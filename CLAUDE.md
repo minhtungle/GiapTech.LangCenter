@@ -51,6 +51,8 @@ một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`. Đ
 
 | Cần biết gì | Đọc ở đâu |
 |---|---|
+| **Tiến độ, lộ trình, nợ kỹ thuật** | [`docs/ke-hoach.md`](./docs/ke-hoach.md) |
+| **Nhật ký theo ngày** (bối cảnh git log không có) | [`docs/nhat-ky/`](./docs/nhat-ky/README.md) |
 | Tổng quan nghiệp vụ, đọc 1 mạch | [`docs/tong-thuat.md`](./docs/tong-thuat.md) |
 | **16 mã FR** theo module | [`docs/nghiep-vu/`](./docs/nghiep-vu/README.md) |
 | **ERD 16 bảng** + ràng buộc | [`docs/database/erd.md`](./docs/database/erd.md) |
@@ -109,6 +111,8 @@ docs/                                   # Tài liệu (xem mục 3)
 4. Cập nhật Swagger/OpenAPI + tài liệu API.
 5. Viết test — unit cho `Application`, integration cho endpoint (**bắt buộc có test cách ly tenant**).
 6. Cập nhật [`CHANGELOG.md`](./CHANGELOG.md).
+7. Ghi [nhật ký ngày](./docs/nhat-ky/README.md) + cập nhật trạng thái ở
+   [`docs/ke-hoach.md`](./docs/ke-hoach.md) — làm ngay sau khi commit, không dồn lại.
 
 ---
 

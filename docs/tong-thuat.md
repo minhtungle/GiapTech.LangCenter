@@ -29,6 +29,10 @@ khẩu}**.
 3. **Vote MVP ràng buộc UNIQUE ở tầng DB**, không chỉ chặn ở UI — [ERD](./database/erd.md#ràng-buộc-nghiệp-vụ-quan-trọng).
 4. **API trả mã lỗi**, frontend dịch qua `react-i18next` — [cqrs-mediatr.md](./backend/cqrs-mediatr.md#trả-lỗi).
 
+## Tiến độ
+
+Xem [ke-hoach.md](./ke-hoach.md) — bảng trạng thái 16 mã FR, lộ trình và nợ kỹ thuật.
+
 ## Đi tiếp
 
 - Kiến trúc & bản đồ công nghệ: [kien-truc/TONG-QUAN-KIEN-TRUC.md](./kien-truc/TONG-QUAN-KIEN-TRUC.md)

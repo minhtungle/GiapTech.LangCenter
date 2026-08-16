@@ -9,6 +9,8 @@
 |---|---|
 | Quy tắc bắt buộc khi làm việc với repo (đặc biệt cho AI agent) | [`CLAUDE.md`](./CLAUDE.md) |
 | Tổng quan nghiệp vụ (đọc 1 mạch trước khi đào sâu) | [`docs/tong-thuat.md`](./docs/tong-thuat.md) |
+| **Tiến độ & lộ trình** | [`docs/ke-hoach.md`](./docs/ke-hoach.md) |
+| Nhật ký làm việc theo ngày | [`docs/nhat-ky/`](./docs/nhat-ky/README.md) |
 | Quy trình Git, commit, PR | [`CONTRIBUTING.md`](./CONTRIBUTING.md) |
 | Chính sách bảo mật | [`SECURITY.md`](./SECURITY.md) |
 | Nhật ký thay đổi | [`CHANGELOG.md`](./CHANGELOG.md) |
@@ -43,8 +45,8 @@
 
 ## Trạng thái dự án
 
-🚧 **Giai đoạn tài liệu.** Chưa khởi tạo mã nguồn. Bước kế tiếp: bootstrap checklist ở
-[`CLAUDE.md`](./CLAUDE.md) mục 13.
+🚧 **6/16 FR xong** — xác thực (FR-01, FR-02) và cụm quản trị hệ thống (FR-03→06) chạy được
+đầu-cuối trên PostgreSQL. Chi tiết và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## Kiểm tra liên kết tài liệu
 
