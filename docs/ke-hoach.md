@@ -5,7 +5,7 @@
 ## Tiến độ tổng
 
 ```
-Nghiệp vụ  █████████░░░░░░░  9/16 FR (FR-08, FR-10 làm một phần)
+Nghiệp vụ  ███████████░░░░░  11/16 FR (FR-08 thiếu Calendar, FR-10 thiếu vẽ sơ đồ)
 Hạ tầng    ████████░░░░░░░░  chạy được ở máy dev, chưa triển khai
 ```
 
@@ -21,8 +21,8 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | FR-06 | Thiết lập chung | ✅ | 🟡 | Chưa upload được logo / ảnh bìa |
 | FR-07 | Lọc thông tin (trận đấu) | ✅ | ✅ | `BoLocTranDau` dùng chung với FR-12 |
 | FR-08 | Danh sách trận đấu | ✅ | 🟡 | Datatable xong; Calendar chưa |
-| FR-09 | Chấp nhận lời mời đối thủ | ⬜ | ⬜ | |
-| FR-10 | Thêm/Cập nhật trận đấu | 🟡 | 🟡 | Thông tin chung xong; đội hình/sơ đồ/đánh giá chưa |
+| FR-09 | Chấp nhận lời mời đối thủ | ✅ | ✅ | Chấp nhận → tự sinh trận, điều hướng sang chi tiết |
+| FR-10 | Thêm/Cập nhật trận đấu | ✅ | 🟡 | 3 tab đủ; sơ đồ chưa có bản vẽ kéo-thả |
 | FR-11 | Xóa trận đấu | ✅ | ✅ | Chỉ xóa cứng trận chưa diễn ra; có Lưu trữ thay thế |
 | FR-12 | Lọc thông tin (thống kê) | ⬜ | ⬜ | Tái dùng FR-07 |
 | FR-13 | Biểu đồ diễn biến | ⬜ | ⬜ | |
@@ -41,7 +41,7 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | Cách ly tenant (2 tầng phòng vệ tự động + test) | ✅ |
 | Phân quyền động đọc từ DB + cache | ✅ |
 | Frontend: layout, i18n, design token, auto-refresh token | ✅ |
-| 86 test (34 unit + 52 integration) | ✅ |
+| 100 test (34 unit + 66 integration) | ✅ |
 | **Dockerfile cho API** | ✅ 2 giai đoạn, chạy user thường |
 | **`docker compose up` chạy được** | ✅ 5 container, API healthy, migration tự áp |
 | Test E2E frontend | ⬜ |
@@ -65,13 +65,13 @@ Module lớn nhất, tách 3 đợt để mỗi đợt đều có thứ dùng đ
 **~~Đợt 1a — Nền tảng~~** ✅ xong 16/08
 - ~~CRUD đối thủ · FR-07 bộ lọc · FR-08 Datatable · FR-11 xóa/lưu trữ~~
 
-**Đợt 1b — Trận đấu đầy đủ** (~1 phiên)
-- FR-10a đội hình · FR-10c đánh giá + **vote MVP**
-- FR-09 lời mời → sinh trận
-- FR-08 chế độ Calendar
+**~~Đợt 1b — Trận đấu đầy đủ~~** ✅ xong 16/08 (trừ Calendar)
+- ~~FR-10a đội hình · FR-10c đánh giá + vote MVP · FR-09 lời mời~~
+- ⬜ FR-08 chế độ Calendar — còn lại
 
-**Đợt 1c — Sơ đồ chiến thuật** (~1 phiên, tách riêng)
-- FR-10b kéo-thả, lưu `jsonb`. Nặng nhất cả dự án, độc lập — chưa có vẫn dùng được lịch thi đấu
+**Đợt 1c — Sơ đồ chiến thuật kéo-thả** (~1 phiên, còn lại)
+- Backend FR-10b đã xong (lưu `jsonb` + validate JSON); UI hiện là ô nhập JSON thô.
+- Cần: bản vẽ kéo-thả trên nền sân bóng. Nặng nhất cả dự án, độc lập.
 
 ### Giai đoạn 2 — Thống kê (FR-12 → FR-14) · ~1 phiên
 

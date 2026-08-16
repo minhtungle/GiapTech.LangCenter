@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Plus, Pencil, Trash2, Archive, Filter, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, Archive, Filter, X, ListChecks } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { api, layMaLoi } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong,
@@ -50,6 +51,7 @@ function sangInputLocal(iso: string) {
 export default function LichThiDau() {
   const { t } = useTranslation()
   const qc = useQueryClient()
+  const navigate = useNavigate()
 
   const [moLoc, setMoLoc] = useState(false)
   const [loc, setLoc] = useState<{
@@ -259,7 +261,7 @@ export default function LichThiDau() {
               <Th className="text-center">{t('tranDau.tySo')}</Th>
               <Th>{t('tranDau.ketQua')}</Th>
               <Th>{t('tranDau.trangThai')}</Th>
-              <Th className="w-28" />
+              <Th className="w-36" />
             </tr>
           </thead>
           <tbody>
@@ -284,6 +286,14 @@ export default function LichThiDau() {
                 <Td className="text-muted-foreground">{t(`tranDau.tt.${tr.trangThai}`)}</Td>
                 <Td>
                   <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title={t('tranDau.moChiTiet')}
+                      onClick={() => navigate(`/lich-thi-dau/${tr.id}`)}
+                    >
+                      <ListChecks className="h-3.5 w-3.5" />
+                    </Button>
                     <Button variant="ghost" size="sm" title={t('chung.sua')} onClick={() => moSua(tr)}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>

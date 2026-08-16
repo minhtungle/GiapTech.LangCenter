@@ -35,5 +35,8 @@ public static class MaLoi
     public const string LoiMoiDaXuLy = "LOI_MOI_DA_XU_LY";
     public const string DoiThuDaTonTai = "DOI_THU_DA_TON_TAI";
     public const string DoiThuDaCoTranDau = "DOI_THU_DA_CO_TRAN_DAU";
+    public const string LoiMoiDaSinhTran = "LOI_MOI_DA_SINH_TRAN";
+    public const string CauThuKhongTrongDoiHinh = "CAU_THU_KHONG_TRONG_DOI_HINH";
+    public const string CauThuKhongHopLe = "CAU_THU_KHONG_HOP_LE";
     public const string SoTienVuotQuaCanDong = "SO_TIEN_VUOT_QUA_CAN_DONG";
 }
