@@ -114,8 +114,9 @@ docs/                                   # Tài liệu (xem mục 3)
 
 ## 6. Bootstrap checklist
 
-- [ ] `git init` + `.gitignore` (.NET + Node + **`.env`**), commit đầu tiên.
-- [ ] Khởi tạo solution .NET theo [mục 5](#5-cấu-trúc-mã-nguồn) (`dotnet new sln`, 4 project).
+- [x] `git init` + `.gitignore` (.NET + Node + **`.env`**), commit đầu tiên.
+- [x] Khởi tạo solution .NET theo [mục 5](#5-cấu-trúc-mã-nguồn): 4 project + 2 test project,
+      `Directory.Build.props` (net8.0, nullable, warnings-as-errors), test canh luật phụ thuộc.
 - [ ] Cài EF Core + Npgsql, tạo `DbContext` với [16 entity](./docs/database/erd.md), migration đầu tiên.
       Chốt cách xử lý [`tenant_id` ở bảng con](./docs/database/erd.md#ghi-chú-về-tenant_id-ở-bảng-con).
 - [ ] Cấu hình [multi-tenant middleware + Global Query Filter](./docs/backend/multi-tenant.md).
@@ -129,18 +130,26 @@ docs/                                   # Tài liệu (xem mục 3)
 
 ## 7. Lệnh build/test/dev
 
-> ⚠️ **Placeholder** — cập nhật ngay khi solution .NET và project frontend được khởi tạo lần đầu.
+Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 
 ```bash
-# Backend
-dotnet build
-dotnet test
-dotnet run --project src/GiapTech.SoccerRoom.API
+# --- Backend (đã hoạt động) ---
+dotnet build                                        # 0 warning — TreatWarningsAsErrors đang bật
+dotnet test                                         # gồm test canh luật phụ thuộc Clean Architecture
+dotnet run --project src/GiapTech.SoccerRoom.API    # Swagger tại /swagger
 
-# Frontend
-cd frontend && npm install && npm run dev
-npm run build
-
-# Kiểm tra liên kết tài liệu
+# --- Kiểm tra tài liệu (đã hoạt động) ---
 python3 scripts/check-doc-links.py
+
+# --- Frontend (chưa khởi tạo) ---
+cd frontend && npm install && npm run dev
 ```
+
+> `TreatWarningsAsErrors=true` trong `Directory.Build.props` — cảnh báo làm build đỏ. Sửa cảnh báo,
+> đừng tắt cờ.
+
+### Test luật phụ thuộc
+
+`tests/GiapTech.SoccerRoom.Application.UnitTests/KienTruc/LuatPhuThuocTests.cs` biến quy tắc #9 thành
+thứ CI bắt được: nếu `Domain` lỡ tham chiếu EF Core / ASP.NET Core / MediatR, hoặc `Application` tham
+chiếu ngược lên `Infrastructure`/`API`, test đỏ ngay kèm hướng dẫn sửa.

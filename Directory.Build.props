@@ -1,0 +1,20 @@
+<Project>
+
+  <!--
+    Cấu hình dùng chung cho mọi project trong solution.
+    Xem docs/backend/clean-architecture.md
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Cảnh báo = lỗi: chặn code lỗi tiềm ẩn lọt vào main ngay từ lúc build -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+</Project>
