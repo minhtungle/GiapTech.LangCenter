@@ -34,7 +34,30 @@ phạm vi một tenant** — hai CLB khác nhau có thể cùng có tài khoản
 - Token đặt lại dùng một lần, có thời hạn ngắn.
 - Kênh gửi: SMTP (xem [biến môi trường](../ha-tang/bien-moi-truong.md)).
 
+## Phiên đăng nhập & refresh token
+
+| Cơ chế | Quyết định | Vì sao |
+|---|---|---|
+| Lưu trữ | DB giữ **hash SHA-256**, không giữ token thô | Người đọc được DB (backup rò rỉ, SQL injection) không mạo danh được ai |
+| Xoay vòng | Token cũ **thu hồi ngay** khi cấp token mới | Bản sao bị lộ chỉ dùng được tới lần làm mới kế tiếp, không sống tới ngày hết hạn |
+| Phát hiện đánh cắp | Dùng lại token **đã thu hồi** → thu hồi **toàn bộ** phiên | Tái sử dụng là dấu hiệu có bản sao trong tay người khác; thà buộc đăng nhập lại còn hơn để phiên bị chiếm chạy tiếp |
+| Đổi mật khẩu | Thu hồi mọi phiên đang mở | Đổi mật khẩu thường là phản ứng khi nghi bị lộ |
+| Hạn | Access 60 phút · Refresh 30 ngày | |
+
+## Trạng thái triển khai
+
+| Endpoint | Mã | Ghi chú |
+|---|---|---|
+| `POST /api/v1/auth/dang-nhap` | FR-01 | Trả `phaiDoiMatKhau` để frontend điều hướng |
+| `POST /api/v1/auth/doi-mat-khau` | FR-01 | Người dùng tự đổi; thu hồi phiên cũ |
+| `POST /api/v1/auth/lam-moi-token` | FR-01 | Xoay vòng + phát hiện tái sử dụng |
+| `POST /api/v1/auth/quen-mat-khau` | FR-02 | **Luôn trả 204** dù email có tồn tại hay không |
+| `POST /api/v1/auth/dat-lai-mat-khau` | FR-02 | Token hạn 30 phút, dùng **một lần**, thu hồi mọi phiên |
+
+Chưa cấu hình `SMTP_HOST` (môi trường dev) thì email được ghi log thay vì gửi — luồng vẫn chạy
+đầu-cuối mà không cần dựng SMTP thật.
+
 ## Tham chiếu
 
-- Bảng `NGUOI_DUNG`, `TENANT` — xem [ERD](../database/erd.md).
+- Bảng `NGUOI_DUNG`, `TENANT`, `REFRESH_TOKEN`, `TOKEN_DATLAI_MATKHAU` — xem [ERD](../database/erd.md).
 - Cấu hình JWT & Identity — xem [SECURITY.md](../../SECURITY.md).

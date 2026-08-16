@@ -1,6 +1,9 @@
 using Asp.Versioning;
 using GiapTech.SoccerRoom.Application.DangNhap.Commands.DangNhap;
+using GiapTech.SoccerRoom.Application.DangNhap.Commands.DatLaiMatKhauQuaToken;
 using GiapTech.SoccerRoom.Application.DangNhap.Commands.DoiMatKhau;
+using GiapTech.SoccerRoom.Application.DangNhap.Commands.LamMoiToken;
+using GiapTech.SoccerRoom.Application.DangNhap.Commands.QuenMatKhau;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -36,4 +39,39 @@ public class AuthController(ISender sender) : ControllerBase
         await sender.Send(command, ct);
         return NoContent();
     }
+
+    /// <summary>
+    /// FR-02 — yêu cầu đặt lại mật khẩu qua email.
+    /// Luôn trả 204 dù email có tồn tại hay không, để không tiết lộ email nào đã đăng ký.
+    /// </summary>
+    [HttpPost("quen-mat-khau")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> QuenMatKhau(
+        [FromBody] QuenMatKhauCommand command, CancellationToken ct)
+    {
+        await sender.Send(command, ct);
+        return NoContent();
+    }
+
+    /// <summary>FR-02 — đặt lại mật khẩu bằng mã nhận qua email.</summary>
+    [HttpPost("dat-lai-mat-khau")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> DatLaiMatKhau(
+        [FromBody] DatLaiMatKhauQuaTokenCommand command, CancellationToken ct)
+    {
+        await sender.Send(command, ct);
+        return NoContent();
+    }
+
+    /// <summary>FR-01 — đổi refresh token lấy cặp token mới (token cũ bị thu hồi ngay).</summary>
+    [HttpPost("lam-moi-token")]
+    [AllowAnonymous]
+    [ProducesResponseType<DangNhapResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<DangNhapResult>> LamMoiToken(
+        [FromBody] LamMoiTokenCommand command, CancellationToken ct)
+        => Ok(await sender.Send(command, ct));
 }

@@ -45,6 +45,16 @@ public class DoiMatKhauHandler(
         // Gỡ cờ bắt buộc đổi — đây là điều kiện để người dùng vào được hệ thống.
         nguoiDung.PhaiDoiMatKhau = false;
 
+        // Thu hồi refresh token của các phiên KHÁC: đổi mật khẩu thường là phản ứng khi nghi
+        // bị lộ, nên phải đá mọi phiên cũ ra thay vì để chúng tự làm mới token vô thời hạn.
+        var bayGio = DateTimeOffset.UtcNow;
+        var phienCu = await db.RefreshTokens
+            .Where(r => r.NguoiDungId == userId && r.ThuHoiLuc == null)
+            .ToListAsync(ct);
+
+        foreach (var r in phienCu)
+            r.ThuHoiLuc = bayGio;
+
         await db.SaveChangesAsync(ct);
     }
 }

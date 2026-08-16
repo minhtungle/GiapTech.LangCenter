@@ -30,7 +30,8 @@ public class DangNhapValidator : AbstractValidator<DangNhapCommand>
 public class DangNhapHandler(
     IAppDbContext db,
     IPasswordHasher hasher,
-    ITokenService tokenService)
+    ITokenService tokenService,
+    ICurrentTenant currentTenant)
     : IRequestHandler<DangNhapCommand, DangNhapResult>
 {
     public async Task<DangNhapResult> Handle(DangNhapCommand request, CancellationToken ct)
@@ -61,6 +62,21 @@ public class DangNhapHandler(
 
         var token = tokenService.PhatHanh(new ThongTinToken(
             tenant.Id, tenant.MaDoi, nguoiDung.Id, nguoiDung.Username));
+
+        // Lưu HASH của refresh token, không lưu token thô — người đọc được DB sẽ không mạo
+        // danh được ai (cùng lý do với password_hash).
+        using var _ = currentTenant.DatPhamVi(tenant.Id);
+
+        db.RefreshTokens.Add(new Domain.Entities.RefreshToken
+        {
+            TenantId = tenant.Id,
+            NguoiDungId = nguoiDung.Id,
+            TokenHash = QuenMatKhau.BamToken.Bam(token.RefreshToken),
+            HetHan = DateTimeOffset.UtcNow.AddDays(
+                LamMoiToken.LamMoiTokenHandler.TokenService_HanRefreshNgay)
+        });
+
+        await db.SaveChangesAsync(ct);
 
         return new DangNhapResult(
             token.AccessToken, token.RefreshToken, token.HetHan, nguoiDung.PhaiDoiMatKhau);

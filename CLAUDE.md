@@ -19,7 +19,7 @@ một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`. Đ
 5 module · 16 mã FR · 3 actor (Admin / Manager / Player) — đọc 1 mạch ở
 [`docs/tong-thuat.md`](./docs/tong-thuat.md).
 
-**Trạng thái:** 🚧 backend: đăng nhập (FR-01) + **trọn cụm quản trị (FR-03→FR-06)**, 36 test xanh. Bước kế tiếp ở [mục 6](#6-bootstrap-checklist).
+**Trạng thái:** 🚧 backend: **xác thực trọn vẹn (FR-01, FR-02)** + **cụm quản trị (FR-03→FR-06)**, 44 test xanh. Bước kế tiếp ở [mục 6](#6-bootstrap-checklist).
 
 ---
 
@@ -131,6 +131,8 @@ docs/                                   # Tài liệu (xem mục 3)
 - [x] **Cụm quản trị hệ thống (FR-03 → FR-06)**: CRUD tài khoản · hồ sơ cầu thủ · nhóm quyền ·
       thiết lập chung. Seeder tạo CLB mới (admin/123456 + nhóm "Quản trị viên" đầy đủ).
       Middleware buộc đổi mật khẩu lần đầu — chặn ở tầng API, không phó mặc frontend.
+- [x] **FR-02 quên mật khẩu** (token hash, hạn 30 phút, dùng một lần) + **refresh token** có xoay
+      vòng và phát hiện tái sử dụng. Migration `ThemBangToken`.
 - [ ] Khởi tạo frontend từ template shadcn-admin (Vite), cấu hình TanStack Query trỏ về API.
 - [ ] Chốt [design token](./docs/frontend/design-tokens.md) + dựng trang style-guide.
 - [ ] Cập nhật [mục 7](#7-lệnh-buildtestdev) bằng lệnh thật chạy được.
@@ -144,7 +146,7 @@ Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 ```bash
 # --- Backend (đã hoạt động) ---
 dotnet build                                        # 0 warning — TreatWarningsAsErrors đang bật
-dotnet test                                         # 36 test: luật phụ thuộc, cách ly tenant, phân quyền, CRUD quản trị
+dotnet test                                         # 44 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực, CRUD quản trị
 dotnet run --project src/GiapTech.SoccerRoom.API    # Swagger tại /swagger
 
 # --- Kiểm tra tài liệu (đã hoạt động) ---

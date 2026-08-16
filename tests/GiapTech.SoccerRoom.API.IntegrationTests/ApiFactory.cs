@@ -42,6 +42,11 @@ public class ApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<DbContextOptions<AppDbContext>>();
             services.RemoveAll<AppDbContext>();
 
+            // Thay SMTP thật: TestEmailSender bắt token thô từ nội dung email để test
+            // chạy tiếp luồng FR-02 (DB chỉ lưu hash nên không lấy ngược được).
+            services.RemoveAll<IEmailSender>();
+            services.AddScoped<IEmailSender, TestEmailSender>();
+
             services.AddDbContext<AppDbContext>(o => o
                 .UseInMemoryDatabase(_tenDb)
                 .ConfigureWarnings(w => w.Ignore(

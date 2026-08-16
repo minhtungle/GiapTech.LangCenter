@@ -31,6 +31,9 @@ public interface IAppDbContext
     DbSet<DanhGiaCauThu> DanhGiaCauThus { get; }
     DbSet<VoteMvp> VoteMvps { get; }
 
+    DbSet<RefreshToken> RefreshTokens { get; }
+    DbSet<TokenDatLaiMatKhau> TokenDatLaiMatKhaus { get; }
+
     DbSet<Quy> Quys { get; }
     DbSet<DongGopQuy> DongGopQuys { get; }
 

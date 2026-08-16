@@ -20,6 +20,8 @@ public class BuocDoiMatKhauMiddleware(RequestDelegate next)
         "/api/v1/auth/dang-nhap",
         "/api/v1/auth/doi-mat-khau",
         "/api/v1/auth/quen-mat-khau",
+        "/api/v1/auth/dat-lai-mat-khau",
+        "/api/v1/auth/lam-moi-token",
         "/swagger",
         "/health"
     ];

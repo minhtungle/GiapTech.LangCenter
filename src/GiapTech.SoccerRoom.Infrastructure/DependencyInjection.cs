@@ -3,6 +3,7 @@ using GiapTech.SoccerRoom.Infrastructure.Identity;
 using GiapTech.SoccerRoom.Infrastructure.MultiTenancy;
 using GiapTech.SoccerRoom.Infrastructure.Persistence;
 using GiapTech.SoccerRoom.Infrastructure.Persistence.Seed;
+using GiapTech.SoccerRoom.Infrastructure.ThongBao;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,6 +33,7 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, AppPasswordHasher>();
         services.AddSingleton<ITokenService, TokenService>();
         services.AddScoped<ITenantSeeder, TenantSeeder>();
+        services.AddScoped<IEmailSender, SmtpEmailSender>();
 
         return services;
     }
