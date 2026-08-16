@@ -19,7 +19,7 @@ một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`. Đ
 5 module · 16 mã FR · 3 actor (Admin / Manager / Player) — đọc 1 mạch ở
 [`docs/tong-thuat.md`](./docs/tong-thuat.md).
 
-**Trạng thái:** 🚧 backend: **xác thực trọn vẹn (FR-01, FR-02)** + **cụm quản trị (FR-03→FR-06)**, 44 test xanh. Bước kế tiếp ở [mục 6](#6-bootstrap-checklist).
+**Trạng thái:** 🚧 **chạy được đầu-cuối trên PostgreSQL thật**: frontend đăng nhập → cụm quản trị (FR-01→FR-06). 44 test xanh. Bước kế tiếp ở [mục 6](#6-bootstrap-checklist).
 
 ---
 
@@ -133,8 +133,12 @@ docs/                                   # Tài liệu (xem mục 3)
       Middleware buộc đổi mật khẩu lần đầu — chặn ở tầng API, không phó mặc frontend.
 - [x] **FR-02 quên mật khẩu** (token hash, hạn 30 phút, dùng một lần) + **refresh token** có xoay
       vòng và phát hiện tái sử dụng. Migration `ThemBangToken`.
-- [ ] Khởi tạo frontend từ template shadcn-admin (Vite), cấu hình TanStack Query trỏ về API.
-- [ ] Chốt [design token](./docs/frontend/design-tokens.md) + dựng trang style-guide.
+- [x] **Frontend** (Vite + React + TS + Tailwind + TanStack Query): đăng nhập, đổi mật khẩu,
+      quên mật khẩu, và 4 màn quản trị (tài khoản/cầu thủ/phân quyền/thiết lập).
+      Interceptor tự làm mới token, có khử đua để không kích hoạt cơ chế chống đánh cắp.
+- [x] Chốt [design token](./docs/frontend/design-tokens.md): xanh sân cỏ + cam nhấn + 3 màu trạng thái.
+- [x] **Kiểm chứng trên PostgreSQL thật**: migration áp sạch, 17 bảng, UNIQUE vote MVP chặn đúng
+      khi thử vi phạm trực tiếp bằng SQL.
 - [ ] Cập nhật [mục 7](#7-lệnh-buildtestdev) bằng lệnh thật chạy được.
 
 ---
@@ -152,8 +156,18 @@ dotnet run --project src/GiapTech.SoccerRoom.API    # Swagger tại /swagger
 # --- Kiểm tra tài liệu (đã hoạt động) ---
 python3 scripts/check-doc-links.py
 
-# --- Frontend (chưa khởi tạo) ---
-cd frontend && npm install && npm run dev
+# --- Frontend (đã hoạt động) ---
+cd frontend && npm install && npm run dev   # http://localhost:5173, proxy /api -> :5229
+
+# --- PostgreSQL cho dev ---
+docker run -d --name sr-pg -e POSTGRES_PASSWORD=devpass -e POSTGRES_USER=soccerroom \
+  -e POSTGRES_DB=soccerroom -p 55432:5432 postgres:16-alpine
+export ConnectionStrings__Default="Host=localhost;Port=55432;Database=soccerroom;Username=soccerroom;Password=devpass"
+dotnet ef database update --project src/GiapTech.SoccerRoom.Infrastructure \
+  --startup-project src/GiapTech.SoccerRoom.API
+
+# Tạo CLB thử (chỉ chạy ở Development): POST /api/v1/dang-ky-clb {"maDoi":"FCDEV","tenDoi":"..."}
+# → admin/123456, bắt buộc đổi mật khẩu lần đầu
 ```
 
 > `TreatWarningsAsErrors=true` trong `Directory.Build.props` — cảnh báo làm build đỏ. Sửa cảnh báo,

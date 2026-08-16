@@ -15,8 +15,14 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
 {
     public AppDbContext CreateDbContext(string[] args)
     {
+        // Ưu tiên biến môi trường để `dotnet ef database update` chạy được lên DB thật;
+        // chuỗi mặc định chỉ đủ cho `migrations add` (EF chỉ cần biết provider là PostgreSQL).
+        var connectionString =
+            Environment.GetEnvironmentVariable("ConnectionStrings__Default")
+            ?? "Host=localhost;Database=soccerroom_design;Username=postgres;Password=postgres";
+
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseNpgsql("Host=localhost;Database=soccerroom_design;Username=postgres;Password=postgres")
+            .UseNpgsql(connectionString)
             .UseSnakeCaseNamingConvention()
             .Options;
 

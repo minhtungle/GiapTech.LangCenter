@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Design token — xem docs/frontend/design-tokens.md.
+  Ánh xạ sang biến theming của shadcn/ui, KHÔNG tạo hệ biến song song.
+*/
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 20% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 20% 12%;
+
+    /* Màu chủ đạo: xanh lá đậm — gợi sân cỏ, đủ tương phản với chữ trắng */
+    --primary: 152 45% 28%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 222 20% 12%;
+
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 14% 45%;
+
+    /* Màu nhấn: cam ấm, dùng tiết chế cho badge/highlight */
+    --accent: 28 85% 52%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 20% 90%;
+    --input: 214 20% 90%;
+    --ring: 152 45% 28%;
+
+    /*
+      Màu trạng thái — nghĩa CỐ ĐỊNH ở mọi module, không dùng để trang trí:
+      thắng/đã đóng đủ · thua/quá hạn · hòa/đang chờ
+    */
+    --status-win: 152 55% 34%;
+    --status-lose: 0 72% 45%;
+    --status-draw: 38 92% 45%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222 22% 10%;
+    --foreground: 210 20% 96%;
+
+    --card: 222 20% 13%;
+    --card-foreground: 210 20% 96%;
+
+    --primary: 152 45% 45%;
+    --primary-foreground: 222 22% 10%;
+
+    --secondary: 217 18% 20%;
+    --secondary-foreground: 210 20% 96%;
+
+    --muted: 217 18% 20%;
+    --muted-foreground: 215 16% 62%;
+
+    --accent: 28 80% 58%;
+    --accent-foreground: 222 22% 10%;
+
+    --destructive: 0 62% 52%;
+    --destructive-foreground: 210 20% 96%;
+
+    --border: 217 18% 24%;
+    --input: 217 18% 24%;
+    --ring: 152 45% 45%;
+
+    --status-win: 152 50% 48%;
+    --status-lose: 0 62% 55%;
+    --status-draw: 38 88% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+}

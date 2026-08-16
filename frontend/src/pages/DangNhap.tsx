@@ -1,0 +1,91 @@
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { useTranslation } from 'react-i18next'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '@/lib/auth'
+import { layMaLoi } from '@/lib/api'
+import {
+  Button, CanhBaoLoi, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label,
+} from '@/components/ui'
+
+const schema = z.object({
+  maDoi: z.string().min(1),
+  username: z.string().min(1),
+  matKhau: z.string().min(1),
+})
+
+type FormData = z.infer<typeof schema>
+
+/** FR-01 — đăng nhập bằng bộ ba {ID đội, username, mật khẩu}. */
+export default function DangNhap() {
+  const { t } = useTranslation()
+  const { dangNhap } = useAuth()
+  const navigate = useNavigate()
+  const [maLoi, setMaLoi] = useState<string | null>(null)
+
+  const { register, handleSubmit, formState } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: { maDoi: '', username: '', matKhau: '' },
+  })
+
+  const onSubmit = async (data: FormData) => {
+    setMaLoi(null)
+    try {
+      const { phaiDoiMatKhau } = await dangNhap(data.maDoi, data.username, data.matKhau)
+      // Bắt buộc đổi mật khẩu trước khi vào hệ thống (FR-01). Backend cũng chặn ở
+      // middleware, nên điều hướng này chỉ để trải nghiệm mượt, không phải lớp bảo vệ.
+      navigate(phaiDoiMatKhau ? '/doi-mat-khau' : '/', { replace: true })
+    } catch (e) {
+      setMaLoi(layMaLoi(e))
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle className="text-lg">{t('dangNhap.tieuDe')}</CardTitle>
+          <CardDescription>{t('dangNhap.moTa')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="maDoi">{t('dangNhap.maDoi')}</Label>
+              <Input id="maDoi" autoFocus autoComplete="organization" {...register('maDoi')} />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="username">{t('dangNhap.username')}</Label>
+              <Input id="username" autoComplete="username" {...register('username')} />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="matKhau">{t('dangNhap.matKhau')}</Label>
+              <Input
+                id="matKhau"
+                type="password"
+                autoComplete="current-password"
+                {...register('matKhau')}
+              />
+            </div>
+
+            {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
+
+            <Button type="submit" disabled={formState.isSubmitting}>
+              {formState.isSubmitting ? t('chung.dangTai') : t('dangNhap.nut')}
+            </Button>
+
+            <Link
+              to="/quen-mat-khau"
+              className="text-center text-sm text-muted-foreground hover:text-foreground"
+            >
+              {t('dangNhap.quenMatKhau')}
+            </Link>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

@@ -1,7 +1,17 @@
 # Design token
 
-> ⚠️ **Chưa chốt giá trị màu cụ thể.** Tài liệu này định nghĩa **cấu trúc** token và quy tắc sử dụng.
-> Chốt giá trị hex cùng lúc dựng trang style-guide, trước khi code màn hình nghiệp vụ đầu tiên.
+> ✅ **Đã chốt.** Giá trị thật nằm trong `frontend/src/index.css` (biến CSS) và
+> `frontend/tailwind.config.js` (ánh xạ sang class Tailwind).
+>
+> | Token | Giá trị | Vai trò |
+> |---|---|---|
+> | `--primary` | `152 45% 28%` — xanh lá đậm | Gợi sân cỏ, đủ tương phản với chữ trắng |
+> | `--accent` | `28 85% 52%` — cam ấm | Nhấn thứ cấp, dùng tiết chế |
+> | `--status-win` | `152 55% 34%` | Thắng · đã đóng đủ quỹ |
+> | `--status-lose` | `0 72% 45%` | Thua · quá hạn |
+> | `--status-draw` | `38 92% 45%` | Hòa · đang chờ |
+>
+> Có bản dark mode đầy đủ. Trang style-guide trực quan vẫn **chưa dựng**.
 
 ## Nguyên tắc
 

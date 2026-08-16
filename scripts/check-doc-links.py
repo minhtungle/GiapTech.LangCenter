@@ -16,11 +16,13 @@ ROOT = Path(__file__).resolve().parent.parent
 MD_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 HTML_LINK_RE = re.compile(r'(?:href|src)="([^"]+)"')
 
-SKIP_DIRS = {".git", "node_modules", "bin", "obj", "dist", ".github"}
+SKIP_DIRS = {".git", "node_modules", "bin", "obj", "dist", ".github", ".agents", ".claude"}
 
 
 def is_external(link: str) -> bool:
-    return link.startswith(("http://", "https://", "mailto:", "#"))
+    # Đường dẫn bắt đầu bằng "/" là URL tuyệt đối lúc chạy (vd asset của Vite trong
+    # index.html), không phải liên kết tài liệu — bỏ qua.
+    return link.startswith(("http://", "https://", "mailto:", "#", "/"))
 
 
 def find_doc_files():
