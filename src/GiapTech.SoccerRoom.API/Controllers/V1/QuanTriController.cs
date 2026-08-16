@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using GiapTech.SoccerRoom.API.Authorization;
+using GiapTech.SoccerRoom.Application.Common.Models;
 using GiapTech.SoccerRoom.Application.QuanTri.CauThu;
 using GiapTech.SoccerRoom.Application.QuanTri.Quyen;
 using GiapTech.SoccerRoom.Application.QuanTri.TaiKhoan;
@@ -19,9 +20,13 @@ public class CauThuController(ISender sender) : ControllerBase
 {
     [HttpGet]
     [RequirePermission(ChucNang.CauThu, HanhDong.Xem)]
-    public async Task<ActionResult<List<CauThuDto>>> DanhSach(
-        [FromQuery] string? timKiem, CancellationToken ct)
-        => Ok(await sender.Send(new LayDanhSachCauThuQuery(timKiem), ct));
+    public async Task<ActionResult<KetQuaTrang<CauThuDto>>> DanhSach(
+        [FromQuery] string? timKiem,
+        [FromQuery] int trang = 1,
+        [FromQuery] int soDong = 20,
+        CancellationToken ct = default)
+        => Ok(await sender.Send(
+            new LayDanhSachCauThuQuery(timKiem, new ThamSoTrang(trang, soDong)), ct));
 
     [HttpGet("{id:guid}")]
     [RequirePermission(ChucNang.CauThu, HanhDong.Xem)]
@@ -64,9 +69,13 @@ public class TaiKhoanController(ISender sender) : ControllerBase
 {
     [HttpGet]
     [RequirePermission(ChucNang.TaiKhoan, HanhDong.Xem)]
-    public async Task<ActionResult<List<TaiKhoanDto>>> DanhSach(
-        [FromQuery] string? timKiem, CancellationToken ct)
-        => Ok(await sender.Send(new LayDanhSachTaiKhoanQuery(timKiem), ct));
+    public async Task<ActionResult<KetQuaTrang<TaiKhoanDto>>> DanhSach(
+        [FromQuery] string? timKiem,
+        [FromQuery] int trang = 1,
+        [FromQuery] int soDong = 20,
+        CancellationToken ct = default)
+        => Ok(await sender.Send(
+            new LayDanhSachTaiKhoanQuery(timKiem, new ThamSoTrang(trang, soDong)), ct));
 
     [HttpPost]
     [RequirePermission(ChucNang.TaiKhoan, HanhDong.Them)]

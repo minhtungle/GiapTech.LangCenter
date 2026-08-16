@@ -8,6 +8,16 @@ namespace GiapTech.SoccerRoom.API.IntegrationTests;
 /// <summary>FR-09 lời mời · FR-10 đội hình, sơ đồ, đánh giá, vote MVP.</summary>
 public class ChiTietTranTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
+
+    /// <summary>
+    /// Đọc phần dữ liệu từ response phân trang. API trả { duLieu, tongSoDong, trang, soDong }
+    /// thay vì mảng trần — xem KetQuaTrang.
+    /// </summary>
+    private static async Task<List<JsonElement>> DocTrang(HttpResponseMessage res)
+    {
+        var body = await res.Content.ReadFromJsonAsync<JsonElement>();
+        return body.GetProperty("duLieu").EnumerateArray().ToList();
+    }
     private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
     {
         var c = factory.CreateClient();
@@ -380,7 +390,7 @@ public class ChiTietTranTests(ApiFactory factory) : IClassFixture<ApiFactory>
         });
         var quyenXem = await taoQuyen.Content.ReadFromJsonAsync<Guid>();
 
-        var dsTk = await manager.GetFromJsonAsync<List<JsonElement>>("/api/v1/tai-khoan") ?? [];
+        var dsTk = await DocTrang(await manager.GetAsync("/api/v1/tai-khoan"));
         var player = dsTk.Single(u => u.GetProperty("username").GetString() == "player");
         await manager.PutAsJsonAsync($"/api/v1/tai-khoan/{player.GetProperty("id").GetGuid()}", new
         {

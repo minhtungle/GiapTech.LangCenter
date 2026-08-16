@@ -1,6 +1,7 @@
 using FluentValidation;
 using GiapTech.SoccerRoom.Application.Common.Exceptions;
 using GiapTech.SoccerRoom.Application.Common.Interfaces;
+using GiapTech.SoccerRoom.Application.Common.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,13 +14,16 @@ public record CauThuDto(
 
 // ---------- Queries ----------
 
-public record LayDanhSachCauThuQuery(string? TimKiem = null) : IRequest<List<CauThuDto>>;
+public record LayDanhSachCauThuQuery(string? TimKiem = null, ThamSoTrang? Trang = null)
+    : IRequest<KetQuaTrang<CauThuDto>>;
 
 public class LayDanhSachCauThuHandler(IAppDbContext db)
-    : IRequestHandler<LayDanhSachCauThuQuery, List<CauThuDto>>
+    : IRequestHandler<LayDanhSachCauThuQuery, KetQuaTrang<CauThuDto>>
 {
-    public async Task<List<CauThuDto>> Handle(LayDanhSachCauThuQuery request, CancellationToken ct)
+    public async Task<KetQuaTrang<CauThuDto>> Handle(
+        LayDanhSachCauThuQuery request, CancellationToken ct)
     {
+        var trang = request.Trang ?? new ThamSoTrang();
         var q = db.CauThus.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(request.TimKiem))
@@ -31,12 +35,18 @@ public class LayDanhSachCauThuHandler(IAppDbContext db)
             q = q.Where(c => c.HoTen.ToLower().Contains(tu));
         }
 
-        return await q
+        var tong = await q.CountAsync(ct);
+
+        var duLieu = await q
             .OrderBy(c => c.HoTen)
+            .Skip(trang.BoQua)
+            .Take(trang.SoDongHopLe)
             .Select(c => new CauThuDto(
                 c.Id, c.HoTen, c.AnhDaiDien, c.NgaySinh, c.NgayThamGia, c.GhiChu,
                 db.NguoiDungs.Any(u => u.CauThuId == c.Id)))
             .ToListAsync(ct);
+
+        return new KetQuaTrang<CauThuDto>(duLieu, tong, trang.TrangHopLe, trang.SoDongHopLe);
     }
 }
 

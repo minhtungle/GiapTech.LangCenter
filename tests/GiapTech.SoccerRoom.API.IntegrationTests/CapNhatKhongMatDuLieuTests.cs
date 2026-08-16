@@ -14,6 +14,16 @@ namespace GiapTech.SoccerRoom.API.IntegrationTests;
 /// </summary>
 public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
+
+    /// <summary>
+    /// Đọc phần dữ liệu từ response phân trang. API trả { duLieu, tongSoDong, trang, soDong }
+    /// thay vì mảng trần — xem KetQuaTrang.
+    /// </summary>
+    private static async Task<List<JsonElement>> DocTrang(HttpResponseMessage res)
+    {
+        var body = await res.Content.ReadFromJsonAsync<JsonElement>();
+        return body.GetProperty("duLieu").EnumerateArray().ToList();
+    }
     private async Task<HttpClient> Client()
     {
         var c = factory.CreateClient();
@@ -48,7 +58,7 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
             PhaiDoiMatKhau = false
         });
 
-        var ds = await client.GetFromJsonAsync<List<JsonElement>>("/api/v1/tai-khoan");
+        var ds = await DocTrang(await client.GetAsync("/api/v1/tai-khoan"));
         var u = ds!.Single(x => x.GetProperty("username").GetString() == "du-truong");
 
         // Đây là danh sách trường CapNhatTaiKhoanCommand ghi đè.
@@ -94,7 +104,7 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
         });
         Assert.Equal(HttpStatusCode.NoContent, res.StatusCode);
 
-        var ds = await client.GetFromJsonAsync<List<JsonElement>>("/api/v1/tai-khoan");
+        var ds = await DocTrang(await client.GetAsync("/api/v1/tai-khoan"));
         var u = ds!.Single(x => x.GetProperty("username").GetString() == "giu-nguyen");
 
         Assert.Equal("moi@example.com", u.GetProperty("email").GetString());
@@ -128,7 +138,7 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
             TrangThai = "HoatDong"
         });
 
-        var ds = await client.GetFromJsonAsync<List<JsonElement>>("/api/v1/tai-khoan");
+        var ds = await DocTrang(await client.GetAsync("/api/v1/tai-khoan"));
         var u = ds!.Single(x => x.GetProperty("username").GetString() == "co-buoc-doi");
 
         // Lệnh cập nhật không mang PhaiDoiMatKhau, nên nó phải giữ nguyên chứ không bị reset.
@@ -170,7 +180,7 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
         // Không được coi "cầu thủ đã có tài khoản" là xung đột với CHÍNH tài khoản đó.
         Assert.Equal(HttpStatusCode.NoContent, res.StatusCode);
 
-        var ds = await client.GetFromJsonAsync<List<JsonElement>>("/api/v1/tai-khoan");
+        var ds = await DocTrang(await client.GetAsync("/api/v1/tai-khoan"));
         var u = ds!.Single(x => x.GetProperty("username").GetString() == "co-cau-thu");
         Assert.Equal(cauThuId.ToString(), u.GetProperty("cauThuId").GetString());
     }

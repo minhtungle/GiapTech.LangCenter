@@ -14,6 +14,12 @@ namespace GiapTech.SoccerRoom.API.IntegrationTests;
 /// </summary>
 public class PhanQuyenVaCachLyTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
+
+    private static async Task<List<JsonElement>> DocTrang(HttpResponseMessage res)
+    {
+        var body = await res.Content.ReadFromJsonAsync<JsonElement>();
+        return body.GetProperty("duLieu").EnumerateArray().ToList();
+    }
     private async Task<string> LayToken(string maDoi, string username, string matKhau)
     {
         var client = factory.CreateClient();
@@ -87,8 +93,8 @@ public class PhanQuyenVaCachLyTests(ApiFactory factory) : IClassFixture<ApiFacto
         var clientA = ClientVoiToken(await LayToken(factory.MaDoiA, "manager", "manager123"));
         var clientB = ClientVoiToken(await LayToken(factory.MaDoiB, "manager", "manager123"));
 
-        var cuaA = await clientA.GetFromJsonAsync<List<JsonElement>>("/api/v1/cau-thu");
-        var cuaB = await clientB.GetFromJsonAsync<List<JsonElement>>("/api/v1/cau-thu");
+        var cuaA = await DocTrang(await clientA.GetAsync("/api/v1/cau-thu"));
+        var cuaB = await DocTrang(await clientB.GetAsync("/api/v1/cau-thu"));
 
         Assert.NotNull(cuaA);
         Assert.NotNull(cuaB);

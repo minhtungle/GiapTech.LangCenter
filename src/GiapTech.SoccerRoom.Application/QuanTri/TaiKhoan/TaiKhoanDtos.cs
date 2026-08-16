@@ -1,6 +1,7 @@
 using FluentValidation;
 using GiapTech.SoccerRoom.Application.Common.Exceptions;
 using GiapTech.SoccerRoom.Application.Common.Interfaces;
+using GiapTech.SoccerRoom.Application.Common.Models;
 using GiapTech.SoccerRoom.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -21,13 +22,16 @@ public record TaiKhoanDto(
 
 // ---------- Queries ----------
 
-public record LayDanhSachTaiKhoanQuery(string? TimKiem = null) : IRequest<List<TaiKhoanDto>>;
+public record LayDanhSachTaiKhoanQuery(string? TimKiem = null, ThamSoTrang? Trang = null)
+    : IRequest<KetQuaTrang<TaiKhoanDto>>;
 
 public class LayDanhSachTaiKhoanHandler(IAppDbContext db)
-    : IRequestHandler<LayDanhSachTaiKhoanQuery, List<TaiKhoanDto>>
+    : IRequestHandler<LayDanhSachTaiKhoanQuery, KetQuaTrang<TaiKhoanDto>>
 {
-    public async Task<List<TaiKhoanDto>> Handle(LayDanhSachTaiKhoanQuery request, CancellationToken ct)
+    public async Task<KetQuaTrang<TaiKhoanDto>> Handle(
+        LayDanhSachTaiKhoanQuery request, CancellationToken ct)
     {
+        var trang = request.Trang ?? new ThamSoTrang();
         var q = db.NguoiDungs.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(request.TimKiem))
@@ -36,8 +40,12 @@ public class LayDanhSachTaiKhoanHandler(IAppDbContext db)
             q = q.Where(u => u.Username.ToLower().Contains(tu));
         }
 
-        return await q
+        var tong = await q.CountAsync(ct);
+
+        var duLieu = await q
             .OrderBy(u => u.Username)
+            .Skip(trang.BoQua)
+            .Take(trang.SoDongHopLe)
             .Select(u => new TaiKhoanDto(
                 u.Id, u.Username, u.Email, u.SoDienThoai, u.DiaChi,
                 u.PhaiDoiMatKhau, u.TrangThai,
@@ -46,6 +54,8 @@ public class LayDanhSachTaiKhoanHandler(IAppDbContext db)
                 u.NguoiDungQuyens.Select(nq => nq.QuyenId).ToList(),
                 u.NguoiDungQuyens.Select(nq => nq.Quyen.TenQuyen).ToList()))
             .ToListAsync(ct);
+
+        return new KetQuaTrang<TaiKhoanDto>(duLieu, tong, trang.TrangHopLe, trang.SoDongHopLe);
     }
 }
 

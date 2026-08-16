@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using GiapTech.SoccerRoom.API.Authorization;
+using GiapTech.SoccerRoom.Application.Common.Models;
 using GiapTech.SoccerRoom.Application.LichThiDau.DoiThu;
 using GiapTech.SoccerRoom.Application.LichThiDau.TranDau;
 using GiapTech.SoccerRoom.Domain.Common;
@@ -19,9 +20,13 @@ public class DoiThuController(ISender sender) : ControllerBase
     // chức năng riêng chỉ làm ma trận phân quyền dài thêm mà không ai cần cấp lẻ.
     [HttpGet]
     [RequirePermission(ChucNang.LichThiDau, HanhDong.Xem)]
-    public async Task<ActionResult<List<DoiThuDto>>> DanhSach(
-        [FromQuery] string? timKiem, CancellationToken ct)
-        => Ok(await sender.Send(new LayDanhSachDoiThuQuery(timKiem), ct));
+    public async Task<ActionResult<KetQuaTrang<DoiThuDto>>> DanhSach(
+        [FromQuery] string? timKiem,
+        [FromQuery] int trang = 1,
+        [FromQuery] int soDong = 20,
+        CancellationToken ct = default)
+        => Ok(await sender.Send(
+            new LayDanhSachDoiThuQuery(timKiem, new ThamSoTrang(trang, soDong)), ct));
 
     [HttpPost]
     [RequirePermission(ChucNang.LichThiDau, HanhDong.Them)]
@@ -58,14 +63,35 @@ public class TranDauController(ISender sender) : ControllerBase
     /// </summary>
     [HttpPost("tim-kiem")]
     [RequirePermission(ChucNang.LichThiDau, HanhDong.Xem)]
-    public async Task<ActionResult<List<TranDauDto>>> TimKiem(
-        [FromBody] BoLocTranDau? loc, CancellationToken ct)
-        => Ok(await sender.Send(new LayDanhSachTranDauQuery(loc), ct));
+    public async Task<ActionResult<KetQuaTrang<TranDauDto>>> TimKiem(
+        [FromBody] BoLocTranDau? loc,
+        [FromQuery] int trang = 1,
+        [FromQuery] int soDong = 20,
+        CancellationToken ct = default)
+        => Ok(await sender.Send(
+            new LayDanhSachTranDauQuery(loc, new ThamSoTrang(trang, soDong)), ct));
 
     [HttpGet]
     [RequirePermission(ChucNang.LichThiDau, HanhDong.Xem)]
-    public async Task<ActionResult<List<TranDauDto>>> DanhSach(CancellationToken ct)
-        => Ok(await sender.Send(new LayDanhSachTranDauQuery(), ct));
+    public async Task<ActionResult<KetQuaTrang<TranDauDto>>> DanhSach(
+        [FromQuery] int trang = 1,
+        [FromQuery] int soDong = 20,
+        CancellationToken ct = default)
+        => Ok(await sender.Send(
+            new LayDanhSachTranDauQuery(null, new ThamSoTrang(trang, soDong)), ct));
+
+    /// <summary>
+    /// FR-08 chế độ Calendar — đủ trận của một tháng, không phân trang.
+    /// Cắt trang ở đây sẽ làm mất trận khỏi ô ngày mà người dùng không biết.
+    /// </summary>
+    [HttpPost("theo-thang")]
+    [RequirePermission(ChucNang.LichThiDau, HanhDong.Xem)]
+    public async Task<ActionResult<List<TranDauDto>>> TheoThang(
+        [FromQuery] int nam,
+        [FromQuery] int thang,
+        [FromBody] BoLocTranDau? loc,
+        CancellationToken ct)
+        => Ok(await sender.Send(new LayTranDauTheoThangQuery(nam, thang, loc), ct));
 
     [HttpGet("{id:guid}")]
     [RequirePermission(ChucNang.LichThiDau, HanhDong.Xem)]

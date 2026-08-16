@@ -1,6 +1,7 @@
 using FluentValidation;
 using GiapTech.SoccerRoom.Application.Common.Exceptions;
 using GiapTech.SoccerRoom.Application.Common.Interfaces;
+using GiapTech.SoccerRoom.Application.Common.Models;
 using GiapTech.SoccerRoom.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -26,22 +27,81 @@ public record TranDauDto(
 
 // ---------- Queries ----------
 
-public record LayDanhSachTranDauQuery(BoLocTranDau? Loc = null) : IRequest<List<TranDauDto>>;
+/// <summary>
+/// FR-08 chế độ Datatable — có phân trang.
+///
+/// Chế độ Calendar dùng <see cref="LayTranDauTheoThangQuery"/> thay vì query này: lịch tháng
+/// phải hiện ĐỦ mọi trận trong tháng, cắt trang sẽ làm mất trận khỏi ô ngày.
+/// </summary>
+public record LayDanhSachTranDauQuery(BoLocTranDau? Loc = null, ThamSoTrang? Trang = null)
+    : IRequest<KetQuaTrang<TranDauDto>>;
 
 public class LayDanhSachTranDauHandler(IAppDbContext db)
-    : IRequestHandler<LayDanhSachTranDauQuery, List<TranDauDto>>
+    : IRequestHandler<LayDanhSachTranDauQuery, KetQuaTrang<TranDauDto>>
 {
-    public async Task<List<TranDauDto>> Handle(LayDanhSachTranDauQuery request, CancellationToken ct)
-        => await db.TranDaus
-            .ApBoLoc(request.Loc ?? new BoLocTranDau())
+    public async Task<KetQuaTrang<TranDauDto>> Handle(
+        LayDanhSachTranDauQuery request, CancellationToken ct)
+    {
+        var trang = request.Trang ?? new ThamSoTrang();
+
+        var q = db.TranDaus.ApBoLoc(request.Loc ?? new BoLocTranDau());
+
+        // Đếm TRƯỚC khi phân trang: tổng số dòng là của cả bộ lọc, không phải của trang hiện tại.
+        var tong = await q.CountAsync(ct);
+
+        var duLieu = await q
             // Trận gần nhất lên đầu: người dùng quan tâm trận sắp tới và vừa đá xong.
             .OrderByDescending(t => t.ThoiGian)
+            .Skip(trang.BoQua)
+            .Take(trang.SoDongHopLe)
             .Select(t => new TranDauDto(
                 t.Id, t.ThoiGian, t.DoiThuId,
                 t.DoiThu != null ? t.DoiThu.TenDoi : null,
                 t.TySoNha, t.TySoKhach, t.KetQua, t.TrangThai,
                 t.LinkVideo, t.NhanXetChung, t.GhiChu))
             .ToListAsync(ct);
+
+        return new KetQuaTrang<TranDauDto>(duLieu, tong, trang.TrangHopLe, trang.SoDongHopLe);
+    }
+}
+
+/// <summary>
+/// FR-08 chế độ Calendar — lấy đủ trận của một tháng, KHÔNG phân trang.
+///
+/// Lịch tháng tối đa 31 ô ngày; một CLB phong trào hiếm khi đá quá vài trận mỗi tháng, nên
+/// không có rủi ro trả về quá nhiều. Phân trang ở đây sẽ làm mất trận khỏi ô ngày mà người
+/// dùng không biết.
+/// </summary>
+public record LayTranDauTheoThangQuery(int Nam, int Thang, BoLocTranDau? Loc = null)
+    : IRequest<List<TranDauDto>>;
+
+public class LayTranDauTheoThangHandler(IAppDbContext db)
+    : IRequestHandler<LayTranDauTheoThangQuery, List<TranDauDto>>
+{
+    public async Task<List<TranDauDto>> Handle(
+        LayTranDauTheoThangQuery request, CancellationToken ct)
+    {
+        var dauThang = new DateOnly(request.Nam, request.Thang, 1);
+        var cuoiThang = dauThang.AddMonths(1).AddDays(-1);
+
+        // Giao bộ lọc của người dùng với khoảng tháng đang xem: giữ nguyên tiêu chí kết quả,
+        // đối thủ... mà vẫn giới hạn đúng tháng.
+        var loc = (request.Loc ?? new BoLocTranDau()) with
+        {
+            TuNgay = dauThang,
+            DenNgay = cuoiThang,
+        };
+
+        return await db.TranDaus
+            .ApBoLoc(loc)
+            .OrderBy(t => t.ThoiGian)
+            .Select(t => new TranDauDto(
+                t.Id, t.ThoiGian, t.DoiThuId,
+                t.DoiThu != null ? t.DoiThu.TenDoi : null,
+                t.TySoNha, t.TySoKhach, t.KetQua, t.TrangThai,
+                t.LinkVideo, t.NhanXetChung, t.GhiChu))
+            .ToListAsync(ct);
+    }
 }
 
 public record LayTranDauQuery(Guid Id) : IRequest<TranDauDto>;

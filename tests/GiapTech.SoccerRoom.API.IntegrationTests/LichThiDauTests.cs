@@ -8,6 +8,16 @@ namespace GiapTech.SoccerRoom.API.IntegrationTests;
 /// <summary>Module lịch thi đấu — FR-07 lọc, FR-08 danh sách, FR-10 CRUD, FR-11 xóa.</summary>
 public class LichThiDauTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
+
+    /// <summary>
+    /// Đọc phần dữ liệu từ response phân trang. API trả { duLieu, tongSoDong, trang, soDong }
+    /// thay vì mảng trần — xem KetQuaTrang.
+    /// </summary>
+    private static async Task<List<JsonElement>> DocTrang(HttpResponseMessage res)
+    {
+        var body = await res.Content.ReadFromJsonAsync<JsonElement>();
+        return body.GetProperty("duLieu").EnumerateArray().ToList();
+    }
     private async Task<HttpClient> Client(string? maDoi = null)
     {
         var c = factory.CreateClient();
@@ -150,7 +160,7 @@ public class LichThiDauTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var res = await client.PostAsJsonAsync("/api/v1/tran-dau/tim-kiem",
             new { TuNgay = "2026-06-01", DenNgay = "2026-06-30" });
-        var ds = await res.Content.ReadFromJsonAsync<List<JsonElement>>();
+        var ds = await DocTrang(res);
 
         var trongThang6 = ds!.Where(t =>
             t.GetProperty("thoiGian").GetDateTimeOffset().Month == 6).ToList();
@@ -170,7 +180,7 @@ public class LichThiDauTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var res = await client.PostAsJsonAsync("/api/v1/tran-dau/tim-kiem",
             new { TuNgay = "2026-08-15", DenNgay = "2026-08-15" });
-        var ds = await res.Content.ReadFromJsonAsync<List<JsonElement>>();
+        var ds = await DocTrang(res);
 
         Assert.Contains(ds!, t =>
             t.GetProperty("thoiGian").GetDateTimeOffset().Date == new DateTime(2026, 8, 15));
@@ -186,7 +196,7 @@ public class LichThiDauTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var res = await client.PostAsJsonAsync("/api/v1/tran-dau/tim-kiem",
             new { TuNgay = "2026-09-01", DenNgay = "2026-09-30", KetQua = new[] { "Thang", "Hoa" } });
-        var ds = await res.Content.ReadFromJsonAsync<List<JsonElement>>();
+        var ds = await DocTrang(res);
 
         Assert.All(ds!, t =>
             Assert.Contains(t.GetProperty("ketQua").GetString(), new[] { "Thang", "Hoa" }));
@@ -202,7 +212,7 @@ public class LichThiDauTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var res = await client.PostAsJsonAsync("/api/v1/tran-dau/tim-kiem",
             new { TuNgay = "2026-10-01", DenNgay = "2026-10-31", BanThangToiThieu = 3 });
-        var ds = await res.Content.ReadFromJsonAsync<List<JsonElement>>();
+        var ds = await DocTrang(res);
 
         Assert.Single(ds!);
         Assert.Equal(5, ds![0].GetProperty("tySoNha").GetInt32());
@@ -275,7 +285,7 @@ public class LichThiDauTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.NotFound,
             (await clientB.GetAsync($"/api/v1/tran-dau/{idCuaA}")).StatusCode);
 
-        var dsB = await clientB.GetFromJsonAsync<List<JsonElement>>("/api/v1/tran-dau");
+        var dsB = await DocTrang(await clientB.GetAsync("/api/v1/tran-dau"));
         Assert.DoesNotContain(dsB!, t => t.GetProperty("id").GetGuid() == idCuaA);
     }
 
