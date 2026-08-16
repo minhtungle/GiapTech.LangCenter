@@ -32,7 +32,7 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Lam_moi_token_tra_ve_cap_token_moi()
     {
-        var dn = await DangNhap("CLB-A", "manager", "manager123");
+        var dn = await DangNhap(factory.MaDoiA, "manager", "manager123");
         var refreshCu = dn.GetProperty("refreshToken").GetString()!;
 
         var res = await factory.CreateClient().PostAsJsonAsync(
@@ -56,7 +56,7 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Refresh_token_cu_khong_dung_lai_duoc()
     {
-        var dn = await DangNhap("CLB-B", "manager", "manager123");
+        var dn = await DangNhap(factory.MaDoiB, "manager", "manager123");
         var refreshCu = dn.GetProperty("refreshToken").GetString()!;
 
         var lan1 = await factory.CreateClient().PostAsJsonAsync(
@@ -75,7 +75,7 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Tai_su_dung_token_da_thu_hoi_thi_thu_hoi_toan_bo_phien()
     {
-        var dn = await DangNhap("CLB-A", "player", "player123");
+        var dn = await DangNhap(factory.MaDoiA, "player", "player123");
         var doi1 = dn.GetProperty("refreshToken").GetString()!;
 
         var r2 = await factory.CreateClient().PostAsJsonAsync(
@@ -114,10 +114,10 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var client = factory.CreateClient();
 
         var coThat = await client.PostAsJsonAsync("/api/v1/auth/quen-mat-khau",
-            new { MaDoi = "CLB-A", Email = "co-that@example.com" });
+            new { MaDoi = factory.MaDoiA, Email = "co-that@example.com" });
 
         var khongCo = await client.PostAsJsonAsync("/api/v1/auth/quen-mat-khau",
-            new { MaDoi = "CLB-A", Email = "khong-ton-tai@example.com" });
+            new { MaDoi = factory.MaDoiA, Email = "khong-ton-tai@example.com" });
 
         var saiTenant = await client.PostAsJsonAsync("/api/v1/auth/quen-mat-khau",
             new { MaDoi = "CLB-KHONG-CO", Email = "co-that@example.com" });
@@ -134,7 +134,7 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var client = await TaoTaiKhoanCoEmail("quen-mk-1", "quenmk1@example.com");
 
         await client.PostAsJsonAsync("/api/v1/auth/quen-mat-khau",
-            new { MaDoi = "CLB-A", Email = "quenmk1@example.com" });
+            new { MaDoi = factory.MaDoiA, Email = "quenmk1@example.com" });
 
         // Token thô chỉ có trong email; test đọc bản ghi để dựng lại luồng.
         var tokenTho = LayTokenThoMoiNhat("quenmk1@example.com");
@@ -144,7 +144,7 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
             new { Token = tokenTho, MatKhauMoi = "mat-khau-that-moi" });
         Assert.Equal(HttpStatusCode.NoContent, datLai.StatusCode);
 
-        var dn = await DangNhap("CLB-A", "quen-mk-1", "mat-khau-that-moi");
+        var dn = await DangNhap(factory.MaDoiA, "quen-mk-1", "mat-khau-that-moi");
         Assert.False(string.IsNullOrEmpty(dn.GetProperty("accessToken").GetString()));
 
         // Người dùng tự đặt mật khẩu → không bắt đổi lại lần nữa.
@@ -157,7 +157,7 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
         await TaoTaiKhoanCoEmail("quen-mk-2", "quenmk2@example.com");
 
         await factory.CreateClient().PostAsJsonAsync("/api/v1/auth/quen-mat-khau",
-            new { MaDoi = "CLB-A", Email = "quenmk2@example.com" });
+            new { MaDoi = factory.MaDoiA, Email = "quenmk2@example.com" });
 
         var token = LayTokenThoMoiNhat("quenmk2@example.com")!;
 
@@ -186,7 +186,7 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
     /// <summary>Tạo tài khoản có email để chạy luồng FR-02.</summary>
     private async Task<HttpClient> TaoTaiKhoanCoEmail(string username, string email)
     {
-        var dn = await DangNhap("CLB-A", "manager", "manager123");
+        var dn = await DangNhap(factory.MaDoiA, "manager", "manager123");
         var client = ClientVoiToken(dn.GetProperty("accessToken").GetString()!);
 
         await client.PostAsJsonAsync("/api/v1/tai-khoan", new

@@ -10,7 +10,10 @@ public interface ITenantSeeder
     ///
     /// Chạy khi tạo CLB mới, không đặt trong migration InitialCreate: migration chạy một lần
     /// lúc dựng DB, còn mỗi tenant cần bộ dữ liệu khởi tạo riêng.
+    ///
+    /// Mã đội được SINH TỰ ĐỘNG (7 ký tự) và trả về trong <see cref="Tenant.MaDoi"/> —
+    /// người dùng không tự đặt, vì tên dạng "FC ..." rất dễ trùng.
     /// </summary>
     Task<Tenant> TaoTenantMoiAsync(
-        string maDoi, string tenDoi, string matKhauAdmin = "123456", CancellationToken ct = default);
+        string tenDoi, string matKhauAdmin = "123456", CancellationToken ct = default);
 }

@@ -16,7 +16,7 @@ public class QuenMatKhauValidator : AbstractValidator<QuenMatKhauCommand>
 {
     public QuenMatKhauValidator()
     {
-        RuleFor(x => x.MaDoi).NotEmpty().MaximumLength(50);
+        RuleFor(x => x.MaDoi).NotEmpty().MaximumLength(20);
         RuleFor(x => x.Email).NotEmpty().EmailAddress();
     }
 }
@@ -35,8 +35,10 @@ public class QuenMatKhauHandler(
     {
         var email = request.Email.Trim();
 
+        var maDoi = Domain.Common.MaDoi.ChuanHoa(request.MaDoi);
+
         var tenant = await db.Tenants
-            .FirstOrDefaultAsync(t => t.MaDoi == request.MaDoi, ct);
+            .FirstOrDefaultAsync(t => t.MaDoi == maDoi, ct);
 
         var nguoiDung = tenant is null
             ? null

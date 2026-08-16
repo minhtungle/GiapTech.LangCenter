@@ -13,7 +13,7 @@ interface TaiKhoanDto {
   email: string | null
   soDienThoai: string | null
   phaiDoiMatKhau: boolean
-  trangThai: number
+  trangThai: 'HoatDong' | 'VoHieuHoa'
   cauThuId: string | null
   tenCauThu: string | null
   quyenIds: string[]
@@ -213,7 +213,7 @@ export default function TaiKhoan() {
                   </div>
                 </Td>
                 <Td>
-                  {u.trangThai === 0 ? (
+                  {u.trangThai === 'HoatDong' ? (
                     <Badge variant="win">{t('taiKhoan.hoatDong')}</Badge>
                   ) : (
                     <Badge variant="lose">{t('taiKhoan.voHieuHoa')}</Badge>

@@ -2,8 +2,24 @@
 
 ## FR-01 — Đăng nhập
 
-Xác thực bằng **bộ ba**: `{ID đội (tenant), tên đăng nhập, mật khẩu}`. Username chỉ duy nhất **trong
+Xác thực bằng **bộ ba**: `{mã đội, tên đăng nhập, mật khẩu}`. Username chỉ duy nhất **trong
 phạm vi một tenant** — hai CLB khác nhau có thể cùng có tài khoản `admin`.
+
+### Mã đội
+
+**7 ký tự, do hệ thống sinh tự động** — người dùng không tự đặt.
+
+| Quyết định | Lý do |
+|---|---|
+| Sinh tự động, không cho tự đặt | Tên dạng "FC ..." rất dễ trùng giữa các CLB phong trào, mà mã phải duy nhất toàn hệ thống |
+| Bộ 31 ký tự: `23456789ABCDEFGHJKMNPQRSTUVWXYZ` | Bỏ `0/O` và `1/I/L` — người dùng phải đọc mã qua điện thoại và chép tay, nhầm 0 với O là lỗi hay gặp. Vẫn còn 31⁷ ≈ 27 tỷ tổ hợp |
+| Không phân biệt hoa/thường | Lưu dạng hoa, chuẩn hoá khi so sánh. Gõ `a3k9m2p` hay `A3K9M2P` đều vào được |
+| Không cho sửa (FR-06) | Người dùng gõ mã mỗi lần đăng nhập; đổi mã sẽ khoá cả CLB ra ngoài |
+
+Màn đăng ký hiển thị mã to kèm nút sao chép và cảnh báo ghi lại — mã sinh tự động mà người dùng
+không lưu thì họ mất đường vào, và không có cách tự tra lại.
+
+Cài đặt: `Domain/Common/MaDoi.cs`, kiểm chứng bởi `MaDoiTests`.
 
 ### Luồng
 

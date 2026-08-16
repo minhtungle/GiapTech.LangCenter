@@ -13,7 +13,16 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(o =>
+    {
+        // Nhận và trả enum dạng CHUỖI ("Xem", "Them"...) thay vì số.
+        // Số thứ tự enum là chi tiết nội bộ: client gửi 2 mà không biết 2 là gì rất dễ sai,
+        // và chèn một giá trị mới vào giữa enum sẽ âm thầm đổi nghĩa dữ liệu client đã lưu.
+        o.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddHttpContextAccessor();

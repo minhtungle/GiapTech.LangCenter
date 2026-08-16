@@ -8,12 +8,14 @@ namespace GiapTech.SoccerRoom.API.IntegrationTests;
 /// <summary>Cụm quản trị hệ thống — FR-03 tài khoản, FR-04 cầu thủ, FR-05 quyền, FR-06 thiết lập.</summary>
 public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string maDoi = "CLB-A", string user = "manager",
+    /// <param name="maDoi">Null = dùng CLB A. Không đặt mặc định được vì mã do seeder sinh
+    /// lúc chạy, mà tham số mặc định phải là hằng biên dịch.</param>
+    private async Task<HttpClient> Client(string? maDoi = null, string user = "manager",
         string mk = "manager123")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaDoi = maDoi, Username = user, MatKhau = mk });
+            new { MaDoi = maDoi ?? factory.MaDoiA, Username = user, MatKhau = mk });
         res.EnsureSuccessStatusCode();
         var body = await res.Content.ReadFromJsonAsync<JsonElement>();
 
@@ -62,11 +64,11 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Khong_sua_duoc_cau_thu_cua_tenant_khac()
     {
-        var clientA = await Client("CLB-A");
+        var clientA = await Client(factory.MaDoiA);
         var tao = await clientA.PostAsJsonAsync("/api/v1/cau-thu", new { HoTen = "Chỉ của A" });
         var idCuaA = await tao.Content.ReadFromJsonAsync<Guid>();
 
-        var clientB = await Client("CLB-B");
+        var clientB = await Client(factory.MaDoiB);
 
         var doc = await clientB.GetAsync($"/api/v1/cau-thu/{idCuaA}");
         Assert.Equal(HttpStatusCode.NotFound, doc.StatusCode);
@@ -156,7 +158,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         // Tài khoản vừa tạo phải đăng nhập được ngay.
         var dangNhap = await factory.CreateClient().PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaDoi = "CLB-A", Username = "nhanvien1", MatKhau = "matkhau123" });
+            new { MaDoi = factory.MaDoiA, Username = "nhanvien1", MatKhau = "matkhau123" });
         Assert.Equal(HttpStatusCode.OK, dangNhap.StatusCode);
     }
 
@@ -181,11 +183,11 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Khong_gan_duoc_quyen_cua_tenant_khac()
     {
-        var clientB = await Client("CLB-B");
+        var clientB = await Client(factory.MaDoiB);
         var quyenCuaB = (await clientB.GetFromJsonAsync<List<JsonElement>>("/api/v1/quyen"))![0]
             .GetProperty("id").GetGuid();
 
-        var clientA = await Client("CLB-A");
+        var clientA = await Client(factory.MaDoiA);
         var res = await clientA.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
             Username = "user-lai-quyen",
@@ -222,7 +224,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.NoContent, datLai.StatusCode);
 
         var dangNhap = await factory.CreateClient().PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaDoi = "CLB-A", Username = "bi-dat-lai-mk", MatKhau = "matkhautam123" });
+            new { MaDoi = factory.MaDoiA, Username = "bi-dat-lai-mk", MatKhau = "matkhautam123" });
 
         var body = await dangNhap.Content.ReadFromJsonAsync<JsonElement>();
         Assert.True(body.GetProperty("phaiDoiMatKhau").GetBoolean());
@@ -247,7 +249,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal("FC Đã Đổi Tên", doc.GetProperty("tenDoi").GetString());
 
         // MaDoi không đổi được: người dùng gõ nó mỗi lần đăng nhập.
-        Assert.Equal("CLB-A", doc.GetProperty("maDoi").GetString());
+        Assert.Equal(factory.MaDoiA, doc.GetProperty("maDoi").GetString());
     }
 
     // ---------- Phân quyền trên cụm quản trị ----------
@@ -255,7 +257,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Player_khong_quyen_bi_tu_choi_moi_endpoint_quan_tri()
     {
-        var client = await Client("CLB-A", "player", "player123");
+        var client = await Client(factory.MaDoiA, "player", "player123");
 
         foreach (var url in new[]
                  { "/api/v1/cau-thu", "/api/v1/tai-khoan", "/api/v1/quyen", "/api/v1/thiet-lap" })

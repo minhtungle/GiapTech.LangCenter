@@ -26,6 +26,32 @@ public class ApiFactory : WebApplicationFactory<Program>
     public Guid TenantAId { get; private set; }
     public Guid TenantBId { get; private set; }
 
+    /// <summary>
+    /// Mã đội do seeder sinh — test không đoán trước được nên phải đọc từ đây.
+    ///
+    /// Truy cập property này ép host khởi tạo (và do đó chạy seed) nếu chưa. Không có bước
+    /// đó, test nào đọc mã TRƯỚC khi gọi CreateClient() sẽ nhận chuỗi rỗng và đăng nhập
+    /// thất bại với lỗi 400 rất khó lần ra nguyên nhân.
+    /// </summary>
+    public string MaDoiA
+    {
+        get { BaoDamDaSeed(); return _maDoiA; }
+    }
+
+    public string MaDoiB
+    {
+        get { BaoDamDaSeed(); return _maDoiB; }
+    }
+
+    private string _maDoiA = "";
+    private string _maDoiB = "";
+
+    private void BaoDamDaSeed()
+    {
+        // Services là lazy: chạm vào nó sẽ dựng host, kéo theo CreateHost và seed.
+        if (_maDoiA.Length == 0) _ = Services;
+    }
+
     private readonly string _tenDb = $"api-test-{Guid.NewGuid()}";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -87,9 +113,10 @@ public class ApiFactory : WebApplicationFactory<Program>
         var hasher = sp.GetRequiredService<IPasswordHasher>();
         var currentTenant = sp.GetRequiredService<ICurrentTenant>();
 
-        foreach (var maDoi in new[] { "CLB-A", "CLB-B" })
+        foreach (var nhan in new[] { "A", "B" })
         {
-            var tenant = seeder.TaoTenantMoiAsync(maDoi, $"Đội {maDoi}").GetAwaiter().GetResult();
+            // Mã đội do hệ thống sinh, test đọc lại từ kết quả thay vì tự đặt.
+            var tenant = seeder.TaoTenantMoiAsync($"Đội {nhan}").GetAwaiter().GetResult();
 
             using var _ = currentTenant.DatPhamVi(tenant.Id);
 
@@ -119,11 +146,11 @@ public class ApiFactory : WebApplicationFactory<Program>
                 TenantId = tenant.Id, NguoiDungId = manager.Id, QuyenId = quyenQuanTri.Id
             });
 
-            db.CauThus.Add(new CauThu { TenantId = tenant.Id, HoTen = $"Cầu thủ của {maDoi}" });
+            db.CauThus.Add(new CauThu { TenantId = tenant.Id, HoTen = $"Cầu thủ của CLB-{nhan}" });
             db.SaveChanges();
 
-            if (maDoi == "CLB-A") TenantAId = tenant.Id;
-            else TenantBId = tenant.Id;
+            if (nhan == "A") { TenantAId = tenant.Id; _maDoiA = tenant.MaDoi; }
+            else { TenantBId = tenant.Id; _maDoiB = tenant.MaDoi; }
         }
     }
 

@@ -6,6 +6,7 @@ import Layout from '@/components/Layout'
 import DangNhap from '@/pages/DangNhap'
 import DoiMatKhau from '@/pages/DoiMatKhau'
 import QuenMatKhau from '@/pages/QuenMatKhau'
+import DangKyClb from '@/pages/DangKyClb'
 import CauThu from '@/pages/quan-tri/CauThu'
 import TaiKhoan from '@/pages/quan-tri/TaiKhoan'
 import PhanQuyen from '@/pages/quan-tri/PhanQuyen'
@@ -75,6 +76,7 @@ export default function App() {
           <Routes>
             <Route path="/dang-nhap" element={<DangNhap />} />
             <Route path="/quen-mat-khau" element={<QuenMatKhau />} />
+            <Route path="/dang-ky" element={<DangKyClb />} />
             <Route path="/doi-mat-khau" element={<DoiMatKhau />} />
 
             <Route

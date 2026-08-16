@@ -12,7 +12,11 @@ namespace GiapTech.SoccerRoom.Domain.Entities;
 /// </summary>
 public class Tenant : BaseEntity
 {
-    /// <summary>ID đội người dùng gõ khi đăng nhập (FR-01) — ngắn, dễ nhớ, duy nhất toàn hệ thống.</summary>
+    /// <summary>
+    /// ID đội người dùng gõ khi đăng nhập (FR-01): mã 7 ký tự SINH TỰ ĐỘNG, duy nhất toàn
+    /// hệ thống. Không để người dùng tự đặt vì tên dạng "FC ..." rất dễ trùng.
+    /// Luôn lưu dạng hoa — xem <see cref="Common.MaDoi"/>.
+    /// </summary>
     public string MaDoi { get; set; } = null!;
 
     public string TenDoi { get; set; } = null!;

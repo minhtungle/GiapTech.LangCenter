@@ -13,15 +13,13 @@ public class TenantSeeder(AppDbContext db, IPasswordHasher hasher, ICurrentTenan
     /// <summary>Tên nhóm quyền quản trị — dùng lại khi cần kiểm tra/khôi phục.</summary>
     public const string NhomQuyenQuanTri = "Quản trị viên";
 
-    public async Task<Tenant> TaoTenantMoiAsync(
-        string maDoi, string tenDoi, string matKhauAdmin = "123456", CancellationToken ct = default)
-    {
-        var daCo = await db.Tenants
-            .IgnoreQueryFilters()
-            .AnyAsync(t => t.MaDoi == maDoi, ct);
+    /// <summary>Số lần thử sinh mã trước khi bỏ cuộc — xem <see cref="SinhMaChuaDungAsync"/>.</summary>
+    private const int SoLanThuSinhMa = 10;
 
-        if (daCo)
-            throw new InvalidOperationException($"Mã đội '{maDoi}' đã tồn tại.");
+    public async Task<Tenant> TaoTenantMoiAsync(
+        string tenDoi, string matKhauAdmin = "123456", CancellationToken ct = default)
+    {
+        var maDoi = await SinhMaChuaDungAsync(ct);
 
         var tenant = new Tenant { MaDoi = maDoi, TenDoi = tenDoi };
         db.Tenants.Add(tenant);
@@ -75,5 +73,30 @@ public class TenantSeeder(AppDbContext db, IPasswordHasher hasher, ICurrentTenan
 
         await db.SaveChangesAsync(ct);
         return tenant;
+    }
+
+    /// <summary>
+    /// Sinh mã 7 ký tự chưa ai dùng.
+    ///
+    /// Với 31^7 ≈ 27 tỷ tổ hợp, xác suất trùng ở quy mô này gần như bằng 0, nhưng vẫn kiểm
+    /// tra và thử lại — không dựa vào may mắn cho một ràng buộc UNIQUE. Nếu 10 lần đều trùng
+    /// thì gần như chắc chắn có gì đó sai (DB hỏng, RNG kẹt) chứ không phải xui, nên ném lỗi
+    /// thay vì lặp vô hạn.
+    /// </summary>
+    private async Task<string> SinhMaChuaDungAsync(CancellationToken ct)
+    {
+        for (var i = 0; i < SoLanThuSinhMa; i++)
+        {
+            var ma = MaDoi.Sinh();
+
+            var daDung = await db.Tenants
+                .IgnoreQueryFilters()
+                .AnyAsync(t => t.MaDoi == ma, ct);
+
+            if (!daDung) return ma;
+        }
+
+        throw new InvalidOperationException(
+            $"Không sinh được mã đội chưa dùng sau {SoLanThuSinhMa} lần thử.");
     }
 }

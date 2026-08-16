@@ -75,8 +75,11 @@ export default function QuenMatKhau() {
                 <Input
                   id="maDoi"
                   autoFocus
+                  maxLength={7}
+                  placeholder="A3K9M2P"
+                  className="font-mono uppercase tracking-widest"
                   value={maDoi}
-                  onChange={(e) => setMaDoi(e.target.value)}
+                  onChange={(e) => setMaDoi(e.target.value.toUpperCase())}
                   required
                 />
               </div>

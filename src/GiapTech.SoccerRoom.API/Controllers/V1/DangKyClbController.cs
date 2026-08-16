@@ -18,7 +18,8 @@ namespace GiapTech.SoccerRoom.API.Controllers.V1;
 public class DangKyClbController(
     ITenantSeeder seeder, IWebHostEnvironment env) : ControllerBase
 {
-    public record DangKyRequest(string MaDoi, string TenDoi);
+    /// <summary>Chỉ cần tên đội — mã đội do hệ thống sinh (7 ký tự).</summary>
+    public record DangKyRequest(string TenDoi);
 
     [HttpPost]
     [AllowAnonymous]
@@ -27,9 +28,12 @@ public class DangKyClbController(
         if (!env.IsDevelopment())
             return NotFound();
 
+        if (string.IsNullOrWhiteSpace(body.TenDoi))
+            return BadRequest(new { errorCode = "DU_LIEU_KHONG_HOP_LE" });
+
         try
         {
-            var tenant = await seeder.TaoTenantMoiAsync(body.MaDoi, body.TenDoi, ct: ct);
+            var tenant = await seeder.TaoTenantMoiAsync(body.TenDoi.Trim(), ct: ct);
             return Ok(new
             {
                 tenant.Id,
@@ -37,12 +41,12 @@ public class DangKyClbController(
                 tenant.TenDoi,
                 username = "admin",
                 matKhau = "123456",
-                luuY = "Bắt buộc đổi mật khẩu ở lần đăng nhập đầu tiên."
+                luuY = "Ghi lại mã đội — cần nó để đăng nhập. Bắt buộc đổi mật khẩu lần đầu."
             });
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { errorCode = "MA_DOI_DA_TON_TAI", chiTiet = ex.Message });
+            return BadRequest(new { errorCode = "LOI_HE_THONG", chiTiet = ex.Message });
         }
     }
 }

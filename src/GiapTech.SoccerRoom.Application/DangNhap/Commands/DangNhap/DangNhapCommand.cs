@@ -21,7 +21,7 @@ public class DangNhapValidator : AbstractValidator<DangNhapCommand>
 {
     public DangNhapValidator()
     {
-        RuleFor(x => x.MaDoi).NotEmpty().MaximumLength(50);
+        RuleFor(x => x.MaDoi).NotEmpty().MaximumLength(20);
         RuleFor(x => x.Username).NotEmpty().MaximumLength(100);
         RuleFor(x => x.MatKhau).NotEmpty();
     }
@@ -36,15 +36,19 @@ public class DangNhapHandler(
 {
     public async Task<DangNhapResult> Handle(DangNhapCommand request, CancellationToken ct)
     {
+        // Chuẩn hoá: người dùng gõ mã bằng tay nên hoa/thường và khoảng trắng thừa là
+        // chuyện thường. Không chuẩn hoá thì họ bị từ chối chỉ vì bàn phím đang ở chế độ thường.
+        var maDoi = Domain.Common.MaDoi.ChuanHoa(request.MaDoi);
+
         // TENANT không phải ITenantEntity nên không bị Global Query Filter chặn — cần thiết,
         // vì lúc này chưa biết tenant nào để mà lọc.
         var tenant = await db.Tenants
-            .FirstOrDefaultAsync(t => t.MaDoi == request.MaDoi, ct);
+            .FirstOrDefaultAsync(t => t.MaDoi == maDoi, ct);
 
         // Sai ID đội, sai username, sai mật khẩu → CÙNG một mã lỗi. Phân biệt sẽ cho phép
         // dò xem CLB nào tồn tại và tài khoản nào có thật.
         if (tenant is null)
-            throw new AppException(MaLoi.DangNhapThatBai, $"Không có tenant {request.MaDoi}");
+            throw new AppException(MaLoi.DangNhapThatBai, $"Không có tenant {maDoi}");
 
         var nguoiDung = await db.NguoiDungs
             .IgnoreQueryFilters() // chưa có tenant trong context ở bước đăng nhập

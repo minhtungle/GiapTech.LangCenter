@@ -11,7 +11,7 @@ import {
 } from '@/components/ui'
 
 const schema = z.object({
-  maDoi: z.string().min(1),
+  maDoi: z.string().min(1).transform((v) => v.trim().toUpperCase()),
   username: z.string().min(1),
   matKhau: z.string().min(1),
 })
@@ -53,7 +53,18 @@ export default function DangNhap() {
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="maDoi">{t('dangNhap.maDoi')}</Label>
-              <Input id="maDoi" autoFocus autoComplete="organization" {...register('maDoi')} />
+              <Input
+                id="maDoi"
+                autoFocus
+                autoComplete="organization"
+                maxLength={7}
+                placeholder="A3K9M2P"
+                // Hiển thị hoa ngay khi gõ để khớp với mã được cấp; backend cũng chuẩn hoá
+                // nên gõ thường vẫn vào được, đây chỉ là gợi ý trực quan.
+                className="font-mono uppercase tracking-widest placeholder:tracking-widest"
+                {...register('maDoi')}
+              />
+              <p className="text-xs text-muted-foreground">{t('dangNhap.maDoiGoiY')}</p>
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -83,6 +94,13 @@ export default function DangNhap() {
             >
               {t('dangNhap.quenMatKhau')}
             </Link>
+
+            <p className="text-center text-sm text-muted-foreground">
+              {t('dangNhap.chuaCoClb')}{' '}
+              <Link to="/dang-ky" className="text-primary hover:underline">
+                {t('dangKy.nut')}
+              </Link>
+            </p>
           </form>
         </CardContent>
       </Card>

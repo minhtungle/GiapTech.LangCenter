@@ -14,7 +14,7 @@ public class TenantConfig : IEntityTypeConfiguration<Tenant>
     public void Configure(EntityTypeBuilder<Tenant> b)
     {
         b.ToTable("TENANT");
-        b.Property(x => x.MaDoi).HasMaxLength(50).IsRequired();
+        b.Property(x => x.MaDoi).HasMaxLength(Domain.Common.MaDoi.DoDai).IsFixedLength().IsRequired();
         b.Property(x => x.TenDoi).HasMaxLength(200).IsRequired();
         b.Property(x => x.TenVietTat).HasMaxLength(50);
 

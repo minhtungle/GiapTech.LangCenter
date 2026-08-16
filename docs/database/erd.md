@@ -47,7 +47,7 @@ erDiagram
 
 | Bảng | Mục đích | Trường chính | Quan hệ |
 |---|---|---|---|
-| `TENANT` | CLB | id, ten_doi, ten_viet_tat, ngay_thanh_lap, logo_url, anh_bia_url, mo_ta | 1—N với hầu hết bảng khác qua `tenant_id` |
+| `TENANT` | CLB | id, **ma_doi** `char(7)` UNIQUE (sinh tự động), ten_doi, ten_viet_tat, ngay_thanh_lap, logo_url, anh_bia_url, mo_ta | 1—N với hầu hết bảng khác qua `tenant_id` |
 | `NGUOI_DUNG` | Tài khoản đăng nhập | id, tenant_id, username, password_hash, email, so_dien_thoai, dia_chi, phai_doi_mk, cau_thu_id (FK nullable), trang_thai | N—1 TENANT; 0..1 với CAU_THU; N—N với QUYEN qua `NGUOIDUNG_QUYEN` |
 | `CAU_THU` | Hồ sơ cầu thủ | id, tenant_id, anh_dai_dien, ho_ten, ngay_sinh, ngay_tham_gia, ghi_chu | Độc lập với NGUOI_DUNG |
 
@@ -86,6 +86,7 @@ erDiagram
 | `UNIQUE(tenant_id, username)` | `NGUOI_DUNG` | Username duy nhất **trong phạm vi tenant**, hai CLB có thể cùng có `admin` |
 | `UNIQUE(tran_dau_id)` | `SODO_CHIENTHUAT` | Quan hệ 1—1 với trận đấu |
 | `UNIQUE(quy_id, cau_thu_id)` | `DONGGOP_QUY` | Một cầu thủ chỉ có 1 khoản đóng trong mỗi đợt quỹ |
+| `UNIQUE(ma_doi)` | `TENANT` | Mã đội 7 ký tự sinh tự động, duy nhất **toàn hệ thống** — xem [FR-01](../nghiep-vu/dang-nhap.md#mã-đội) |
 | `cau_thu_id` nullable | `NGUOI_DUNG` | Tài khoản có thể không gắn hồ sơ cầu thủ nào (0..1) |
 | `so_tien_da_dong <= so_tien_can_dong` | `DONGGOP_QUY` | Kiểm tra ở tầng Application (FluentValidation) |
 

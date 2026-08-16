@@ -46,7 +46,7 @@ public class PhanQuyenVaCachLyTests(ApiFactory factory) : IClassFixture<ApiFacto
     [Fact]
     public async Task Buoc_doi_mat_khau_chan_truy_cap_va_doi_xong_thi_vao_duoc()
     {
-        var tokenChuaDoi = await LayToken("CLB-A", "admin", "123456");
+        var tokenChuaDoi = await LayToken(factory.MaDoiA, "admin", "123456");
         var resTruoc = await ClientVoiToken(tokenChuaDoi).GetAsync("/api/v1/cau-thu");
 
         Assert.Equal(HttpStatusCode.Forbidden, resTruoc.StatusCode);
@@ -58,7 +58,7 @@ public class PhanQuyenVaCachLyTests(ApiFactory factory) : IClassFixture<ApiFacto
             new { MatKhauCu = "123456", MatKhauMoi = "mat-khau-moi-A" });
         doi.EnsureSuccessStatusCode();
 
-        var tokenSauDoi = await LayToken("CLB-A", "admin", "mat-khau-moi-A");
+        var tokenSauDoi = await LayToken(factory.MaDoiA, "admin", "mat-khau-moi-A");
         var resSau = await ClientVoiToken(tokenSauDoi).GetAsync("/api/v1/cau-thu");
 
         Assert.Equal(HttpStatusCode.OK, resSau.StatusCode);
@@ -71,7 +71,7 @@ public class PhanQuyenVaCachLyTests(ApiFactory factory) : IClassFixture<ApiFacto
     [Fact]
     public async Task Xac_thuc_duoc_nhung_thieu_quyen_thi_bi_tu_choi()
     {
-        var client = ClientVoiToken(await LayToken("CLB-A", "player", "player123"));
+        var client = ClientVoiToken(await LayToken(factory.MaDoiA, "player", "player123"));
         var res = await client.GetAsync("/api/v1/cau-thu");
 
         Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
@@ -84,8 +84,8 @@ public class PhanQuyenVaCachLyTests(ApiFactory factory) : IClassFixture<ApiFacto
     [Fact]
     public async Task Moi_tenant_chi_thay_du_lieu_cua_minh()
     {
-        var clientA = ClientVoiToken(await LayToken("CLB-A", "manager", "manager123"));
-        var clientB = ClientVoiToken(await LayToken("CLB-B", "manager", "manager123"));
+        var clientA = ClientVoiToken(await LayToken(factory.MaDoiA, "manager", "manager123"));
+        var clientB = ClientVoiToken(await LayToken(factory.MaDoiB, "manager", "manager123"));
 
         var cuaA = await clientA.GetFromJsonAsync<List<JsonElement>>("/api/v1/cau-thu");
         var cuaB = await clientB.GetFromJsonAsync<List<JsonElement>>("/api/v1/cau-thu");
@@ -103,7 +103,7 @@ public class PhanQuyenVaCachLyTests(ApiFactory factory) : IClassFixture<ApiFacto
     [Fact]
     public async Task Token_bi_sua_chu_ky_thi_bi_tu_choi()
     {
-        var token = await LayToken("CLB-A", "admin", "123456");
+        var token = await LayToken(factory.MaDoiA, "admin", "123456");
 
         // Đổi ký tự cuối của phần chữ ký.
         var gia = token[..^1] + (token[^1] == 'a' ? 'b' : 'a');
