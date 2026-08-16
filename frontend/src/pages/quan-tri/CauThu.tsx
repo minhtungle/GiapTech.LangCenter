@@ -4,8 +4,9 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Search, Trash2, Pencil } from 'lucide-react'
 import { api, layMaLoi } from '@/lib/api'
 import {
-  Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Th, TrangTrong,
+  Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong,
 } from '@/components/ui'
+import { Modal, ModalChan } from '@/components/ui/Modal'
 
 interface CauThuDto {
   id: string
@@ -17,7 +18,7 @@ interface CauThuDto {
   coTaiKhoan: boolean
 }
 
-/** FR-04 — CRUD hồ sơ cầu thủ. */
+/** FR-04 — CRUD hồ sơ cầu thủ. Thêm/sửa trong modal, không chèn form vào main view. */
 export default function CauThu() {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -25,6 +26,7 @@ export default function CauThu() {
   const [dangSua, setDangSua] = useState<CauThuDto | null>(null)
   const [moForm, setMoForm] = useState(false)
   const [maLoi, setMaLoi] = useState<string | null>(null)
+  const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['cau-thu', timKiem],
@@ -39,9 +41,7 @@ export default function CauThu() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['cau-thu'] })
-      setMoForm(false)
-      setDangSua(null)
-      setMaLoi(null)
+      dongForm()
     },
     onError: (e) => setMaLoi(layMaLoi(e)),
   })
@@ -49,8 +49,26 @@ export default function CauThu() {
   const xoa = useMutation({
     mutationFn: async (id: string) => api.delete(`/cau-thu/${id}`),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['cau-thu'] }),
-    onError: (e) => setMaLoi(layMaLoi(e)),
+    onError: (e) => setMaLoiBang(layMaLoi(e)),
   })
+
+  const moThem = () => {
+    setDangSua(null)
+    setMaLoi(null)
+    setMoForm(true)
+  }
+
+  const moSua = (c: CauThuDto) => {
+    setDangSua(c)
+    setMaLoi(null)
+    setMoForm(true)
+  }
+
+  const dongForm = () => {
+    setMoForm(false)
+    setDangSua(null)
+    setMaLoi(null)
+  }
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -75,73 +93,26 @@ export default function CauThu() {
             onChange={(e) => setTimKiem(e.target.value)}
           />
         </div>
-        <Button
-          onClick={() => {
-            setDangSua(null)
-            setMoForm(true)
-            setMaLoi(null)
-          }}
-        >
+        <Button onClick={moThem}>
           <Plus className="h-4 w-4" />
           {t('cauThu.themMoi')}
         </Button>
       </div>
 
-      {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
-
-      {moForm && (
-        <Card>
-          <CardContent className="pt-5">
-            <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="hoTen">{t('cauThu.hoTen')}</Label>
-                <Input id="hoTen" name="hoTen" defaultValue={dangSua?.hoTen} required autoFocus />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="ngaySinh">{t('cauThu.ngaySinh')}</Label>
-                <Input
-                  id="ngaySinh"
-                  name="ngaySinh"
-                  type="date"
-                  defaultValue={dangSua?.ngaySinh ?? ''}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="ngayThamGia">{t('cauThu.ngayThamGia')}</Label>
-                <Input
-                  id="ngayThamGia"
-                  name="ngayThamGia"
-                  type="date"
-                  defaultValue={dangSua?.ngayThamGia ?? ''}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="ghiChu">{t('cauThu.ghiChu')}</Label>
-                <Input id="ghiChu" name="ghiChu" defaultValue={dangSua?.ghiChu ?? ''} />
-              </div>
-              <div className="flex gap-2 sm:col-span-2">
-                <Button type="submit" disabled={luu.isPending}>
-                  {t('chung.luu')}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setMoForm(false)}>
-                  {t('chung.huy')}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+      {maLoiBang && <CanhBaoLoi>{t(`loi.${maLoiBang}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">{t('chung.dangTai')}</p>
       ) : !data?.length ? (
         <TrangTrong
-          thongDiep={t('cauThu.chuaCo')}
+          thongDiep={timKiem ? t('chung.khongCoDuLieu') : t('cauThu.chuaCo')}
           hanhDong={
-            <Button onClick={() => setMoForm(true)}>
-              <Plus className="h-4 w-4" />
-              {t('cauThu.themMoi')}
-            </Button>
+            !timKiem && (
+              <Button onClick={moThem}>
+                <Plus className="h-4 w-4" />
+                {t('cauThu.themMoi')}
+              </Button>
+            )
           }
         />
       ) : (
@@ -170,21 +141,15 @@ export default function CauThu() {
                 </Td>
                 <Td>
                   <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setDangSua(c)
-                        setMoForm(true)
-                        setMaLoi(null)
-                      }}
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => moSua(c)} title={t('chung.sua')}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
+                      title={t('chung.xoa')}
                       onClick={() => {
+                        setMaLoiBang(null)
                         if (confirm(t('chung.xacNhanXoa'))) xoa.mutate(c.id)
                       }}
                     >
@@ -197,6 +162,56 @@ export default function CauThu() {
           </tbody>
         </Table>
       )}
+
+      <Modal
+        mo={moForm}
+        onDong={dongForm}
+        chanDoiKhiXuLy={luu.isPending}
+        tieuDe={dangSua ? t('cauThu.suaTieuDe') : t('cauThu.themMoi')}
+        moTa={dangSua ? dangSua.hoTen : undefined}
+      >
+        {/* key ép React dựng lại form khi đổi bản ghi — nếu không, defaultValue giữ giá trị cũ. */}
+        <form key={dangSua?.id ?? 'moi'} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label htmlFor="hoTen">{t('cauThu.hoTen')}</Label>
+            <Input id="hoTen" name="hoTen" defaultValue={dangSua?.hoTen} required autoFocus />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="ngaySinh">{t('cauThu.ngaySinh')}</Label>
+            <Input id="ngaySinh" name="ngaySinh" type="date" defaultValue={dangSua?.ngaySinh ?? ''} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="ngayThamGia">{t('cauThu.ngayThamGia')}</Label>
+            <Input
+              id="ngayThamGia"
+              name="ngayThamGia"
+              type="date"
+              defaultValue={dangSua?.ngayThamGia ?? ''}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label htmlFor="ghiChu">{t('cauThu.ghiChu')}</Label>
+            <Input id="ghiChu" name="ghiChu" defaultValue={dangSua?.ghiChu ?? ''} />
+          </div>
+
+          {maLoi && (
+            <div className="sm:col-span-2">
+              <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>
+            </div>
+          )}
+
+          <div className="sm:col-span-2">
+            <ModalChan>
+              <Button type="button" variant="outline" onClick={dongForm} disabled={luu.isPending}>
+                {t('chung.huy')}
+              </Button>
+              <Button type="submit" disabled={luu.isPending}>
+                {luu.isPending ? t('chung.dangTai') : t('chung.luu')}
+              </Button>
+            </ModalChan>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

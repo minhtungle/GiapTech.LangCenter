@@ -8,4 +8,10 @@ public static class ClaimTenant
 {
     public const string TenantId = "tenant_id";
     public const string MaDoi = "ma_doi";
+
+    /// <summary>
+    /// Tên đội — đưa vào token để sidebar hiển thị được ngay khi tải trang, không phải chờ
+    /// một lượt gọi API chỉ để lấy một chuỗi.
+    /// </summary>
+    public const string TenDoi = "ten_doi";
 }

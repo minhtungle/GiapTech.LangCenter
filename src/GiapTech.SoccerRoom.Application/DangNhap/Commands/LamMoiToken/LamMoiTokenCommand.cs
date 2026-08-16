@@ -73,7 +73,7 @@ public class LamMoiTokenHandler(
         token.ThuHoiLuc = bayGio;
 
         var capMoi = tokenService.PhatHanh(new ThongTinToken(
-            tenant.Id, tenant.MaDoi, token.NguoiDung.Id, token.NguoiDung.Username));
+            tenant.Id, tenant.MaDoi, tenant.TenDoi, token.NguoiDung.Id, token.NguoiDung.Username));
 
         db.RefreshTokens.Add(new Domain.Entities.RefreshToken
         {

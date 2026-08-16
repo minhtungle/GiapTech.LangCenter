@@ -43,7 +43,7 @@ shadcn-admin.
 | `--status-draw` | Hòa · Đang chờ | Vàng |
 
 Ba token này là **quy ước xuyên suốt** — xem
-[ui-ux-nguyen-tac.md](./ui-ux-nguyen-tac.md#4-quy-ước-màu-trạng-thái).
+[ui-ux-nguyen-tac.md](./ui-ux-nguyen-tac.md#5-quy-ước-màu-trạng-thái).
 
 ## Quy tắc sử dụng
 

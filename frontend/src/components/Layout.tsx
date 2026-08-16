@@ -7,6 +7,20 @@ import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
+/**
+ * Chữ viết tắt cho ô logo: lấy chữ cái đầu của 2 từ cuối, bỏ tiền tố "FC"/"CLB" vì gần như
+ * CLB nào cũng có, để lại thì mọi ô đều hiện "FC".
+ */
+function vietTat(tenDoi?: string) {
+  if (!tenDoi) return 'SR'
+  const tu = tenDoi
+    .trim()
+    .split(/\s+/)
+    .filter((t) => !['fc', 'clb', 'cau', 'lac', 'bo'].includes(t.toLowerCase()))
+  const lay = tu.slice(-2)
+  return (lay.map((t) => t[0]).join('') || tenDoi[0]).toUpperCase()
+}
+
 /** Sidebar cố định theo 5 module + breadcrumb (docs/frontend/ui-ux-nguyen-tac.md). */
 export default function Layout() {
   const { t } = useTranslation()
@@ -50,11 +64,22 @@ export default function Layout() {
   return (
     <div className="flex min-h-screen bg-muted/20">
       <aside className="hidden w-56 shrink-0 flex-col border-r border-border bg-background md:flex">
-        <div className="flex h-14 items-center gap-2 border-b border-border px-4">
-          <div className="flex h-7 w-7 items-center justify-center rounded bg-primary text-xs font-bold text-primary-foreground">
-            SR
+        {/*
+          Hiển thị TÊN đội làm dòng chính, mã đội làm dòng phụ: người dùng nhận ra CLB của
+          mình qua tên, còn mã chỉ cần khi đăng nhập hoặc đọc cho người khác.
+        */}
+        <div className="flex h-14 items-center gap-2.5 border-b border-border px-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-primary text-xs font-bold text-primary-foreground">
+            {vietTat(phien?.tenDoi)}
           </div>
-          <span className="truncate text-sm font-semibold">{phien?.maDoi}</span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold leading-tight" title={phien?.tenDoi}>
+              {phien?.tenDoi || '—'}
+            </p>
+            <p className="truncate font-mono text-[11px] leading-tight tracking-wide text-muted-foreground">
+              {phien?.maDoi}
+            </p>
+          </div>
         </div>
 
         <nav className="flex-1 overflow-y-auto p-2">

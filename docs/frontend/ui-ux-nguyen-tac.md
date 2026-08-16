@@ -19,17 +19,34 @@
   [FR-03](../nghiep-vu/quan-tri-he-thong.md#quy-trình-chuẩn-tạo-tài-khoản-wizard-tuần-tự): hồ sơ cầu thủ
   → nhóm quyền → tài khoản.
 - **Empty-state** luôn có nút hành động + hướng dẫn ngắn, không để màn hình trắng.
+- **Thêm/cập nhật không cần chuyển view → dùng modal**, không chèn form vào giữa danh sách:
+  chèn form đẩy bảng xuống, người dùng mất ngữ cảnh dòng đang thao tác. Modal dùng thẻ
+  `<dialog>` của trình duyệt để có sẵn focus trap và Esc.
+- **Select có nhiều lựa chọn → dùng `SelectTimKiem`** (gõ để lọc), không dùng `<select>` cơ bản.
+  Danh sách cầu thủ/nhóm quyền của một CLB có thể vài chục mục. Tìm kiếm **bỏ dấu tiếng Việt**:
+  gõ "nguyen" ra "Nguyễn".
+- **Không dùng `prompt()` / `alert()` của trình duyệt** cho nhập liệu — không style được, không
+  dịch được, và trông như lỗi trang web.
 - **Toast** nhất quán vị trí/thời gian. **Không dùng `alert()`** hay modal chặn luồng cho thông báo
   thông thường.
 
-## 3. Thiết bị mục tiêu
+## 3. Danh tính CLB trên giao diện
+
+Sau khi đăng nhập, mọi chỗ hiển thị CLB dùng **tên đội** làm dòng chính, **mã đội** làm dòng phụ
+nhỏ bên dưới. Người dùng nhận ra CLB của mình qua tên; mã 7 ký tự chỉ cần khi đăng nhập hoặc đọc
+cho người khác.
+
+Tên đội nằm trong claim `ten_doi` của JWT để sidebar hiển thị được ngay khi tải trang. Đổi tên ở
+FR-06 phải gọi `capNhatTenDoi()` — token đang cầm vẫn mang tên cũ tới lần làm mới kế tiếp.
+
+## 4. Thiết bị mục tiêu
 
 | Nhóm thao tác | Ưu tiên | Lý do |
 |---|---|---|
 | Vẽ sơ đồ chiến thuật (FR-10 tab b), ma trận phân quyền (FR-05) | **Desktop** | Thao tác kéo-thả, bảng nhiều chiều |
 | Xem lịch, vote MVP, xem tiến độ quỹ (Player) | **Responsive tốt** | Sẽ tái dùng cho mobile app qua cùng API |
 
-## 4. Quy ước màu trạng thái
+## 5. Quy ước màu trạng thái
 
 Dùng **thống nhất** ở mọi module, không đổi nghĩa theo ngữ cảnh:
 
@@ -41,7 +58,7 @@ Dùng **thống nhất** ở mọi module, không đổi nghĩa theo ngữ cản
 
 Áp dụng cả ở Calendar (FR-08), Datatable (FR-08), biểu đồ (FR-13) và danh sách quỹ (FR-15).
 
-## 5. Đa ngôn ngữ
+## 6. Đa ngôn ngữ
 
 Mọi chuỗi hiển thị đi qua `react-i18next`. Message lỗi từ API là **mã lỗi**, frontend tra bảng dịch —
 xem [cqrs-mediatr.md](../backend/cqrs-mediatr.md#trả-lỗi). Không hard-code tiếng Việt trong component.

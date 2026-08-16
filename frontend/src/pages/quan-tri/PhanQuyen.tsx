@@ -4,8 +4,9 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Trash2, Pencil } from 'lucide-react'
 import { api, layMaLoi } from '@/lib/api'
 import {
-  Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Th,
+  Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th,
 } from '@/components/ui'
+import { Modal, ModalChan } from '@/components/ui/Modal'
 
 interface ChucNangDto {
   tenChucNang: string
@@ -32,6 +33,7 @@ export default function PhanQuyen() {
   const [tenQuyen, setTenQuyen] = useState('')
   const [oDaChon, setODaChon] = useState<Set<string>>(new Set())
   const [maLoi, setMaLoi] = useState<string | null>(null)
+  const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
 
   const { data: danhMuc } = useQuery({
     queryKey: ['quyen-danh-muc'],
@@ -86,7 +88,7 @@ export default function PhanQuyen() {
   const xoa = useMutation({
     mutationFn: async (id: string) => api.delete(`/quyen/${id}`),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['quyen'] }),
-    onError: (e) => setMaLoi(layMaLoi(e)),
+    onError: (e) => setMaLoiBang(layMaLoi(e)),
   })
 
   return (
@@ -98,11 +100,18 @@ export default function PhanQuyen() {
         </Button>
       </div>
 
-      {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
+      {maLoiBang && <CanhBaoLoi>{t(`loi.${maLoiBang}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
-      {moForm && danhMuc && (
-        <Card>
-          <CardContent className="flex flex-col gap-4 pt-5">
+      <Modal
+        mo={moForm}
+        onDong={() => setMoForm(false)}
+        chanDoiKhiXuLy={luu.isPending}
+        tieuDe={dangSua ? t('quyen.suaTieuDe') : t('quyen.themMoi')}
+        moTa={dangSua?.tenQuyen}
+        rong="lg"
+      >
+        {danhMuc && (
+          <div className="flex flex-col gap-4">
             <div className="flex max-w-sm flex-col gap-1.5">
               <Label htmlFor="tenQuyen">{t('quyen.tenQuyen')}</Label>
               <Input
@@ -157,17 +166,23 @@ export default function PhanQuyen() {
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <Button onClick={() => luu.mutate()} disabled={luu.isPending || !tenQuyen}>
-                {t('chung.luu')}
-              </Button>
-              <Button variant="outline" onClick={() => setMoForm(false)}>
+            {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
+
+            <ModalChan>
+              <Button
+                variant="outline"
+                onClick={() => setMoForm(false)}
+                disabled={luu.isPending}
+              >
                 {t('chung.huy')}
               </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              <Button onClick={() => luu.mutate()} disabled={luu.isPending || !tenQuyen}>
+                {luu.isPending ? t('chung.dangTai') : t('chung.luu')}
+              </Button>
+            </ModalChan>
+          </div>
+        )}
+      </Modal>
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">{t('chung.dangTai')}</p>
@@ -198,6 +213,7 @@ export default function PhanQuyen() {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
+                        setMaLoiBang(null)
                         if (confirm(t('chung.xacNhanXoa'))) xoa.mutate(q.id)
                       }}
                     >

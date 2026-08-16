@@ -10,7 +10,8 @@ public interface IPasswordHasher
 }
 
 /// <summary>Thông tin đưa vào JWT.</summary>
-public record ThongTinToken(Guid TenantId, string MaDoi, Guid NguoiDungId, string Username);
+public record ThongTinToken(
+    Guid TenantId, string MaDoi, string TenDoi, Guid NguoiDungId, string Username);
 
 /// <summary>Cặp token trả về sau đăng nhập.</summary>
 public record CapToken(string AccessToken, string RefreshToken, DateTimeOffset HetHan);

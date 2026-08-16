@@ -30,7 +30,8 @@ public class TokenService(IConfiguration config) : ITokenService
             new(ClaimTypes.NameIdentifier, tt.NguoiDungId.ToString()),
             new(ClaimTypes.Name, tt.Username),
             new(ClaimTenant.TenantId, tt.TenantId.ToString()),
-            new(ClaimTenant.MaDoi, tt.MaDoi)
+            new(ClaimTenant.MaDoi, tt.MaDoi),
+            new(ClaimTenant.TenDoi, tt.TenDoi)
         };
 
         var khoa = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(secret));

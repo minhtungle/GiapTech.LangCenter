@@ -65,7 +65,7 @@ public class DangNhapHandler(
             throw new AppException(MaLoi.TaiKhoanBiVoHieuHoa);
 
         var token = tokenService.PhatHanh(new ThongTinToken(
-            tenant.Id, tenant.MaDoi, nguoiDung.Id, nguoiDung.Username));
+            tenant.Id, tenant.MaDoi, tenant.TenDoi, nguoiDung.Id, nguoiDung.Username));
 
         // Lưu HASH của refresh token, không lưu token thô — người đọc được DB sẽ không mạo
         // danh được ai (cùng lý do với password_hash).

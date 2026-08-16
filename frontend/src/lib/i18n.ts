@@ -73,6 +73,7 @@ const vi = {
     ghiChu: 'Ghi chú',
     coTaiKhoan: 'Có tài khoản',
     themMoi: 'Thêm cầu thủ',
+    suaTieuDe: 'Sửa hồ sơ cầu thủ',
     chuaCo: 'Chưa có hồ sơ cầu thủ nào. Thêm cầu thủ đầu tiên để bắt đầu.',
   },
   taiKhoan: {
@@ -88,6 +89,10 @@ const vi = {
     datLaiMatKhau: 'Đặt lại mật khẩu',
     cauThuLienKet: 'Hồ sơ cầu thủ',
     chuaGan: 'Chưa gán',
+    canDoiMatKhau: 'Cần đổi mật khẩu',
+    timCauThu: 'Gõ tên cầu thủ để tìm…',
+    wizardGoiY: 'Chọn hồ sơ cầu thủ và nhóm quyền nếu đã có',
+    datLaiGoiY: 'Người dùng sẽ được yêu cầu đổi lại ở lần đăng nhập kế tiếp.',
   },
   quyen: {
     tieuDe: 'Phân quyền truy cập',
@@ -95,6 +100,7 @@ const vi = {
     moTa: 'Mô tả',
     soTaiKhoan: 'Số tài khoản',
     themMoi: 'Thêm nhóm quyền',
+    suaTieuDe: 'Sửa nhóm quyền',
     maTran: 'Ma trận quyền',
     chucNang: 'Chức năng',
   },

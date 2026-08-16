@@ -6,6 +6,7 @@ interface PhienDangNhap {
   username: string
   tenantId: string
   maDoi: string
+  tenDoi: string
 }
 
 interface AuthContextValue {
@@ -16,6 +17,12 @@ interface AuthContextValue {
   /** Gọi sau khi đổi mật khẩu để gỡ trạng thái "phải đổi". */
   danhDauDaDoiMatKhau: () => void
   phaiDoiMatKhau: boolean
+  /**
+   * Cập nhật tên đội hiển thị sau khi sửa ở FR-06. Tên nằm trong JWT nên token đang cầm
+   * vẫn mang tên cũ cho tới lần làm mới kế tiếp — không đồng bộ thì sidebar hiện tên cũ
+   * dù người dùng vừa đổi xong.
+   */
+  capNhatTenDoi: (tenDoi: string) => void
 }
 
 const AuthContext = React.createContext<AuthContextValue | null>(null)
@@ -37,6 +44,7 @@ function docPhienTuToken(token: string | null): PhienDangNhap | null {
       username: claims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ?? '',
       tenantId: claims.tenant_id ?? '',
       maDoi: claims.ma_doi ?? '',
+      tenDoi: claims.ten_doi ?? '',
     }
   } catch {
     return null
@@ -68,6 +76,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const danhDauDaDoiMatKhau = React.useCallback(() => setPhaiDoiMatKhau(false), [])
 
+  const capNhatTenDoi = React.useCallback(
+    (tenDoi: string) => setPhien((p) => (p ? { ...p, tenDoi } : p)),
+    [],
+  )
+
   const value = React.useMemo(
     () => ({
       phien,
@@ -76,8 +89,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dangXuat,
       danhDauDaDoiMatKhau,
       phaiDoiMatKhau,
+      capNhatTenDoi,
     }),
-    [phien, dangNhap, dangXuat, danhDauDaDoiMatKhau, phaiDoiMatKhau],
+    [phien, dangNhap, dangXuat, danhDauDaDoiMatKhau, phaiDoiMatKhau, capNhatTenDoi],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

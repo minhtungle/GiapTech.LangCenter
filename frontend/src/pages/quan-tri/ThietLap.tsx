@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, layMaLoi } from '@/lib/api'
+import { useAuth } from '@/lib/auth'
 import { Button, CanhBaoLoi, Card, CardContent, Input, Label } from '@/components/ui'
 
 interface ThietLapDto {
@@ -19,6 +20,7 @@ interface ThietLapDto {
 export default function ThietLap() {
   const { t } = useTranslation()
   const qc = useQueryClient()
+  const { capNhatTenDoi } = useAuth()
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [daLuu, setDaLuu] = useState(false)
 
@@ -28,9 +30,15 @@ export default function ThietLap() {
   })
 
   const luu = useMutation({
-    mutationFn: async (form: Partial<ThietLapDto>) => api.put('/thiet-lap', form),
-    onSuccess: () => {
+    mutationFn: async (form: Partial<ThietLapDto>) => {
+      await api.put('/thiet-lap', form)
+      return form
+    },
+    onSuccess: (form) => {
       void qc.invalidateQueries({ queryKey: ['thiet-lap'] })
+      // Tên đội nằm trong JWT nên token đang cầm vẫn mang tên cũ tới lần làm mới kế tiếp;
+      // không đồng bộ thì sidebar hiện tên cũ dù người dùng vừa đổi xong.
+      if (form.tenDoi) capNhatTenDoi(form.tenDoi)
       setMaLoi(null)
       setDaLuu(true)
       setTimeout(() => setDaLuu(false), 2500)
