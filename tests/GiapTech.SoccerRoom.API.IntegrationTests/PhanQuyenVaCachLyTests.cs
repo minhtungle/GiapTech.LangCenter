@@ -103,7 +103,9 @@ public class PhanQuyenVaCachLyTests(ApiFactory factory) : IClassFixture<ApiFacto
     [Fact]
     public async Task Token_bi_sua_chu_ky_thi_bi_tu_choi()
     {
-        var token = await LayToken(factory.MaDoiA, "admin", "123456");
+        // Dùng "manager", KHÔNG dùng "admin": test Buoc_doi_mat_khau đổi mật khẩu admin nên
+        // hai test chạy song song sẽ tranh nhau — cái chạy sau không đăng nhập được.
+        var token = await LayToken(factory.MaDoiA, "manager", "manager123");
 
         // Đổi ký tự cuối của phần chữ ký.
         var gia = token[..^1] + (token[^1] == 'a' ? 'b' : 'a');

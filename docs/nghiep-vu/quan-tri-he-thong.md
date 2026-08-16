@@ -70,6 +70,11 @@ Cố tình **không** cho sửa:
 | `username` | Là định danh đăng nhập — đổi sẽ khoá người dùng ra ngoài mà họ không biết |
 | `password` | Có luồng riêng (`dat-lai-mat-khau`) để luôn bật cờ buộc đổi, admin không giữ mật khẩu đang dùng của người khác |
 
+> ⚠️ **Quy tắc chống mất dữ liệu:** mọi trường mà `CapNhatTaiKhoanCommand` ghi đè đều phải có
+> mặt trong `TaiKhoanDto` **và** trong form sửa. Thiếu một trường thì form không điền lại được,
+> và khi lưu sẽ gửi `null` lên — xóa mất dữ liệu người dùng chưa từng đụng tới. Lỗi này đã xảy
+> ra với `diaChi`; `CapNhatKhongMatDuLieuTests` canh không cho tái diễn.
+
 Chặn **tự vô hiệu hóa chính mình**: đăng xuất xong không vào lại được, và nếu là admin duy nhất thì
 cả CLB mất quyền quản trị.
 | FR-04 | `/api/v1/cau-thu` (GET/POST/PUT/DELETE) | Chặn xóa khi còn dữ liệu đóng quỹ |

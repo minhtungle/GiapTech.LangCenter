@@ -85,6 +85,7 @@ const vi = {
     username: 'Tên đăng nhập',
     email: 'Email',
     soDienThoai: 'Số điện thoại',
+    diaChi: 'Địa chỉ',
     quyen: 'Nhóm quyền',
     trangThai: 'Trạng thái',
     hoatDong: 'Hoạt động',

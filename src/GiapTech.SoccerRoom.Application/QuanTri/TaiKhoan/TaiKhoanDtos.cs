@@ -7,7 +7,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GiapTech.SoccerRoom.Application.QuanTri.TaiKhoan;
 
-/// <summary>FR-03 — tài khoản người dùng. Không bao giờ trả PasswordHash ra ngoài.</summary>
+/// <summary>
+/// FR-03 — tài khoản người dùng. Không bao giờ trả PasswordHash ra ngoài.
+///
+/// Dữ liệu tài khoản trả về client. PHẢI chứa đủ mọi trường mà lệnh cập nhật ghi đè —
+/// thiếu một trường thì form sửa không điền lại được, và khi lưu sẽ gửi null lên, xóa mất
+/// dữ liệu người dùng chưa từng đụng tới.
+/// </summary>
 public record TaiKhoanDto(
     Guid Id, string Username, string? Email, string? SoDienThoai, string? DiaChi,
     bool PhaiDoiMatKhau, TrangThaiNguoiDung TrangThai,

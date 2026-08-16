@@ -14,6 +14,7 @@ interface TaiKhoanDto {
   username: string
   email: string | null
   soDienThoai: string | null
+  diaChi: string | null
   phaiDoiMatKhau: boolean
   trangThai: 'HoatDong' | 'VoHieuHoa'
   cauThuId: string | null
@@ -129,10 +130,12 @@ export default function TaiKhoan() {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
 
+    // Mọi trường mà lệnh cập nhật ghi đè đều phải đọc TỪ FORM. Gửi cứng null sẽ xóa dữ
+    // liệu người dùng chưa từng đụng tới — đúng lỗi đã xảy ra với diaChi.
     const chung = {
       email: (fd.get('email') as string) || null,
       soDienThoai: (fd.get('soDienThoai') as string) || null,
-      diaChi: null,
+      diaChi: (fd.get('diaChi') as string) || null,
       cauThuId: cauThuChon,
       quyenIds: quyenChon,
     }
@@ -312,6 +315,11 @@ export default function TaiKhoan() {
               name="soDienThoai"
               defaultValue={dangSua?.soDienThoai ?? ''}
             />
+          </div>
+
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label htmlFor="diaChi">{t('taiKhoan.diaChi')}</Label>
+            <Input id="diaChi" name="diaChi" defaultValue={dangSua?.diaChi ?? ''} />
           </div>
 
           <div className="flex flex-col gap-1.5">
