@@ -23,12 +23,26 @@ khái niệm "deny" ghi đè — chỉ cộng dồn quyền.
 ## Cách dùng trên endpoint
 
 ```csharp
-[RequirePermission("LichThiDau", "Sua")]
+[RequirePermission(ChucNang.LichThiDau, HanhDong.Sua)]
 public async Task<IActionResult> CapNhatTranDau(...)
 ```
 
-Cơ chế: attribute sinh ra một `IAuthorizationRequirement`; custom `IAuthorizationHandler` đọc quyền hiệu
-lực của người dùng hiện tại từ DB và đối chiếu.
+Dùng hằng số `ChucNang.*` và enum `HanhDong` thay vì chuỗi thô — gõ sai chuỗi sẽ tạo ra một policy
+không bao giờ khớp, và lỗi chỉ lộ ra lúc chạy.
+
+### Cơ chế (đã triển khai)
+
+| Thành phần | Vai trò |
+|---|---|
+| `RequirePermissionAttribute` | Sinh tên policy `Quyen:{chucNang}:{hanhDong}` |
+| `QuyenPolicyProvider` | Sinh policy **khi gặp lần đầu** — không phải đăng ký sẵn từng tổ hợp trong `Program.cs` (số tổ hợp = số chức năng × 4 và còn tăng theo mỗi module) |
+| `QuyenAuthorizationHandler` | Đọc `tenant_id` + `NameIdentifier` từ claim, hỏi `IQuyenService` |
+| `QuyenService` | Truy vấn `NGUOIDUNG_QUYEN → QUYEN → QUYEN_CHUC_NANG`, cache 5 phút |
+
+### Đã kiểm chứng
+
+`PhanQuyenVaCachLyTests` chạy qua API thật. Đã chứng minh test bắt được vi phạm bằng phản chứng: thay
+`[RequirePermission]` bằng `[Authorize]` thường → test "thiếu quyền → 403" đỏ ngay.
 
 ## Danh mục chức năng
 

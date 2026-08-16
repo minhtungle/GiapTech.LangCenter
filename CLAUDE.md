@@ -19,7 +19,7 @@ một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`. Đ
 5 module · 16 mã FR · 3 actor (Admin / Manager / Player) — đọc 1 mạch ở
 [`docs/tong-thuat.md`](./docs/tong-thuat.md).
 
-**Trạng thái:** 🚧 backend đã có bộ khung (solution + 16 entity + DbContext + migration đầu). Bước kế tiếp ở [mục 6](#6-bootstrap-checklist).
+**Trạng thái:** 🚧 backend chạy được: đăng nhập (FR-01) + phân quyền động + cách ly tenant, 24 test xanh. Bước kế tiếp ở [mục 6](#6-bootstrap-checklist).
 
 ---
 
@@ -121,8 +121,13 @@ docs/                                   # Tài liệu (xem mục 3)
       Đã chốt: [denormalize `tenant_id` xuống cả 7 bảng con](./docs/database/erd.md#denormalize-tenant_id-xuống-bảng-con).
 - [x] [Global Query Filter](./docs/backend/multi-tenant.md) tự động + tự gán `tenant_id` khi ghi,
       có `CachLyTenantTests` canh. **Còn thiếu:** middleware đọc claim ở tầng API.
-- [ ] Cấu hình ASP.NET Core Identity + JWT + `Asp.Versioning.Mvc` (`/api/v1/`).
-- [ ] Cấu hình [phân quyền động](./docs/backend/phan-quyen-dong.md) + `[RequirePermission]`.
+- [x] JWT Bearer + `Asp.Versioning.Mvc` (`/api/v1/`) + Swagger có ô nhập token.
+      Dùng riêng `PasswordHasher` của Identity, **không** kéo cả Identity stack (nó giả định
+      username duy nhất toàn cục — trái với multi-tenant).
+- [x] [Phân quyền động](./docs/backend/phan-quyen-dong.md): `[RequirePermission]` + policy sinh
+      động + `IAuthorizationHandler` đọc `QUYEN_CHUC_NANG` có cache. Đã kiểm chứng bằng phản chứng.
+- [x] Middleware tenant đọc claim → `ICurrentTenant`; exception middleware trả **mã lỗi**.
+- [x] FR-01 đăng nhập (CQRS + FluentValidation), 10 integration test.
 - [ ] Khởi tạo frontend từ template shadcn-admin (Vite), cấu hình TanStack Query trỏ về API.
 - [ ] Chốt [design token](./docs/frontend/design-tokens.md) + dựng trang style-guide.
 - [ ] Cập nhật [mục 7](#7-lệnh-buildtestdev) bằng lệnh thật chạy được.
@@ -136,7 +141,7 @@ Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 ```bash
 # --- Backend (đã hoạt động) ---
 dotnet build                                        # 0 warning — TreatWarningsAsErrors đang bật
-dotnet test                                         # gồm test canh luật phụ thuộc Clean Architecture
+dotnet test                                         # 24 test: luật phụ thuộc, cách ly tenant, phân quyền
 dotnet run --project src/GiapTech.SoccerRoom.API    # Swagger tại /swagger
 
 # --- Kiểm tra tài liệu (đã hoạt động) ---
