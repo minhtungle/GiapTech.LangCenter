@@ -160,11 +160,27 @@
 .sr-lich .lm-calendar-weekdays > div:nth-child(6)::after { content: 'T7'; }
 .sr-lich .lm-calendar-weekdays > div:nth-child(7)::after { content: 'CN'; }
 
+/*
+  Ô ngày: cao vừa đủ để lọt cả lịch trong một màn hình 768px mà không phải cuộn.
+  Thư viện để ô tự giãn theo chiều cao khung, nên phải chặn bằng height cố định —
+  min-height không đủ, ô vẫn phình ra 143px.
+*/
 .sr-lich .lm-calendar-content > div {
   position: relative;
-  min-height: 3.25rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 0.35rem;
+  height: 2.75rem;
+  min-height: 0;
+  font-size: 0.8125rem;
   border-radius: calc(var(--radius) - 4px);
   color: hsl(var(--foreground));
+}
+
+/* Ô bấm được để thêm trận — con trỏ báo cho người dùng biết. */
+.sr-lich .sr-o-bam-duoc {
+  cursor: pointer;
 }
 
 .sr-lich .lm-calendar-content > div[data-grey='true'] {
@@ -175,14 +191,18 @@
   background: hsl(var(--muted));
 }
 
-/* Ô có trận: viền nhạt để nhận ra ngay cả trước khi nhìn chấm màu. */
+/*
+  Ô có trận: nền nhạt thay vì viền. Viền làm ô co lại hẹp hơn các ô khác trong cùng hàng,
+  nhìn lệch hẳn — đã thấy trên ảnh chụp thật.
+*/
 .sr-lich .sr-o-co-tran {
-  box-shadow: inset 0 0 0 1px hsl(var(--border));
+  background: hsl(var(--muted) / 0.6);
+  font-weight: 600;
 }
 
 .sr-cham-hang {
   position: absolute;
-  bottom: 0.25rem;
+  bottom: 0.2rem;
   left: 0;
   right: 0;
   display: flex;
@@ -191,8 +211,8 @@
 }
 
 .sr-cham {
-  width: 0.5rem;
-  height: 0.5rem;
+  width: 0.45rem;
+  height: 0.45rem;
   border: 0;
   border-radius: 9999px;
   padding: 0;

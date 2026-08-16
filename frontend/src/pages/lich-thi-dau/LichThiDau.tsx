@@ -84,6 +84,8 @@ export default function LichThiDau() {
 
   const [moForm, setMoForm] = useState(false)
   const [dangSua, setDangSua] = useState<TranDauDto | null>(null)
+  // Ngày điền sẵn khi mở form từ một ô trên lịch.
+  const [ngayMacDinh, setNgayMacDinh] = useState<string | null>(null)
   const [doiThuChon, setDoiThuChon] = useState<string | null>(null)
   const [trangThaiChon, setTrangThaiChon] = useState<TrangThai>('DaLenLich')
   const [maLoi, setMaLoi] = useState<string | null>(null)
@@ -152,8 +154,19 @@ export default function LichThiDau() {
     onError: (e) => setMaLoiBang(layMaLoi(e)),
   })
 
+  const moThemTuNgay = (ngay: string) => {
+    setDangSua(null)
+    // 15:00 là giờ đá phổ biến của CLB phong trào — đỡ cho người dùng một bước chỉnh.
+    setNgayMacDinh(`${ngay}T15:00`)
+    setDoiThuChon(null)
+    setTrangThaiChon('DaLenLich')
+    setMaLoi(null)
+    setMoForm(true)
+  }
+
   const moThem = () => {
     setDangSua(null)
+    setNgayMacDinh(null)
     setDoiThuChon(null)
     setTrangThaiChon('DaLenLich')
     setMaLoi(null)
@@ -171,6 +184,7 @@ export default function LichThiDau() {
   const dongForm = () => {
     setMoForm(false)
     setDangSua(null)
+    setNgayMacDinh(null)
     setDoiThuChon(null)
     setMaLoi(null)
   }
@@ -362,7 +376,10 @@ export default function LichThiDau() {
             thang={thangXem.thang}
             suKien={suKienLich}
             onChonTran={(id) => navigate(`/lich-thi-dau/${id}`)}
+            onChonNgay={moThemTuNgay}
           />
+
+          <p className="text-xs text-muted-foreground">{t('tranDau.lichGoiY')}</p>
 
           {/* Chú giải màu — người dùng không phải đoán chấm nào nghĩa gì. */}
           <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
@@ -500,7 +517,11 @@ export default function LichThiDau() {
         tieuDe={dangSua ? t('tranDau.suaTieuDe') : t('tranDau.themMoi')}
         rong="lg"
       >
-        <form key={dangSua?.id ?? 'moi'} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
+        <form
+          key={dangSua?.id ?? ngayMacDinh ?? 'moi'}
+          onSubmit={onSubmit}
+          className="grid gap-4 sm:grid-cols-2"
+        >
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="thoiGian">{t('tranDau.thoiGian')}</Label>
             <Input
@@ -509,7 +530,7 @@ export default function LichThiDau() {
               type="datetime-local"
               required
               autoFocus
-              defaultValue={dangSua ? sangInputLocal(dangSua.thoiGian) : ''}
+              defaultValue={dangSua ? sangInputLocal(dangSua.thoiGian) : (ngayMacDinh ?? '')}
             />
           </div>
 

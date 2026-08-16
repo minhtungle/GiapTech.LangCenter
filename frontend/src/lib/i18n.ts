@@ -117,6 +117,7 @@ const vi = {
     thangTruoc: 'Tháng trước',
     thangSau: 'Tháng sau',
     homNay: 'Hôm nay',
+    lichGoiY: 'Bấm vào một ngày để thêm trận · bấm chấm màu để mở chi tiết trận.',
     xacNhanLuuTru: 'Chuyển trận này sang lưu trữ? Dữ liệu vẫn giữ nguyên cho thống kê.',
     chuaCo: 'Chưa có trận đấu nào. Thêm trận đầu tiên để bắt đầu.',
     khongKhopLoc: 'Không có trận nào khớp bộ lọc.',

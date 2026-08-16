@@ -43,19 +43,23 @@ export function LichThang({
   thang,
   suKien,
   onChonTran,
+  onChonNgay,
 }: {
   nam: number
   thang: number
   suKien: SuKienLich[]
   onChonTran: (tranDauId: string) => void
+  /** Bấm vào ô ngày trống — dùng để mở form thêm trận với ngày đã điền sẵn. */
+  onChonNgay?: (ngay: string) => void
 }) {
   const boc = useRef<HTMLDivElement>(null)
   const daKhoiTao = useRef(false)
+  const instance = useRef<ReturnType<typeof CalendarJS.Calendar> | null>(null)
 
   // Giữ dữ liệu mới nhất trong ref: hàm vẽ chạy sau khi Calendar.js render lại, đọc trực tiếp
   // biến từ closure sẽ dính giá trị của lần render đầu.
-  const duLieu = useRef({ suKien, onChonTran, nam, thang })
-  duLieu.current = { suKien, onChonTran, nam, thang }
+  const duLieu = useRef({ suKien, onChonTran, onChonNgay, nam, thang })
+  duLieu.current = { suKien, onChonTran, onChonNgay, nam, thang }
 
   /**
    * Gắn chấm màu kết quả vào từng ô ngày.
@@ -73,7 +77,7 @@ export function LichThang({
 
     goc.querySelectorAll('[data-cham]').forEach((n) => n.remove())
 
-    const { suKien: ds, onChonTran: chon, nam: n, thang: th } = duLieu.current
+    const { suKien: ds, onChonTran: chon, onChonNgay: chonNgay, nam: n, thang: th } = duLieu.current
 
     const theoNgay = new Map<string, SuKienLich[]>()
     for (const s of ds) theoNgay.set(s.ngay, [...(theoNgay.get(s.ngay) ?? []), s])
@@ -86,6 +90,15 @@ export function LichThang({
       if (!Number.isInteger(ngayTrongThang) || ngayTrongThang < 1) continue
 
       const khoa = `${n}-${String(th).padStart(2, '0')}-${String(ngayTrongThang).padStart(2, '0')}`
+
+      // Bấm ô ngày (kể cả ô trống) → mở form thêm trận với ngày điền sẵn. Không có bước này
+      // thì lịch chỉ để xem, người dùng phải quay về bảng mới thêm được trận.
+      if (chonNgay && !o.hasAttribute('data-da-gan-click')) {
+        o.setAttribute('data-da-gan-click', '')
+        o.addEventListener('click', () => duLieu.current.onChonNgay?.(khoa))
+        o.classList.add('sr-o-bam-duoc')
+      }
+
       const cua = theoNgay.get(khoa)
       if (!cua?.length) continue
 
@@ -120,11 +133,15 @@ export function LichThang({
     if (!el || daKhoiTao.current) return
 
     daKhoiTao.current = true
-    CalendarJS.Calendar(el, {
+    instance.current = CalendarJS.Calendar(el, {
       type: 'inline',
       footer: false,
       // Tuần bắt đầu Thứ Hai — cách người Việt đọc lịch.
       startingDay: 1,
+      // TẮT đổi tháng bằng lăn chuột. Mặc định thư viện bật, khiến lăn chuột trên lịch nhảy
+      // tháng liên tục thay vì cuộn trang — người dùng thấy như "kéo vô hạn" và không cuộn
+      // xuống được. Ta đã có nút ‹ › riêng, rõ ràng hơn.
+      wheel: false,
       value: `${nam}-${String(thang).padStart(2, '0')}-01`,
     } as never)
 
@@ -132,10 +149,26 @@ export function LichThang({
       // Calendar.js không có hàm destroy công khai; dọn DOM là cách chắc chắn để không để
       // lại node mồ côi sau khi rời trang.
       daKhoiTao.current = false
+      instance.current = null
       if (el) el.innerHTML = ''
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  /**
+   * Đẩy tháng đang xem xuống thư viện khi nút ‹ › ở ngoài thay đổi state.
+   *
+   * Không có bước này thì lưới đứng yên ở tháng khởi tạo trong khi nhãn phía trên đã đổi —
+   * hai thứ nói hai chuyện khác nhau.
+   */
+  useEffect(() => {
+    const inst = instance.current
+    if (!inst) return
+
+    const moc = `${nam}-${String(thang).padStart(2, '0')}-01`
+    const co = inst as unknown as Record<string, unknown>
+    if (typeof co.setValue === 'function') (co.setValue as (v: string) => void)(moc)
+  }, [nam, thang])
 
   /**
    * Vẽ lại chấm mỗi khi dữ liệu đổi, VÀ mỗi khi Calendar.js tự render lại lưới (người dùng
