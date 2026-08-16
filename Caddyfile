@@ -1,0 +1,27 @@
+# Caddy tự động cấp/gia hạn HTTPS qua Let's Encrypt cho domain khai báo bên dưới.
+# Thay clubmgmt.example.com bằng domain thật khi triển khai.
+
+clubmgmt.example.com {
+    # Static SPA (React + shadcn-admin build) — phục vụ trực tiếp, không cần container riêng
+    handle /api/* {
+        reverse_proxy api:8080
+    }
+
+    handle {
+        root * /srv/frontend
+        try_files {path} /index.html
+        file_server
+    }
+
+    encode gzip zstd
+
+    log {
+        output stdout
+        format json
+    }
+}
+
+# Ví dụ subdomain quản trị observability nội bộ (tuỳ chọn, nên đặt sau xác thực/IP allowlist)
+# monitor.clubmgmt.example.com {
+#     reverse_proxy grafana:3000
+# }

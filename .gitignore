@@ -1,0 +1,82 @@
+# ============================================================
+# Secrets — TUYỆT ĐỐI không commit
+# ============================================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+appsettings.Production.json
+appsettings.Local.json
+
+# ============================================================
+# .NET
+# ============================================================
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+*.user
+*.suo
+*.userprefs
+*.dll
+*.exe
+*.pdb
+*.cache
+.vs/
+TestResults/
+[Cc]overage*/
+*.coverage
+*.trx
+project.lock.json
+artifacts/
+
+# ============================================================
+# Node / Frontend
+# ============================================================
+node_modules/
+dist/
+dist-ssr/
+build/
+.vite/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+
+# ============================================================
+# Agent skills (cài qua `npx skills add`)
+# Giữ skills-lock.json để đồng đội cài lại đúng bản (có hash SHA-256).
+# ============================================================
+.agents/
+.claude/skills/
+
+# ============================================================
+# IDE / Editor
+# ============================================================
+.idea/
+*.swp
+*.swo
+*~
+
+# ============================================================
+# OS
+# ============================================================
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+
+# ============================================================
+# Hạ tầng / vận hành
+# ============================================================
+frontend/dist/
+backup/
+*.sql.gz
+caddy_data/
+caddy_config/
