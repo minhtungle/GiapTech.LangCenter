@@ -40,7 +40,7 @@ Luật phụ thuộc giữa các lớp: [../backend/clean-architecture.md](../ba
 | Đa ngôn ngữ | ✅ Đã chốt | Backend `.resx` theo culture; Frontend `react-i18next` |
 | Tên namespace/solution | ✅ Đã chốt | `GiapTech.SoccerRoom.*` |
 | Giá trị design token (màu cụ thể) | 🕓 Chưa chốt | Chốt cùng lúc dựng style-guide — [design-tokens.md](../frontend/design-tokens.md) |
-| `tenant_id` ở bảng con (denormalize hay join) | 🕓 Chưa chốt | Quyết định khi tạo migration đầu — [ERD](../database/erd.md#ghi-chú-về-tenant_id-ở-bảng-con) |
+| `tenant_id` ở bảng con | ✅ Đã chốt | Denormalize xuống cả 7 bảng con — [ERD](../database/erd.md#denormalize-tenant_id-xuống-bảng-con) |
 | Mobile app | 🕓 Chưa triển khai | Dùng lại API hiện có, ưu tiên React Native khi cần |
 | Real-time (SignalR) | 🕓 Chưa triển khai | Cân nhắc khi cần cập nhật vote MVP trực tiếp |
 

@@ -46,16 +46,35 @@ Integration test bắt buộc cho mỗi module: tạo dữ liệu ở tenant A, 
 | **Raw SQL** (`FromSqlRaw`, `ExecuteSqlRaw`, Dapper) | Filter không áp dụng | Tự thêm `WHERE tenant_id = @tenant` trong mọi câu lệnh |
 | **Truy vấn thống kê aggregate** | Thường viết dạng raw SQL / group-by phức tạp | Điểm rủi ro cao nhất — xem [FR-13, FR-14](../nghiep-vu/thong-ke.md) |
 | **`IgnoreQueryFilters()`** | Vô hiệu hóa filter hoàn toàn | Chỉ dùng cho tác vụ quản trị hệ thống, phải review kỹ |
-| **Bảng con không có `tenant_id`** (`VOTE_MVP`, `DOIHINH_TRANDAU`, `DONGGOP_QUY`...) | Truy vấn trực tiếp bảng con không bị lọc | Luôn join lên bảng cha, hoặc denormalize `tenant_id` — xem [ERD](../database/erd.md) |
+| ~~Bảng con không có `tenant_id`~~ | ~~Truy vấn trực tiếp bảng con không bị lọc~~ | ✅ **Đã xử lý:** cả 7 bảng con đều mang `tenant_id` riêng — xem [ERD](../database/erd.md#denormalize-tenant_id-xuống-bảng-con) |
 | **Include/navigation từ entity chưa lọc** | Kéo theo dữ liệu tenant khác | Bắt đầu truy vấn từ entity có filter |
 | **Background job / cron** | Không có HTTP context → không có claim tenant | Truyền `tenant_id` tường minh vào job, không dựa vào `ICurrentTenant` |
+
+## ⚠️ Bẫy: filter không được trỏ ra object bên ngoài DbContext
+
+Khi dựng query filter bằng expression tree, biểu thức **phải** trỏ vào property của chính
+`DbContext`, không trỏ thẳng vào object `ICurrentTenant`:
+
+```csharp
+// ĐÚNG — EF thay bằng instance đang chạy ở mỗi truy vấn
+Expression.Property(Expression.Constant(this), nameof(TenantIdHienTai))
+
+// SAI — model bị cache, object "nướng cứng" vào context ĐẦU TIÊN
+Expression.Property(Expression.Constant(currentTenant), nameof(ICurrentTenant.TenantId))
+```
+
+EF Core cache model và dùng chung cho mọi context có cùng options. Bản sai khiến context của tenant B
+đọc tenant của A và **thấy dữ liệu của A** — không exception, không log, chỉ trả về dữ liệu sai.
+
+Lỗi này đã thực sự xảy ra trong quá trình dựng `AppDbContext` và bị `CachLyTenantTests` bắt được. Hai
+test đỏ khi dùng bản sai, xanh khi dùng bản đúng — đã kiểm chứng cả hai chiều.
 
 ## Checklist khi thêm entity nghiệp vụ mới
 
 - [ ] Entity có property `TenantId` (hoặc kế thừa `ITenantEntity`).
 - [ ] Migration tạo cột `tenant_id` + FK → `TENANT` + **index** trên `tenant_id`.
-- [ ] Nếu là bảng con không mang `tenant_id`: xác nhận mọi truy vấn đều đi qua bảng cha.
-- [ ] Có integration test cách ly tenant cho entity này.
+- [ ] Bảng chi tiết cũng mang `tenant_id` riêng (không dựa vào join lên bảng cha).
+- [ ] Có test cách ly tenant cho entity này (`CachLyTenantTests`).
 - [ ] [ERD](../database/erd.md) đã cập nhật **trong cùng PR**.
 
 ## Tham chiếu

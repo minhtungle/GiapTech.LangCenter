@@ -6,9 +6,9 @@
 > Filter theo `tenant_id` đang đăng nhập. Không được quên ở bất kỳ entity mới nào.
 > Cách triển khai: [../backend/multi-tenant.md](../backend/multi-tenant.md).
 
-Các bảng chi tiết (`DOIHINH_TRANDAU`, `SODO_CHIENTHUAT`, `DANHGIA_CAUTHU`, `VOTE_MVP`, `QUYEN_CHUC_NANG`,
-`NGUOIDUNG_QUYEN`, `DONGGOP_QUY`) kế thừa phạm vi tenant qua bảng cha; xem mục
-[Ghi chú về tenant_id ở bảng con](#ghi-chú-về-tenant_id-ở-bảng-con).
+Áp dụng cho **cả bảng chi tiết** (`DOIHINH_TRANDAU`, `SODO_CHIENTHUAT`, `DANHGIA_CAUTHU`, `VOTE_MVP`,
+`QUYEN_CHUC_NANG`, `NGUOIDUNG_QUYEN`, `DONGGOP_QUY`) — xem
+[Denormalize tenant_id xuống bảng con](#denormalize-tenant_id-xuống-bảng-con).
 
 ## Sơ đồ tổng quan
 
@@ -89,13 +89,19 @@ erDiagram
 | `cau_thu_id` nullable | `NGUOI_DUNG` | Tài khoản có thể không gắn hồ sơ cầu thủ nào (0..1) |
 | `so_tien_da_dong <= so_tien_can_dong` | `DONGGOP_QUY` | Kiểm tra ở tầng Application (FluentValidation) |
 
-## Ghi chú về `tenant_id` ở bảng con
+## Denormalize tenant_id xuống bảng con
 
-Các bảng chi tiết (`QUYEN_CHUC_NANG`, `NGUOIDUNG_QUYEN`, `DOIHINH_TRANDAU`, `SODO_CHIENTHUAT`,
-`DANHGIA_CAUTHU`, `VOTE_MVP`, `DONGGOP_QUY`) **kế thừa phạm vi tenant qua bảng cha**. Khi truy vấn
-trực tiếp các bảng này mà không đi qua bảng cha, phải **join lên bảng cha** để Global Query Filter có
-hiệu lực — hoặc cân nhắc thêm cột `tenant_id` denormalize kèm FK composite. Quyết định cụ thể ghi ở
-[quy-uoc-migration.md](./quy-uoc-migration.md) khi tạo migration đầu tiên.
+Bảy bảng chi tiết (`QUYEN_CHUC_NANG`, `NGUOIDUNG_QUYEN`, `DOIHINH_TRANDAU`, `SODO_CHIENTHUAT`,
+`DANHGIA_CAUTHU`, `VOTE_MVP`, `DONGGOP_QUY`) **mang cột `tenant_id` riêng** thay vì chỉ kế thừa phạm vi
+qua bảng cha.
+
+**Vì sao:** Global Query Filter chỉ áp cho entity có `TenantId`. Nếu bảng con không có, mọi truy vấn
+trực tiếp — đếm phiếu MVP, tổng đóng quỹ, kiểm tra quyền — đều phải nhớ join lên bảng cha. Quên một lần
+là rò rỉ dữ liệu chéo CLB, đúng lỗi nghiêm trọng nhất hệ thống này có thể mắc.
+
+**Đánh đổi đã chấp nhận:** thừa một cột `uuid` mỗi bảng, và cần giữ `tenant_id` của bản ghi con nhất
+quán với cha. Việc gán đã tự động hóa trong `AppDbContext.SaveChanges` nên tầng Application không phải
+nhớ; `CachLyTenantTests` canh cả 7 bảng đều có cột và có filter.
 
 ## Tham chiếu
 

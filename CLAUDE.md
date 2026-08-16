@@ -19,7 +19,7 @@ một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`. Đ
 5 module · 16 mã FR · 3 actor (Admin / Manager / Player) — đọc 1 mạch ở
 [`docs/tong-thuat.md`](./docs/tong-thuat.md).
 
-**Trạng thái:** 🚧 giai đoạn tài liệu, chưa khởi tạo mã nguồn. Bước kế tiếp ở [mục 6](#6-bootstrap-checklist).
+**Trạng thái:** 🚧 backend đã có bộ khung (solution + 16 entity + DbContext + migration đầu). Bước kế tiếp ở [mục 6](#6-bootstrap-checklist).
 
 ---
 
@@ -117,9 +117,10 @@ docs/                                   # Tài liệu (xem mục 3)
 - [x] `git init` + `.gitignore` (.NET + Node + **`.env`**), commit đầu tiên.
 - [x] Khởi tạo solution .NET theo [mục 5](#5-cấu-trúc-mã-nguồn): 4 project + 2 test project,
       `Directory.Build.props` (net8.0, nullable, warnings-as-errors), test canh luật phụ thuộc.
-- [ ] Cài EF Core + Npgsql, tạo `DbContext` với [16 entity](./docs/database/erd.md), migration đầu tiên.
-      Chốt cách xử lý [`tenant_id` ở bảng con](./docs/database/erd.md#ghi-chú-về-tenant_id-ở-bảng-con).
-- [ ] Cấu hình [multi-tenant middleware + Global Query Filter](./docs/backend/multi-tenant.md).
+- [x] Cài EF Core + Npgsql, tạo `DbContext` với 16 entity, migration `InitialCreate` (15 bảng).
+      Đã chốt: [denormalize `tenant_id` xuống cả 7 bảng con](./docs/database/erd.md#denormalize-tenant_id-xuống-bảng-con).
+- [x] [Global Query Filter](./docs/backend/multi-tenant.md) tự động + tự gán `tenant_id` khi ghi,
+      có `CachLyTenantTests` canh. **Còn thiếu:** middleware đọc claim ở tầng API.
 - [ ] Cấu hình ASP.NET Core Identity + JWT + `Asp.Versioning.Mvc` (`/api/v1/`).
 - [ ] Cấu hình [phân quyền động](./docs/backend/phan-quyen-dong.md) + `[RequirePermission]`.
 - [ ] Khởi tạo frontend từ template shadcn-admin (Vite), cấu hình TanStack Query trỏ về API.

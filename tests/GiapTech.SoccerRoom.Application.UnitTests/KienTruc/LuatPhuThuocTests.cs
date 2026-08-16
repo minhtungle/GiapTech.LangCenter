@@ -40,11 +40,21 @@ public class LuatPhuThuocTests
             "không rải attribute trong Domain. Xem docs/backend/clean-architecture.md.");
     }
 
-    /// <summary>Application chỉ định nghĩa interface — cài đặt cụ thể nằm ở Infrastructure.</summary>
+    /// <summary>
+    /// Application không được biết tới PROVIDER database cụ thể.
+    ///
+    /// Lưu ý phạm vi: Application ĐƯỢC phép tham chiếu Microsoft.EntityFrameworkCore để khai báo
+    /// <c>IAppDbContext</c> với <c>DbSet&lt;T&gt;</c> — đây là mẫu chuẩn của Clean Architecture,
+    /// DbSet đóng vai trò abstraction truy vấn (IQueryable), không ràng buộc vào database nào.
+    /// Điều thực sự phải cấm là phụ thuộc provider (Npgsql): nó khoá Application vào PostgreSQL
+    /// và làm unit test không thay được bằng in-memory provider.
+    ///
+    /// Domain thì nghiêm ngặt hơn — cấm cả EF Core, xem test ở trên.
+    /// </summary>
     [Theory]
-    [InlineData("Microsoft.EntityFrameworkCore")]
     [InlineData("Npgsql")]
-    public void Application_khong_duoc_phu_thuoc_EFCore(string tenAssemblyCam)
+    [InlineData("Microsoft.EntityFrameworkCore.SqlServer")]
+    public void Application_khong_duoc_phu_thuoc_provider_database(string tenAssemblyCam)
     {
         var viPham = ApplicationAssembly
             .GetReferencedAssemblies()
