@@ -1,0 +1,25 @@
+# Caddyfile cho máy dev — HTTP trên localhost, không xin chứng chỉ.
+# Bản production dùng ./Caddyfile với domain thật + HTTPS tự động.
+
+:80 {
+    handle /api/* {
+        reverse_proxy api:8080
+    }
+
+    handle /health {
+        reverse_proxy api:8080
+    }
+
+    handle {
+        root * /srv/frontend
+        try_files {path} /index.html
+        file_server
+    }
+
+    encode gzip zstd
+
+    log {
+        output stdout
+        format console
+    }
+}

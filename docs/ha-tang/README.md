@@ -29,12 +29,56 @@ CI/CD:    GitHub Actions → build & test → image → ghcr.io → SSH `docker 
 > **Nguyên tắc bất di bất dịch #5:** mọi service ngoài Caddy nằm trong Docker network nội bộ, **không mở
 > port trực tiếp ra Internet**.
 
+## Chạy toàn hệ thống
+
+```bash
+cp .env.example .env          # rồi điền giá trị thật
+docker compose up -d          # production
+docker compose ps             # api phải ở trạng thái (healthy)
+```
+
+Ở máy dev, dùng thêm lớp phủ để Caddy chạy HTTP trên `localhost:8080` (không xin cert) và
+mở port PostgreSQL/MinIO cho tiện xem dữ liệu:
+
+```bash
+cd frontend && npm run build && cd ..     # Caddy phục vụ ./frontend/dist
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+```
+
+| Địa chỉ (dev) | Nội dung |
+|---|---|
+| http://localhost:8080 | Frontend |
+| http://localhost:8080/api/v1/... | API qua Caddy |
+| http://localhost:8080/health | Healthcheck |
+| localhost:55432 | PostgreSQL (chỉ ở dev) |
+| http://localhost:59001 | MinIO console (chỉ ở dev) |
+
+**Quan sát hệ thống** (Grafana/Loki/Prometheus/Uptime Kuma) nằm trong profile riêng để
+`docker compose up` mặc định chỉ chạy thứ cần cho ứng dụng:
+
+```bash
+docker compose --profile quan-sat up -d
+```
+
+### Những điều đã xử lý sẵn
+
+- **Migration tự chạy lúc khởi động** API. Đủ dùng cho một VPS; nếu về sau chạy nhiều bản sao
+  API thì phải tách thành bước riêng vì nhiều instance sẽ tranh nhau migrate. Tắt bằng
+  `TU_DONG_MIGRATE=false`.
+- **API chờ PostgreSQL healthy** rồi mới khởi động — khởi động sớm sẽ chết ngay lúc migrate.
+- **Không redirect HTTPS trong container** (`SAU_REVERSE_PROXY=true`): TLS đã kết thúc ở Caddy,
+  bật redirect sẽ đá cả healthcheck lẫn request thật sang cổng container không nghe.
+- **API chạy bằng user thường**, không phải root.
+
 ## File cấu hình liên quan
 
 | File | Vai trò |
 |---|---|
-| [`docker-compose.yml`](../../docker-compose.yml) | Định nghĩa toàn bộ service |
-| [`Caddyfile`](../../Caddyfile) | Reverse proxy + HTTPS tự động |
+| [`docker-compose.yml`](../../docker-compose.yml) | Định nghĩa toàn bộ service (production) |
+| [`docker-compose.dev.yml`](../../docker-compose.dev.yml) | Lớp phủ cho máy dev |
+| [`src/GiapTech.SoccerRoom.API/Dockerfile`](../../src/GiapTech.SoccerRoom.API/Dockerfile) | Image API, 2 giai đoạn build/runtime |
+| [`Caddyfile`](../../Caddyfile) | Reverse proxy + HTTPS tự động (production) |
+| [`Caddyfile.dev`](../../Caddyfile.dev) | HTTP localhost cho dev |
 | [`.env.example`](../../.env.example) | Mẫu biến môi trường — copy thành `.env`, **không commit** |
 | [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml) | Pipeline CI/CD |
 

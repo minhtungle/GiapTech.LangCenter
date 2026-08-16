@@ -1,0 +1,30 @@
+# Lớp phủ cho máy dev — dùng kèm docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#
+# Khác bản production: Caddy phục vụ HTTP trên localhost (không xin cert Let's Encrypt),
+# và mở port PostgreSQL/MinIO ra host để tiện xem dữ liệu.
+
+services:
+  caddy:
+    ports:
+      - "8080:80"
+    volumes:
+      - ./Caddyfile.dev:/etc/caddy/Caddyfile:ro
+      - ./frontend/dist:/srv/frontend:ro
+
+  api:
+    build:
+      context: .
+      dockerfile: src/GiapTech.SoccerRoom.API/Dockerfile
+    image: soccerroom-api:local
+
+  postgres:
+    # Chỉ ở dev: mở port để nối psql/DBeaver từ máy. Bản production KHÔNG có dòng này.
+    ports:
+      - "55432:5432"
+
+  minio:
+    # 9000/9001 hay bị Docker Desktop và các công cụ khác chiếm — dịch lên 59000 cho chắc.
+    ports:
+      - "59000:9000"
+      - "59001:9001"

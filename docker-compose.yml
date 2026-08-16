@@ -1,7 +1,10 @@
-version: "3.9"
+# Mọi service (trừ Caddy) chỉ nằm trong network nội bộ "backend" — không expose port ra
+# Internet. Quy tắc bất di bất dịch #5, xem docs/kien-truc/adr/0004-ha-tang-tu-host-vps.md
+#
+# Chạy:  cp .env.example .env  →  điền giá trị  →  docker compose up -d
+# Dev:   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
-# Mọi service (trừ Caddy) chỉ nằm trong network nội bộ "backend" — không expose port ra Internet.
-# Xem docs/kien-truc/adr/0004-ha-tang-tu-host-vps.md
+name: soccerroom
 
 networks:
   backend:
@@ -29,18 +32,47 @@ services:
     networks:
       - backend
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
   api:
-    image: ghcr.io/giaptech/soccerroom-api:latest
+    # Build tại chỗ nếu chưa có image; trên VPS thì `docker compose pull` lấy bản CI đã đẩy.
+    build:
+      context: .
+      dockerfile: src/GiapTech.SoccerRoom.API/Dockerfile
+    image: ${IMAGE_API:-ghcr.io/giaptech/soccerroom-api:latest}
     restart: unless-stopped
-    env_file: .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      # Caddy đã kết thúc TLS — xem Program.cs
+      SAU_REVERSE_PROXY: "true"
+      # Host là TÊN SERVICE trong network nội bộ, không phải localhost.
+      ConnectionStrings__Default: >-
+        Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?can JWT_SECRET toi thieu 32 ky tu}
+      JWT_ISSUER: ${JWT_ISSUER:-soccerroom-api}
+      JWT_EXPIRY_MINUTES: ${JWT_EXPIRY_MINUTES:-60}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@soccerroom.local}
+      SMS_PROVIDER: ${SMS_PROVIDER:-}
+      SMS_API_KEY: ${SMS_API_KEY:-}
+      SMS_SECRET_KEY: ${SMS_SECRET_KEY:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
     networks:
       - backend
     depends_on:
-      - postgres
-      - redis
-      - minio
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # Ảnh runtime alpine không có curl/wget; dùng chính .NET để gọi.
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   postgres:
     image: postgres:16-alpine
@@ -48,11 +80,17 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?can POSTGRES_PASSWORD}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
       - backend
+    healthcheck:
+      # API chờ healthcheck này: khởi động khi DB chưa sẵn sàng sẽ chết ngay lúc migrate.
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     # KHÔNG map port ra host — chỉ truy cập qua network nội bộ
 
   redis:
@@ -66,24 +104,28 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?can MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?can MINIO_ROOT_PASSWORD}
     volumes:
       - minio-data:/data
     networks:
       - backend
     # Console MinIO (9001) chỉ truy cập qua SSH tunnel khi cần quản trị, không public
 
-  # ---- Quan sát hệ thống (tuỳ chọn, bật khi cần) ----
+  # ---- Quan sát hệ thống (tuỳ chọn) ----
+  # Bật bằng: docker compose --profile quan-sat up -d
+  # Tách profile để `docker compose up` mặc định chỉ chạy thứ cần cho ứng dụng.
   uptime-kuma:
     image: louislam/uptime-kuma:1
     restart: unless-stopped
+    profiles: ["quan-sat"]
     networks:
       - backend
 
   grafana:
     image: grafana/grafana:latest
     restart: unless-stopped
+    profiles: ["quan-sat"]
     volumes:
       - grafana-data:/var/lib/grafana
     networks:
@@ -92,12 +134,14 @@ services:
   loki:
     image: grafana/loki:latest
     restart: unless-stopped
+    profiles: ["quan-sat"]
     networks:
       - backend
 
   prometheus:
     image: prom/prometheus:latest
     restart: unless-stopped
+    profiles: ["quan-sat"]
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     networks:

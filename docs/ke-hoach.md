@@ -42,7 +42,8 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | Phân quyền động đọc từ DB + cache | ✅ |
 | Frontend: layout, i18n, design token, auto-refresh token | ✅ |
 | 62 test (32 unit + 30 integration) | ✅ |
-| **Dockerfile cho API** | ⬜ **CI đang trỏ file không tồn tại** |
+| **Dockerfile cho API** | ✅ 2 giai đoạn, chạy user thường |
+| **`docker compose up` chạy được** | ✅ 5 container, API healthy, migration tự áp |
 | Test E2E frontend | ⬜ |
 | Triển khai VPS (domain, HTTPS, backup) | ⬜ |
 
@@ -54,7 +55,7 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 
 | # | Việc | Ước tính | Vì sao gấp |
 |---|---|---|---|
-| N1 | Dockerfile cho API | ~0.5 phiên | CI trỏ tới file không tồn tại → pipeline đỏ ngay khi merge PR |
+| ~~N1~~ | ~~Dockerfile cho API~~ | — | ✅ Xong 16/08 |
 | N2 | Test E2E frontend | ~0.5 phiên | 8 màn không có gì canh; lỗi enum ngày 16/08 lọt qua cả 44 test backend |
 
 ### Giai đoạn 1 — Lịch thi đấu (FR-07 → FR-11)
@@ -99,7 +100,7 @@ Dockerfile → thử `docker compose up` → VPS → domain + HTTPS → backup.
 | ADR-0005: không dùng Identity đầy đủ (đang lệch `CLAUDE.md` mục 4) | Trung bình |
 | Đăng xuất chưa gọi API thu hồi refresh token | Thấp |
 | Trang style-guide · pre-commit hook · code-split · `.resx` backend | Thấp |
-| `docker-compose.yml` thiếu biến `JWT_SECRET`, `SMTP_*` | Thấp |
+
 
 ---
 

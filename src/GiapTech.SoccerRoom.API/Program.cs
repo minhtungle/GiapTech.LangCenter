@@ -8,6 +8,7 @@ using GiapTech.SoccerRoom.Application.Common.Interfaces;
 using GiapTech.SoccerRoom.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
@@ -98,7 +99,24 @@ builder.Services.AddSwaggerGen(o =>
     });
 });
 
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<GiapTech.SoccerRoom.Infrastructure.Persistence.AppDbContext>("database");
+
 var app = builder.Build();
+
+// Áp migration lúc khởi động. Với một VPS chạy Docker Compose, đây là cách đơn giản và
+// đủ dùng; nếu về sau chạy nhiều bản sao API cùng lúc thì phải tách thành bước riêng
+// trong pipeline, vì nhiều instance cùng migrate sẽ tranh nhau.
+if (app.Configuration.GetValue("TU_DONG_MIGRATE", true))
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider
+        .GetRequiredService<GiapTech.SoccerRoom.Infrastructure.Persistence.AppDbContext>();
+
+    // Provider in-memory (integration test) không có khái niệm migration.
+    if (db.Database.IsRelational())
+        await db.Database.MigrateAsync();
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -109,7 +127,10 @@ if (app.Environment.IsDevelopment())
 // Bắt exception sớm nhất để mọi lỗi phía sau đều thành { errorCode } (quy tắc #2).
 app.UseMiddleware<ExceptionMiddleware>();
 
-app.UseHttpsRedirection();
+// Chỉ redirect HTTPS khi chạy trực tiếp. Sau Caddy, TLS đã kết thúc ở proxy nên bật cái này
+// sẽ đá cả healthcheck lẫn request thật sang cổng HTTPS mà container không nghe.
+if (!app.Configuration.GetValue("SAU_REVERSE_PROXY", false))
+    app.UseHttpsRedirection();
 
 app.UseAuthentication();
 // PHẢI nằm giữa Authentication và Authorization: cần claim đã giải mã, và phải xong trước
@@ -122,10 +143,9 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// TODO(bootstrap): còn thiếu — xem CLAUDE.md mục 6
-//   - FR-02 quên mật khẩu (SMTP)
-//   - Refresh token: hiện mới phát hành, chưa lưu và chưa có endpoint đổi mới
-//   - Frontend shadcn-admin
+// Healthcheck cho docker compose và Uptime Kuma. Không cần xác thực — nó phải trả lời được
+// cả khi hệ thống đang hỏng, và không tiết lộ gì ngoài trạng thái sống/chết.
+app.MapHealthChecks("/health").AllowAnonymous();
 
 app.Run();
 

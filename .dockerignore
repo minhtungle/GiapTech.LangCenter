@@ -1,0 +1,13 @@
+# Không đưa vào build context: làm chậm build và có thể lộ secret
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+.git/
+.agents/
+.claude/
+frontend/
+docs/
+tests/
+.env
+*.md

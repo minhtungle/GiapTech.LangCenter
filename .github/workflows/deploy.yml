@@ -71,6 +71,9 @@ jobs:
           file: src/GiapTech.SoccerRoom.API/Dockerfile
           push: true
           tags: ${{ env.IMAGE_API }}:latest,${{ env.IMAGE_API }}:${{ github.sha }}
+          # Tái dùng layer giữa các lần build — restore NuGet là bước lâu nhất.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy:
     needs: push-images
