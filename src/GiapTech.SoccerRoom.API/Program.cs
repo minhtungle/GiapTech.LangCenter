@@ -3,6 +3,8 @@ using Asp.Versioning;
 using GiapTech.SoccerRoom.API.Authorization;
 using GiapTech.SoccerRoom.API.Middleware;
 using GiapTech.SoccerRoom.Application;
+using GiapTech.SoccerRoom.API.Services;
+using GiapTech.SoccerRoom.Application.Common.Interfaces;
 using GiapTech.SoccerRoom.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -13,6 +15,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 builder.Services.ThemApplication();
 builder.Services.ThemInfrastructure(builder.Configuration);
@@ -101,13 +106,15 @@ app.UseAuthentication();
 // PHẢI nằm giữa Authentication và Authorization: cần claim đã giải mã, và phải xong trước
 // khi handler phân quyền truy vấn DB (truy vấn đó cần tenant để lọc).
 app.UseMiddleware<TenantMiddleware>();
+// Chặn mọi endpoint nghiệp vụ khi còn cờ PhaiDoiMatKhau (FR-01). Đặt trước Authorization
+// để không phụ thuộc việc frontend có tôn trọng cờ trong response đăng nhập hay không.
+app.UseMiddleware<BuocDoiMatKhauMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();
 
 // TODO(bootstrap): còn thiếu — xem CLAUDE.md mục 6
 //   - FR-02 quên mật khẩu (SMTP)
-//   - Seeder tạo tenant mới: admin/123456 + nhóm quyền "Quản trị viên"
 //   - Refresh token: hiện mới phát hành, chưa lưu và chưa có endpoint đổi mới
 //   - Frontend shadcn-admin
 

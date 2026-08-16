@@ -1,7 +1,6 @@
 using GiapTech.SoccerRoom.Application.Common.Interfaces;
 using GiapTech.SoccerRoom.Domain.Common;
 using GiapTech.SoccerRoom.Domain.Entities;
-using GiapTech.SoccerRoom.Domain.Enums;
 using GiapTech.SoccerRoom.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -22,8 +21,10 @@ public class ApiFactory : WebApplicationFactory<Program>
 {
     public const string JwtSecret = "khoa-test-du-32-ky-tu-cho-hs256-abcdef";
 
-    public static readonly Guid TenantAId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001");
-    public static readonly Guid TenantBId = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000002");
+    /// <summary>Id do seeder sinh ra. Phải là instance, không static: mỗi ApiFactory dùng
+    /// một InMemory DB riêng, để static thì factory tạo sau ghi đè id của factory trước.</summary>
+    public Guid TenantAId { get; private set; }
+    public Guid TenantBId { get; private set; }
 
     private readonly string _tenDb = $"api-test-{Guid.NewGuid()}";
 
@@ -63,57 +64,62 @@ public class ApiFactory : WebApplicationFactory<Program>
         return host;
     }
 
-    /// <summary>Hai tenant, mỗi tenant một admin đủ quyền và một player không quyền.</summary>
-    private static void SeedDuLieu(IServiceProvider sp)
+    /// <summary>
+    /// Hai CLB, mỗi CLB một admin đủ quyền và một player không quyền.
+    ///
+    /// Dùng chính <see cref="ITenantSeeder"/> của production thay vì dựng dữ liệu bằng tay:
+    /// mọi test bên dưới do đó cũng là bằng chứng seeder chạy đúng, và dữ liệu test không
+    /// thể trôi lệch khỏi dữ liệu thật.
+    /// </summary>
+    private void SeedDuLieu(IServiceProvider sp)
     {
-        var hasher = sp.GetRequiredService<IPasswordHasher>();
-
         // Lấy DbContext TỪ SCOPE, không tự new: instance tự tạo dùng một InMemory store khác
         // với instance mà request thật sự đọc, nên dữ liệu seed sẽ không bao giờ được thấy.
         var db = sp.GetRequiredService<AppDbContext>();
-
         if (db.Tenants.IgnoreQueryFilters().Any()) return;
 
-        foreach (var (tid, maDoi) in new[] { (TenantAId, "CLB-A"), (TenantBId, "CLB-B") })
+        var seeder = sp.GetRequiredService<ITenantSeeder>();
+        var hasher = sp.GetRequiredService<IPasswordHasher>();
+        var currentTenant = sp.GetRequiredService<ICurrentTenant>();
+
+        foreach (var maDoi in new[] { "CLB-A", "CLB-B" })
         {
-            db.Tenants.Add(new Tenant { Id = tid, MaDoi = maDoi, TenDoi = $"Đội {maDoi}" });
+            var tenant = seeder.TaoTenantMoiAsync(maDoi, $"Đội {maDoi}").GetAwaiter().GetResult();
 
-            // Nhóm quyền đầy đủ — admin có toàn quyền qua dữ liệu, không qua ngoại lệ code.
-            var quyenAdmin = new Quyen { TenantId = tid, TenQuyen = "Quản trị viên" };
-            db.Quyens.Add(quyenAdmin);
+            using var _ = currentTenant.DatPhamVi(tenant.Id);
 
-            foreach (var cn in ChucNang.TatCa)
-                foreach (var hd in Enum.GetValues<HanhDong>())
-                    db.QuyenChucNangs.Add(new QuyenChucNang
-                    {
-                        TenantId = tid, QuyenId = quyenAdmin.Id, TenChucNang = cn, HanhDong = hd
-                    });
-
-            var admin = new NguoiDung
-            {
-                TenantId = tid,
-                Username = "admin",
-                PasswordHash = hasher.Bam("123456"),
-                PhaiDoiMatKhau = true
-            };
-            db.NguoiDungs.Add(admin);
-            db.NguoiDungQuyens.Add(new NguoiDungQuyen
-            {
-                TenantId = tid, NguoiDungId = admin.Id, QuyenId = quyenAdmin.Id
-            });
-
-            // Player: có tài khoản nhưng KHÔNG được gán nhóm quyền nào.
+            // Player: có tài khoản hợp lệ nhưng KHÔNG được gán nhóm quyền nào — dùng để
+            // kiểm chứng phân quyền thật sự đọc từ DB.
             db.NguoiDungs.Add(new NguoiDung
             {
-                TenantId = tid,
+                TenantId = tenant.Id,
                 Username = "player",
                 PasswordHash = hasher.Bam("player123")
             });
 
-            db.CauThus.Add(new CauThu { TenantId = tid, HoTen = $"Cầu thủ của {maDoi}" });
-        }
+            // Manager: đủ quyền và KHÔNG bị buộc đổi mật khẩu. Các test nghiệp vụ dùng tài
+            // khoản này để không phải tiêu thụ mật khẩu mặc định của admin — nhiều test cùng
+            // đổi mật khẩu một tài khoản sẽ phụ thuộc thứ tự chạy.
+            var quyenQuanTri = db.Quyens.Single(q => q.TenantId == tenant.Id);
+            var manager = new NguoiDung
+            {
+                TenantId = tenant.Id,
+                Username = "manager",
+                PasswordHash = hasher.Bam("manager123"),
+                PhaiDoiMatKhau = false
+            };
+            db.NguoiDungs.Add(manager);
+            db.NguoiDungQuyens.Add(new NguoiDungQuyen
+            {
+                TenantId = tenant.Id, NguoiDungId = manager.Id, QuyenId = quyenQuanTri.Id
+            });
 
-        db.SaveChanges();
+            db.CauThus.Add(new CauThu { TenantId = tenant.Id, HoTen = $"Cầu thủ của {maDoi}" });
+            db.SaveChanges();
+
+            if (maDoi == "CLB-A") TenantAId = tenant.Id;
+            else TenantBId = tenant.Id;
+        }
     }
 
     private sealed class TenantRong : ICurrentTenant

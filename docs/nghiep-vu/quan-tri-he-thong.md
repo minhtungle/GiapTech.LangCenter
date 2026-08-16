@@ -56,6 +56,19 @@ Thông tin CLB: tên đội, tên viết tắt, ngày thành lập, logo, ảnh 
 - Tenant mới chưa cấu hình → dùng **giá trị mặc định**, không chặn người dùng vào hệ thống.
 - Logo và ảnh bìa upload lên MinIO qua presigned URL.
 
+## Trạng thái triển khai
+
+| Mã | Endpoint | Ghi chú |
+|---|---|---|
+| FR-03 | `/api/v1/tai-khoan` (GET/POST/PUT/DELETE), `POST {id}/dat-lai-mat-khau` | Đặt lại mật khẩu dùng chức năng riêng `DoiMatKhauNguoiKhac` |
+| FR-04 | `/api/v1/cau-thu` (GET/POST/PUT/DELETE) | Chặn xóa khi còn dữ liệu đóng quỹ |
+| FR-05 | `/api/v1/quyen` (GET/POST/PUT/DELETE), `GET /danh-muc` | Chặn xóa nhóm đang được gán; tự xóa cache quyền khi sửa |
+| FR-06 | `/api/v1/thiet-lap` (GET/PUT) | `MaDoi` không cho sửa — người dùng gõ nó khi đăng nhập |
+
+Đăng nhập lần đầu: tài khoản do seeder tạo mang cờ `PhaiDoiMatKhau`, bị `BuocDoiMatKhauMiddleware`
+chặn khỏi **mọi** endpoint nghiệp vụ cho tới khi gọi `POST /api/v1/auth/doi-mat-khau`. Chặn ở tầng API
+chứ không chỉ ở frontend, vì token vẫn hợp lệ và gọi thẳng API sẽ qua được.
+
 ## Tham chiếu
 
 - Bảng `NGUOI_DUNG`, `CAU_THU`, `QUYEN`, `QUYEN_CHUC_NANG`, `NGUOIDUNG_QUYEN`, `TENANT` — xem

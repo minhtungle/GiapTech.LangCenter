@@ -2,6 +2,7 @@ using GiapTech.SoccerRoom.Application.Common.Interfaces;
 using GiapTech.SoccerRoom.Infrastructure.Identity;
 using GiapTech.SoccerRoom.Infrastructure.MultiTenancy;
 using GiapTech.SoccerRoom.Infrastructure.Persistence;
+using GiapTech.SoccerRoom.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,6 +31,7 @@ public static class DependencyInjection
         services.AddScoped<IQuyenService, QuyenService>();
         services.AddSingleton<IPasswordHasher, AppPasswordHasher>();
         services.AddSingleton<ITokenService, TokenService>();
+        services.AddScoped<ITenantSeeder, TenantSeeder>();
 
         return services;
     }

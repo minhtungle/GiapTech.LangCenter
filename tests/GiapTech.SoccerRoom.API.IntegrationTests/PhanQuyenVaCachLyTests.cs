@@ -38,13 +38,30 @@ public class PhanQuyenVaCachLyTests(ApiFactory factory) : IClassFixture<ApiFacto
         Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
     }
 
+    /// <summary>
+    /// Admin còn cờ PhaiDoiMatKhau bị chặn khỏi endpoint nghiệp vụ (FR-01); đổi xong thì vào được.
+    /// Gộp hai khẳng định vào một test vì cả hai đều tiêu thụ mật khẩu mặc định của
+    /// CLB-A/admin — tách ra sẽ thành hai test tranh nhau đổi cùng một mật khẩu.
+    /// </summary>
     [Fact]
-    public async Task Token_hop_le_va_du_quyen_thi_truy_cap_duoc()
+    public async Task Buoc_doi_mat_khau_chan_truy_cap_va_doi_xong_thi_vao_duoc()
     {
-        var client = ClientVoiToken(await LayToken("CLB-A", "admin", "123456"));
-        var res = await client.GetAsync("/api/v1/cau-thu");
+        var tokenChuaDoi = await LayToken("CLB-A", "admin", "123456");
+        var resTruoc = await ClientVoiToken(tokenChuaDoi).GetAsync("/api/v1/cau-thu");
 
-        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, resTruoc.StatusCode);
+        var body = await resTruoc.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("PHAI_DOI_MAT_KHAU", body.GetProperty("errorCode").GetString());
+
+        var doi = await ClientVoiToken(tokenChuaDoi).PostAsJsonAsync(
+            "/api/v1/auth/doi-mat-khau",
+            new { MatKhauCu = "123456", MatKhauMoi = "mat-khau-moi-A" });
+        doi.EnsureSuccessStatusCode();
+
+        var tokenSauDoi = await LayToken("CLB-A", "admin", "mat-khau-moi-A");
+        var resSau = await ClientVoiToken(tokenSauDoi).GetAsync("/api/v1/cau-thu");
+
+        Assert.Equal(HttpStatusCode.OK, resSau.StatusCode);
     }
 
     /// <summary>
@@ -67,8 +84,8 @@ public class PhanQuyenVaCachLyTests(ApiFactory factory) : IClassFixture<ApiFacto
     [Fact]
     public async Task Moi_tenant_chi_thay_du_lieu_cua_minh()
     {
-        var clientA = ClientVoiToken(await LayToken("CLB-A", "admin", "123456"));
-        var clientB = ClientVoiToken(await LayToken("CLB-B", "admin", "123456"));
+        var clientA = ClientVoiToken(await LayToken("CLB-A", "manager", "manager123"));
+        var clientB = ClientVoiToken(await LayToken("CLB-B", "manager", "manager123"));
 
         var cuaA = await clientA.GetFromJsonAsync<List<JsonElement>>("/api/v1/cau-thu");
         var cuaB = await clientB.GetFromJsonAsync<List<JsonElement>>("/api/v1/cau-thu");

@@ -70,8 +70,8 @@ public class DangNhapTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var tokenB = bB.GetProperty("accessToken").GetString()!;
         Assert.NotEqual(tokenA, tokenB);
 
-        Assert.Equal(ApiFactory.TenantAId.ToString(), DocClaim(tokenA, "tenant_id"));
-        Assert.Equal(ApiFactory.TenantBId.ToString(), DocClaim(tokenB, "tenant_id"));
+        Assert.Equal(factory.TenantAId.ToString(), DocClaim(tokenA, "tenant_id"));
+        Assert.Equal(factory.TenantBId.ToString(), DocClaim(tokenB, "tenant_id"));
     }
 
     [Fact]
