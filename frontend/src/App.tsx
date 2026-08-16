@@ -7,6 +7,8 @@ import DangNhap from '@/pages/DangNhap'
 import DoiMatKhau from '@/pages/DoiMatKhau'
 import QuenMatKhau from '@/pages/QuenMatKhau'
 import DangKyClb from '@/pages/DangKyClb'
+import LichThiDau from '@/pages/lich-thi-dau/LichThiDau'
+import DoiThu from '@/pages/lich-thi-dau/DoiThu'
 import CauThu from '@/pages/quan-tri/CauThu'
 import TaiKhoan from '@/pages/quan-tri/TaiKhoan'
 import PhanQuyen from '@/pages/quan-tri/PhanQuyen'
@@ -87,7 +89,8 @@ export default function App() {
               }
             >
               <Route path="/" element={<TongQuan />} />
-              <Route path="/lich-thi-dau" element={<ChuaLam ten={t('menu.lichThiDau')} />} />
+              <Route path="/lich-thi-dau" element={<LichThiDau />} />
+              <Route path="/doi-thu" element={<DoiThu />} />
               <Route path="/thong-ke" element={<ChuaLam ten={t('menu.thongKe')} />} />
               <Route path="/tai-chinh" element={<ChuaLam ten={t('menu.taiChinh')} />} />
               <Route path="/quan-tri/tai-khoan" element={<TaiKhoan />} />

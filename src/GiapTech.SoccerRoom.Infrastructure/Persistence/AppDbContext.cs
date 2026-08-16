@@ -57,7 +57,41 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant
 
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
+        ChuanHoaThoiGianVeUtc(modelBuilder);
         ApDungQueryFilterTheoTenant(modelBuilder);
+    }
+
+    /// <summary>
+    /// Chuẩn hoá mọi <see cref="DateTimeOffset"/> về UTC khi ghi xuống DB.
+    ///
+    /// PostgreSQL `timestamptz` CHỈ nhận offset 0; client gửi `+07:00` sẽ làm Npgsql ném
+    /// ArgumentException và cả request hỏng với lỗi 500 khó hiểu. Chuyển đổi tập trung ở đây
+    /// thay vì bắt từng handler nhớ gọi `.ToUniversalTime()` — quên một chỗ là lỗi lại xuất hiện.
+    ///
+    /// Giá trị thời điểm không đổi, chỉ đổi cách biểu diễn; client tự hiển thị theo giờ địa phương.
+    /// </summary>
+    private static void ChuanHoaThoiGianVeUtc(ModelBuilder modelBuilder)
+    {
+        var boChuyenDoi = new Microsoft.EntityFrameworkCore.Storage.ValueConversion
+            .ValueConverter<DateTimeOffset, DateTimeOffset>(
+                v => v.ToUniversalTime(),
+                v => v.ToUniversalTime());
+
+        var boChuyenDoiNullable = new Microsoft.EntityFrameworkCore.Storage.ValueConversion
+            .ValueConverter<DateTimeOffset?, DateTimeOffset?>(
+                v => v.HasValue ? v.Value.ToUniversalTime() : v,
+                v => v.HasValue ? v.Value.ToUniversalTime() : v);
+
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType == typeof(DateTimeOffset))
+                    property.SetValueConverter(boChuyenDoi);
+                else if (property.ClrType == typeof(DateTimeOffset?))
+                    property.SetValueConverter(boChuyenDoiNullable);
+            }
+        }
     }
 
     /// <summary>

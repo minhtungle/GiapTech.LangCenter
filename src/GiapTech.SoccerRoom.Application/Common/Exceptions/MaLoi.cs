@@ -33,5 +33,7 @@ public static class MaLoi
     public const string MvpDaVoteRoi = "MVP_DA_VOTE_ROI";
     public const string TranDauDaDienRaKhongXoaDuoc = "TRAN_DAU_DA_DIEN_RA_KHONG_XOA_DUOC";
     public const string LoiMoiDaXuLy = "LOI_MOI_DA_XU_LY";
+    public const string DoiThuDaTonTai = "DOI_THU_DA_TON_TAI";
+    public const string DoiThuDaCoTranDau = "DOI_THU_DA_CO_TRAN_DAU";
     public const string SoTienVuotQuaCanDong = "SO_TIEN_VUOT_QUA_CAN_DONG";
 }

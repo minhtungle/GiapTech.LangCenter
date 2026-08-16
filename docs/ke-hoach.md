@@ -5,7 +5,7 @@
 ## Tiến độ tổng
 
 ```
-Nghiệp vụ  ██████░░░░░░░░░░  6/16 FR
+Nghiệp vụ  █████████░░░░░░░  9/16 FR (FR-08, FR-10 làm một phần)
 Hạ tầng    ████████░░░░░░░░  chạy được ở máy dev, chưa triển khai
 ```
 
@@ -19,11 +19,11 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | FR-04 | Hồ sơ cầu thủ | ✅ | 🟡 | Chưa upload được ảnh đại diện |
 | FR-05 | Phân quyền truy cập | ✅ | ✅ | Ma trận chức năng × thao tác |
 | FR-06 | Thiết lập chung | ✅ | 🟡 | Chưa upload được logo / ảnh bìa |
-| FR-07 | Lọc thông tin (trận đấu) | ⬜ | ⬜ | Dùng chung với FR-12 |
-| FR-08 | Danh sách trận đấu | ⬜ | ⬜ | 2 chế độ Calendar / Datatable |
+| FR-07 | Lọc thông tin (trận đấu) | ✅ | ✅ | `BoLocTranDau` dùng chung với FR-12 |
+| FR-08 | Danh sách trận đấu | ✅ | 🟡 | Datatable xong; Calendar chưa |
 | FR-09 | Chấp nhận lời mời đối thủ | ⬜ | ⬜ | |
-| FR-10 | Thêm/Cập nhật trận đấu | ⬜ | ⬜ | 3 tab; tab (b) sơ đồ kéo-thả nặng nhất |
-| FR-11 | Xóa trận đấu | ⬜ | ⬜ | |
+| FR-10 | Thêm/Cập nhật trận đấu | 🟡 | 🟡 | Thông tin chung xong; đội hình/sơ đồ/đánh giá chưa |
+| FR-11 | Xóa trận đấu | ✅ | ✅ | Chỉ xóa cứng trận chưa diễn ra; có Lưu trữ thay thế |
 | FR-12 | Lọc thông tin (thống kê) | ⬜ | ⬜ | Tái dùng FR-07 |
 | FR-13 | Biểu đồ diễn biến | ⬜ | ⬜ | |
 | FR-14 | Bảng xếp hạng MVP | ⬜ | ⬜ | 4 tiêu chí |
@@ -41,7 +41,7 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | Cách ly tenant (2 tầng phòng vệ tự động + test) | ✅ |
 | Phân quyền động đọc từ DB + cache | ✅ |
 | Frontend: layout, i18n, design token, auto-refresh token | ✅ |
-| 62 test (32 unit + 30 integration) | ✅ |
+| 86 test (34 unit + 52 integration) | ✅ |
 | **Dockerfile cho API** | ✅ 2 giai đoạn, chạy user thường |
 | **`docker compose up` chạy được** | ✅ 5 container, API healthy, migration tự áp |
 | Test E2E frontend | ⬜ |
@@ -62,11 +62,8 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 
 Module lớn nhất, tách 3 đợt để mỗi đợt đều có thứ dùng được.
 
-**Đợt 1a — Nền tảng** (~1 phiên)
-- CRUD đối thủ (`DOI_THU`) — chưa có mà FR-09/FR-10 đều cần
-- FR-07 bộ lọc (dựng 1 lần, dùng chung FR-12)
-- FR-08 Datatable + CRUD trận đấu cơ bản
-- FR-11 xóa trận (chỉ trận "đã lên lịch")
+**~~Đợt 1a — Nền tảng~~** ✅ xong 16/08
+- ~~CRUD đối thủ · FR-07 bộ lọc · FR-08 Datatable · FR-11 xóa/lưu trữ~~
 
 **Đợt 1b — Trận đấu đầy đủ** (~1 phiên)
 - FR-10a đội hình · FR-10c đánh giá + **vote MVP**
