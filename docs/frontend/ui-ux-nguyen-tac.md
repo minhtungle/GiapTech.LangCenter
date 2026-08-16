@@ -11,7 +11,9 @@
 
 ## 2. Luồng dễ hiểu
 
-- **Sidebar cố định** theo 5 module + **breadcrumb** ở mọi trang con.
+- **Sidebar** theo 5 module + **breadcrumb** ở mọi trang con. **Thu gọn được** (chỉ còn icon,
+  nhớ lựa chọn trong `localStorage`); trên mobile chuyển thành ngăn kéo vì sidebar cố định
+  chiếm quá nhiều bề ngang.
 - **Thêm/Cập nhật trận đấu** = wizard 3 bước, đúng 3 tab đã đặc tả ở
   [FR-10](../nghiep-vu/lich-thi-dau.md#fr-10--thêm--cập-nhật-trận-đấu). **Cho phép lưu nháp giữa chừng** —
   người dùng không bị mất dữ liệu khi rời tab.
@@ -22,9 +24,12 @@
 - **Thêm/cập nhật không cần chuyển view → dùng modal**, không chèn form vào giữa danh sách:
   chèn form đẩy bảng xuống, người dùng mất ngữ cảnh dòng đang thao tác. Modal dùng thẻ
   `<dialog>` của trình duyệt để có sẵn focus trap và Esc.
-- **Select có nhiều lựa chọn → dùng `SelectTimKiem`** (gõ để lọc), không dùng `<select>` cơ bản.
-  Danh sách cầu thủ/nhóm quyền của một CLB có thể vài chục mục. Tìm kiếm **bỏ dấu tiếng Việt**:
+- **Select có nhiều lựa chọn → dùng `SelectTimKiem`** (chọn một) hoặc **`SelectTimKiemNhieu`**
+  (chọn nhiều, hiển thị chip), không dùng `<select>` cơ bản. Tìm kiếm **bỏ dấu tiếng Việt**:
   gõ "nguyen" ra "Nguyễn".
+- **Modal chứa dropdown: không đặt `overflow-y-auto` ở thân modal** — nó tạo scroll container
+  làm dropdown `position: absolute` bị cắt, người dùng phải cuộn mới thấy hết. Giới hạn chiều
+  cao ở chính thẻ `<dialog>` và cho dialog cuộn.
 - **Không dùng `prompt()` / `alert()` của trình duyệt** cho nhập liệu — không style được, không
   dịch được, và trông như lỗi trang web.
 - **Toast** nhất quán vị trí/thời gian. **Không dùng `alert()`** hay modal chặn luồng cho thông báo

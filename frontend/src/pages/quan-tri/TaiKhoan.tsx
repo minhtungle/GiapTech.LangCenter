@@ -7,7 +7,7 @@ import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong,
 } from '@/components/ui'
 import { Modal, ModalChan } from '@/components/ui/Modal'
-import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
+import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 
 interface TaiKhoanDto {
   id: string
@@ -39,9 +39,11 @@ export default function TaiKhoan() {
   const [moForm, setMoForm] = useState(false)
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
-  const [quyenChon, setQuyenChon] = useState<Set<string>>(new Set())
+  const [quyenChon, setQuyenChon] = useState<string[]>([])
   const [cauThuChon, setCauThuChon] = useState<string | null>(null)
   const [datLaiCho, setDatLaiCho] = useState<TaiKhoanDto | null>(null)
+  // Mặc định BẬT: tài khoản do người khác tạo hộ thì mật khẩu ban đầu người tạo cũng biết.
+  const [buocDoiMk, setBuocDoiMk] = useState(true)
 
   const { data, isLoading } = useQuery({
     queryKey: ['tai-khoan'],
@@ -84,7 +86,8 @@ export default function TaiKhoan() {
   })
 
   const moThem = () => {
-    setQuyenChon(new Set())
+    setQuyenChon([])
+    setBuocDoiMk(true)
     setCauThuChon(null)
     setMaLoi(null)
     setMoForm(true)
@@ -92,7 +95,7 @@ export default function TaiKhoan() {
 
   const dongForm = () => {
     setMoForm(false)
-    setQuyenChon(new Set())
+    setQuyenChon([])
     setCauThuChon(null)
     setMaLoi(null)
   }
@@ -107,8 +110,8 @@ export default function TaiKhoan() {
       soDienThoai: (fd.get('soDienThoai') as string) || null,
       diaChi: null,
       cauThuId: cauThuChon,
-      quyenIds: [...quyenChon],
-      phaiDoiMatKhau: true,
+      quyenIds: quyenChon,
+      phaiDoiMatKhau: buocDoiMk,
     })
   }
 
@@ -250,29 +253,32 @@ export default function TaiKhoan() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label>{t('taiKhoan.quyen')}</Label>
-            <div className="flex max-h-28 flex-wrap gap-3 overflow-y-auto rounded-md border border-input p-2">
-              {quyens?.length ? (
-                quyens.map((q) => (
-                  <label key={q.id} className="flex items-center gap-1.5 text-sm">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 accent-[hsl(var(--primary))]"
-                      checked={quyenChon.has(q.id)}
-                      onChange={(e) => {
-                        const moi = new Set(quyenChon)
-                        if (e.target.checked) moi.add(q.id)
-                        else moi.delete(q.id)
-                        setQuyenChon(moi)
-                      }}
-                    />
-                    {q.tenQuyen}
-                  </label>
-                ))
-              ) : (
-                <span className="text-sm text-muted-foreground">{t('chung.khongCoDuLieu')}</span>
-              )}
-            </div>
+            <Label htmlFor="quyenIds">{t('taiKhoan.quyen')}</Label>
+            <SelectTimKiemNhieu
+              id="quyenIds"
+              luaChon={(quyens ?? []).map((q) => ({ giaTri: q.id, nhan: q.tenQuyen }))}
+              giaTri={quyenChon}
+              onDoi={setQuyenChon}
+              placeholder={t('taiKhoan.chonQuyen')}
+              placeholderTimKiem={t('taiKhoan.timQuyen')}
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 accent-[hsl(var(--primary))]"
+                checked={buocDoiMk}
+                onChange={(e) => setBuocDoiMk(e.target.checked)}
+              />
+              <span>
+                {t('taiKhoan.buocDoiMk')}
+                <span className="block text-xs text-muted-foreground">
+                  {t('taiKhoan.buocDoiMkGoiY')}
+                </span>
+              </span>
+            </label>
           </div>
 
           {maLoi && (

@@ -188,6 +188,195 @@ export function SelectTimKiem({
 }
 
 /**
+ * Bản chọn NHIỀU của {@link SelectTimKiem} — mục đã chọn hiển thị dạng chip.
+ *
+ * Tách component riêng thay vì thêm cờ `multiple`: kiểu của `giaTri`/`onDoi` khác nhau
+ * (chuỗi so với mảng), gộp lại sẽ phải dùng union type và ép kiểu ở mọi nơi gọi.
+ */
+export function SelectTimKiemNhieu({
+  luaChon,
+  giaTri,
+  onDoi,
+  placeholder = 'Chọn…',
+  placeholderTimKiem = 'Gõ để tìm…',
+  id,
+  disabled,
+}: {
+  luaChon: LuaChon[]
+  giaTri: string[]
+  onDoi: (giaTri: string[]) => void
+  placeholder?: string
+  placeholderTimKiem?: string
+  id?: string
+  disabled?: boolean
+}) {
+  const [mo, setMo] = React.useState(false)
+  const [tuKhoa, setTuKhoa] = React.useState('')
+  const [chiSoHighlight, setChiSoHighlight] = React.useState(0)
+  const boc = React.useRef<HTMLDivElement>(null)
+  const oNhap = React.useRef<HTMLInputElement>(null)
+
+  const daChon = luaChon.filter((l) => giaTri.includes(l.giaTri))
+
+  const daLoc = React.useMemo(() => {
+    const tu = boDau(tuKhoa)
+    if (!tu) return luaChon
+    return luaChon.filter(
+      (l) => boDau(l.nhan).includes(tu) || (l.phu ? boDau(l.phu).includes(tu) : false),
+    )
+  }, [luaChon, tuKhoa])
+
+  React.useEffect(() => {
+    if (!mo) return
+    const xuLy = (e: MouseEvent) => {
+      if (boc.current && !boc.current.contains(e.target as Node)) setMo(false)
+    }
+    document.addEventListener('mousedown', xuLy)
+    return () => document.removeEventListener('mousedown', xuLy)
+  }, [mo])
+
+  React.useEffect(() => {
+    if (mo) {
+      setTuKhoa('')
+      setChiSoHighlight(0)
+      requestAnimationFrame(() => oNhap.current?.focus())
+    }
+  }, [mo])
+
+  // Không đóng sau mỗi lần chọn: tick nhiều mục liên tiếp là thao tác thường gặp.
+  const bat = (v: string) =>
+    onDoi(giaTri.includes(v) ? giaTri.filter((x) => x !== v) : [...giaTri, v])
+
+  const banPhim = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setChiSoHighlight((i) => Math.min(i + 1, daLoc.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setChiSoHighlight((i) => Math.max(i - 1, 0))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      const muc = daLoc[chiSoHighlight]
+      if (muc) bat(muc.giaTri)
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      setMo(false)
+    }
+  }
+
+  return (
+    <div ref={boc} className="relative">
+      <button
+        id={id}
+        type="button"
+        disabled={disabled}
+        onClick={() => setMo((v) => !v)}
+        className={cn(
+          'flex min-h-9 w-full items-center justify-between gap-2 rounded-md border border-input',
+          'bg-background px-2 py-1 text-sm',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          'disabled:cursor-not-allowed disabled:opacity-50',
+        )}
+        aria-haspopup="listbox"
+        aria-expanded={mo}
+      >
+        {daChon.length === 0 ? (
+          <span className="px-1 text-muted-foreground">{placeholder}</span>
+        ) : (
+          <span className="flex flex-wrap gap-1">
+            {daChon.map((l) => (
+              <span
+                key={l.giaTri}
+                className="inline-flex items-center gap-1 rounded bg-accent/15 px-1.5 py-0.5 text-xs text-accent"
+              >
+                {l.nhan}
+                <span
+                  role="button"
+                  tabIndex={-1}
+                  aria-label={`Bỏ ${l.nhan}`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    bat(l.giaTri)
+                  }}
+                  className="hover:opacity-70"
+                >
+                  <X className="h-3 w-3" />
+                </span>
+              </span>
+            ))}
+          </span>
+        )}
+        <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+      </button>
+
+      {mo && (
+        <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-card shadow-lg">
+          <div className="border-b border-border p-1.5">
+            <input
+              ref={oNhap}
+              value={tuKhoa}
+              onChange={(e) => {
+                setTuKhoa(e.target.value)
+                setChiSoHighlight(0)
+              }}
+              onKeyDown={banPhim}
+              placeholder={placeholderTimKiem}
+              className="h-8 w-full rounded bg-transparent px-2 text-sm outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+
+          <ul role="listbox" aria-multiselectable className="max-h-56 overflow-y-auto p-1">
+            {daLoc.length === 0 ? (
+              <li className="px-2 py-3 text-center text-sm text-muted-foreground">
+                Không tìm thấy
+              </li>
+            ) : (
+              daLoc.map((l, i) => {
+                const chon = giaTri.includes(l.giaTri)
+                return (
+                  <li key={l.giaTri}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={chon}
+                      onMouseEnter={() => setChiSoHighlight(i)}
+                      onClick={() => bat(l.giaTri)}
+                      className={cn(
+                        'flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm',
+                        i === chiSoHighlight && 'bg-muted',
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'flex h-4 w-4 shrink-0 items-center justify-center rounded border',
+                          chon
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : 'border-input',
+                        )}
+                      >
+                        {chon && <Check className="h-3 w-3" />}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate">{l.nhan}</span>
+                        {l.phu && (
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {l.phu}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  </li>
+                )
+              })
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
  * Bỏ dấu tiếng Việt để tìm kiếm không phụ thuộc dấu: gõ "nguyen" ra "Nguyễn".
  *
  * `̀-ͯ` là dải dấu tổ hợp mà NFD tách ra. Viết bằng escape thay vì dán ký tự

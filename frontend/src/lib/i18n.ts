@@ -19,6 +19,10 @@ const vi = {
     xacNhanXoa: 'Bạn chắc chắn muốn xóa?',
     dangXuat: 'Đăng xuất',
     quayLai: 'Quay lại',
+    dong: 'Đóng',
+    moMenu: 'Mở menu',
+    moSidebar: 'Mở rộng thanh bên',
+    thuGonSidebar: 'Thu gọn thanh bên',
   },
   dangKy: {
     tieuDe: 'Đăng ký câu lạc bộ',
@@ -92,6 +96,10 @@ const vi = {
     canDoiMatKhau: 'Cần đổi mật khẩu',
     timCauThu: 'Gõ tên cầu thủ để tìm…',
     wizardGoiY: 'Chọn hồ sơ cầu thủ và nhóm quyền nếu đã có',
+    chonQuyen: 'Chọn nhóm quyền…',
+    timQuyen: 'Gõ tên nhóm quyền để tìm…',
+    buocDoiMk: 'Bắt buộc đổi mật khẩu ở lần đăng nhập đầu',
+    buocDoiMkGoiY: 'Nên bật: mật khẩu bạn đặt hộ thì bạn cũng biết.',
     datLaiGoiY: 'Người dùng sẽ được yêu cầu đổi lại ở lần đăng nhập kế tiếp.',
   },
   quyen: {

@@ -62,6 +62,8 @@ export function Modal({
       className={cn(
         'w-[calc(100vw-2rem)] rounded-lg border border-border bg-card p-0 text-card-foreground shadow-lg',
         'backdrop:bg-black/40 backdrop:backdrop-blur-[1px]',
+        // Cuộn ở cấp dialog, không ở thân — xem chú thích bên dưới.
+        'max-h-[calc(100dvh-4rem)] overflow-y-auto',
         rong === 'sm' && 'max-w-sm',
         rong === 'md' && 'max-w-xl',
         rong === 'lg' && 'max-w-3xl',
@@ -84,7 +86,12 @@ export function Modal({
         </Button>
       </div>
 
-      <div className="max-h-[calc(100vh-16rem)] overflow-y-auto p-4">{children}</div>
+      {/*
+        KHÔNG dùng overflow-y-auto ở đây: nó tạo scroll container, khiến dropdown của
+        SelectTimKiem (position: absolute) bị cắt và phải cuộn mới thấy. Thay vào đó giới hạn
+        chiều cao chính dialog và cho cả dialog cuộn — dropdown vẫn nổi lên trên bình thường.
+      */}
+      <div className="p-4">{children}</div>
     </dialog>
   )
 }

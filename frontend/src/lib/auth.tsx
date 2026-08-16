@@ -57,6 +57,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
   const [phaiDoiMatKhau, setPhaiDoiMatKhau] = React.useState(false)
 
+  /**
+   * Bù tên đội cho token phát hành TRƯỚC khi claim `ten_doi` tồn tại.
+   *
+   * Không có bước này, người đang có phiên mở sẽ thấy sidebar trống chỗ tên đội cho tới khi
+   * họ đăng xuất — mà họ không có lý do gì để nghĩ tới việc đó. Gọi API một lần rồi thôi.
+   */
+  React.useEffect(() => {
+    if (!phien || phien.tenDoi) return
+
+    let huy = false
+    api
+      .get<{ tenDoi: string }>('/thiet-lap')
+      .then(({ data }) => {
+        if (!huy && data.tenDoi) setPhien((p) => (p ? { ...p, tenDoi: data.tenDoi } : p))
+      })
+      .catch(() => {
+        // Thiếu quyền xem thiết lập chung, hoặc lỗi mạng: sidebar hiện mã đội thay tên.
+        // Không chặn người dùng vì một chuỗi hiển thị.
+      })
+
+    return () => {
+      huy = true
+    }
+  }, [phien])
+
   const dangNhap = React.useCallback(
     async (maDoi: string, username: string, matKhau: string) => {
       const { data } = await api.post('/auth/dang-nhap', { maDoi, username, matKhau })
