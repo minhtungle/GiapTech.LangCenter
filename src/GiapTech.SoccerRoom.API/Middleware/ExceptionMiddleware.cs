@@ -4,7 +4,7 @@ using GiapTech.SoccerRoom.Application.Common.Exceptions;
 namespace GiapTech.SoccerRoom.API.Middleware;
 
 /// <summary>
-/// Bắt exception và trả response chuẩn dạng { errorCode, duLieu } — quy tắc #2.
+/// Bắt exception và trả response chuẩn dạng { errorCode, duLieu } — quy tắc #3.
 ///
 /// Không bao giờ trả exception.Message ra client: message có thể chứa tên bảng, câu SQL,
 /// đường dẫn file, và luôn là một ngôn ngữ cố định. Chi tiết chỉ đi vào log.

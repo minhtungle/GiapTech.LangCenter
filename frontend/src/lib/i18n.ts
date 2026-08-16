@@ -2,7 +2,7 @@ import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 
 /**
- * Đa ngôn ngữ (quy tắc #2): API trả MÃ LỖI, frontend tra bảng dịch ở đây.
+ * Đa ngôn ngữ (quy tắc #3): API trả MÃ LỖI, frontend tra bảng dịch ở đây.
  * Thêm mã lỗi mới ở backend thì phải thêm bản dịch tương ứng, nếu không người dùng
  * sẽ thấy chính chuỗi mã lỗi trên màn hình.
  */

@@ -4,7 +4,7 @@ namespace GiapTech.SoccerRoom.Application.UnitTests.KienTruc;
 
 /// <summary>
 /// Canh luật phụ thuộc Clean Architecture (docs/backend/clean-architecture.md).
-/// Quy tắc bất di bất dịch #9: Domain KHÔNG phụ thuộc EF Core / ASP.NET Core.
+/// Quy tắc bất di bất dịch #10: Domain KHÔNG phụ thuộc EF Core / ASP.NET Core.
 ///
 /// Test này tồn tại vì luật phụ thuộc chỉ ghi trong tài liệu thì rất dễ vi phạm
 /// bằng một lệnh `dotnet add reference` mà người review không để ý.

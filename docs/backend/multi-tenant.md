@@ -1,6 +1,6 @@
 # Multi-tenant — Cách ly dữ liệu theo `tenant_id`
 
-> **Quy tắc bất di bất dịch #1.** Rò rỉ dữ liệu chéo giữa hai CLB là lỗi nghiêm trọng nhất mà hệ thống
+> **Quy tắc bất di bất dịch #2.** Rò rỉ dữ liệu chéo giữa hai CLB là lỗi nghiêm trọng nhất mà hệ thống
 > này có thể mắc phải. Mọi entity nghiệp vụ mới **bắt buộc** đi qua checklist cuối trang.
 
 Mô hình: **shared-schema** — mọi tenant dùng chung bảng, phân biệt bằng cột `tenant_id`

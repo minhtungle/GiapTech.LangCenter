@@ -23,26 +23,39 @@ một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`. Đ
 
 ---
 
-## 2. Mười quy tắc bất di bất dịch
+## 2. Mười một quy tắc bất di bất dịch
 
-1. **Mọi bảng nghiệp vụ có `tenant_id` + EF Core Global Query Filter** — không được quên ở entity mới.
+1. **Cập nhật hệ thống KHÔNG được ảnh hưởng dữ liệu hiện có.** Nếu một thay đổi bắt buộc phải
+   động tới dữ liệu đang có → **dừng lại hỏi người dùng trước khi làm**.
+   - Lệnh cập nhật ghi đè trường nào thì trường đó **phải** có trong DTO trả về **và** trong form.
+     Không gửi giá trị cứng (`null`, `''`) cho trường không hiển thị trên UI.
+   - Test phải kiểm "sửa một trường không làm mất trường khác", không chỉ kiểm trường vừa đổi.
+   - Migration làm hẹp cột / đổi kiểu / xóa cột, reset DB, `docker compose down -v`, xóa hàng loạt
+     → **hỏi trước**, kèm phương án an toàn hơn.
+   - Thêm claim vào JWT là **thay đổi phá vỡ tương thích** với token đang lưu hành — phải có đường
+     lui cho phiên đang mở.
+
+   → Đã xảy ra 16/08/2026: form sửa tài khoản thiếu ô địa chỉ nên âm thầm xóa địa chỉ mỗi lần lưu.
+   Canh bởi `CapNhatKhongMatDuLieuTests`.
+
+2. **Mọi bảng nghiệp vụ có `tenant_id` + EF Core Global Query Filter** — không được quên ở entity mới.
    Rò rỉ dữ liệu chéo CLB là lỗi nghiêm trọng nhất hệ thống này có thể mắc.
    → [multi-tenant.md](./docs/backend/multi-tenant.md)
-2. **API không hard-code message lỗi một ngôn ngữ** — trả **mã lỗi**, frontend dịch qua `react-i18next`.
+3. **API không hard-code message lỗi một ngôn ngữ** — trả **mã lỗi**, frontend dịch qua `react-i18next`.
    → [cqrs-mediatr.md](./docs/backend/cqrs-mediatr.md#trả-lỗi)
-3. **Đổi schema/API → cập nhật tài liệu trong cùng PR**, không tách "làm sau".
-4. **Không push thẳng `main`**, không force-push, không amend commit đã publish, không `--no-verify`
+4. **Đổi schema/API → cập nhật tài liệu trong cùng PR**, không tách "làm sau".
+5. **Không push thẳng `main`**, không force-push, không amend commit đã publish, không `--no-verify`
    (trừ yêu cầu tường minh). → [CONTRIBUTING.md](./CONTRIBUTING.md)
-5. **Mọi service ngoài Caddy không expose port ra Internet.**
+6. **Mọi service ngoài Caddy không expose port ra Internet.**
    → [ADR-0004](./docs/kien-truc/adr/0004-ha-tang-tu-host-vps.md)
-6. **Quyết định kiến trúc lớn/khó đảo ngược → viết ADR mới**, không sửa đè ADR cũ.
-7. **Mỗi cầu thủ chỉ vote MVP 1 lần/trận** — `UNIQUE(tran_dau_id, nguoi_vote_id)` ở **tầng DB**, không
+7. **Quyết định kiến trúc lớn/khó đảo ngược → viết ADR mới**, không sửa đè ADR cũ.
+8. **Mỗi cầu thủ chỉ vote MVP 1 lần/trận** — `UNIQUE(tran_dau_id, nguoi_vote_id)` ở **tầng DB**, không
    chỉ chặn ở UI. → [ERD](./docs/database/erd.md#ràng-buộc-nghiệp-vụ-quan-trọng)
-8. **Phân quyền đọc động từ bảng `QUYEN_CHUC_NANG`** — không hard-code `[Authorize(Roles=...)]`.
+9. **Phân quyền đọc động từ bảng `QUYEN_CHUC_NANG`** — không hard-code `[Authorize(Roles=...)]`.
    → [phan-quyen-dong.md](./docs/backend/phan-quyen-dong.md)
-9. **`Domain` không phụ thuộc EF Core / ASP.NET Core** — cấu hình EF đặt ở `Infrastructure`.
+10. **`Domain` không phụ thuộc EF Core / ASP.NET Core** — cấu hình EF đặt ở `Infrastructure`.
    → [clean-architecture.md](./docs/backend/clean-architecture.md)
-10. **Tăng version API chỉ khi breaking change** — thêm field/endpoint mới hoặc sửa bug thì không.
+11. **Tăng version API chỉ khi breaking change** — thêm field/endpoint mới hoặc sửa bug thì không.
     → [ADR-0003](./docs/kien-truc/adr/0003-api-versioning.md)
 
 ---
@@ -179,6 +192,6 @@ dotnet ef database update --project src/GiapTech.SoccerRoom.Infrastructure \
 
 ### Test luật phụ thuộc
 
-`tests/GiapTech.SoccerRoom.Application.UnitTests/KienTruc/LuatPhuThuocTests.cs` biến quy tắc #9 thành
+`tests/GiapTech.SoccerRoom.Application.UnitTests/KienTruc/LuatPhuThuocTests.cs` biến quy tắc #10 thành
 thứ CI bắt được: nếu `Domain` lỡ tham chiếu EF Core / ASP.NET Core / MediatR, hoặc `Application` tham
 chiếu ngược lên `Infrastructure`/`API`, test đỏ ngay kèm hướng dẫn sửa.

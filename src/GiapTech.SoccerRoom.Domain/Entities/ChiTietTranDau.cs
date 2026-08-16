@@ -58,7 +58,7 @@ public class DanhGiaCauThu : TenantEntity
 /// <summary>
 /// VOTE_MVP — bình chọn cầu thủ xuất sắc (FR-10 tab c).
 ///
-/// Quy tắc bất di bất dịch #7: mỗi người tối đa 1 tim/trận.
+/// Quy tắc bất di bất dịch #8: mỗi người tối đa 1 tim/trận.
 /// Ràng buộc UNIQUE(tran_dau_id, nguoi_vote_id) đặt ở tầng DB — chặn ở UI là không đủ,
 /// hai request đồng thời vẫn lọt qua kiểm tra tại tầng ứng dụng.
 /// </summary>

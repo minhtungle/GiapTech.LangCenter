@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace GiapTech.SoccerRoom.Application.UnitTests.MultiTenancy;
 
 /// <summary>
-/// Kiểm chứng cách ly dữ liệu giữa các tenant — quy tắc bất di bất dịch #1.
+/// Kiểm chứng cách ly dữ liệu giữa các tenant — quy tắc bất di bất dịch #2.
 /// Rò rỉ dữ liệu chéo CLB là lỗi nghiêm trọng nhất hệ thống này có thể mắc,
 /// nên nó phải có test chứ không chỉ có tài liệu. Xem docs/backend/multi-tenant.md.
 /// </summary>

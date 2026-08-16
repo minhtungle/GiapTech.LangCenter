@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace GiapTech.SoccerRoom.API.Authorization;
 
 /// <summary>
-/// Yêu cầu quyền (chức năng + thao tác) — quy tắc bất di bất dịch #8.
+/// Yêu cầu quyền (chức năng + thao tác) — quy tắc bất di bất dịch #9.
 /// Quyền đọc động từ bảng QUYEN_CHUC_NANG lúc chạy, KHÔNG dùng [Authorize(Roles=...)].
 /// </summary>
 public class QuyenRequirement(string chucNang, HanhDong hanhDong) : IAuthorizationRequirement

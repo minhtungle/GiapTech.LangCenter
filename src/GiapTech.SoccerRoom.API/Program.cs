@@ -72,7 +72,7 @@ if (!string.IsNullOrEmpty(jwtSecret))
         });
 }
 
-// --- Phân quyền động (quy tắc #8) ---
+// --- Phân quyền động (quy tắc #9) ---
 builder.Services.AddAuthorization();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, QuyenPolicyProvider>();
 builder.Services.AddScoped<IAuthorizationHandler, QuyenAuthorizationHandler>();
@@ -124,7 +124,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Bắt exception sớm nhất để mọi lỗi phía sau đều thành { errorCode } (quy tắc #2).
+// Bắt exception sớm nhất để mọi lỗi phía sau đều thành { errorCode } (quy tắc #3).
 app.UseMiddleware<ExceptionMiddleware>();
 
 // Chỉ redirect HTTPS khi chạy trực tiếp. Sau Caddy, TLS đã kết thúc ở proxy nên bật cái này

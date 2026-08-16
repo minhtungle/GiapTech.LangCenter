@@ -66,7 +66,7 @@ map sang response chuẩn:
 ```
 
 Frontend dịch mã lỗi qua `react-i18next` — xem [ADR-0002](../kien-truc/adr/0002-frontend-shadcn-admin.md).
-Đây là **quy tắc bất di bất dịch #2**: API không hard-code message một ngôn ngữ.
+Đây là **quy tắc bất di bất dịch #3**: API không hard-code message một ngôn ngữ.
 
 ## Quan hệ với API versioning
 

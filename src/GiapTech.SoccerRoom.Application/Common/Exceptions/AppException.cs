@@ -1,7 +1,7 @@
 namespace GiapTech.SoccerRoom.Application.Common.Exceptions;
 
 /// <summary>
-/// Exception nghiệp vụ mang mã lỗi thay vì message tiếng Việt (quy tắc #2).
+/// Exception nghiệp vụ mang mã lỗi thay vì message tiếng Việt (quy tắc #3).
 /// Message chỉ để đọc log phía server, KHÔNG trả về client.
 /// </summary>
 public class AppException(string ma, string? chiTietLog = null)

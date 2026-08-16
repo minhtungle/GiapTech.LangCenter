@@ -51,7 +51,7 @@ Thời gian, đối thủ (ID đội), danh sách thành viên tham gia, sắp x
 - **Thả tim vote MVP** — mỗi người **tối đa 1 tim / trận**.
 
 > **Ràng buộc bắt buộc:** `UNIQUE(tran_dau_id, nguoi_vote_id)` ở tầng **database**, không chỉ chặn ở UI.
-> Đây là quy tắc bất di bất dịch #7 trong `CLAUDE.md`.
+> Đây là quy tắc bất di bất dịch #8 trong `CLAUDE.md`.
 
 ## FR-11 — Xóa trận đấu
 

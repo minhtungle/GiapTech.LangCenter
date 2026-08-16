@@ -1,6 +1,6 @@
 # Phân quyền động theo chức năng + thao tác
 
-> **Quy tắc bất di bất dịch #8.** **Không** dùng `[Authorize(Roles = "...")]` với role cố định. Quyền
+> **Quy tắc bất di bất dịch #9.** **Không** dùng `[Authorize(Roles = "...")]` với role cố định. Quyền
 > đọc động từ bảng `QUYEN_CHUC_NANG` tại runtime.
 
 ## Vì sao không dùng role cố định

@@ -84,7 +84,7 @@ api.interceptors.response.use(
   },
 )
 
-/** Mã lỗi backend trả về — frontend tự dịch (quy tắc #2). */
+/** Mã lỗi backend trả về — frontend tự dịch (quy tắc #3). */
 export function layMaLoi(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as { errorCode?: string } | undefined

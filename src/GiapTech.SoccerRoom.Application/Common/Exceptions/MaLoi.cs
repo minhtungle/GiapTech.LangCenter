@@ -1,7 +1,7 @@
 namespace GiapTech.SoccerRoom.Application.Common.Exceptions;
 
 /// <summary>
-/// Danh mục mã lỗi API. Quy tắc bất di bất dịch #2: API trả MÃ LỖI, không trả text một
+/// Danh mục mã lỗi API. Quy tắc bất di bất dịch #3: API trả MÃ LỖI, không trả text một
 /// ngôn ngữ — frontend tra bảng dịch qua react-i18next.
 ///
 /// Thêm mã mới ở đây thì phải thêm bản dịch tương ứng ở frontend trong cùng PR, nếu không

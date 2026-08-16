@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace GiapTech.SoccerRoom.API.Authorization;
 
 /// <summary>
-/// Kiểm tra quyền động lúc chạy — quy tắc bất di bất dịch #8.
+/// Kiểm tra quyền động lúc chạy — quy tắc bất di bất dịch #9.
 ///
 /// Cố tình KHÔNG có nhánh "nếu là admin thì cho qua": admin có toàn quyền nhờ được gán nhóm
 /// quyền đầy đủ lúc seed, nên chỉ một cơ chế duy nhất quyết định mọi truy cập. Ngoại lệ
