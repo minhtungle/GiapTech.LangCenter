@@ -1,14 +1,22 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Plus, Pencil, Trash2, Archive, Filter, X, ListChecks } from 'lucide-react'
+import {
+  Plus, Pencil, Trash2, Archive, Filter, X, ListChecks,
+  Table2, CalendarDays, ChevronLeft, ChevronRight,
+} from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { api, layMaLoi } from '@/lib/api'
+import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong,
 } from '@/components/ui'
 import { Modal, ModalChan } from '@/components/ui/Modal'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
+import { cn } from '@/lib/utils'
+import { LichThang, type SuKienLich } from '@/components/LichThang'
+import { PhanTrang } from '@/components/ui/PhanTrang'
+
+const KHOA_CHE_DO = 'sr_lich_thi_dau_che_do'
 
 type KetQua = 'ChuaCo' | 'Thang' | 'Hoa' | 'Thua'
 type TrangThai = 'DaLenLich' | 'DaDienRa' | 'DaHuy' | 'LuuTru'
@@ -53,6 +61,19 @@ export default function LichThiDau() {
   const qc = useQueryClient()
   const navigate = useNavigate()
 
+  // Nhớ chế độ giữa các phiên: người thích xem lịch không phải bấm lại mỗi lần vào.
+  const [cheDo, setCheDo] = useState<'bang' | 'lich'>(
+    () => (localStorage.getItem(KHOA_CHE_DO) as 'bang' | 'lich') ?? 'bang',
+  )
+  const [thangXem, setThangXem] = useState(() => {
+    const n = new Date()
+    return { nam: n.getFullYear(), thang: n.getMonth() + 1 }
+  })
+
+  useEffect(() => localStorage.setItem(KHOA_CHE_DO, cheDo), [cheDo])
+
+  const [trang, setTrang] = useState(1)
+  const [soDong, setSoDong] = useState(20)
   const [moLoc, setMoLoc] = useState(false)
   const [loc, setLoc] = useState<{
     tuNgay: string
@@ -70,14 +91,15 @@ export default function LichThiDau() {
 
   const { data: doiThus } = useQuery({
     queryKey: ['doi-thu'],
-    queryFn: async () => (await api.get<DoiThuNgan[]>('/doi-thu')).data,
+    queryFn: async () =>
+      (await api.get<KetQuaTrang<DoiThuNgan>>('/doi-thu', { params: { soDong: 200 } })).data.duLieu,
   })
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['tran-dau', loc],
+  const { data: ketQua, isLoading } = useQuery({
+    queryKey: ['tran-dau', loc, trang, soDong],
     queryFn: async () =>
       (
-        await api.post<TranDauDto[]>('/tran-dau/tim-kiem', {
+        await api.post<KetQuaTrang<TranDauDto>>(`/tran-dau/tim-kiem?trang=${trang}&soDong=${soDong}`, {
           tuNgay: loc.tuNgay || null,
           denNgay: loc.denNgay || null,
           ketQua: loc.ketQua.length ? loc.ketQua : null,
@@ -85,6 +107,26 @@ export default function LichThiDau() {
         })
       ).data,
   })
+
+  // Calendar dùng endpoint riêng: lịch tháng phải hiện ĐỦ trận, cắt trang sẽ làm mất trận
+  // khỏi ô ngày mà người dùng không biết.
+  const { data: tranThang } = useQuery({
+    queryKey: ['tran-dau-thang', thangXem, loc],
+    enabled: cheDo === 'lich',
+    queryFn: async () =>
+      (
+        await api.post<TranDauDto[]>(
+          `/tran-dau/theo-thang?nam=${thangXem.nam}&thang=${thangXem.thang}`,
+          {
+            ketQua: loc.ketQua.length ? loc.ketQua : null,
+            doiThuId: loc.doiThuId,
+          },
+        )
+      ).data,
+  })
+
+  const kq = ketQua ?? trangRong<TranDauDto>()
+  const data = kq.duLieu
 
   const luu = useMutation({
     mutationFn: async (form: Record<string, unknown>) => {
@@ -152,6 +194,36 @@ export default function LichThiDau() {
     })
   }
 
+  const doiThang = (buoc: number) => {
+    const d = new Date(thangXem.nam, thangXem.thang - 1 + buoc, 1)
+    setThangXem({ nam: d.getFullYear(), thang: d.getMonth() + 1 })
+  }
+
+  const veHomNay = () => {
+    const n = new Date()
+    setThangXem({ nam: n.getFullYear(), thang: n.getMonth() + 1 })
+  }
+
+  /** Màu chấm theo kết quả — dùng chung token với badge ở bảng để hai màn khớp nhau. */
+  const MAU_CHAM: Record<KetQua, string> = {
+    Thang: 'hsl(var(--status-win))',
+    Thua: 'hsl(var(--status-lose))',
+    Hoa: 'hsl(var(--status-draw))',
+    ChuaCo: 'hsl(var(--muted-foreground))',
+  }
+
+  const suKienLich: SuKienLich[] = (tranThang ?? []).map((tr) => {
+    const d = new Date(tr.thoiGian)
+    const p = (n: number) => String(n).padStart(2, '0')
+    const tySo = tr.tySoNha !== null ? ` ${tr.tySoNha}-${tr.tySoKhach}` : ''
+    return {
+      ngay: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`,
+      tranDauId: tr.id,
+      nhan: `${p(d.getHours())}:${p(d.getMinutes())} ${tr.tenDoiThu ?? ''}${tySo}`.trim(),
+      mau: MAU_CHAM[tr.ketQua],
+    }
+  })
+
   const coLoc = loc.tuNgay || loc.denNgay || loc.ketQua.length > 0 || loc.doiThuId
 
   return (
@@ -162,10 +234,40 @@ export default function LichThiDau() {
           {t('tranDau.boLoc')}
           {coLoc && <Badge variant="accent">{t('tranDau.dangLoc')}</Badge>}
         </Button>
-        <Button onClick={moThem}>
-          <Plus className="h-4 w-4" />
-          {t('tranDau.themMoi')}
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Chuyển Bảng ↔ Lịch, giữ nguyên bộ lọc đang áp (FR-08). */}
+          <div className="flex overflow-hidden rounded-md border border-input">
+            <button
+              type="button"
+              onClick={() => setCheDo('bang')}
+              aria-pressed={cheDo === 'bang'}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors',
+                cheDo === 'bang' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
+              )}
+            >
+              <Table2 className="h-4 w-4" />
+              {t('tranDau.cheDoBang')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCheDo('lich')}
+              aria-pressed={cheDo === 'lich'}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors',
+                cheDo === 'lich' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
+              )}
+            >
+              <CalendarDays className="h-4 w-4" />
+              {t('tranDau.cheDoLich')}
+            </button>
+          </div>
+
+          <Button onClick={moThem}>
+            <Plus className="h-4 w-4" />
+            {t('tranDau.themMoi')}
+          </Button>
+        </div>
       </div>
 
       {moLoc && (
@@ -238,9 +340,51 @@ export default function LichThiDau() {
 
       {maLoiBang && <CanhBaoLoi>{t(`loi.${maLoiBang}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
-      {isLoading ? (
+      {cheDo === 'lich' ? (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => doiThang(-1)} aria-label={t('tranDau.thangTruoc')}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="min-w-40 text-center text-sm font-semibold">
+              {t('tranDau.thang')} {thangXem.thang} / {thangXem.nam}
+            </span>
+            <Button variant="ghost" size="sm" onClick={() => doiThang(1)} aria-label={t('tranDau.thangSau')}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={veHomNay}>
+              {t('tranDau.homNay')}
+            </Button>
+          </div>
+
+          <LichThang
+            nam={thangXem.nam}
+            thang={thangXem.thang}
+            suKien={suKienLich}
+            onChonTran={(id) => navigate(`/lich-thi-dau/${id}`)}
+          />
+
+          {/* Chú giải màu — người dùng không phải đoán chấm nào nghĩa gì. */}
+          <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+            {([
+              ['Thang', 'hsl(var(--status-win))'],
+              ['Thua', 'hsl(var(--status-lose))'],
+              ['Hoa', 'hsl(var(--status-draw))'],
+              ['ChuaCo', 'hsl(var(--muted-foreground))'],
+            ] as const).map(([k, mau]) => (
+              <span key={k} className="flex items-center gap-1.5">
+                <span
+                  className="inline-block h-2 w-2 rounded-full"
+                  style={{ background: mau }}
+                />
+                {t(`tranDau.kq.${k}`)}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : isLoading ? (
         <p className="text-sm text-muted-foreground">{t('chung.dangTai')}</p>
-      ) : !data?.length ? (
+      ) : !data.length ? (
         <TrangTrong
           thongDiep={coLoc ? t('tranDau.khongKhopLoc') : t('tranDau.chuaCo')}
           hanhDong={
@@ -333,6 +477,20 @@ export default function LichThiDau() {
             ))}
           </tbody>
         </Table>
+      )}
+
+      {cheDo === 'bang' && data.length > 0 && (
+        <PhanTrang
+          trang={kq.trang}
+          soDong={kq.soDong}
+          tongSoDong={kq.tongSoDong}
+          tongSoTrang={kq.tongSoTrang}
+          onDoiTrang={setTrang}
+          onDoiSoDong={(n) => {
+            setSoDong(n)
+            setTrang(1)
+          }}
+        />
       )}
 
       <Modal

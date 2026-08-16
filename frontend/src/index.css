@@ -87,3 +87,124 @@
     font-feature-settings: 'rlig' 1, 'calt' 1;
   }
 }
+
+/*
+  Ghi đè Calendar.js (@calendarjs/ce) để khớp design token của dự án.
+
+  Ẩn thanh điều hướng của thư viện: nút của nó dùng tên icon Material (`expand_less`) mà dự
+  án không nạp font đó, nên hiện ra thành chữ chồng lên nhau. Ta đã có thanh điều hướng
+  tháng riêng ở trên, khớp với các nút khác của hệ thống.
+  Thư viện dùng tiền tố .lm-calendar-* và màu cứng của riêng nó; không ghi đè thì lịch sẽ
+  lạc lõng giữa các màn khác và hỏng hẳn ở dark mode.
+*/
+.sr-lich .lm-calendar {
+  width: 100%;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  box-shadow: none;
+}
+
+/*
+  KHÔNG ẩn cả .lm-calendar-header — hàng nhãn thứ nằm bên trong nó, ẩn đi là mất luôn.
+  Chỉ ẩn hai phần gây lỗi: tiêu đề tháng tiếng Anh (đã có thanh điều hướng riêng ở trên)
+  và cụm nút dùng tên icon Material mà dự án không nạp font, nên hiện thành chữ "expand_less"
+  chồng lên nhau.
+*/
+.sr-lich .lm-calendar-header {
+  background: transparent;
+  padding-bottom: 0.25rem;
+}
+
+.sr-lich .lm-calendar-labels,
+.sr-lich .lm-calendar-navigation {
+  display: none;
+}
+
+.sr-lich .lm-calendar-weekdays {
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/*
+  Nhãn thứ: thư viện cắt tên còn MỘT ký tự đầu, mà tiếng Việt Thứ hai/ba/tư/năm/sáu/bảy đều
+  bắt đầu bằng T nên hàng tiêu đề thành "TTTTTTC". Ẩn chữ gốc và vẽ lại bằng ::after —
+  cách duy nhất vì thư viện không cho can thiệp bước dựng nhãn.
+  Thứ tự khớp startingDay: 1 (bắt đầu Thứ Hai).
+*/
+.sr-lich .lm-calendar-weekdays > div {
+  /* Giấu chữ gốc bằng màu trong suốt, KHÔNG dùng font-size:0 — cái đó làm sập chiều cao hàng
+     và nhãn ::after biến mất khỏi màn hình. */
+  color: transparent;
+  position: relative;
+  min-height: 1.5rem;
+}
+
+.sr-lich .lm-calendar-weekdays > div::after {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: hsl(var(--muted-foreground));
+}
+
+.sr-lich .lm-calendar-weekdays > div:nth-child(1)::after { content: 'T2'; }
+.sr-lich .lm-calendar-weekdays > div:nth-child(2)::after { content: 'T3'; }
+.sr-lich .lm-calendar-weekdays > div:nth-child(3)::after { content: 'T4'; }
+.sr-lich .lm-calendar-weekdays > div:nth-child(4)::after { content: 'T5'; }
+.sr-lich .lm-calendar-weekdays > div:nth-child(5)::after { content: 'T6'; }
+.sr-lich .lm-calendar-weekdays > div:nth-child(6)::after { content: 'T7'; }
+.sr-lich .lm-calendar-weekdays > div:nth-child(7)::after { content: 'CN'; }
+
+.sr-lich .lm-calendar-content > div {
+  position: relative;
+  min-height: 3.25rem;
+  border-radius: calc(var(--radius) - 4px);
+  color: hsl(var(--foreground));
+}
+
+.sr-lich .lm-calendar-content > div[data-grey='true'] {
+  color: hsl(var(--muted-foreground) / 0.45);
+}
+
+.sr-lich .lm-calendar-content > div:hover {
+  background: hsl(var(--muted));
+}
+
+/* Ô có trận: viền nhạt để nhận ra ngay cả trước khi nhìn chấm màu. */
+.sr-lich .sr-o-co-tran {
+  box-shadow: inset 0 0 0 1px hsl(var(--border));
+}
+
+.sr-cham-hang {
+  position: absolute;
+  bottom: 0.25rem;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 0.2rem;
+}
+
+.sr-cham {
+  width: 0.5rem;
+  height: 0.5rem;
+  border: 0;
+  border-radius: 9999px;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.sr-cham:hover {
+  transform: scale(1.4);
+}
+
+.sr-cham:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 1px;
+}

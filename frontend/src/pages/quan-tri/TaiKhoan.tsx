@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Plus, KeyRound, Trash2, Pencil } from 'lucide-react'
-import { api, layMaLoi } from '@/lib/api'
+import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong,
 } from '@/components/ui'
 import { Modal, ModalChan } from '@/components/ui/Modal'
+import { PhanTrang } from '@/components/ui/PhanTrang'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 
 interface TaiKhoanDto {
@@ -38,6 +39,8 @@ export default function TaiKhoan() {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const [moForm, setMoForm] = useState(false)
+  const [trang, setTrang] = useState(1)
+  const [soDong, setSoDong] = useState(20)
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
   const [quyenChon, setQuyenChon] = useState<string[]>([])
@@ -48,17 +51,22 @@ export default function TaiKhoan() {
   const [dangSua, setDangSua] = useState<TaiKhoanDto | null>(null)
   const [trangThai, setTrangThai] = useState<'HoatDong' | 'VoHieuHoa'>('HoatDong')
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['tai-khoan'],
-    queryFn: async () => (await api.get<TaiKhoanDto[]>('/tai-khoan')).data,
+  const { data: ketQua, isLoading } = useQuery({
+    queryKey: ['tai-khoan', trang, soDong],
+    queryFn: async () =>
+      (await api.get<KetQuaTrang<TaiKhoanDto>>('/tai-khoan', { params: { trang, soDong } })).data,
   })
+
+  const kq = ketQua ?? trangRong<TaiKhoanDto>()
+  const data = kq.duLieu
   const { data: quyens } = useQuery({
     queryKey: ['quyen'],
     queryFn: async () => (await api.get<QuyenNgan[]>('/quyen')).data,
   })
   const { data: cauThus } = useQuery({
     queryKey: ['cau-thu'],
-    queryFn: async () => (await api.get<CauThuNgan[]>('/cau-thu')).data,
+    queryFn: async () =>
+      (await api.get<KetQuaTrang<CauThuNgan>>('/cau-thu', { params: { soDong: 200 } })).data.duLieu,
   })
 
   const tao = useMutation({
@@ -180,7 +188,7 @@ export default function TaiKhoan() {
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">{t('chung.dangTai')}</p>
-      ) : !data?.length ? (
+      ) : !data.length ? (
         <TrangTrong thongDiep={t('chung.khongCoDuLieu')} />
       ) : (
         <Table>
@@ -263,6 +271,20 @@ export default function TaiKhoan() {
             ))}
           </tbody>
         </Table>
+      )}
+
+      {data.length > 0 && (
+        <PhanTrang
+          trang={kq.trang}
+          soDong={kq.soDong}
+          tongSoDong={kq.tongSoDong}
+          tongSoTrang={kq.tongSoTrang}
+          onDoiTrang={setTrang}
+          onDoiSoDong={(n) => {
+            setSoDong(n)
+            setTrang(1)
+          }}
+        />
       )}
 
       {/* ---------- Modal thêm tài khoản ---------- */}

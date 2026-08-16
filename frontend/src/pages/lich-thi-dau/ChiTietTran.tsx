@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Heart, Save, Users } from 'lucide-react'
-import { api, layMaLoi } from '@/lib/api'
+import { api, layMaLoi, type KetQuaTrang } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong,
 } from '@/components/ui'
@@ -132,7 +132,8 @@ function TabDoiHinh({
   })
   const { data: cauThus } = useQuery({
     queryKey: ['cau-thu'],
-    queryFn: async () => (await api.get<CauThuNgan[]>('/cau-thu')).data,
+    queryFn: async () =>
+      (await api.get<KetQuaTrang<CauThuNgan>>('/cau-thu', { params: { soDong: 200 } })).data.duLieu,
   })
 
   // Khởi tạo từ dữ liệu server, sau đó để người dùng chỉnh tự do.

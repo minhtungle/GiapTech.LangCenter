@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Plus, Pencil, Trash2, Search } from 'lucide-react'
-import { api, layMaLoi } from '@/lib/api'
+import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong,
 } from '@/components/ui'
 import { Modal, ModalChan } from '@/components/ui/Modal'
+import { PhanTrang } from '@/components/ui/PhanTrang'
 
 interface DoiThuDto {
   id: string
@@ -21,16 +22,25 @@ export default function DoiThu() {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const [timKiem, setTimKiem] = useState('')
+  const [trang, setTrang] = useState(1)
+  const [soDong, setSoDong] = useState(20)
   const [moForm, setMoForm] = useState(false)
   const [dangSua, setDangSua] = useState<DoiThuDto | null>(null)
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['doi-thu', timKiem],
+  const { data: ketQua, isLoading } = useQuery({
+    queryKey: ['doi-thu', timKiem, trang, soDong],
     queryFn: async () =>
-      (await api.get<DoiThuDto[]>('/doi-thu', { params: { timKiem: timKiem || undefined } })).data,
+      (
+        await api.get<KetQuaTrang<DoiThuDto>>('/doi-thu', {
+          params: { timKiem: timKiem || undefined, trang, soDong },
+        })
+      ).data,
   })
+
+  const kq = ketQua ?? trangRong<DoiThuDto>()
+  const data = kq.duLieu
 
   const luu = useMutation({
     mutationFn: async (form: Record<string, unknown>) => {
@@ -85,7 +95,10 @@ export default function DoiThu() {
             className="pl-8"
             placeholder={t('chung.timKiem')}
             value={timKiem}
-            onChange={(e) => setTimKiem(e.target.value)}
+            onChange={(e) => {
+              setTimKiem(e.target.value)
+              setTrang(1)
+            }}
           />
         </div>
         <Button onClick={moThem}>
@@ -98,7 +111,7 @@ export default function DoiThu() {
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">{t('chung.dangTai')}</p>
-      ) : !data?.length ? (
+      ) : !data.length ? (
         <TrangTrong
           thongDiep={timKiem ? t('chung.khongCoDuLieu') : t('doiThu.chuaCo')}
           hanhDong={
@@ -152,6 +165,20 @@ export default function DoiThu() {
             ))}
           </tbody>
         </Table>
+      )}
+
+      {data.length > 0 && (
+        <PhanTrang
+          trang={kq.trang}
+          soDong={kq.soDong}
+          tongSoDong={kq.tongSoDong}
+          tongSoTrang={kq.tongSoTrang}
+          onDoiTrang={setTrang}
+          onDoiSoDong={(n) => {
+            setSoDong(n)
+            setTrang(1)
+          }}
+        />
       )}
 
       <Modal

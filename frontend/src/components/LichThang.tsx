@@ -1,0 +1,166 @@
+import { useCallback, useEffect, useRef } from 'react'
+import CalendarJS from '@calendarjs/ce'
+import '@calendarjs/ce/dist/style.css'
+
+/**
+ * Việt hoá nhãn của Calendar.js qua `setDictionary` — gọi MỘT lần ở tầng module.
+ *
+ * Lưu ý về hàng tiêu đề thứ: thư viện **cắt còn một ký tự đầu** dù từ điển trả về gì. Tiếng
+ * Việt thì Thứ hai/ba/tư/năm/sáu/bảy đều bắt đầu bằng T, nên hàng tiêu đề thành "TTTTTTC"
+ * không đọc được. Đã kiểm chứng trong trình duyệt: `document.dictionary.Monday` đúng là "T2"
+ * nhưng DOM vẫn hiện "T". Khắc phục bằng CSS `::after` ở index.css, không sửa được từ đây.
+ */
+CalendarJS.setDictionary({
+  Sunday: 'Chủ nhật', Monday: 'Thứ hai', Tuesday: 'Thứ ba', Wednesday: 'Thứ tư',
+  Thursday: 'Thứ năm', Friday: 'Thứ sáu', Saturday: 'Thứ bảy',
+  January: 'Tháng 1', February: 'Tháng 2', March: 'Tháng 3', April: 'Tháng 4',
+  May: 'Tháng 5', June: 'Tháng 6', July: 'Tháng 7', August: 'Tháng 8',
+  September: 'Tháng 9', October: 'Tháng 10', November: 'Tháng 11', December: 'Tháng 12',
+})
+
+/**
+ * Lịch tháng dựng trên **Calendar.js** (`@calendarjs/ce` v1.1.0, MIT — https://calendarjs.com).
+ *
+ * Gói chỉ xuất hàm khởi tạo kiểu vanilla (`CalendarJS.Calendar(el, options)`) — tài liệu có
+ * nhắc `dist/react` nhưng bản trên npm không có, nên phải bọc thủ công bằng ref.
+ *
+ * **Cấu trúc DOM đã kiểm chứng trong trình duyệt thật** (không đoán từ tài liệu):
+ * `.lm-calendar-content` chứa đúng 42 `<div>` (6 tuần × 7 ngày), mỗi div có nội dung là số
+ * ngày và thuộc tính `data-grey="true"` cho ngày thuộc tháng khác. Không có `data-value`,
+ * nên phải tự suy ngày từ vị trí ô.
+ */
+export interface SuKienLich {
+  /** ISO `YYYY-MM-DD`. */
+  ngay: string
+  tranDauId: string
+  nhan: string
+  /** Giá trị CSS color — truyền từ token trạng thái của dự án. */
+  mau: string
+}
+
+export function LichThang({
+  nam,
+  thang,
+  suKien,
+  onChonTran,
+}: {
+  nam: number
+  thang: number
+  suKien: SuKienLich[]
+  onChonTran: (tranDauId: string) => void
+}) {
+  const boc = useRef<HTMLDivElement>(null)
+  const daKhoiTao = useRef(false)
+
+  // Giữ dữ liệu mới nhất trong ref: hàm vẽ chạy sau khi Calendar.js render lại, đọc trực tiếp
+  // biến từ closure sẽ dính giá trị của lần render đầu.
+  const duLieu = useRef({ suKien, onChonTran, nam, thang })
+  duLieu.current = { suKien, onChonTran, nam, thang }
+
+  /**
+   * Gắn chấm màu kết quả vào từng ô ngày.
+   *
+   * Calendar.js không có API chèn nội dung tuỳ ý vào ô, nên phải thao tác DOM trực tiếp —
+   * cái giá của việc dùng thư viện tự quản lý DOM. Đổi lại được phần dựng lưới, điều hướng
+   * tháng và xử lý ngày biên.
+   */
+  const veCham = useCallback(() => {
+    const goc = boc.current
+    if (!goc) return
+
+    const content = goc.querySelector('.lm-calendar-content')
+    if (!content) return
+
+    goc.querySelectorAll('[data-cham]').forEach((n) => n.remove())
+
+    const { suKien: ds, onChonTran: chon, nam: n, thang: th } = duLieu.current
+
+    const theoNgay = new Map<string, SuKienLich[]>()
+    for (const s of ds) theoNgay.set(s.ngay, [...(theoNgay.get(s.ngay) ?? []), s])
+
+    for (const o of Array.from(content.children) as HTMLElement[]) {
+      // Bỏ qua ô của tháng trước/sau: trận của chúng thuộc tháng khác, hiện lên sẽ gây nhầm.
+      if (o.getAttribute('data-grey') === 'true') continue
+
+      const ngayTrongThang = Number(o.textContent?.trim())
+      if (!Number.isInteger(ngayTrongThang) || ngayTrongThang < 1) continue
+
+      const khoa = `${n}-${String(th).padStart(2, '0')}-${String(ngayTrongThang).padStart(2, '0')}`
+      const cua = theoNgay.get(khoa)
+      if (!cua?.length) continue
+
+      const hang = document.createElement('div')
+      hang.setAttribute('data-cham', '')
+      hang.className = 'sr-cham-hang'
+
+      for (const s of cua) {
+        const cham = document.createElement('button')
+        cham.type = 'button'
+        cham.className = 'sr-cham'
+        cham.style.background = s.mau
+        cham.title = s.nhan
+        cham.setAttribute('aria-label', s.nhan)
+        cham.addEventListener('click', (e) => {
+          // Chặn nổi bọt: bấm chấm là mở trận, không phải chọn ngày trên lịch.
+          e.stopPropagation()
+          e.preventDefault()
+          chon(s.tranDauId)
+        })
+        hang.appendChild(cham)
+      }
+
+      o.appendChild(hang)
+      o.classList.add('sr-o-co-tran')
+    }
+  }, [])
+
+  // Khởi tạo MỘT lần. Dựng lại mỗi render sẽ nháy màn hình và mất trạng thái.
+  useEffect(() => {
+    const el = boc.current
+    if (!el || daKhoiTao.current) return
+
+    daKhoiTao.current = true
+    CalendarJS.Calendar(el, {
+      type: 'inline',
+      footer: false,
+      // Tuần bắt đầu Thứ Hai — cách người Việt đọc lịch.
+      startingDay: 1,
+      value: `${nam}-${String(thang).padStart(2, '0')}-01`,
+    } as never)
+
+    return () => {
+      // Calendar.js không có hàm destroy công khai; dọn DOM là cách chắc chắn để không để
+      // lại node mồ côi sau khi rời trang.
+      daKhoiTao.current = false
+      if (el) el.innerHTML = ''
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /**
+   * Vẽ lại chấm mỗi khi dữ liệu đổi, VÀ mỗi khi Calendar.js tự render lại lưới (người dùng
+   * bấm mũi tên đổi tháng). MutationObserver là cách duy nhất bắt được lần render thứ hai,
+   * vì thư viện không phát sự kiện nào cho việc đó.
+   */
+  useEffect(() => {
+    const goc = boc.current
+    if (!goc) return
+
+    veCham()
+
+    const theoDoi = new MutationObserver((ds) => {
+      // Bỏ qua thay đổi do chính hàm vẽ gây ra, nếu không sẽ lặp vô tận.
+      const tuNgoai = ds.some((d) =>
+        Array.from(d.addedNodes).some(
+          (n) => !(n instanceof HTMLElement) || !n.hasAttribute('data-cham'),
+        ),
+      )
+      if (tuNgoai) veCham()
+    })
+
+    theoDoi.observe(goc, { childList: true, subtree: true })
+    return () => theoDoi.disconnect()
+  }, [nam, thang, suKien, veCham])
+
+  return <div ref={boc} className="sr-lich" />
+}

@@ -92,3 +92,29 @@ export function layMaLoi(error: unknown): string {
   }
   return 'LOI_HE_THONG'
 }
+
+/**
+ * Kết quả phân trang từ API.
+ *
+ * Bốn endpoint danh sách (`/cau-thu`, `/tai-khoan`, `/doi-thu`, `/tran-dau`) trả về hình dạng
+ * này thay vì mảng trần. Các endpoint còn lại (quyền, lời mời, đội hình, đánh giá) vẫn trả
+ * mảng vì số lượng bị chặn tự nhiên bởi nghiệp vụ.
+ */
+export interface KetQuaTrang<T> {
+  duLieu: T[]
+  tongSoDong: number
+  trang: number
+  soDong: number
+  tongSoTrang: number
+}
+
+/** Tham số phân trang gửi lên dạng query string. */
+export interface ThamSoTrang {
+  trang?: number
+  soDong?: number
+}
+
+/** Trang rỗng — dùng làm giá trị mặc định để component không phải kiểm null ở mọi chỗ. */
+export function trangRong<T>(): KetQuaTrang<T> {
+  return { duLieu: [], tongSoDong: 0, trang: 1, soDong: 20, tongSoTrang: 1 }
+}

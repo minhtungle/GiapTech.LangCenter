@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Plus, Search, Trash2, Pencil } from 'lucide-react'
-import { api, layMaLoi } from '@/lib/api'
+import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong,
 } from '@/components/ui'
 import { Modal, ModalChan } from '@/components/ui/Modal'
+import { PhanTrang } from '@/components/ui/PhanTrang'
 
 interface CauThuDto {
   id: string
@@ -23,16 +24,25 @@ export default function CauThu() {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const [timKiem, setTimKiem] = useState('')
+  const [trang, setTrang] = useState(1)
+  const [soDong, setSoDong] = useState(20)
   const [dangSua, setDangSua] = useState<CauThuDto | null>(null)
   const [moForm, setMoForm] = useState(false)
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['cau-thu', timKiem],
+  const { data: ketQua, isLoading } = useQuery({
+    queryKey: ['cau-thu', timKiem, trang, soDong],
     queryFn: async () =>
-      (await api.get<CauThuDto[]>('/cau-thu', { params: { timKiem: timKiem || undefined } })).data,
+      (
+        await api.get<KetQuaTrang<CauThuDto>>('/cau-thu', {
+          params: { timKiem: timKiem || undefined, trang, soDong },
+        })
+      ).data,
   })
+
+  const kq = ketQua ?? trangRong<CauThuDto>()
+  const data = kq.duLieu
 
   const luu = useMutation({
     mutationFn: async (form: Partial<CauThuDto>) => {
@@ -90,7 +100,10 @@ export default function CauThu() {
             className="pl-8"
             placeholder={t('chung.timKiem')}
             value={timKiem}
-            onChange={(e) => setTimKiem(e.target.value)}
+            onChange={(e) => {
+              setTimKiem(e.target.value)
+              setTrang(1)
+            }}
           />
         </div>
         <Button onClick={moThem}>
@@ -103,7 +116,7 @@ export default function CauThu() {
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">{t('chung.dangTai')}</p>
-      ) : !data?.length ? (
+      ) : !data.length ? (
         <TrangTrong
           thongDiep={timKiem ? t('chung.khongCoDuLieu') : t('cauThu.chuaCo')}
           hanhDong={
@@ -161,6 +174,20 @@ export default function CauThu() {
             ))}
           </tbody>
         </Table>
+      )}
+
+      {data.length > 0 && (
+        <PhanTrang
+          trang={kq.trang}
+          soDong={kq.soDong}
+          tongSoDong={kq.tongSoDong}
+          tongSoTrang={kq.tongSoTrang}
+          onDoiTrang={setTrang}
+          onDoiSoDong={(n) => {
+            setSoDong(n)
+            setTrang(1)
+          }}
+        />
       )}
 
       <Modal

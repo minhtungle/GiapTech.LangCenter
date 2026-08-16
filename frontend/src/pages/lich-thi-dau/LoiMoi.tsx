@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Check, X, Trash2 } from 'lucide-react'
-import { api, layMaLoi } from '@/lib/api'
+import { api, layMaLoi, type KetQuaTrang } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong,
 } from '@/components/ui'
@@ -42,7 +42,8 @@ export default function LoiMoi() {
   })
   const { data: doiThus } = useQuery({
     queryKey: ['doi-thu'],
-    queryFn: async () => (await api.get<DoiThuNgan[]>('/doi-thu')).data,
+    queryFn: async () =>
+      (await api.get<KetQuaTrang<DoiThuNgan>>('/doi-thu', { params: { soDong: 200 } })).data.duLieu,
   })
 
   const tao = useMutation({
