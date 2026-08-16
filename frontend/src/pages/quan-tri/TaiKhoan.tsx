@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Plus, KeyRound, Trash2 } from 'lucide-react'
+import { Plus, KeyRound, Trash2, Pencil } from 'lucide-react'
 import { api, layMaLoi } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong,
@@ -44,6 +44,8 @@ export default function TaiKhoan() {
   const [datLaiCho, setDatLaiCho] = useState<TaiKhoanDto | null>(null)
   // Mặc định BẬT: tài khoản do người khác tạo hộ thì mật khẩu ban đầu người tạo cũng biết.
   const [buocDoiMk, setBuocDoiMk] = useState(true)
+  const [dangSua, setDangSua] = useState<TaiKhoanDto | null>(null)
+  const [trangThai, setTrangThai] = useState<'HoatDong' | 'VoHieuHoa'>('HoatDong')
 
   const { data, isLoading } = useQuery({
     queryKey: ['tai-khoan'],
@@ -60,6 +62,17 @@ export default function TaiKhoan() {
 
   const tao = useMutation({
     mutationFn: async (form: Record<string, unknown>) => api.post('/tai-khoan', form),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['tai-khoan'] })
+      void qc.invalidateQueries({ queryKey: ['cau-thu'] })
+      dongForm()
+    },
+    onError: (e) => setMaLoi(layMaLoi(e)),
+  })
+
+  const capNhat = useMutation({
+    mutationFn: async (form: Record<string, unknown>) =>
+      api.put(`/tai-khoan/${dangSua!.id}`, { ...form, id: dangSua!.id }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['tai-khoan'] })
       void qc.invalidateQueries({ queryKey: ['cau-thu'] })
@@ -86,15 +99,27 @@ export default function TaiKhoan() {
   })
 
   const moThem = () => {
+    setDangSua(null)
     setQuyenChon([])
     setBuocDoiMk(true)
     setCauThuChon(null)
+    setTrangThai('HoatDong')
+    setMaLoi(null)
+    setMoForm(true)
+  }
+
+  const moSua = (u: TaiKhoanDto) => {
+    setDangSua(u)
+    setQuyenChon(u.quyenIds)
+    setCauThuChon(u.cauThuId)
+    setTrangThai(u.trangThai)
     setMaLoi(null)
     setMoForm(true)
   }
 
   const dongForm = () => {
     setMoForm(false)
+    setDangSua(null)
     setQuyenChon([])
     setCauThuChon(null)
     setMaLoi(null)
@@ -103,21 +128,36 @@ export default function TaiKhoan() {
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
-    tao.mutate({
-      username: String(fd.get('username')),
-      matKhau: String(fd.get('matKhau')),
+
+    const chung = {
       email: (fd.get('email') as string) || null,
       soDienThoai: (fd.get('soDienThoai') as string) || null,
       diaChi: null,
       cauThuId: cauThuChon,
       quyenIds: quyenChon,
-      phaiDoiMatKhau: buocDoiMk,
-    })
+    }
+
+    if (dangSua) {
+      // Username và mật khẩu KHÔNG sửa ở đây: username là định danh đăng nhập, đổi sẽ khoá
+      // người dùng ra ngoài; mật khẩu có luồng riêng (đặt lại) để luôn bật cờ buộc đổi.
+      capNhat.mutate({ ...chung, trangThai })
+    } else {
+      tao.mutate({
+        ...chung,
+        username: String(fd.get('username')),
+        matKhau: String(fd.get('matKhau')),
+        phaiDoiMatKhau: buocDoiMk,
+      })
+    }
   }
 
+  const dangLuu = tao.isPending || capNhat.isPending
+
   // Chỉ cầu thủ chưa gắn tài khoản mới chọn được — một hồ sơ tối đa một tài khoản (FR-03).
+  // Khi sửa, giữ lại cầu thủ đang gắn cho CHÍNH tài khoản này, nếu không nó biến mất khỏi
+  // danh sách và người dùng vô tình gỡ liên kết chỉ vì mở form ra xem.
   const cauThuKhaDung = (cauThus ?? [])
-    .filter((c) => !c.coTaiKhoan)
+    .filter((c) => !c.coTaiKhoan || c.id === dangSua?.cauThuId)
     .map((c) => ({
       giaTri: c.id,
       nhan: c.hoTen,
@@ -187,6 +227,14 @@ export default function TaiKhoan() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      title={t('chung.sua')}
+                      onClick={() => moSua(u)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       title={t('taiKhoan.datLaiMatKhau')}
                       onClick={() => {
                         setMaLoi(null)
@@ -218,26 +266,52 @@ export default function TaiKhoan() {
       <Modal
         mo={moForm}
         onDong={dongForm}
-        chanDoiKhiXuLy={tao.isPending}
-        tieuDe={t('taiKhoan.themMoi')}
-        moTa={t('taiKhoan.wizardGoiY')}
+        chanDoiKhiXuLy={dangLuu}
+        tieuDe={dangSua ? t('taiKhoan.suaTieuDe') : t('taiKhoan.themMoi')}
+        moTa={dangSua ? dangSua.username : t('taiKhoan.wizardGoiY')}
       >
-        <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="username">{t('taiKhoan.username')}</Label>
-            <Input id="username" name="username" required autoFocus />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="matKhau">{t('dangNhap.matKhau')}</Label>
-            <Input id="matKhau" name="matKhau" type="password" minLength={6} required />
-          </div>
+        <form
+          key={dangSua?.id ?? 'moi'}
+          onSubmit={onSubmit}
+          className="grid gap-4 sm:grid-cols-2"
+        >
+          {dangSua ? (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="trangThai">{t('taiKhoan.trangThai')}</Label>
+              <SelectTimKiem
+                id="trangThai"
+                choPhepXoa={false}
+                luaChon={[
+                  { giaTri: 'HoatDong', nhan: t('taiKhoan.hoatDong') },
+                  { giaTri: 'VoHieuHoa', nhan: t('taiKhoan.voHieuHoa') },
+                ]}
+                giaTri={trangThai}
+                onDoi={(v) => setTrangThai((v as 'HoatDong' | 'VoHieuHoa') ?? 'HoatDong')}
+              />
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="username">{t('taiKhoan.username')}</Label>
+                <Input id="username" name="username" required autoFocus />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="matKhau">{t('dangNhap.matKhau')}</Label>
+                <Input id="matKhau" name="matKhau" type="password" minLength={6} required />
+              </div>
+            </>
+          )}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="email">{t('taiKhoan.email')}</Label>
-            <Input id="email" name="email" type="email" />
+            <Input id="email" name="email" type="email" defaultValue={dangSua?.email ?? ''} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="soDienThoai">{t('taiKhoan.soDienThoai')}</Label>
-            <Input id="soDienThoai" name="soDienThoai" />
+            <Input
+              id="soDienThoai"
+              name="soDienThoai"
+              defaultValue={dangSua?.soDienThoai ?? ''}
+            />
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -264,22 +338,25 @@ export default function TaiKhoan() {
             />
           </div>
 
-          <div className="sm:col-span-2">
-            <label className="flex items-start gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="mt-0.5 h-4 w-4 accent-[hsl(var(--primary))]"
-                checked={buocDoiMk}
-                onChange={(e) => setBuocDoiMk(e.target.checked)}
-              />
-              <span>
-                {t('taiKhoan.buocDoiMk')}
-                <span className="block text-xs text-muted-foreground">
-                  {t('taiKhoan.buocDoiMkGoiY')}
+          {/* Chỉ khi TẠO: sửa tài khoản không đặt lại mật khẩu nên cờ này không có nghĩa. */}
+          {!dangSua && (
+            <div className="sm:col-span-2">
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 accent-[hsl(var(--primary))]"
+                  checked={buocDoiMk}
+                  onChange={(e) => setBuocDoiMk(e.target.checked)}
+                />
+                <span>
+                  {t('taiKhoan.buocDoiMk')}
+                  <span className="block text-xs text-muted-foreground">
+                    {t('taiKhoan.buocDoiMkGoiY')}
+                  </span>
                 </span>
-              </span>
-            </label>
-          </div>
+              </label>
+            </div>
+          )}
 
           {maLoi && (
             <div className="sm:col-span-2">
@@ -289,11 +366,11 @@ export default function TaiKhoan() {
 
           <div className="sm:col-span-2">
             <ModalChan>
-              <Button type="button" variant="outline" onClick={dongForm} disabled={tao.isPending}>
+              <Button type="button" variant="outline" onClick={dongForm} disabled={dangLuu}>
                 {t('chung.huy')}
               </Button>
-              <Button type="submit" disabled={tao.isPending}>
-                {tao.isPending ? t('chung.dangTai') : t('chung.luu')}
+              <Button type="submit" disabled={dangLuu}>
+                {dangLuu ? t('chung.dangTai') : t('chung.luu')}
               </Button>
             </ModalChan>
           </div>

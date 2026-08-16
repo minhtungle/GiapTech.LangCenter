@@ -15,7 +15,7 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 |---|---|:---:|:---:|---|
 | FR-01 | Đăng nhập | ✅ | ✅ | Kèm đổi mật khẩu, refresh token xoay vòng |
 | FR-02 | Quên mật khẩu | ✅ | ✅ | Chưa cấu hình SMTP thật — email ghi log |
-| FR-03 | Tài khoản người dùng | ✅ | 🟡 | FE thiếu nút sửa / vô hiệu hóa |
+| FR-03 | Tài khoản người dùng | ✅ | ✅ | CRUD đủ, kể cả vô hiệu hóa |
 | FR-04 | Hồ sơ cầu thủ | ✅ | 🟡 | Chưa upload được ảnh đại diện |
 | FR-05 | Phân quyền truy cập | ✅ | ✅ | Ma trận chức năng × thao tác |
 | FR-06 | Thiết lập chung | ✅ | 🟡 | Chưa upload được logo / ảnh bìa |
@@ -96,7 +96,6 @@ Dockerfile → thử `docker compose up` → VPS → domain + HTTPS → backup.
 |---|---|
 | `/dang-ky-clb` chưa an toàn production (đang chặn bằng `IsDevelopment()`) | Cao |
 | Upload ảnh MinIO — avatar, logo, ảnh bìa | Trung bình |
-| Sửa / vô hiệu hóa tài khoản ở frontend | Trung bình |
 | ADR-0005: không dùng Identity đầy đủ (đang lệch `CLAUDE.md` mục 4) | Trung bình |
 | Đăng xuất chưa gọi API thu hồi refresh token | Thấp |
 | Trang style-guide · pre-commit hook · code-split · `.resx` backend | Thấp |

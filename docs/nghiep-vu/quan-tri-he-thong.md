@@ -61,6 +61,17 @@ Thông tin CLB: tên đội, tên viết tắt, ngày thành lập, logo, ảnh 
 | Mã | Endpoint | Ghi chú |
 |---|---|---|
 | FR-03 | `/api/v1/tai-khoan` (GET/POST/PUT/DELETE), `POST {id}/dat-lai-mat-khau` | Đặt lại mật khẩu dùng chức năng riêng `DoiMatKhauNguoiKhac` |
+
+**Cập nhật tài khoản (PUT)** sửa được: email, SĐT, hồ sơ cầu thủ liên kết, nhóm quyền, trạng thái.
+Cố tình **không** cho sửa:
+
+| Trường | Vì sao |
+|---|---|
+| `username` | Là định danh đăng nhập — đổi sẽ khoá người dùng ra ngoài mà họ không biết |
+| `password` | Có luồng riêng (`dat-lai-mat-khau`) để luôn bật cờ buộc đổi, admin không giữ mật khẩu đang dùng của người khác |
+
+Chặn **tự vô hiệu hóa chính mình**: đăng xuất xong không vào lại được, và nếu là admin duy nhất thì
+cả CLB mất quyền quản trị.
 | FR-04 | `/api/v1/cau-thu` (GET/POST/PUT/DELETE) | Chặn xóa khi còn dữ liệu đóng quỹ |
 | FR-05 | `/api/v1/quyen` (GET/POST/PUT/DELETE), `GET /danh-muc` | Chặn xóa nhóm đang được gán; tự xóa cache quyền khi sửa |
 | FR-06 | `/api/v1/thiet-lap` (GET/PUT) | `MaDoi` không cho sửa — người dùng gõ nó khi đăng nhập |

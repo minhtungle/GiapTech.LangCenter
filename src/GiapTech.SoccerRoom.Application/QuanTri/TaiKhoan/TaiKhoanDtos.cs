@@ -128,8 +128,18 @@ public record CapNhatTaiKhoanCommand(
     Guid Id, string? Email, string? SoDienThoai, string? DiaChi,
     Guid? CauThuId, List<Guid> QuyenIds, TrangThaiNguoiDung TrangThai) : IRequest;
 
+public class CapNhatTaiKhoanValidator : AbstractValidator<CapNhatTaiKhoanCommand>
+{
+    public CapNhatTaiKhoanValidator()
+    {
+        RuleFor(x => x.Id).NotEmpty();
+        RuleFor(x => x.Email).EmailAddress().When(x => !string.IsNullOrWhiteSpace(x.Email));
+        RuleFor(x => x.SoDienThoai).MaximumLength(20);
+    }
+}
+
 public class CapNhatTaiKhoanHandler(
-    IAppDbContext db, IQuyenService quyenService, ICurrentTenant tenant)
+    IAppDbContext db, IQuyenService quyenService, ICurrentTenant tenant, ICurrentUser currentUser)
     : IRequestHandler<CapNhatTaiKhoanCommand>
 {
     public async Task Handle(CapNhatTaiKhoanCommand request, CancellationToken ct)
@@ -138,6 +148,12 @@ public class CapNhatTaiKhoanHandler(
             .Include(u => u.NguoiDungQuyens)
             .FirstOrDefaultAsync(u => u.Id == request.Id, ct)
             ?? throw new KhongTimThayException($"NguoiDung {request.Id}");
+
+        // Tự vô hiệu hóa mình là đường một chiều: đăng xuất xong không vào lại được, và nếu
+        // đây là admin duy nhất thì cả CLB mất quyền quản trị.
+        if (currentUser.UserId == request.Id &&
+            request.TrangThai == TrangThaiNguoiDung.VoHieuHoa)
+            throw new AppException("KHONG_TU_VO_HIEU_HOA_MINH");
 
         if (request.CauThuId is { } cauThuId &&
             await db.NguoiDungs.AnyAsync(u => u.CauThuId == cauThuId && u.Id != request.Id, ct))
