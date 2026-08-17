@@ -60,6 +60,14 @@ services:
       SMS_PROVIDER: ${SMS_PROVIDER:-}
       SMS_API_KEY: ${SMS_API_KEY:-}
       SMS_SECRET_KEY: ${SMS_SECRET_KEY:-}
+      # Kho ảnh — endpoint là TÊN SERVICE nội bộ, MinIO không expose ra Internet (quy tắc #6).
+      # Dùng chung tài khoản root: CLB phong trào một VPS, tạo access key riêng chỉ thêm một
+      # thứ phải xoay vòng mà không giảm rủi ro thực tế nào.
+      Minio__Endpoint: minio:9000
+      Minio__AccessKey: ${MINIO_ROOT_USER:?can MINIO_ROOT_USER}
+      Minio__SecretKey: ${MINIO_ROOT_PASSWORD:?can MINIO_ROOT_PASSWORD}
+      Minio__Bucket: ${MINIO_BUCKET:-soccerroom-anh}
+      Minio__UseSsl: "false"
       SENTRY_DSN: ${SENTRY_DSN:-}
     networks:
       - backend

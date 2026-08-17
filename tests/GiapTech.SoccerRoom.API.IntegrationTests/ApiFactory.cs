@@ -73,6 +73,13 @@ public class ApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IEmailSender>();
             services.AddScoped<IEmailSender, TestEmailSender>();
 
+            // Thay MinIO bằng kho trong bộ nhớ: test không có container MinIO, mà điều cần
+            // canh ở tầng này là LUỒNG (ghi khoá vào DB, dọn ảnh cũ, cách ly tenant) chứ
+            // không phải giao thức S3. Bản giả giữ nguyên quy ước khoá {tenantId}/... nên
+            // kiểm được cách ly.
+            services.RemoveAll<ILuuTruAnh>();
+            services.AddScoped<ILuuTruAnh, TestLuuTruAnh>();
+
             services.AddDbContext<AppDbContext>(o => o
                 .UseInMemoryDatabase(_tenDb)
                 .ConfigureWarnings(w => w.Ignore(

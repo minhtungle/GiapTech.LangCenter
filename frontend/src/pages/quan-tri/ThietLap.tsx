@@ -7,6 +7,7 @@ import { Button, CanhBaoLoi, Card, CardContent, Input, Label, Textarea,
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { BANG_MAU_AO } from '@/components/soDo/loaiSan'
+import { ChonAnh } from '@/components/ui/ChonAnh'
 
 interface ThietLapDto {
   id: string
@@ -30,6 +31,9 @@ export default function ThietLap() {
   const [daLuu, setDaLuu] = useState(false)
   /** null = chưa chạm, lấy giá trị server. */
   const [mauAo, setMauAo] = useState<string[] | null>(null)
+  /** null = chưa chạm, lấy giá trị server. Ảnh tải ngay nên state này chỉ để hiện lại. */
+  const [logoNhap, setLogoNhap] = useState<string | null | undefined>(undefined)
+  const [anhBiaNhap, setAnhBiaNhap] = useState<string | null | undefined>(undefined)
 
   const { data, isLoading } = useQuery({
     queryKey: ['thiet-lap'],
@@ -44,6 +48,8 @@ export default function ThietLap() {
     onSuccess: (form) => {
       void qc.invalidateQueries({ queryKey: ['thiet-lap'] })
       setMauAo(null)
+      setLogoNhap(undefined)
+      setAnhBiaNhap(undefined)
       // Tên đội nằm trong JWT nên token đang cầm vẫn mang tên cũ tới lần làm mới kế tiếp;
       // không đồng bộ thì sidebar hiện tên cũ dù người dùng vừa đổi xong.
       if (form.tenDoi) capNhatTenDoi(form.tenDoi)
@@ -57,6 +63,10 @@ export default function ThietLap() {
   if (isLoading) return <p className="text-sm text-muted-foreground">{t('chung.dangTai')}</p>
 
   const dangChonMau = mauAo ?? data?.mauAo ?? []
+  const logo = logoNhap === undefined ? (data?.logoUrl ?? null) : logoNhap
+  const anhBia = anhBiaNhap === undefined ? (data?.anhBiaUrl ?? null) : anhBiaNhap
+  const setLogo = setLogoNhap
+  const setAnhBia = setAnhBiaNhap
 
   const bat = (ma: string) =>
     setMauAo(
@@ -75,8 +85,8 @@ export default function ThietLap() {
       tenVietTat: (fd.get('tenVietTat') as string) || null,
       ngayThanhLap: (fd.get('ngayThanhLap') as string) || null,
       moTa: (fd.get('moTa') as string) || null,
-      logoUrl: data?.logoUrl ?? null,
-      anhBiaUrl: data?.anhBiaUrl ?? null,
+      logoUrl: logo,
+      anhBiaUrl: anhBia,
       mauAo: dangChonMau,
     })
   }
@@ -115,6 +125,33 @@ export default function ThietLap() {
             Bộ áo đấu — bảng chiến thuật chỉ cho chọn trong bộ này. Khai ở đây một lần thay vì
             mỗi trận chọn lại một màu khác, xem lại lịch sử không nhận ra đội mình mặc gì.
           */}
+          <div className="flex flex-wrap gap-6 sm:col-span-2">
+            <div>
+              <Label className="mb-1.5 block">{t('thietLap.logo')}</Label>
+              <ChonAnh
+                khoa={logo}
+                duongDanTai="/anh/clb/logo"
+                duongDanXoa="/anh/clb/logo"
+                onXong={(k) => {
+                  setLogo(k)
+                  void qc.invalidateQueries({ queryKey: ['thiet-lap'] })
+                }}
+              />
+            </div>
+            <div>
+              <Label className="mb-1.5 block">{t('thietLap.anhBia')}</Label>
+              <ChonAnh
+                khoa={anhBia}
+                duongDanTai="/anh/clb/anh-bia"
+                duongDanXoa="/anh/clb/anh-bia"
+                onXong={(k) => {
+                  setAnhBia(k)
+                  void qc.invalidateQueries({ queryKey: ['thiet-lap'] })
+                }}
+              />
+            </div>
+          </div>
+
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label>{t('thietLap.mauAo')}</Label>
             <div className="flex flex-wrap gap-2">

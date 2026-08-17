@@ -7,6 +7,8 @@ import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong, Textarea,
 } from '@/components/ui'
 import { Modal, ModalChan } from '@/components/ui/Modal'
+import { ChonAnh } from '@/components/ui/ChonAnh'
+import { Anh } from '@/components/ui/Anh'
 import { PhanTrang } from '@/components/ui/PhanTrang'
 
 interface CauThuDto {
@@ -31,6 +33,8 @@ export default function CauThu() {
   const [dangSua, setDangSua] = useState<CauThuDto | null>(null)
   const [moForm, setMoForm] = useState(false)
   const [maLoi, setMaLoi] = useState<string | null>(null)
+  /** Khoá ảnh đang hiện trong form — tải ảnh cập nhật ngay, không chờ bấm Lưu. */
+  const [anhHienTai, setAnhHienTai] = useState<string | null>(null)
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
 
   const { data: ketQua, isLoading } = useQuery({
@@ -66,12 +70,14 @@ export default function CauThu() {
 
   const moThem = () => {
     setDangSua(null)
+    setAnhHienTai(null)
     setMaLoi(null)
     setMoForm(true)
   }
 
   const moSua = (c: CauThuDto) => {
     setDangSua(c)
+    setAnhHienTai(c.anhDaiDien)
     setMaLoi(null)
     setMoForm(true)
   }
@@ -93,6 +99,7 @@ export default function CauThu() {
       ngaySinh: (fd.get('ngaySinh') as string) || null,
       ngayThamGia: (fd.get('ngayThamGia') as string) || null,
       ghiChu: (fd.get('ghiChu') as string) || null,
+      anhDaiDien: anhHienTai,
       soAo: soAo === '' ? null : Number(soAo),
       viTriSoTruong: (fd.get('viTriSoTruong') as string) || null,
     })
@@ -139,6 +146,7 @@ export default function CauThu() {
         <Table>
           <thead>
             <tr>
+              <Th className="w-14" />
               <Th className="w-16">{t('cauThu.soAo')}</Th>
               <Th>{t('cauThu.hoTen')}</Th>
               <Th className="w-20">{t('cauThu.viTriSoTruong')}</Th>
@@ -151,6 +159,17 @@ export default function CauThu() {
           <tbody>
             {data.map((c) => (
               <tr key={c.id} className="hover:bg-muted/40">
+                <Td>
+                  <Anh
+                    khoa={c.anhDaiDien}
+                    className="h-8 w-8 rounded-full object-cover"
+                    thayThe={
+                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-[10px] text-muted-foreground">
+                        —
+                      </span>
+                    }
+                  />
+                </Td>
                 <Td>
                   {c.soAo !== null ? (
                     <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
@@ -218,6 +237,25 @@ export default function CauThu() {
       >
         {/* key ép React dựng lại form khi đổi bản ghi — nếu không, defaultValue giữ giá trị cũ. */}
         <form key={dangSua?.id ?? 'moi'} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
+          {/* Ảnh chỉ chọn được khi SỬA: endpoint cần id cầu thủ, mà lúc tạo mới chưa có.
+              Người dùng tạo hồ sơ xong bấm sửa để thêm ảnh — một bước, đổi lại không phải
+              dựng luồng tải ảnh tạm rồi gắn sau. */}
+          {dangSua && (
+            <div className="sm:col-span-2">
+              <Label className="mb-1.5 block">{t('cauThu.anhDaiDien')}</Label>
+              <ChonAnh
+                khoa={anhHienTai}
+                duongDanTai={`/anh/cau-thu/${dangSua.id}`}
+                duongDanXoa={`/anh/cau-thu/${dangSua.id}`}
+                hinhTron
+                onXong={(k) => {
+                  setAnhHienTai(k)
+                  void qc.invalidateQueries({ queryKey: ['cau-thu'] })
+                }}
+              />
+            </div>
+          )}
+
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label htmlFor="hoTen">{t('cauThu.hoTen')}</Label>
             <Input id="hoTen" name="hoTen" defaultValue={dangSua?.hoTen} required autoFocus />

@@ -82,9 +82,42 @@ Bảng màu tồn tại ở hai nơi — `Domain/Common/MauAo.cs` (validate) và
 ### Quy tắc
 
 - Tenant mới chưa cấu hình → dùng **giá trị mặc định**, không chặn người dùng vào hệ thống.
-- Logo và ảnh bìa upload lên MinIO qua presigned URL.
+- Logo và ảnh bìa lưu trên MinIO, **API làm proxy** (`GET /api/v1/anh/{khoa}`) chứ không dùng
+  presigned URL: MinIO không expose ra Internet (quy tắc #6), và đi qua API thì mỗi lần đọc đều
+  kiểm được tenant. Xem [upload ảnh](#upload-ảnh).
 - Lệnh cập nhật gửi `mauAo = null` (client cũ) thì **giữ nguyên** bộ áo; chỉ mảng rỗng mới là
   "người dùng chủ động bỏ hết" (quy tắc #1). Canh bởi `Sua_ten_doi_khong_lam_mat_bo_ao`.
+
+## Upload ảnh
+
+Ảnh đại diện cầu thủ (FR-04), logo và ảnh bìa CLB (FR-06) lưu trên MinIO (ADR-0004).
+
+**DB lưu KHOÁ, không lưu URL đầy đủ**: đổi domain hay chuyển kho lưu trữ thì mọi hàng vẫn dùng
+được, không phải migration sửa hàng loạt chuỗi.
+
+### Cách ly tenant
+
+Khoá có dạng `{tenantId}/{loai}/{guid}{ext}` — tenant nằm ngay đầu đường dẫn. Kho lưu trữ
+**không có Global Query Filter** như EF Core, nên cách ly phải tự cài đặt: tầng lưu trữ kiểm
+tiền tố tenant trước khi đọc/xoá. Không có bước này thì đoán được khoá là đọc được ảnh CLB
+khác. Canh bởi `Khong_doc_duoc_anh_cua_clb_khac`, kiểm chứng bằng phản chứng.
+
+`ILuuTruAnh` đăng ký **Scoped**, không Singleton: nó phụ thuộc `ICurrentTenant` (theo request).
+Singleton sẽ giữ tenant của request đầu tiên cho mọi request sau.
+
+### Ba quyết định
+
+- **SVG bị từ chối.** SVG là XML, chứa được `<script>` và chạy khi trình duyệt mở trực tiếp —
+  nhận nó là mở đường cho XSS lưu trữ. Chỉ nhận JPG/PNG/WebP/GIF, tối đa 5 MB.
+- **Frontend tải ảnh qua axios rồi tạo blob URL**, không dùng `<img src="/api/v1/anh/...">`:
+  trình duyệt không gắn header `Authorization` cho request của thẻ img nên endpoint trả 401 và
+  ảnh hiện thành icon hỏng (đã gặp đúng lỗi này). Hai lựa chọn khác đều tệ hơn — token trong
+  querystring bị lộ vào log server, hoặc expose MinIO ra Internet (trái quy tắc #6).
+- **Đổi ảnh dọn ảnh cũ.** Không dọn thì mỗi lần đổi avatar để lại một tệp mồ côi vĩnh viễn.
+  Ghi khoá mới vào DB TRƯỚC khi xoá tệp cũ: xoá trước mà ghi DB lỗi thì mất cả hai.
+  Canh bởi `Doi_anh_thi_xoa_anh_cu`.
+
+Bucket tạo lúc tải lên đầu tiên, không lúc khởi động: API phải lên được kể cả khi MinIO tạm chết.
 
 ## Trạng thái triển khai
 

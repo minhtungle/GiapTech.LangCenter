@@ -21,6 +21,7 @@ nhân để quản trị: dùng SSH tunnel.
 |---|---|
 | `MINIO_ROOT_USER` | Tài khoản quản trị MinIO — **bắt buộc đổi** |
 | `MINIO_ROOT_PASSWORD` | Mật khẩu quản trị — **bắt buộc đổi** |
+| `MINIO_BUCKET` | Bucket chứa ảnh, mặc định `soccerroom-anh` — tạo tự động lần tải đầu |
 
 Console MinIO (cổng 9001) không public — truy cập qua SSH tunnel khi cần quản trị. Client upload file
 (ảnh đại diện cầu thủ, logo, ảnh bìa) qua **presigned URL**, không đi qua backend.

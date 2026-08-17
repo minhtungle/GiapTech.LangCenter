@@ -16,9 +16,9 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | FR-01 | Đăng nhập | ✅ | ✅ | Kèm đổi mật khẩu, refresh token xoay vòng |
 | FR-02 | Quên mật khẩu | ✅ | ✅ | Chưa cấu hình SMTP thật — email ghi log |
 | FR-03 | Tài khoản người dùng | ✅ | ✅ | CRUD đủ, kể cả vô hiệu hóa |
-| FR-04 | Hồ sơ cầu thủ | ✅ | 🟡 | Chưa upload được ảnh đại diện |
+| FR-04 | Hồ sơ cầu thủ | ✅ | ✅ | Kèm số áo, vị trí sở trường, ảnh đại diện (MinIO) |
 | FR-05 | Phân quyền truy cập | ✅ | ✅ | Ma trận chức năng × thao tác |
-| FR-06 | Thiết lập chung | ✅ | 🟡 | Chưa upload được logo / ảnh bìa |
+| FR-06 | Thiết lập chung | ✅ | ✅ | Kèm bộ áo đấu, logo và ảnh bìa (MinIO) |
 | FR-07 | Lọc thông tin (trận đấu) | ✅ | ✅ | `BoLocTranDau` dùng chung với FR-12 |
 | FR-08 | Danh sách trận đấu | ✅ | ✅ | Datatable (phân trang) + Calendar (Calendar.js), chuyển đổi qua lại |
 | FR-09 | Chấp nhận lời mời đối thủ | ✅ | ✅ | Chấp nhận → tự sinh trận, điều hướng sang chi tiết |
@@ -41,7 +41,8 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | Cách ly tenant (2 tầng phòng vệ tự động + test) | ✅ |
 | Phân quyền động đọc từ DB + cache | ✅ |
 | Frontend: layout, i18n, design token, auto-refresh token | ✅ |
-| 196 test (41 unit + 155 integration) | ✅ |
+| 208 test (41 unit + 167 integration) | ✅ |
+| Upload ảnh qua MinIO (avatar, logo, ảnh bìa) | ✅ |
 | **Dockerfile cho API** | ✅ 2 giai đoạn, chạy user thường |
 | **`docker compose up` chạy được** | ✅ 5 container, API healthy, migration tự áp |
 | Test E2E frontend | ⬜ |
