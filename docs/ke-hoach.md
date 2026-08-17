@@ -22,7 +22,7 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | FR-07 | Lọc thông tin (trận đấu) | ✅ | ✅ | `BoLocTranDau` dùng chung với FR-12 |
 | FR-08 | Danh sách trận đấu | ✅ | ✅ | Datatable (phân trang) + Calendar (Calendar.js), chuyển đổi qua lại |
 | FR-09 | Chấp nhận lời mời đối thủ | ✅ | ✅ | Chấp nhận → tự sinh trận, điều hướng sang chi tiết |
-| FR-10 | Thêm/Cập nhật trận đấu | ✅ | 🟡 | 3 tab đủ; sơ đồ chưa có bản vẽ kéo-thả |
+| FR-10 | Thêm/Cập nhật trận đấu | ✅ | ✅ | 4 tab; bảng chiến thuật kéo-thả, mẫu đội hình, nhiều video |
 | FR-11 | Xóa trận đấu | ✅ | ✅ | Chỉ xóa cứng trận chưa diễn ra; có Lưu trữ thay thế |
 | FR-12 | Lọc thông tin (thống kê) | ✅ | ✅ | Component `BoLocTranDau` dùng chung với FR-07 |
 | FR-13 | Biểu đồ diễn biến | ✅ | ✅ | Recharts, bấm điểm → chi tiết trận |
@@ -41,7 +41,7 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | Cách ly tenant (2 tầng phòng vệ tự động + test) | ✅ |
 | Phân quyền động đọc từ DB + cache | ✅ |
 | Frontend: layout, i18n, design token, auto-refresh token | ✅ |
-| 109 test (34 unit + 75 integration) | ✅ |
+| 196 test (41 unit + 155 integration) | ✅ |
 | **Dockerfile cho API** | ✅ 2 giai đoạn, chạy user thường |
 | **`docker compose up` chạy được** | ✅ 5 container, API healthy, migration tự áp |
 | Test E2E frontend | ⬜ |
@@ -69,9 +69,8 @@ Module lớn nhất, tách 3 đợt để mỗi đợt đều có thứ dùng đ
 - ~~FR-10a đội hình · FR-10c đánh giá + vote MVP · FR-09 lời mời~~
 - ~~FR-08 chế độ Calendar~~ ✅ dùng Calendar.js
 
-**Đợt 1c — Sơ đồ chiến thuật kéo-thả** (~1 phiên, còn lại)
-- Backend FR-10b đã xong (lưu `jsonb` + validate JSON); UI hiện là ô nhập JSON thô.
-- Cần: bản vẽ kéo-thả trên nền sân bóng. Nặng nhất cả dự án, độc lập.
+**~~Đợt 1c — Sơ đồ chiến thuật kéo-thả~~** ✅ xong 17/08
+- ~~Bảng chiến thuật kéo-thả 4 loại sân, 2 hiệp, cả hai đội, mẫu đội hình dùng lại~~
 
 ### Giai đoạn 2 — Thống kê (FR-12 → FR-14) · ✅ xong
 
