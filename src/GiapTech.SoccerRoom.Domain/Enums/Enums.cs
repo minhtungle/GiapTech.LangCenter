@@ -29,6 +29,23 @@ public enum TrangThaiLoiMoi
     DaTuChoi = 2
 }
 
+/// <summary>
+/// Câu trả lời của cầu thủ cho lời mời đăng ký thi đấu.
+///
+/// Có <see cref="ChuaTraLoi"/> làm giá trị mặc định vì hàng phản hồi được tạo sẵn cho mọi
+/// cầu thủ ngay khi gửi lời mời — trưởng nhóm cần thấy ai chưa trả lời, không chỉ ai đồng ý.
+///
+/// <see cref="ChuaChac"/> là trạng thái thật của bóng đá phong trào: "để xem hôm đó có tăng
+/// ca không". Ép chọn có/không sẽ khiến người ta chọn bừa rồi bỏ trận.
+/// </summary>
+public enum TraLoiThamGia
+{
+    ChuaTraLoi = 0,
+    ThamGia = 1,
+    KhongThamGia = 2,
+    ChuaChac = 3
+}
+
 /// <summary>Trạng thái tài khoản đăng nhập.</summary>
 public enum TrangThaiNguoiDung
 {

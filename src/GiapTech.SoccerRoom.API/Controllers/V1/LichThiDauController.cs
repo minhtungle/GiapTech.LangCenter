@@ -67,9 +67,13 @@ public class TranDauController(ISender sender) : ControllerBase
         [FromBody] BoLocTranDau? loc,
         [FromQuery] int trang = 1,
         [FromQuery] int soDong = 20,
+        [FromQuery] CotSapXep cot = CotSapXep.ThoiGian,
+        [FromQuery] bool tangDan = false,
         CancellationToken ct = default)
         => Ok(await sender.Send(
-            new LayDanhSachTranDauQuery(loc, new ThamSoTrang(trang, soDong)), ct));
+            new LayDanhSachTranDauQuery(
+                loc, new ThamSoTrang(trang, soDong), new ThamSoSapXep(cot, tangDan)),
+            ct));
 
     [HttpGet]
     [RequirePermission(ChucNang.LichThiDau, HanhDong.Xem)]

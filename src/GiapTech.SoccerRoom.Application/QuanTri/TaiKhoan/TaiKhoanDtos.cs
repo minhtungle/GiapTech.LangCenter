@@ -18,7 +18,9 @@ namespace GiapTech.SoccerRoom.Application.QuanTri.TaiKhoan;
 public record TaiKhoanDto(
     Guid Id, string Username, string? Email, string? SoDienThoai, string? DiaChi,
     bool PhaiDoiMatKhau, TrangThaiNguoiDung TrangThai,
-    Guid? CauThuId, string? TenCauThu, List<Guid> QuyenIds, List<string> TenQuyens);
+    Guid? CauThuId, string? TenCauThu, List<Guid> QuyenIds, List<string> TenQuyens,
+    /// <summary>Trưởng nhóm — người gửi lời mời đăng ký thi đấu ở Hòm thư.</summary>
+    bool LaTruongNhom);
 
 // ---------- Queries ----------
 
@@ -52,7 +54,8 @@ public class LayDanhSachTaiKhoanHandler(IAppDbContext db)
                 u.CauThuId,
                 u.CauThu != null ? u.CauThu.HoTen : null,
                 u.NguoiDungQuyens.Select(nq => nq.QuyenId).ToList(),
-                u.NguoiDungQuyens.Select(nq => nq.Quyen.TenQuyen).ToList()))
+                u.NguoiDungQuyens.Select(nq => nq.Quyen.TenQuyen).ToList(),
+                u.LaTruongNhom))
             .ToListAsync(ct);
 
         return new KetQuaTrang<TaiKhoanDto>(duLieu, tong, trang.TrangHopLe, trang.SoDongHopLe);
@@ -63,7 +66,8 @@ public class LayDanhSachTaiKhoanHandler(IAppDbContext db)
 
 public record TaoTaiKhoanCommand(
     string Username, string MatKhau, string? Email, string? SoDienThoai, string? DiaChi,
-    Guid? CauThuId, List<Guid> QuyenIds, bool PhaiDoiMatKhau = true) : IRequest<Guid>;
+    Guid? CauThuId, List<Guid> QuyenIds, bool PhaiDoiMatKhau = true,
+    bool LaTruongNhom = false) : IRequest<Guid>;
 
 public class TaoTaiKhoanValidator : AbstractValidator<TaoTaiKhoanCommand>
 {
@@ -109,7 +113,8 @@ public class TaoTaiKhoanHandler(IAppDbContext db, IPasswordHasher hasher)
             SoDienThoai = request.SoDienThoai,
             DiaChi = request.DiaChi,
             CauThuId = request.CauThuId,
-            PhaiDoiMatKhau = request.PhaiDoiMatKhau
+            PhaiDoiMatKhau = request.PhaiDoiMatKhau,
+            LaTruongNhom = request.LaTruongNhom
         };
         db.NguoiDungs.Add(nguoiDung);
 
@@ -142,7 +147,8 @@ public class TaoTaiKhoanHandler(IAppDbContext db, IPasswordHasher hasher)
 
 public record CapNhatTaiKhoanCommand(
     Guid Id, string? Email, string? SoDienThoai, string? DiaChi,
-    Guid? CauThuId, List<Guid> QuyenIds, TrangThaiNguoiDung TrangThai) : IRequest;
+    Guid? CauThuId, List<Guid> QuyenIds, TrangThaiNguoiDung TrangThai,
+    bool LaTruongNhom = false) : IRequest;
 
 public class CapNhatTaiKhoanValidator : AbstractValidator<CapNhatTaiKhoanCommand>
 {
@@ -182,6 +188,7 @@ public class CapNhatTaiKhoanHandler(
         nguoiDung.DiaChi = request.DiaChi;
         nguoiDung.CauThuId = request.CauThuId;
         nguoiDung.TrangThai = request.TrangThai;
+        nguoiDung.LaTruongNhom = request.LaTruongNhom;
 
         db.NguoiDungQuyens.RemoveRange(nguoiDung.NguoiDungQuyens);
         foreach (var quyenId in request.QuyenIds.Distinct())

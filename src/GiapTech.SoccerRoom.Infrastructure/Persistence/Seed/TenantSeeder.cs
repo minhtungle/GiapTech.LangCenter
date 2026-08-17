@@ -60,7 +60,10 @@ public class TenantSeeder(AppDbContext db, IPasswordHasher hasher, ICurrentTenan
             PasswordHash = hasher.Bam(matKhauAdmin),
             // Mật khẩu mặc định ai cũng biết → bắt buộc đổi trước khi vào hệ thống (FR-01).
             PhaiDoiMatKhau = true,
-            TrangThai = TrangThaiNguoiDung.HoatDong
+            TrangThai = TrangThaiNguoiDung.HoatDong,
+            // Admin của CLB mới là trưởng nhóm mặc định — không thì không ai gửi được lời
+            // mời đăng ký và tính năng hòm thư nằm chết cho tới khi có người tự bật cờ.
+            LaTruongNhom = true
         };
         db.NguoiDungs.Add(admin);
 

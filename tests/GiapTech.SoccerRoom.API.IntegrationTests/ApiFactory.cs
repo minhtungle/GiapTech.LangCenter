@@ -146,6 +146,33 @@ public class ApiFactory : WebApplicationFactory<Program>
                 TenantId = tenant.Id, NguoiDungId = manager.Id, QuyenId = quyenQuanTri.Id
             });
 
+            // Trưởng nhóm: cùng quyền với manager nhưng CÓ cờ LaTruongNhom. Cần cả hai để
+            // kiểm chứng cờ này thật sự chặn — dùng chung một tài khoản thì test "không phải
+            // trưởng nhóm bị chặn" không viết được.
+            var truongNhom = new NguoiDung
+            {
+                TenantId = tenant.Id,
+                Username = "truongnhom",
+                PasswordHash = hasher.Bam("truongnhom123"),
+                PhaiDoiMatKhau = false,
+                LaTruongNhom = true
+            };
+            db.NguoiDungs.Add(truongNhom);
+            db.NguoiDungQuyens.Add(new NguoiDungQuyen
+            {
+                TenantId = tenant.Id, NguoiDungId = truongNhom.Id, QuyenId = quyenQuanTri.Id
+            });
+
+            // Trưởng nhóm GẮN hồ sơ cầu thủ: ngoài việc gửi lời mời, họ cũng là người đá bóng
+            // nên phải tự trả lời được. Tài khoản quản lý thuần tuý (không gắn hồ sơ) là
+            // trường hợp riêng, kiểm bằng `manager`.
+            var cauThuTruongNhom = new CauThu
+            {
+                TenantId = tenant.Id, HoTen = $"Trưởng nhóm CLB-{nhan}"
+            };
+            db.CauThus.Add(cauThuTruongNhom);
+            truongNhom.CauThuId = cauThuTruongNhom.Id;
+
             db.CauThus.Add(new CauThu { TenantId = tenant.Id, HoTen = $"Cầu thủ của CLB-{nhan}" });
             db.SaveChanges();
 

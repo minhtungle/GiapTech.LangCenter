@@ -67,7 +67,7 @@ public class ChiTietTranTests(ApiFactory factory) : IClassFixture<ApiFactory>
             new { TenDoi = "FC Mời Giao Hữu", LienHe = (string?)null, GhiChu = (string?)null });
         var doiThuId = await taoDt.Content.ReadFromJsonAsync<Guid>();
 
-        var taoLm = await client.PostAsJsonAsync("/api/v1/loi-moi", new
+        var taoLm = await client.PostAsJsonAsync("/api/v1/hom-thu/giao-huu", new
         {
             DoiThuId = doiThuId,
             ThoiGianDeXuat = "2026-05-10T15:00:00Z",
@@ -75,7 +75,7 @@ public class ChiTietTranTests(ApiFactory factory) : IClassFixture<ApiFactory>
         });
         var loiMoiId = await taoLm.Content.ReadFromJsonAsync<Guid>();
 
-        var chapNhan = await client.PostAsync($"/api/v1/loi-moi/{loiMoiId}/chap-nhan", null);
+        var chapNhan = await client.PostAsync($"/api/v1/hom-thu/giao-huu/{loiMoiId}/chap-nhan", null);
         Assert.Equal(HttpStatusCode.OK, chapNhan.StatusCode);
         var tranDauId = await chapNhan.Content.ReadFromJsonAsync<Guid>();
 
@@ -86,7 +86,7 @@ public class ChiTietTranTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal("FC Mời Giao Hữu", tran.GetProperty("tenDoiThu").GetString());
 
         // Lời mời giữ vết trận đã sinh.
-        var ds = await client.GetFromJsonAsync<List<JsonElement>>("/api/v1/loi-moi");
+        var ds = await client.GetFromJsonAsync<List<JsonElement>>("/api/v1/hom-thu/giao-huu");
         var lm = ds!.Single(x => x.GetProperty("id").GetGuid() == loiMoiId);
         Assert.Equal("DaChapNhan", lm.GetProperty("trangThai").GetString());
         Assert.Equal(tranDauId.ToString(), lm.GetProperty("tranDauId").GetString());
@@ -101,12 +101,12 @@ public class ChiTietTranTests(ApiFactory factory) : IClassFixture<ApiFactory>
             new { TenDoi = "FC Mời Hai Lần", LienHe = (string?)null, GhiChu = (string?)null });
         var doiThuId = await taoDt.Content.ReadFromJsonAsync<Guid>();
 
-        var taoLm = await client.PostAsJsonAsync("/api/v1/loi-moi",
+        var taoLm = await client.PostAsJsonAsync("/api/v1/hom-thu/giao-huu",
             new { DoiThuId = doiThuId, ThoiGianDeXuat = "2026-05-11T15:00:00Z", GhiChu = (string?)null });
         var id = await taoLm.Content.ReadFromJsonAsync<Guid>();
 
-        await client.PostAsync($"/api/v1/loi-moi/{id}/chap-nhan", null);
-        var lan2 = await client.PostAsync($"/api/v1/loi-moi/{id}/chap-nhan", null);
+        await client.PostAsync($"/api/v1/hom-thu/giao-huu/{id}/chap-nhan", null);
+        var lan2 = await client.PostAsync($"/api/v1/hom-thu/giao-huu/{id}/chap-nhan", null);
 
         Assert.Equal(HttpStatusCode.BadRequest, lan2.StatusCode);
         var body = await lan2.Content.ReadFromJsonAsync<JsonElement>();
@@ -121,14 +121,14 @@ public class ChiTietTranTests(ApiFactory factory) : IClassFixture<ApiFactory>
             new { TenDoi = "FC Bị Từ Chối", LienHe = (string?)null, GhiChu = (string?)null });
         var doiThuId = await taoDt.Content.ReadFromJsonAsync<Guid>();
 
-        var taoLm = await client.PostAsJsonAsync("/api/v1/loi-moi",
+        var taoLm = await client.PostAsJsonAsync("/api/v1/hom-thu/giao-huu",
             new { DoiThuId = doiThuId, ThoiGianDeXuat = "2026-05-12T15:00:00Z", GhiChu = (string?)null });
         var id = await taoLm.Content.ReadFromJsonAsync<Guid>();
 
-        var res = await client.PostAsync($"/api/v1/loi-moi/{id}/tu-choi", null);
+        var res = await client.PostAsync($"/api/v1/hom-thu/giao-huu/{id}/tu-choi", null);
         Assert.Equal(HttpStatusCode.NoContent, res.StatusCode);
 
-        var ds = await client.GetFromJsonAsync<List<JsonElement>>("/api/v1/loi-moi");
+        var ds = await client.GetFromJsonAsync<List<JsonElement>>("/api/v1/hom-thu/giao-huu");
         var lm = ds!.Single(x => x.GetProperty("id").GetGuid() == id);
         Assert.Equal("DaTuChoi", lm.GetProperty("trangThai").GetString());
         Assert.True(lm.GetProperty("tranDauId").ValueKind == JsonValueKind.Null);
@@ -285,6 +285,109 @@ public class ChiTietTranTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var dg = await client.GetFromJsonAsync<List<JsonElement>>($"/api/v1/tran-dau/{tranId}/danh-gia");
         Assert.Single(dg!);
         Assert.Equal(0, dg![0].GetProperty("soBanGhiDuoc").GetInt32());
+    }
+
+    /// <summary>
+    /// Tỷ số đội nhà = tổng bàn thắng CỦA CẢ TRẬN, không chỉ phần vừa gửi lên.
+    ///
+    /// Bẫy: handler lưu đánh giá cố tình không xóa cầu thủ vắng mặt trong payload (cho phép
+    /// lưu từng phần). Nếu cộng tổng chỉ trên payload thì lưu riêng cầu thủ B sẽ làm tỷ số
+    /// tụt mất số bàn của A — mất dữ liệu đúng kiểu quy tắc #1 cấm.
+    ///
+    /// Kiểm bằng phản chứng: đổi tổng thành `request.DanhGias.Sum(...)` thì test này phải đỏ.
+    /// </summary>
+    [Fact]
+    public async Task Luu_danh_gia_tung_phan_khong_lam_tut_ty_so()
+    {
+        var client = await Client();
+        var tranId = await TaoTran(client, "2026-05-20T15:00:00Z");
+        var a = await TaoCauThu(client, "Tiền Đạo A");
+        var b = await TaoCauThu(client, "Tiền Đạo B");
+
+        await client.PutAsJsonAsync($"/api/v1/tran-dau/{tranId}/doi-hinh", new
+        {
+            TranDauId = tranId,
+            ThanhVien = new[]
+            {
+                new { CauThuId = a, ViTri = (string?)null, LaDuBi = false },
+                new { CauThuId = b, ViTri = (string?)null, LaDuBi = false },
+            },
+        });
+
+        // Lưu riêng A: 2 bàn.
+        await client.PutAsJsonAsync($"/api/v1/tran-dau/{tranId}/danh-gia", new
+        {
+            TranDauId = tranId,
+            DanhGias = new[]
+            {
+                new { CauThuId = a, SoBanGhiDuoc = 2, SoBanCuuThua = 0,
+                      ChiSoKyNang = (string?)null, GhiChu = (string?)null },
+            },
+        });
+        Assert.Equal(2, (await client.GetFromJsonAsync<JsonElement>($"/api/v1/tran-dau/{tranId}"))
+            .GetProperty("tySoNha").GetInt32());
+
+        // Lưu riêng B: 1 bàn. Tổng phải là 3, KHÔNG phải 1.
+        await client.PutAsJsonAsync($"/api/v1/tran-dau/{tranId}/danh-gia", new
+        {
+            TranDauId = tranId,
+            DanhGias = new[]
+            {
+                new { CauThuId = b, SoBanGhiDuoc = 1, SoBanCuuThua = 0,
+                      ChiSoKyNang = (string?)null, GhiChu = (string?)null },
+            },
+        });
+
+        var tran = await client.GetFromJsonAsync<JsonElement>($"/api/v1/tran-dau/{tranId}");
+        Assert.Equal(3, tran.GetProperty("tySoNha").GetInt32());
+    }
+
+    /// <summary>
+    /// Chỉ số kỹ năng lưu và đọc lại nguyên vẹn — cột JSON nên backend không hiểu nội dung,
+    /// nhưng không được làm méo nó.
+    /// </summary>
+    [Fact]
+    public async Task Chi_so_ky_nang_luu_va_doc_lai_nguyen_ven()
+    {
+        var client = await Client();
+        var tranId = await TaoTran(client, "2026-05-21T15:00:00Z");
+        var a = await TaoCauThu(client, "Cầu Thủ Có Chỉ Số");
+
+        await client.PutAsJsonAsync($"/api/v1/tran-dau/{tranId}/doi-hinh", new
+        {
+            TranDauId = tranId,
+            ThanhVien = new[] { new { CauThuId = a, ViTri = (string?)null, LaDuBi = false } },
+        });
+
+        const string chiSo = """{"tanCong":8,"phongNgu":5,"theLuc":7}""";
+        await client.PutAsJsonAsync($"/api/v1/tran-dau/{tranId}/danh-gia", new
+        {
+            TranDauId = tranId,
+            DanhGias = new[]
+            {
+                new { CauThuId = a, SoBanGhiDuoc = 1, SoBanCuuThua = 0,
+                      ChiSoKyNang = chiSo, GhiChu = "chạy tốt" },
+            },
+        });
+
+        var dg = await client.GetFromJsonAsync<List<JsonElement>>($"/api/v1/tran-dau/{tranId}/danh-gia");
+        var cua = dg!.Single(x => x.GetProperty("cauThuId").GetGuid() == a);
+        Assert.Equal(chiSo, cua.GetProperty("chiSoKyNang").GetString());
+
+        // Sửa mỗi ghi chú KHÔNG được xóa chỉ số đã chấm (quy tắc #1).
+        await client.PutAsJsonAsync($"/api/v1/tran-dau/{tranId}/danh-gia", new
+        {
+            TranDauId = tranId,
+            DanhGias = new[]
+            {
+                new { CauThuId = a, SoBanGhiDuoc = 1, SoBanCuuThua = 0,
+                      ChiSoKyNang = chiSo, GhiChu = "sửa ghi chú" },
+            },
+        });
+
+        var sau = await client.GetFromJsonAsync<List<JsonElement>>($"/api/v1/tran-dau/{tranId}/danh-gia");
+        Assert.Equal(chiSo, sau!.Single(x => x.GetProperty("cauThuId").GetGuid() == a)
+            .GetProperty("chiSoKyNang").GetString());
     }
 
     /// <summary>

@@ -21,7 +21,6 @@ public record TranDauDto(
     int? TySoKhach,
     KetQuaTranDau KetQua,
     TrangThaiTranDau TrangThai,
-    string? LinkVideo,
     string? NhanXetChung,
     string? GhiChu);
 
@@ -33,12 +32,70 @@ public record TranDauDto(
 /// Chế độ Calendar dùng <see cref="LayTranDauTheoThangQuery"/> thay vì query này: lịch tháng
 /// phải hiện ĐỦ mọi trận trong tháng, cắt trang sẽ làm mất trận khỏi ô ngày.
 /// </summary>
-public record LayDanhSachTranDauQuery(BoLocTranDau? Loc = null, ThamSoTrang? Trang = null)
+/// <summary>
+/// Cột sắp xếp được ở bảng lịch thi đấu.
+///
+/// Danh sách ĐÓNG chứ không nhận tên cột tự do từ client: ghép chuỗi vào ORDER BY là đường
+/// dẫn tới SQL injection, mà cho sắp theo cột bất kỳ cũng buộc phải đánh index cho mọi cột.
+/// </summary>
+public enum CotSapXep
+{
+    ThoiGian,
+    DoiThu,
+    TySo,
+    KetQua,
+    TrangThai,
+}
+
+public record ThamSoSapXep(CotSapXep Cot = CotSapXep.ThoiGian, bool TangDan = false);
+
+public record LayDanhSachTranDauQuery(
+    BoLocTranDau? Loc = null, ThamSoTrang? Trang = null, ThamSoSapXep? SapXep = null)
     : IRequest<KetQuaTrang<TranDauDto>>;
 
 public class LayDanhSachTranDauHandler(IAppDbContext db)
     : IRequestHandler<LayDanhSachTranDauQuery, KetQuaTrang<TranDauDto>>
 {
+    /// <summary>
+    /// Sắp xếp theo cột người dùng chọn, luôn kèm khoá phụ <c>ThoiGian</c> giảm dần.
+    ///
+    /// Không có khoá phụ thì các hàng bằng nhau (cùng kết quả "Thắng", cùng trạng thái) xếp
+    /// theo thứ tự PostgreSQL trả về — thứ tự đó **không ổn định giữa các trang**, nên một
+    /// trận có thể xuất hiện ở cả trang 1 lẫn trang 2, hoặc biến mất khỏi cả hai.
+    /// </summary>
+    private static IQueryable<Domain.Entities.TranDau> ApSapXep(
+        IQueryable<Domain.Entities.TranDau> q, ThamSoSapXep sx)
+    {
+        var thu = sx.Cot switch
+        {
+            // Trận chưa gán đối thủ xếp cuối thay vì lẫn vào đầu danh sách theo chuỗi rỗng.
+            CotSapXep.DoiThu => sx.TangDan
+                ? q.OrderBy(t => t.DoiThu == null).ThenBy(t => t.DoiThu!.TenDoi)
+                : q.OrderBy(t => t.DoiThu == null).ThenByDescending(t => t.DoiThu!.TenDoi),
+
+            // Sắp theo hiệu số bàn thắng — "tỷ số" mà xếp theo bàn thắng đội nhà thì 5-6 lại
+            // đứng trên 2-0, đọc ra kết quả ngược.
+            CotSapXep.TySo => sx.TangDan
+                ? q.OrderBy(t => t.TySoNha == null)
+                    .ThenBy(t => (t.TySoNha ?? 0) - (t.TySoKhach ?? 0))
+                : q.OrderBy(t => t.TySoNha == null)
+                    .ThenByDescending(t => (t.TySoNha ?? 0) - (t.TySoKhach ?? 0)),
+
+            CotSapXep.KetQua => sx.TangDan
+                ? q.OrderBy(t => t.KetQua)
+                : q.OrderByDescending(t => t.KetQua),
+
+            CotSapXep.TrangThai => sx.TangDan
+                ? q.OrderBy(t => t.TrangThai)
+                : q.OrderByDescending(t => t.TrangThai),
+
+            // Mặc định: trận gần nhất lên đầu — người dùng quan tâm trận sắp tới và vừa đá xong.
+            _ => sx.TangDan ? q.OrderBy(t => t.ThoiGian) : q.OrderByDescending(t => t.ThoiGian),
+        };
+
+        return sx.Cot == CotSapXep.ThoiGian ? thu : thu.ThenByDescending(t => t.ThoiGian);
+    }
+
     public async Task<KetQuaTrang<TranDauDto>> Handle(
         LayDanhSachTranDauQuery request, CancellationToken ct)
     {
@@ -49,16 +106,14 @@ public class LayDanhSachTranDauHandler(IAppDbContext db)
         // Đếm TRƯỚC khi phân trang: tổng số dòng là của cả bộ lọc, không phải của trang hiện tại.
         var tong = await q.CountAsync(ct);
 
-        var duLieu = await q
-            // Trận gần nhất lên đầu: người dùng quan tâm trận sắp tới và vừa đá xong.
-            .OrderByDescending(t => t.ThoiGian)
+        var duLieu = await ApSapXep(q, request.SapXep ?? new ThamSoSapXep())
             .Skip(trang.BoQua)
             .Take(trang.SoDongHopLe)
             .Select(t => new TranDauDto(
                 t.Id, t.ThoiGian, t.DoiThuId,
                 t.DoiThu != null ? t.DoiThu.TenDoi : null,
                 t.TySoNha, t.TySoKhach, t.KetQua, t.TrangThai,
-                t.LinkVideo, t.NhanXetChung, t.GhiChu))
+                t.NhanXetChung, t.GhiChu))
             .ToListAsync(ct);
 
         return new KetQuaTrang<TranDauDto>(duLieu, tong, trang.TrangHopLe, trang.SoDongHopLe);
@@ -99,7 +154,7 @@ public class LayTranDauTheoThangHandler(IAppDbContext db)
                 t.Id, t.ThoiGian, t.DoiThuId,
                 t.DoiThu != null ? t.DoiThu.TenDoi : null,
                 t.TySoNha, t.TySoKhach, t.KetQua, t.TrangThai,
-                t.LinkVideo, t.NhanXetChung, t.GhiChu))
+                t.NhanXetChung, t.GhiChu))
             .ToListAsync(ct);
     }
 }
@@ -115,21 +170,27 @@ public class LayTranDauHandler(IAppDbContext db) : IRequestHandler<LayTranDauQue
                    t.Id, t.ThoiGian, t.DoiThuId,
                    t.DoiThu != null ? t.DoiThu.TenDoi : null,
                    t.TySoNha, t.TySoKhach, t.KetQua, t.TrangThai,
-                   t.LinkVideo, t.NhanXetChung, t.GhiChu))
+                   t.NhanXetChung, t.GhiChu))
                .FirstOrDefaultAsync(ct)
            ?? throw new KhongTimThayException($"TranDau {request.Id}");
 }
 
 // ---------- Commands ----------
 
+/// <summary>
+/// FR-10 — thêm/sửa trận.
+///
+/// **Không có <c>TySoNha</c>**: bàn thắng đội nhà là tổng bàn cầu thủ ghi ở tab đánh giá
+/// (<see cref="ChiTietTran.LuuDanhGiaCommand"/>). Giữ lại trường ở đây thì có hai đường ghi
+/// vào cùng một ô, đường nào chạy sau thắng — người dùng sửa bàn thắng cầu thủ xong quay ra
+/// lưu thông tin chung là tỷ số bật về giá trị cũ.
+/// </summary>
 public record LuuTranDauCommand(
     Guid? Id,
     DateTimeOffset ThoiGian,
     Guid? DoiThuId,
-    int? TySoNha,
     int? TySoKhach,
     TrangThaiTranDau TrangThai,
-    string? LinkVideo,
     string? NhanXetChung,
     string? GhiChu) : IRequest<Guid>;
 
@@ -139,18 +200,9 @@ public class LuuTranDauValidator : AbstractValidator<LuuTranDauCommand>
     {
         RuleFor(x => x.ThoiGian).NotEmpty();
 
-        RuleFor(x => x.TySoNha).GreaterThanOrEqualTo(0).When(x => x.TySoNha.HasValue)
-            .WithErrorCode("TY_SO_AM");
         RuleFor(x => x.TySoKhach).GreaterThanOrEqualTo(0).When(x => x.TySoKhach.HasValue)
             .WithErrorCode("TY_SO_AM");
 
-        RuleFor(x => x.LinkVideo).MaximumLength(500);
-
-        // Nhập một nửa tỷ số thì không suy ra được kết quả — bắt nhập đủ hoặc bỏ trống cả hai.
-        RuleFor(x => x)
-            .Must(x => x.TySoNha.HasValue == x.TySoKhach.HasValue)
-            .WithErrorCode("TY_SO_PHAI_DU_HAI_BEN")
-            .WithName(nameof(LuuTranDauCommand.TySoNha));
     }
 }
 
@@ -177,10 +229,10 @@ public class LuuTranDauHandler(IAppDbContext db) : IRequestHandler<LuuTranDauCom
 
         tranDau.ThoiGian = request.ThoiGian;
         tranDau.DoiThuId = request.DoiThuId;
-        tranDau.TySoNha = request.TySoNha;
+        // TySoNha KHÔNG gán ở đây — nó thuộc về tab đánh giá. Gán lại (kể cả gán null) sẽ xóa
+        // trắng tổng bàn thắng cầu thủ vừa nhập, đúng kiểu mất dữ liệu mà quy tắc #1 cấm.
         tranDau.TySoKhach = request.TySoKhach;
         tranDau.TrangThai = request.TrangThai;
-        tranDau.LinkVideo = request.LinkVideo;
         tranDau.NhanXetChung = request.NhanXetChung;
         tranDau.GhiChu = request.GhiChu;
 

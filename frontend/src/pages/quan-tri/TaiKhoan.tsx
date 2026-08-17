@@ -17,6 +17,7 @@ interface TaiKhoanDto {
   soDienThoai: string | null
   diaChi: string | null
   phaiDoiMatKhau: boolean
+  laTruongNhom: boolean
   trangThai: 'HoatDong' | 'VoHieuHoa'
   cauThuId: string | null
   tenCauThu: string | null
@@ -48,6 +49,8 @@ export default function TaiKhoan() {
   const [datLaiCho, setDatLaiCho] = useState<TaiKhoanDto | null>(null)
   // Mặc định BẬT: tài khoản do người khác tạo hộ thì mật khẩu ban đầu người tạo cũng biết.
   const [buocDoiMk, setBuocDoiMk] = useState(true)
+  /** null = chưa chạm, lấy giá trị của tài khoản đang sửa. */
+  const [truongNhom, setTruongNhom] = useState<boolean | null>(null)
   const [dangSua, setDangSua] = useState<TaiKhoanDto | null>(null)
   const [trangThai, setTrangThai] = useState<'HoatDong' | 'VoHieuHoa'>('HoatDong')
 
@@ -111,6 +114,7 @@ export default function TaiKhoan() {
     setDangSua(null)
     setQuyenChon([])
     setBuocDoiMk(true)
+    setTruongNhom(null)
     setCauThuChon(null)
     setTrangThai('HoatDong')
     setMaLoi(null)
@@ -120,6 +124,7 @@ export default function TaiKhoan() {
   const moSua = (u: TaiKhoanDto) => {
     setDangSua(u)
     setQuyenChon(u.quyenIds)
+    setTruongNhom(null)
     setCauThuChon(u.cauThuId)
     setTrangThai(u.trangThai)
     setMaLoi(null)
@@ -130,6 +135,7 @@ export default function TaiKhoan() {
     setMoForm(false)
     setDangSua(null)
     setQuyenChon([])
+    setTruongNhom(null)
     setCauThuChon(null)
     setMaLoi(null)
   }
@@ -146,6 +152,7 @@ export default function TaiKhoan() {
       diaChi: (fd.get('diaChi') as string) || null,
       cauThuId: cauThuChon,
       quyenIds: quyenChon,
+      laTruongNhom: truongNhom ?? dangSua?.laTruongNhom ?? false,
     }
 
     if (dangSua) {
@@ -366,6 +373,27 @@ export default function TaiKhoan() {
               placeholder={t('taiKhoan.chonQuyen')}
               placeholderTimKiem={t('taiKhoan.timQuyen')}
             />
+          </div>
+
+          {/*
+            Trưởng nhóm — người gửi lời mời đăng ký thi đấu ở Hòm thư. Là cờ riêng chứ không
+            suy từ nhóm quyền: "được sửa lịch" và "là người triệu tập đội" là hai chuyện khác.
+          */}
+          <div className="sm:col-span-2">
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 accent-[hsl(var(--primary))]"
+                checked={truongNhom ?? dangSua?.laTruongNhom ?? false}
+                onChange={(e) => setTruongNhom(e.target.checked)}
+              />
+              <span>
+                {t('taiKhoan.laTruongNhom')}
+                <span className="block text-xs text-muted-foreground">
+                  {t('taiKhoan.laTruongNhomGoiY')}
+                </span>
+              </span>
+            </label>
           </div>
 
           {/* Chỉ khi TẠO: sửa tài khoản không đặt lại mật khẩu nên cờ này không có nghĩa. */}

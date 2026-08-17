@@ -99,11 +99,18 @@ public class PhanQuyenVaCachLyTests(ApiFactory factory) : IClassFixture<ApiFacto
         Assert.NotNull(cuaA);
         Assert.NotNull(cuaB);
 
-        Assert.Single(cuaA);
-        Assert.Single(cuaB);
+        // Kiểm bằng NỘI DUNG chứ không bằng số lượng: fixture thêm hồ sơ cầu thủ là chuyện
+        // thường, mà đếm cứng thì mỗi lần thêm một seed lại phải sửa test này — trong khi
+        // điều cần canh là "không thấy dữ liệu CLB khác", không phải "có đúng N hàng".
+        var tenA = cuaA.Select(x => x.GetProperty("hoTen").GetString()).ToList();
+        var tenB = cuaB.Select(x => x.GetProperty("hoTen").GetString()).ToList();
 
-        Assert.Equal("Cầu thủ của CLB-A", cuaA[0].GetProperty("hoTen").GetString());
-        Assert.Equal("Cầu thủ của CLB-B", cuaB[0].GetProperty("hoTen").GetString());
+        Assert.Contains("Cầu thủ của CLB-A", tenA);
+        Assert.Contains("Cầu thủ của CLB-B", tenB);
+
+        // Không bên nào thấy cầu thủ của bên kia.
+        Assert.All(tenA, t => Assert.DoesNotContain("CLB-B", t));
+        Assert.All(tenB, t => Assert.DoesNotContain("CLB-A", t));
     }
 
     [Fact]

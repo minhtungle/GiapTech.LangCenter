@@ -32,18 +32,55 @@ public class LichThiDauTests(ApiFactory factory) : IClassFixture<ApiFactory>
         return client;
     }
 
-    private static object Tran(string thoiGian, int? nha = null, int? khach = null,
+    /// <summary>
+    /// Body tạo/sửa trận. **Không có TySoNha** — bàn thắng đội nhà là tổng bàn cầu thủ ghi,
+    /// đặt qua <see cref="DatBanThang"/>. Xem LuuTranDauCommand.
+    /// </summary>
+    private static object Tran(string thoiGian, int? khach = null,
         string trangThai = "DaLenLich", Guid? doiThuId = null) => new
     {
         ThoiGian = thoiGian,
         DoiThuId = doiThuId,
-        TySoNha = nha,
         TySoKhach = khach,
         TrangThai = trangThai,
         LinkVideo = (string?)null,
         NhanXetChung = (string?)null,
         GhiChu = (string?)null,
     };
+
+    /// <summary>
+    /// Đặt bàn thắng đội nhà theo đúng đường thật: đưa một cầu thủ vào đội hình rồi ghi
+    /// <paramref name="soBan"/> bàn cho cậu ta. Tỷ số nhà tự cộng từ đó.
+    /// </summary>
+    private static async Task DatBanThang(HttpClient client, Guid tranDauId, int soBan)
+    {
+        var cauThus = await client.GetFromJsonAsync<JsonElement>("/api/v1/cau-thu?soDong=1");
+        var cauThuId = cauThus.GetProperty("duLieu")[0].GetProperty("id").GetGuid();
+
+        var dh = await client.PutAsJsonAsync($"/api/v1/tran-dau/{tranDauId}/doi-hinh", new
+        {
+            TranDauId = tranDauId,
+            ThanhVien = new[] { new { CauThuId = cauThuId, ViTri = (string?)null, LaDuBi = false } },
+        });
+        dh.EnsureSuccessStatusCode();
+
+        var dg = await client.PutAsJsonAsync($"/api/v1/tran-dau/{tranDauId}/danh-gia", new
+        {
+            TranDauId = tranDauId,
+            DanhGias = new[]
+            {
+                new
+                {
+                    CauThuId = cauThuId,
+                    SoBanGhiDuoc = soBan,
+                    SoBanCuuThua = 0,
+                    ChiSoKyNang = (string?)null,
+                    GhiChu = (string?)null,
+                },
+            },
+        });
+        dg.EnsureSuccessStatusCode();
+    }
 
     // ---------- Kết quả suy ra từ tỷ số ----------
 
@@ -61,33 +98,191 @@ public class LichThiDauTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var client = await Client();
 
         var tao = await client.PostAsJsonAsync("/api/v1/tran-dau",
-            Tran("2026-03-01T15:00:00+07:00", nha, khach, "DaDienRa"));
+            Tran("2026-03-01T15:00:00+07:00", khach, "DaDienRa"));
         Assert.Equal(HttpStatusCode.Created, tao.StatusCode);
         var id = await tao.Content.ReadFromJsonAsync<Guid>();
 
+        if (nha is { } n) await DatBanThang(client, id, n);
+
         var ct = await client.GetFromJsonAsync<JsonElement>($"/api/v1/tran-dau/{id}");
         Assert.Equal(mongDoi, ct.GetProperty("ketQua").GetString());
+        Assert.Equal(nha, ct.GetProperty("tySoNha").ValueKind == JsonValueKind.Null
+            ? null : ct.GetProperty("tySoNha").GetInt32());
     }
 
-    /// <summary>Nhập một nửa tỷ số thì không suy ra được kết quả.</summary>
+    /// <summary>
+    /// QUY TẮC #1 — sửa thông tin chung KHÔNG được xóa bàn thắng cầu thủ đã ghi.
+    ///
+    /// Đây là cái bẫy của việc tách tỷ số ra hai chỗ nhập: lệnh cập nhật trận không còn nhận
+    /// TySoNha, nhưng nếu handler vẫn gán null cho nó thì mỗi lần sửa giờ đá là tỷ số về 0.
+    /// Kiểm bằng phản chứng: bỏ dòng bảo vệ trong LuuTranDauHandler thì test này phải đỏ.
+    /// </summary>
     [Fact]
-    public async Task Ty_so_thieu_mot_ben_bi_tu_choi()
+    public async Task Sua_thong_tin_chung_khong_lam_mat_ban_thang()
+    {
+        var client = await Client();
+        var tao = await client.PostAsJsonAsync("/api/v1/tran-dau",
+            Tran("2026-03-02T15:00:00+07:00", khach: 1, trangThai: "DaDienRa"));
+        var id = await tao.Content.ReadFromJsonAsync<Guid>();
+
+        await DatBanThang(client, id, 3);
+
+        // Sửa mỗi giờ đá — không đụng gì tới tỷ số.
+        var sua = await client.PutAsJsonAsync($"/api/v1/tran-dau/{id}", new
+        {
+            Id = id,
+            ThoiGian = "2026-03-02T17:00:00+07:00",
+            DoiThuId = (Guid?)null,
+            TySoKhach = 1,
+            TrangThai = "DaDienRa",
+            LinkVideo = (string?)null,
+            NhanXetChung = (string?)null,
+            GhiChu = "đổi giờ",
+        });
+        sua.EnsureSuccessStatusCode();
+
+        var ct = await client.GetFromJsonAsync<JsonElement>($"/api/v1/tran-dau/{id}");
+        Assert.Equal(3, ct.GetProperty("tySoNha").GetInt32());
+        Assert.Equal("Thang", ct.GetProperty("ketQua").GetString());
+    }
+
+    /// <summary>
+    /// Sửa bàn thắng cầu thủ thì tỷ số trận đổi theo — một nguồn sự thật duy nhất.
+    /// </summary>
+    [Fact]
+    public async Task Ty_so_nha_doi_theo_ban_thang_cau_thu()
+    {
+        var client = await Client();
+        var tao = await client.PostAsJsonAsync("/api/v1/tran-dau",
+            Tran("2026-03-04T15:00:00+07:00", khach: 0, trangThai: "DaDienRa"));
+        var id = await tao.Content.ReadFromJsonAsync<Guid>();
+
+        await DatBanThang(client, id, 2);
+        var sau2 = await client.GetFromJsonAsync<JsonElement>($"/api/v1/tran-dau/{id}");
+        Assert.Equal(2, sau2.GetProperty("tySoNha").GetInt32());
+
+        // Sửa lại còn 1 bàn — tỷ số phải TỤT theo, không chỉ tăng được.
+        await DatBanThang(client, id, 1);
+        var sau1 = await client.GetFromJsonAsync<JsonElement>($"/api/v1/tran-dau/{id}");
+        Assert.Equal(1, sau1.GetProperty("tySoNha").GetInt32());
+        Assert.Equal("Thang", sau1.GetProperty("ketQua").GetString());
+    }
+
+    [Fact]
+    public async Task Ty_so_khach_am_bi_tu_choi()
     {
         var client = await Client();
         var res = await client.PostAsJsonAsync("/api/v1/tran-dau",
-            Tran("2026-03-02T15:00:00+07:00", nha: 2, khach: null));
+            Tran("2026-03-03T15:00:00+07:00", khach: -1));
 
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
-        var body = await res.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal("DU_LIEU_KHONG_HOP_LE", body.GetProperty("errorCode").GetString());
     }
 
+    // ---------- Sắp xếp bảng ----------
+
+    /// <summary>Mặc định: trận mới nhất lên đầu — cái người dùng quan tâm.</summary>
     [Fact]
-    public async Task Ty_so_am_bi_tu_choi()
+    public async Task Mac_dinh_sap_theo_thoi_gian_giam_dan()
     {
         var client = await Client();
-        var res = await client.PostAsJsonAsync("/api/v1/tran-dau",
-            Tran("2026-03-03T15:00:00+07:00", nha: -1, khach: 0));
+        foreach (var ngay in new[] { "05", "20", "12" })
+            await client.PostAsJsonAsync("/api/v1/tran-dau",
+                Tran($"2027-03-{ngay}T15:00:00+07:00"));
+
+        var res = await client.PostAsJsonAsync(
+            "/api/v1/tran-dau/tim-kiem?soDong=200",
+            new { TuNgay = "2027-03-01", DenNgay = "2027-03-31" });
+        var ds = await DocTrang(res);
+
+        var gio = ds.Select(t => t.GetProperty("thoiGian").GetDateTimeOffset()).ToList();
+        Assert.Equal(gio.OrderByDescending(x => x), gio);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Sap_theo_thoi_gian_hai_chieu(bool tangDan)
+    {
+        var client = await Client();
+        foreach (var ngay in new[] { "03", "18", "09" })
+            await client.PostAsJsonAsync("/api/v1/tran-dau",
+                Tran($"2027-04-{ngay}T15:00:00+07:00"));
+
+        var res = await client.PostAsJsonAsync(
+            $"/api/v1/tran-dau/tim-kiem?soDong=200&cot=ThoiGian&tangDan={tangDan}",
+            new { TuNgay = "2027-04-01", DenNgay = "2027-04-30" });
+        var gio = (await DocTrang(res))
+            .Select(t => t.GetProperty("thoiGian").GetDateTimeOffset()).ToList();
+
+        Assert.Equal(tangDan ? gio.OrderBy(x => x) : gio.OrderByDescending(x => x), gio);
+    }
+
+    /// <summary>
+    /// Sắp theo tỷ số dùng HIỆU SỐ, không phải bàn thắng đội nhà: 5-6 phải xếp dưới 2-0.
+    /// </summary>
+    [Fact]
+    public async Task Sap_theo_ty_so_dung_hieu_so()
+    {
+        var client = await Client();
+
+        // 5-6 (hiệu -1) và 2-0 (hiệu +2).
+        var thua = await client.PostAsJsonAsync("/api/v1/tran-dau",
+            Tran("2027-05-01T15:00:00+07:00", khach: 6, trangThai: "DaDienRa"));
+        await DatBanThang(client, await thua.Content.ReadFromJsonAsync<Guid>(), 5);
+
+        var thang = await client.PostAsJsonAsync("/api/v1/tran-dau",
+            Tran("2027-05-02T15:00:00+07:00", khach: 0, trangThai: "DaDienRa"));
+        await DatBanThang(client, await thang.Content.ReadFromJsonAsync<Guid>(), 2);
+
+        var res = await client.PostAsJsonAsync(
+            "/api/v1/tran-dau/tim-kiem?soDong=200&cot=TySo&tangDan=false",
+            new { TuNgay = "2027-05-01", DenNgay = "2027-05-31" });
+        var ds = await DocTrang(res);
+
+        var hieu = ds
+            .Where(t => t.GetProperty("tySoNha").ValueKind != JsonValueKind.Null)
+            .Select(t => t.GetProperty("tySoNha").GetInt32() - t.GetProperty("tySoKhach").GetInt32())
+            .ToList();
+
+        Assert.Equal(hieu.OrderByDescending(x => x), hieu);
+        Assert.Equal(2, hieu[0]);
+    }
+
+    /// <summary>Trận chưa gán đối thủ xếp CUỐI, không lẫn lên đầu theo chuỗi rỗng.</summary>
+    [Fact]
+    public async Task Sap_theo_doi_thu_day_tran_trong_xuong_cuoi()
+    {
+        var client = await Client();
+
+        var taoDt = await client.PostAsJsonAsync("/api/v1/doi-thu",
+            new { TenDoi = "FC Sắp Xếp", LienHe = (string?)null, GhiChu = (string?)null });
+        var doiThuId = await taoDt.Content.ReadFromJsonAsync<Guid>();
+
+        await client.PostAsJsonAsync("/api/v1/tran-dau",
+            Tran("2027-06-01T15:00:00+07:00", doiThuId: doiThuId));
+        await client.PostAsJsonAsync("/api/v1/tran-dau", Tran("2027-06-02T15:00:00+07:00"));
+
+        var res = await client.PostAsJsonAsync(
+            "/api/v1/tran-dau/tim-kiem?soDong=200&cot=DoiThu&tangDan=true",
+            new { TuNgay = "2027-06-01", DenNgay = "2027-06-30" });
+        var ds = await DocTrang(res);
+
+        var viTriTrong = ds.FindIndex(t => t.GetProperty("tenDoiThu").ValueKind == JsonValueKind.Null);
+        var viTriCo = ds.FindIndex(t => t.GetProperty("tenDoiThu").ValueKind != JsonValueKind.Null);
+
+        Assert.True(viTriCo >= 0 && viTriTrong >= 0);
+        Assert.True(viTriCo < viTriTrong, "Trận có đối thủ phải đứng trước trận chưa gán");
+    }
+
+    /// <summary>
+    /// Cột sắp xếp là ENUM đóng — tên cột tự do bị từ chối, không ghép chuỗi vào ORDER BY.
+    /// </summary>
+    [Fact]
+    public async Task Cot_sap_xep_la_khong_hop_le_bi_tu_choi()
+    {
+        var client = await Client();
+        var res = await client.PostAsJsonAsync(
+            "/api/v1/tran-dau/tim-kiem?cot=ten_doi;DROP%20TABLE", new { });
 
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
     }
@@ -118,8 +313,9 @@ public class LichThiDauTests(ApiFactory factory) : IClassFixture<ApiFactory>
     {
         var client = await Client();
         var tao = await client.PostAsJsonAsync("/api/v1/tran-dau",
-            Tran("2026-04-02T15:00:00+07:00", 2, 1, "DaDienRa"));
+            Tran("2026-04-02T15:00:00+07:00", 1, "DaDienRa"));
         var id = await tao.Content.ReadFromJsonAsync<Guid>();
+        await DatBanThang(client, id, 2);
 
         var xoa = await client.DeleteAsync($"/api/v1/tran-dau/{id}");
         Assert.Equal(HttpStatusCode.BadRequest, xoa.StatusCode);
@@ -135,8 +331,9 @@ public class LichThiDauTests(ApiFactory factory) : IClassFixture<ApiFactory>
     {
         var client = await Client();
         var tao = await client.PostAsJsonAsync("/api/v1/tran-dau",
-            Tran("2026-04-03T15:00:00+07:00", 1, 0, "DaDienRa"));
+            Tran("2026-04-03T15:00:00+07:00", 0, "DaDienRa"));
         var id = await tao.Content.ReadFromJsonAsync<Guid>();
+        await DatBanThang(client, id, 1);
 
         var res = await client.PostAsync($"/api/v1/tran-dau/{id}/luu-tru", null);
         Assert.Equal(HttpStatusCode.NoContent, res.StatusCode);
@@ -190,9 +387,12 @@ public class LichThiDauTests(ApiFactory factory) : IClassFixture<ApiFactory>
     public async Task Loc_theo_ket_qua()
     {
         var client = await Client();
-        await client.PostAsJsonAsync("/api/v1/tran-dau", Tran("2026-09-01T15:00:00+07:00", 3, 0, "DaDienRa"));
-        await client.PostAsJsonAsync("/api/v1/tran-dau", Tran("2026-09-02T15:00:00+07:00", 0, 2, "DaDienRa"));
-        await client.PostAsJsonAsync("/api/v1/tran-dau", Tran("2026-09-03T15:00:00+07:00", 1, 1, "DaDienRa"));
+        foreach (var (ngay, nha, khach) in new[] { ("01", 3, 0), ("02", 0, 2), ("03", 1, 1) })
+        {
+            var r = await client.PostAsJsonAsync("/api/v1/tran-dau",
+                Tran($"2026-09-{ngay}T15:00:00+07:00", khach, "DaDienRa"));
+            await DatBanThang(client, await r.Content.ReadFromJsonAsync<Guid>(), nha);
+        }
 
         var res = await client.PostAsJsonAsync("/api/v1/tran-dau/tim-kiem",
             new { TuNgay = "2026-09-01", DenNgay = "2026-09-30", KetQua = new[] { "Thang", "Hoa" } });
@@ -207,8 +407,12 @@ public class LichThiDauTests(ApiFactory factory) : IClassFixture<ApiFactory>
     public async Task Loc_theo_so_ban_thang()
     {
         var client = await Client();
-        await client.PostAsJsonAsync("/api/v1/tran-dau", Tran("2026-10-01T15:00:00+07:00", 5, 0, "DaDienRa"));
-        await client.PostAsJsonAsync("/api/v1/tran-dau", Tran("2026-10-02T15:00:00+07:00", 1, 0, "DaDienRa"));
+        foreach (var (ngay, nha) in new[] { ("01", 5), ("02", 1) })
+        {
+            var r = await client.PostAsJsonAsync("/api/v1/tran-dau",
+                Tran($"2026-10-{ngay}T15:00:00+07:00", 0, "DaDienRa"));
+            await DatBanThang(client, await r.Content.ReadFromJsonAsync<Guid>(), nha);
+        }
 
         var res = await client.PostAsJsonAsync("/api/v1/tran-dau/tim-kiem",
             new { TuNgay = "2026-10-01", DenNgay = "2026-10-31", BanThangToiThieu = 3 });
