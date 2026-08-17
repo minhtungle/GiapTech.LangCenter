@@ -3,7 +3,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, layMaLoi } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
-import { Button, CanhBaoLoi, Card, CardContent, Input, Label } from '@/components/ui'
+import { Button, CanhBaoLoi, Card, CardContent, Input, Label, Textarea,
+} from '@/components/ui'
+import { cn } from '@/lib/utils'
+import { BANG_MAU_AO } from '@/components/soDo/loaiSan'
 
 interface ThietLapDto {
   id: string
@@ -14,6 +17,8 @@ interface ThietLapDto {
   logoUrl: string | null
   anhBiaUrl: string | null
   moTa: string | null
+  /** Bộ áo đấu của CLB — mã màu trong BANG_MAU_AO. */
+  mauAo: string[]
 }
 
 /** FR-06 — thiết lập chung CLB. */
@@ -23,6 +28,8 @@ export default function ThietLap() {
   const { capNhatTenDoi } = useAuth()
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [daLuu, setDaLuu] = useState(false)
+  /** null = chưa chạm, lấy giá trị server. */
+  const [mauAo, setMauAo] = useState<string[] | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['thiet-lap'],
@@ -36,6 +43,7 @@ export default function ThietLap() {
     },
     onSuccess: (form) => {
       void qc.invalidateQueries({ queryKey: ['thiet-lap'] })
+      setMauAo(null)
       // Tên đội nằm trong JWT nên token đang cầm vẫn mang tên cũ tới lần làm mới kế tiếp;
       // không đồng bộ thì sidebar hiện tên cũ dù người dùng vừa đổi xong.
       if (form.tenDoi) capNhatTenDoi(form.tenDoi)
@@ -48,9 +56,20 @@ export default function ThietLap() {
 
   if (isLoading) return <p className="text-sm text-muted-foreground">{t('chung.dangTai')}</p>
 
+  const dangChonMau = mauAo ?? data?.mauAo ?? []
+
+  const bat = (ma: string) =>
+    setMauAo(
+      dangChonMau.includes(ma)
+        ? dangChonMau.filter((m) => m !== ma)
+        : [...dangChonMau, ma],
+    )
+
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
+    // Mọi trường lệnh cập nhật ghi đè đều gửi lại (quy tắc #1) — kể cả logo/ảnh bìa chưa có
+    // ô trên form, nếu không mỗi lần lưu sẽ xoá chúng.
     luu.mutate({
       tenDoi: String(fd.get('tenDoi')),
       tenVietTat: (fd.get('tenVietTat') as string) || null,
@@ -58,6 +77,7 @@ export default function ThietLap() {
       moTa: (fd.get('moTa') as string) || null,
       logoUrl: data?.logoUrl ?? null,
       anhBiaUrl: data?.anhBiaUrl ?? null,
+      mauAo: dangChonMau,
     })
   }
 
@@ -91,9 +111,46 @@ export default function ThietLap() {
             />
           </div>
 
+          {/*
+            Bộ áo đấu — bảng chiến thuật chỉ cho chọn trong bộ này. Khai ở đây một lần thay vì
+            mỗi trận chọn lại một màu khác, xem lại lịch sử không nhận ra đội mình mặc gì.
+          */}
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label>{t('thietLap.mauAo')}</Label>
+            <div className="flex flex-wrap gap-2">
+              {BANG_MAU_AO.map((m) => {
+                const daChon = dangChonMau.includes(m.ma)
+                return (
+                  <button
+                    key={m.ma}
+                    type="button"
+                    onClick={() => bat(m.ma)}
+                    aria-pressed={daChon}
+                    aria-label={t(`soDo.mau.${m.ma}`)}
+                    className={cn(
+                      'flex items-center gap-2 rounded-md border px-2 py-1.5 text-xs transition-colors',
+                      daChon
+                        ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent))]/10 font-medium'
+                        : 'border-border hover:bg-muted',
+                    )}
+                  >
+                    <span
+                      style={{ background: m.nen }}
+                      className="h-4 w-4 rounded-full border border-white/70 shadow-sm"
+                    />
+                    {t(`soDo.mau.${m.ma}`)}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {dangChonMau.length === 0 ? t('thietLap.mauAoChuaChon') : t('thietLap.mauAoGoiY')}
+            </p>
+          </div>
+
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label htmlFor="moTa">{t('thietLap.moTa')}</Label>
-            <Input id="moTa" name="moTa" defaultValue={data?.moTa ?? ''} />
+            <Textarea id="moTa" name="moTa" defaultValue={data?.moTa ?? ''} />
           </div>
 
           {maLoi && (

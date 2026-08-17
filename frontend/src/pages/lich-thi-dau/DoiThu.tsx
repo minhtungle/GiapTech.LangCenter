@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Pencil, Trash2, Search } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import {
-  Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong,
+  Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong, Textarea,
 } from '@/components/ui'
 import { Modal, ModalChan } from '@/components/ui/Modal'
 import { PhanTrang } from '@/components/ui/PhanTrang'
@@ -199,7 +199,7 @@ export default function DoiThu() {
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="ghiChu">{t('cauThu.ghiChu')}</Label>
-            <Input id="ghiChu" name="ghiChu" defaultValue={dangSua?.ghiChu ?? ''} />
+            <Textarea id="ghiChu" name="ghiChu" defaultValue={dangSua?.ghiChu ?? ''} />
           </div>
 
           {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}

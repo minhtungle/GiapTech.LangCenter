@@ -26,6 +26,21 @@ public class Tenant : BaseEntity
     public string? AnhBiaUrl { get; set; }
     public string? MoTa { get; set; }
 
+    /// <summary>
+    /// Bộ áo đấu của CLB, JSON mảng mã màu: <c>["trang","xanhDuong"]</c>.
+    ///
+    /// Một CLB thường có 2–3 bộ áo (sân nhà, sân khách, áo thủ môn). Bảng chiến thuật chỉ cho
+    /// chọn trong bộ này — không thì mỗi trận lại vẽ một màu khác, xem lại lịch sử không nhận
+    /// ra đội mình mặc gì.
+    ///
+    /// Lưu JSON thay vì bảng con: danh sách ngắn, không truy vấn theo từng màu, và thêm thuộc
+    /// tính sau này (tên bộ áo, ảnh) không cần migration.
+    ///
+    /// Null hoặc rỗng = CLB chưa khai — sơ đồ rơi về bảng màu đầy đủ, tránh khoá người dùng
+    /// khỏi tính năng chỉ vì chưa vào thiết lập.
+    /// </summary>
+    public string? MauAoJson { get; set; }
+
     public ICollection<NguoiDung> NguoiDungs { get; set; } = [];
     public ICollection<CauThu> CauThus { get; set; } = [];
 }
