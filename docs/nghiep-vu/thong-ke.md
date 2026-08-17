@@ -15,7 +15,10 @@ Xu hướng **bàn thắng / bàn thua** qua các trận theo thời gian.
 
 ## FR-14 — Bảng xếp hạng MVP
 
-Top cầu thủ theo **4 tiêu chí** (chuyển đổi tiêu chí xếp hạng được):
+Top cầu thủ theo **4 tiêu chí** (chuyển đổi tiêu chí xếp hạng được).
+
+DTO mang **đủ bốn tiêu chí** trong một lần gọi nên đổi cột xếp hạng không cần gọi lại API —
+frontend sắp tại chỗ, số cầu thủ của một CLB chỉ vài chục dòng.
 
 | # | Tiêu chí | Nguồn dữ liệu |
 |---|---|---|
@@ -31,11 +34,48 @@ Bảng xếp hạng chịu ảnh hưởng của bộ lọc FR-12 (chỉ tính c�
 Theo [nguyên tắc UI/UX](../frontend/ui-ux-nguyen-tac.md): **KPI card gọn ở đầu**, biểu đồ chi tiết bên
 dưới. Tùy chọn nâng cao ẩn dưới "Xem thêm".
 
-## Lưu ý triển khai
+## Quyết định triển khai
 
-- Truy vấn thống kê là nơi **dễ quên `tenant_id` nhất** vì thường viết dạng aggregate/raw SQL. Global
-  Query Filter chỉ áp dụng cho LINQ qua DbSet — xem [multi-tenant](../backend/multi-tenant.md).
-- Cân nhắc cache ngắn hạn (Redis) cho bảng xếp hạng nếu số trận lớn.
+**Một endpoint trả cả ba phần** (`POST /thong-ke`) thay vì ba endpoint riêng: cả ba đọc cùng
+một tập trận đã lọc, gọi ba lần là ba lần quét lại cùng dữ liệu — và ba lần đó có thể rơi vào
+hai trạng thái DB khác nhau nếu ai đó vừa nhập kết quả.
+
+Dùng **POST cho một endpoint đọc**: bộ lọc là object lồng (danh sách kết quả, danh sách trạng
+thái) mà querystring diễn đạt vụng — cùng lý do và cùng kiểu body với `POST /tran-dau/tim-kiem`.
+
+### Cách ly tenant
+
+Mọi truy vấn đi qua `db.TranDaus` / `db.DanhGiaCauThus` / `db.VoteMvps` nên Global Query Filter
+tự lọc. **Không dùng raw SQL** — đó là chỗ dễ quên `tenant_id` nhất (xem
+[multi-tenant](../backend/multi-tenant.md)) và rò rỉ chéo CLB là lỗi nghiêm trọng nhất hệ thống
+có thể mắc (quy tắc #2).
+
+Canh bởi `ThongKe_cach_ly_theo_tenant`, kiểm cả ba phần. Kiểm chứng bằng phản chứng: thêm
+`IgnoreQueryFilters()` vào truy vấn trận thì test đỏ ngay.
+
+### Bốn quy tắc tính toán
+
+- **Tỷ lệ thắng chia cho số trận ĐÃ ĐÁ**, không phải tổng trận: lên lịch 10 trận mới đá 2 mà
+  thắng cả 2 thì tỷ lệ là 100%, không phải 20%. Canh bởi `Ty_le_thang_tinh_tren_tran_da_da`.
+- **Biểu đồ bỏ qua trận chưa đá**: vẽ thành điểm 0-0 sẽ kéo đường xu hướng xuống, trông như
+  đội vừa thua liên tiếp.
+- **Điểm kỹ năng là trung bình trên các trận CÓ CHẤM**, không tính trận chưa chấm là 0 điểm:
+  chấm 8 điểm một trận rồi bỏ chấm trận sau không có nghĩa là 4 điểm. Chưa chấm lần nào thì
+  trả `null`, không phải 0 — hai thứ khác nhau.
+- **Cầu thủ có mặt trong đội hình nhưng chưa được đánh giá vẫn lên bảng**: không thì người đá
+  đủ mười trận mà chưa ai chấm bị coi như không tồn tại.
+
+JSON chỉ số hỏng chỉ bỏ qua bản ghi đó, không làm sập cả bảng xếp hạng.
+
+### Đọc chỉ số kỹ năng ở tầng ứng dụng
+
+`DANHGIA_CAUTHU.chi_so_ky_nang` là JSON; truy vấn nó trong LINQ cần hàm riêng của Npgsql mà
+`Application` không được phụ thuộc provider (xem `LuatPhuThuocTests`). Số bản ghi đánh giá của
+một CLB phong trào nhỏ nên tải về xử lý là chấp nhận được.
+
+### Chưa làm
+
+Cache ngắn hạn (Redis) cho bảng xếp hạng — chỉ cần khi số trận lớn, hiện chưa tới ngưỡng đó.
 
 ## Tham chiếu
 

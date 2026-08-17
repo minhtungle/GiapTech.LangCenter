@@ -24,11 +24,11 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | FR-09 | Chấp nhận lời mời đối thủ | ✅ | ✅ | Chấp nhận → tự sinh trận, điều hướng sang chi tiết |
 | FR-10 | Thêm/Cập nhật trận đấu | ✅ | 🟡 | 3 tab đủ; sơ đồ chưa có bản vẽ kéo-thả |
 | FR-11 | Xóa trận đấu | ✅ | ✅ | Chỉ xóa cứng trận chưa diễn ra; có Lưu trữ thay thế |
-| FR-12 | Lọc thông tin (thống kê) | ⬜ | ⬜ | Tái dùng FR-07 |
-| FR-13 | Biểu đồ diễn biến | ⬜ | ⬜ | |
-| FR-14 | Bảng xếp hạng MVP | ⬜ | ⬜ | 4 tiêu chí |
-| FR-15 | Danh sách quỹ | ⬜ | ⬜ | |
-| FR-16 | Thêm/Cập nhật quỹ | ⬜ | ⬜ | Cần cài đặt `ISmsSender` |
+| FR-12 | Lọc thông tin (thống kê) | ✅ | ✅ | Component `BoLocTranDau` dùng chung với FR-07 |
+| FR-13 | Biểu đồ diễn biến | ✅ | ✅ | Recharts, bấm điểm → chi tiết trận |
+| FR-14 | Bảng xếp hạng MVP | ✅ | ✅ | 4 tiêu chí, đổi cột không gọi lại API |
+| FR-15 | Danh sách quỹ | ✅ | ✅ | Tiến độ thu, màu theo trạng thái |
+| FR-16 | Thêm/Cập nhật quỹ | ✅ | ✅ | Nhắc nợ = sao chép danh sách; SMS/Email chưa làm |
 
 ✅ xong · 🟡 dùng được nhưng thiếu phần · ⬜ chưa làm
 
@@ -73,13 +73,20 @@ Module lớn nhất, tách 3 đợt để mỗi đợt đều có thứ dùng đ
 - Backend FR-10b đã xong (lưu `jsonb` + validate JSON); UI hiện là ô nhập JSON thô.
 - Cần: bản vẽ kéo-thả trên nền sân bóng. Nặng nhất cả dự án, độc lập.
 
-### Giai đoạn 2 — Thống kê (FR-12 → FR-14) · ~1 phiên
+### Giai đoạn 2 — Thống kê (FR-12 → FR-14) · ✅ xong
 
-Nhẹ nếu đợt 1a xong. ⚠️ Nơi **dễ quên `tenant_id` nhất** — aggregate query hay viết raw SQL.
+KPI + biểu đồ Recharts + bảng xếp hạng 4 tiêu chí, tất cả chịu ảnh hưởng của bộ lọc chung.
+
+⚠️ Nơi **dễ quên `tenant_id` nhất** — đã tránh bằng cách không dùng raw SQL, mọi truy vấn đi
+qua DbSet để Global Query Filter tự lọc. Canh bởi `ThongKe_cach_ly_theo_tenant`, kiểm chứng
+bằng phản chứng (thêm `IgnoreQueryFilters()` thì test đỏ).
 
 ### Giai đoạn 3 — Tài chính (FR-15, FR-16) · ~1 phiên
 
-Cần cài đặt `ISmsSender`. Bắt buộc security review (dữ liệu tài chính).
+**Đã xong:** CRUD đợt quỹ, thu tiền từng phần, khoản chi + số dư quỹ, sao chép danh sách nợ.
+
+**Còn lại:** gửi nhắc nợ tự động qua SMS/Email — cần `ISmsSender` và tài khoản SendGrid/eSMS.
+Bắt buộc security review (dữ liệu tài chính).
 
 ### Giai đoạn 4 — Triển khai
 

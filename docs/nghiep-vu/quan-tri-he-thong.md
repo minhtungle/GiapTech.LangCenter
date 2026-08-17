@@ -23,7 +23,14 @@ danh sách quyền (nhiều nhóm quyền / tài khoản), hồ sơ cầu thủ 
 
 ## FR-04 — Hồ sơ cầu thủ
 
-CRUD hồ sơ: ảnh đại diện, họ tên, ngày sinh, ngày tham gia, ghi chú.
+CRUD hồ sơ: ảnh đại diện, họ tên, **số áo**, **vị trí sở trường**, ngày sinh, ngày tham gia, ghi chú.
+
+Số áo và vị trí sở trường là **nguồn mặc định cho bảng chiến thuật** (FR-10 tab b) — không có
+chúng thì phải gõ lại số áo cho từng người ở từng trận. Sơ đồ của một trận vẫn ghi đè được
+(mượn áo, trùng số).
+
+**Số áo KHÔNG đặt UNIQUE**: CLB phong trào hay trùng số, ràng buộc cứng sẽ chặn cả việc nhập
+liệu bình thường.
 
 ### Quy tắc
 
@@ -49,12 +56,35 @@ Ma trận chức năng × thao tác (checkbox), ưu tiên desktop vì thao tác 
 
 ## FR-06 — Thiết lập chung
 
-Thông tin CLB: tên đội, tên viết tắt, ngày thành lập, logo, ảnh bìa, mô tả.
+Thông tin CLB: tên đội, tên viết tắt, ngày thành lập, logo, ảnh bìa, mô tả, **bộ áo đấu**.
+
+### Bộ áo đấu
+
+CLB chọn **nhiều màu** từ bảng 8 màu cố định (trắng · đỏ · xanh dương · vàng · cam · tím ·
+đen · hồng) — thường 2–3 bộ: sân nhà, sân khách, áo thủ môn. Lưu JSON vào `TENANT.mau_ao_json`.
+
+**Bảng chiến thuật (FR-10 tab b) chỉ cho chọn trong bộ này.** Không ràng buộc thì mỗi trận lại
+vẽ một màu khác, xem lại lịch sử không nhận ra đội mình mặc gì.
+
+Ba trường hợp biên:
+
+- **Chưa khai** (null / mảng rỗng) → sơ đồ mở **toàn bộ** bảng màu. Khoá người dùng khỏi tính
+  năng chỉ vì họ chưa vào màn thiết lập là chặn nhầm chỗ.
+- **Màu đang dùng trên sơ đồ luôn có mặt** kể cả khi CLB vừa bỏ nó khỏi bộ áo — nếu không,
+  bảng chọn không có ô nào sáng và người dùng tưởng hỏng.
+- **Mã lạ bị chặn tại cổng** (`MAU_AO_KHONG_HOP_LE`), không lọc âm thầm: lọc im lặng thì người
+  dùng tưởng đã lưu được.
+
+Bảng màu tồn tại ở hai nơi — `Domain/Common/MauAo.cs` (validate) và `BANG_MAU_AO` ở frontend
+(vẽ, có mã hex + màu chữ). Không gộp được vì Domain không nên biết mã màu CSS. Hai danh sách
+**mã** phải khớp, canh bởi `MauAoDongBoTests`.
 
 ### Quy tắc
 
 - Tenant mới chưa cấu hình → dùng **giá trị mặc định**, không chặn người dùng vào hệ thống.
 - Logo và ảnh bìa upload lên MinIO qua presigned URL.
+- Lệnh cập nhật gửi `mauAo = null` (client cũ) thì **giữ nguyên** bộ áo; chỉ mảng rỗng mới là
+  "người dùng chủ động bỏ hết" (quy tắc #1). Canh bởi `Sua_ten_doi_khong_lam_mat_bo_ao`.
 
 ## Trạng thái triển khai
 

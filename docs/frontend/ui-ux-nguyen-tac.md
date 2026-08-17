@@ -67,3 +67,27 @@ Dùng **thống nhất** ở mọi module, không đổi nghĩa theo ngữ cản
 
 Mọi chuỗi hiển thị đi qua `react-i18next`. Message lỗi từ API là **mã lỗi**, frontend tra bảng dịch —
 xem [cqrs-mediatr.md](../backend/cqrs-mediatr.md#trả-lỗi). Không hard-code tiếng Việt trong component.
+
+## Ô nhập văn bản dài
+
+Mọi trường **có thể dài** dùng `<Textarea>`, không dùng `<Input>`: nhận xét, ghi chú, mô tả,
+ghi chú chiến thuật. `<input>` một dòng cắt nội dung khỏi tầm nhìn ngay khi vượt bề rộng ô —
+người dùng gõ một đoạn nhận xét rồi không đọc lại được đoạn đầu, phải rê con trỏ mới thấy.
+
+Trường ngắn (tên, số áo, URL, ngày) vẫn dùng `Input`.
+
+## Xác nhận thao tác phá huỷ
+
+Thao tác **ghi đè hoặc xoá hàng loạt không hoàn tác được** phải hỏi qua `<HopXacNhan>`:
+xoá hết sơ đồ, áp sơ đồ dựng sẵn đè lên đội hình đang có, chép hiệp, áp mẫu đội hình.
+
+Ba quy tắc:
+
+1. **Nói rõ mất gì, kèm số lượng** — "Sẽ bỏ 7 cầu thủ Đối thủ khỏi sân ở Hiệp 2", không phải
+   "Bạn có chắc không?".
+2. **Không hỏi khi không mất gì** — áp sơ đồ vào sân trống thì chạy thẳng. Hỏi mọi thứ sẽ
+   khiến người dùng bấm Đồng ý theo phản xạ và hộp thoại mất hết tác dụng.
+3. **Focus mặc định vào nút Huỷ** — gõ Enter theo quán tính phải rơi vào hành động an toàn.
+
+Không dùng `confirm()` của trình duyệt: nó không nói được cụ thể mất gì và không dịch được
+theo ngôn ngữ đang chọn.

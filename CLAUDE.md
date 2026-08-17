@@ -19,7 +19,8 @@ một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`. Đ
 5 module · 16 mã FR · 3 actor (Admin / Manager / Player) — đọc 1 mạch ở
 [`docs/tong-thuat.md`](./docs/tong-thuat.md).
 
-**Trạng thái:** 🚧 **chạy được đầu-cuối trên PostgreSQL thật**: frontend đăng nhập → cụm quản trị (FR-01→FR-06). 44 test xanh. Bước kế tiếp ở [mục 6](#6-bootstrap-checklist).
+**Trạng thái:** ✅ **đủ 16 mã FR, chạy đầu-cuối trên PostgreSQL thật**. 196 test xanh.
+Còn lại là nợ kỹ thuật (test E2E, triển khai VPS) — xem [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ---
 
@@ -167,7 +168,7 @@ Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 ```bash
 # --- Backend (đã hoạt động) ---
 dotnet build                                        # 0 warning — TreatWarningsAsErrors đang bật
-dotnet test                                         # 44 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực, CRUD quản trị
+dotnet test                                         # 196 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực, 5 module nghiệp vụ
 dotnet run --project src/GiapTech.SoccerRoom.API    # Swagger tại /swagger
 
 # --- Kiểm tra tài liệu (đã hoạt động) ---

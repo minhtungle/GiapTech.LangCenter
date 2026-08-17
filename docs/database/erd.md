@@ -47,9 +47,9 @@ erDiagram
 
 | Bảng | Mục đích | Trường chính | Quan hệ |
 |---|---|---|---|
-| `TENANT` | CLB | id, **ma_doi** `char(7)` UNIQUE (sinh tự động), ten_doi, ten_viet_tat, ngay_thanh_lap, logo_url, anh_bia_url, mo_ta | 1—N với hầu hết bảng khác qua `tenant_id` |
-| `NGUOI_DUNG` | Tài khoản đăng nhập | id, tenant_id, username, password_hash, email, so_dien_thoai, dia_chi, phai_doi_mk, cau_thu_id (FK nullable), trang_thai | N—1 TENANT; 0..1 với CAU_THU; N—N với QUYEN qua `NGUOIDUNG_QUYEN` |
-| `CAU_THU` | Hồ sơ cầu thủ | id, tenant_id, anh_dai_dien, ho_ten, ngay_sinh, ngay_tham_gia, ghi_chu | Độc lập với NGUOI_DUNG |
+| `TENANT` | CLB | id, **ma_doi** `char(7)` UNIQUE (sinh tự động), ten_doi, ten_viet_tat, ngay_thanh_lap, logo_url, anh_bia_url, mo_ta, mau_ao_json | 1—N với hầu hết bảng khác qua `tenant_id` |
+| `NGUOI_DUNG` | Tài khoản đăng nhập | id, tenant_id, username, password_hash, email, so_dien_thoai, dia_chi, phai_doi_mk, cau_thu_id (FK nullable), trang_thai, la_truong_nhom | N—1 TENANT; 0..1 với CAU_THU; N—N với QUYEN qua `NGUOIDUNG_QUYEN` |
+| `CAU_THU` | Hồ sơ cầu thủ | id, tenant_id, anh_dai_dien, ho_ten, ngay_sinh, ngay_tham_gia, ghi_chu, so_ao, vi_tri_so_truong | Độc lập với NGUOI_DUNG |
 
 ### Nhóm phân quyền
 
@@ -65,9 +65,13 @@ erDiagram
 |---|---|---|---|
 | `DOI_THU` | Đối thủ | id, tenant_id, ten_doi, lien_he | 1—N TRAN_DAU, 1—N LOI_MOI_DOI_THU |
 | `LOI_MOI_DOI_THU` | Lời mời giao hữu | id, tenant_id, doi_thu_id, thoi_gian_de_xuat, trang_thai | N—1 DOI_THU |
-| `TRAN_DAU` | Trận đấu | id, tenant_id, thoi_gian, doi_thu_id, ty_so_nha, ty_so_khach, ket_qua, link_video, nhan_xet_chung, trang_thai | 1—N DOIHINH_TRANDAU, 1—1 SODO_CHIENTHUAT, 1—N DANHGIA_CAUTHU, 1—N VOTE_MVP |
+| `TRAN_DAU` | Trận đấu | id, tenant_id, thoi_gian, doi_thu_id, ty_so_nha *(tự cộng từ DANHGIA_CAUTHU, không nhập tay)*, ty_so_khach, ket_qua, nhan_xet_chung, trang_thai | 1—N DOIHINH_TRANDAU, 1—1 SODO_CHIENTHUAT, 1—N DANHGIA_CAUTHU, 1—N VOTE_MVP, 1—N VIDEO_TRAN |
 | `DOIHINH_TRANDAU` | Đội hình tham gia | id, tran_dau_id, cau_thu_id, vi_tri | N—1 TRAN_DAU, N—1 CAU_THU |
 | `SODO_CHIENTHUAT` | Sơ đồ chiến thuật | id, tran_dau_id (1—1), so_do_json, ghi_chu_chien_thuat | 1—1 TRAN_DAU |
+| `VIDEO_TRAN` | Link video sau trận | id, tenant_id, tran_dau_id, ten, url, mo_ta, thu_tu | N—1 TRAN_DAU (Cascade) |
+| `LOI_MOI_THAM_GIA` | Trưởng nhóm mời đăng ký thi đấu | id, tenant_id, tran_dau_id **UNIQUE**, nguoi_gui_id, loi_nhan, han_tra_loi, da_dong | N—1 TRAN_DAU (Cascade), 1—N PHAN_HOI_THAM_GIA |
+| `PHAN_HOI_THAM_GIA` | Câu trả lời của cầu thủ | id, tenant_id, loi_moi_id, cau_thu_id, tra_loi, ghi_chu, thoi_gian_tra_loi, **UNIQUE(loi_moi_id, cau_thu_id)** | N—1 LOI_MOI_THAM_GIA, N—1 CAU_THU |
+| `MAU_DOI_HINH` | Đội hình mẫu dùng lại | id, tenant_id, ten, loai_san (5/7/9/11), noi_dung_json, ghi_chu, **UNIQUE(tenant_id, ten)** | độc lập — không FK tới TRAN_DAU |
 | `DANHGIA_CAUTHU` | Đánh giá sau trận | id, tran_dau_id, cau_thu_id, so_ban_ghi_duoc, so_ban_cuu_thua, chi_so_ky_nang (JSON), ghi_chu | N—1 TRAN_DAU, N—1 CAU_THU |
 | `VOTE_MVP` | Bình chọn MVP | id, tran_dau_id, nguoi_vote_id, nguoi_duoc_vote_id, **UNIQUE(tran_dau_id, nguoi_vote_id)** | N—1 TRAN_DAU |
 
@@ -77,6 +81,7 @@ erDiagram
 |---|---|---|---|
 | `QUY` | Đợt quỹ | id, tenant_id, ten_quy, thoi_han, ghi_chu, trang_thai | 1—N DONGGOP_QUY |
 | `DONGGOP_QUY` | Đóng góp quỹ | id, quy_id, cau_thu_id, so_tien_can_dong, so_tien_da_dong, ngay_dong | N—1 QUY, N—1 CAU_THU |
+| `KHOAN_CHI` | Khoản chi từ quỹ | id, tenant_id, quy_id (nullable), noi_dung, so_tien, ngay_chi, nguoi_chi, ghi_chu | N—1 QUY (**SetNull**) |
 
 ## Ràng buộc nghiệp vụ quan trọng
 
@@ -85,6 +90,9 @@ erDiagram
 | `UNIQUE(tran_dau_id, nguoi_vote_id)` | `VOTE_MVP` | Mỗi người tối đa 1 tim/trận (FR-10) — quy tắc bất di bất dịch #8 |
 | `UNIQUE(tenant_id, username)` | `NGUOI_DUNG` | Username duy nhất **trong phạm vi tenant**, hai CLB có thể cùng có `admin` |
 | `UNIQUE(tran_dau_id)` | `SODO_CHIENTHUAT` | Quan hệ 1—1 với trận đấu |
+| `UNIQUE(tran_dau_id)` | `LOI_MOI_THAM_GIA` | Mỗi trận tối đa một lời mời — gửi hai lần thì cầu thủ thấy hai thẻ giống hệt |
+| `UNIQUE(loi_moi_id, cau_thu_id)` | `PHAN_HOI_THAM_GIA` | Mỗi cầu thủ một phản hồi/lời mời, chặn ở tầng DB như vote MVP |
+| `UNIQUE(tenant_id, ten)` | `MAU_DOI_HINH` | Tên mẫu duy nhất **trong tenant**, hai CLB đều đặt được "Đội hình mạnh nhất" |
 | `UNIQUE(quy_id, cau_thu_id)` | `DONGGOP_QUY` | Một cầu thủ chỉ có 1 khoản đóng trong mỗi đợt quỹ |
 | `UNIQUE(ma_doi)` | `TENANT` | Mã đội 7 ký tự sinh tự động, duy nhất **toàn hệ thống** — xem [FR-01](../nghiep-vu/dang-nhap.md#mã-đội) |
 | `cau_thu_id` nullable | `NGUOI_DUNG` | Tài khoản có thể không gắn hồ sơ cầu thủ nào (0..1) |
