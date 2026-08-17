@@ -41,11 +41,11 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | Cách ly tenant (2 tầng phòng vệ tự động + test) | ✅ |
 | Phân quyền động đọc từ DB + cache | ✅ |
 | Frontend: layout, i18n, design token, auto-refresh token | ✅ |
-| 208 test (41 unit + 167 integration) | ✅ |
+| 220 test (41 unit + 179 integration) | ✅ |
 | Upload ảnh qua MinIO (avatar, logo, ảnh bìa) | ✅ |
 | **Dockerfile cho API** | ✅ 2 giai đoạn, chạy user thường |
 | **`docker compose up` chạy được** | ✅ 5 container, API healthy, migration tự áp |
-| Test E2E frontend (23 test Playwright) | ✅ |
+| Test E2E frontend (28 test Playwright) | ✅ |
 | CI/CD 4 job: test → E2E → đẩy image → deploy | ✅ |
 | Triển khai VPS (domain, HTTPS, backup) | 🟡 cần server thật |
 
@@ -58,7 +58,8 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | # | Việc | Ước tính | Vì sao gấp |
 |---|---|---|---|
 | ~~N1~~ | ~~Dockerfile cho API~~ | — | ✅ Xong 16/08 |
-| ~~N2~~ | ~~Test E2E frontend~~ | — | ✅ Xong 17/08 — 23 test Playwright |
+| ~~N2~~ | ~~Test E2E frontend~~ | — | ✅ Xong 17/08 — 28 test Playwright |
+| N3 | **Rate limit `/doi-thu/tra-cuu-clb/{maDoi}` ở tầng Caddy** | ~1h | Endpoint duy nhất đọc ngoài tenant. Không gian mã `31^7` làm việc dò **chậm**, không làm nó **bất khả thi** — phải chặn trước khi mở ra Internet. Xem [FR-10](./nghiep-vu/lich-thi-dau.md#tra-cứu-clb-khác-trong-hệ-thống) |
 
 ### Giai đoạn 1 — Lịch thi đấu (FR-07 → FR-11)
 

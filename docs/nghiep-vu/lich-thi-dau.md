@@ -95,10 +95,42 @@ Mở **view riêng theo ID trận**, tổ chức thành **4 tab**, cho phép **l
 
 ### Tab (a) — Thông tin chung
 
-Thời gian, đối thủ (ID đội), trạng thái, link video, nhận xét chung, ghi chú.
+Thời gian, đối thủ, trạng thái, link video, nhận xét chung, ghi chú.
+
+**Ba đường chọn đối thủ**, làm được ngay trong form thêm trận, không phải rời sang màn Đối thủ
+rồi quay lại:
+
+1. **Chọn từ sổ đối thủ** — đội đã lưu trước đó.
+2. **Gõ tên lạ → tạo ngay** trong dropdown. Dòng *Tạo đội "…"* hiện khi từ khoá **không khớp
+   chính xác** mục nào đang có — không phải khi danh sách rỗng: gõ "FC Hải" mà đã có "FC Hải
+   Châu" thì vẫn cho tạo, vì đó là hai đội khác nhau.
+3. **Tra mã đội 7 ký tự** — thêm CLB khác cũng dùng hệ thống này. Xem
+   [Tra cứu CLB khác](#tra-cứu-clb-khác-trong-hệ-thống) bên dưới.
 
 **Bàn thắng đội nhà chỉ HIỂN THỊ, không nhập** — xem [Một nguồn sự thật cho tỷ số](#một-nguồn-sự-thật-cho-tỷ-số).
 Bàn thua nhập tay.
+
+#### Tra cứu CLB khác trong hệ thống
+
+`GET /api/v1/doi-thu/tra-cuu-clb/{maDoi}` là **endpoint duy nhất trong hệ thống đọc dữ liệu
+ngoài tenant hiện tại**, nên bị giới hạn chặt hơn mọi endpoint khác (quy tắc #2):
+
+| Giới hạn | Lý do |
+|---|---|
+| Chỉ so khớp **chính xác** mã 7 ký tự | Cho `Contains` hoặc tìm theo tên là bất kỳ ai gõ một chữ cũng dò ra danh sách toàn bộ CLB |
+| Trả **đúng 3 field**: `maDoi`, `tenDoi`, `daCoTrongSo` | Không trả `id`: có id là mở đường thử gọi endpoint khác với id đó |
+| **404 giống hệt nhau** cho: mã sai định dạng · mã không tồn tại · mã của chính mình | Phân biệt được thì người dò biết ngay mã nào đúng định dạng, thu hẹp không gian dò rất nhiều |
+| `daCoTrongSo` đọc sổ đối thủ **của tenant hiện tại** | Bỏ query filter ở đây là rò rỉ chéo: cờ bật lên chỉ vì CLB khác đã thêm đội đó vào sổ của họ |
+
+Không gian mã là `31^7 ≈ 27 tỷ` (bộ ký tự bỏ `0/O` và `1/I/L`) nên dò ngẫu nhiên không khả thi.
+**Nợ kỹ thuật:** vẫn nên thêm rate limit ở tầng Caddy trước khi lên production.
+
+`DOI_THU.ma_doi_he_thong` lưu **mã đội**, cố ý **không phải FK** tới `TENANT`:
+
+- FK cho phép join xuyên tenant — một truy vấn vô tình thành rò rỉ dữ liệu chéo CLB.
+- CLB kia có thể xoá tài khoản; lịch sử đối đầu của ta phải giữ nguyên, không bị Cascade theo.
+
+Canh bởi `TraCuuClbTests` (12 test, 5 phản chứng) và `e2e/chon-doi-thu.spec.ts` (5 test).
 
 ### Tab (b) — Đội hình & Sơ đồ *(gộp từ hai tab cũ)*
 

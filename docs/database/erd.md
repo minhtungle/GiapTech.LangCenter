@@ -63,7 +63,7 @@ erDiagram
 
 | Bảng | Mục đích | Trường chính | Quan hệ |
 |---|---|---|---|
-| `DOI_THU` | Đối thủ | id, tenant_id, ten_doi, lien_he | 1—N TRAN_DAU, 1—N LOI_MOI_DOI_THU |
+| `DOI_THU` | Đối thủ | id, tenant_id, ten_doi, lien_he, **ma_doi_he_thong** | 1—N TRAN_DAU, 1—N LOI_MOI_DOI_THU |
 | `LOI_MOI_DOI_THU` | Lời mời giao hữu | id, tenant_id, doi_thu_id, thoi_gian_de_xuat, trang_thai | N—1 DOI_THU |
 | `TRAN_DAU` | Trận đấu | id, tenant_id, thoi_gian, doi_thu_id, ty_so_nha *(tự cộng từ DANHGIA_CAUTHU, không nhập tay)*, ty_so_khach, ket_qua, nhan_xet_chung, trang_thai | 1—N DOIHINH_TRANDAU, 1—1 SODO_CHIENTHUAT, 1—N DANHGIA_CAUTHU, 1—N VOTE_MVP, 1—N VIDEO_TRAN |
 | `DOIHINH_TRANDAU` | Đội hình tham gia | id, tran_dau_id, cau_thu_id, vi_tri | N—1 TRAN_DAU, N—1 CAU_THU |
