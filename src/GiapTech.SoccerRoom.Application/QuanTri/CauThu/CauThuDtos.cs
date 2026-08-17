@@ -10,7 +10,8 @@ namespace GiapTech.SoccerRoom.Application.QuanTri.CauThu;
 /// <summary>FR-04 — hồ sơ cầu thủ. Độc lập với tài khoản đăng nhập.</summary>
 public record CauThuDto(
     Guid Id, string HoTen, string? AnhDaiDien, DateOnly? NgaySinh,
-    DateOnly? NgayThamGia, string? GhiChu, bool CoTaiKhoan);
+    DateOnly? NgayThamGia, string? GhiChu, bool CoTaiKhoan,
+    int? SoAo, string? ViTriSoTruong);
 
 // ---------- Queries ----------
 
@@ -43,7 +44,7 @@ public class LayDanhSachCauThuHandler(IAppDbContext db)
             .Take(trang.SoDongHopLe)
             .Select(c => new CauThuDto(
                 c.Id, c.HoTen, c.AnhDaiDien, c.NgaySinh, c.NgayThamGia, c.GhiChu,
-                db.NguoiDungs.Any(u => u.CauThuId == c.Id)))
+                db.NguoiDungs.Any(u => u.CauThuId == c.Id), c.SoAo, c.ViTriSoTruong))
             .ToListAsync(ct);
 
         return new KetQuaTrang<CauThuDto>(duLieu, tong, trang.TrangHopLe, trang.SoDongHopLe);
@@ -59,7 +60,7 @@ public class LayCauThuHandler(IAppDbContext db) : IRequestHandler<LayCauThuQuery
                .Where(c => c.Id == request.Id)
                .Select(c => new CauThuDto(
                    c.Id, c.HoTen, c.AnhDaiDien, c.NgaySinh, c.NgayThamGia, c.GhiChu,
-                   db.NguoiDungs.Any(u => u.CauThuId == c.Id)))
+                   db.NguoiDungs.Any(u => u.CauThuId == c.Id), c.SoAo, c.ViTriSoTruong))
                .FirstOrDefaultAsync(ct)
            ?? throw new KhongTimThayException($"CauThu {request.Id}");
 }
@@ -68,7 +69,8 @@ public class LayCauThuHandler(IAppDbContext db) : IRequestHandler<LayCauThuQuery
 
 public record TaoCauThuCommand(
     string HoTen, string? AnhDaiDien, DateOnly? NgaySinh,
-    DateOnly? NgayThamGia, string? GhiChu) : IRequest<Guid>;
+    DateOnly? NgayThamGia, string? GhiChu,
+    int? SoAo = null, string? ViTriSoTruong = null) : IRequest<Guid>;
 
 public class TaoCauThuValidator : AbstractValidator<TaoCauThuCommand>
 {
@@ -79,6 +81,9 @@ public class TaoCauThuValidator : AbstractValidator<TaoCauThuCommand>
             .LessThan(_ => DateOnly.FromDateTime(DateTime.UtcNow))
             .When(x => x.NgaySinh.HasValue)
             .WithErrorCode("NGAY_SINH_TUONG_LAI");
+        RuleFor(x => x.SoAo).InclusiveBetween(1, 99).When(x => x.SoAo.HasValue)
+            .WithErrorCode("SO_AO_KHONG_HOP_LE");
+        RuleFor(x => x.ViTriSoTruong).MaximumLength(8);
     }
 }
 
@@ -93,7 +98,9 @@ public class TaoCauThuHandler(IAppDbContext db) : IRequestHandler<TaoCauThuComma
             AnhDaiDien = request.AnhDaiDien,
             NgaySinh = request.NgaySinh,
             NgayThamGia = request.NgayThamGia,
-            GhiChu = request.GhiChu
+            GhiChu = request.GhiChu,
+            SoAo = request.SoAo,
+            ViTriSoTruong = ChuanHoaCauThu.ViTri(request.ViTriSoTruong)
         };
 
         db.CauThus.Add(cauThu);
@@ -104,7 +111,8 @@ public class TaoCauThuHandler(IAppDbContext db) : IRequestHandler<TaoCauThuComma
 
 public record CapNhatCauThuCommand(
     Guid Id, string HoTen, string? AnhDaiDien, DateOnly? NgaySinh,
-    DateOnly? NgayThamGia, string? GhiChu) : IRequest;
+    DateOnly? NgayThamGia, string? GhiChu,
+    int? SoAo = null, string? ViTriSoTruong = null) : IRequest;
 
 public class CapNhatCauThuValidator : AbstractValidator<CapNhatCauThuCommand>
 {
@@ -112,6 +120,9 @@ public class CapNhatCauThuValidator : AbstractValidator<CapNhatCauThuCommand>
     {
         RuleFor(x => x.Id).NotEmpty();
         RuleFor(x => x.HoTen).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.SoAo).InclusiveBetween(1, 99).When(x => x.SoAo.HasValue)
+            .WithErrorCode("SO_AO_KHONG_HOP_LE");
+        RuleFor(x => x.ViTriSoTruong).MaximumLength(8);
     }
 }
 
@@ -127,9 +138,18 @@ public class CapNhatCauThuHandler(IAppDbContext db) : IRequestHandler<CapNhatCau
         cauThu.NgaySinh = request.NgaySinh;
         cauThu.NgayThamGia = request.NgayThamGia;
         cauThu.GhiChu = request.GhiChu;
+        cauThu.SoAo = request.SoAo;
+        cauThu.ViTriSoTruong = ChuanHoaCauThu.ViTri(request.ViTriSoTruong);
 
         await db.SaveChangesAsync(ct);
     }
+}
+
+/// <summary>Mã vị trí luôn viết HOA (GK, CB) — không thì "gk" và "GK" thành hai vị trí khác nhau.</summary>
+internal static class ChuanHoaCauThu
+{
+    public static string? ViTri(string? v) =>
+        string.IsNullOrWhiteSpace(v) ? null : v.Trim().ToUpperInvariant();
 }
 
 public record XoaCauThuCommand(Guid Id) : IRequest;

@@ -26,6 +26,17 @@ public class SoDoChienThuat : TenantEntity
     public Guid TranDauId { get; set; }
     public TranDau TranDau { get; set; } = null!;
 
+    /// <summary>
+    /// Nội dung sơ đồ: <c>{ loaiSan, hiep1: {viTri, doiThu}, hiep2: {...} }</c>.
+    ///
+    /// Hai hiệp nằm trong cùng một bản ghi vì chúng luôn được đọc/ghi cùng nhau và quan hệ
+    /// với trận vẫn là 1—1. Tách thành hai hàng sẽ phải thêm cột "hiệp" và mọi truy vấn đều
+    /// phải nhớ lọc nó.
+    ///
+    /// Bản ghi cũ chỉ có <c>{viTri, doiThu}</c> phẳng — frontend đọc được cả hai dạng, coi
+    /// dạng phẳng là hiệp 1. Không có bước này thì mọi sơ đồ đã lưu trước đây biến mất khỏi
+    /// màn hình (quy tắc #1).
+    /// </summary>
     public string SoDoJson { get; set; } = "{}";
     public string? GhiChuChienThuat { get; set; }
 

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Search, Trash2, Pencil } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import {
-  Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong,
+  Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong, Textarea,
 } from '@/components/ui'
 import { Modal, ModalChan } from '@/components/ui/Modal'
 import { PhanTrang } from '@/components/ui/PhanTrang'
@@ -17,6 +17,8 @@ interface CauThuDto {
   ngayThamGia: string | null
   ghiChu: string | null
   coTaiKhoan: boolean
+  soAo: number | null
+  viTriSoTruong: string | null
 }
 
 /** FR-04 — CRUD hồ sơ cầu thủ. Thêm/sửa trong modal, không chèn form vào main view. */
@@ -83,11 +85,16 @@ export default function CauThu() {
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
+    const soAo = fd.get('soAo') as string
+    // Mọi trường lệnh cập nhật ghi đè đều đọc TỪ FORM (quy tắc #1) — thiếu một ô là mất
+    // dữ liệu trường đó mỗi lần lưu.
     luu.mutate({
       hoTen: String(fd.get('hoTen')),
       ngaySinh: (fd.get('ngaySinh') as string) || null,
       ngayThamGia: (fd.get('ngayThamGia') as string) || null,
       ghiChu: (fd.get('ghiChu') as string) || null,
+      soAo: soAo === '' ? null : Number(soAo),
+      viTriSoTruong: (fd.get('viTriSoTruong') as string) || null,
     })
   }
 
@@ -132,7 +139,9 @@ export default function CauThu() {
         <Table>
           <thead>
             <tr>
+              <Th className="w-16">{t('cauThu.soAo')}</Th>
               <Th>{t('cauThu.hoTen')}</Th>
+              <Th className="w-20">{t('cauThu.viTriSoTruong')}</Th>
               <Th>{t('cauThu.ngaySinh')}</Th>
               <Th>{t('cauThu.ngayThamGia')}</Th>
               <Th>{t('cauThu.coTaiKhoan')}</Th>
@@ -142,7 +151,17 @@ export default function CauThu() {
           <tbody>
             {data.map((c) => (
               <tr key={c.id} className="hover:bg-muted/40">
+                <Td>
+                  {c.soAo !== null ? (
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                      {c.soAo}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </Td>
                 <Td className="font-medium">{c.hoTen}</Td>
+                <Td className="text-muted-foreground">{c.viTriSoTruong ?? '—'}</Td>
                 <Td className="text-muted-foreground">{c.ngaySinh ?? '—'}</Td>
                 <Td className="text-muted-foreground">{c.ngayThamGia ?? '—'}</Td>
                 <Td>
@@ -204,6 +223,29 @@ export default function CauThu() {
             <Input id="hoTen" name="hoTen" defaultValue={dangSua?.hoTen} required autoFocus />
           </div>
           <div className="flex flex-col gap-1.5">
+            <Label htmlFor="soAo">{t('cauThu.soAo')}</Label>
+            <Input
+              id="soAo"
+              name="soAo"
+              type="number"
+              min={1}
+              max={99}
+              defaultValue={dangSua?.soAo ?? ''}
+              placeholder="VD: 10"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="viTriSoTruong">{t('cauThu.viTriSoTruong')}</Label>
+            <Input
+              id="viTriSoTruong"
+              name="viTriSoTruong"
+              maxLength={8}
+              className="uppercase"
+              defaultValue={dangSua?.viTriSoTruong ?? ''}
+              placeholder="VD: ST"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
             <Label htmlFor="ngaySinh">{t('cauThu.ngaySinh')}</Label>
             <Input id="ngaySinh" name="ngaySinh" type="date" defaultValue={dangSua?.ngaySinh ?? ''} />
           </div>
@@ -218,7 +260,7 @@ export default function CauThu() {
           </div>
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label htmlFor="ghiChu">{t('cauThu.ghiChu')}</Label>
-            <Input id="ghiChu" name="ghiChu" defaultValue={dangSua?.ghiChu ?? ''} />
+            <Textarea id="ghiChu" name="ghiChu" defaultValue={dangSua?.ghiChu ?? ''} />
           </div>
 
           {maLoi && (

@@ -16,6 +16,22 @@ public class CauThu : TenantEntity
     public DateOnly? NgayThamGia { get; set; }
     public string? GhiChu { get; set; }
 
+    /// <summary>
+    /// Số áo cố định của cầu thủ. Null khi chưa đặt.
+    ///
+    /// Nguồn mặc định cho áo trên bảng chiến thuật — trước đây phải gõ tay số áo cho từng
+    /// người ở từng trận. Sơ đồ vẫn ghi đè được cho trận riêng lẻ (mượn áo, trùng số).
+    /// **Không đặt UNIQUE**: CLB phong trào hay trùng số, và ràng buộc cứng sẽ chặn cả việc
+    /// nhập liệu bình thường.
+    /// </summary>
+    public int? SoAo { get; set; }
+
+    /// <summary>
+    /// Vị trí sở trường (GK, CB, ST…). Null khi chưa đặt.
+    /// Dùng làm gợi ý khi xếp sơ đồ, không ràng buộc cầu thủ chỉ được đá vị trí này.
+    /// </summary>
+    public string? ViTriSoTruong { get; set; }
+
     public Tenant Tenant { get; set; } = null!;
 
     public ICollection<DoiHinhTranDau> DoiHinhs { get; set; } = [];
