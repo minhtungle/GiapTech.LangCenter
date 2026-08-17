@@ -11,7 +11,13 @@ public class TranDau : TenantEntity
     public Guid? DoiThuId { get; set; }
     public DoiThu? DoiThu { get; set; }
 
-    /// <summary>Tỷ số đội nhà. Null khi trận chưa diễn ra.</summary>
+    /// <summary>
+    /// Tỷ số đội nhà. Null khi trận chưa diễn ra.
+    ///
+    /// **Không nhập tay** — luôn bằng tổng bàn thắng của cầu thủ trong <c>DANHGIA_CAUTHU</c>,
+    /// do <see cref="DongBoTySoNha"/> đặt. Cho sửa tay thì bảng vua phá lưới (FR-14) và tỷ số
+    /// trận sẽ nói hai con số khác nhau, không biết bên nào đúng.
+    /// </summary>
     public int? TySoNha { get; set; }
 
     /// <summary>Tỷ số đội khách. Null khi trận chưa diễn ra.</summary>
@@ -20,8 +26,14 @@ public class TranDau : TenantEntity
     public KetQuaTranDau KetQua { get; set; } = KetQuaTranDau.ChuaCo;
     public TrangThaiTranDau TrangThai { get; set; } = TrangThaiTranDau.DaLenLich;
 
-    /// <summary>Link video sau trận (Youtube/Drive) — hệ thống chỉ lưu link, không lưu file.</summary>
-    public string? LinkVideo { get; set; }
+    /// <summary>
+    /// Video sau trận — hệ thống **chỉ lưu link**, không lưu file (xem ADR-0004).
+    ///
+    /// Nhiều link mỗi trận: một trận thường có video hiệp 1, hiệp 2, bản highlight và vài
+    /// clip bàn thắng ở các nguồn khác nhau. Một ô text không chứa nổi, mà nhét nhiều URL
+    /// vào một chuỗi thì không đặt tên cho từng cái được.
+    /// </summary>
+    public ICollection<VideoTran> Videos { get; set; } = [];
 
     public string? NhanXetChung { get; set; }
     public string? GhiChu { get; set; }
@@ -51,5 +63,28 @@ public class TranDau : TenantEntity
             < 0 => KetQuaTranDau.Thua,
             _ => KetQuaTranDau.Hoa
         };
+    }
+
+    /// <summary>
+    /// Đặt tỷ số đội nhà bằng tổng bàn thắng cầu thủ ghi được, rồi tính lại kết quả.
+    ///
+    /// Chỉ đội NHÀ suy được từ đánh giá: bàn của đối thủ thì không cầu thủ nào của ta ghi,
+    /// nên <see cref="TySoKhach"/> vẫn nhập tay.
+    ///
+    /// Trận chưa có bàn nào (<paramref name="tongBanThang"/> = 0) mà tỷ số khách cũng chưa
+    /// nhập thì để nguyên null — 0–null không phải "hoà 0-0", mà là "chưa đá". Phân biệt được
+    /// hai cái này mới lọc đúng trận sắp tới trên lịch.
+    /// </summary>
+    public void DongBoTySoNha(int tongBanThang)
+    {
+        if (tongBanThang == 0 && TySoKhach is null)
+        {
+            TySoNha = null;
+            TinhKetQua();
+            return;
+        }
+
+        TySoNha = tongBanThang;
+        TinhKetQua();
     }
 }

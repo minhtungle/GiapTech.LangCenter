@@ -87,8 +87,8 @@ public class LuuDanhGiaHandler(IAppDbContext db) : IRequestHandler<LuuDanhGiaCom
 {
     public async Task Handle(LuuDanhGiaCommand request, CancellationToken ct)
     {
-        if (!await db.TranDaus.AnyAsync(t => t.Id == request.TranDauId, ct))
-            throw new KhongTimThayException($"TranDau {request.TranDauId}");
+        var tran = await db.TranDaus.FirstOrDefaultAsync(t => t.Id == request.TranDauId, ct)
+            ?? throw new KhongTimThayException($"TranDau {request.TranDauId}");
 
         var hienCo = await db.DanhGiaCauThus
             .Where(d => d.TranDauId == request.TranDauId)
@@ -116,6 +116,17 @@ public class LuuDanhGiaHandler(IAppDbContext db) : IRequestHandler<LuuDanhGiaCom
 
         // Cố tình KHÔNG xóa đánh giá của cầu thủ không có trong danh sách gửi lên: người dùng
         // có thể đang lưu từng phần, xóa sẽ mất dữ liệu họ nhập trước đó (quy tắc #1).
+
+        // Tỷ số đội nhà = tổng bàn thắng cầu thủ. Tính trên TOÀN BỘ đánh giá của trận, không
+        // chỉ phần vừa gửi: lưu từng phần mà chỉ cộng phần gửi lên thì tỷ số tụt xuống mỗi
+        // lần lưu một cầu thủ.
+        var tongBanThang = hienCo
+            .Where(d => request.DanhGias.All(m => m.CauThuId != d.CauThuId))
+            .Sum(d => d.SoBanGhiDuoc)
+            + request.DanhGias.Sum(m => m.SoBanGhiDuoc);
+
+        tran.DongBoTySoNha(tongBanThang);
+
         await db.SaveChangesAsync(ct);
     }
 }
