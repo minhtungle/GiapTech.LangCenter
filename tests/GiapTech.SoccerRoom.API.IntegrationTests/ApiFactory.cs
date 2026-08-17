@@ -27,6 +27,15 @@ public class ApiFactory : WebApplicationFactory<Program>
     public Guid TenantBId { get; private set; }
 
     /// <summary>
+    /// CLB thứ ba, dùng làm **mồi** cho test cách ly ba chiều.
+    ///
+    /// Hai tenant chỉ kiểm được "A không thấy dữ liệu B". Có trường hợp cần ba: khi cờ trả về
+    /// phụ thuộc dữ liệu của tenant nào — A tra mã C, trong khi chỉ B mới có C trong sổ. Với
+    /// hai tenant, một truy vấn lỡ `IgnoreQueryFilters()` vẫn cho kết quả trùng đáp án đúng.
+    /// </summary>
+    public Guid TenantCId { get; private set; }
+
+    /// <summary>
     /// Mã đội do seeder sinh — test không đoán trước được nên phải đọc từ đây.
     ///
     /// Truy cập property này ép host khởi tạo (và do đó chạy seed) nếu chưa. Không có bước
@@ -43,8 +52,14 @@ public class ApiFactory : WebApplicationFactory<Program>
         get { BaoDamDaSeed(); return _maDoiB; }
     }
 
+    public string MaDoiC
+    {
+        get { BaoDamDaSeed(); return _maDoiC; }
+    }
+
     private string _maDoiA = "";
     private string _maDoiB = "";
+    private string _maDoiC = "";
 
     private void BaoDamDaSeed()
     {
@@ -120,7 +135,7 @@ public class ApiFactory : WebApplicationFactory<Program>
         var hasher = sp.GetRequiredService<IPasswordHasher>();
         var currentTenant = sp.GetRequiredService<ICurrentTenant>();
 
-        foreach (var nhan in new[] { "A", "B" })
+        foreach (var nhan in new[] { "A", "B", "C" })
         {
             // Mã đội do hệ thống sinh, test đọc lại từ kết quả thay vì tự đặt.
             var tenant = seeder.TaoTenantMoiAsync($"Đội {nhan}").GetAwaiter().GetResult();
@@ -184,7 +199,8 @@ public class ApiFactory : WebApplicationFactory<Program>
             db.SaveChanges();
 
             if (nhan == "A") { TenantAId = tenant.Id; _maDoiA = tenant.MaDoi; }
-            else { TenantBId = tenant.Id; _maDoiB = tenant.MaDoi; }
+            else if (nhan == "B") { TenantBId = tenant.Id; _maDoiB = tenant.MaDoi; }
+            else { TenantCId = tenant.Id; _maDoiC = tenant.MaDoi; }
         }
     }
 

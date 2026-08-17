@@ -10,6 +10,19 @@ public class DoiThu : TenantEntity
     public string? LienHe { get; set; }
     public string? GhiChu { get; set; }
 
+    /// <summary>
+    /// Mã đội của CLB đối thủ nếu họ CŨNG dùng hệ thống này. Null khi đội chỉ tồn tại trong
+    /// sổ của ta (nhập tay).
+    ///
+    /// Lưu **mã đội** chứ không phải FK tới TENANT: FK sẽ cho phép join xuyên tenant và biến
+    /// một truy vấn vô tình thành rò rỉ dữ liệu chéo CLB (quy tắc #2). Mã đội chỉ là chuỗi 7
+    /// ký tự để hiển thị và tra lại khi cần, không mở đường đọc dữ liệu của họ.
+    ///
+    /// Cũng không dùng FK vì CLB kia có thể xoá tài khoản — lịch sử đối đầu của ta phải giữ
+    /// nguyên, không bị Cascade theo.
+    /// </summary>
+    public string? MaDoiHeThong { get; set; }
+
     public Tenant Tenant { get; set; } = null!;
 
     public ICollection<TranDau> TranDaus { get; set; } = [];

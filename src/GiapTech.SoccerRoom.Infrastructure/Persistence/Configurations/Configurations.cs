@@ -111,6 +111,7 @@ public class DoiThuConfig : IEntityTypeConfiguration<DoiThu>
         b.ToTable("DOI_THU");
         b.Property(x => x.TenDoi).HasMaxLength(200).IsRequired();
         b.Property(x => x.LienHe).HasMaxLength(200);
+        b.Property(x => x.MaDoiHeThong).HasMaxLength(Domain.Common.MaDoi.DoDai).IsFixedLength();
         b.HasIndex(x => x.TenantId);
 
         b.HasOne(x => x.Tenant).WithMany()

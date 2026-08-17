@@ -28,6 +28,23 @@ public class DoiThuController(ISender sender) : ControllerBase
         => Ok(await sender.Send(
             new LayDanhSachDoiThuQuery(timKiem, new ThamSoTrang(trang, soDong)), ct));
 
+    /// <summary>
+    /// Tra một CLB khác trong hệ thống theo **mã đội chính xác** (7 ký tự).
+    ///
+    /// Endpoint duy nhất đọc dữ liệu ngoài tenant hiện tại. Chỉ trả tên + mã, không trả id,
+    /// không tìm theo tên, không liệt kê — xem `TraCuuClbQuery` để biết lý do từng ràng buộc.
+    ///
+    /// Trả 404 khi không tìm thấy: cùng một phản hồi cho "mã sai định dạng", "mã không tồn
+    /// tại" và "mã của chính mình" — phân biệt ba trường hợp là cho người dò biết mã nào có thật.
+    /// </summary>
+    [HttpGet("tra-cuu-clb/{maDoi}")]
+    [RequirePermission(ChucNang.LichThiDau, HanhDong.Xem)]
+    public async Task<ActionResult<ClbTraCuuDto>> TraCuuClb(string maDoi, CancellationToken ct)
+    {
+        var clb = await sender.Send(new TraCuuClbQuery(maDoi), ct);
+        return clb is null ? NotFound() : Ok(clb);
+    }
+
     [HttpPost]
     [RequirePermission(ChucNang.LichThiDau, HanhDong.Them)]
     public async Task<ActionResult<Guid>> Tao(

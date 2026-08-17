@@ -12,7 +12,10 @@ namespace GiapTech.SoccerRoom.Application.LichThiDau.DoiThu;
 ///
 /// DTO phải chứa đủ mọi trường mà lệnh cập nhật ghi đè (quy tắc #1).
 /// </summary>
-public record DoiThuDto(Guid Id, string TenDoi, string? LienHe, string? GhiChu, int SoTranDaDau);
+public record DoiThuDto(
+    Guid Id, string TenDoi, string? LienHe, string? GhiChu, int SoTranDaDau,
+    /// <summary>Mã đội nếu CLB này cũng dùng hệ thống. Null khi chỉ có trong sổ của ta.</summary>
+    string? MaDoiHeThong);
 
 // ---------- Queries ----------
 
@@ -42,7 +45,8 @@ public class LayDanhSachDoiThuHandler(IAppDbContext db)
             .Take(trang.SoDongHopLe)
             .Select(d => new DoiThuDto(
                 d.Id, d.TenDoi, d.LienHe, d.GhiChu,
-                db.TranDaus.Count(t => t.DoiThuId == d.Id)))
+                db.TranDaus.Count(t => t.DoiThuId == d.Id),
+                d.MaDoiHeThong))
             .ToListAsync(ct);
 
         return new KetQuaTrang<DoiThuDto>(duLieu, tong, trang.TrangHopLe, trang.SoDongHopLe);
@@ -51,8 +55,9 @@ public class LayDanhSachDoiThuHandler(IAppDbContext db)
 
 // ---------- Commands ----------
 
-public record LuuDoiThuCommand(Guid? Id, string TenDoi, string? LienHe, string? GhiChu)
-    : IRequest<Guid>;
+public record LuuDoiThuCommand(
+    Guid? Id, string TenDoi, string? LienHe, string? GhiChu,
+    string? MaDoiHeThong = null) : IRequest<Guid>;
 
 public class LuuDoiThuValidator : AbstractValidator<LuuDoiThuCommand>
 {
@@ -60,6 +65,10 @@ public class LuuDoiThuValidator : AbstractValidator<LuuDoiThuCommand>
     {
         RuleFor(x => x.TenDoi).NotEmpty().MaximumLength(200);
         RuleFor(x => x.LienHe).MaximumLength(200);
+
+        // Định dạng mã đội KHÔNG kiểm ở đây mà ở handler: pipeline validation gộp mọi lỗi
+        // thành một mã DU_LIEU_KHONG_HOP_LE duy nhất, nên `WithErrorCode` bị mất và frontend
+        // không nói được "mã đội sai" thay vì "dữ liệu sai". Xem LuuDoiThuHandler.
     }
 }
 
@@ -68,6 +77,13 @@ public class LuuDoiThuHandler(IAppDbContext db) : IRequestHandler<LuuDoiThuComma
     public async Task<Guid> Handle(LuuDoiThuCommand request, CancellationToken ct)
     {
         var ten = request.TenDoi.Trim();
+
+        // Mã sai định dạng chặn ở đây, trước khi chạm DB: để lọt xuống thì cột char(7) ném
+        // lỗi Npgsql thô mà frontend không dịch được. Ở handler chứ không ở validator để giữ
+        // được mã lỗi riêng (xem LuuDoiThuValidator).
+        var coMa = !string.IsNullOrWhiteSpace(request.MaDoiHeThong);
+        if (coMa && !Domain.Common.MaDoi.HopLe(request.MaDoiHeThong!))
+            throw new AppException("MA_DOI_KHONG_HOP_LE");
 
         // Trùng tên đối thủ trong cùng CLB gần như luôn là nhập nhầm hai lần — chặn sớm để
         // lịch sử đối đầu không bị chia làm hai bản ghi.
@@ -91,6 +107,9 @@ public class LuuDoiThuHandler(IAppDbContext db) : IRequestHandler<LuuDoiThuComma
         doiThu.TenDoi = ten;
         doiThu.LienHe = request.LienHe;
         doiThu.GhiChu = request.GhiChu;
+        doiThu.MaDoiHeThong = string.IsNullOrWhiteSpace(request.MaDoiHeThong)
+            ? null
+            : Domain.Common.MaDoi.ChuanHoa(request.MaDoiHeThong);
 
         await db.SaveChangesAsync(ct);
         return doiThu.Id;
