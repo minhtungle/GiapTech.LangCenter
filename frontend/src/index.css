@@ -173,9 +173,9 @@
   /* Padding ngang tối thiểu: mỗi 1px lấy đi là 1px cho tên đối thủ, mà tên bị cắt thành
      "FC Hà…" thì hiện tên cũng bằng không hiện. */
   padding: 0.25rem 0.15rem 0.15rem;
-  /* 5.5rem chứa số ngày + 3 viên trận — số trận tối đa thực tế trong một ngày của một CLB
-     phong trào. Đã đo trên lịch thật: 4.25rem cắt mất viên thứ ba của ngày 7. */
-  height: 5.5rem;
+  /* 6.25rem chứa số ngày + 3 viên trận, mỗi viên tên tối đa 2 dòng. Đã đo trên lịch thật:
+     4.25rem cắt mất viên thứ ba, 5.5rem không đủ khi tên xuống dòng. */
+  height: 6.25rem;
   min-height: 0;
   font-size: 0.75rem;
   line-height: 1.2;
@@ -223,7 +223,8 @@
 /* Một trận: chấm màu kết quả + tên đối thủ, bấm được để mở chi tiết. */
 .sr-tran-vien {
   display: flex;
-  align-items: center;
+  /* flex-start, không center: khi tên xuống 2 dòng thì chấm màu phải thẳng dòng đầu. */
+  align-items: flex-start;
   gap: 0.2rem;
   width: 100%;
   padding: 0.05rem 0.2rem;
@@ -251,11 +252,24 @@
   border-radius: 9999px;
 }
 
-/* Tên đối thủ: cắt bằng ellipsis, tooltip giữ nội dung đầy đủ. */
+/*
+  Tên đối thủ: XUỐNG DÒNG thay vì cắt bằng ellipsis.
+
+  Ellipsis một dòng biến "FC Kiểm Lịch" thành "FC Kiểm L…" trên màn 1280px — ô ngày chỉ rộng
+  ~130px ở bề rộng đó. Hiện tên mà đọc không ra thì bằng không hiện. Cho phép 2 dòng, cắt từ
+  dòng thứ ba bằng line-clamp: tên đối thủ dài hơn hai dòng là ngoại lệ, còn tooltip vẫn giữ
+  nội dung đầy đủ.
+
+  Đã đo ở 1280px (viewport mặc định của test E2E) — không chỉ ở màn rộng.
+*/
 .sr-tran-ten {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* Ngắt cả từ dài để không tràn ngang ô — "Thanh" dài hơn ô thì vẫn phải nằm trong. */
+  overflow-wrap: anywhere;
   font-size: 0.6875rem;
+  line-height: 1.15;
   color: hsl(var(--foreground));
 }

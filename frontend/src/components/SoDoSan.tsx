@@ -297,6 +297,10 @@ export function SoDoSan({
         onDragOver={(e) => e.preventDefault()}
         onDrop={thaVaoSan}
         style={{ aspectRatio: cauHinh.tyLe }}
+        // Mốc cho test E2E: tỷ lệ sân là inline style (đổi theo loại sân) nên không có class
+        // cố định nào để bám vào.
+        data-testid="san"
+
         className={cn(
           'relative mx-auto shrink-0 select-none overflow-hidden rounded-lg',
           // Cỏ sọc như bảng chiến thuật thật — dải sáng/tối xen kẽ theo chiều ngang.

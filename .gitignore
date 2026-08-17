@@ -80,3 +80,7 @@ backup/
 *.sql.gz
 caddy_data/
 caddy_config/
+
+# Playwright — kết quả chạy test E2E, không commit
+frontend/test-results/
+frontend/playwright-report/

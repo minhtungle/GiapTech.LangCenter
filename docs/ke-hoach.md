@@ -45,7 +45,7 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | Upload ảnh qua MinIO (avatar, logo, ảnh bìa) | ✅ |
 | **Dockerfile cho API** | ✅ 2 giai đoạn, chạy user thường |
 | **`docker compose up` chạy được** | ✅ 5 container, API healthy, migration tự áp |
-| Test E2E frontend | ⬜ |
+| Test E2E frontend (23 test Playwright) | ✅ |
 | Triển khai VPS (domain, HTTPS, backup) | ⬜ |
 
 ---
@@ -57,7 +57,7 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | # | Việc | Ước tính | Vì sao gấp |
 |---|---|---|---|
 | ~~N1~~ | ~~Dockerfile cho API~~ | — | ✅ Xong 16/08 |
-| N2 | Test E2E frontend | ~0.5 phiên | 8 màn không có gì canh; lỗi enum ngày 16/08 lọt qua cả 44 test backend |
+| ~~N2~~ | ~~Test E2E frontend~~ | — | ✅ Xong 17/08 — 23 test Playwright |
 
 ### Giai đoạn 1 — Lịch thi đấu (FR-07 → FR-11)
 

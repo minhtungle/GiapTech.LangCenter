@@ -54,3 +54,27 @@ python3 scripts/check-doc-links.py
 ```
 
 Exit code 0 nếu không có link hỏng, 1 nếu có (dùng được trong CI).
+
+## Test E2E
+
+```bash
+docker compose up -d          # cần API + PostgreSQL + MinIO đang chạy
+cd frontend && npm run e2e    # 23 test
+npm run e2e:ui                # chế độ xem từng bước, để gỡ lỗi
+```
+
+Chạy trên **bản build thật qua Caddy** (`localhost:8080`), không phải `vite dev`: lỗi chỉ xuất
+hiện ở bản build đã xảy ra thật — `tsc --noEmit` từng báo sạch trong khi `vite build` bắt 5 lỗi.
+
+Mỗi test **tự tạo CLB riêng** qua `/dang-ky-clb` nên không tranh dữ liệu của nhau. Endpoint đó
+chỉ chạy ở `Development`, nên test E2E cũng chỉ chạy được với API ở Development.
+
+### Ba cái bẫy đã mất thời gian
+
+- **Đóng dropdown**: bấm lại chính nút select (nó là toggle). `Escape` đóng cả `<dialog>` bao
+  ngoài; bấm phần tử khác thì dropdown che nó và Playwright chờ tới timeout; bấm toạ độ (5,5)
+  rơi vào backdrop của modal.
+- **Reload sau khi bấm Lưu** huỷ request đang bay → test đỏ trong khi ứng dụng đúng. Chờ chỉ
+  dấu "Đã lưu" trước.
+- **Kéo-thả trên sân**: cuộn sân vào khung nhìn trước. Ở màn 800px cao, áo hàng dưới nằm ngoài
+  viewport nên chuột không tới được.
