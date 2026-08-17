@@ -24,6 +24,10 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    environment:
+      # Caddyfile đọc {$DOMAIN} — không có biến này thì Caddy dựng site tên rỗng và
+      # không ai truy cập được. Bắt buộc đặt trong .env trên VPS.
+      DOMAIN: "${DOMAIN:?can DOMAIN, vi du clb.example.com}"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./frontend/dist:/srv/frontend:ro

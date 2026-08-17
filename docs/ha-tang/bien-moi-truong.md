@@ -8,6 +8,7 @@ Copy [`.env.example`](../../.env.example) thành `.env`, điền giá trị th�
 
 | Biến | Mô tả |
 |---|---|
+| `DOMAIN` | Domain để Caddy xin chứng chỉ HTTPS — **bắt buộc**, compose dừng nếu thiếu |
 | `POSTGRES_DB` | Tên database. Mặc định `clubmgmt` |
 | `POSTGRES_USER` | User ứng dụng dùng để kết nối |
 | `POSTGRES_PASSWORD` | Mật khẩu — **bắt buộc đổi**, sinh ngẫu nhiên đủ dài |

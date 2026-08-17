@@ -3,13 +3,20 @@ name: Build & Deploy
 on:
   push:
     branches: [main]
+  # Cho phép chạy tay để triển khai lại mà không cần commit rỗng.
+  workflow_dispatch:
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_API: ghcr.io/${{ github.repository_owner }}/soccerroom-api
+  # Tên image PHẢI khớp mặc định trong docker-compose.yml, nếu không VPS sẽ pull image cũ
+  # của chủ repo khác và deploy "thành công" mà chẳng đổi gì.
+  #
+  # `github.repository_owner` viết hoa được (GitHub cho phép), nhưng GHCR chỉ nhận chữ
+  # thường — hạ về lowercase ở bước riêng bên dưới.
+  IMAGE_NAME: soccerroom-api
 
 jobs:
-  build-and-test:
+  kiem-tra:
+    name: Build & test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,6 +31,7 @@ jobs:
           dotnet restore
           dotnet build --no-restore -c Release
 
+      # TreatWarningsAsErrors đang bật nên build đỏ khi có cảnh báo — không cần cờ thêm.
       - name: Test (backend)
         run: dotnet test --no-build -c Release
 
@@ -47,64 +55,189 @@ jobs:
         with:
           name: frontend-dist
           path: frontend/dist
+          retention-days: 7
 
-  push-images:
-    needs: build-and-test
+  e2e:
+    name: Test E2E
+    needs: kiem-tra
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Tạo .env cho compose
+        # Giá trị dùng-một-lần cho CI, không phải secret thật: cụm này sống vài phút rồi bị
+        # xoá cùng runner. Dùng secret thật ở đây chỉ tăng bề mặt rủi ro mà không được gì.
+        run: |
+          cat > .env <<'EOF'
+          ASPNETCORE_ENVIRONMENT=Development
+          POSTGRES_DB=soccerroom
+          POSTGRES_USER=soccerroom
+          POSTGRES_PASSWORD=ci-chi-dung-mot-lan
+          JWT_SECRET=ci-jwt-secret-toi-thieu-32-ky-tu-de-chay-test
+          JWT_ISSUER=soccerroom-api
+          MINIO_ROOT_USER=ci-minio-user
+          MINIO_ROOT_PASSWORD=ci-minio-password
+          MINIO_BUCKET=soccerroom-anh
+          DOMAIN=localhost
+          EOF
+
+      - name: Build & dựng cả cụm
+        # Build tại chỗ chứ không pull: E2E phải kiểm ĐÚNG commit này, pull `latest` sẽ test
+        # bản trước đó và cho cảm giác an toàn sai.
+        run: |
+          npm ci --prefix frontend
+          npm run build --prefix frontend
+          # Dùng lớp phủ dev: Caddy phục vụ HTTP trên localhost:8080 thay vì xin cert
+          # Let's Encrypt cho domain giả — runner CI không có DNS trỏ về nó.
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+
+      - name: Chờ API healthy
+        # Dùng đủ cả hai `-f` như bước `up`: thiếu chúng thì compose suy project từ tên thư
+        # mục — hiện đúng, nhưng sẽ sai âm thầm nếu ai đó đổi tên repo hoặc đặt COMPOSE_PROJECT_NAME.
+        run: |
+          cps="docker compose -f docker-compose.yml -f docker-compose.dev.yml"
+          for i in $(seq 1 60); do
+            trangThai=$(docker inspect --format '{{.State.Health.Status}}' \
+              "$($cps ps -q api)" 2>/dev/null || echo "chua-co")
+            [ "$trangThai" = "healthy" ] && echo "API healthy sau $((i * 10))s" && exit 0
+            sleep 10
+          done
+          echo "API không lên được sau 10 phút:"
+          $cps logs api --tail 80
+          exit 1
+
+      - name: Cài Playwright
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Chạy 23 test E2E
+        working-directory: frontend
+        run: npm run e2e
+
+      - name: Lưu vết khi lỗi
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+          retention-days: 7
+
+      - name: Log container khi lỗi
+        if: failure()
+        run: docker compose -f docker-compose.yml -f docker-compose.dev.yml logs --tail 200
+
+  day-image:
+    name: Đẩy image lên GHCR
+    needs: e2e
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    outputs:
+      image: ${{ steps.ten.outputs.image }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Login to GHCR
+      - name: Hạ tên chủ repo về chữ thường
+        id: ten
+        # GHCR từ chối tên có chữ hoa. `minhtungle` thì không sao, nhưng repo fork sang
+        # tổ chức có chữ hoa sẽ đỏ ở bước push mà thông báo lỗi rất khó lần.
+        run: |
+          chu=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "image=ghcr.io/$chu/${{ env.IMAGE_NAME }}" >> "$GITHUB_OUTPUT"
+
+      - name: Login GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & push API image
+      - name: Build & push
         uses: docker/build-push-action@v5
         with:
           context: .
           file: src/GiapTech.SoccerRoom.API/Dockerfile
           push: true
-          tags: ${{ env.IMAGE_API }}:latest,${{ env.IMAGE_API }}:${{ github.sha }}
-          # Tái dùng layer giữa các lần build — restore NuGet là bước lâu nhất.
+          # Gắn cả `latest` và SHA: `latest` để compose pull, SHA để quay lại bản cũ khi cần
+          # (`IMAGE_API=...:<sha> docker compose up -d`).
+          tags: |
+            ${{ steps.ten.outputs.image }}:latest
+            ${{ steps.ten.outputs.image }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
-    needs: push-images
+  trien-khai:
+    name: Triển khai VPS
+    needs: day-image
     runs-on: ubuntu-latest
+    # Environment `production` cho phép bật "required reviewers" trên GitHub nếu muốn chốt
+    # tay trước khi đẩy lên server thật.
+    environment: production
     steps:
-      # Frontend static: đồng bộ thẳng vào thư mục Caddy mount (./frontend/dist)
-      - name: Download frontend build
+      - name: Tải frontend build
         uses: actions/download-artifact@v4
         with:
           name: frontend-dist
           path: frontend-dist
 
-      - name: Copy frontend to VPS
+      - name: Chép frontend lên VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
           source: "frontend-dist/*"
-          target: /opt/clubmgmt/frontend/dist
+          # Đường dẫn phải khớp thư mục đã clone repo trên VPS (xem docs/ha-tang/trien-khai-vps.md).
+          target: ${{ secrets.VPS_PATH }}/frontend/dist
           strip_components: 1
+          # rm: xoá tệp cũ trước khi chép. Không xoá thì asset của bản trước (main-abc123.js)
+          # nằm lại mãi và thư mục phình dần.
           rm: true
 
-      - name: Deploy to VPS via SSH
+      - name: Pull image mới & khởi động lại
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          # `set -e`: mặc định ssh-action chạy tiếp dù lệnh trước lỗi, nên deploy "xanh" trong
+          # khi container không lên.
           script: |
-            cd /opt/clubmgmt
-            docker compose pull
+            set -e
+            cd ${{ secrets.VPS_PATH }}
+
+            # Ghim đúng image của commit này, không dùng `latest`: hai lần deploy sát nhau thì
+            # `latest` có thể đã bị bản sau ghi đè và ta triển khai sai bản.
+            export IMAGE_API=${{ needs.day-image.outputs.image }}:${{ github.sha }}
+
+            docker compose pull api
             docker compose up -d
-            docker image prune -f
+
+            # Chờ API healthy TRƯỚC khi báo thành công. Không chờ thì workflow xanh trong khi
+            # migration lỗi và API restart vòng lặp.
+            for i in $(seq 1 30); do
+              trangThai=$(docker inspect --format '{{.State.Health.Status}}' \
+                "$(docker compose ps -q api)" 2>/dev/null || echo "chua-co")
+              if [ "$trangThai" = "healthy" ]; then
+                echo "API healthy — deploy xong"
+                docker image prune -f
+                exit 0
+              fi
+              sleep 5
+            done
+
+            echo "API không healthy sau 150s — log:"
+            docker compose logs api --tail 100
+            exit 1

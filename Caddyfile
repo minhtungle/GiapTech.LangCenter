@@ -1,27 +1,55 @@
-# Caddy tự động cấp/gia hạn HTTPS qua Let's Encrypt cho domain khai báo bên dưới.
-# Thay clubmgmt.example.com bằng domain thật khi triển khai.
+# Caddy tự cấp và gia hạn HTTPS qua Let's Encrypt.
+#
+# Domain đọc từ biến môi trường {$DOMAIN} thay vì ghim trong file: ghim thì mỗi lần đổi domain
+# phải sửa repo và commit, mà CI/CD không nên biết domain của môi trường nào. Đặt DOMAIN trong
+# `.env` trên VPS — xem docs/ha-tang/trien-khai-vps.md.
+#
+# Bản dev dùng ./Caddyfile.dev (HTTP trên localhost, không xin cert).
 
-clubmgmt.example.com {
-    # Static SPA (React + shadcn-admin build) — phục vụ trực tiếp, không cần container riêng
-    handle /api/* {
-        reverse_proxy api:8080
-    }
+{$DOMAIN} {
+	handle /api/* {
+		reverse_proxy api:8080
+	}
 
-    handle {
-        root * /srv/frontend
-        try_files {path} /index.html
-        file_server
-    }
+	# Health endpoint để Uptime Kuma và CI kiểm tra ngoài đường /api.
+	handle /health {
+		reverse_proxy api:8080
+	}
 
-    encode gzip zstd
+	# Static SPA (React + shadcn-admin build) — Caddy phục vụ trực tiếp, không container riêng.
+	handle {
+		root * /srv/frontend
+		try_files {path} /index.html
+		file_server
+	}
 
-    log {
-        output stdout
-        format json
-    }
+	encode gzip zstd
+
+	# Ảnh đi qua /api/v1/anh nên đã có Cache-Control từ API. Asset build của Vite có hash
+	# trong tên nên cache dài được; index.html thì không, nếu không người dùng giữ bản cũ mãi.
+	@assetCoHash path /assets/*
+	header @assetCoHash Cache-Control "public, max-age=31536000, immutable"
+	header /index.html Cache-Control "no-cache"
+
+	# Header bảo mật cơ bản. KHÔNG đặt CSP quá chặt ở đây: frontend dùng blob: cho ảnh tải
+	# qua axios và data: cho favicon — chặn hai scheme đó sẽ làm ảnh biến mất.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Caddy tự thêm Server: Caddy — bỏ đi để không lộ phiên bản.
+		-Server
+	}
+
+	log {
+		output stdout
+		format json
+	}
 }
 
-# Ví dụ subdomain quản trị observability nội bộ (tuỳ chọn, nên đặt sau xác thực/IP allowlist)
-# monitor.clubmgmt.example.com {
+# Subdomain quan sát nội bộ (tuỳ chọn). Bật cùng `--profile quan-sat` và ĐẶT SAU xác thực
+# hoặc IP allowlist — Grafana mở công khai là lộ toàn bộ metrics hệ thống.
+# monitor.{$DOMAIN} {
 #     reverse_proxy grafana:3000
 # }

@@ -46,7 +46,8 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | **Dockerfile cho API** | ✅ 2 giai đoạn, chạy user thường |
 | **`docker compose up` chạy được** | ✅ 5 container, API healthy, migration tự áp |
 | Test E2E frontend (23 test Playwright) | ✅ |
-| Triển khai VPS (domain, HTTPS, backup) | ⬜ |
+| CI/CD 4 job: test → E2E → đẩy image → deploy | ✅ |
+| Triển khai VPS (domain, HTTPS, backup) | 🟡 cần server thật |
 
 ---
 
