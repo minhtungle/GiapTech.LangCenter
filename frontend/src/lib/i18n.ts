@@ -258,6 +258,14 @@ const vi = {
       cuuThua: 'Cứu thua',
     },
   },
+  chonDoiThu: {
+    timHoacTaoMoi: 'Gõ tên đội để tìm hoặc tạo mới…',
+    taoDoi: 'Tạo đội "{ten}"',
+    traCuuGoiY: 'Đội đó cũng dùng app này? Nhập mã đội 7 ký tự của họ:',
+    tra: 'Tra',
+    themVaoSo: 'Thêm vào sổ',
+    daCoTrongSo: 'Đã có trong sổ',
+  },
   taiChinh: {
     tabQuy: 'Đợt quỹ',
     tabChi: 'Khoản chi',
@@ -481,6 +489,8 @@ const vi = {
     TRAN_CHUA_CO_SO_DO: 'Trận này chưa có sơ đồ để lưu thành mẫu. Xếp đội hình rồi bấm Lưu sơ đồ trước.',
     SO_AO_KHONG_HOP_LE: 'Số áo phải từ 1 đến 99',
     SO_TIEN_AM: 'Số tiền không được âm',
+    KHONG_TIM_THAY_CLB: 'Không có CLB nào dùng mã này. Kiểm lại mã đội (7 ký tự, không có số 0 và 1).',
+    MA_DOI_KHONG_HOP_LE: 'Mã đội không hợp lệ — 7 ký tự, không chứa 0/O/1/I/L',
     LOAI_ANH_KHONG_HO_TRO: 'Chỉ nhận ảnh JPG, PNG, WebP hoặc GIF',
     ANH_QUA_LON: 'Ảnh quá lớn, tối đa 5 MB',
     ANH_RONG: 'Tệp ảnh rỗng',

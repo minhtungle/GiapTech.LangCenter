@@ -13,6 +13,7 @@ import { Modal, ModalChan } from '@/components/ui/Modal'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 import { cn } from '@/lib/utils'
 import { SoDoSan, type CauThuTrenSan, type QuanTrenSan, type Ben } from '@/components/SoDoSan'
+import { ChonDoiThu } from '@/components/ChonDoiThu'
 import {
   CAU_HINH_SAN, CAC_LOAI_SAN, BANG_MAU_AO, chuanHoaLoaiSan, timMauAo,
   MAU_MAC_DINH_TA, MAU_MAC_DINH_DOI_THU, type LoaiSan,
@@ -34,10 +35,6 @@ interface TranDauDto {
   trangThai: 'DaLenLich' | 'DaDienRa' | 'DaHuy' | 'LuuTru'
   nhanXetChung: string | null
   ghiChu: string | null
-}
-interface DoiThuNgan {
-  id: string
-  tenDoi: string
 }
 interface DoiHinhDto {
   id: string
@@ -259,11 +256,6 @@ function TabThongTin({
     queryKey: ['tran-dau', tranDauId],
     queryFn: async () => (await api.get<TranDauDto>(`/tran-dau/${tranDauId}`)).data,
   })
-  const { data: doiThus } = useQuery({
-    queryKey: ['doi-thu'],
-    queryFn: async () =>
-      (await api.get<KetQuaTrang<DoiThuNgan>>('/doi-thu', { params: { soDong: 200 } })).data.duLieu,
-  })
 
   const luu = useMutation({
     mutationFn: async (form: Record<string, unknown>) =>
@@ -318,14 +310,7 @@ function TabThongTin({
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="doiThuId">{t('tranDau.doiThu')}</Label>
-        <SelectTimKiem
-          id="doiThuId"
-          luaChon={(doiThus ?? []).map((d) => ({ giaTri: d.id, nhan: d.tenDoi }))}
-          giaTri={doiThu}
-          onDoi={setDoiThuChon}
-          placeholder={t('tranDau.chuaChonDoiThu')}
-          placeholderTimKiem={t('tranDau.timDoiThu')}
-        />
+        <ChonDoiThu giaTri={doiThu} onDoi={setDoiThuChon} />
       </div>
 
       <div className="flex flex-col gap-1.5">
