@@ -51,6 +51,36 @@ export const Input = React.forwardRef<
 ))
 Input.displayName = 'Input'
 
+/**
+ * Ô nhập nhiều dòng cho **mọi trường có thể dài**: nhận xét, ghi chú, mô tả, ghi chú chiến thuật.
+ *
+ * `<input>` một dòng cắt nội dung khỏi tầm nhìn ngay khi vượt bề rộng ô — người dùng gõ một
+ * đoạn nhận xét rồi không đọc lại được đoạn đầu, phải rê con trỏ mới thấy. Trường dài dùng
+ * `<textarea>`, trường ngắn (tên, số áo, URL) vẫn dùng `Input`.
+ *
+ * Mặc định 3 dòng và `resize-y`: đủ cho ghi chú thường gặp, người cần dài hơn thì tự kéo.
+ */
+export const Textarea = React.forwardRef<
+  HTMLTextAreaElement,
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>
+>(({ className, rows = 3, ...props }, ref) => (
+  <textarea
+    ref={ref}
+    rows={rows}
+    className={cn(
+      'flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm',
+      'placeholder:text-muted-foreground',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+      'disabled:cursor-not-allowed disabled:opacity-50',
+      // resize-y thôi: kéo ngang sẽ phá vỡ lưới cột của form.
+      'resize-y',
+      className,
+    )}
+    {...props}
+  />
+))
+Textarea.displayName = 'Textarea'
+
 export function Label({ className, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) {
   return (
     <label className={cn('text-sm font-medium leading-none', className)} {...props} />

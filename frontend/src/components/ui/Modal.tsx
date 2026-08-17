@@ -26,7 +26,7 @@ export function Modal({
   children: React.ReactNode
   /** true = không cho đóng bằng Esc / bấm nền, dùng khi đang lưu dở. */
   chanDoiKhiXuLy?: boolean
-  rong?: 'sm' | 'md' | 'lg'
+  rong?: 'sm' | 'md' | 'lg' | 'xl'
 }) {
   const ref = React.useRef<HTMLDialogElement>(null)
 
@@ -67,6 +67,9 @@ export function Modal({
         rong === 'sm' && 'max-w-sm',
         rong === 'md' && 'max-w-xl',
         rong === 'lg' && 'max-w-3xl',
+        // xl cho bảng chiến thuật: sân + bảng điều khiển side by side cần bề ngang thật,
+        // nhét vào 3xl thì sân bé tới mức không kéo nổi áo.
+        rong === 'xl' && 'max-w-6xl',
       )}
     >
       <div className="flex items-start justify-between gap-4 border-b border-border p-4">

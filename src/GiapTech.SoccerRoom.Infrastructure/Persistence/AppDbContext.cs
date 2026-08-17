@@ -27,6 +27,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant
     public DbSet<TranDau> TranDaus => Set<TranDau>();
     public DbSet<DoiHinhTranDau> DoiHinhTranDaus => Set<DoiHinhTranDau>();
     public DbSet<SoDoChienThuat> SoDoChienThuats => Set<SoDoChienThuat>();
+    public DbSet<MauDoiHinh> MauDoiHinhs => Set<MauDoiHinh>();
+    public DbSet<VideoTran> VideoTrans => Set<VideoTran>();
+    public DbSet<LoiMoiThamGia> LoiMoiThamGias => Set<LoiMoiThamGia>();
+    public DbSet<PhanHoiThamGia> PhanHoiThamGias => Set<PhanHoiThamGia>();
     public DbSet<DanhGiaCauThu> DanhGiaCauThus => Set<DanhGiaCauThu>();
     public DbSet<VoteMvp> VoteMvps => Set<VoteMvp>();
 
@@ -35,6 +39,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant
 
     public DbSet<Quy> Quys => Set<Quy>();
     public DbSet<DongGopQuy> DongGopQuys => Set<DongGopQuy>();
+    public DbSet<KhoanChi> KhoanChis => Set<KhoanChi>();
 
     /// <summary>
     /// Tenant của context này, đọc bởi Global Query Filter.

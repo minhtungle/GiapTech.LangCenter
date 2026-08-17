@@ -1,6 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
 import { AuthProvider, useAuth } from '@/lib/auth'
 import Layout from '@/components/Layout'
 import DangNhap from '@/pages/DangNhap'
@@ -10,7 +9,11 @@ import DangKyClb from '@/pages/DangKyClb'
 import LichThiDau from '@/pages/lich-thi-dau/LichThiDau'
 import DoiThu from '@/pages/lich-thi-dau/DoiThu'
 import ChiTietTran from '@/pages/lich-thi-dau/ChiTietTran'
-import LoiMoi from '@/pages/lich-thi-dau/LoiMoi'
+import HomThu from '@/pages/lich-thi-dau/HomThu'
+import MauDoiHinh from '@/pages/lich-thi-dau/MauDoiHinh'
+import ThuVienVideo from '@/pages/lich-thi-dau/ThuVienVideo'
+import TaiChinh from '@/pages/tai-chinh/TaiChinh'
+import ThongKe from '@/pages/thong-ke/ThongKe'
 import CauThu from '@/pages/quan-tri/CauThu'
 import TaiKhoan from '@/pages/quan-tri/TaiKhoan'
 import PhanQuyen from '@/pages/quan-tri/PhanQuyen'
@@ -41,19 +44,6 @@ function CanDangNhap({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-function ChuaLam({ ten }: { ten: string }) {
-  return (
-    <Card className="max-w-lg">
-      <CardHeader>
-        <CardTitle>{ten}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground">Module này chưa được triển khai.</p>
-      </CardContent>
-    </Card>
-  )
-}
-
 function TongQuan() {
   const { phien } = useAuth()
   return (
@@ -71,8 +61,6 @@ function TongQuan() {
 }
 
 export default function App() {
-  const { t } = useTranslation()
-
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
@@ -93,10 +81,12 @@ export default function App() {
               <Route path="/" element={<TongQuan />} />
               <Route path="/lich-thi-dau" element={<LichThiDau />} />
               <Route path="/lich-thi-dau/:id" element={<ChiTietTran />} />
-              <Route path="/loi-moi" element={<LoiMoi />} />
+              <Route path="/mau-doi-hinh" element={<MauDoiHinh />} />
+              <Route path="/thu-vien-video" element={<ThuVienVideo />} />
+              <Route path="/hom-thu" element={<HomThu />} />
               <Route path="/doi-thu" element={<DoiThu />} />
-              <Route path="/thong-ke" element={<ChuaLam ten={t('menu.thongKe')} />} />
-              <Route path="/tai-chinh" element={<ChuaLam ten={t('menu.taiChinh')} />} />
+              <Route path="/thong-ke" element={<ThongKe />} />
+              <Route path="/tai-chinh" element={<TaiChinh />} />
               <Route path="/quan-tri/tai-khoan" element={<TaiKhoan />} />
               <Route path="/quan-tri/cau-thu" element={<CauThu />} />
               <Route path="/quan-tri/phan-quyen" element={<PhanQuyen />} />

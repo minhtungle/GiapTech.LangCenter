@@ -36,6 +36,8 @@ export interface SuKienLich {
   nhan: string
   /** Giá trị CSS color — truyền từ token trạng thái của dự án. */
   mau: string
+  /** Nhãn ngắn hiện trong ô ngày: tên đối thủ, hoặc tỷ số nếu chưa có đối thủ. */
+  tenNgan: string
 }
 
 export function LichThang({
@@ -104,22 +106,35 @@ export function LichThang({
 
       const hang = document.createElement('div')
       hang.setAttribute('data-cham', '')
-      hang.className = 'sr-cham-hang'
+      hang.className = 'sr-tran-hang'
 
       for (const s of cua) {
-        const cham = document.createElement('button')
-        cham.type = 'button'
+        // Mỗi trận là một "viên" gồm chấm màu kết quả + tên đối thủ. Chỉ chấm màu thì người
+        // dùng phải rê chuột từng ô mới biết đá với ai.
+        const vien = document.createElement('button')
+        vien.type = 'button'
+        vien.className = 'sr-tran-vien'
+        vien.title = s.nhan
+        vien.setAttribute('aria-label', s.nhan)
+
+        const cham = document.createElement('span')
         cham.className = 'sr-cham'
         cham.style.background = s.mau
-        cham.title = s.nhan
-        cham.setAttribute('aria-label', s.nhan)
-        cham.addEventListener('click', (e) => {
-          // Chặn nổi bọt: bấm chấm là mở trận, không phải chọn ngày trên lịch.
+        vien.appendChild(cham)
+
+        const ten = document.createElement('span')
+        ten.className = 'sr-tran-ten'
+        // Không có đối thủ thì hiện tỷ số, còn hơn để trống.
+        ten.textContent = s.tenNgan
+        vien.appendChild(ten)
+
+        vien.addEventListener('click', (e) => {
+          // Chặn nổi bọt: bấm viên là mở trận, không phải chọn ngày trên lịch.
           e.stopPropagation()
           e.preventDefault()
           chon(s.tranDauId)
         })
-        hang.appendChild(cham)
+        hang.appendChild(vien)
       }
 
       o.appendChild(hang)

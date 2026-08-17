@@ -2,23 +2,29 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  Plus, Pencil, Trash2, Archive, Filter, X, ListChecks,
+  Plus, Pencil, Trash2, Archive, ListChecks,
   Table2, CalendarDays, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import {
-  Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong,
+  Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong, Textarea,
 } from '@/components/ui'
 import { Modal, ModalChan } from '@/components/ui/Modal'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { cn } from '@/lib/utils'
 import { LichThang, type SuKienLich } from '@/components/LichThang'
+import {
+  BoLocTranDau, NutBoLoc, BO_LOC_RONG, coLocNao, sangThamSoApi, type GiaTriBoLoc,
+} from '@/components/BoLocTranDau'
 import { PhanTrang } from '@/components/ui/PhanTrang'
+import { ThSapXep } from '@/components/ui/ThSapXep'
 
 const KHOA_CHE_DO = 'sr_lich_thi_dau_che_do'
 
 type KetQua = 'ChuaCo' | 'Thang' | 'Hoa' | 'Thua'
+/** Khớp enum CotSapXep ở backend — tên cột tự do không được nhận (chống SQL injection). */
+type CotSapXep = 'ThoiGian' | 'DoiThu' | 'TySo' | 'KetQua' | 'TrangThai'
 type TrangThai = 'DaLenLich' | 'DaDienRa' | 'DaHuy' | 'LuuTru'
 
 interface TranDauDto {
@@ -30,7 +36,6 @@ interface TranDauDto {
   tySoKhach: number | null
   ketQua: KetQua
   trangThai: TrangThai
-  linkVideo: string | null
   nhanXetChung: string | null
   ghiChu: string | null
 }
@@ -74,13 +79,12 @@ export default function LichThiDau() {
 
   const [trang, setTrang] = useState(1)
   const [soDong, setSoDong] = useState(20)
+  const [sapXep, setSapXep] = useState<{ cot: CotSapXep; tangDan: boolean }>({
+    cot: 'ThoiGian',
+    tangDan: false,
+  })
   const [moLoc, setMoLoc] = useState(false)
-  const [loc, setLoc] = useState<{
-    tuNgay: string
-    denNgay: string
-    ketQua: KetQua[]
-    doiThuId: string | null
-  }>({ tuNgay: '', denNgay: '', ketQua: [], doiThuId: null })
+  const [loc, setLoc] = useState<GiaTriBoLoc>(BO_LOC_RONG)
 
   const [moForm, setMoForm] = useState(false)
   const [dangSua, setDangSua] = useState<TranDauDto | null>(null)
@@ -98,17 +102,22 @@ export default function LichThiDau() {
   })
 
   const { data: ketQua, isLoading } = useQuery({
-    queryKey: ['tran-dau', loc, trang, soDong],
+    queryKey: ['tran-dau', loc, trang, soDong, sapXep],
     queryFn: async () =>
       (
-        await api.post<KetQuaTrang<TranDauDto>>(`/tran-dau/tim-kiem?trang=${trang}&soDong=${soDong}`, {
-          tuNgay: loc.tuNgay || null,
-          denNgay: loc.denNgay || null,
-          ketQua: loc.ketQua.length ? loc.ketQua : null,
-          doiThuId: loc.doiThuId,
-        })
+        await api.post<KetQuaTrang<TranDauDto>>(
+          `/tran-dau/tim-kiem?trang=${trang}&soDong=${soDong}` +
+            `&cot=${sapXep.cot}&tangDan=${sapXep.tangDan}`,
+          sangThamSoApi(loc),
+        )
       ).data,
   })
+
+  /** Đổi cột sắp xếp → về trang 1: trang 3 của thứ tự cũ không có nghĩa gì ở thứ tự mới. */
+  const doiSapXep = (cot: CotSapXep, tangDan: boolean) => {
+    setSapXep({ cot, tangDan })
+    setTrang(1)
+  }
 
   // Calendar dùng endpoint riêng: lịch tháng phải hiện ĐỦ trận, cắt trang sẽ làm mất trận
   // khỏi ô ngày mà người dùng không biết.
@@ -119,10 +128,7 @@ export default function LichThiDau() {
       (
         await api.post<TranDauDto[]>(
           `/tran-dau/theo-thang?nam=${thangXem.nam}&thang=${thangXem.thang}`,
-          {
-            ketQua: loc.ketQua.length ? loc.ketQua : null,
-            doiThuId: loc.doiThuId,
-          },
+          { ketQua: loc.ketQua.length ? loc.ketQua : null, doiThuId: loc.doiThuId },
         )
       ).data,
   })
@@ -192,17 +198,15 @@ export default function LichThiDau() {
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
-    const nha = fd.get('tySoNha') as string
     const khach = fd.get('tySoKhach') as string
 
     // Mọi trường lệnh cập nhật ghi đè đều đọc TỪ FORM (quy tắc #1) — không gửi giá trị cứng.
+    // `tySoNha` không nằm trong form vì nó là tổng bàn thắng cầu thủ, nhập ở tab đánh giá.
     luu.mutate({
       thoiGian: new Date(String(fd.get('thoiGian'))).toISOString(),
       doiThuId: doiThuChon,
-      tySoNha: nha === '' ? null : Number(nha),
       tySoKhach: khach === '' ? null : Number(khach),
       trangThai: trangThaiChon,
-      linkVideo: (fd.get('linkVideo') as string) || null,
       nhanXetChung: (fd.get('nhanXetChung') as string) || null,
       ghiChu: (fd.get('ghiChu') as string) || null,
     })
@@ -229,25 +233,27 @@ export default function LichThiDau() {
   const suKienLich: SuKienLich[] = (tranThang ?? []).map((tr) => {
     const d = new Date(tr.thoiGian)
     const p = (n: number) => String(n).padStart(2, '0')
-    const tySo = tr.tySoNha !== null ? ` ${tr.tySoNha}-${tr.tySoKhach}` : ''
+    const tySo =
+      tr.tySoNha !== null || tr.tySoKhach !== null
+        ? ` ${tr.tySoNha ?? 0}-${tr.tySoKhach ?? 0}`
+        : ''
     return {
       ngay: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`,
       tranDauId: tr.id,
+      // Tooltip đầy đủ: giờ + đối thủ + tỷ số.
       nhan: `${p(d.getHours())}:${p(d.getMinutes())} ${tr.tenDoiThu ?? ''}${tySo}`.trim(),
+      // Nhãn trong ô hẹp: ưu tiên tên đối thủ; chưa có thì dùng tỷ số, cuối cùng là giờ.
+      tenNgan: tr.tenDoiThu ?? (tySo.trim() || `${p(d.getHours())}:${p(d.getMinutes())}`),
       mau: MAU_CHAM[tr.ketQua],
     }
   })
 
-  const coLoc = loc.tuNgay || loc.denNgay || loc.ketQua.length > 0 || loc.doiThuId
+  const coLoc = coLocNao(loc)
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Button variant={coLoc ? 'primary' : 'outline'} onClick={() => setMoLoc((v) => !v)}>
-          <Filter className="h-4 w-4" />
-          {t('tranDau.boLoc')}
-          {coLoc && <Badge variant="accent">{t('tranDau.dangLoc')}</Badge>}
-        </Button>
+        <NutBoLoc mo={moLoc} onDoi={setMoLoc} loc={loc} />
         <div className="flex items-center gap-2">
           {/* Chuyển Bảng ↔ Lịch, giữ nguyên bộ lọc đang áp (FR-08). */}
           <div className="flex overflow-hidden rounded-md border border-input">
@@ -284,73 +290,7 @@ export default function LichThiDau() {
         </div>
       </div>
 
-      {moLoc && (
-        <div className="grid gap-3 rounded-lg border border-border bg-card p-4 sm:grid-cols-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="tuNgay">{t('tranDau.tuNgay')}</Label>
-            <Input
-              id="tuNgay"
-              type="date"
-              value={loc.tuNgay}
-              onChange={(e) => setLoc({ ...loc, tuNgay: e.target.value })}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="denNgay">{t('tranDau.denNgay')}</Label>
-            <Input
-              id="denNgay"
-              type="date"
-              value={loc.denNgay}
-              onChange={(e) => setLoc({ ...loc, denNgay: e.target.value })}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="locDoiThu">{t('tranDau.doiThu')}</Label>
-            <SelectTimKiem
-              id="locDoiThu"
-              luaChon={(doiThus ?? []).map((d) => ({ giaTri: d.id, nhan: d.tenDoi }))}
-              giaTri={loc.doiThuId}
-              onDoi={(v) => setLoc({ ...loc, doiThuId: v })}
-              placeholder={t('tranDau.moiDoiThu')}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label>{t('tranDau.ketQua')}</Label>
-            <div className="flex flex-wrap gap-2 pt-1.5">
-              {(['Thang', 'Hoa', 'Thua'] as const).map((k) => (
-                <label key={k} className="flex items-center gap-1.5 text-sm">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 accent-[hsl(var(--primary))]"
-                    checked={loc.ketQua.includes(k)}
-                    onChange={(e) =>
-                      setLoc({
-                        ...loc,
-                        ketQua: e.target.checked
-                          ? [...loc.ketQua, k]
-                          : loc.ketQua.filter((x) => x !== k),
-                      })
-                    }
-                  />
-                  {t(`tranDau.kq.${k}`)}
-                </label>
-              ))}
-            </div>
-          </div>
-          {coLoc && (
-            <div className="sm:col-span-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setLoc({ tuNgay: '', denNgay: '', ketQua: [], doiThuId: null })}
-              >
-                <X className="h-3.5 w-3.5" />
-                {t('tranDau.xoaLoc')}
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+      {moLoc && <BoLocTranDau loc={loc} onDoi={setLoc} />}
 
       {maLoiBang && <CanhBaoLoi>{t(`loi.${maLoiBang}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
@@ -417,11 +357,25 @@ export default function LichThiDau() {
         <Table>
           <thead>
             <tr>
-              <Th>{t('tranDau.thoiGian')}</Th>
-              <Th>{t('tranDau.doiThu')}</Th>
-              <Th className="text-center">{t('tranDau.tySo')}</Th>
-              <Th>{t('tranDau.ketQua')}</Th>
-              <Th>{t('tranDau.trangThai')}</Th>
+              {(
+                [
+                  ['ThoiGian', t('tranDau.thoiGian')],
+                  ['DoiThu', t('tranDau.doiThu')],
+                  ['TySo', t('tranDau.tySo')],
+                  ['KetQua', t('tranDau.ketQua')],
+                  ['TrangThai', t('tranDau.trangThai')],
+                ] as [CotSapXep, string][]
+              ).map(([cot, nhan]) => (
+                <ThSapXep
+                  key={cot}
+                  cot={cot}
+                  cotHienTai={sapXep.cot}
+                  tangDan={sapXep.tangDan}
+                  onDoi={doiSapXep}
+                >
+                  {nhan}
+                </ThSapXep>
+              ))}
               <Th className="w-36" />
             </tr>
           </thead>
@@ -439,7 +393,9 @@ export default function LichThiDau() {
                 </Td>
                 <Td>{tr.tenDoiThu ?? <span className="text-muted-foreground">—</span>}</Td>
                 <Td className="text-center font-mono">
-                  {tr.tySoNha !== null ? `${tr.tySoNha} – ${tr.tySoKhach}` : '—'}
+                  {tr.tySoNha !== null || tr.tySoKhach !== null
+                    ? `${tr.tySoNha ?? 0} – ${tr.tySoKhach ?? 0}`
+                    : '—'}
                 </Td>
                 <Td>
                   <Badge variant={MAU_KET_QUA[tr.ketQua]}>{t(`tranDau.kq.${tr.ketQua}`)}</Badge>
@@ -564,16 +520,14 @@ export default function LichThiDau() {
             />
           </div>
 
+          {/* Bàn thắng chỉ HIỆN ở đây — nó là tổng bàn cầu thủ ghi, nhập ở tab đánh giá của
+              màn chi tiết. Để ô nhập ở cả hai chỗ thì hai con số sẽ đá nhau. */}
           <div className="flex gap-2">
             <div className="flex flex-1 flex-col gap-1.5">
-              <Label htmlFor="tySoNha">{t('tranDau.tySoNha')}</Label>
-              <Input
-                id="tySoNha"
-                name="tySoNha"
-                type="number"
-                min={0}
-                defaultValue={dangSua?.tySoNha ?? ''}
-              />
+              <Label>{t('tranDau.tySoNha')}</Label>
+              <div className="flex h-9 items-center rounded-md border border-dashed border-border bg-muted/40 px-3 text-sm font-semibold tabular-nums">
+                {dangSua?.tySoNha ?? '—'}
+              </div>
             </div>
             <div className="flex flex-1 flex-col gap-1.5">
               <Label htmlFor="tySoKhach">{t('tranDau.tySoKhach')}</Label>
@@ -587,22 +541,13 @@ export default function LichThiDau() {
             </div>
           </div>
 
-          <p className="text-xs text-muted-foreground sm:col-span-2">{t('tranDau.tySoGoiY')}</p>
-
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
-            <Label htmlFor="linkVideo">{t('tranDau.linkVideo')}</Label>
-            <Input
-              id="linkVideo"
-              name="linkVideo"
-              type="url"
-              placeholder="https://youtube.com/..."
-              defaultValue={dangSua?.linkVideo ?? ''}
-            />
-          </div>
+          <p className="text-xs text-muted-foreground sm:col-span-2">
+            {t('tranDau.tySoNhaTuTinh')}
+          </p>
 
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label htmlFor="nhanXetChung">{t('tranDau.nhanXetChung')}</Label>
-            <Input
+            <Textarea
               id="nhanXetChung"
               name="nhanXetChung"
               defaultValue={dangSua?.nhanXetChung ?? ''}
@@ -611,7 +556,7 @@ export default function LichThiDau() {
 
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label htmlFor="ghiChu">{t('cauThu.ghiChu')}</Label>
-            <Input id="ghiChu" name="ghiChu" defaultValue={dangSua?.ghiChu ?? ''} />
+            <Textarea id="ghiChu" name="ghiChu" defaultValue={dangSua?.ghiChu ?? ''} />
           </div>
 
           {maLoi && (

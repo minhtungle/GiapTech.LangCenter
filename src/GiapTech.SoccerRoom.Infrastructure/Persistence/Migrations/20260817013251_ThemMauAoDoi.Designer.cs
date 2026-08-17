@@ -3,6 +3,7 @@ using System;
 using GiapTech.SoccerRoom.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GiapTech.SoccerRoom.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260817013251_ThemMauAoDoi")]
+    partial class ThemMauAoDoi
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -296,69 +299,6 @@ namespace GiapTech.SoccerRoom.Infrastructure.Persistence.Migrations
                     b.ToTable("DONGGOP_QUY", (string)null);
                 });
 
-            modelBuilder.Entity("GiapTech.SoccerRoom.Domain.Entities.KhoanChi", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("GhiChu")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("ghi_chu");
-
-                    b.Property<DateTimeOffset?>("NgayCapNhat")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("ngay_cap_nhat");
-
-                    b.Property<DateOnly>("NgayChi")
-                        .HasColumnType("date")
-                        .HasColumnName("ngay_chi");
-
-                    b.Property<DateTimeOffset>("NgayTao")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("ngay_tao");
-
-                    b.Property<string>("NguoiChi")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("nguoi_chi");
-
-                    b.Property<string>("NoiDung")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)")
-                        .HasColumnName("noi_dung");
-
-                    b.Property<Guid?>("QuyId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("quy_id");
-
-                    b.Property<decimal>("SoTien")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("so_tien");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_khoan_chi");
-
-                    b.HasIndex("NgayChi")
-                        .HasDatabaseName("ix_khoan_chi_ngay_chi");
-
-                    b.HasIndex("QuyId")
-                        .HasDatabaseName("ix_khoan_chi_quy_id");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_khoan_chi_tenant_id");
-
-                    b.ToTable("KHOAN_CHI", (string)null);
-                });
-
             modelBuilder.Entity("GiapTech.SoccerRoom.Domain.Entities.LoiMoiDoiThu", b =>
                 {
                     b.Property<Guid>("Id")
@@ -408,59 +348,6 @@ namespace GiapTech.SoccerRoom.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_loi_moi_doi_thu_tenant_id_trang_thai");
 
                     b.ToTable("LOI_MOI_DOI_THU", (string)null);
-                });
-
-            modelBuilder.Entity("GiapTech.SoccerRoom.Domain.Entities.LoiMoiThamGia", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<bool>("DaDong")
-                        .HasColumnType("boolean")
-                        .HasColumnName("da_dong");
-
-                    b.Property<DateTimeOffset?>("HanTraLoi")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("han_tra_loi");
-
-                    b.Property<string>("LoiNhan")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("loi_nhan");
-
-                    b.Property<DateTimeOffset?>("NgayCapNhat")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("ngay_cap_nhat");
-
-                    b.Property<DateTimeOffset>("NgayTao")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("ngay_tao");
-
-                    b.Property<Guid>("NguoiGuiId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("nguoi_gui_id");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<Guid>("TranDauId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tran_dau_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_loi_moi_tham_gia");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_loi_moi_tham_gia_tenant_id");
-
-                    b.HasIndex("TranDauId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_loi_moi_tham_gia_tran_dau_id");
-
-                    b.ToTable("LOI_MOI_THAM_GIA", (string)null);
                 });
 
             modelBuilder.Entity("GiapTech.SoccerRoom.Domain.Entities.MauDoiHinh", b =>
@@ -533,10 +420,6 @@ namespace GiapTech.SoccerRoom.Infrastructure.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("email");
-
-                    b.Property<bool>("LaTruongNhom")
-                        .HasColumnType("boolean")
-                        .HasColumnName("la_truong_nhom");
 
                     b.Property<DateTimeOffset?>("NgayCapNhat")
                         .HasColumnType("timestamp with time zone")
@@ -628,62 +511,6 @@ namespace GiapTech.SoccerRoom.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_nguoidung_quyen_nguoi_dung_id_quyen_id");
 
                     b.ToTable("NGUOIDUNG_QUYEN", (string)null);
-                });
-
-            modelBuilder.Entity("GiapTech.SoccerRoom.Domain.Entities.PhanHoiThamGia", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("CauThuId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("cau_thu_id");
-
-                    b.Property<string>("GhiChu")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("ghi_chu");
-
-                    b.Property<Guid>("LoiMoiId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("loi_moi_id");
-
-                    b.Property<DateTimeOffset?>("NgayCapNhat")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("ngay_cap_nhat");
-
-                    b.Property<DateTimeOffset>("NgayTao")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("ngay_tao");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset?>("ThoiGianTraLoi")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("thoi_gian_tra_loi");
-
-                    b.Property<int>("TraLoi")
-                        .HasColumnType("integer")
-                        .HasColumnName("tra_loi");
-
-                    b.HasKey("Id")
-                        .HasName("pk_phan_hoi_tham_gia");
-
-                    b.HasIndex("CauThuId")
-                        .HasDatabaseName("ix_phan_hoi_tham_gia_cau_thu_id");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_phan_hoi_tham_gia_tenant_id");
-
-                    b.HasIndex("LoiMoiId", "CauThuId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_phan_hoi_tham_gia_loi_moi_id_cau_thu_id");
-
-                    b.ToTable("PHAN_HOI_THAM_GIA", (string)null);
                 });
 
             modelBuilder.Entity("GiapTech.SoccerRoom.Domain.Entities.Quy", b =>
@@ -1302,26 +1129,6 @@ namespace GiapTech.SoccerRoom.Infrastructure.Persistence.Migrations
                     b.Navigation("Tenant");
                 });
 
-            modelBuilder.Entity("GiapTech.SoccerRoom.Domain.Entities.KhoanChi", b =>
-                {
-                    b.HasOne("GiapTech.SoccerRoom.Domain.Entities.Quy", "Quy")
-                        .WithMany()
-                        .HasForeignKey("QuyId")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("fk_khoan_chi_quys_quy_id");
-
-                    b.HasOne("GiapTech.SoccerRoom.Domain.Entities.Tenant", "Tenant")
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_khoan_chi_tenants_tenant_id");
-
-                    b.Navigation("Quy");
-
-                    b.Navigation("Tenant");
-                });
-
             modelBuilder.Entity("GiapTech.SoccerRoom.Domain.Entities.LoiMoiDoiThu", b =>
                 {
                     b.HasOne("GiapTech.SoccerRoom.Domain.Entities.DoiThu", "DoiThu")
@@ -1341,27 +1148,6 @@ namespace GiapTech.SoccerRoom.Infrastructure.Persistence.Migrations
                     b.Navigation("DoiThu");
 
                     b.Navigation("Tenant");
-                });
-
-            modelBuilder.Entity("GiapTech.SoccerRoom.Domain.Entities.LoiMoiThamGia", b =>
-                {
-                    b.HasOne("GiapTech.SoccerRoom.Domain.Entities.Tenant", "Tenant")
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_loi_moi_tham_gia_tenants_tenant_id");
-
-                    b.HasOne("GiapTech.SoccerRoom.Domain.Entities.TranDau", "TranDau")
-                        .WithMany()
-                        .HasForeignKey("TranDauId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_loi_moi_tham_gia_tran_daus_tran_dau_id");
-
-                    b.Navigation("Tenant");
-
-                    b.Navigation("TranDau");
                 });
 
             modelBuilder.Entity("GiapTech.SoccerRoom.Domain.Entities.MauDoiHinh", b =>
@@ -1415,36 +1201,6 @@ namespace GiapTech.SoccerRoom.Infrastructure.Persistence.Migrations
                     b.Navigation("NguoiDung");
 
                     b.Navigation("Quyen");
-                });
-
-            modelBuilder.Entity("GiapTech.SoccerRoom.Domain.Entities.PhanHoiThamGia", b =>
-                {
-                    b.HasOne("GiapTech.SoccerRoom.Domain.Entities.CauThu", "CauThu")
-                        .WithMany()
-                        .HasForeignKey("CauThuId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_phan_hoi_tham_gia_cau_thu_cau_thu_id");
-
-                    b.HasOne("GiapTech.SoccerRoom.Domain.Entities.LoiMoiThamGia", "LoiMoi")
-                        .WithMany("PhanHois")
-                        .HasForeignKey("LoiMoiId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_phan_hoi_tham_gia_loi_moi_tham_gia_loi_moi_id");
-
-                    b.HasOne("GiapTech.SoccerRoom.Domain.Entities.Tenant", "Tenant")
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_phan_hoi_tham_gia_tenants_tenant_id");
-
-                    b.Navigation("CauThu");
-
-                    b.Navigation("LoiMoi");
-
-                    b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("GiapTech.SoccerRoom.Domain.Entities.Quy", b =>
@@ -1604,11 +1360,6 @@ namespace GiapTech.SoccerRoom.Infrastructure.Persistence.Migrations
                     b.Navigation("LoiMois");
 
                     b.Navigation("TranDaus");
-                });
-
-            modelBuilder.Entity("GiapTech.SoccerRoom.Domain.Entities.LoiMoiThamGia", b =>
-                {
-                    b.Navigation("PhanHois");
                 });
 
             modelBuilder.Entity("GiapTech.SoccerRoom.Domain.Entities.NguoiDung", b =>

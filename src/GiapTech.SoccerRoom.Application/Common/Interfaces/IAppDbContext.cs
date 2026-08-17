@@ -28,6 +28,10 @@ public interface IAppDbContext
     DbSet<TranDau> TranDaus { get; }
     DbSet<DoiHinhTranDau> DoiHinhTranDaus { get; }
     DbSet<SoDoChienThuat> SoDoChienThuats { get; }
+    DbSet<MauDoiHinh> MauDoiHinhs { get; }
+    DbSet<VideoTran> VideoTrans { get; }
+    DbSet<LoiMoiThamGia> LoiMoiThamGias { get; }
+    DbSet<PhanHoiThamGia> PhanHoiThamGias { get; }
     DbSet<DanhGiaCauThu> DanhGiaCauThus { get; }
     DbSet<VoteMvp> VoteMvps { get; }
 
@@ -36,6 +40,7 @@ public interface IAppDbContext
 
     DbSet<Quy> Quys { get; }
     DbSet<DongGopQuy> DongGopQuys { get; }
+    DbSet<KhoanChi> KhoanChis { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

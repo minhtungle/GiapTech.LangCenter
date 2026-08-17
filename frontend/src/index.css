@@ -161,21 +161,32 @@
 .sr-lich .lm-calendar-weekdays > div:nth-child(7)::after { content: 'CN'; }
 
 /*
-  Ô ngày: cao vừa đủ để lọt cả lịch trong một màn hình 768px mà không phải cuộn.
-  Thư viện để ô tự giãn theo chiều cao khung, nên phải chặn bằng height cố định —
-  min-height không đủ, ô vẫn phình ra 143px.
+  Ô ngày: đủ chỗ cho số ngày + tên đối thủ, mà cả lịch vẫn lọt một màn hình.
+  Thư viện để ô tự giãn theo chiều cao khung nên phải chặn bằng height cố định —
+  min-height không đủ, ô phình ra 143px.
 */
 .sr-lich .lm-calendar-content > div {
   position: relative;
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 0.35rem;
-  height: 2.75rem;
+  flex-direction: column;
+  align-items: stretch;
+  /* Padding ngang tối thiểu: mỗi 1px lấy đi là 1px cho tên đối thủ, mà tên bị cắt thành
+     "FC Hà…" thì hiện tên cũng bằng không hiện. */
+  padding: 0.25rem 0.15rem 0.15rem;
+  /* 5.5rem chứa số ngày + 3 viên trận — số trận tối đa thực tế trong một ngày của một CLB
+     phong trào. Đã đo trên lịch thật: 4.25rem cắt mất viên thứ ba của ngày 7. */
+  height: 5.5rem;
   min-height: 0;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
   border-radius: calc(var(--radius) - 4px);
   color: hsl(var(--foreground));
+  overflow: hidden;
+}
+
+/* Số ngày căn giữa ở dòng đầu, chừa phần dưới cho danh sách trận. */
+.sr-lich .lm-calendar-content > div {
+  text-align: center;
 }
 
 /* Ô bấm được để thêm trận — con trỏ báo cho người dùng biết. */
@@ -200,31 +211,51 @@
   font-weight: 600;
 }
 
-.sr-cham-hang {
-  position: absolute;
-  bottom: 0.2rem;
-  left: 0;
-  right: 0;
+/* Danh sách trận trong ô ngày — xếp dọc dưới số ngày. */
+.sr-tran-hang {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-top: 0.15rem;
+  overflow: hidden;
+}
+
+/* Một trận: chấm màu kết quả + tên đối thủ, bấm được để mở chi tiết. */
+.sr-tran-vien {
+  display: flex;
+  align-items: center;
   gap: 0.2rem;
+  width: 100%;
+  padding: 0.05rem 0.2rem;
+  border: 0;
+  border-radius: 3px;
+  background: hsl(var(--background));
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.sr-tran-vien:hover {
+  background: hsl(var(--accent) / 0.15);
+}
+
+.sr-tran-vien:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 1px;
 }
 
 .sr-cham {
-  width: 0.45rem;
-  height: 0.45rem;
-  border: 0;
+  flex-shrink: 0;
+  width: 0.4rem;
+  height: 0.4rem;
   border-radius: 9999px;
-  padding: 0;
-  cursor: pointer;
-  transition: transform 0.1s;
 }
 
-.sr-cham:hover {
-  transform: scale(1.4);
-}
-
-.sr-cham:focus-visible {
-  outline: 2px solid hsl(var(--ring));
-  outline-offset: 1px;
+/* Tên đối thủ: cắt bằng ellipsis, tooltip giữ nội dung đầy đủ. */
+.sr-tran-ten {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.6875rem;
+  color: hsl(var(--foreground));
 }

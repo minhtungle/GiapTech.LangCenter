@@ -29,6 +29,7 @@ public class CauThuConfig : IEntityTypeConfiguration<CauThu>
     {
         b.ToTable("CAU_THU");
         b.Property(x => x.HoTen).HasMaxLength(200).IsRequired();
+        b.Property(x => x.ViTriSoTruong).HasMaxLength(8);
         b.HasIndex(x => x.TenantId);
 
         b.HasOne(x => x.Tenant).WithMany(t => t.CauThus)
@@ -134,7 +135,6 @@ public class TranDauConfig : IEntityTypeConfiguration<TranDau>
     public void Configure(EntityTypeBuilder<TranDau> b)
     {
         b.ToTable("TRAN_DAU");
-        b.Property(x => x.LinkVideo).HasMaxLength(500);
 
         // Bộ lọc chính của FR-07/FR-12 là theo tenant + thời gian.
         b.HasIndex(x => new { x.TenantId, x.ThoiGian });
@@ -179,6 +179,87 @@ public class SoDoChienThuatConfig : IEntityTypeConfiguration<SoDoChienThuat>
         b.HasOne(x => x.TranDau).WithOne(t => t.SoDoChienThuat)
             .HasForeignKey<SoDoChienThuat>(x => x.TranDauId)
             .OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class VideoTranConfig : IEntityTypeConfiguration<VideoTran>
+{
+    public void Configure(EntityTypeBuilder<VideoTran> b)
+    {
+        b.ToTable("VIDEO_TRAN");
+        b.Property(x => x.Ten).HasMaxLength(200).IsRequired();
+        b.Property(x => x.Url).HasMaxLength(1000).IsRequired();
+        b.Property(x => x.MoTa).HasMaxLength(1000);
+        b.HasIndex(x => x.TenantId);
+        b.HasIndex(x => x.TranDauId);
+
+        // Xóa trận thì xóa luôn video của nó (FR-11) — link mồ côi không dùng được vào việc gì.
+        b.HasOne(x => x.TranDau).WithMany(t => t.Videos)
+            .HasForeignKey(x => x.TranDauId).OnDelete(DeleteBehavior.Cascade);
+
+        b.HasOne(x => x.Tenant).WithMany()
+            .HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class LoiMoiThamGiaConfig : IEntityTypeConfiguration<LoiMoiThamGia>
+{
+    public void Configure(EntityTypeBuilder<LoiMoiThamGia> b)
+    {
+        b.ToTable("LOI_MOI_THAM_GIA");
+        b.Property(x => x.LoiNhan).HasMaxLength(1000);
+        b.HasIndex(x => x.TenantId);
+
+        // Mỗi trận tối đa MỘT lời mời: gửi hai lần thì cầu thủ thấy hai thẻ giống hệt và
+        // không biết trả lời cái nào mới tính.
+        b.HasIndex(x => x.TranDauId).IsUnique();
+
+        b.HasOne(x => x.TranDau).WithMany()
+            .HasForeignKey(x => x.TranDauId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(x => x.Tenant).WithMany()
+            .HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class PhanHoiThamGiaConfig : IEntityTypeConfiguration<PhanHoiThamGia>
+{
+    public void Configure(EntityTypeBuilder<PhanHoiThamGia> b)
+    {
+        b.ToTable("PHAN_HOI_THAM_GIA");
+        b.Property(x => x.GhiChu).HasMaxLength(500);
+        b.HasIndex(x => x.TenantId);
+
+        // Mỗi cầu thủ một phản hồi cho mỗi lời mời — chặn ở tầng DB, cùng lý do với vote MVP:
+        // hai request đồng thời vẫn lọt qua kiểm tra ở tầng ứng dụng.
+        b.HasIndex(x => new { x.LoiMoiId, x.CauThuId }).IsUnique();
+
+        b.HasOne(x => x.LoiMoi).WithMany(l => l.PhanHois)
+            .HasForeignKey(x => x.LoiMoiId).OnDelete(DeleteBehavior.Cascade);
+
+        // Xoá hồ sơ cầu thủ thì xoá luôn phản hồi của họ: phản hồi không mang giá trị thống kê
+        // (khác đánh giá và đóng quỹ), giữ lại chỉ thành hàng mồ côi không hiển thị được tên.
+        b.HasOne(x => x.CauThu).WithMany()
+            .HasForeignKey(x => x.CauThuId).OnDelete(DeleteBehavior.Cascade);
+
+        b.HasOne(x => x.Tenant).WithMany()
+            .HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class MauDoiHinhConfig : IEntityTypeConfiguration<MauDoiHinh>
+{
+    public void Configure(EntityTypeBuilder<MauDoiHinh> b)
+    {
+        b.ToTable("MAU_DOI_HINH");
+        b.Property(x => x.Ten).HasMaxLength(200).IsRequired();
+        b.Property(x => x.NoiDungJson).HasColumnType("jsonb").IsRequired();
+        b.HasIndex(x => x.TenantId);
+
+        // Tên mẫu duy nhất TRONG tenant — hai CLB đều có thể có mẫu "Đội hình mạnh nhất".
+        b.HasIndex(x => new { x.TenantId, x.Ten }).IsUnique();
+
+        b.HasOne(x => x.Tenant).WithMany()
+            .HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
     }
 }
 
@@ -229,6 +310,31 @@ public class QuyConfig : IEntityTypeConfiguration<Quy>
         b.ToTable("QUY");
         b.Property(x => x.TenQuy).HasMaxLength(200).IsRequired();
         b.HasIndex(x => new { x.TenantId, x.TrangThai });
+
+        b.HasOne(x => x.Tenant).WithMany()
+            .HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class KhoanChiConfig : IEntityTypeConfiguration<KhoanChi>
+{
+    public void Configure(EntityTypeBuilder<KhoanChi> b)
+    {
+        b.ToTable("KHOAN_CHI");
+        b.Property(x => x.NoiDung).HasMaxLength(300).IsRequired();
+        b.Property(x => x.NguoiChi).HasMaxLength(200);
+        b.Property(x => x.GhiChu).HasMaxLength(1000);
+
+        // Tiền: precision cố định, không dùng floating point.
+        b.Property(x => x.SoTien).HasPrecision(18, 2);
+
+        b.HasIndex(x => x.TenantId);
+        b.HasIndex(x => x.NgayChi);
+
+        // Xoá đợt quỹ KHÔNG xoá khoản chi — tiền đã tiêu là sự thật kế toán, giữ lại dưới
+        // dạng chi chung của CLB. SetNull thay vì Cascade.
+        b.HasOne(x => x.Quy).WithMany()
+            .HasForeignKey(x => x.QuyId).OnDelete(DeleteBehavior.SetNull);
 
         b.HasOne(x => x.Tenant).WithMany()
             .HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
