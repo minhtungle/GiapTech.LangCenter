@@ -41,11 +41,11 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | Cách ly tenant (2 tầng phòng vệ tự động + test) | ✅ |
 | Phân quyền động đọc từ DB + cache | ✅ |
 | Frontend: layout, i18n, design token, auto-refresh token | ✅ |
-| 226 test (41 unit + 185 integration) | ✅ |
+| 242 test (42 unit + 200 integration) | ✅ |
 | Upload ảnh qua MinIO (avatar, logo, ảnh bìa) | ✅ |
 | **Dockerfile cho API** | ✅ 2 giai đoạn, chạy user thường |
 | **`docker compose up` chạy được** | ✅ 5 container, API healthy, migration tự áp |
-| Test E2E frontend (28 test Playwright) | ✅ |
+| Test E2E frontend (33 test Playwright) | ✅ |
 | CI/CD 4 job: test → E2E → đẩy image → deploy | ✅ |
 | Triển khai VPS (domain, HTTPS, backup) | 🟡 cần server thật |
 

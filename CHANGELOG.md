@@ -44,6 +44,22 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 - Canh bởi `TraCuuClbTests` (12 test, 5 phản chứng) + `e2e/chon-doi-thu.spec.ts` (5 test).
 - **Nợ kỹ thuật:** cần rate limit ở tầng Caddy cho endpoint này trước khi lên production.
 
+**Sàn đối thủ (FR-17)**
+- Danh sách CLB đã đăng ký hệ thống + gửi lời mời bắt đối. Lọc theo tên/mã và theo khu vực.
+- `LOI_MOI_BAT_DOI` — **bảng duy nhất thuộc HAI tenant cùng lúc**, nên không có Global Query
+  Filter. Mọi truy vấn tự lọc `TenantGuiId == toi || TenantNhanId == toi`; FK dùng **Restrict**
+  chứ không Cascade (xoá một CLB không được xoá lời mời khỏi hòm thư CLB kia).
+- Đồng ý tạo **hai trận độc lập**, một ở lịch mỗi bên — trận dùng chung sẽ buộc một CLB sửa dữ
+  liệu nằm trong tenant của CLB kia.
+- Ba ô mới ở Thiết lập chung: khu vực · sân nhà · liên hệ bắt đối, tách thành nhóm và ghi rõ
+  "hiện CÔNG KHAI".
+- ⚠️ **Quyết định của chủ sản phẩm:** mọi CLB tự động lên sàn, không tắt được, kèm thành tích
+  thắng/hoà/thua. Cố ý đi ngược thiết kế của `tra-cuu-clb` (vốn dựng để chặn liệt kê CLB) — xem
+  [FR-17](./docs/nghiep-vu/lich-thi-dau.md#fr-17--sàn-đối-thủ-bổ-sung-18082026).
+- Canh bởi `SanDoiThuTests` (16 test, 8 phản chứng) + `e2e/san-doi-thu.spec.ts` (5 test).
+- `CachLyTenantTests` thêm test **chiều ngược**: entity KHÔNG có Query Filter phải là ngoại lệ
+  đã khai lý do. Thêm entity không kế thừa `TenantEntity` giờ làm test đỏ thay vì lọt im lặng.
+
 **Cờ tính năng**
 - `GET /api/v1/tinh-nang` (ẩn danh) — API khai những gì đang bật, để frontend không vẽ ra lối
   vào dẫn tới ngõ cụt. Chỉ khai `dangKyClb`, **không khai tên môi trường**.
@@ -66,6 +82,9 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 - API nhận và trả enum dạng **chuỗi** thay vì số.
 
 ### Fixed
+- **Sàn đối thủ trả `lienHeCongKhai` của mọi CLB.** Một lần gọi API là thu được số điện thoại
+  toàn hệ thống — đúng cửa spam mà việc "chỉ hiện liên hệ sau khi chấp nhận" ở hòm thư định chặn.
+  Phát hiện khi gọi API thật và đọc kết quả, không test nào bắt được lúc đó.
 - **Link "Tạo câu lạc bộ" hiện cả trên production**, nơi `/dang-ky-clb` trả 404 vì chỉ bật ở
   Development. Người dùng bấm vào, điền tên, rồi nhận "Đã có lỗi xảy ra" — trông như app hỏng
   chứ không phải "chức năng chưa mở". Gõ thẳng `/dang-ky` cũng mở được form.

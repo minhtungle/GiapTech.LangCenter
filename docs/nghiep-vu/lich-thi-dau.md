@@ -286,3 +286,66 @@ Xóa trận + toàn bộ dữ liệu liên quan: đội hình (`DOIHINH_TRANDAU`
 
 - Bảng `TRAN_DAU`, `DOIHINH_TRANDAU`, `SODO_CHIENTHUAT`, `DANHGIA_CAUTHU`, `VOTE_MVP`, `DOI_THU`,
   `LOI_MOI_DOI_THU` — xem [ERD](../database/erd.md).
+
+
+---
+
+## FR-17 — Sàn đối thủ (bổ sung 18/08/2026)
+
+Danh sách các CLB đã đăng ký hệ thống, để tìm đội và **gửi lời mời bắt đối**.
+
+### Quyết định của chủ sản phẩm
+
+| Câu hỏi | Chọn | Hệ quả |
+|---|---|---|
+| CLB nào lên sàn | **Tất cả, không tắt được** | CLB đăng ký để quản lý nội bộ vẫn bị đưa ra cho người lạ xem |
+| Lộ những gì | **Thành tích thắng/hoà/thua** | Dữ liệu nhập cho mục đích nội bộ thành công khai |
+| Mời qua đâu | **Hòm thư của CLB kia** | Cần bảng xuyên tenant `LOI_MOI_BAT_DOI` |
+
+Tính năng này **cố ý đi ngược** thiết kế của [tra cứu CLB](#tra-cứu-clb-khác-trong-hệ-thống) —
+endpoint đó dựng để *chặn* việc liệt kê danh sách CLB, sàn thì mở chính cái đó. Ghi lại để người
+đọc sau không tưởng là sơ suất.
+
+**Muốn cho CLB tự chọn ẩn/hiện:** sửa mệnh đề `Where` trong `LayDanhSachSanHandler` (thêm cột
+`Tenant.HienTrenSan`), **không** sửa ở tầng UI.
+
+### Trên sàn hiện gì
+
+Có: tên · mã đội · tên viết tắt · logo · khu vực · sân nhà · mô tả · số trận đã đá · T/H/B.
+
+**Không** có, dù đã chọn mức lộ nhiều nhất:
+
+- **Liên hệ, kể cả `lien_he_cong_khai`.** Trả nó ở danh sách sàn là mở đúng cửa spam: một lần
+  gọi API thu được số điện thoại của mọi CLB. Liên hệ chỉ hiện trong hòm thư, **sau khi** bên
+  kia đồng ý lời mời. *(Đây là lỗi thật đã xảy ra khi làm tính năng — DTO trả liên hệ, phát hiện
+  khi gọi API và đọc kết quả.)*
+- `id` tenant · danh sách cầu thủ · quỹ, khoản chi · chi tiết trận, đánh giá, vote MVP.
+
+Sắp theo **tên**, không theo thành tích: xếp theo thành tích biến sàn thành bảng xếp hạng toàn hệ
+thống, đội mới hoặc thua nhiều bị đẩy xuống cuối và không ai tìm thấy để bắt đối — ngược mục đích.
+
+### Ba ô mới ở Thiết lập chung
+
+`khu_vuc` · `san_nha` · `lien_he_cong_khai`. Tách thành nhóm riêng trên form và ghi rõ **"hiện
+CÔNG KHAI"**: người dùng điền số điện thoại phải biết ai đọc được.
+
+Cả ba theo quy ước quy tắc #1 giống `mau_ao`: `null` = client không gửi → **giữ nguyên**; chuỗi
+rỗng = người dùng chủ động xoá → ghi `null`. Không phân biệt hai ca này thì mỗi lần lưu từ màn cũ
+sẽ âm thầm xoá khu vực và liên hệ — đúng lỗi đã xảy ra 16/08 với ô địa chỉ.
+
+### Lời mời bắt đối
+
+`LOI_MOI_BAT_DOI` là **bảng duy nhất trong hệ thống thuộc về hai tenant cùng lúc**, nên không thể
+có Global Query Filter. Chi tiết ở [multi-tenant.md](../backend/multi-tenant.md#những-chỗ-global-query-filter-không-bảo-vệ).
+
+- `ma_doi_he_thong` kiểu **chuỗi, không phải FK** — cùng lý do với sổ đối thủ: FK cho phép join
+  xuyên tenant và Cascade mất lịch sử nếu CLB kia xoá tài khoản.
+- FK tới `TENANT` dùng **Restrict**, không Cascade: xoá một CLB không được xoá lời mời khỏi hòm
+  thư của CLB kia — đó là dữ liệu của họ.
+- **Một lời mời đang chờ cho mỗi cặp CLB.** Không chặn thì bấm nhiều lần dội hàng loạt thẻ giống
+  nhau vào hòm thư bên kia. Chỉ chặn `ChoPhanHoi` — đá xong rồi mời lại lần sau là hợp lý.
+- **Đồng ý tạo HAI trận độc lập**, một ở lịch mỗi bên. Trận dùng chung sẽ buộc một CLB sửa dữ liệu
+  nằm trong tenant của CLB kia. Hộp xác nhận nói trước điều này.
+- Chỉ **bên nhận** trả lời được, chỉ **bên gửi** huỷ được, và chỉ khi chưa ai trả lời.
+
+Canh bởi `SanDoiThuTests` (16 test, 8 phản chứng) và `e2e/san-doi-thu.spec.ts` (5 test).

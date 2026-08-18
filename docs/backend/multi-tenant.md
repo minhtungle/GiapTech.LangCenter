@@ -49,6 +49,24 @@ Integration test bắt buộc cho mỗi module: tạo dữ liệu ở tenant A, 
 | ~~Bảng con không có `tenant_id`~~ | ~~Truy vấn trực tiếp bảng con không bị lọc~~ | ✅ **Đã xử lý:** cả 7 bảng con đều mang `tenant_id` riêng — xem [ERD](../database/erd.md#denormalize-tenant_id-xuống-bảng-con) |
 | **Include/navigation từ entity chưa lọc** | Kéo theo dữ liệu tenant khác | Bắt đầu truy vấn từ entity có filter |
 | **Background job / cron** | Không có HTTP context → không có claim tenant | Truyền `tenant_id` tường minh vào job, không dựa vào `ICurrentTenant` |
+| **`LOI_MOI_BAT_DOI`** — bảng duy nhất thuộc **hai** tenant | Không thể có filter (một lời mời phải hiện ở hòm thư CẢ hai bên) | Mọi truy vấn tự lọc `TenantGuiId == toi \|\| TenantNhanId == toi`; ghi thì kiểm đúng vai (chỉ bên nhận trả lời, chỉ bên gửi huỷ) — canh bởi `SanDoiThuTests` |
+| **Sàn đối thủ** (`SanDoiThuDtos`) | Đọc `TENANT` + đếm `TRAN_DAU` của CLB khác bằng `IgnoreQueryFilters` | Từng phép đếm phải có `td.TenantId == t.Id`; DTO khoá cứng danh sách field, có test so khớp chính xác |
+
+### Ba endpoint đọc ngoài tenant, xếp theo mức rộng
+
+Càng xuống dưới càng lộ nhiều. Sửa gì ở đây cũng phải đọc lại cả bảng này:
+
+| Endpoint | Đọc gì | Giới hạn |
+|---|---|---|
+| `GET /doi-thu/tra-cuu-clb/{maDoi}` | Một CLB, khi biết **chính xác** mã 7 ký tự | Không tìm theo tên, không liệt kê, 404 giống nhau cho mọi loại không-tìm-thấy |
+| `GET /san-doi-thu/loi-moi` | Lời mời có ta là một trong hai bên | Tự lọc hai chiều; liên hệ bên kia chỉ trả **sau khi** đã chấp nhận |
+| `GET /san-doi-thu` | **Mọi CLB** trong hệ thống + thành tích | Không trả `id`, **không trả liên hệ**, không trả dữ liệu cầu thủ/quỹ/chi tiết trận |
+
+**Quyết định của chủ sản phẩm (18/08/2026):** mọi CLB tự động lên Sàn đối thủ, **không có cách
+tắt**, kèm thành tích thắng/hoà/thua. Nó cố ý đi ngược thiết kế của `tra-cuu-clb` (vốn dựng để
+*chặn* việc liệt kê CLB). Nếu sau này cần cho CLB tự chọn ẩn/hiện, chỗ sửa là mệnh đề `Where`
+trong `LayDanhSachSanHandler` — thêm cột `Tenant.HienTrenSan` và lọc theo nó. **Không** sửa ở
+tầng UI: ẩn ở UI mà API vẫn trả thì chỉ cần mở DevTools là thấy hết.
 
 ## ⚠️ Bẫy: filter không được trỏ ra object bên ngoài DbContext
 
