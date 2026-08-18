@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
 import { layMaLoi } from '@/lib/api'
+import { useTinhNang } from '@/lib/tinhNang'
 import {
   Button, CanhBaoLoi, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label,
 } from '@/components/ui'
@@ -21,6 +22,7 @@ type FormData = z.infer<typeof schema>
 /** FR-01 — đăng nhập bằng bộ ba {ID đội, username, mật khẩu}. */
 export default function DangNhap() {
   const { t } = useTranslation()
+  const tinhNang = useTinhNang()
   const { dangNhap } = useAuth()
   const navigate = useNavigate()
   const [maLoi, setMaLoi] = useState<string | null>(null)
@@ -95,12 +97,16 @@ export default function DangNhap() {
               {t('dangNhap.quenMatKhau')}
             </Link>
 
-            <p className="text-center text-sm text-muted-foreground">
-              {t('dangNhap.chuaCoClb')}{' '}
-              <Link to="/dang-ky" className="text-primary hover:underline">
-                {t('dangKy.nut')}
-              </Link>
-            </p>
+            {/* Chỉ hiện khi API khai là đăng ký CLB đang bật. Trên production endpoint đó trả
+                404, người dùng bấm vào sẽ điền cả form rồi nhận "Đã có lỗi xảy ra". */}
+            {tinhNang.dangKyClb && (
+              <p className="text-center text-sm text-muted-foreground">
+                {t('dangNhap.chuaCoClb')}{' '}
+                <Link to="/dang-ky" className="text-primary hover:underline">
+                  {t('dangKy.nut')}
+                </Link>
+              </p>
+            )}
           </form>
         </CardContent>
       </Card>

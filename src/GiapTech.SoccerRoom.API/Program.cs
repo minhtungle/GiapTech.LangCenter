@@ -147,6 +147,21 @@ app.MapControllers();
 // cả khi hệ thống đang hỏng, và không tiết lộ gì ngoài trạng thái sống/chết.
 app.MapHealthChecks("/health").AllowAnonymous();
 
+// Cờ tính năng cho frontend, đọc TRƯỚC khi đăng nhập nên phải ẩn danh.
+//
+// Không nhét vào /health: đó là endpoint hạ tầng cho docker compose và Uptime Kuma, phải trả
+// lời được cả khi hệ thống đang hỏng và không tiết lộ gì ngoài sống/chết.
+//
+// Chỉ khai những gì frontend cần để KHÔNG hiện lối vào dẫn tới ngõ cụt. Không khai tên môi
+// trường: "Production"/"Development" là thông tin thừa với người dùng và thừa với người dò.
+app.MapGet("/api/v1/tinh-nang", (IWebHostEnvironment env) => Results.Ok(new
+{
+    // Đăng ký CLB ẩn danh chỉ bật ở Development — xem DangKyClbController. Không có cờ này
+    // thì trang đăng nhập vẫn hiện link "Tạo câu lạc bộ" trên production, người dùng bấm vào,
+    // điền tên, rồi nhận "Đã có lỗi xảy ra" từ một 404 — trông như app hỏng.
+    dangKyClb = env.IsDevelopment(),
+})).AllowAnonymous();
+
 app.Run();
 
 /// <summary>Điểm neo cho integration test qua WebApplicationFactory&lt;Program&gt;.</summary>

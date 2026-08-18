@@ -41,7 +41,7 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | Cách ly tenant (2 tầng phòng vệ tự động + test) | ✅ |
 | Phân quyền động đọc từ DB + cache | ✅ |
 | Frontend: layout, i18n, design token, auto-refresh token | ✅ |
-| 220 test (41 unit + 179 integration) | ✅ |
+| 226 test (41 unit + 185 integration) | ✅ |
 | Upload ảnh qua MinIO (avatar, logo, ảnh bìa) | ✅ |
 | **Dockerfile cho API** | ✅ 2 giai đoạn, chạy user thường |
 | **`docker compose up` chạy được** | ✅ 5 container, API healthy, migration tự áp |

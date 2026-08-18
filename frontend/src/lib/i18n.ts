@@ -36,6 +36,10 @@ const vi = {
     giaiThichMa: 'Mã đội gồm 7 ký tự do hệ thống cấp, dùng để đăng nhập.',
     canhBaoLuuMa: 'Hãy ghi lại mã đội. Bạn cần nó mỗi lần đăng nhập và không thể tự tra lại.',
     luuYDoiMatKhau: 'Bạn sẽ được yêu cầu đổi mật khẩu ở lần đăng nhập đầu tiên.',
+    chuaMo: 'Đăng ký chưa mở',
+    chuaMoMoTa:
+      'Hệ thống này chưa mở đăng ký tự do. Liên hệ quản trị viên để được tạo câu lạc bộ.',
+    veDangNhap: '← Về trang đăng nhập',
   },
   dangNhap: {
     tieuDe: 'Đăng nhập',

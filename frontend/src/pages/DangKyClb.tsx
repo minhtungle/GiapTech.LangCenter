@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Check, Copy } from 'lucide-react'
 import { api, layMaLoi } from '@/lib/api'
+import { useTinhNang } from '@/lib/tinhNang'
 import {
   Button, CanhBaoLoi, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label,
 } from '@/components/ui'
@@ -23,6 +24,7 @@ interface KetQua {
  */
 export default function DangKyClb() {
   const { t } = useTranslation()
+  const tinhNang = useTinhNang()
   const [tenDoi, setTenDoi] = useState('')
   const [ketQua, setKetQua] = useState<KetQua | null>(null)
   const [maLoi, setMaLoi] = useState<string | null>(null)
@@ -48,6 +50,26 @@ export default function DangKyClb() {
     await navigator.clipboard.writeText(ketQua.maDoi)
     setDaChep(true)
     setTimeout(() => setDaChep(false), 2000)
+  }
+
+  // Ẩn link ở trang đăng nhập là chưa đủ: gõ thẳng /dang-ky vẫn mở được form, điền xong mới
+  // biết là không dùng được. Chặn ngay ở đây, nói rõ lý do thay vì để 404 thành "lỗi hệ thống".
+  if (!tinhNang.dangKyClb) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-lg">{t('dangKy.chuaMo')}</CardTitle>
+            <CardDescription>{t('dangKy.chuaMoMoTa')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link to="/dang-nhap" className="text-sm text-primary hover:underline">
+              {t('dangKy.veDangNhap')}
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (

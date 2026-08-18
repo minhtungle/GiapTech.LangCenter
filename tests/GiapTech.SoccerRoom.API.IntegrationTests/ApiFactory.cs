@@ -69,9 +69,18 @@ public class ApiFactory : WebApplicationFactory<Program>
 
     private readonly string _tenDb = $"api-test-{Guid.NewGuid()}";
 
+    /// <summary>
+    /// Môi trường ứng dụng chạy. Lớp con ghi đè để kiểm hành vi khác biệt theo môi trường —
+    /// mà quan trọng nhất là những thứ chỉ MỞ ở Development (đăng ký CLB ẩn danh, Swagger).
+    ///
+    /// Không có nó thì test "cờ tính năng khớp hành vi thật" là vô nghĩa: ở Development cả cờ
+    /// lẫn endpoint đều bật, nên `env.IsDevelopment()` và hằng `true` cho cùng kết quả.
+    /// </summary>
+    protected virtual string MoiTruong => Environments.Development;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseEnvironment(Environments.Development);
+        builder.UseEnvironment(MoiTruong);
 
         builder.UseSetting("JWT_SECRET", JwtSecret);
         builder.UseSetting("JWT_ISSUER", "soccerroom-api");
