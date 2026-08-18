@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import {
-  Check, CircleHelp, Lock, LockOpen, Mail, Plus, Trash2, Users, X,
+  Check, CircleHelp, Lock, LockOpen, Mail, Plus, Store, Trash2, Users, X,
 } from 'lucide-react'
 import { api, layMaLoi, type KetQuaTrang } from '@/lib/api'
 import {
@@ -12,6 +12,7 @@ import {
 import { Modal, ModalChan } from '@/components/ui/Modal'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { ChonDoiThu } from '@/components/ChonDoiThu'
+import { LoiMoiBatDoi } from '@/pages/san-doi-thu/LoiMoiBatDoi'
 import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import { cn } from '@/lib/utils'
 
@@ -111,6 +112,18 @@ export default function HomThu() {
       {/* Lời mời giao hữu chỉ hiện với trưởng nhóm: cầu thủ thường không quyết định
           đội mình đá với ai. */}
       {laTruongNhom && <KhoiGiaoHuu onLoi={setMaLoi} qc={qc} />}
+
+      {/* Lời mời bắt đối từ Sàn đối thủ — CLB khác trong hệ thống gửi tới. Cùng lý do chỉ hiện
+          với trưởng nhóm: đồng ý sẽ tạo trận trong lịch đội. */}
+      {laTruongNhom && (
+        <section className="flex flex-col gap-3">
+          <h2 className="flex items-center gap-2 text-base font-semibold">
+            <Store className="h-4 w-4" />
+            {t('san.loiMoiTieuDe')}
+          </h2>
+          <LoiMoiBatDoi />
+        </section>
+      )}
     </div>
   )
 }

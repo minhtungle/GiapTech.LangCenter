@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
-  CalendarDays, BarChart3, Wallet, Users, UserCircle, ShieldCheck, Settings, LogOut, Home, Swords, MailOpen,
+  CalendarDays, BarChart3, Wallet, Users, UserCircle, ShieldCheck, Settings, LogOut, Home, Swords, Store, MailOpen,
   ClipboardList, Video,
   PanelLeftClose, PanelLeft, Menu, X,
 } from 'lucide-react'
@@ -60,6 +60,7 @@ export default function Layout() {
         { to: '/lich-thi-dau', nhan: t('menu.lichThiDau'), icon: CalendarDays },
         { to: '/hom-thu', nhan: t('menu.homThu'), icon: MailOpen },
         { to: '/doi-thu', nhan: t('menu.doiThu'), icon: Swords },
+        { to: '/san-doi-thu', nhan: t('menu.sanDoiThu'), icon: Store },
         { to: '/mau-doi-hinh', nhan: t('menu.mauDoiHinh'), icon: ClipboardList },
         { to: '/thu-vien-video', nhan: t('menu.thuVienVideo'), icon: Video },
         { to: '/thong-ke', nhan: t('menu.thongKe'), icon: BarChart3 },

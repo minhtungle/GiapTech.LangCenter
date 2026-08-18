@@ -20,6 +20,9 @@ interface ThietLapDto {
   moTa: string | null
   /** Bộ áo đấu của CLB — mã màu trong BANG_MAU_AO. */
   mauAo: string[]
+  khuVuc: string | null
+  sanNha: string | null
+  lienHeCongKhai: string | null
 }
 
 /** FR-06 — thiết lập chung CLB. */
@@ -88,6 +91,12 @@ export default function ThietLap() {
       logoUrl: logo,
       anhBiaUrl: anhBia,
       mauAo: dangChonMau,
+      // Ba trường Sàn đối thủ. Gửi CHUỖI RỖNG (không phải null) khi người dùng xoá hết ô:
+      // backend hiểu null = "client không gửi, giữ nguyên", còn '' = "chủ động xoá". Gửi null
+      // ở đây sẽ khiến ô đã xoá lại hiện giá trị cũ sau khi tải lại — trông như không lưu được.
+      khuVuc: (fd.get('khuVuc') as string) ?? '',
+      sanNha: (fd.get('sanNha') as string) ?? '',
+      lienHeCongKhai: (fd.get('lienHeCongKhai') as string) ?? '',
     })
   }
 
@@ -188,6 +197,45 @@ export default function ThietLap() {
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label htmlFor="moTa">{t('thietLap.moTa')}</Label>
             <Textarea id="moTa" name="moTa" defaultValue={data?.moTa ?? ''} />
+            <p className="text-xs text-muted-foreground">{t('thietLap.moTaCongKhai')}</p>
+          </div>
+
+          {/* Nhóm Sàn đối thủ. Tách riêng và nói rõ "công khai": ba ô này hiện cho CLB khác
+              xem, khác hẳn các ô còn lại trên form vốn chỉ nội bộ. */}
+          <div className="sm:col-span-2">
+            <h3 className="text-sm font-semibold">{t('thietLap.nhomSan')}</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t('thietLap.nhomSanMoTa')}</p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="khuVuc">{t('thietLap.khuVuc')}</Label>
+            <Input
+              id="khuVuc"
+              name="khuVuc"
+              defaultValue={data?.khuVuc ?? ''}
+              placeholder={t('thietLap.khuVucGoiY')}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sanNha">{t('thietLap.sanNha')}</Label>
+            <Input
+              id="sanNha"
+              name="sanNha"
+              defaultValue={data?.sanNha ?? ''}
+              placeholder={t('thietLap.sanNhaGoiY')}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label htmlFor="lienHeCongKhai">{t('thietLap.lienHeCongKhai')}</Label>
+            <Input
+              id="lienHeCongKhai"
+              name="lienHeCongKhai"
+              defaultValue={data?.lienHeCongKhai ?? ''}
+              placeholder={t('thietLap.lienHeGoiY')}
+            />
+            <p className="text-xs text-muted-foreground">{t('thietLap.lienHeLuuY')}</p>
           </div>
 
           {maLoi && (
