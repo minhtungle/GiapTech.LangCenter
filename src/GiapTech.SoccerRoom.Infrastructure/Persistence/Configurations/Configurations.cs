@@ -222,6 +222,33 @@ public class LoiMoiThamGiaConfig : IEntityTypeConfiguration<LoiMoiThamGia>
     }
 }
 
+public class LoiMoiBatDoiConfig : IEntityTypeConfiguration<LoiMoiBatDoi>
+{
+    public void Configure(EntityTypeBuilder<LoiMoiBatDoi> b)
+    {
+        b.ToTable("LOI_MOI_BAT_DOI");
+        b.Property(x => x.LoiNhan).HasMaxLength(1000);
+        b.Property(x => x.PhanHoi).HasMaxLength(1000);
+        b.Property(x => x.DiaDiem).HasMaxLength(200);
+
+        // Index cho CẢ HAI chiều: hòm thư đọc "lời mời tôi nhận" và "lời mời tôi gửi", hai
+        // truy vấn khác nhau. Chỉ index một chiều thì chiều kia quét toàn bảng.
+        b.HasIndex(x => x.TenantNhanId);
+        b.HasIndex(x => x.TenantGuiId);
+
+        // KHÔNG Cascade: xoá một CLB không được xoá lời mời khỏi hòm thư của CLB kia — đó là
+        // dữ liệu của họ, không phải của bên bị xoá (quy tắc #1). Restrict buộc phải xử lý
+        // tường minh nếu sau này có chức năng xoá CLB.
+        b.HasOne(x => x.TenantGui).WithMany()
+            .HasForeignKey(x => x.TenantGuiId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.TenantNhan).WithMany()
+            .HasForeignKey(x => x.TenantNhanId).OnDelete(DeleteBehavior.Restrict);
+
+        // Không đặt FK tới TRAN_DAU: trận nằm trong tenant của từng bên, mà bảng này xuyên
+        // tenant — FK sẽ mở đường join từ tenant này sang trận của tenant kia.
+    }
+}
+
 public class PhanHoiThamGiaConfig : IEntityTypeConfiguration<PhanHoiThamGia>
 {
     public void Configure(EntityTypeBuilder<PhanHoiThamGia> b)

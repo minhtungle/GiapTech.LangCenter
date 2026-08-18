@@ -13,7 +13,13 @@ public record ThietLapDto(
     Guid Id, string MaDoi, string TenDoi, string? TenVietTat,
     DateOnly? NgayThanhLap, string? LogoUrl, string? AnhBiaUrl, string? MoTa,
     /// <summary>Bộ áo đấu — trả về mảng đã tách sẵn, frontend khỏi tự parse JSON.</summary>
-    List<string> MauAo);
+    List<string> MauAo,
+    /// <summary>Khu vực hoạt động — hiện CÔNG KHAI trên Sàn đối thủ.</summary>
+    string? KhuVuc = null,
+    /// <summary>Sân nhà — hiện CÔNG KHAI trên Sàn đối thủ.</summary>
+    string? SanNha = null,
+    /// <summary>Liên hệ công khai, chỉ hiện cho CLB đã chấp nhận lời mời bắt đối.</summary>
+    string? LienHeCongKhai = null);
 
 /// <summary>
 /// Đọc/ghi cột <c>mau_ao_json</c>. Tách riêng để handler đọc và handler ghi dùng chung một
@@ -65,7 +71,8 @@ public class LayThietLapHandler(IAppDbContext db, ICurrentTenant tenant)
             ? new ThietLapDto(
                 t.Id, t.MaDoi, t.TenDoi, t.TenVietTat,
                 t.NgayThanhLap, t.LogoUrl, t.AnhBiaUrl, t.MoTa,
-                MauAoJson.Doc(t.MauAoJson))
+                MauAoJson.Doc(t.MauAoJson),
+                t.KhuVuc, t.SanNha, t.LienHeCongKhai)
             : throw new KhongTimThayException($"Tenant {tid}");
     }
 }
@@ -73,7 +80,12 @@ public class LayThietLapHandler(IAppDbContext db, ICurrentTenant tenant)
 public record CapNhatThietLapCommand(
     string TenDoi, string? TenVietTat, DateOnly? NgayThanhLap,
     string? LogoUrl, string? AnhBiaUrl, string? MoTa,
-    List<string>? MauAo = null) : IRequest;
+    List<string>? MauAo = null,
+    // Ba trường Sàn đối thủ. Mặc định null để client cũ (chưa biết các trường này) gửi lệnh
+    // cập nhật mà KHÔNG xoá mất giá trị đang có — quy tắc #1, cùng cách xử lý với MauAo.
+    string? KhuVuc = null,
+    string? SanNha = null,
+    string? LienHeCongKhai = null) : IRequest;
 
 public class CapNhatThietLapValidator : AbstractValidator<CapNhatThietLapCommand>
 {
@@ -81,6 +93,9 @@ public class CapNhatThietLapValidator : AbstractValidator<CapNhatThietLapCommand
     {
         RuleFor(x => x.TenDoi).NotEmpty().MaximumLength(200);
         RuleFor(x => x.TenVietTat).MaximumLength(50);
+        RuleFor(x => x.KhuVuc).MaximumLength(200);
+        RuleFor(x => x.SanNha).MaximumLength(200);
+        RuleFor(x => x.LienHeCongKhai).MaximumLength(200);
 
         // Mã lạ bị chặn tại cổng thay vì lọc âm thầm: người dùng gửi "xanhLa" mà hệ thống im
         // lặng bỏ đi thì họ tưởng đã lưu được.
@@ -112,6 +127,14 @@ public class CapNhatThietLapHandler(IAppDbContext db, ICurrentTenant tenant)
         // null = client cũ không gửi trường này → GIỮ NGUYÊN bộ áo đang có (quy tắc #1).
         // Danh sách rỗng thì khác: người dùng chủ động bỏ hết áo, ghi null vào cột.
         if (request.MauAo is { } ds) t.MauAoJson = MauAoJson.Ghi(ds);
+
+        // Ba trường Sàn đối thủ: null = client không gửi → giữ nguyên. Chuỗi rỗng = người dùng
+        // chủ động xoá → ghi null. Không phân biệt hai ca này thì mỗi lần lưu thiết lập từ màn
+        // cũ sẽ âm thầm xoá khu vực và liên hệ — đúng lỗi đã xảy ra 16/08 với ô địa chỉ.
+        if (request.KhuVuc is { } kv) t.KhuVuc = string.IsNullOrWhiteSpace(kv) ? null : kv.Trim();
+        if (request.SanNha is { } sn) t.SanNha = string.IsNullOrWhiteSpace(sn) ? null : sn.Trim();
+        if (request.LienHeCongKhai is { } lh)
+            t.LienHeCongKhai = string.IsNullOrWhiteSpace(lh) ? null : lh.Trim();
 
         // MaDoi cố tình KHÔNG cho sửa: người dùng gõ nó mỗi lần đăng nhập, đổi sẽ khóa cả
         // CLB ra ngoài. Muốn đổi thì cần quy trình riêng có cảnh báo rõ.
