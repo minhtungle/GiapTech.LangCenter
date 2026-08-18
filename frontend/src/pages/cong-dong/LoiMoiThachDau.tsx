@@ -9,13 +9,13 @@ import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import { Modal, ModalChan } from '@/components/ui/Modal'
 
 /**
- * Lời mời bắt đối — hiện trong Hòm thư, cả lời mời ta gửi lẫn ta nhận.
+ * Lời mời thách đấu — hiện trong Hòm thư, cả lời mời ta gửi lẫn ta nhận.
  *
  * Gộp hai chiều vào một danh sách thay vì hai tab: đội phong trào có vài lời mời mỗi tháng,
  * chia tab chỉ bắt người dùng bấm thêm để tìm.
  */
 
-interface ThuBatDoi {
+interface ThuThachDau {
   id: string
   toiGui: boolean
   maDoiBenKia: string
@@ -33,28 +33,28 @@ interface ThuBatDoi {
   tranDauCuaToi: string | null
 }
 
-export function LoiMoiBatDoi() {
+export function LoiMoiThachDau() {
   const { t, i18n } = useTranslation()
   const qc = useQueryClient()
   const [maLoi, setMaLoi] = useState<string | null>(null)
-  const [dangTraLoi, setDangTraLoi] = useState<{ thu: ThuBatDoi; chapNhan: boolean } | null>(null)
-  const [xacNhanHuy, setXacNhanHuy] = useState<ThuBatDoi | null>(null)
+  const [dangTraLoi, setDangTraLoi] = useState<{ thu: ThuThachDau; chapNhan: boolean } | null>(null)
+  const [xacNhanHuy, setXacNhanHuy] = useState<ThuThachDau | null>(null)
 
   const { data: ds, isLoading } = useQuery({
-    queryKey: ['loi-moi-bat-doi'],
-    queryFn: async () => (await api.get<ThuBatDoi[]>('/san-doi-thu/loi-moi')).data,
+    queryKey: ['loi-moi-thach-dau'],
+    queryFn: async () => (await api.get<ThuThachDau[]>('/cong-dong/loi-moi')).data,
   })
 
   const lamMoi = () => {
-    void qc.invalidateQueries({ queryKey: ['loi-moi-bat-doi'] })
+    void qc.invalidateQueries({ queryKey: ['loi-moi-thach-dau'] })
     // Chấp nhận sẽ TẠO trận trong lịch ta — làm mới cả hai, không thì lịch trông như chưa có gì.
     void qc.invalidateQueries({ queryKey: ['tran-dau'] })
-    void qc.invalidateQueries({ queryKey: ['san-doi-thu'] })
+    void qc.invalidateQueries({ queryKey: ['cong-dong'] })
   }
 
   const traLoi = useMutation({
     mutationFn: async (v: { id: string; chapNhan: boolean; phanHoi: string | null }) =>
-      api.post(`/san-doi-thu/loi-moi/${v.id}/tra-loi`, {
+      api.post(`/cong-dong/loi-moi/${v.id}/tra-loi`, {
         chapNhan: v.chapNhan,
         phanHoi: v.phanHoi,
       }),
@@ -67,7 +67,7 @@ export function LoiMoiBatDoi() {
   })
 
   const huy = useMutation({
-    mutationFn: async (id: string) => api.delete(`/san-doi-thu/loi-moi/${id}`),
+    mutationFn: async (id: string) => api.delete(`/cong-dong/loi-moi/${id}`),
     onSuccess: () => {
       lamMoi()
       setXacNhanHuy(null)
@@ -84,10 +84,10 @@ export function LoiMoiBatDoi() {
           hour: '2-digit',
           minute: '2-digit',
         })
-      : t('san.chuaHenGio')
+      : t('congDong.chuaHenGio')
 
   if (isLoading) return <TrangTrong thongDiep={t('chung.dangTai')} />
-  if (!ds || ds.length === 0) return <TrangTrong thongDiep={t('san.chuaCoLoiMoi')} />
+  if (!ds || ds.length === 0) return <TrangTrong thongDiep={t('congDong.chuaCoLoiMoi')} />
 
   return (
     <div className="flex flex-col gap-3">
@@ -98,20 +98,20 @@ export function LoiMoiBatDoi() {
           <CardContent className="flex flex-col gap-2.5 pt-5">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={thu.toiGui ? 'muted' : 'accent'}>
-                {thu.toiGui ? t('san.toiGui') : t('san.toiNhan')}
+                {thu.toiGui ? t('congDong.toiGui') : t('congDong.toiNhan')}
               </Badge>
               <span className="font-medium">{thu.tenDoiBenKia}</span>
               <span className="font-mono text-xs text-muted-foreground">{thu.maDoiBenKia}</span>
 
               <span className="ml-auto">
                 {thu.trangThai === 'ChoPhanHoi' && (
-                  <Badge variant="draw">{t('san.choPhanHoi')}</Badge>
+                  <Badge variant="draw">{t('congDong.choPhanHoi')}</Badge>
                 )}
                 {thu.trangThai === 'DaChapNhan' && (
-                  <Badge variant="win">{t('san.daChapNhan')}</Badge>
+                  <Badge variant="win">{t('congDong.daChapNhan')}</Badge>
                 )}
                 {thu.trangThai === 'DaTuChoi' && (
-                  <Badge variant="lose">{t('san.daTuChoi')}</Badge>
+                  <Badge variant="lose">{t('congDong.daTuChoi')}</Badge>
                 )}
               </span>
             </div>
@@ -133,7 +133,7 @@ export function LoiMoiBatDoi() {
 
             {thu.phanHoi && (
               <p className="text-sm text-muted-foreground" style={{ overflowWrap: 'anywhere' }}>
-                <span className="font-medium">{t('san.phanHoi')}: </span>
+                <span className="font-medium">{t('congDong.phanHoi')}: </span>
                 {thu.phanHoi}
               </p>
             )}
@@ -151,7 +151,7 @@ export function LoiMoiBatDoi() {
                 to={`/lich-thi-dau/${thu.tranDauCuaToi}`}
                 className="text-sm text-primary hover:underline"
               >
-                {t('san.xemTranDaTao')}
+                {t('congDong.xemTranDaTao')}
               </Link>
             )}
 
@@ -165,7 +165,7 @@ export function LoiMoiBatDoi() {
                     onClick={() => setXacNhanHuy(thu)}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                    {t('san.huyLoiMoi')}
+                    {t('congDong.huyLoiMoi')}
                   </Button>
                 ) : (
                   <>
@@ -175,7 +175,7 @@ export function LoiMoiBatDoi() {
                       onClick={() => setDangTraLoi({ thu, chapNhan: true })}
                     >
                       <Check className="h-3.5 w-3.5" />
-                      {t('san.dongY')}
+                      {t('congDong.dongY')}
                     </Button>
                     <Button
                       type="button"
@@ -184,7 +184,7 @@ export function LoiMoiBatDoi() {
                       onClick={() => setDangTraLoi({ thu, chapNhan: false })}
                     >
                       <X className="h-3.5 w-3.5" />
-                      {t('san.tuChoi')}
+                      {t('congDong.tuChoi')}
                     </Button>
                   </>
                 )}
@@ -209,9 +209,9 @@ export function LoiMoiBatDoi() {
       {xacNhanHuy && (
         <HopXacNhan
           mo
-          tieuDe={t('san.huyLoiMoi')}
-          thongDiep={t('san.huyXacNhan', { ten: xacNhanHuy.tenDoiBenKia })}
-          nhanDongY={t('san.huyLoiMoi')}
+          tieuDe={t('congDong.huyLoiMoi')}
+          thongDiep={t('congDong.huyXacNhan', { ten: xacNhanHuy.tenDoiBenKia })}
+          nhanDongY={t('congDong.huyLoiMoi')}
           onHuy={() => setXacNhanHuy(null)}
           onDongY={() => huy.mutate(xacNhanHuy.id)}
         />
@@ -249,7 +249,7 @@ function HopTraLoi({
     <Modal
       mo
       onDong={onDong}
-      tieuDe={chapNhan ? t('san.dongY') : t('san.tuChoi')}
+      tieuDe={chapNhan ? t('congDong.dongY') : t('congDong.tuChoi')}
       rong="sm"
     >
       <form
@@ -261,15 +261,15 @@ function HopTraLoi({
       >
         <p className="text-sm text-muted-foreground">
           {chapNhan
-            ? t('san.dongYGiaiThich', { ten: tenDoi })
-            : t('san.tuChoiGiaiThich', { ten: tenDoi })}
+            ? t('congDong.dongYGiaiThich', { ten: tenDoi })
+            : t('congDong.tuChoiGiaiThich', { ten: tenDoi })}
         </p>
 
         <Textarea
           rows={2}
           value={phanHoi}
           onChange={(e) => setPhanHoi(e.target.value)}
-          placeholder={t('san.phanHoiGoiY')}
+          placeholder={t('congDong.phanHoiGoiY')}
         />
 
         <ModalChan>
@@ -277,7 +277,7 @@ function HopTraLoi({
             {t('chung.huy')}
           </Button>
           <Button type="submit" disabled={dangGui}>
-            {dangGui ? t('chung.dangTai') : chapNhan ? t('san.dongY') : t('san.tuChoi')}
+            {dangGui ? t('chung.dangTai') : chapNhan ? t('congDong.dongY') : t('congDong.tuChoi')}
           </Button>
         </ModalChan>
       </form>

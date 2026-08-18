@@ -70,7 +70,7 @@ erDiagram
 | `SODO_CHIENTHUAT` | Sơ đồ chiến thuật | id, tran_dau_id (1—1), so_do_json, ghi_chu_chien_thuat | 1—1 TRAN_DAU |
 | `VIDEO_TRAN` | Link video sau trận | id, tenant_id, tran_dau_id, ten, url, mo_ta, thu_tu | N—1 TRAN_DAU (Cascade) |
 | `LOI_MOI_THAM_GIA` | Trưởng nhóm mời đăng ký thi đấu | id, tenant_id, tran_dau_id **UNIQUE**, nguoi_gui_id, loi_nhan, han_tra_loi, da_dong | N—1 TRAN_DAU (Cascade), 1—N PHAN_HOI_THAM_GIA |
-| `LOI_MOI_BAT_DOI` | Lời mời bắt đối giữa hai CLB (Sàn đối thủ) | id, **tenant_gui_id**, **tenant_nhan_id**, thoi_gian_de_xuat, dia_diem, loi_nhan, trang_thai, phan_hoi, tran_dau_nhan_id, tran_dau_gui_id | N—1 TENANT ×2 (**Restrict**) |
+| `LOI_MOI_BAT_DOI` | Lời mời thách đấu giữa hai CLB (Cộng đồng). **Tên bảng giữ nguyên** dù entity C# đã đổi thành `LoiMoiThachDau` — đổi tên bảng là mất dữ liệu đang có (quy tắc #1) | id, **tenant_gui_id**, **tenant_nhan_id**, thoi_gian_de_xuat, dia_diem, loi_nhan, trang_thai, phan_hoi, tran_dau_nhan_id, tran_dau_gui_id | N—1 TENANT ×2 (**Restrict**) |
 | `PHAN_HOI_THAM_GIA` | Câu trả lời của cầu thủ | id, tenant_id, loi_moi_id, cau_thu_id, tra_loi, ghi_chu, thoi_gian_tra_loi, **UNIQUE(loi_moi_id, cau_thu_id)** | N—1 LOI_MOI_THAM_GIA, N—1 CAU_THU |
 | `MAU_DOI_HINH` | Đội hình mẫu dùng lại | id, tenant_id, ten, loai_san (5/7/9/11), noi_dung_json, ghi_chu, **UNIQUE(tenant_id, ten)** | độc lập — không FK tới TRAN_DAU |
 | `DANHGIA_CAUTHU` | Đánh giá sau trận | id, tran_dau_id, cau_thu_id, so_ban_ghi_duoc, so_ban_cuu_thua, chi_so_ky_nang (JSON), ghi_chu | N—1 TRAN_DAU, N—1 CAU_THU |

@@ -8,7 +8,8 @@ import QuenMatKhau from '@/pages/QuenMatKhau'
 import DangKyClb from '@/pages/DangKyClb'
 import LichThiDau from '@/pages/lich-thi-dau/LichThiDau'
 import DoiThu from '@/pages/lich-thi-dau/DoiThu'
-import SanDoiThu from '@/pages/san-doi-thu/SanDoiThu'
+import CongDong from '@/pages/cong-dong/CongDong'
+import ChiTietClb from '@/pages/cong-dong/ChiTietClb'
 import ChiTietTran from '@/pages/lich-thi-dau/ChiTietTran'
 import HomThu from '@/pages/lich-thi-dau/HomThu'
 import MauDoiHinh from '@/pages/lich-thi-dau/MauDoiHinh'
@@ -86,7 +87,8 @@ export default function App() {
               <Route path="/thu-vien-video" element={<ThuVienVideo />} />
               <Route path="/hom-thu" element={<HomThu />} />
               <Route path="/doi-thu" element={<DoiThu />} />
-              <Route path="/san-doi-thu" element={<SanDoiThu />} />
+              <Route path="/cong-dong" element={<CongDong />} />
+              <Route path="/cong-dong/:maDoi" element={<ChiTietClb />} />
               <Route path="/thong-ke" element={<ThongKe />} />
               <Route path="/tai-chinh" element={<TaiChinh />} />
               <Route path="/quan-tri/tai-khoan" element={<TaiKhoan />} />

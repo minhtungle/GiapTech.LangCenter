@@ -222,9 +222,9 @@ public class LoiMoiThamGiaConfig : IEntityTypeConfiguration<LoiMoiThamGia>
     }
 }
 
-public class LoiMoiBatDoiConfig : IEntityTypeConfiguration<LoiMoiBatDoi>
+public class LoiMoiThachDauConfig : IEntityTypeConfiguration<LoiMoiThachDau>
 {
-    public void Configure(EntityTypeBuilder<LoiMoiBatDoi> b)
+    public void Configure(EntityTypeBuilder<LoiMoiThachDau> b)
     {
         b.ToTable("LOI_MOI_BAT_DOI");
         b.Property(x => x.LoiNhan).HasMaxLength(1000);

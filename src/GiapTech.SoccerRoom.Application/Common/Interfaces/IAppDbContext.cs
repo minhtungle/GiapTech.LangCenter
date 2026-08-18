@@ -33,10 +33,10 @@ public interface IAppDbContext
     DbSet<LoiMoiThamGia> LoiMoiThamGias { get; }
 
     /// <summary>
-    /// Lời mời bắt đối giữa hai CLB. KHÔNG có Global Query Filter — nó thuộc về hai tenant
+    /// Lời mời thách đấu giữa hai CLB. KHÔNG có Global Query Filter — nó thuộc về hai tenant
     /// cùng lúc. Mọi truy vấn phải tự lọc `TenantGuiId == x || TenantNhanId == x`.
     /// </summary>
-    DbSet<LoiMoiBatDoi> LoiMoiBatDois { get; }
+    DbSet<LoiMoiThachDau> LoiMoiThachDaus { get; }
     DbSet<PhanHoiThamGia> PhanHoiThamGias { get; }
     DbSet<DanhGiaCauThu> DanhGiaCauThus { get; }
     DbSet<VoteMvp> VoteMvps { get; }

@@ -6,18 +6,18 @@ using GiapTech.SoccerRoom.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace GiapTech.SoccerRoom.Application.SanDoiThu;
+namespace GiapTech.SoccerRoom.Application.CongDong;
 
 /// <summary>
-/// Lời mời bắt đối giữa hai CLB, gửi từ Sàn đối thủ.
+/// Lời mời thách đấu giữa hai CLB, gửi từ Cộng đồng.
 ///
 /// ⚠️ MỌI truy vấn trong file này phải tự lọc `TenantGuiId == toi || TenantNhanId == toi`.
-/// <see cref="LoiMoiBatDoi"/> là bảng DUY NHẤT không có Global Query Filter bảo vệ (nó thuộc
+/// <see cref="LoiMoiThachDau"/> là bảng DUY NHẤT không có Global Query Filter bảo vệ (nó thuộc
 /// hai tenant cùng lúc), nên quên mệnh đề đó là rò rỉ dữ liệu chéo CLB — quy tắc #2.
 ///
-/// `LoiMoiBatDoiTests` có test đọc/ghi từ một CLB thứ ba để canh đúng chuyện này.
+/// `LoiMoiThachDauTests` có test đọc/ghi từ một CLB thứ ba để canh đúng chuyện này.
 /// </summary>
-public record ThuBatDoiDto(
+public record ThuThachDauDto(
     Guid Id,
     /// <summary>True = ta gửi, False = ta nhận. Quyết định UI hiện nút gì.</summary>
     bool ToiGui,
@@ -38,12 +38,12 @@ public record ThuBatDoiDto(
 
 // ---------- Query ----------
 
-public record LayThuBatDoiQuery : IRequest<List<ThuBatDoiDto>>;
+public record LayThuThachDauQuery : IRequest<List<ThuThachDauDto>>;
 
-public class LayThuBatDoiHandler(IAppDbContext db, ICurrentTenant tenant)
-    : IRequestHandler<LayThuBatDoiQuery, List<ThuBatDoiDto>>
+public class LayThuThachDauHandler(IAppDbContext db, ICurrentTenant tenant)
+    : IRequestHandler<LayThuThachDauQuery, List<ThuThachDauDto>>
 {
-    public async Task<List<ThuBatDoiDto>> Handle(LayThuBatDoiQuery request, CancellationToken ct)
+    public async Task<List<ThuThachDauDto>> Handle(LayThuThachDauQuery request, CancellationToken ct)
     {
         if (tenant.TenantId is not { } toi)
             throw new AppException(MaLoi.ChuaXacThuc);
@@ -51,10 +51,10 @@ public class LayThuBatDoiHandler(IAppDbContext db, ICurrentTenant tenant)
         // Lọc HAI CHIỀU trong cùng một truy vấn: hòm thư hiển thị cả lời mời ta gửi (để theo
         // dõi ai chưa trả lời) lẫn lời mời ta nhận. Tách hai truy vấn rồi ghép ở bộ nhớ sẽ mất
         // thứ tự thời gian chung.
-        return await db.LoiMoiBatDois
+        return await db.LoiMoiThachDaus
             .Where(l => l.TenantGuiId == toi || l.TenantNhanId == toi)
             .OrderByDescending(l => l.NgayTao)
-            .Select(l => new ThuBatDoiDto(
+            .Select(l => new ThuThachDauDto(
                 l.Id,
                 l.TenantGuiId == toi,
                 l.TenantGuiId == toi ? l.TenantNhan.MaDoi : l.TenantGui.MaDoi,
@@ -80,16 +80,16 @@ public class LayThuBatDoiHandler(IAppDbContext db, ICurrentTenant tenant)
 
 // ---------- Gửi ----------
 
-public record GuiLoiMoiBatDoiCommand(
+public record GuiLoiMoiThachDauCommand(
     /// <summary>Mã đội bên nhận. Dùng MÃ chứ không dùng id: sàn không trả id tenant ra ngoài.</summary>
     string MaDoiNhan,
     DateTimeOffset? ThoiGianDeXuat,
     string? DiaDiem,
     string? LoiNhan) : IRequest<Guid>;
 
-public class GuiLoiMoiBatDoiValidator : AbstractValidator<GuiLoiMoiBatDoiCommand>
+public class GuiLoiMoiThachDauValidator : AbstractValidator<GuiLoiMoiThachDauCommand>
 {
-    public GuiLoiMoiBatDoiValidator()
+    public GuiLoiMoiThachDauValidator()
     {
         RuleFor(x => x.MaDoiNhan).NotEmpty();
         RuleFor(x => x.LoiNhan).MaximumLength(1000);
@@ -97,10 +97,10 @@ public class GuiLoiMoiBatDoiValidator : AbstractValidator<GuiLoiMoiBatDoiCommand
     }
 }
 
-public class GuiLoiMoiBatDoiHandler(IAppDbContext db, ICurrentTenant tenant)
-    : IRequestHandler<GuiLoiMoiBatDoiCommand, Guid>
+public class GuiLoiMoiThachDauHandler(IAppDbContext db, ICurrentTenant tenant)
+    : IRequestHandler<GuiLoiMoiThachDauCommand, Guid>
 {
-    public async Task<Guid> Handle(GuiLoiMoiBatDoiCommand request, CancellationToken ct)
+    public async Task<Guid> Handle(GuiLoiMoiThachDauCommand request, CancellationToken ct)
     {
         if (tenant.TenantId is not { } toi)
             throw new AppException(MaLoi.ChuaXacThuc);
@@ -123,13 +123,13 @@ public class GuiLoiMoiBatDoiHandler(IAppDbContext db, ICurrentTenant tenant)
         // biết trả lời cái nào mới tính.
         //
         // Chỉ chặn ChoPhanHoi: đã đá xong một trận thì mời lại lần sau là hợp lý.
-        var dangCho = await db.LoiMoiBatDois.AnyAsync(l =>
+        var dangCho = await db.LoiMoiThachDaus.AnyAsync(l =>
             l.TenantGuiId == toi
             && l.TenantNhanId == benNhan.Id
             && l.TrangThai == TrangThaiLoiMoi.ChoPhanHoi, ct);
         if (dangCho) throw new AppException("DA_GUI_LOI_MOI_DANG_CHO");
 
-        var loiMoi = new LoiMoiBatDoi
+        var loiMoi = new LoiMoiThachDau
         {
             TenantGuiId = toi,
             TenantNhanId = benNhan.Id,
@@ -139,7 +139,7 @@ public class GuiLoiMoiBatDoiHandler(IAppDbContext db, ICurrentTenant tenant)
             TrangThai = TrangThaiLoiMoi.ChoPhanHoi,
         };
 
-        db.LoiMoiBatDois.Add(loiMoi);
+        db.LoiMoiThachDaus.Add(loiMoi);
         await db.SaveChangesAsync(ct);
         return loiMoi.Id;
     }
@@ -147,24 +147,24 @@ public class GuiLoiMoiBatDoiHandler(IAppDbContext db, ICurrentTenant tenant)
 
 // ---------- Trả lời ----------
 
-public record TraLoiBatDoiCommand(
+public record TraLoiThachDauCommand(
     Guid Id,
     bool ChapNhan,
     string? PhanHoi) : IRequest;
 
-public class TraLoiBatDoiHandler(IAppDbContext db, ICurrentTenant tenant)
-    : IRequestHandler<TraLoiBatDoiCommand>
+public class TraLoiThachDauHandler(IAppDbContext db, ICurrentTenant tenant)
+    : IRequestHandler<TraLoiThachDauCommand>
 {
-    public async Task Handle(TraLoiBatDoiCommand request, CancellationToken ct)
+    public async Task Handle(TraLoiThachDauCommand request, CancellationToken ct)
     {
         if (tenant.TenantId is not { } toi)
             throw new AppException(MaLoi.ChuaXacThuc);
 
         // CHỈ bên NHẬN trả lời được. Lọc ngay trong truy vấn thay vì tải rồi kiểm: tải trước
         // nghĩa là một CLB thứ ba vẫn đọc được nội dung lời mời của người khác qua id.
-        var loiMoi = await db.LoiMoiBatDois
+        var loiMoi = await db.LoiMoiThachDaus
             .FirstOrDefaultAsync(l => l.Id == request.Id && l.TenantNhanId == toi, ct)
-            ?? throw new KhongTimThayException($"LoiMoiBatDoi {request.Id}");
+            ?? throw new KhongTimThayException($"LoiMoiThachDau {request.Id}");
 
         if (loiMoi.TrangThai != TrangThaiLoiMoi.ChoPhanHoi)
             throw new AppException("LOI_MOI_DA_TRA_LOI");
@@ -210,7 +210,7 @@ public class TraLoiBatDoiHandler(IAppDbContext db, ICurrentTenant tenant)
     /// </summary>
     private static async Task<Guid> TaoTranVaDoiThu(
         IAppDbContext db, Guid tenantId, string maDoiKia, string tenDoiKia,
-        LoiMoiBatDoi loiMoi, CancellationToken ct)
+        LoiMoiThachDau loiMoi, CancellationToken ct)
     {
         var doiThu = await db.DoiThus.IgnoreQueryFilters()
             .FirstOrDefaultAsync(d => d.TenantId == tenantId && d.MaDoiHeThong == maDoiKia, ct);
@@ -235,8 +235,8 @@ public class TraLoiBatDoiHandler(IAppDbContext db, ICurrentTenant tenant)
             ThoiGian = loiMoi.ThoiGianDeXuat ?? DateTimeOffset.UtcNow.AddDays(7),
             TrangThai = TrangThaiTranDau.DaLenLich,
             GhiChu = loiMoi.DiaDiem is null
-                ? "Tạo từ lời mời bắt đối trên Sàn đối thủ."
-                : $"Tạo từ lời mời bắt đối trên Sàn đối thủ. Địa điểm: {loiMoi.DiaDiem}",
+                ? "Tạo từ lời mời thách đấu trên Cộng đồng."
+                : $"Tạo từ lời mời thách đấu trên Cộng đồng. Địa điểm: {loiMoi.DiaDiem}",
         };
         db.TranDaus.Add(tran);
 
@@ -246,27 +246,27 @@ public class TraLoiBatDoiHandler(IAppDbContext db, ICurrentTenant tenant)
 
 // ---------- Huỷ (bên gửi rút lại) ----------
 
-public record HuyLoiMoiBatDoiCommand(Guid Id) : IRequest;
+public record HuyLoiMoiThachDauCommand(Guid Id) : IRequest;
 
-public class HuyLoiMoiBatDoiHandler(IAppDbContext db, ICurrentTenant tenant)
-    : IRequestHandler<HuyLoiMoiBatDoiCommand>
+public class HuyLoiMoiThachDauHandler(IAppDbContext db, ICurrentTenant tenant)
+    : IRequestHandler<HuyLoiMoiThachDauCommand>
 {
-    public async Task Handle(HuyLoiMoiBatDoiCommand request, CancellationToken ct)
+    public async Task Handle(HuyLoiMoiThachDauCommand request, CancellationToken ct)
     {
         if (tenant.TenantId is not { } toi)
             throw new AppException(MaLoi.ChuaXacThuc);
 
         // Chỉ bên GỬI rút được, và chỉ khi bên kia chưa trả lời.
-        var loiMoi = await db.LoiMoiBatDois
+        var loiMoi = await db.LoiMoiThachDaus
             .FirstOrDefaultAsync(l => l.Id == request.Id && l.TenantGuiId == toi, ct)
-            ?? throw new KhongTimThayException($"LoiMoiBatDoi {request.Id}");
+            ?? throw new KhongTimThayException($"LoiMoiThachDau {request.Id}");
 
         if (loiMoi.TrangThai != TrangThaiLoiMoi.ChoPhanHoi)
             throw new AppException("LOI_MOI_DA_TRA_LOI");
 
         // Xoá hẳn thay vì đánh dấu: lời mời chưa ai trả lời thì không có lịch sử nào cần giữ,
         // mà để lại sẽ chặn gửi lại (ràng buộc "một lời mời đang chờ mỗi cặp").
-        db.LoiMoiBatDois.Remove(loiMoi);
+        db.LoiMoiThachDaus.Remove(loiMoi);
         await db.SaveChangesAsync(ct);
     }
 }

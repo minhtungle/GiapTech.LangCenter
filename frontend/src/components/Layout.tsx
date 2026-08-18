@@ -60,7 +60,7 @@ export default function Layout() {
         { to: '/lich-thi-dau', nhan: t('menu.lichThiDau'), icon: CalendarDays },
         { to: '/hom-thu', nhan: t('menu.homThu'), icon: MailOpen },
         { to: '/doi-thu', nhan: t('menu.doiThu'), icon: Swords },
-        { to: '/san-doi-thu', nhan: t('menu.sanDoiThu'), icon: Store },
+        { to: '/cong-dong', nhan: t('menu.congDong'), icon: Store },
         { to: '/mau-doi-hinh', nhan: t('menu.mauDoiHinh'), icon: ClipboardList },
         { to: '/thu-vien-video', nhan: t('menu.thuVienVideo'), icon: Video },
         { to: '/thong-ke', nhan: t('menu.thongKe'), icon: BarChart3 },

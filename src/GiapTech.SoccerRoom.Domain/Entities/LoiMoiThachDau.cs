@@ -4,7 +4,7 @@ using GiapTech.SoccerRoom.Domain.Enums;
 namespace GiapTech.SoccerRoom.Domain.Entities;
 
 /// <summary>
-/// LOI_MOI_BAT_DOI — CLB này mời CLB kia đá giao hữu, gửi qua Sàn đối thủ.
+/// LOI_MOI_BAT_DOI — CLB này mời CLB kia đá giao hữu, gửi qua Cộng đồng.
 ///
 /// **Bảng DUY NHẤT trong hệ thống thuộc về HAI tenant cùng lúc.** Mọi bảng nghiệp vụ khác kế
 /// thừa <see cref="TenantEntity"/> và bị Global Query Filter lọc theo một tenant; bảng này
@@ -12,13 +12,13 @@ namespace GiapTech.SoccerRoom.Domain.Entities;
 ///
 /// Vì thế nó KHÔNG kế thừa TenantEntity mà mang hai khoá tường minh, và mọi truy vấn phải tự
 /// lọc bằng <c>TenantGuiId == x || TenantNhanId == x</c>. Quên mệnh đề đó là rò rỉ dữ liệu
-/// chéo CLB — xem `LoiMoiBatDoiTests`, có test canh đúng chuyện này.
+/// chéo CLB — xem `LoiMoiThachDauTests`, có test canh đúng chuyện này.
 ///
 /// Không dùng <see cref="LoiMoiThamGia"/> (mời cầu thủ đăng ký) hay `DoiThu`+`TrangThaiLoiMoi`
-/// (giao hữu ghi tay trong sổ riêng): cả hai đều nằm gọn trong một tenant. Lời mời bắt đối là
+/// (giao hữu ghi tay trong sổ riêng): cả hai đều nằm gọn trong một tenant. Lời mời thách đấu là
 /// thứ khác hẳn — nó bắc cầu giữa hai CLB độc lập.
 /// </summary>
-public class LoiMoiBatDoi : BaseEntity
+public class LoiMoiThachDau : BaseEntity
 {
     /// <summary>CLB gửi lời mời.</summary>
     public Guid TenantGuiId { get; set; }

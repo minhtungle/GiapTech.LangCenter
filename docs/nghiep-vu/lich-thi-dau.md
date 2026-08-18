@@ -290,15 +290,15 @@ Xóa trận + toàn bộ dữ liệu liên quan: đội hình (`DOIHINH_TRANDAU`
 
 ---
 
-## FR-17 — Sàn đối thủ (bổ sung 18/08/2026)
+## FR-17 — Cộng đồng (bổ sung 18/08/2026)
 
-Danh sách các CLB đã đăng ký hệ thống, để tìm đội và **gửi lời mời bắt đối**.
+Danh sách các CLB đã đăng ký hệ thống, để tìm đội và **gửi lời mời thách đấu**.
 
 ### Quyết định của chủ sản phẩm
 
 | Câu hỏi | Chọn | Hệ quả |
 |---|---|---|
-| CLB nào lên sàn | **Tất cả, không tắt được** | CLB đăng ký để quản lý nội bộ vẫn bị đưa ra cho người lạ xem |
+| CLB nào lên cộng đồng | **Tất cả, không tắt được** | CLB đăng ký để quản lý nội bộ vẫn bị đưa ra cho người lạ xem |
 | Lộ những gì | **Thành tích thắng/hoà/thua** | Dữ liệu nhập cho mục đích nội bộ thành công khai |
 | Mời qua đâu | **Hòm thư của CLB kia** | Cần bảng xuyên tenant `LOI_MOI_BAT_DOI` |
 
@@ -306,7 +306,7 @@ Tính năng này **cố ý đi ngược** thiết kế của [tra cứu CLB](#tr
 endpoint đó dựng để *chặn* việc liệt kê danh sách CLB, sàn thì mở chính cái đó. Ghi lại để người
 đọc sau không tưởng là sơ suất.
 
-**Muốn cho CLB tự chọn ẩn/hiện:** sửa mệnh đề `Where` trong `LayDanhSachSanHandler` (thêm cột
+**Muốn cho CLB tự chọn ẩn/hiện:** sửa mệnh đề `Where` trong `LayDanhSachCongDongHandler` (thêm cột
 `Tenant.HienTrenSan`), **không** sửa ở tầng UI.
 
 ### Trên sàn hiện gì
@@ -315,14 +315,14 @@ Có: tên · mã đội · tên viết tắt · logo · khu vực · sân nhà �
 
 **Không** có, dù đã chọn mức lộ nhiều nhất:
 
-- **Liên hệ, kể cả `lien_he_cong_khai`.** Trả nó ở danh sách sàn là mở đúng cửa spam: một lần
+- **Liên hệ, kể cả `lien_he_cong_khai`.** Trả nó ở danh sách cộng đồng là mở đúng cửa spam: một lần
   gọi API thu được số điện thoại của mọi CLB. Liên hệ chỉ hiện trong hòm thư, **sau khi** bên
   kia đồng ý lời mời. *(Đây là lỗi thật đã xảy ra khi làm tính năng — DTO trả liên hệ, phát hiện
   khi gọi API và đọc kết quả.)*
 - `id` tenant · danh sách cầu thủ · quỹ, khoản chi · chi tiết trận, đánh giá, vote MVP.
 
 Sắp theo **tên**, không theo thành tích: xếp theo thành tích biến sàn thành bảng xếp hạng toàn hệ
-thống, đội mới hoặc thua nhiều bị đẩy xuống cuối và không ai tìm thấy để bắt đối — ngược mục đích.
+thống, đội mới hoặc thua nhiều bị đẩy xuống cuối và không ai tìm thấy để thách đấu — ngược mục đích.
 
 ### Ba ô mới ở Thiết lập chung
 
@@ -333,7 +333,7 @@ Cả ba theo quy ước quy tắc #1 giống `mau_ao`: `null` = client không g�
 rỗng = người dùng chủ động xoá → ghi `null`. Không phân biệt hai ca này thì mỗi lần lưu từ màn cũ
 sẽ âm thầm xoá khu vực và liên hệ — đúng lỗi đã xảy ra 16/08 với ô địa chỉ.
 
-### Lời mời bắt đối
+### Lời mời thách đấu
 
 `LOI_MOI_BAT_DOI` là **bảng duy nhất trong hệ thống thuộc về hai tenant cùng lúc**, nên không thể
 có Global Query Filter. Chi tiết ở [multi-tenant.md](../backend/multi-tenant.md#những-chỗ-global-query-filter-không-bảo-vệ).
@@ -348,4 +348,30 @@ có Global Query Filter. Chi tiết ở [multi-tenant.md](../backend/multi-tenan
   nằm trong tenant của CLB kia. Hộp xác nhận nói trước điều này.
 - Chỉ **bên nhận** trả lời được, chỉ **bên gửi** huỷ được, và chỉ khi chưa ai trả lời.
 
-Canh bởi `SanDoiThuTests` (16 test, 8 phản chứng) và `e2e/san-doi-thu.spec.ts` (5 test).
+### Chi tiết một CLB — `GET /cong-dong/{maDoi}`
+
+Bấm vào một CLB trong danh sách để xem hồ sơ công khai: mô tả, khu vực, sân nhà, ngày thành lập,
+bộ áo, thành tích đầy đủ (kèm bàn thắng/bàn thua), **10 trận gần nhất đã có kết quả**, và **số
+trận đã đối đầu với ta**. Có nút gửi lời mời thách đấu ngay trên trang.
+
+Tách khỏi DTO danh sách thay vì trả luôn mọi thứ: danh sách 20 CLB × 10 trận là 200 dòng cho một
+lần xem, mà người dùng chỉ mở chi tiết một hai đội.
+
+**Vẫn KHÔNG lộ**, dù đây là trang chi tiết:
+
+| Không lộ | Vì sao |
+|---|---|
+| Danh sách cầu thủ, tên người, ảnh cá nhân | Dữ liệu của **cá nhân**, không phải của CLB. Một đội có thể muốn công khai thành tích nhưng không muốn công khai tên từng người |
+| Ghi chú và nhận xét từng trận | Viết cho nội bộ đọc ("hàng phòng ngự yếu") |
+| Quỹ, khoản chi, đánh giá, vote MVP, sơ đồ | Dữ liệu vận hành và bí mật nghiệp vụ |
+| `lien_he_cong_khai` | Chỉ hiện ở hòm thư sau khi hai bên đồng ý |
+| `id` tenant | Có id là mở đường thử gọi endpoint khác |
+
+`soTranDoiDauVoiTa` đếm trong **sổ của ta** (có Query Filter), không đọc sổ của họ. Hai bên có thể
+lệch số nếu một bên không lưu `ma_doi_he_thong` — chấp nhận được, mỗi CLB tự quản lịch của mình.
+
+Route dùng ràng buộc `{maDoi:length(7)}`. Không có nó thì `{maDoi}` cũng khớp `khu-vuc` và
+`loi-moi` — mà cả hai **đúng 7 ký tự**, một trùng hợp khiến ràng buộc độ dài không phân biệt được
+chúng; thứ tự literal của ASP.NET Core mới là cái đang giữ. Test canh bằng chuỗi 6 và 8 ký tự.
+
+Canh bởi `CongDongTests` (21 test, 12 phản chứng) và `e2e/cong-dong.spec.ts` (7 test).

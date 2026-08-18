@@ -12,7 +12,7 @@ import {
 import { Modal, ModalChan } from '@/components/ui/Modal'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { ChonDoiThu } from '@/components/ChonDoiThu'
-import { LoiMoiBatDoi } from '@/pages/san-doi-thu/LoiMoiBatDoi'
+import { LoiMoiThachDau } from '@/pages/cong-dong/LoiMoiThachDau'
 import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import { cn } from '@/lib/utils'
 
@@ -113,15 +113,15 @@ export default function HomThu() {
           đội mình đá với ai. */}
       {laTruongNhom && <KhoiGiaoHuu onLoi={setMaLoi} qc={qc} />}
 
-      {/* Lời mời bắt đối từ Sàn đối thủ — CLB khác trong hệ thống gửi tới. Cùng lý do chỉ hiện
+      {/* Lời mời thách đấu từ Cộng đồng — CLB khác trong hệ thống gửi tới. Cùng lý do chỉ hiện
           với trưởng nhóm: đồng ý sẽ tạo trận trong lịch đội. */}
       {laTruongNhom && (
         <section className="flex flex-col gap-3">
           <h2 className="flex items-center gap-2 text-base font-semibold">
             <Store className="h-4 w-4" />
-            {t('san.loiMoiTieuDe')}
+            {t('congDong.loiMoiTieuDe')}
           </h2>
-          <LoiMoiBatDoi />
+          <LoiMoiThachDau />
         </section>
       )}
     </div>

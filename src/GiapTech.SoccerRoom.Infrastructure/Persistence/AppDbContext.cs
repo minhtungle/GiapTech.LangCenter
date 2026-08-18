@@ -30,7 +30,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant
     public DbSet<MauDoiHinh> MauDoiHinhs => Set<MauDoiHinh>();
     public DbSet<VideoTran> VideoTrans => Set<VideoTran>();
     public DbSet<LoiMoiThamGia> LoiMoiThamGias => Set<LoiMoiThamGia>();
-    public DbSet<LoiMoiBatDoi> LoiMoiBatDois => Set<LoiMoiBatDoi>();
+    public DbSet<LoiMoiThachDau> LoiMoiThachDaus => Set<LoiMoiThachDau>();
     public DbSet<PhanHoiThamGia> PhanHoiThamGias => Set<PhanHoiThamGia>();
     public DbSet<DanhGiaCauThu> DanhGiaCauThus => Set<DanhGiaCauThu>();
     public DbSet<VoteMvp> VoteMvps => Set<VoteMvp>();

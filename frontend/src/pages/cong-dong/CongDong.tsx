@@ -1,25 +1,24 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { Search, Send, MapPin, Info } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
-import {
-  Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Textarea, TrangTrong,
-} from '@/components/ui'
+import { Badge, Button, Card, CardContent, Input, Label, TrangTrong } from '@/components/ui'
 import { Anh } from '@/components/ui/Anh'
-import { Modal, ModalChan } from '@/components/ui/Modal'
 import { PhanTrang } from '@/components/ui/PhanTrang'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
+import { ModalThachDau } from './ModalThachDau'
 
 /**
- * SÀN ĐỐI THỦ — danh sách CLB đã đăng ký hệ thống, để tìm đội bắt đối.
+ * CỘNG ĐỒNG — danh sách CLB đã đăng ký hệ thống, để tìm đội thách đấu.
  *
- * ⚠️ Trang này hiển thị dữ liệu của CLB KHÁC. Mọi CLB đều lên sàn và không tắt được (quyết định
- * của chủ sản phẩm), kèm thành tích thắng/hoà/thua. Xem `SanDoiThuDtos.cs` ở backend để biết
+ * ⚠️ Trang này hiển thị dữ liệu của CLB KHÁC. Mọi CLB đều lên cộng đồng và không tắt được (quyết định
+ * của chủ sản phẩm), kèm thành tích thắng/hoà/thua. Xem `CongDongDtos.cs` ở backend để biết
  * những gì cố ý lộ và những gì cố ý không.
  */
 
-interface ClbTrenSan {
+interface ClbCongDong {
   maDoi: string
   tenDoi: string
   tenVietTat: string | null
@@ -27,7 +26,7 @@ interface ClbTrenSan {
   khuVuc: string | null
   sanNha: string | null
   moTa: string | null
-  // KHÔNG có liên hệ ở đây: backend cố ý không trả trên sàn (mở cửa spam). Liên hệ chỉ xuất
+  // KHÔNG có liên hệ ở đây: backend cố ý không trả trong cộng đồng (mở cửa spam). Liên hệ chỉ xuất
   // hiện trong hòm thư sau khi bên kia đồng ý lời mời.
   soTranDaDa: number
   soThang: number
@@ -37,7 +36,7 @@ interface ClbTrenSan {
   dangMoiTa: boolean
 }
 
-export default function SanDoiThu() {
+export default function CongDong() {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const [tuKhoa, setTuKhoa] = useState('')
@@ -45,25 +44,25 @@ export default function SanDoiThu() {
   const [khuVuc, setKhuVuc] = useState<string | null>(null)
   const [trang, setTrang] = useState(1)
   const [soDong, setSoDong] = useState(20)
-  const [moiClb, setMoiClb] = useState<ClbTrenSan | null>(null)
+  const [moiClb, setMoiClb] = useState<ClbCongDong | null>(null)
   const [maLoi, setMaLoi] = useState<string | null>(null)
 
   const { data: ketQua, isLoading } = useQuery({
-    queryKey: ['san-doi-thu', tuKhoa, khuVuc, trang, soDong],
+    queryKey: ['cong-dong', tuKhoa, khuVuc, trang, soDong],
     queryFn: async () =>
       (
-        await api.get<KetQuaTrang<ClbTrenSan>>('/san-doi-thu', {
+        await api.get<KetQuaTrang<ClbCongDong>>('/cong-dong', {
           params: { tuKhoa: tuKhoa || undefined, khuVuc: khuVuc || undefined, trang, soDong },
         })
       ).data,
   })
 
   const { data: dsKhuVuc } = useQuery({
-    queryKey: ['san-doi-thu', 'khu-vuc'],
-    queryFn: async () => (await api.get<string[]>('/san-doi-thu/khu-vuc')).data,
+    queryKey: ['cong-dong', 'khu-vuc'],
+    queryFn: async () => (await api.get<string[]>('/cong-dong/khu-vuc')).data,
   })
 
-  const kq = ketQua ?? trangRong<ClbTrenSan>()
+  const kq = ketQua ?? trangRong<ClbCongDong>()
 
   const gui = useMutation({
     mutationFn: async (form: {
@@ -71,11 +70,11 @@ export default function SanDoiThu() {
       thoiGianDeXuat: string | null
       diaDiem: string | null
       loiNhan: string | null
-    }) => api.post('/san-doi-thu/loi-moi', form),
+    }) => api.post('/cong-dong/loi-moi', form),
     onSuccess: () => {
       // Làm mới cả sàn (để cờ dangChoPhanHoi bật) lẫn hòm thư lời mời.
-      void qc.invalidateQueries({ queryKey: ['san-doi-thu'] })
-      void qc.invalidateQueries({ queryKey: ['loi-moi-bat-doi'] })
+      void qc.invalidateQueries({ queryKey: ['cong-dong'] })
+      void qc.invalidateQueries({ queryKey: ['loi-moi-thach-dau'] })
       setMoiClb(null)
       setMaLoi(null)
     },
@@ -90,23 +89,23 @@ export default function SanDoiThu() {
   return (
     <div className="flex flex-col gap-4">
       {/* Nói rõ một lần ở đầu trang: đây là dữ liệu công khai, và của mình cũng vậy. Người dùng
-          cần biết đội mình đang hiện trên sàn của người khác — không thì họ ngạc nhiên khi
+          cần biết đội mình đang hiện trong cộng đồng của người khác — không thì họ ngạc nhiên khi
           nhận lời mời từ CLB lạ. */}
       <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
         <Info className="mt-0.5 h-4 w-4 shrink-0" />
-        <p>{t('san.luuYCongKhai')}</p>
+        <p>{t('congDong.luuYCongKhai')}</p>
       </div>
 
       <div className="flex flex-wrap items-end gap-2">
         <div className="min-w-56 flex-1">
-          <Label htmlFor="timClb">{t('san.timDoi')}</Label>
+          <Label htmlFor="timClb">{t('congDong.timDoi')}</Label>
           <div className="flex gap-2">
             <Input
               id="timClb"
               value={oTim}
               onChange={(e) => setOTim(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && timNgay()}
-              placeholder={t('san.timGoiY')}
+              placeholder={t('congDong.timGoiY')}
             />
             <Button type="button" variant="outline" onClick={timNgay}>
               <Search className="h-4 w-4" />
@@ -115,7 +114,7 @@ export default function SanDoiThu() {
         </div>
 
         <div className="w-56">
-          <Label htmlFor="locKhuVuc">{t('san.khuVuc')}</Label>
+          <Label htmlFor="locKhuVuc">{t('congDong.khuVuc')}</Label>
           <SelectTimKiem
             id="locKhuVuc"
             luaChon={(dsKhuVuc ?? []).map((k) => ({ giaTri: k, nhan: k }))}
@@ -124,7 +123,7 @@ export default function SanDoiThu() {
               setKhuVuc(v)
               setTrang(1)
             }}
-            placeholder={t('san.moiKhuVuc')}
+            placeholder={t('congDong.moiKhuVuc')}
           />
         </div>
       </div>
@@ -132,7 +131,7 @@ export default function SanDoiThu() {
       {isLoading ? (
         <TrangTrong thongDiep={t('chung.dangTai')} />
       ) : kq.duLieu.length === 0 ? (
-        <TrangTrong thongDiep={tuKhoa || khuVuc ? t('san.khongKhop') : t('san.sanTrong')} />
+        <TrangTrong thongDiep={tuKhoa || khuVuc ? t('congDong.khongKhop') : t('congDong.sanTrong')} />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {kq.duLieu.map((clb) => (
@@ -154,8 +153,9 @@ export default function SanDoiThu() {
       />
 
       {moiClb && (
-        <ModalMoi
-          clb={moiClb}
+        <ModalThachDau
+          tenDoi={moiClb.tenDoi}
+          sanNhaGoiY={moiClb.sanNha}
           maLoi={maLoi}
           dangGui={gui.isPending}
           onDong={() => {
@@ -169,13 +169,19 @@ export default function SanDoiThu() {
   )
 }
 
-function TheClb({ clb, onMoi }: { clb: ClbTrenSan; onMoi: () => void }) {
+function TheClb({ clb, onMoi }: { clb: ClbCongDong; onMoi: () => void }) {
   const { t } = useTranslation()
 
   return (
     <Card>
       <CardContent className="flex flex-col gap-3 pt-5">
-        <div className="flex items-start gap-3">
+        {/* Vùng nhận diện là link sang chi tiết; nút "Gửi lời mời" nằm NGOÀI link để bấm nút
+            không kéo theo điều hướng. Bọc cả thẻ trong <Link> sẽ lồng button trong anchor —
+            HTML không hợp lệ và trình duyệt xử lý mỗi nơi một kiểu. */}
+        <Link
+          to={`/cong-dong/${clb.maDoi}`}
+          className="flex items-start gap-3 rounded-md hover:opacity-80"
+        >
           {clb.logoUrl ? (
             <Anh khoa={clb.logoUrl} className="h-11 w-11 shrink-0 rounded-md object-cover" />
           ) : (
@@ -188,7 +194,7 @@ function TheClb({ clb, onMoi }: { clb: ClbTrenSan; onMoi: () => void }) {
             <p className="truncate font-medium">{clb.tenDoi}</p>
             <p className="font-mono text-xs text-muted-foreground">{clb.maDoi}</p>
           </div>
-        </div>
+        </Link>
 
         {clb.khuVuc && (
           <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -216,11 +222,11 @@ function TheClb({ clb, onMoi }: { clb: ClbTrenSan; onMoi: () => void }) {
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
           {clb.soTranDaDa === 0 ? (
             // "0 · 0 · 0" trông như đội đá dở, thực ra là đội mới. Nói rõ ra.
-            <Badge variant="muted">{t('san.chuaCoTran')}</Badge>
+            <Badge variant="muted">{t('congDong.chuaCoTran')}</Badge>
           ) : (
             <>
               <Badge variant="muted">
-                {t('san.soTran', { so: clb.soTranDaDa })}
+                {t('congDong.soTran', { so: clb.soTranDaDa })}
               </Badge>
               <span className="text-muted-foreground">
                 <span className="text-status-win">{clb.soThang}</span>
@@ -235,100 +241,16 @@ function TheClb({ clb, onMoi }: { clb: ClbTrenSan; onMoi: () => void }) {
 
         {clb.dangMoiTa ? (
           // Họ mời ta trước rồi — đẩy sang hòm thư trả lời thay vì gửi lời mời chéo nhau.
-          <Badge variant="accent">{t('san.hoDaMoiTa')}</Badge>
+          <Badge variant="accent">{t('congDong.hoDaMoiTa')}</Badge>
         ) : clb.dangChoPhanHoi ? (
-          <Badge variant="muted">{t('san.dangChoPhanHoi')}</Badge>
+          <Badge variant="muted">{t('congDong.dangChoPhanHoi')}</Badge>
         ) : (
           <Button type="button" size="sm" onClick={onMoi} className="self-start">
             <Send className="h-3.5 w-3.5" />
-            {t('san.guiLoiMoi')}
+            {t('congDong.guiLoiMoi')}
           </Button>
         )}
       </CardContent>
     </Card>
-  )
-}
-
-function ModalMoi({
-  clb,
-  maLoi,
-  dangGui,
-  onDong,
-  onGui,
-}: {
-  clb: ClbTrenSan
-  maLoi: string | null
-  dangGui: boolean
-  onDong: () => void
-  onGui: (form: {
-    thoiGianDeXuat: string | null
-    diaDiem: string | null
-    loiNhan: string | null
-  }) => void
-}) {
-  const { t } = useTranslation()
-  const [thoiGian, setThoiGian] = useState('')
-  const [diaDiem, setDiaDiem] = useState(clb.sanNha ?? '')
-  const [loiNhan, setLoiNhan] = useState('')
-
-  return (
-    <Modal mo tieuDe={t('san.moiTieuDe', { ten: clb.tenDoi })} onDong={onDong}>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          onGui({
-            // `datetime-local` trả chuỗi không có múi giờ; thêm giây rồi để backend chuẩn hoá
-            // về UTC (AppDbContext làm việc đó tập trung).
-            thoiGianDeXuat: thoiGian ? new Date(thoiGian).toISOString() : null,
-            diaDiem: diaDiem.trim() || null,
-            loiNhan: loiNhan.trim() || null,
-          })
-        }}
-        className="flex flex-col gap-3"
-      >
-        <div>
-          <Label htmlFor="moiThoiGian">{t('san.thoiGianDeXuat')}</Label>
-          <Input
-            id="moiThoiGian"
-            type="datetime-local"
-            value={thoiGian}
-            onChange={(e) => setThoiGian(e.target.value)}
-          />
-          <p className="mt-1 text-xs text-muted-foreground">{t('san.thoiGianTuyChon')}</p>
-        </div>
-
-        <div>
-          <Label htmlFor="moiDiaDiem">{t('san.diaDiem')}</Label>
-          <Input
-            id="moiDiaDiem"
-            value={diaDiem}
-            onChange={(e) => setDiaDiem(e.target.value)}
-            placeholder={clb.sanNha ?? t('san.diaDiemGoiY')}
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="moiLoiNhan">{t('san.loiNhan')}</Label>
-          <Textarea
-            id="moiLoiNhan"
-            rows={3}
-            value={loiNhan}
-            onChange={(e) => setLoiNhan(e.target.value)}
-            placeholder={t('san.loiNhanGoiY')}
-          />
-        </div>
-
-        {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
-
-        <ModalChan>
-          <Button type="button" variant="outline" onClick={onDong}>
-            {t('chung.huy')}
-          </Button>
-          <Button type="submit" disabled={dangGui}>
-            {dangGui ? t('chung.dangTai') : t('san.gui')}
-          </Button>
-        </ModalChan>
-      </form>
-    </Modal>
   )
 }

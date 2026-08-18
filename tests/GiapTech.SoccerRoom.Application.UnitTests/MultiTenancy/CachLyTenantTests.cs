@@ -141,9 +141,9 @@ public class CachLyTenantTests
         [nameof(Tenant)] = "Bảng ĐỊNH NGHĨA tenant, không thuộc tenant nào.",
         [nameof(RefreshToken)] = "Tra theo token trước khi biết tenant nào — xem XacThucNangCao.",
         [nameof(TokenDatLaiMatKhau)] = "Quên mật khẩu: chưa đăng nhập nên chưa có tenant.",
-        [nameof(LoiMoiBatDoi)] =
+        [nameof(LoiMoiThachDau)] =
             "Thuộc HAI tenant cùng lúc (gửi + nhận). Mọi truy vấn phải tự lọc " +
-            "`TenantGuiId == x || TenantNhanId == x` — canh bởi LoiMoiBatDoiTests.",
+            "`TenantGuiId == x || TenantNhanId == x` — canh bởi LoiMoiThachDauTests.",
     };
 
     [Fact]
