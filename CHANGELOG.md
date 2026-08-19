@@ -56,6 +56,17 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
   thành `case` tường minh sẽ khiến QR ghi lên `anh_bia_url`, mất ảnh bìa và làm QR hiện công khai.
 - Canh bởi 8 test tích hợp mới (6 phản chứng) + 1 test E2E.
 
+**Bộ dữ liệu mẫu để test tay**
+- `POST /api/v1/du-lieu-mau/seed` (chỉ Development): 7 CLB, 39 cầu thủ, 64 trận, 8 đợt quỹ,
+  4 lời mời thách đấu — dựng trong ~8 giây. Xem [docs/du-lieu-mau.md](./docs/du-lieu-mau.md).
+- Hai CLB đầy đủ NGANG NHAU để test cách ly dữ liệu và lời mời hai chiều; ba vai mỗi CLB
+  (admin/manager/player) để test phân quyền.
+- 6 tháng quá khứ + 1 tháng tương lai; đủ mọi trạng thái quỹ, lời mời, trận đấu.
+- Tỷ số nhà **cộng từ đánh giá cầu thủ** qua `DongBoTySoNha()`, không gán tay: gán tay tạo ra
+  dữ liệu hệ thống không sinh nổi (tỷ số 3-1 mà tổng bàn cầu thủ = 0).
+- `xoaDuLieuCu` mặc định `false` — xoá dữ liệu là lựa chọn tường minh (quy tắc #1).
+- 14 test tích hợp, 6 phản chứng.
+
 **Cộng đồng (FR-17)** *(đổi tên từ "Sàn đối thủ" theo yêu cầu)*
 - **Trang chi tiết CLB** `/cong-dong/{maDoi}`: mô tả, khu vực, sân nhà, bộ áo, thành tích đầy đủ
   (kèm bàn thắng/thua), 10 trận gần nhất, số trận đối đầu với ta, và nút thách đấu.
@@ -102,6 +113,10 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 - API nhận và trả enum dạng **chuỗi** thay vì số.
 
 ### Fixed
+- **Bốn lỗi trong bộ dữ liệu mẫu**, cả bốn chỉ lộ khi xem con số trên màn hình: 18 người "đóng"
+  1₫–17₫ vì `_ => canDong` trong switch **lồng** bị C# hiểu là pattern gán biến; trận hiện 22:00
+  vì ghi `TimeSpan.Zero` thay vì UTC+7; bảng xếp hạng thiếu 4 người và **cột "Cứu thua" trống
+  hoàn toàn** vì đội hình xoay `i % 4`; và test "số tiền" vẫn xanh khi tổng quỹ là 153₫.
 - **Không hoàn tác được khi bấm nhầm "đã đóng đủ".** Backend vốn đã cho (gửi số tiền 0), nhưng UI
   chỉ sửa được bằng cách tự xoá ô rồi gõ `0` — không ai đoán ra. Thêm nút **↺ Hoàn tác** kèm hộp
   xác nhận nói rõ tên + số tiền + hậu quả.

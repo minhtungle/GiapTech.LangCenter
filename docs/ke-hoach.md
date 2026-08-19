@@ -43,7 +43,7 @@ Còn lại    ██████░░░░░░░░░░  4 việc cần t
 | Cách ly tenant (2 tầng phòng vệ tự động + test) | ✅ |
 | Phân quyền động đọc từ DB + cache | ✅ |
 | Frontend: layout, i18n, design token, auto-refresh token | ✅ |
-| 262 test (42 unit + 220 integration) | ✅ |
+| 276 test (42 unit + 234 integration) | ✅ |
 | Upload ảnh qua MinIO (avatar, logo, ảnh bìa) | ✅ |
 | **Dockerfile cho API** | ✅ 2 giai đoạn, chạy user thường |
 | **`docker compose up` chạy được** | ✅ 5 container, API healthy, migration tự áp |
@@ -64,6 +64,8 @@ Còn lại    ██████░░░░░░░░░░  4 việc cần t
 | N3 | **Rate limit ba endpoint đọc ngoài tenant ở tầng Caddy** | ~1h | `tra-cuu-clb/{maDoi}` · `cong-dong` · `cong-dong/{maDoi}`. Không gian mã `31^7` làm việc dò **chậm**, không làm nó **bất khả thi**; mà `cong-dong` thì liệt kê thẳng nên còn dễ hơn. Phải chặn trước khi mở ra Internet — xem [ba endpoint đọc ngoài tenant](./backend/multi-tenant.md#ba-endpoint-đọc-ngoài-tenant-xếp-theo-mức-rộng) |
 | N4 | **Không có đường tạo CLB ở production** | ~4h | `/dang-ky-clb` chỉ bật ở Development (mở ẩn danh ở production là cho phép sinh CLB rác không giới hạn). Cần quy trình duyệt tay hoặc xác thực cấp hệ thống — **không có nó thì không ai dùng được hệ thống sau khi deploy** |
 | N5 | **E2E để lại tenant rác trong DB dev** | ~2h | 76 CLB rác, và từ 18/08 chúng **hiện trên Cộng đồng của mọi người**. Hai hướng: DB riêng cho E2E, hoặc bước dọn sau khi chạy |
+
+| N6 | **Màn Tổng quan (`/`) trống** | ~3h | Chỉ hiện "Xin chào, admin". Không thuộc FR nào nên bị bỏ sót khi liệt kê "17/17 FR xong" — phát hiện 20/08 khi đi qua từng màn với bộ dữ liệu mẫu. Là màn ĐẦU TIÊN người dùng thấy sau đăng nhập |
 
 ### Giai đoạn 1 — Lịch thi đấu (FR-07 → FR-11)
 

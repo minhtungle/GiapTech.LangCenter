@@ -66,6 +66,7 @@ Còn lại là nợ kỹ thuật (test E2E, triển khai VPS) — xem [`docs/ke-
 | Cần biết gì | Đọc ở đâu |
 |---|---|
 | **Tiến độ, lộ trình, nợ kỹ thuật** | [`docs/ke-hoach.md`](./docs/ke-hoach.md) |
+| **Bộ dữ liệu mẫu để test tay** (1 lệnh curl) | [`docs/du-lieu-mau.md`](./docs/du-lieu-mau.md) |
 | **Nhật ký theo ngày** (bối cảnh git log không có) | [`docs/nhat-ky/`](./docs/nhat-ky/README.md) |
 | Tổng quan nghiệp vụ, đọc 1 mạch | [`docs/tong-thuat.md`](./docs/tong-thuat.md) |
 | **16 mã FR** theo module | [`docs/nghiep-vu/`](./docs/nghiep-vu/README.md) |
