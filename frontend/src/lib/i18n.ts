@@ -359,6 +359,9 @@ const vi = {
     dangThu: 'Đang thu',
     thuTien: 'Thu tiền',
     thuDu: 'Đánh dấu đã đóng đủ',
+    hoanTac: 'Hoàn tác',
+    hoanTacXacNhan:
+      'Đưa số tiền đã đóng của {{ten}} về 0? Khoản {{tien}} đang ghi nhận sẽ bị xoá cùng ngày đóng. Dùng khi bấm nhầm hoặc ghi sai số.',
     hienChuyenKhoan: 'Hiện thông tin chuyển khoản cho đợt quỹ này',
     hienChuyenKhoanMoTa:
       'Số tài khoản và mã QR khai ở Thiết lập chung sẽ hiện trên màn thu tiền. Tắt cho đợt thu tiền mặt tại sân.',

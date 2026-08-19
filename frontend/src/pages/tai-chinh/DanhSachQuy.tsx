@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Check, ClipboardCopy, Pencil, Plus, Trash2, Users } from 'lucide-react'
+import { Check, ClipboardCopy, Pencil, Plus, Trash2, Undo2, Users } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, Textarea, TrangTrong,
@@ -524,6 +524,7 @@ function ModalThuTien({
   const { t } = useTranslation()
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [daChep, setDaChep] = useState(false)
+  const [hoanTac, setHoanTac] = useState<DongGopDto | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['quy-chi-tiet', quy.id],
@@ -597,7 +598,7 @@ function ModalThuTien({
               <tr>
                 <Th>{t('cauThu.hoTen')}</Th>
                 <Th className="w-32">{t('taiChinh.canDong')}</Th>
-                <Th className="w-40">{t('taiChinh.daDong')}</Th>
+                <Th className="w-52">{t('taiChinh.daDong')}</Th>
                 <Th className="w-28">{t('taiChinh.conThieu')}</Th>
               </tr>
             </thead>
@@ -614,6 +615,13 @@ function ModalThuTien({
                         type="number"
                         min={0}
                         step={1000}
+                        // `key` buộc React dựng lại ô khi số tiền đổi từ phía server.
+                        //
+                        // Ô này dùng `defaultValue` (không kiểm soát) để gõ giữa chừng không bị
+                        // ghi đè. Nhưng `defaultValue` chỉ có tác dụng ở lần render ĐẦU: bấm
+                        // "đã đóng đủ" xong, dữ liệu về 100.000 mà ô vẫn hiện 0 — người dùng
+                        // thấy ô mâu thuẫn với cột "Còn thiếu" và tưởng chưa lưu được.
+                        key={`${d.id}-${d.soTienDaDong}`}
                         defaultValue={d.soTienDaDong}
                         // Lưu khi rời ô, không lưu mỗi ký tự: gõ "50000" mà gửi 5 request
                         // thì con số trung gian (5, 50, 500…) cũng bị ghi vào DB.
@@ -623,17 +631,42 @@ function ModalThuTien({
                         }}
                         className="h-8"
                       />
-                      {/* Nút thu đủ: thao tác thường gặp nhất, đỡ gõ lại đúng con số. */}
-                      {!d.daDongDu && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          title={t('taiChinh.thuDu')}
-                          onClick={() => thu.mutate({ id: d.id, soTien: d.soTienCanDong })}
-                        >
-                          <Check className="h-4 w-4 text-status-win" />
-                        </Button>
-                      )}
+
+                      {/* Hai nút có CHỖ RIÊNG cố định, không chồng vị trí nhau.
+                          Dùng chung một chỗ thì sau khi bấm ✓ (thu đủ), nút hoàn tác nhảy vào
+                          đúng toạ độ đó — cú bấm tiếp theo theo quán tính sẽ xoá mất khoản vừa
+                          ghi. Có hộp xác nhận vẫn đỡ, nhưng đừng dựng cái bẫy ngay từ đầu. */}
+                      <span className="w-8 shrink-0">
+                        {/* Thu đủ: thao tác thường gặp nhất, đỡ gõ lại đúng con số. */}
+                        {!d.daDongDu && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title={t('taiChinh.thuDu')}
+                            onClick={() => thu.mutate({ id: d.id, soTien: d.soTienCanDong })}
+                          >
+                            <Check className="h-4 w-4 text-status-win" />
+                          </Button>
+                        )}
+                      </span>
+
+                      <span className="w-8 shrink-0">
+                        {/* Hoàn tác về 0. Trước đây chỉ sửa được bằng cách tự xoá ô rồi gõ "0"
+                            — không ai đoán ra, nên bấm nhầm ✓ là coi như xong.
+
+                            Có XÁC NHẬN vì đây là thao tác trên tiền: nó xoá vết một khoản đã
+                            ghi nhận. */}
+                        {d.soTienDaDong > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title={t('taiChinh.hoanTac')}
+                            onClick={() => setHoanTac(d)}
+                          >
+                            <Undo2 className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        )}
+                      </span>
                     </div>
                   </Td>
                   <Td>
@@ -657,6 +690,23 @@ function ModalThuTien({
           {t('chung.dong')}
         </Button>
       </ModalChan>
+
+      {hoanTac && (
+        <HopXacNhan
+          mo
+          tieuDe={t('taiChinh.hoanTac')}
+          thongDiep={t('taiChinh.hoanTacXacNhan', {
+            ten: hoanTac.hoTen,
+            tien: tienVnd(hoanTac.soTienDaDong),
+          })}
+          nhanDongY={t('taiChinh.hoanTac')}
+          onHuy={() => setHoanTac(null)}
+          onDongY={() => {
+            thu.mutate({ id: hoanTac.id, soTien: 0 })
+            setHoanTac(null)
+          }}
+        />
+      )}
     </Modal>
   )
 }

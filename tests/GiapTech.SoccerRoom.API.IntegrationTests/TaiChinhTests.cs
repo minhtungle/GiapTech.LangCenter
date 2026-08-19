@@ -303,6 +303,123 @@ public class TaiChinhTests(ApiFactory factory) : IClassFixture<ApiFactory>
             (await ChiTiet(client, quyId)).GetProperty("dongGops")[0].GetProperty("ngayDong").ValueKind);
     }
 
+    [Fact]
+    public async Task Hoan_tac_dua_tien_do_va_trang_thai_ve_dung()
+    {
+        // Hoàn tác không chỉ là xoá ngày đóng: tổng đã thu, số người đã đóng đủ, và cờ daDongDu
+        // đều phải quay lại. Thiếu một chỗ thì thủ quỹ bấm hoàn tác mà bảng vẫn báo "Đủ".
+        var client = await Client();
+        var cauThus = await LayCauThuIds(client, 2);
+        var quyId = await TaoQuy(client, "Quỹ hoàn tác tiến độ",
+            [(cauThus[0], 100_000m), (cauThus[1], 100_000m)]);
+
+        var truoc = await ChiTiet(client, quyId);
+        var dongGopId = truoc.GetProperty("dongGops")[0].GetProperty("id").GetGuid();
+
+        // Thu đủ một người.
+        await client.PutAsJsonAsync($"/api/v1/quy/dong-gop/{dongGopId}",
+            new { DongGopId = dongGopId, SoTienDaDong = 100_000m, GhiChu = (string?)null });
+
+        var daThu = await ChiTiet(client, quyId);
+        Assert.Equal(100_000m, daThu.GetProperty("quy").GetProperty("tongDaThu").GetDecimal());
+        Assert.Equal(1, daThu.GetProperty("quy").GetProperty("soNguoiDaDongDu").GetInt32());
+
+        // Hoàn tác.
+        await client.PutAsJsonAsync($"/api/v1/quy/dong-gop/{dongGopId}",
+            new { DongGopId = dongGopId, SoTienDaDong = 0m, GhiChu = (string?)null });
+
+        var sau = await ChiTiet(client, quyId);
+        Assert.Equal(0m, sau.GetProperty("quy").GetProperty("tongDaThu").GetDecimal());
+        Assert.Equal(0, sau.GetProperty("quy").GetProperty("soNguoiDaDongDu").GetInt32());
+
+        var nguoi = sau.GetProperty("dongGops").EnumerateArray()
+            .Single(d => d.GetProperty("id").GetGuid() == dongGopId);
+        Assert.Equal(0m, nguoi.GetProperty("soTienDaDong").GetDecimal());
+        Assert.False(nguoi.GetProperty("daDongDu").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Hoan_tac_roi_thu_lai_duoc()
+    {
+        // Bấm nhầm rồi hoàn tác không được khoá vĩnh viễn khoản đóng đó — thủ quỹ phải thu lại
+        // được ngay, kể cả sau khi đã hoàn tác về 0.
+        var client = await Client();
+        var cauThus = await LayCauThuIds(client);
+        var quyId = await TaoQuy(client, "Quỹ thu lại", [(cauThus[0], 80_000m)]);
+
+        var dongGopId = (await ChiTiet(client, quyId))
+            .GetProperty("dongGops")[0].GetProperty("id").GetGuid();
+
+        foreach (var tien in new[] { 80_000m, 0m, 40_000m })
+        {
+            var res = await client.PutAsJsonAsync($"/api/v1/quy/dong-gop/{dongGopId}",
+                new { DongGopId = dongGopId, SoTienDaDong = tien, GhiChu = (string?)null });
+            res.EnsureSuccessStatusCode();
+        }
+
+        var ct = await ChiTiet(client, quyId);
+        Assert.Equal(40_000m, ct.GetProperty("quy").GetProperty("tongDaThu").GetDecimal());
+        // Đóng một phần: chưa đủ nhưng ngày đóng phải CÓ (tiền thật đã vào).
+        Assert.False(ct.GetProperty("dongGops")[0].GetProperty("daDongDu").GetBoolean());
+        Assert.NotEqual(JsonValueKind.Null,
+            ct.GetProperty("dongGops")[0].GetProperty("ngayDong").ValueKind);
+    }
+
+    [Fact]
+    public async Task Hoan_tac_xong_thi_go_duoc_nguoi_khoi_dot_quy()
+    {
+        // Ràng buộc KHONG_XOA_NGUOI_DA_DONG_TIEN chặn gỡ người đang có tiền. Hoàn tác về 0 phải
+        // mở lại đường đó — không thì "hoàn tác" chỉ nửa vời: tiền về 0 mà vẫn không gỡ được.
+        var client = await Client();
+        var cauThus = await LayCauThuIds(client, 2);
+        var quyId = await TaoQuy(client, "Quỹ gỡ người",
+            [(cauThus[0], 70_000m), (cauThus[1], 70_000m)]);
+
+        var ct = await ChiTiet(client, quyId);
+        var giu = ct.GetProperty("dongGops").EnumerateArray()
+            .Select(d => d.GetProperty("cauThuId").GetGuid()).ToList();
+        var dongGopId = ct.GetProperty("dongGops")[0].GetProperty("id").GetGuid();
+        var cauThuBiGo = ct.GetProperty("dongGops")[0].GetProperty("cauThuId").GetGuid();
+
+        await client.PutAsJsonAsync($"/api/v1/quy/dong-gop/{dongGopId}",
+            new { DongGopId = dongGopId, SoTienDaDong = 70_000m, GhiChu = (string?)null });
+
+        // Gỡ khi còn tiền: bị chặn.
+        var conLai = giu.Where(id => id != cauThuBiGo)
+            .Select(id => new { CauThuId = id, SoTienCanDong = 70_000m }).ToList();
+        var biChan = await client.PutAsJsonAsync($"/api/v1/quy/{quyId}", new
+        {
+            Id = quyId,
+            TenQuy = "Quỹ gỡ người",
+            ThoiHan = (string?)null,
+            GhiChu = (string?)null,
+            TrangThai = "DangMo",
+            ThanhViens = conLai,
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, biChan.StatusCode);
+        Assert.Equal("KHONG_XOA_NGUOI_DA_DONG_TIEN",
+            (await biChan.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("errorCode").GetString());
+
+        // Hoàn tác rồi gỡ: được.
+        await client.PutAsJsonAsync($"/api/v1/quy/dong-gop/{dongGopId}",
+            new { DongGopId = dongGopId, SoTienDaDong = 0m, GhiChu = (string?)null });
+
+        var duoc = await client.PutAsJsonAsync($"/api/v1/quy/{quyId}", new
+        {
+            Id = quyId,
+            TenQuy = "Quỹ gỡ người",
+            ThoiHan = (string?)null,
+            GhiChu = (string?)null,
+            TrangThai = "DangMo",
+            ThanhViens = conLai,
+        });
+        duoc.EnsureSuccessStatusCode();
+
+        var sau = await ChiTiet(client, quyId);
+        Assert.Equal(1, sau.GetProperty("quy").GetProperty("soNguoi").GetInt32());
+    }
+
     // ---------- Khoản chi & số dư ----------
 
     [Fact]
