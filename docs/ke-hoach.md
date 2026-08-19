@@ -1,15 +1,16 @@
 # Kế hoạch & tiến độ
 
-> Cập nhật cuối: **2026-08-16**. Nhật ký chi tiết theo ngày: [nhat-ky/](./nhat-ky/README.md).
+> Cập nhật cuối: **2026-08-18**. Nhật ký chi tiết theo ngày: [nhat-ky/](./nhat-ky/README.md).
 
 ## Tiến độ tổng
 
 ```
-Nghiệp vụ  ███████████░░░░░  11/16 FR (FR-10 thiếu bản vẽ sơ đồ kéo-thả)
-Hạ tầng    ████████░░░░░░░░  chạy được ở máy dev, chưa triển khai
+Nghiệp vụ  ████████████████  17/17 FR chạy đầu-cuối
+Hạ tầng    ████████████░░░░  CI/CD sẵn sàng, chờ VPS thật
+Còn lại    ██████░░░░░░░░░░  4 việc cần tài khoản/hạ tầng ngoài + 3 nợ kỹ thuật
 ```
 
-## Trạng thái 16 mã FR
+## Trạng thái 17 mã FR
 
 | Mã | Chức năng | Backend | Frontend | Ghi chú |
 |---|---|:---:|:---:|---|
@@ -29,6 +30,7 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | FR-14 | Bảng xếp hạng MVP | ✅ | ✅ | 4 tiêu chí, đổi cột không gọi lại API |
 | FR-15 | Danh sách quỹ | ✅ | ✅ | Tiến độ thu, màu theo trạng thái |
 | FR-16 | Thêm/Cập nhật quỹ | ✅ | ✅ | Nhắc nợ = sao chép danh sách; SMS/Email chưa làm |
+| FR-17 | Cộng đồng (mới 18/08) | ✅ | ✅ | Danh sách CLB, chi tiết công khai, lời mời thách đấu |
 
 ✅ xong · 🟡 dùng được nhưng thiếu phần · ⬜ chưa làm
 
@@ -58,8 +60,10 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | # | Việc | Ước tính | Vì sao gấp |
 |---|---|---|---|
 | ~~N1~~ | ~~Dockerfile cho API~~ | — | ✅ Xong 16/08 |
-| ~~N2~~ | ~~Test E2E frontend~~ | — | ✅ Xong 17/08 — 28 test Playwright |
-| N3 | **Rate limit `/doi-thu/tra-cuu-clb/{maDoi}` ở tầng Caddy** | ~1h | Endpoint duy nhất đọc ngoài tenant. Không gian mã `31^7` làm việc dò **chậm**, không làm nó **bất khả thi** — phải chặn trước khi mở ra Internet. Xem [FR-10](./nghiep-vu/lich-thi-dau.md#tra-cứu-clb-khác-trong-hệ-thống) |
+| ~~N2~~ | ~~Test E2E frontend~~ | — | ✅ Xong 17/08 — nay 35 test Playwright |
+| N3 | **Rate limit ba endpoint đọc ngoài tenant ở tầng Caddy** | ~1h | `tra-cuu-clb/{maDoi}` · `cong-dong` · `cong-dong/{maDoi}`. Không gian mã `31^7` làm việc dò **chậm**, không làm nó **bất khả thi**; mà `cong-dong` thì liệt kê thẳng nên còn dễ hơn. Phải chặn trước khi mở ra Internet — xem [ba endpoint đọc ngoài tenant](./backend/multi-tenant.md#ba-endpoint-đọc-ngoài-tenant-xếp-theo-mức-rộng) |
+| N4 | **Không có đường tạo CLB ở production** | ~4h | `/dang-ky-clb` chỉ bật ở Development (mở ẩn danh ở production là cho phép sinh CLB rác không giới hạn). Cần quy trình duyệt tay hoặc xác thực cấp hệ thống — **không có nó thì không ai dùng được hệ thống sau khi deploy** |
+| N5 | **E2E để lại tenant rác trong DB dev** | ~2h | 76 CLB rác, và từ 18/08 chúng **hiện trên Cộng đồng của mọi người**. Hai hướng: DB riêng cho E2E, hoặc bước dọn sau khi chạy |
 
 ### Giai đoạn 1 — Lịch thi đấu (FR-07 → FR-11)
 
