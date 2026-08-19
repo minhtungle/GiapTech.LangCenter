@@ -98,6 +98,25 @@ Ba ràng buộc, cả ba đã kiểm chứng bằng phản chứng:
 
 Hoàn tiền về 0 sẽ **xoá luôn `ngay_dong`** — không thì báo cáo thấy "đóng ngày X, số tiền 0".
 
+### Hoàn tác khoản đã thu *(bổ sung 20/08/2026)*
+
+Backend vốn đã cho: `GhiNhanThuCommand` nhận số tiền bất kỳ ≥ 0, gửi 0 là hoàn tác. Vướng nằm ở
+**UI** — trước đây muốn về 0 phải tự xoá ô rồi gõ `0`, không ai đoán ra, nên bấm nhầm nút ✓ coi
+như xong.
+
+| Sửa gì | Vì sao |
+|---|---|
+| Nút **↺ Hoàn tác** hiện khi `so_tien_da_dong > 0` | Cú bấm rõ ràng thay vì mẹo gõ tay |
+| **Hộp xác nhận** nói tên + số tiền + hậu quả | Thao tác trên tiền: nó xoá vết một khoản đã ghi nhận |
+| Nút ✓ và ↺ có **chỗ riêng cố định** | Dùng chung một chỗ thì sau khi bấm ✓, nút ↺ nhảy vào đúng toạ độ đó — cú bấm tiếp theo theo quán tính sẽ xoá mất khoản vừa ghi |
+| `key` trên ô nhập | `defaultValue` chỉ có tác dụng ở render đầu, nên bấm ✓ xong ô vẫn hiện 0 trong khi cột "Còn thiếu" báo đã đủ |
+
+Hoàn tác **không khoá vĩnh viễn**: thu lại được ngay, và ràng buộc `KHONG_XOA_NGUOI_DA_DONG_TIEN`
+cũng mở lại (gỡ được người khỏi đợt quỹ sau khi hoàn tác về 0).
+
+Canh bởi `Hoan_tac_dua_tien_do_va_trang_thai_ve_dung` · `Hoan_tac_roi_thu_lai_duoc` ·
+`Hoan_tac_xong_thi_go_duoc_nguoi_khoi_dot_quy` + E2E *hoàn tác được khi bấm nhầm đã đóng tiền*.
+
 ## Khoản chi và số dư *(ngoài phạm vi FR-15/16)*
 
 Bảng `KHOAN_CHI`. Thu tiền vào mà không ghi được tiền ra thì con số "đã thu" không nói lên quỹ

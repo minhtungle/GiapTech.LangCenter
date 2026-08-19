@@ -43,11 +43,11 @@ Còn lại    ██████░░░░░░░░░░  4 việc cần t
 | Cách ly tenant (2 tầng phòng vệ tự động + test) | ✅ |
 | Phân quyền động đọc từ DB + cache | ✅ |
 | Frontend: layout, i18n, design token, auto-refresh token | ✅ |
-| 256 test (42 unit + 214 integration) | ✅ |
+| 262 test (42 unit + 220 integration) | ✅ |
 | Upload ảnh qua MinIO (avatar, logo, ảnh bìa) | ✅ |
 | **Dockerfile cho API** | ✅ 2 giai đoạn, chạy user thường |
 | **`docker compose up` chạy được** | ✅ 5 container, API healthy, migration tự áp |
-| Test E2E frontend (36 test Playwright) | ✅ |
+| Test E2E frontend (37 test Playwright) | ✅ |
 | CI/CD 4 job: test → E2E → đẩy image → deploy | ✅ |
 | Triển khai VPS (domain, HTTPS, backup) | 🟡 cần server thật |
 

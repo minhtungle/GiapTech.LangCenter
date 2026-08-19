@@ -102,6 +102,14 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 - API nhận và trả enum dạng **chuỗi** thay vì số.
 
 ### Fixed
+- **Không hoàn tác được khi bấm nhầm "đã đóng đủ".** Backend vốn đã cho (gửi số tiền 0), nhưng UI
+  chỉ sửa được bằng cách tự xoá ô rồi gõ `0` — không ai đoán ra. Thêm nút **↺ Hoàn tác** kèm hộp
+  xác nhận nói rõ tên + số tiền + hậu quả.
+- **Ô "Đã đóng" không cập nhật sau khi bấm ✓.** `defaultValue` chỉ có tác dụng ở render đầu, nên ô
+  vẫn hiện 0 trong khi cột "Còn thiếu" báo đã đủ — người dùng tưởng chưa lưu được. Thêm `key` buộc
+  React dựng lại ô khi số tiền đổi từ phía server.
+- Nút ✓ và ↺ **không dùng chung vị trí** nữa: sau khi bấm ✓, nút ↺ nhảy vào đúng toạ độ đó và cú
+  bấm tiếp theo theo quán tính sẽ xoá mất khoản vừa ghi.
 - **Lưu đợt quỹ không làm mới cache chi tiết.** Chỉ `invalidateQueries(['quy'])`, thiếu
   `['quy-chi-tiet']` — nên tắt hiển thị chuyển khoản xong mở lại màn thu tiền vẫn thấy số tài
   khoản. Lỗi có sẵn từ trước, tính năng chuyển khoản làm nó lộ ra. Phát hiện khi xem màn hình.

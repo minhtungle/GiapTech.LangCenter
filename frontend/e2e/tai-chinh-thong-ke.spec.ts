@@ -107,6 +107,64 @@ test.describe('Tài chính', () => {
     await expect(page.locator('main')).toContainText(/không xóa được|Đóng đợt quỹ/i)
     await expect(page.locator('tbody')).toContainText('Quỹ đã thu')
   })
+  test('hoàn tác được khi bấm nhầm đã đóng tiền', async ({ page, request }) => {
+    await vaoHeThong(page, request, 'hoan-tac')
+    await taoCauThu(page, 'Người Bấm Nhầm')
+    await taoCauThu(page, 'Người Đóng Thật')
+
+    await page.goto('/tai-chinh')
+    await page.click('button:has-text("Thêm đợt quỹ")')
+    await page.fill('#tenQuy', 'Quỹ E2E hoàn tác')
+    await page.click('#thanhVien')
+    await page.locator('ul[role=listbox] button').nth(0).click()
+    await page.locator('ul[role=listbox] button').nth(1).click()
+    await dongDropdown(page, '#thanhVien')
+    await page.fill('#dongLoat', '120000')
+    await page.click('button:has-text("Áp cho tất cả")')
+    await page.locator('dialog[open] button[type=submit]').click()
+    await expect(page.locator('dialog[open]')).toHaveCount(0)
+
+    await page.locator('button[title="Thu tiền"]').first().click()
+
+    // Neo theo TÊN, không theo chỉ số hàng: handler sắp "người còn nợ lên đầu", nên thu đủ một
+    // người là hàng đó nhảy xuống cuối và `tbody tr` thứ nhất trỏ sang người khác.
+    const hang = page.locator('dialog[open] tbody tr', { hasText: 'Người Bấm Nhầm' })
+    const oTien = hang.locator('input[type=number]')
+
+    // Chưa đóng: có nút thu đủ, KHÔNG có nút hoàn tác.
+    await expect(hang.locator('button[title="Đánh dấu đã đóng đủ"]')).toHaveCount(1)
+    await expect(hang.locator('button[title="Hoàn tác"]')).toHaveCount(0)
+
+    await hang.locator('button[title="Đánh dấu đã đóng đủ"]').click()
+
+    // Ô số phải HIỆN ĐÚNG số vừa ghi. Lỗi thật: `defaultValue` chỉ có tác dụng ở render đầu,
+    // nên ô vẫn hiện 0 trong khi cột "Còn thiếu" báo đã đủ — người dùng tưởng chưa lưu được.
+    await expect(oTien).toHaveValue('120000')
+    await expect(hang.locator('button[title="Hoàn tác"]')).toHaveCount(1)
+    await expect(hang.locator('button[title="Đánh dấu đã đóng đủ"]')).toHaveCount(0)
+
+    // Hai nút phải ở HAI vị trí khác nhau: dùng chung một chỗ thì cú bấm tiếp theo theo quán
+    // tính sẽ xoá mất khoản vừa ghi.
+    const hopHt = await hang.locator('button[title="Hoàn tác"]').boundingBox()
+    expect(hopHt).not.toBeNull()
+
+    // Hoàn tác: phải có xác nhận nói rõ số tiền, vì nó xoá vết một khoản đã ghi nhận.
+    await hang.locator('button[title="Hoàn tác"]').click()
+    const hopXacNhan = page.locator('dialog[open]').last()
+    await expect(hopXacNhan).toContainText('120.000')
+    await hopXacNhan.locator('button:has-text("Hoàn tác")').click()
+
+    // Về 0, và tiến độ quỹ giảm theo.
+    await expect(oTien).toHaveValue('0')
+    await expect(page.locator('dialog[open]').first()).toContainText('0 ₫ / 240.000 ₫')
+    await expect(hang.locator('button[title="Đánh dấu đã đóng đủ"]')).toHaveCount(1)
+
+    // Thu lại được — hoàn tác không khoá vĩnh viễn khoản đóng.
+    await hang.locator('button[title="Đánh dấu đã đóng đủ"]').click()
+    await expect(oTien).toHaveValue('120000')
+    await expect(page.locator('dialog[open]').first()).toContainText('120.000 ₫ / 240.000 ₫')
+  })
+
   test('thông tin chuyển khoản: bật/tắt theo đợt, tiền không mất', async ({ page, request }) => {
     await vaoHeThong(page, request, 'chuyen-khoan')
     await taoCauThu(page, 'Người Chuyển Khoản A')
