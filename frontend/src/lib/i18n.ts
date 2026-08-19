@@ -359,6 +359,13 @@ const vi = {
     dangThu: 'Đang thu',
     thuTien: 'Thu tiền',
     thuDu: 'Đánh dấu đã đóng đủ',
+    hienChuyenKhoan: 'Hiện thông tin chuyển khoản cho đợt quỹ này',
+    hienChuyenKhoanMoTa:
+      'Số tài khoản và mã QR khai ở Thiết lập chung sẽ hiện trên màn thu tiền. Tắt cho đợt thu tiền mặt tại sân.',
+    chuyenKhoanTieuDe: 'Chuyển khoản vào',
+    saoChepSoTk: 'Sao chép',
+    chuyenKhoanLuuY:
+      'Hệ thống không tự ghi nhận tiền vào. Sau khi thành viên chuyển, thủ quỹ nhập số tiền vào bảng bên dưới.',
     canDong: 'Phải đóng',
     daDong: 'Đã đóng',
     conThieu: 'Còn thiếu',
@@ -555,6 +562,18 @@ const vi = {
     lienHeGoiY: 'Số điện thoại hoặc Zalo',
     lienHeLuuY:
       'Chỉ hiện cho CLB đã đồng ý lời mời thách đấu với bạn — không hiện trên danh sách cộng đồng.',
+    nhomChuyenKhoan: 'Chuyển khoản quỹ',
+    nhomChuyenKhoanMoTa:
+      'Chỉ hiện cho thành viên trong đội, ở màn thu tiền của đợt quỹ có bật hiển thị. KHÔNG hiện trên Cộng đồng.',
+    soTaiKhoan: 'Số tài khoản',
+    soTaiKhoanGoiY: 'VD: 0123456789',
+    tenNganHang: 'Ngân hàng',
+    tenNganHangGoiY: 'VD: Vietcombank',
+    chuTaiKhoan: 'Chủ tài khoản',
+    chuTaiKhoanGoiY: 'Tên đúng như trên app ngân hàng',
+    chuTaiKhoanLuuY: 'Người chuyển cần khớp tên để không chuyển nhầm.',
+    anhQr: 'Mã QR chuyển khoản',
+    anhQrGoiY: 'Chụp từ app ngân hàng của bạn. Ảnh này không hiện trên Cộng đồng.',
     mauAoChuaChon: 'Chưa khai bộ áo — bảng chiến thuật sẽ mở toàn bộ màu.',
   },
   // Bảng dịch MÃ LỖI từ backend — xem MaLoi.cs

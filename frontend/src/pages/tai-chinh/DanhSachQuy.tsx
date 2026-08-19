@@ -6,6 +6,7 @@ import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, Textarea, TrangTrong,
 } from '@/components/ui'
+import { Anh } from '@/components/ui/Anh'
 import { Modal, ModalChan } from '@/components/ui/Modal'
 import { PhanTrang } from '@/components/ui/PhanTrang'
 import { SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
@@ -26,6 +27,7 @@ export interface QuyDto {
   soNguoi: number
   soNguoiDaDongDu: number
   quaHan: boolean
+  hienThongTinChuyenKhoan: boolean
 }
 interface DongGopDto {
   id: string
@@ -37,9 +39,17 @@ interface DongGopDto {
   ghiChu: string | null
   daDongDu: boolean
 }
+interface ThongTinChuyenKhoan {
+  soTaiKhoan: string | null
+  tenNganHang: string | null
+  chuTaiKhoan: string | null
+  anhQrUrl: string | null
+}
 interface ChiTietQuyDto {
   quy: QuyDto
   dongGops: DongGopDto[]
+  /** null = đợt quỹ tắt hiển thị, HOẶC CLB chưa khai gì. Backend gộp hai ca này. */
+  chuyenKhoan: ThongTinChuyenKhoan | null
 }
 interface CauThuNgan {
   id: string
@@ -303,6 +313,10 @@ function FormQuy({
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['quy'] })
       void qc.invalidateQueries({ queryKey: ['tai-chinh-tong-quan'] })
+      // Cả CHI TIẾT đợt quỹ: modal thu tiền đọc từ `quy-chi-tiet`, không phải `quy`. Thiếu
+      // dòng này thì sửa đợt quỹ xong mở lại màn thu tiền vẫn thấy dữ liệu cũ — tắt hiển thị
+      // chuyển khoản mà khối số tài khoản vẫn còn đó (lỗi thật, phát hiện khi xem màn hình).
+      void qc.invalidateQueries({ queryKey: ['quy-chi-tiet'] })
       onDong()
     },
     onError: (e) => setMaLoi(layMaLoi(e)),
@@ -344,6 +358,9 @@ function FormQuy({
               cauThuId,
               soTienCanDong: tienCua(cauThuId),
             })),
+            // Đọc từ form như mọi trường khác (quy tắc #1): gửi giá trị cứng sẽ tắt hiển thị
+            // mỗi lần thủ quỹ sửa tên đợt quỹ.
+            hienThongTinChuyenKhoan: fd.get('hienChuyenKhoan') === 'on',
           })
         }}
         className="flex flex-col gap-4"
@@ -459,6 +476,26 @@ function FormQuy({
           <Textarea id="ghiChu" name="ghiChu" defaultValue={quy?.ghiChu ?? ''} />
         </div>
 
+        {/* Theo TỪNG ĐỢT, không phải bật/tắt toàn cục: có đợt thu tiền mặt tại sân, có đợt thu
+            chuyển khoản. Hiện QR cho đợt thu tiền mặt chỉ làm người ta chuyển khoản trong khi
+            thủ quỹ đang đứng chờ nhận tiền tươi. */}
+        <div className="flex flex-col gap-1.5">
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="hienChuyenKhoan"
+              defaultChecked={quy?.hienThongTinChuyenKhoan ?? false}
+              className="mt-0.5 h-4 w-4 rounded border-input accent-primary"
+            />
+            <span>
+              {t('taiChinh.hienChuyenKhoan')}
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                {t('taiChinh.hienChuyenKhoanMoTa')}
+              </span>
+            </span>
+          </label>
+        </div>
+
         {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
         <ModalChan>
@@ -533,6 +570,11 @@ function ModalThuTien({
   return (
     <Modal mo onDong={onDong} tieuDe={t('taiChinh.thuTien')} moTa={quy.tenQuy} rong="lg">
       {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
+
+      {/* Thông tin chuyển khoản — backend chỉ trả khi đợt quỹ bật hiển thị VÀ CLB đã khai gì đó,
+          nên ở đây chỉ cần kiểm null. Đặt TRÊN danh sách: thủ quỹ mở màn này để đọc số tài khoản
+          cho người khác, không phải cuộn xuống cuối tìm. */}
+      {data?.chuyenKhoan && <KhoiChuyenKhoan tt={data.chuyenKhoan} />}
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">{t('chung.dangTai')}</p>
@@ -616,5 +658,53 @@ function ModalThuTien({
         </Button>
       </ModalChan>
     </Modal>
+  )
+}
+
+/**
+ * Khối thông tin chuyển khoản trong màn thu tiền.
+ *
+ * Chỉ HIỂN THỊ — hệ thống không xử lý tiền. Thủ quỹ đọc số này cho thành viên (hoặc chụp lại gửi
+ * nhóm chat), người ta chuyển, rồi thủ quỹ nhập tay số đã nhận vào bảng bên dưới. Không có
+ * webhook, không đối chiếu sao kê: tự động ghi nhận đòi quyền đọc sao kê ngân hàng của CLB.
+ */
+function KhoiChuyenKhoan({ tt }: { tt: ThongTinChuyenKhoan }) {
+  const { t } = useTranslation()
+  const [daChep, setDaChep] = useState(false)
+
+  const chepSoTaiKhoan = async () => {
+    if (!tt.soTaiKhoan) return
+    await navigator.clipboard.writeText(tt.soTaiKhoan)
+    setDaChep(true)
+    setTimeout(() => setDaChep(false), 2000)
+  }
+
+  return (
+    <div className="mb-4 flex flex-wrap items-start gap-4 rounded-lg border border-border bg-muted/40 p-3">
+      {tt.anhQrUrl && (
+        // Cỡ vừa phải: QR to quá thì đẩy danh sách người đóng xuống dưới màn hình, mà thủ quỹ
+        // mở modal này chủ yếu để thu tiền.
+        <Anh khoa={tt.anhQrUrl} className="h-32 w-32 shrink-0 rounded-md object-contain" />
+      )}
+
+      <div className="flex min-w-0 flex-col gap-1 text-sm">
+        <p className="font-medium">{t('taiChinh.chuyenKhoanTieuDe')}</p>
+
+        {tt.soTaiKhoan && (
+          <p className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-base tracking-wide">{tt.soTaiKhoan}</span>
+            <Button type="button" variant="ghost" size="sm" onClick={() => void chepSoTaiKhoan()}>
+              {daChep ? t('taiChinh.daChep') : t('taiChinh.saoChepSoTk')}
+            </Button>
+          </p>
+        )}
+        {tt.tenNganHang && <p className="text-muted-foreground">{tt.tenNganHang}</p>}
+        {tt.chuTaiKhoan && <p className="text-muted-foreground">{tt.chuTaiKhoan}</p>}
+
+        {/* Nói rõ hệ thống KHÔNG tự ghi nhận: thành viên chuyển xong mà thấy tiến độ vẫn 0 sẽ
+            tưởng chuyển thất bại và chuyển lại lần nữa. */}
+        <p className="mt-1 text-xs text-muted-foreground">{t('taiChinh.chuyenKhoanLuuY')}</p>
+      </div>
+    </div>
   )
 }

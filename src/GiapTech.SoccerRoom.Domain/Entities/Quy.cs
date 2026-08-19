@@ -11,6 +11,18 @@ public class Quy : TenantEntity
     public string? GhiChu { get; set; }
     public TrangThaiQuy TrangThai { get; set; } = TrangThaiQuy.DangMo;
 
+    /// <summary>
+    /// Có hiện thông tin chuyển khoản của CLB trên đợt quỹ này hay không.
+    ///
+    /// Theo đợt chứ không phải bật/tắt toàn cục: có đợt thu tiền mặt tại sân (đóng ngay sau
+    /// trận), có đợt thu chuyển khoản. Hiện QR cho đợt thu tiền mặt chỉ làm người ta chuyển
+    /// khoản trong khi thủ quỹ đang đứng chờ nhận tiền tươi.
+    ///
+    /// Mặc định <c>false</c>: đợt quỹ cũ (tạo trước tính năng này) không tự nhiên hiện số tài
+    /// khoản lên — thủ quỹ chủ động bật khi cần.
+    /// </summary>
+    public bool HienThongTinChuyenKhoan { get; set; }
+
     public Tenant Tenant { get; set; } = null!;
 
     public ICollection<DongGopQuy> DongGops { get; set; } = [];

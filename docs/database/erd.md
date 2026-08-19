@@ -47,7 +47,7 @@ erDiagram
 
 | Bảng | Mục đích | Trường chính | Quan hệ |
 |---|---|---|---|
-| `TENANT` | CLB | id, **ma_doi** `char(7)` UNIQUE (sinh tự động), ten_doi, ten_viet_tat, ngay_thanh_lap, logo_url, anh_bia_url, mo_ta, mau_ao_json, **khu_vuc**, **san_nha**, **lien_he_cong_khai** | 1—N với hầu hết bảng khác qua `tenant_id` |
+| `TENANT` | CLB | id, **ma_doi** `char(7)` UNIQUE (sinh tự động), ten_doi, ten_viet_tat, ngay_thanh_lap, logo_url, anh_bia_url, mo_ta, mau_ao_json, **khu_vuc**, **san_nha**, **lien_he_cong_khai**, **so_tai_khoan**, **ten_ngan_hang**, **chu_tai_khoan**, **anh_qr_url** | 1—N với hầu hết bảng khác qua `tenant_id` |
 | `NGUOI_DUNG` | Tài khoản đăng nhập | id, tenant_id, username, password_hash, email, so_dien_thoai, dia_chi, phai_doi_mk, cau_thu_id (FK nullable), trang_thai, la_truong_nhom | N—1 TENANT; 0..1 với CAU_THU; N—N với QUYEN qua `NGUOIDUNG_QUYEN` |
 | `CAU_THU` | Hồ sơ cầu thủ | id, tenant_id, anh_dai_dien, ho_ten, ngay_sinh, ngay_tham_gia, ghi_chu, so_ao, vi_tri_so_truong | Độc lập với NGUOI_DUNG |
 
@@ -80,7 +80,7 @@ erDiagram
 
 | Bảng | Mục đích | Trường chính | Quan hệ |
 |---|---|---|---|
-| `QUY` | Đợt quỹ | id, tenant_id, ten_quy, thoi_han, ghi_chu, trang_thai | 1—N DONGGOP_QUY |
+| `QUY` | Đợt quỹ | id, tenant_id, ten_quy, thoi_han, ghi_chu, trang_thai, **hien_thong_tin_chuyen_khoan** | 1—N DONGGOP_QUY |
 | `DONGGOP_QUY` | Đóng góp quỹ | id, quy_id, cau_thu_id, so_tien_can_dong, so_tien_da_dong, ngay_dong | N—1 QUY, N—1 CAU_THU |
 | `KHOAN_CHI` | Khoản chi từ quỹ | id, tenant_id, quy_id (nullable), noi_dung, so_tien, ngay_chi, nguoi_chi, ghi_chu | N—1 QUY (**SetNull**) |
 

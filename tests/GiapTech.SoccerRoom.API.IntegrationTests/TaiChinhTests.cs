@@ -431,4 +431,248 @@ public class TaiChinhTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Single(no!);
         Assert.Equal(0m, no![0].GetProperty("soTienDaDong").GetDecimal());
     }
+
+    // ---------- Thông tin chuyển khoản (thanh toán) ----------
+
+    /// <summary>Khai thông tin chuyển khoản cho CLB đang đăng nhập.</summary>
+    private static async Task KhaiChuyenKhoan(
+        HttpClient c, string? soTaiKhoan, string? nganHang, string? chuTk, string? anhQr)
+    {
+        var tl = await c.GetFromJsonAsync<JsonElement>("/api/v1/thiet-lap");
+        var res = await c.PutAsJsonAsync("/api/v1/thiet-lap", new
+        {
+            TenDoi = tl.GetProperty("tenDoi").GetString(),
+            TenVietTat = (string?)null,
+            NgayThanhLap = (string?)null,
+            MoTa = (string?)null,
+            LogoUrl = (string?)null,
+            AnhBiaUrl = (string?)null,
+            MauAo = Array.Empty<string>(),
+            KhuVuc = (string?)null,
+            SanNha = (string?)null,
+            LienHeCongKhai = (string?)null,
+            SoTaiKhoan = soTaiKhoan,
+            TenNganHang = nganHang,
+            ChuTaiKhoan = chuTk,
+            AnhQrUrl = anhQr,
+        });
+        res.EnsureSuccessStatusCode();
+    }
+
+    private static async Task<Guid> TaoQuyCoChuyenKhoan(
+        HttpClient c, string ten, IEnumerable<(Guid CauThuId, decimal SoTien)> thanhViens,
+        bool hienChuyenKhoan)
+    {
+        var res = await c.PostAsJsonAsync("/api/v1/quy", new
+        {
+            TenQuy = ten,
+            ThoiHan = (string?)null,
+            GhiChu = (string?)null,
+            TrangThai = "DangMo",
+            ThanhViens = thanhViens.Select(v => new { v.CauThuId, SoTienCanDong = v.SoTien }),
+            HienThongTinChuyenKhoan = hienChuyenKhoan,
+        });
+        res.EnsureSuccessStatusCode();
+        return await res.Content.ReadFromJsonAsync<Guid>();
+    }
+
+    [Fact]
+    public async Task Quy_bat_hien_chuyen_khoan_thi_tra_kem_thong_tin()
+    {
+        var client = await Client();
+        var cauThus = await LayCauThuIds(client, 1);
+        await KhaiChuyenKhoan(client, "0123456789", "Vietcombank", "Nguyễn Văn Thủ Quỹ", null);
+
+        var quyId = await TaoQuyCoChuyenKhoan(client, "Quỹ chuyển khoản",
+            [(cauThus[0], 100_000m)], hienChuyenKhoan: true);
+
+        var ct = await ChiTiet(client, quyId);
+        Assert.True(ct.GetProperty("quy").GetProperty("hienThongTinChuyenKhoan").GetBoolean());
+
+        var ck = ct.GetProperty("chuyenKhoan");
+        Assert.Equal(JsonValueKind.Object, ck.ValueKind);
+        Assert.Equal("0123456789", ck.GetProperty("soTaiKhoan").GetString());
+        Assert.Equal("Vietcombank", ck.GetProperty("tenNganHang").GetString());
+        Assert.Equal("Nguyễn Văn Thủ Quỹ", ck.GetProperty("chuTaiKhoan").GetString());
+    }
+
+    [Fact]
+    public async Task Quy_khong_bat_thi_KHONG_tra_so_tai_khoan()
+    {
+        // Thủ quỹ tắt hiển thị cho đợt thu tiền mặt → API không được trả số tài khoản. Trả rồi
+        // để frontend tự ẩn là sai: mở DevTools là thấy, mà UI cũng dễ quên ẩn ở một màn nào đó.
+        var client = await Client();
+        var cauThus = await LayCauThuIds(client, 1);
+        await KhaiChuyenKhoan(client, "9999888877", "MB Bank", "Thủ Quỹ B", null);
+
+        var quyId = await TaoQuyCoChuyenKhoan(client, "Quỹ thu tiền mặt",
+            [(cauThus[0], 50_000m)], hienChuyenKhoan: false);
+
+        var ct = await ChiTiet(client, quyId);
+        Assert.False(ct.GetProperty("quy").GetProperty("hienThongTinChuyenKhoan").GetBoolean());
+
+        // `chuyenKhoan` phải là null, và số tài khoản không xuất hiện ở bất kỳ đâu trong body.
+        Assert.Equal(JsonValueKind.Null, ct.GetProperty("chuyenKhoan").ValueKind);
+        Assert.DoesNotContain("9999888877", ct.GetRawText());
+    }
+
+    [Fact]
+    public async Task Bat_hien_nhung_chua_khai_gi_thi_tra_null()
+    {
+        // Bật hiển thị mà CLB chưa khai số nào → trả null chứ không phải object toàn null. UI
+        // nhận object sẽ vẽ khối "Chuyển khoản" trống rỗng không có gì bên dưới.
+        var client = await Client(factory.MaDoiB);
+        var cauThus = await LayCauThuIds(client, 1);
+
+        // CHUỖI RỖNG, không phải null: null nghĩa là "client không gửi, giữ nguyên" nên sẽ
+        // không xoá được thông tin mà test khác đã khai cho cùng CLB này (các test chia nhau
+        // MaDoiB). Truyền null ở đây làm test đỏ hay xanh tuỳ THỨ TỰ CHẠY.
+        await KhaiChuyenKhoan(client, "", "", "", "");
+
+        var quyId = await TaoQuyCoChuyenKhoan(client, "Quỹ bật nhưng chưa khai",
+            [(cauThus[0], 30_000m)], hienChuyenKhoan: true);
+
+        var ct = await ChiTiet(client, quyId);
+        Assert.True(ct.GetProperty("quy").GetProperty("hienThongTinChuyenKhoan").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, ct.GetProperty("chuyenKhoan").ValueKind);
+    }
+
+    [Fact]
+    public async Task Client_cu_khong_gui_co_thi_mac_dinh_KHONG_hien()
+    {
+        // `TaoQuy` (helper cũ) không gửi `HienThongTinChuyenKhoan`. Mặc định phải là false —
+        // phía an toàn: không lộ số tài khoản ngoài ý muốn của thủ quỹ.
+        var client = await Client();
+        var cauThus = await LayCauThuIds(client, 1);
+        await KhaiChuyenKhoan(client, "0011223344", "Techcombank", "Thủ Quỹ C", null);
+
+        var quyId = await TaoQuy(client, "Quỹ tạo bằng client cũ", [(cauThus[0], 20_000m)]);
+
+        var ct = await ChiTiet(client, quyId);
+        Assert.False(ct.GetProperty("quy").GetProperty("hienThongTinChuyenKhoan").GetBoolean());
+        Assert.DoesNotContain("0011223344", ct.GetRawText());
+    }
+
+    [Fact]
+    public async Task Sua_quy_doi_co_hien_khong_lam_mat_tien_da_thu()
+    {
+        // Quy tắc #1. Bật/tắt hiển thị chuyển khoản là thao tác trên đợt quỹ ĐANG THU tiền —
+        // nếu lệnh lưu quỹ vô tình ghi đè `so_tien_da_dong` thì tiền thật đã vào túi biến mất.
+        var client = await Client();
+        var cauThus = await LayCauThuIds(client, 2);
+        await KhaiChuyenKhoan(client, "5566778899", "ACB", "Thủ Quỹ D", null);
+
+        var quyId = await TaoQuyCoChuyenKhoan(client, "Quỹ đổi cờ",
+            [(cauThus[0], 100_000m), (cauThus[1], 100_000m)], hienChuyenKhoan: false);
+
+        // Thu tiền một người.
+        var truoc = await ChiTiet(client, quyId);
+        var dongGopId = truoc.GetProperty("dongGops")[0].GetProperty("id").GetGuid();
+        var thu = await client.PutAsJsonAsync($"/api/v1/quy/dong-gop/{dongGopId}",
+            new { DongGopId = dongGopId, SoTienDaDong = 100_000m, GhiChu = (string?)null });
+        thu.EnsureSuccessStatusCode();
+
+        // Giờ bật hiển thị chuyển khoản: gửi lại đủ mọi trường như UI làm.
+        var giua = await ChiTiet(client, quyId);
+        var thanhViens = giua.GetProperty("dongGops").EnumerateArray()
+            .Select(d => new
+            {
+                CauThuId = d.GetProperty("cauThuId").GetGuid(),
+                SoTienCanDong = d.GetProperty("soTienCanDong").GetDecimal(),
+            })
+            .ToList();
+
+        var sua = await client.PutAsJsonAsync($"/api/v1/quy/{quyId}", new
+        {
+            Id = quyId,
+            TenQuy = "Quỹ đổi cờ",
+            ThoiHan = (string?)null,
+            GhiChu = (string?)null,
+            TrangThai = "DangMo",
+            ThanhViens = thanhViens,
+            HienThongTinChuyenKhoan = true,
+        });
+        sua.EnsureSuccessStatusCode();
+
+        var sauSua = await ChiTiet(client, quyId);
+        Assert.True(sauSua.GetProperty("quy").GetProperty("hienThongTinChuyenKhoan").GetBoolean());
+
+        // TIỀN ĐÃ THU CÒN NGUYÊN.
+        Assert.Equal(100_000m, sauSua.GetProperty("quy").GetProperty("tongDaThu").GetDecimal());
+        Assert.Equal(1, sauSua.GetProperty("quy").GetProperty("soNguoiDaDongDu").GetInt32());
+    }
+
+    [Fact]
+    public async Task Thong_tin_chuyen_khoan_luu_va_doc_lai_khong_mat()
+    {
+        // Quy tắc #1: lưu thiết lập từ màn khác không được xoá thông tin chuyển khoản.
+        var client = await Client(factory.MaDoiC);
+        await KhaiChuyenKhoan(client, "1112223334", "BIDV", "Thủ Quỹ E", null);
+
+        var doc1 = await client.GetFromJsonAsync<JsonElement>("/api/v1/thiet-lap");
+        Assert.Equal("1112223334", doc1.GetProperty("soTaiKhoan").GetString());
+        Assert.Equal("BIDV", doc1.GetProperty("tenNganHang").GetString());
+
+        // Client CŨ gửi lệnh cập nhật mà không biết bốn trường này (đều null) → phải GIỮ NGUYÊN.
+        var luuCu = await client.PutAsJsonAsync("/api/v1/thiet-lap", new
+        {
+            TenDoi = doc1.GetProperty("tenDoi").GetString(),
+            TenVietTat = (string?)null,
+            NgayThanhLap = (string?)null,
+            MoTa = "đổi mô tả từ màn cũ",
+            LogoUrl = (string?)null,
+            AnhBiaUrl = (string?)null,
+        });
+        luuCu.EnsureSuccessStatusCode();
+
+        var doc2 = await client.GetFromJsonAsync<JsonElement>("/api/v1/thiet-lap");
+        Assert.Equal("1112223334", doc2.GetProperty("soTaiKhoan").GetString());
+        Assert.Equal("BIDV", doc2.GetProperty("tenNganHang").GetString());
+        Assert.Equal("Thủ Quỹ E", doc2.GetProperty("chuTaiKhoan").GetString());
+
+        // Chuỗi rỗng = chủ động xoá.
+        await KhaiChuyenKhoan(client, "", "", "", "");
+        var doc3 = await client.GetFromJsonAsync<JsonElement>("/api/v1/thiet-lap");
+        Assert.Null(doc3.GetProperty("soTaiKhoan").GetString());
+    }
+
+    [Fact]
+    public async Task So_tai_khoan_KHONG_lo_ra_Cong_dong()
+    {
+        // Thông tin chuyển khoản là dữ liệu NỘI BỘ, khác `LienHeCongKhai`. Lộ ra Cộng đồng là
+        // cho người lạ biết tài khoản nào đang gom tiền của đội nào.
+        var clientA = await Client(factory.MaDoiA);
+        var clientB = await Client(factory.MaDoiB);
+
+        await KhaiChuyenKhoan(clientB, "7778889990", "VPBank", "Thủ Quỹ Không Lộ", null);
+
+        // Danh sách cộng đồng.
+        var ds = await clientA.GetFromJsonAsync<JsonElement>("/api/v1/cong-dong?soDong=100");
+        Assert.DoesNotContain("7778889990", ds.GetRawText());
+        Assert.DoesNotContain("Thủ Quỹ Không Lộ", ds.GetRawText());
+
+        // Và chi tiết CLB.
+        var ct = await clientA.GetAsync($"/api/v1/cong-dong/{factory.MaDoiB}");
+        var json = await ct.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("7778889990", json);
+        Assert.DoesNotContain("VPBank", json);
+        Assert.DoesNotContain("Thủ Quỹ Không Lộ", json);
+    }
+
+    [Fact]
+    public async Task Quy_cua_CLB_khac_khong_doc_duoc_thong_tin_chuyen_khoan()
+    {
+        // Cách ly tenant: đợt quỹ của A bật hiển thị, B không đọc được đợt quỹ đó nên cũng
+        // không thấy số tài khoản của A.
+        var clientA = await Client(factory.MaDoiA);
+        var clientB = await Client(factory.MaDoiB);
+
+        var cauThus = await LayCauThuIds(clientA, 1);
+        await KhaiChuyenKhoan(clientA, "4443332221", "Agribank", "Thủ Quỹ A", null);
+        var quyId = await TaoQuyCoChuyenKhoan(clientA, "Quỹ riêng của A",
+            [(cauThus[0], 60_000m)], hienChuyenKhoan: true);
+
+        var res = await clientB.GetAsync($"/api/v1/quy/{quyId}");
+        Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
+    }
 }

@@ -107,6 +107,64 @@ test.describe('Tài chính', () => {
     await expect(page.locator('main')).toContainText(/không xóa được|Đóng đợt quỹ/i)
     await expect(page.locator('tbody')).toContainText('Quỹ đã thu')
   })
+  test('thông tin chuyển khoản: bật/tắt theo đợt, tiền không mất', async ({ page, request }) => {
+    await vaoHeThong(page, request, 'chuyen-khoan')
+    await taoCauThu(page, 'Người Chuyển Khoản A')
+    await taoCauThu(page, 'Người Chuyển Khoản B')
+
+    // Khai thông tin chuyển khoản ở Thiết lập chung.
+    await page.goto('/quan-tri/thiet-lap')
+    await expect(page.locator('main')).toContainText('KHÔNG hiện trên Cộng đồng')
+    await page.fill('#soTaiKhoan', '1234509876')
+    await page.fill('#tenNganHang', 'Vietcombank')
+    await page.fill('#chuTaiKhoan', 'NGUYEN VAN THU QUY')
+    await page.locator('button[type=submit]').click()
+    await expect(page.locator('main')).toContainText(/Đã lưu|lưu/i)
+
+    // Giữ nguyên sau khi tải lại (quy tắc #1).
+    await page.reload()
+    await expect(page.locator('#soTaiKhoan')).toHaveValue('1234509876')
+
+    // Đợt quỹ BẬT hiển thị.
+    await page.goto('/tai-chinh')
+    await page.click('button:has-text("Thêm đợt quỹ")')
+    await page.fill('#tenQuy', 'Quỹ E2E chuyển khoản')
+    await page.click('#thanhVien')
+    await page.locator('ul[role=listbox] button').nth(0).click()
+    await page.locator('ul[role=listbox] button').nth(1).click()
+    await dongDropdown(page, '#thanhVien')
+    await page.fill('#dongLoat', '100000')
+    await page.click('button:has-text("Áp cho tất cả")')
+    await page.check('input[name="hienChuyenKhoan"]')
+    await page.locator('dialog[open] button[type=submit]').click()
+    await expect(page.locator('dialog[open]')).toHaveCount(0)
+
+    // Màn thu tiền hiện khối chuyển khoản, kèm lưu ý hệ thống KHÔNG tự ghi nhận — thiếu câu này
+    // thì người chuyển xong thấy tiến độ vẫn 0 sẽ tưởng thất bại và chuyển lại lần nữa.
+    await page.locator('button[title="Thu tiền"]').first().click()
+    await expect(page.locator('dialog[open]')).toContainText('1234509876')
+    await expect(page.locator('dialog[open]')).toContainText('Vietcombank')
+    await expect(page.locator('dialog[open]')).toContainText('không tự ghi nhận')
+
+    // Thu đủ một người.
+    await page.locator('dialog[open] button[title="Đánh dấu đã đóng đủ"]').first().click()
+    await expect(page.locator('dialog[open]')).toContainText('100.000 ₫ / 200.000 ₫')
+    await page.locator('dialog[open] button:has-text("Đóng")').click()
+
+    // TẮT hiển thị trên đợt quỹ ĐANG có tiền.
+    await page.locator('button[title="Sửa"]').first().click()
+    await page.uncheck('input[name="hienChuyenKhoan"]')
+    await page.locator('dialog[open] button[type=submit]').click()
+    await expect(page.locator('dialog[open]')).toHaveCount(0)
+
+    // Lỗi thật đã xảy ra: lệnh lưu quỹ chỉ làm mới cache `quy`, không làm mới `quy-chi-tiet` —
+    // nên mở lại màn thu tiền vẫn thấy số tài khoản dù cờ đã tắt.
+    await page.locator('button[title="Thu tiền"]').first().click()
+    await expect(page.locator('dialog[open]')).not.toContainText('1234509876')
+
+    // Và TIỀN CÒN NGUYÊN (quy tắc #1).
+    await expect(page.locator('dialog[open]')).toContainText('100.000 ₫ / 200.000 ₫')
+  })
 })
 
 test.describe('Thống kê', () => {

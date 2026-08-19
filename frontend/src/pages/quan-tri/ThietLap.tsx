@@ -23,6 +23,10 @@ interface ThietLapDto {
   khuVuc: string | null
   sanNha: string | null
   lienHeCongKhai: string | null
+  soTaiKhoan: string | null
+  tenNganHang: string | null
+  chuTaiKhoan: string | null
+  anhQrUrl: string | null
 }
 
 /** FR-06 — thiết lập chung CLB. */
@@ -34,6 +38,7 @@ export default function ThietLap() {
   const [daLuu, setDaLuu] = useState(false)
   /** null = chưa chạm, lấy giá trị server. */
   const [mauAo, setMauAo] = useState<string[] | null>(null)
+  const [qrNhap, setQrNhap] = useState<string | null | undefined>(undefined)
   /** null = chưa chạm, lấy giá trị server. Ảnh tải ngay nên state này chỉ để hiện lại. */
   const [logoNhap, setLogoNhap] = useState<string | null | undefined>(undefined)
   const [anhBiaNhap, setAnhBiaNhap] = useState<string | null | undefined>(undefined)
@@ -67,6 +72,7 @@ export default function ThietLap() {
 
   const dangChonMau = mauAo ?? data?.mauAo ?? []
   const logo = logoNhap === undefined ? (data?.logoUrl ?? null) : logoNhap
+  const anhQr = qrNhap === undefined ? (data?.anhQrUrl ?? null) : qrNhap
   const anhBia = anhBiaNhap === undefined ? (data?.anhBiaUrl ?? null) : anhBiaNhap
   const setLogo = setLogoNhap
   const setAnhBia = setAnhBiaNhap
@@ -97,6 +103,13 @@ export default function ThietLap() {
       khuVuc: (fd.get('khuVuc') as string) ?? '',
       sanNha: (fd.get('sanNha') as string) ?? '',
       lienHeCongKhai: (fd.get('lienHeCongKhai') as string) ?? '',
+      // Thông tin chuyển khoản. Cùng quy ước: chuỗi rỗng = xoá, không gửi null (null nghĩa là
+      // "giữ nguyên" nên ô đã xoá sẽ hiện lại giá trị cũ sau khi tải lại trang).
+      soTaiKhoan: (fd.get('soTaiKhoan') as string) ?? '',
+      tenNganHang: (fd.get('tenNganHang') as string) ?? '',
+      chuTaiKhoan: (fd.get('chuTaiKhoan') as string) ?? '',
+      // Ảnh QR do ChonAnh tự tải lên và trả khoá — gửi lại để không bị xoá khi lưu form.
+      anhQrUrl: anhQr,
     })
   }
 
@@ -236,6 +249,61 @@ export default function ThietLap() {
               placeholder={t('thietLap.lienHeGoiY')}
             />
             <p className="text-xs text-muted-foreground">{t('thietLap.lienHeLuuY')}</p>
+          </div>
+
+          {/* Nhóm chuyển khoản quỹ. Tách khỏi nhóm Cộng đồng và nói rõ "chỉ trong đội": ba ô
+              kia CÔNG KHAI, còn số tài khoản thì không — đặt cạnh nhau mà không phân biệt thì
+              người dùng tưởng cả hai nhóm cùng mức riêng tư. */}
+          <div className="sm:col-span-2">
+            <h3 className="text-sm font-semibold">{t('thietLap.nhomChuyenKhoan')}</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {t('thietLap.nhomChuyenKhoanMoTa')}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="soTaiKhoan">{t('thietLap.soTaiKhoan')}</Label>
+            <Input
+              id="soTaiKhoan"
+              name="soTaiKhoan"
+              defaultValue={data?.soTaiKhoan ?? ''}
+              placeholder={t('thietLap.soTaiKhoanGoiY')}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="tenNganHang">{t('thietLap.tenNganHang')}</Label>
+            <Input
+              id="tenNganHang"
+              name="tenNganHang"
+              defaultValue={data?.tenNganHang ?? ''}
+              placeholder={t('thietLap.tenNganHangGoiY')}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="chuTaiKhoan">{t('thietLap.chuTaiKhoan')}</Label>
+            <Input
+              id="chuTaiKhoan"
+              name="chuTaiKhoan"
+              defaultValue={data?.chuTaiKhoan ?? ''}
+              placeholder={t('thietLap.chuTaiKhoanGoiY')}
+            />
+            <p className="text-xs text-muted-foreground">{t('thietLap.chuTaiKhoanLuuY')}</p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label className="mb-1.5 block">{t('thietLap.anhQr')}</Label>
+            <ChonAnh
+              khoa={anhQr}
+              duongDanTai="/anh/clb/qr-chuyen-khoan"
+              duongDanXoa="/anh/clb/qr-chuyen-khoan"
+              onXong={(k) => {
+                setQrNhap(k)
+                void qc.invalidateQueries({ queryKey: ['thiet-lap'] })
+              }}
+            />
+            <p className="text-xs text-muted-foreground">{t('thietLap.anhQrGoiY')}</p>
           </div>
 
           {maLoi && (

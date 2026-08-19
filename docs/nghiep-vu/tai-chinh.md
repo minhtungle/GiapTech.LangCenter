@@ -19,6 +19,49 @@ Màu trạng thái theo quy ước chung: **xanh** = đã đóng đủ, **đỏ*
 
 **Trường dữ liệu:** tên quỹ, chọn thành viên + số tiền mỗi người, ghi chú, thời hạn.
 
+### Thông tin chuyển khoản *(bổ sung 19/08/2026)*
+
+**Hệ thống KHÔNG xử lý tiền.** Nó chỉ hiển thị số tài khoản và mã QR để thành viên biết chuyển
+vào đâu; tiền đi trực tiếp giữa hai người, thủ quỹ vào nhập tay số đã nhận. Không cổng thanh
+toán, không webhook, không đối chiếu sao kê — tự động ghi nhận đòi quyền đọc sao kê ngân hàng
+của CLB, và cổng thanh toán đòi tài khoản merchant có phí.
+
+Ba nơi:
+
+| Nơi | Việc |
+|---|---|
+| **Thiết lập chung** | Khai `so_tai_khoan` · `ten_ngan_hang` · `chu_tai_khoan` · `anh_qr_url` |
+| **Form đợt quỹ** | Checkbox *Hiện thông tin chuyển khoản cho đợt quỹ này* |
+| **Màn thu tiền** | Khối chuyển khoản hiện trên đầu, kèm nút sao chép số tài khoản |
+
+**Cờ theo TỪNG ĐỢT, không phải bật/tắt toàn cục.** Có đợt thu tiền mặt tại sân (đóng ngay sau
+trận), có đợt thu chuyển khoản. Hiện QR cho đợt thu tiền mặt chỉ làm người ta chuyển khoản trong
+khi thủ quỹ đang đứng chờ nhận tiền tươi. Mặc định `false`: đợt quỹ cũ không tự nhiên hiện số
+tài khoản lên.
+
+**Lưu ảnh QR do CLB tự tải lên**, không tự sinh mã VietQR: sinh mã cần đúng BIN ngân hàng và
+tuân thủ chuẩn EMVCo — sai một ký tự là app ngân hàng từ chối quét mà người dùng không hiểu vì
+sao. Ảnh họ chụp từ app ngân hàng thì chắc chắn quét được.
+
+#### Đây là dữ liệu NỘI BỘ
+
+Khác `lien_he_cong_khai` (hiện cho CLB đã chấp nhận lời mời thách đấu), bốn trường chuyển khoản
+**không lên Cộng đồng** — cả danh sách lẫn trang chi tiết CLB. Số tài khoản quỹ lộ ra ngoài là
+cho người lạ biết tài khoản nào đang gom tiền của đội nào. Canh bởi
+`So_tai_khoan_KHONG_lo_ra_Cong_dong` và `Anh_QR_khong_lo_ra_Cong_dong`.
+
+Ảnh QR dùng thư mục riêng `qr-chuyen-khoan/` trong MinIO, tách khỏi `logo/` và `anh-bia/` (hai
+loại đó **có** lên Cộng đồng).
+
+#### Lỗi đã tránh và lỗi đã xảy ra
+
+- **Tránh:** cả hai handler ảnh dùng `default:` cho ảnh bìa. Thêm `LoaiAnh.AnhQr` mà không đổi
+  thành `case` tường minh sẽ khiến QR âm thầm ghi lên `anh_bia_url` — vừa mất ảnh bìa, vừa làm
+  QR hiện lên Cộng đồng. Giờ mọi nhánh liệt kê đủ, nhánh mặc định ném `LOAI_ANH_KHONG_HO_TRO`.
+- **Đã xảy ra:** lệnh lưu đợt quỹ chỉ làm mới cache `quy`, không làm mới `quy-chi-tiet`. Tắt
+  hiển thị chuyển khoản xong mở lại màn thu tiền vẫn thấy số tài khoản. Phát hiện khi xem màn
+  hình, không test nào bắt được lúc đó. Canh bởi E2E *thông tin chuyển khoản: bật/tắt theo đợt*.
+
 ### Nhắc nhở
 
 **Hiện tại:** nút **Sao chép danh sách nợ** — chép tên + số tiền còn thiếu ra clipboard để dán

@@ -44,6 +44,18 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 - Canh bởi `TraCuuClbTests` (12 test, 5 phản chứng) + `e2e/chon-doi-thu.spec.ts` (5 test).
 - **Nợ kỹ thuật:** cần rate limit ở tầng Caddy cho endpoint này trước khi lên production.
 
+**Thông tin chuyển khoản quỹ (FR-16)**
+- Khai số tài khoản · ngân hàng · chủ tài khoản · ảnh QR ở Thiết lập chung; checkbox **theo từng
+  đợt quỹ** để chọn có hiện lên màn thu tiền hay không (đợt thu tiền mặt tại sân thì tắt).
+- **Hệ thống KHÔNG xử lý tiền** — chỉ hiển thị. Thủ quỹ vẫn nhập tay số đã nhận. Không cổng
+  thanh toán, không webhook, không đối chiếu sao kê; màn thu tiền nói rõ điều này để người
+  chuyển không tưởng thất bại rồi chuyển lại lần nữa.
+- Bốn trường này là dữ liệu **NỘI BỘ**, khác `lien_he_cong_khai`: không lên Cộng đồng. Ảnh QR
+  dùng thư mục riêng `qr-chuyen-khoan/`, tách khỏi logo và ảnh bìa (hai loại đó có lên Cộng đồng).
+- Lỗi đã TRÁNH: hai handler ảnh dùng `default:` cho ảnh bìa — thêm `LoaiAnh.AnhQr` mà không đổi
+  thành `case` tường minh sẽ khiến QR ghi lên `anh_bia_url`, mất ảnh bìa và làm QR hiện công khai.
+- Canh bởi 8 test tích hợp mới (6 phản chứng) + 1 test E2E.
+
 **Cộng đồng (FR-17)** *(đổi tên từ "Sàn đối thủ" theo yêu cầu)*
 - **Trang chi tiết CLB** `/cong-dong/{maDoi}`: mô tả, khu vực, sân nhà, bộ áo, thành tích đầy đủ
   (kèm bàn thắng/thua), 10 trận gần nhất, số trận đối đầu với ta, và nút thách đấu.
@@ -90,6 +102,9 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 - API nhận và trả enum dạng **chuỗi** thay vì số.
 
 ### Fixed
+- **Lưu đợt quỹ không làm mới cache chi tiết.** Chỉ `invalidateQueries(['quy'])`, thiếu
+  `['quy-chi-tiet']` — nên tắt hiển thị chuyển khoản xong mở lại màn thu tiền vẫn thấy số tài
+  khoản. Lỗi có sẵn từ trước, tính năng chuyển khoản làm nó lộ ra. Phát hiện khi xem màn hình.
 - **Cộng đồng trả `lienHeCongKhai` của mọi CLB.** Một lần gọi API là thu được số điện thoại
   toàn hệ thống — đúng cửa spam mà việc "chỉ hiện liên hệ sau khi chấp nhận" ở hòm thư định chặn.
   Phát hiện khi gọi API thật và đọc kết quả, không test nào bắt được lúc đó.
