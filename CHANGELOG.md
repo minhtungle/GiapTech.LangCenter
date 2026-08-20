@@ -130,6 +130,21 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 - API nhận và trả enum dạng **chuỗi** thay vì số.
 
 ### Fixed
+- **Rà soát toàn hệ thống 20/08** — xem [docs/ra-soat-20-08.md](./docs/ra-soat-20-08.md). Năm
+  thiếu sót, tất cả đã sửa:
+  - **Thu quỹ QUÁ số phải đóng** được nhận: thu 999.000.000₫ cho khoản 100.000₫ → tiến độ hiện
+    `999000000 / 100000`, người đó tính là đã đóng đủ, và số sai lan vào mọi thẻ ở màn Tài chính.
+    Giờ chặn `THU_QUA_SO_PHAI_DONG`, trả kèm số phải đóng để UI nói rõ.
+  - **Xoá cầu thủ làm tỷ số trận mất căn cứ**: cầu thủ ghi 2 bàn trong trận thắng 2-1 → xoá →
+    trận vẫn 2-1 với **0 bàn trong đánh giá**. `DongBoTySoNha` chỉ được gọi khi lưu đánh giá.
+    Giờ tính lại tỷ số của đúng những trận có liên quan.
+  - **Chỉ số kỹ năng ngoài thang 1–10** được nhận (`{"tanCong": 99}`) → radar vẽ ra ngoài khung.
+    Backend trước đây KHÔNG biết danh sách 6 chỉ số — nó chỉ có ở frontend. Thêm
+    `Domain/Common/ChiSoKyNang.cs` + test đồng bộ hai tầng (như `MauAoDongBoTests`).
+  - **Bàn thắng một cầu thủ không có giới hạn trên** (500 → tỷ số 500-1). Giới hạn mềm 50.
+  - **Ô nhập giữ con số vừa bị từ chối** — phát sinh khi sửa lỗi đầu, phát hiện bằng ảnh chụp:
+    `key={id}-${soTien}` không đổi khi bị từ chối (số tiền trong DB không đổi) nên React giữ
+    nguyên ô, mâu thuẫn với cột "Còn thiếu".
 - **Đối thủ trùng lặp khi liên kết** (ca 13 của FR-18): bên mời vừa gõ tay tên đội, vừa đã tra mã
   đội đó từ Cộng đồng → hai bản ghi cùng `ma_doi_he_thong`, thành tích đối đầu đếm sai. Giờ gộp
   trận sang một bản ghi. Phát hiện khi **xem màn Đối thủ** sau khi chạy luồng thật.
