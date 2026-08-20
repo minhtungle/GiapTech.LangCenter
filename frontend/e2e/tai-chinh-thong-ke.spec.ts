@@ -165,6 +165,48 @@ test.describe('Tài chính', () => {
     await expect(page.locator('dialog[open]').first()).toContainText('120.000 ₫ / 240.000 ₫')
   })
 
+  test('thu quá số phải đóng bị chặn, ô trả về giá trị thật', async ({ page, request }) => {
+    // Lỗi thật (rà soát 20/08): thu 999.000.000₫ cho khoản 100.000₫ được NHẬN, và số đó lan vào
+    // thẻ "Số dư quỹ" / "Đã thu" / "Còn phải thu" mà không có bước nào hỏi lại.
+    await vaoHeThong(page, request, 'thu-qua')
+    await taoCauThu(page, 'Người Bị Gõ Nhầm')
+
+    await page.goto('/tai-chinh')
+    await page.click('button:has-text("Thêm đợt quỹ")')
+    await page.fill('#tenQuy', 'Quỹ E2E thu quá')
+    await page.click('#thanhVien')
+    await page.locator('ul[role=listbox] button').first().click()
+    await dongDropdown(page, '#thanhVien')
+    await page.fill('#dongLoat', '100000')
+    await page.click('button:has-text("Áp cho tất cả")')
+    await page.locator('dialog[open] button[type=submit]').click()
+    await expect(page.locator('dialog[open]')).toHaveCount(0)
+
+    await page.locator('button[title="Thu tiền"]').first().click()
+    const o = page.locator('dialog[open] tbody tr').first().locator('input[type=number]')
+
+    await o.fill('999000000')
+    await page.locator('dialog[open] h2').first().click()   // rời ô để onBlur chạy
+
+    // Thông báo đọc được, KHÔNG phải mã lỗi thô.
+    await expect(page.locator('dialog[open]')).toContainText('vượt quá số phải đóng')
+    await expect(page.locator('dialog[open]')).not.toContainText('THU_QUA_SO_PHAI_DONG')
+
+    // Ô trả về giá trị THẬT. `key={id}-${soTien}` không đủ: khi bị từ chối thì số tiền trong DB
+    // không đổi nên key không đổi, và React để lại con số vừa bị từ chối trong ô — mâu thuẫn
+    // với cột "Còn thiếu" bên cạnh.
+    await expect(page.locator('dialog[open] tbody tr').first().locator('input[type=number]'))
+      .toHaveValue('0')
+
+    // Tiền KHÔNG bị ghi.
+    await expect(page.locator('dialog[open]')).toContainText('0 ₫ / 100.000 ₫')
+
+    // Và thu ĐÚNG số vẫn được — chặn "quá" không được chặn luôn ca hợp lệ.
+    await page.locator('dialog[open] tbody tr').first().locator('input[type=number]').fill('100000')
+    await page.locator('dialog[open] h2').first().click()
+    await expect(page.locator('dialog[open]')).toContainText('100.000 ₫ / 100.000 ₫')
+  })
+
   test('thông tin chuyển khoản: bật/tắt theo đợt, tiền không mất', async ({ page, request }) => {
     await vaoHeThong(page, request, 'chuyen-khoan')
     await taoCauThu(page, 'Người Chuyển Khoản A')

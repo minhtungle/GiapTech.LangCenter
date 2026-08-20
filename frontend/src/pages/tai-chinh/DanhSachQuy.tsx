@@ -525,6 +525,14 @@ function ModalThuTien({
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [daChep, setDaChep] = useState(false)
   const [hoanTac, setHoanTac] = useState<DongGopDto | null>(null)
+  /**
+   * Tăng mỗi lần server TỪ CHỐI một khoản thu, để buộc dựng lại ô nhập.
+   *
+   * `key={id}-${soTienDaDong}` không đủ: khi bị từ chối thì số tiền trong DB KHÔNG đổi, nên key
+   * giữ nguyên và React để lại con số vừa bị từ chối (999.000.000) trong ô — mâu thuẫn với cột
+   * "Còn thiếu" bên cạnh, và người dùng không biết con số nào đang có hiệu lực.
+   */
+  const [lanTuChoi, setLanTuChoi] = useState(0)
 
   const { data, isLoading } = useQuery({
     queryKey: ['quy-chi-tiet', quy.id],
@@ -540,7 +548,10 @@ function ModalThuTien({
       void qc.invalidateQueries({ queryKey: ['tai-chinh-tong-quan'] })
       setMaLoi(null)
     },
-    onError: (e) => setMaLoi(layMaLoi(e)),
+    onError: (e) => {
+      setMaLoi(layMaLoi(e))
+      setLanTuChoi((n) => n + 1)
+    },
   })
 
   /**
@@ -621,7 +632,7 @@ function ModalThuTien({
                         // ghi đè. Nhưng `defaultValue` chỉ có tác dụng ở lần render ĐẦU: bấm
                         // "đã đóng đủ" xong, dữ liệu về 100.000 mà ô vẫn hiện 0 — người dùng
                         // thấy ô mâu thuẫn với cột "Còn thiếu" và tưởng chưa lưu được.
-                        key={`${d.id}-${d.soTienDaDong}`}
+                        key={`${d.id}-${d.soTienDaDong}-${lanTuChoi}`}
                         defaultValue={d.soTienDaDong}
                         // Lưu khi rời ô, không lưu mỗi ký tự: gõ "50000" mà gửi 5 request
                         // thì con số trung gian (5, 50, 500…) cũng bị ghi vào DB.
