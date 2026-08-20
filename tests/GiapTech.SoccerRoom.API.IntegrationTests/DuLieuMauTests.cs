@@ -348,6 +348,57 @@ public class DuLieuMauTests
     }
 
     [Fact]
+    public async Task So_do_chien_thuat_du_hai_doi_va_quan_doi_thu_co_SO_AO()
+    {
+        // Lỗi thật (chạy hệ thống 20/08): quân đối thủ không có `so` nên UI hiện dấu "?" trên
+        // MỌI áo đỏ — bảng chiến thuật trông như dữ liệu lỗi. Thấy trên ảnh chụp, không test nào
+        // bắt được.
+        using var f = new ApiFactory();
+        var res = await f.CreateClient().PostAsync("/api/v1/du-lieu-mau/seed", null);
+        var kq = await res.Content.ReadFromJsonAsync<JsonElement>();
+        var client = await DangNhap(f, kq.GetProperty("clbs")[0].GetProperty("maDoi").GetString()!,
+            kq.GetProperty("clbs")[0].GetProperty("matKhau").GetString()!);
+
+        var tranCoSoDo = (await client.GetFromJsonAsync<JsonElement>("/api/v1/tran-dau?soDong=100"))
+            .GetProperty("duLieu").EnumerateArray()
+            .Select(t => t.GetProperty("id").GetGuid())
+            .ToList();
+
+        var daKiem = 0;
+        foreach (var tranId in tranCoSoDo)
+        {
+            var soDo = await client.GetFromJsonAsync<JsonElement>(
+                $"/api/v1/tran-dau/{tranId}/so-do");
+            if (soDo.ValueKind == JsonValueKind.Null) continue;
+
+            var json = soDo.GetProperty("soDoJson").GetString();
+            if (string.IsNullOrWhiteSpace(json) || json == "{}") continue;
+
+            using var noiDung = JsonDocument.Parse(json);
+            if (!noiDung.RootElement.TryGetProperty("hiep1", out var hiep1)) continue;
+
+            var ta = hiep1.GetProperty("ta").EnumerateArray().ToList();
+            var doiThu = hiep1.GetProperty("doiThu").EnumerateArray().ToList();
+
+            // Đủ HAI đội: sơ đồ chỉ có đội nhà thì không thể hiện được thế trận.
+            Assert.NotEmpty(ta);
+            Assert.NotEmpty(doiThu);
+
+            foreach (var q in doiThu)
+            {
+                // Quân đối thủ phải có `so` — không thì UI hiện "?".
+                Assert.True(q.TryGetProperty("so", out var so) && so.GetInt32() > 0,
+                    "Quân đối thủ thiếu số áo — UI sẽ hiện dấu '?' trên mọi áo.");
+                Assert.True(q.TryGetProperty("viTri", out _));
+            }
+
+            daKiem++;
+        }
+
+        Assert.True(daKiem > 0, "Không có sơ đồ nào để kiểm — bộ mẫu phải sinh sơ đồ.");
+    }
+
+    [Fact]
     public async Task Gio_da_bong_la_gio_hop_ly_theo_gio_Viet_Nam()
     {
         // Lỗi thật: ghi `TimeSpan.Zero` (coi 15h là 15h UTC) làm frontend hiển thị 22:00 —

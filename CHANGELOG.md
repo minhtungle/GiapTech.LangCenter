@@ -130,6 +130,8 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 - API nhận và trả enum dạng **chuỗi** thay vì số.
 
 ### Fixed
+- **Quân đối thủ trên bảng chiến thuật hiện dấu "?"** — bộ dữ liệu mẫu sinh quân đối thủ không có
+  số áo nên `SoDoSan` rơi về fallback. Tìm thấy khi chạy hệ thống và xem ảnh chụp.
 - **Ba luồng tạo bản ghi TRÙNG khi request đồng thời** (rà soát vòng hai 20/08). 5 request song
   song cho ra: 5 trận + 5 đối thủ trùng (chấp nhận lời mời link) · 5 lời mời thách đấu · 5 link
   mời. Nguyên nhân chung: ràng buộc "chỉ một" chỉ kiểm ở tầng ứng dụng (`AnyAsync` rồi `Add`) nên

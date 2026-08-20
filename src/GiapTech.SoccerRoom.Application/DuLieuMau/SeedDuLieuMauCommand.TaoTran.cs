@@ -157,12 +157,19 @@ public partial class SeedDuLieuMauHandler
         };
 
         // Quân đối thủ: id tự sinh, không gắn hồ sơ nào (đội kia không có trong hệ thống ta).
+        //
+        // PHẢI có `so`: thiếu nó thì UI hiện dấu "?" trên mọi áo đối thủ (`tenTrenAo` rơi về
+        // fallback) — bảng chiến thuật trông như dữ liệu lỗi. Thấy trên ảnh chụp thật.
+        //
+        // KHÔNG lật `y` ở đây: SoDoSan tự lật khi VẼ (`yHienThi = 100 - y` cho đối thủ), nên lật
+        // sẵn ở dữ liệu sẽ nhân đôi phép lật và hai thủ môn lại chồng lên nhau.
         object QuanDoiThu((string ViTri, int X, int Y) o, int idx) => new
         {
             id = $"dt-{chiSoTran}-{idx}",
             x = 100 - o.X,
             y = o.Y,
             viTri = o.ViTri,
+            so = idx + 1,
         };
 
         var noiDung = new

@@ -192,6 +192,19 @@ chạy song song ở tầng DB. Nó canh phần kiểm được — ràng buộc
 
 Việc chặn đua thật chỉ kiểm được bằng tay trên PostgreSQL. Đã làm, kết quả ở trên.
 
+## 🟡 T8 — Quân đối thủ trên bảng chiến thuật hiện dấu "?"
+
+**Tìm thấy khi chạy hệ thống và xem ảnh chụp**, không test nào bắt được.
+
+Bộ dữ liệu mẫu sinh quân đối thủ **không có `so`** (số áo), nên `SoDoSan` rơi về fallback và hiện
+dấu `?` trên mọi áo đỏ — bảng chiến thuật trông như dữ liệu lỗi.
+
+**Xử lý:** thêm `so = idx + 1` cho quân đối thủ. **Không** lật `y` ở dữ liệu — `SoDoSan` tự lật khi
+vẽ (`yHienThi = 100 - y` cho đối thủ), lật sẵn sẽ nhân đôi phép lật và hai thủ môn lại chồng nhau.
+
+Đã kiểm lại bằng ảnh: số áo hiện hết, thủ môn đối thủ ở đầu sân, thủ môn nhà ở đáy sân — hai đội
+đối diện nhau đúng.
+
 ## Chưa xét sau hai vòng
 
 - **Hiệu năng dưới tải** — chưa đo với 50+ CLB, 1000+ trận.
