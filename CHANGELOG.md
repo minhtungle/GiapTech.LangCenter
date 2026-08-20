@@ -56,6 +56,23 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
   thành `case` tường minh sẽ khiến QR ghi lên `anh_bia_url`, mất ảnh bìa và làm QR hiện công khai.
 - Canh bởi 8 test tích hợp mới (6 phản chứng) + 1 test E2E.
 
+**Lời mời thách đấu qua link/QR (FR-18)**
+- Sinh link + QR mời đối thủ **chưa liên kết**. Họ mở link (KHÔNG cần đăng nhập để xem), đăng
+  nhập hoặc **tạo đội mới ngay tại đó**, chấp nhận → đối thủ "chỉ là cái tên" **nâng cấp thành
+  CLB có ID thật**, trận vào lịch cả hai bên.
+- Xử lý **13 trường hợp** — xem [FR-18](./docs/nghiep-vu/loi-moi-qua-link.md) và
+  [ADR-0005](./docs/kien-truc/adr/0005-loi-moi-qua-link.md). Gồm: link bị chuyển tiếp (xác nhận
+  danh tính + huỷ liên kết được) · hết hạn · thu hồi · dùng token hai lần · mời chéo (gộp trận) ·
+  trận đã đá xong · đối thủ trùng lặp (gộp).
+- Bảng `LOI_MOI_LINK` RIÊNG, không mở rộng `LOI_MOI_BAT_DOI`: bảng đó cần cả hai tenant, còn
+  lời mời link chưa biết bên nhận là ai.
+- Token lưu **hash** (SHA-256), dùng lại cơ chế token đặt lại mật khẩu. Truyền trong **body**
+  không phải URL — URL đi vào log Caddy, history trình duyệt, và header `Referer`.
+- **Mở đăng ký CLB ở production** (nợ N4): luồng "đối thủ chưa có tài khoản" là ca phổ biến nhất
+  và không chạy được nếu đăng ký bị chặn. ⚠️ Rate limit ở Caddy giờ là **bắt buộc** trước khi lên
+  Internet (nợ N3).
+- 20 test tích hợp, 9 phản chứng.
+
 **Bộ dữ liệu mẫu để test tay**
 - `POST /api/v1/du-lieu-mau/seed` (chỉ Development): 7 CLB, 39 cầu thủ, 64 trận, 8 đợt quỹ,
   4 lời mời thách đấu — dựng trong ~8 giây. Xem [docs/du-lieu-mau.md](./docs/du-lieu-mau.md).
@@ -113,6 +130,11 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 - API nhận và trả enum dạng **chuỗi** thay vì số.
 
 ### Fixed
+- **Đối thủ trùng lặp khi liên kết** (ca 13 của FR-18): bên mời vừa gõ tay tên đội, vừa đã tra mã
+  đội đó từ Cộng đồng → hai bản ghi cùng `ma_doi_he_thong`, thành tích đối đầu đếm sai. Giờ gộp
+  trận sang một bản ghi. Phát hiện khi **xem màn Đối thủ** sau khi chạy luồng thật.
+- **CLB khác thu hồi được link của mình** nếu bỏ Query Filter — test cách ly cũ chỉ canh chiều
+  ĐỌC (danh sách), không canh chiều GHI qua id trực tiếp. Đã thêm test.
 - **Bốn lỗi trong bộ dữ liệu mẫu**, cả bốn chỉ lộ khi xem con số trên màn hình: 18 người "đóng"
   1₫–17₫ vì `_ => canDong` trong switch **lồng** bị C# hiểu là pattern gán biến; trận hiện 22:00
   vì ghi `TimeSpan.Zero` thay vì UTC+7; bảng xếp hạng thiếu 4 người và **cột "Cứu thua" trống

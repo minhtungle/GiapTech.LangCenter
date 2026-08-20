@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Plus, Pencil, Trash2, Search } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, Link2 } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong, Textarea,
 } from '@/components/ui'
 import { Modal, ModalChan } from '@/components/ui/Modal'
 import { PhanTrang } from '@/components/ui/PhanTrang'
+import { ModalMoiQuaLink } from '@/components/ModalMoiQuaLink'
 
 interface DoiThuDto {
   id: string
@@ -15,6 +16,8 @@ interface DoiThuDto {
   lienHe: string | null
   ghiChu: string | null
   soTranDaDau: number
+  /** Mã đội CLB trong hệ thống — có nghĩa là đối thủ ĐÃ liên kết. */
+  maDoiHeThong: string | null
 }
 
 /** Sổ đối thủ — nền cho FR-09 (lời mời) và FR-10 (trận đấu). */
@@ -28,6 +31,7 @@ export default function DoiThu() {
   const [dangSua, setDangSua] = useState<DoiThuDto | null>(null)
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
+  const [moiLink, setMoiLink] = useState<DoiThuDto | null>(null)
 
   const { data: ketQua, isLoading } = useQuery({
     queryKey: ['doi-thu', timKiem, trang, soDong],
@@ -137,7 +141,16 @@ export default function DoiThu() {
           <tbody>
             {data.map((d) => (
               <tr key={d.id} className="hover:bg-muted/40">
-                <Td className="font-medium">{d.tenDoi}</Td>
+                <Td className="font-medium">
+                  {d.tenDoi}
+                  {/* Ca 12: tên trong sổ GIỮ NGUYÊN như bạn gõ; mã đội hiện bên dưới để biết
+                      đối thủ này đã liên kết với CLB nào trong hệ thống. */}
+                  {d.maDoiHeThong && (
+                    <span className="mt-0.5 block font-mono text-xs font-normal text-muted-foreground">
+                      {d.maDoiHeThong}
+                    </span>
+                  )}
+                </Td>
                 <Td className="text-muted-foreground">{d.lienHe ?? '—'}</Td>
                 <Td>
                   <Badge variant={d.soTranDaDau > 0 ? 'accent' : 'muted'}>{d.soTranDaDau}</Badge>
@@ -145,6 +158,18 @@ export default function DoiThu() {
                 <Td className="text-muted-foreground">{d.ghiChu ?? '—'}</Td>
                 <Td>
                   <div className="flex gap-1">
+                    {/* Ca 4: đối thủ ĐÃ liên kết thì dùng luồng thách đấu ở Cộng đồng, không
+                        sinh link. Ẩn nút thay vì để họ bấm rồi nhận lỗi. */}
+                    {!d.maDoiHeThong && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title={t('moiLink.moiQuaLink')}
+                        onClick={() => setMoiLink(d)}
+                      >
+                        <Link2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     <Button variant="ghost" size="sm" title={t('chung.sua')} onClick={() => moSua(d)}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
@@ -214,6 +239,17 @@ export default function DoiThu() {
           </ModalChan>
         </form>
       </Modal>
+
+      {moiLink && (
+        <ModalMoiQuaLink
+          doiThuId={moiLink.id}
+          tenDoiThu={moiLink.tenDoi}
+          onDong={() => {
+            setMoiLink(null)
+            void qc.invalidateQueries({ queryKey: ['doi-thu'] })
+          }}
+        />
+      )}
     </div>
   )
 }
