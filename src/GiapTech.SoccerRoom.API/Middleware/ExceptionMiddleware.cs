@@ -1,4 +1,5 @@
 using FluentValidation;
+using Microsoft.EntityFrameworkCore;
 using GiapTech.SoccerRoom.Application.Common.Exceptions;
 
 namespace GiapTech.SoccerRoom.API.Middleware;
@@ -43,6 +44,17 @@ public class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddlewa
             logger.LogWarning(ex, "Lỗi nghiệp vụ {MaLoi}", ex.Ma);
             await TraLoi(context, StatusCodes.Status400BadRequest, ex.Ma, ex.DuLieu);
         }
+        catch (DbUpdateException ex) when (LaViPhamUnique(ex))
+        {
+            // UNIQUE index ở tầng DB là chốt chặn CUỐI cho các ràng buộc "chỉ một": vote MVP,
+            // phản hồi tham gia, đối thủ theo mã đội, lời mời đang chờ. Kiểm ở tầng ứng dụng
+            // (`AnyAsync` rồi `Add`) không đủ — hai request song song đều thấy "chưa có".
+            //
+            // Không có nhánh này thì vi phạm UNIQUE thành 500 "Lỗi hệ thống", người dùng tưởng
+            // app hỏng trong khi thực ra họ bấm hai lần và lần thứ hai bị chặn đúng.
+            logger.LogWarning(ex, "Vi phạm ràng buộc UNIQUE — thao tác trùng");
+            await TraLoi(context, StatusCodes.Status409Conflict, "THAO_TAC_TRUNG", null);
+        }
         catch (Exception ex)
         {
             // Lỗi ngoài dự kiến: ghi log đầy đủ, trả về client mã chung không lộ nội tình.
@@ -60,5 +72,23 @@ public class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddlewa
         context.Response.Clear();
         context.Response.StatusCode = statusCode;
         await context.Response.WriteAsJsonAsync(new { errorCode = maLoi, duLieu });
+    }
+
+    /// <summary>
+    /// Vi phạm UNIQUE của PostgreSQL — SQLSTATE 23505.
+    ///
+    /// Đọc mã SQLSTATE thay vì so chuỗi message: message đổi theo phiên bản và ngôn ngữ server.
+    /// Dùng `Npgsql.PostgresException` gián tiếp qua tên kiểu để Middleware không phải tham
+    /// chiếu Npgsql — API vốn không biết provider nào đang chạy.
+    /// </summary>
+    private static bool LaViPhamUnique(DbUpdateException ex)
+    {
+        for (var e = ex.InnerException; e is not null; e = e.InnerException)
+        {
+            if (e.GetType().GetProperty("SqlState")?.GetValue(e) as string == "23505")
+                return true;
+        }
+
+        return false;
     }
 }
