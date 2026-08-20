@@ -24,7 +24,23 @@ public static class DependencyInjection
 
         services.AddDbContext<AppDbContext>((sp, options) =>
             options
-                .UseNpgsql(configuration.GetConnectionString("Default"))
+                // EnableRetryOnFailure: thử lại các lỗi kết nối nhất thời thay vì để chúng nổi
+                // lên thành 500.
+                //
+                // Không có nó thì mỗi lần PostgreSQL restart (deploy, failover, `docker compose
+                // up`), API vẫn giữ pool trỏ tới tiến trình cũ và **request đầu tiên sau đó chết
+                // hẳn** — người dùng thấy "Đã có lỗi xảy ra", các request sau tự lành. Đã gặp
+                // thật 20/08 khi dựng lại cụm.
+                //
+                // Đánh đổi: execution strategy không cho phép transaction do người dùng TỰ mở
+                // (`BeginTransaction`) vì nó không thể phát lại cả khối. Hiện không chỗ nào trong
+                // `src/` tự mở transaction — đã rà. Nếu sau này cần, dùng
+                // `db.Database.CreateExecutionStrategy().ExecuteAsync(...)` bọc quanh, đừng bỏ cờ này.
+                .UseNpgsql(configuration.GetConnectionString("Default"),
+                    npgsql => npgsql.EnableRetryOnFailure(
+                        maxRetryCount: 3,
+                        maxRetryDelay: TimeSpan.FromSeconds(2),
+                        errorCodesToAdd: null))
                 .UseSnakeCaseNamingConvention());
 
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
