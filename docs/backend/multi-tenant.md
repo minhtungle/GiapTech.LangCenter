@@ -52,7 +52,7 @@ Integration test bắt buộc cho mỗi module: tạo dữ liệu ở tenant A, 
 | **`LOI_MOI_BAT_DOI`** — bảng duy nhất thuộc **hai** tenant | Không thể có filter (một lời mời phải hiện ở hòm thư CẢ hai bên) | Mọi truy vấn tự lọc `TenantGuiId == toi \|\| TenantNhanId == toi`; ghi thì kiểm đúng vai (chỉ bên nhận trả lời, chỉ bên gửi huỷ) — canh bởi `CongDongTests` |
 | **Cộng đồng** (`CongDongDtos`) | Đọc `TENANT` + đếm `TRAN_DAU` của CLB khác bằng `IgnoreQueryFilters` | Từng phép đếm phải có `td.TenantId == t.Id`; DTO khoá cứng danh sách field, có test so khớp chính xác |
 
-### Ba endpoint đọc ngoài tenant, xếp theo mức rộng
+### Bốn endpoint đọc/ghi ngoài tenant, xếp theo mức rộng
 
 Càng xuống dưới càng lộ nhiều. Sửa gì ở đây cũng phải đọc lại cả bảng này:
 

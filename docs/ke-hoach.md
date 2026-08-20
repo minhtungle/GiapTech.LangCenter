@@ -5,12 +5,12 @@
 ## Tiến độ tổng
 
 ```
-Nghiệp vụ  ████████████████  17/17 FR chạy đầu-cuối
+Nghiệp vụ  ████████████████  18/18 FR chạy đầu-cuối
 Hạ tầng    ████████████░░░░  CI/CD sẵn sàng, chờ VPS thật
 Còn lại    ██████░░░░░░░░░░  4 việc cần tài khoản/hạ tầng ngoài + 3 nợ kỹ thuật
 ```
 
-## Trạng thái 17 mã FR
+## Trạng thái 18 mã FR
 
 | Mã | Chức năng | Backend | Frontend | Ghi chú |
 |---|---|:---:|:---:|---|
@@ -31,6 +31,7 @@ Còn lại    ██████░░░░░░░░░░  4 việc cần t
 | FR-15 | Danh sách quỹ | ✅ | ✅ | Tiến độ thu, màu theo trạng thái |
 | FR-16 | Thêm/Cập nhật quỹ | ✅ | ✅ | Kèm thông tin chuyển khoản (QR + số TK) theo từng đợt. Nhắc nợ = sao chép danh sách; SMS/Email chưa làm |
 | FR-17 | Cộng đồng (mới 18/08) | ✅ | ✅ | Danh sách CLB, chi tiết công khai, lời mời thách đấu |
+| FR-18 | Lời mời qua link/QR (mới 20/08) | ✅ | ✅ | 13 trường hợp; nâng cấp đối thủ tên gõ tay thành CLB có ID |
 
 ✅ xong · 🟡 dùng được nhưng thiếu phần · ⬜ chưa làm
 
@@ -43,11 +44,11 @@ Còn lại    ██████░░░░░░░░░░  4 việc cần t
 | Cách ly tenant (2 tầng phòng vệ tự động + test) | ✅ |
 | Phân quyền động đọc từ DB + cache | ✅ |
 | Frontend: layout, i18n, design token, auto-refresh token | ✅ |
-| 276 test (42 unit + 234 integration) | ✅ |
+| 295 test (42 unit + 253 integration) | ✅ |
 | Upload ảnh qua MinIO (avatar, logo, ảnh bìa) | ✅ |
 | **Dockerfile cho API** | ✅ 2 giai đoạn, chạy user thường |
 | **`docker compose up` chạy được** | ✅ 5 container, API healthy, migration tự áp |
-| Test E2E frontend (37 test Playwright) | ✅ |
+| Test E2E frontend (40 test Playwright) | ✅ |
 | CI/CD 4 job: test → E2E → đẩy image → deploy | ✅ |
 | Triển khai VPS (domain, HTTPS, backup) | 🟡 cần server thật |
 
@@ -61,8 +62,8 @@ Còn lại    ██████░░░░░░░░░░  4 việc cần t
 |---|---|---|---|
 | ~~N1~~ | ~~Dockerfile cho API~~ | — | ✅ Xong 16/08 |
 | ~~N2~~ | ~~Test E2E frontend~~ | — | ✅ Xong 17/08 — nay 35 test Playwright |
-| N3 | **Rate limit ba endpoint đọc ngoài tenant ở tầng Caddy** | ~1h | `tra-cuu-clb/{maDoi}` · `cong-dong` · `cong-dong/{maDoi}`. Không gian mã `31^7` làm việc dò **chậm**, không làm nó **bất khả thi**; mà `cong-dong` thì liệt kê thẳng nên còn dễ hơn. Phải chặn trước khi mở ra Internet — xem [ba endpoint đọc ngoài tenant](./backend/multi-tenant.md#ba-endpoint-đọc-ngoài-tenant-xếp-theo-mức-rộng) |
-| N4 | **Không có đường tạo CLB ở production** | ~4h | `/dang-ky-clb` chỉ bật ở Development (mở ẩn danh ở production là cho phép sinh CLB rác không giới hạn). Cần quy trình duyệt tay hoặc xác thực cấp hệ thống — **không có nó thì không ai dùng được hệ thống sau khi deploy** |
+| N3 | 🔴 **Rate limit ở tầng Caddy — BẮT BUỘC trước khi lên Internet** | ~1h | `tra-cuu-clb/{maDoi}` · `cong-dong` · `cong-dong/{maDoi}`. Không gian mã `31^7` làm việc dò **chậm**, không làm nó **bất khả thi**; mà `cong-dong` thì liệt kê thẳng nên còn dễ hơn. Từ 20/08 nặng hơn: **đăng ký CLB đã mở tự do** (nợ N4) nên một script tạo được vô hạn CLB rác, và chúng hiện hết lên Cộng đồng. Cộng thêm `POST /moi-qua-link/xem` là endpoint ẩn danh. Xem [bốn endpoint đọc/ghi ngoài tenant](./backend/multi-tenant.md#bốn-endpoint-đọcghi-ngoài-tenant-xếp-theo-mức-rộng) |
+| ~~N4~~ | ~~Không có đường tạo CLB ở production~~ | — | `/dang-ky-clb` chỉ bật ở Development (mở ẩn danh ở production là cho phép sinh CLB rác không giới hạn). ✅ **Xong 20/08** — mở tự do, vì luồng lời mời qua link (FR-18) cần nó |
 | N5 | **E2E để lại tenant rác trong DB dev** | ~2h | 76 CLB rác, và từ 18/08 chúng **hiện trên Cộng đồng của mọi người**. Hai hướng: DB riêng cho E2E, hoặc bước dọn sau khi chạy |
 
 | N6 | **Màn Tổng quan (`/`) trống** | ~3h | Chỉ hiện "Xin chào, admin". Không thuộc FR nào nên bị bỏ sót khi liệt kê "17/17 FR xong" — phát hiện 20/08 khi đi qua từng màn với bộ dữ liệu mẫu. Là màn ĐẦU TIÊN người dùng thấy sau đăng nhập |
