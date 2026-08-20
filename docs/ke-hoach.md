@@ -44,7 +44,7 @@ Còn lại    ██████░░░░░░░░░░  4 việc cần t
 | Cách ly tenant (2 tầng phòng vệ tự động + test) | ✅ |
 | Phân quyền động đọc từ DB + cache | ✅ |
 | Frontend: layout, i18n, design token, auto-refresh token | ✅ |
-| 341 test (57 unit + 284 integration) | ✅ |
+| 347 test (57 unit + 290 integration) | ✅ |
 | Upload ảnh qua MinIO (avatar, logo, ảnh bìa) | ✅ |
 | **Dockerfile cho API** | ✅ 2 giai đoạn, chạy user thường |
 | **`docker compose up` chạy được** | ✅ 5 container, API healthy, migration tự áp |
@@ -64,7 +64,7 @@ Còn lại    ██████░░░░░░░░░░  4 việc cần t
 | ~~N2~~ | ~~Test E2E frontend~~ | — | ✅ Xong 17/08 — nay 35 test Playwright |
 | N3 | 🔴 **Rate limit ở tầng Caddy — BẮT BUỘC trước khi lên Internet** | ~1h | `tra-cuu-clb/{maDoi}` · `cong-dong` · `cong-dong/{maDoi}`. Không gian mã `31^7` làm việc dò **chậm**, không làm nó **bất khả thi**; mà `cong-dong` thì liệt kê thẳng nên còn dễ hơn. Từ 20/08 nặng hơn: **đăng ký CLB đã mở tự do** (nợ N4) nên một script tạo được vô hạn CLB rác, và chúng hiện hết lên Cộng đồng. Cộng thêm **hai** endpoint ẩn danh nhận đầu vào do người gọi tự đặt: `POST /moi-qua-link/xem` và `GET /auth/ten-doi/{maDoi}` (từ 20/08). Xem [năm endpoint đọc/ghi ngoài tenant](./backend/multi-tenant.md#năm-endpoint-đọcghi-ngoài-tenant-xếp-theo-mức-rộng) |
 | ~~N4~~ | ~~Không có đường tạo CLB ở production~~ | — | `/dang-ky-clb` chỉ bật ở Development (mở ẩn danh ở production là cho phép sinh CLB rác không giới hạn). ✅ **Xong 20/08** — mở tự do, vì luồng lời mời qua link (FR-18) cần nó |
-| N5 | **E2E để lại tenant rác trong DB dev** | ~2h | Đã dọn 67 CLB rác ngày 20/08 (chủ sản phẩm đồng ý, có pg_dump trước, chạy trong transaction, còn đúng 7 CLB mẫu). **Gốc vấn đề còn nguyên**: mỗi lần chạy E2E lại sinh ~44 CLB mới. Từ 18/08 chúng **hiện trên Cộng đồng của mọi người**. Mỗi lần chạy E2E lại sinh thêm ~1 CLB/test. Hai hướng: DB riêng cho E2E, hoặc bước dọn sau khi chạy |
+| ~~N5~~ | ~~E2E để lại tenant rác trong DB dev~~ | — | ✅ **Xong 20/08.** Mỗi test tự tạo CLB riêng nên mỗi lần chạy để lại ~44 CLB, và từ 18/08 chúng hiện lên trang Cộng đồng của mọi người — đo thật: **242 rác / 249 tổng**, toàn bộ trang đầu là rác. Dọn tay một lần rồi tích lại ngay sau lần chạy kế tiếp, nên phải tự động: `globalTeardown` gọi `POST /du-lieu-mau/don-tenant-test`. Kiểm chứng 2 lần chạy liên tiếp: xoá 290 rồi 48 CLB, mỗi lần về đúng 7 CLB mẫu |
 | N8 | **E2E flake ~1/44 mỗi lần chạy** | ~1h | Quan sát 20/08 qua 4 lần chạy liên tiếp: 43/44 · 43/44 · 43/44 · **44/44**, và **đỏ một test KHÁC mỗi lần** (phân trang → địa chỉ tài khoản → chuyển khoản). Chạy riêng test đỏ thì luôn xanh. Khác test mỗi lần ⇒ hạ tầng, không phải lỗi tính năng — nghi là đua giữa `invalidateQueries` và `waitForTimeout` cố định. Chưa chẩn được nên chưa sửa; đừng dùng "chạy lại thấy xanh" làm kết luận |
 | ~~N7~~ | ~~Thiếu `EnableRetryOnFailure` cho Npgsql~~ | — | ✅ **Xong 20/08.** Kiểm chứng bằng phản chứng: restart postgres rồi gọi ngay — bản **không** retry trả `#1 -> 500`, bản **có** retry trả `#1 -> 200`. Đã rà `src/`: không chỗ nào tự mở `BeginTransaction` nên retry an toàn |
 | N6 | **Màn Tổng quan (`/`) trống** | ~3h | Chỉ hiện "Xin chào, admin". Không thuộc FR nào nên bị bỏ sót khi liệt kê "17/17 FR xong" — phát hiện 20/08 khi đi qua từng màn với bộ dữ liệu mẫu. Là màn ĐẦU TIÊN người dùng thấy sau đăng nhập |

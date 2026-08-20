@@ -34,6 +34,12 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
   `GET /auth/ten-doi/{maDoi:length(7)}` ẩn danh, chỉ trả `tenDoi`, chỉ khớp mã **chính xác** —
   **không** có đường tìm theo tên (quyết định 20/08, xem nhật ký).
 
+**Hạ tầng & chất lượng**
+- `EnableRetryOnFailure` cho Npgsql — không có nó thì mỗi lần PostgreSQL restart, request **đầu
+  tiên** sau đó trả 500 "Đã có lỗi xảy ra" còn các request sau tự lành.
+- `POST /du-lieu-mau/don-tenant-test` (chỉ Development) + `globalTeardown` của Playwright — E2E
+  không còn để lại CLB rác trên trang Cộng đồng.
+
 **Quản trị hệ thống (FR-03 → FR-06)**
 - CRUD tài khoản · hồ sơ cầu thủ · nhóm quyền · thiết lập chung.
 - Phân quyền động: `[RequirePermission]` + policy sinh động + handler đọc `QUYEN_CHUC_NANG` có cache.

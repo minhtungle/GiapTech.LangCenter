@@ -32,4 +32,23 @@ public class DuLieuMauController(ISender sender, IWebHostEnvironment env) : Cont
         var kq = await sender.Send(new SeedDuLieuMauCommand(xoaDuLieuCu), ct);
         return Ok(kq);
     }
+
+    /// <summary>
+    /// Xoá các CLB do test E2E sinh ra (tên bắt đầu bằng <c>"E2E "</c>).
+    ///
+    /// Gọi ở bước teardown của Playwright. Không có bước này thì mỗi lần chạy cả bộ để lại
+    /// ~44 CLB, chúng hiện lên trang Cộng đồng của mọi người, và sau vài lần chạy thì trang đó
+    /// không còn dùng được để test tay — đo thật 20/08: 242 CLB rác trên 249.
+    ///
+    /// Không nhận tham số nào: tiền tố là cố định trong handler, không có chế độ "xoá hết".
+    /// Dừng hẳn (400 `DON_TENANT_TEST_VUONG_CLB_THAT`) nếu có lời mời bắc giữa CLB test và CLB thật.
+    /// </summary>
+    [HttpPost("don-tenant-test")]
+    [AllowAnonymous]
+    public async Task<IActionResult> DonTenantTest(CancellationToken ct)
+    {
+        if (!env.IsDevelopment()) return NotFound();
+
+        return Ok(await sender.Send(new DonTenantTestCommand(), ct));
+    }
 }

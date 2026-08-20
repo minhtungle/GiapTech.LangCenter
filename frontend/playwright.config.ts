@@ -23,6 +23,10 @@ export default defineConfig({
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   timeout: 30_000,
 
+  // Xoá CLB do test sinh ra sau khi chạy xong. Không có bước này thì mỗi lần chạy để lại ~44
+  // CLB và chúng hiện lên trang Cộng đồng của mọi người (nợ N5).
+  globalTeardown: './e2e/don-rac.ts',
+
   use: {
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:8080',
     // Caddy tự phát chứng chỉ cho `localhost` bằng CA nội bộ của nó, mà CA đó không nằm trong
