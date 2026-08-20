@@ -130,6 +130,12 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 - API nhận và trả enum dạng **chuỗi** thay vì số.
 
 ### Fixed
+- **Ba luồng tạo bản ghi TRÙNG khi request đồng thời** (rà soát vòng hai 20/08). 5 request song
+  song cho ra: 5 trận + 5 đối thủ trùng (chấp nhận lời mời link) · 5 lời mời thách đấu · 5 link
+  mời. Nguyên nhân chung: ràng buộc "chỉ một" chỉ kiểm ở tầng ứng dụng (`AnyAsync` rồi `Add`) nên
+  hai request song song đều thấy "chưa có". Vote MVP không bị vì đã có UNIQUE ở DB.
+  Thêm ba UNIQUE index có filter riêng, và middleware trả **409 `THAO_TAC_TRUNG`** cho SQLSTATE
+  23505 thay vì 500 "Lỗi hệ thống".
 - **Rà soát toàn hệ thống 20/08** — xem [docs/ra-soat-20-08.md](./docs/ra-soat-20-08.md). Năm
   thiếu sót, tất cả đã sửa:
   - **Thu quỹ QUÁ số phải đóng** được nhận: thu 999.000.000₫ cho khoản 100.000₫ → tiến độ hiện

@@ -126,3 +126,74 @@ Còn lại hai việc, cả hai **không chặn** việc dùng nội bộ:
 - **Hiệu năng dưới tải** — chưa đo với 50+ CLB, 1000+ trận.
 - **Đồng thời** — hai người sửa cùng đợt quỹ, hai người chấp nhận cùng lời mời link.
 - **Trình duyệt cũ / mobile thật** — chỉ kiểm Chromium ở 1440px và 1280px.
+
+
+---
+
+# Rà soát vòng hai — cùng ngày
+
+Vòng một kiểm luồng đơn lẻ. Vòng hai nhắm vào bốn thứ chưa chạm: **đồng thời**, **phân quyền từng
+endpoint**, **cách ly tenant qua id trực tiếp**, và biên dữ liệu còn lại.
+
+## Đã kiểm và ĐÚNG
+
+| Nhóm | Kết quả |
+|---|---|
+| **Cách ly tenant qua id trực tiếp** — 9 đường (GET/PUT/DELETE cầu thủ, trận, quỹ, mẫu đội hình, đóng góp, khoản chi, đội hình) | Tất cả **404**. Global Query Filter kín cả chiều đọc và ghi |
+| **Phân quyền** — 16 endpoint ghi với tài khoản chỉ có quyền Xem | Tất cả **403**. Không hở chỗ nào |
+| **Thu tiền đồng thời** (10 request cùng một khoản) | `100.000/100.000` — không cộng dồn |
+| **Vote MVP đồng thời** (10 request) | 1 phiếu. UNIQUE ở DB làm việc (quy tắc #8) |
+| **Trả lời lời mời đăng ký đồng thời** | Mỗi người đúng 1 hàng. UNIQUE `(loi_moi_id, cau_thu_id)` làm việc |
+
+## 🔴 T7 — Ba luồng thiếu UNIQUE, đồng thời tạo bản ghi trùng
+
+**Tái hiện:** 5 request đồng thời, mỗi luồng.
+
+| Luồng | Trước sửa | Đúng |
+|---|---:|---:|
+| Chấp nhận lời mời link | **5 trận + 5 đối thủ trùng** | 1 |
+| Gửi lời mời thách đấu | **5 lời mời đang chờ** | 1 |
+| Tạo link mời | **5 link đang chờ** | 1 |
+
+**Nguyên nhân chung:** mọi ràng buộc "chỉ một" được kiểm bằng `AnyAsync`/`FirstOrDefaultAsync` rồi
+`Add`. Hai request song song **đều thấy "chưa có"** và đều ghi.
+
+Vote MVP và phản hồi tham gia **không bị** — vì chúng đã có UNIQUE index ở DB. Đó chính là bằng
+chứng cách sửa đúng là gì.
+
+**Xử lý:** thêm ba UNIQUE index, mỗi cái có **filter** riêng:
+
+| Index | Filter | Vì sao cần filter |
+|---|---|---|
+| `UQ_DOI_THU_tenant_ma_doi_he_thong` | `ma_doi_he_thong IS NOT NULL` | Đối thủ tên gõ tay trùng bao nhiêu cũng được — "FC Sông Hàn" của tôi và của bạn là hai đội khác nhau |
+| `UQ_LOI_MOI_BAT_DOI_dang_cho` | `trang_thai = 0` | Đá xong rồi mời lại lần sau là hợp lệ |
+| `UQ_LOI_MOI_LINK_dang_cho` | `trang_thai = 0 AND thu_hoi_luc IS NULL` | Thu hồi rồi thì gửi lại được |
+
+Thiếu filter thì UNIQUE chặn luôn ca hợp lệ — tệ hơn lỗi ban đầu.
+
+Kèm theo: middleware xử lý `DbUpdateException` với SQLSTATE **23505** → trả **409 `THAO_TAC_TRUNG`**
+thay vì 500 "Lỗi hệ thống". Không có nhánh này thì người dùng bấm hai lần sẽ tưởng app hỏng.
+
+**Đã kiểm lại trên PostgreSQL thật sau khi sửa:** cả ba luồng, 5 request đồng thời → **1 bản ghi**.
+
+## Hai lần tôi sai trong vòng này
+
+**Đọc sai ca F.** Tôi thấy "9 phản hồi ThamGia" sau 5 request đồng thời và tưởng là lỗi. Kiểm kỹ:
+9 là số **người** trả lời trong bộ dữ liệu mẫu, và mỗi người đúng 1 hàng. Không phải lỗi.
+
+**Đoán sai tên bảng khi dọn dữ liệu.** Viết `QUYEN_CHUCNANG` thay vì `QUYEN_CHUC_NANG` — transaction
+rollback, **không mất dữ liệu gì**. Lấy tên thật từ `pg_tables` rồi chạy lại.
+
+## Giới hạn của bộ test
+
+`DongThoiTests` **không mô phỏng được đua thật**: provider InMemory không có UNIQUE index và không
+chạy song song ở tầng DB. Nó canh phần kiểm được — ràng buộc **được khai** trong model với filter
+đúng, và tầng ứng dụng trả mã lỗi đúng cho request thứ hai.
+
+Việc chặn đua thật chỉ kiểm được bằng tay trên PostgreSQL. Đã làm, kết quả ở trên.
+
+## Chưa xét sau hai vòng
+
+- **Hiệu năng dưới tải** — chưa đo với 50+ CLB, 1000+ trận.
+- **Trình duyệt cũ / mobile thật** — chỉ Chromium ở 1280–1440px.
+- **Khôi phục sau sự cố** — chưa thử restore từ backup.
