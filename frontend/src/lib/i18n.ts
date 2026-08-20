@@ -46,6 +46,8 @@ const vi = {
     moTa: 'Nhập mã đội, tên đăng nhập và mật khẩu',
     maDoi: 'Mã đội',
     maDoiGoiY: '7 ký tự, không phân biệt hoa thường',
+    dangTraTenDoi: 'Đang tra mã đội…',
+    khongTimThayDoi: 'Không tìm thấy đội tương ứng',
     chuaCoClb: 'Chưa có câu lạc bộ?',
     username: 'Tên đăng nhập',
     matKhau: 'Mật khẩu',

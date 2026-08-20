@@ -21,6 +21,37 @@ không lưu thì họ mất đường vào, và không có cách tự tra lại.
 
 Cài đặt: `Domain/Common/MaDoi.cs`, kiểm chứng bởi `MaDoiTests`.
 
+### Tra tên đội ngay trên trang đăng nhập (20/08/2026)
+
+Gõ đủ 7 ký tự thì trang hiện luôn tên CLB tương ứng; sai thì hiện "Không tìm thấy đội tương ứng".
+Trước đó gõ sai mã chỉ biết sau khi điền hết form và nhận "sai thông tin đăng nhập" — không phân
+biệt được sai mã hay sai mật khẩu.
+
+`GET /auth/ten-doi/{maDoi:length(7)}` · `[AllowAnonymous]` · chỉ trả `{ "tenDoi": "..." }`.
+
+**Không có đường tìm theo tên.** Yêu cầu ban đầu của chủ sản phẩm có cả phần đó (hiện các đội gần
+giống để chọn), nhưng endpoint này buộc phải ẩn danh — người dùng đang **ở** trang đăng nhập nên
+chưa thể có token. Cho tìm theo tên nghĩa là ai cũng liệt kê được toàn bộ CLB kèm mã đội. Chủ sản
+phẩm chốt: *"thôi, giờ chỉ tìm theo mã đội chính xác."*
+
+Ba trạng thái trên giao diện, trạng thái đầu là chỗ dễ sai nhất:
+
+| Ô mã | Hiện gì |
+|---|---|
+| Chưa đủ 7 ký tự | Câu gợi ý "7 ký tự, không phân biệt hoa thường" — **không** được hiện "không tìm thấy" khi người dùng còn đang gõ |
+| Đủ 7, có CLB | `✓ <tên đội>` |
+| Đủ 7, không có CLB | "Không tìm thấy đội tương ứng" |
+
+**Điểm căng có ý thức với quy tắc ở mục Luồng bên dưới** ("không tiết lộ tenant nào tồn tại"):
+endpoint này *có* tiết lộ một mã đội là có thật. Đánh đổi được chấp nhận vì mã đội **không phải bí
+mật** — nó được in ra cho cả CLB dùng để đăng nhập, dán trên nhóm chat, đọc qua điện thoại. Điều
+phải giữ bí mật là *username + mật khẩu*, và endpoint này không nói gì về chúng. Quy tắc kia vẫn
+áp nguyên cho chính lệnh đăng nhập: sai mã, sai username, sai mật khẩu đều trả **cùng một mã lỗi**.
+
+Canh bởi `TraTenDoiTests` (12 test) và `e2e/dang-nhap-tra-ma.spec.ts` (3 test). Nợ **N3 rate limit
+ở Caddy** thành chặn cứng trước khi mở ra Internet — xem
+[năm endpoint ngoài tenant](../backend/multi-tenant.md#năm-endpoint-đọcghi-ngoài-tenant-xếp-theo-mức-rộng).
+
 ### Luồng
 
 1. Người dùng nhập ID đội + username + password.

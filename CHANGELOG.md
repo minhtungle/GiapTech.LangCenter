@@ -28,6 +28,11 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
   hồi toàn bộ phiên.
 - Middleware buộc đổi mật khẩu lần đầu, chặn ở tầng API.
 - Cả refresh token lẫn token đặt lại mật khẩu đều lưu **hash**, không lưu token thô.
+- **Trang đăng nhập tra tên đội theo mã** — gõ đủ 7 ký tự là hiện tên CLB, sai thì hiện "Không
+  tìm thấy đội tương ứng". Trước đó gõ sai mã chỉ biết sau khi điền hết form và nhận "sai thông
+  tin đăng nhập", không phân biệt được sai mã hay sai mật khẩu.
+  `GET /auth/ten-doi/{maDoi:length(7)}` ẩn danh, chỉ trả `tenDoi`, chỉ khớp mã **chính xác** —
+  **không** có đường tìm theo tên (quyết định 20/08, xem nhật ký).
 
 **Quản trị hệ thống (FR-03 → FR-06)**
 - CRUD tài khoản · hồ sơ cầu thủ · nhóm quyền · thiết lập chung.

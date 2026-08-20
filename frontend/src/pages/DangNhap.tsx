@@ -4,9 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
+import { Check, CircleAlert } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { layMaLoi } from '@/lib/api'
 import { useTinhNang } from '@/lib/tinhNang'
+import { useTraTenDoi } from '@/lib/traTenDoi'
 import {
   Button, CanhBaoLoi, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label,
 } from '@/components/ui'
@@ -27,10 +29,14 @@ export default function DangNhap() {
   const navigate = useNavigate()
   const [maLoi, setMaLoi] = useState<string | null>(null)
 
-  const { register, handleSubmit, formState } = useForm<FormData>({
+  const { register, handleSubmit, formState, watch } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { maDoi: '', username: '', matKhau: '' },
   })
+
+  // Tra tên đội ngay khi mã đủ 7 ký tự: gõ sai một chữ mà chỉ biết sau khi điền cả mật khẩu
+  // rồi nhận "sai thông tin đăng nhập" thì không phân biệt được là sai mã hay sai mật khẩu.
+  const { tenDoi, dangTra } = useTraTenDoi(watch('maDoi') ?? '')
 
   const onSubmit = async (data: FormData) => {
     setMaLoi(null)
@@ -66,7 +72,24 @@ export default function DangNhap() {
                 className="font-mono uppercase tracking-widest placeholder:tracking-widest"
                 {...register('maDoi')}
               />
-              <p className="text-xs text-muted-foreground">{t('dangNhap.maDoiGoiY')}</p>
+              {/* Ba trạng thái, mỗi trạng thái một câu: đang tra / tìm thấy tên / không có CLB
+                  nào. Khi mã chưa đủ 7 ký tự thì giữ nguyên câu gợi ý — hiện "không tìm thấy"
+                  lúc người dùng còn đang gõ là báo sai. */}
+              {dangTra ? (
+                <p className="text-xs text-muted-foreground">{t('dangNhap.dangTraTenDoi')}</p>
+              ) : tenDoi ? (
+                <p className="flex items-center gap-1 text-xs font-medium text-primary">
+                  <Check className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">{tenDoi}</span>
+                </p>
+              ) : tenDoi === null ? (
+                <p className="flex items-center gap-1 text-xs text-destructive">
+                  <CircleAlert className="h-3.5 w-3.5 shrink-0" />
+                  {t('dangNhap.khongTimThayDoi')}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">{t('dangNhap.maDoiGoiY')}</p>
+              )}
             </div>
 
             <div className="flex flex-col gap-1.5">

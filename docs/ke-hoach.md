@@ -44,7 +44,7 @@ Còn lại    ██████░░░░░░░░░░  4 việc cần t
 | Cách ly tenant (2 tầng phòng vệ tự động + test) | ✅ |
 | Phân quyền động đọc từ DB + cache | ✅ |
 | Frontend: layout, i18n, design token, auto-refresh token | ✅ |
-| 329 test (57 unit + 272 integration) | ✅ |
+| 341 test (57 unit + 284 integration) | ✅ |
 | Upload ảnh qua MinIO (avatar, logo, ảnh bìa) | ✅ |
 | **Dockerfile cho API** | ✅ 2 giai đoạn, chạy user thường |
 | **`docker compose up` chạy được** | ✅ 5 container, API healthy, migration tự áp |
@@ -62,7 +62,7 @@ Còn lại    ██████░░░░░░░░░░  4 việc cần t
 |---|---|---|---|
 | ~~N1~~ | ~~Dockerfile cho API~~ | — | ✅ Xong 16/08 |
 | ~~N2~~ | ~~Test E2E frontend~~ | — | ✅ Xong 17/08 — nay 35 test Playwright |
-| N3 | 🔴 **Rate limit ở tầng Caddy — BẮT BUỘC trước khi lên Internet** | ~1h | `tra-cuu-clb/{maDoi}` · `cong-dong` · `cong-dong/{maDoi}`. Không gian mã `31^7` làm việc dò **chậm**, không làm nó **bất khả thi**; mà `cong-dong` thì liệt kê thẳng nên còn dễ hơn. Từ 20/08 nặng hơn: **đăng ký CLB đã mở tự do** (nợ N4) nên một script tạo được vô hạn CLB rác, và chúng hiện hết lên Cộng đồng. Cộng thêm `POST /moi-qua-link/xem` là endpoint ẩn danh. Xem [bốn endpoint đọc/ghi ngoài tenant](./backend/multi-tenant.md#bốn-endpoint-đọcghi-ngoài-tenant-xếp-theo-mức-rộng) |
+| N3 | 🔴 **Rate limit ở tầng Caddy — BẮT BUỘC trước khi lên Internet** | ~1h | `tra-cuu-clb/{maDoi}` · `cong-dong` · `cong-dong/{maDoi}`. Không gian mã `31^7` làm việc dò **chậm**, không làm nó **bất khả thi**; mà `cong-dong` thì liệt kê thẳng nên còn dễ hơn. Từ 20/08 nặng hơn: **đăng ký CLB đã mở tự do** (nợ N4) nên một script tạo được vô hạn CLB rác, và chúng hiện hết lên Cộng đồng. Cộng thêm **hai** endpoint ẩn danh nhận đầu vào do người gọi tự đặt: `POST /moi-qua-link/xem` và `GET /auth/ten-doi/{maDoi}` (từ 20/08). Xem [năm endpoint đọc/ghi ngoài tenant](./backend/multi-tenant.md#năm-endpoint-đọcghi-ngoài-tenant-xếp-theo-mức-rộng) |
 | ~~N4~~ | ~~Không có đường tạo CLB ở production~~ | — | `/dang-ky-clb` chỉ bật ở Development (mở ẩn danh ở production là cho phép sinh CLB rác không giới hạn). ✅ **Xong 20/08** — mở tự do, vì luồng lời mời qua link (FR-18) cần nó |
 | N5 | **E2E để lại tenant rác trong DB dev** | ~2h | 76 CLB rác, và từ 18/08 chúng **hiện trên Cộng đồng của mọi người**. Hai hướng: DB riêng cho E2E, hoặc bước dọn sau khi chạy |
 

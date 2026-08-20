@@ -25,6 +25,13 @@ export default defineConfig({
 
   use: {
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:8080',
+    // Caddy tự phát chứng chỉ cho `localhost` bằng CA nội bộ của nó, mà CA đó không nằm trong
+    // trust store của Node/Chromium. Chạy E2E qua https://localhost sẽ đỏ toàn bộ với
+    // ERR_CERT_AUTHORITY_INVALID / "unable to get local issuer certificate" — lỗi môi trường,
+    // không phải lỗi ứng dụng.
+    //
+    // Chỉ nới ở tầng TEST, KHÔNG nới ở tầng ứng dụng: sản phẩm vẫn buộc HTTPS thật.
+    ignoreHTTPSErrors: true,
     // Chỉ giữ vết khi lỗi: ảnh và trace của mọi lần chạy sẽ ngốn hàng trăm MB.
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
