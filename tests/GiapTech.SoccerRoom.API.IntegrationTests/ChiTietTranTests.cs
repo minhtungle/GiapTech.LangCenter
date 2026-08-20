@@ -32,15 +32,17 @@ public class ChiTietTranTests(ApiFactory factory) : IClassFixture<ApiFactory>
         return client;
     }
 
-    private static async Task<Guid> TaoTran(HttpClient c, string thoiGian = "2026-05-01T15:00:00Z")
+    private static async Task<Guid> TaoTran(
+        HttpClient c, string thoiGian = "2026-05-01T15:00:00Z",
+        int? khach = null, string trangThai = "DaLenLich")
     {
         var res = await c.PostAsJsonAsync("/api/v1/tran-dau", new
         {
             ThoiGian = thoiGian,
             DoiThuId = (Guid?)null,
             TySoNha = (int?)null,
-            TySoKhach = (int?)null,
-            TrangThai = "DaLenLich",
+            TySoKhach = khach,
+            TrangThai = trangThai,
             LinkVideo = (string?)null,
             NhanXetChung = (string?)null,
             GhiChu = (string?)null,
@@ -255,7 +257,7 @@ public class ChiTietTranTests(ApiFactory factory) : IClassFixture<ApiFactory>
             DanhGias = new[]
             {
                 new { CauThuId = a, SoBanGhiDuoc = 2, SoBanCuuThua = 0,
-                      ChiSoKyNang = """{"tocDo":8}""", GhiChu = "Chơi tốt" },
+                      ChiSoKyNang = """{"theLuc":8}""", GhiChu = "Chơi tốt" },
             },
         });
 
@@ -511,5 +513,174 @@ public class ChiTietTranTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         Assert.Equal(HttpStatusCode.NoContent, res.StatusCode);
         _ = quyens;
+    }
+
+    // ---------- Rà soát 20/08: bốn thiếu sót tìm được ----------
+
+    [Fact]
+    public async Task Xoa_cau_thu_thi_TINH_LAI_ty_so_tran()
+    {
+        // Lỗi thật (rà soát 20/08): cầu thủ ghi 2 bàn trong trận thắng 2-1 → xoá cầu thủ → trận
+        // VẪN 2-1 và KetQua vẫn Thang, nhưng tổng bàn trong đánh giá = 0.
+        //
+        // `DongBoTySoNha` chỉ được gọi khi lưu đánh giá; `XoaCauThuHandler` không gọi. Tỷ số
+        // thành con số KHÔNG giải thích được từ dữ liệu — phá đúng nguyên tắc "một nguồn sự thật
+        // cho tỷ số" của FR-10, và con số sai lan sang thống kê/biểu đồ/xếp hạng.
+        var client = await Client();
+
+        var taoCt = await client.PostAsJsonAsync("/api/v1/cau-thu",
+            new { HoTen = "Người Sẽ Bị Xoá Sau Khi Ghi Bàn" });
+        var cauThuId = await taoCt.Content.ReadFromJsonAsync<Guid>();
+
+        var tranId = await TaoTran(client, "2026-05-05T15:00:00Z", khach: 1, trangThai: "DaDienRa");
+
+        await client.PutAsJsonAsync($"/api/v1/tran-dau/{tranId}/doi-hinh",
+            new { ThanhVien = new[] { new { CauThuId = cauThuId, ViTri = "ST" } } });
+        await client.PutAsJsonAsync($"/api/v1/tran-dau/{tranId}/danh-gia",
+            new { DanhGias = new[] { new { CauThuId = cauThuId, SoBanGhiDuoc = 2 } } });
+
+        var truoc = await client.GetFromJsonAsync<JsonElement>($"/api/v1/tran-dau/{tranId}");
+        Assert.Equal(2, truoc.GetProperty("tySoNha").GetInt32());
+        Assert.Equal("Thang", truoc.GetProperty("ketQua").GetString());
+
+        var xoa = await client.DeleteAsync($"/api/v1/cau-thu/{cauThuId}");
+        xoa.EnsureSuccessStatusCode();
+
+        // Đánh giá của cầu thủ đã bị xoá phải biến mất — đó là điều kiện để tỷ số tính lại đúng.
+        var danhGiaConLai = await client.GetFromJsonAsync<List<JsonElement>>(
+            $"/api/v1/tran-dau/{tranId}/danh-gia");
+        Assert.DoesNotContain(danhGiaConLai!,
+            d => d.GetProperty("cauThuId").GetGuid() == cauThuId);
+
+        // ⚠️ KHÔNG khẳng định tỷ số = 0 ở đây.
+        //
+        // Provider InMemory KHÔNG thực thi Cascade delete, nên trong test đánh giá vẫn nằm trong
+        // store sau khi xoá cầu thủ, và tổng cộng lại vẫn ra 2. Trên PostgreSQL thật thì Cascade
+        // chạy và tỷ số về 0-1 — đã kiểm tay:
+        //
+        //     TRƯỚC xoá: 2 - 1 Thang
+        //     SAU xoá:   0 - 1 Thua
+        //
+        // Cùng vết với `SetNull` ở KhoanChi (17/08): khẳng định hành vi FK trên InMemory sẽ cho
+        // một test XANH SAI hoặc ĐỎ SAI, cả hai đều tệ hơn không có test.
+    }
+
+    [Fact]
+    public async Task Xoa_cau_thu_KHONG_dung_den_tran_cua_nguoi_khac()
+    {
+        // Tính lại tỷ số không được lan sang trận mà cầu thủ bị xoá không tham gia.
+        var client = await Client();
+
+        var ct1 = await (await client.PostAsJsonAsync("/api/v1/cau-thu",
+            new { HoTen = "Người Bị Xoá A" })).Content.ReadFromJsonAsync<Guid>();
+        var ct2 = await (await client.PostAsJsonAsync("/api/v1/cau-thu",
+            new { HoTen = "Người Ở Lại B" })).Content.ReadFromJsonAsync<Guid>();
+
+        var tranCuaA = await TaoTran(client, "2026-05-10T15:00:00Z", khach: 0, trangThai: "DaDienRa");
+        var tranCuaB = await TaoTran(client, "2026-05-17T15:00:00Z", khach: 0, trangThai: "DaDienRa");
+
+        foreach (var (tran, ct, ban) in new[] { (tranCuaA, ct1, 3), (tranCuaB, ct2, 2) })
+        {
+            await client.PutAsJsonAsync($"/api/v1/tran-dau/{tran}/doi-hinh",
+                new { ThanhVien = new[] { new { CauThuId = ct, ViTri = "ST" } } });
+            await client.PutAsJsonAsync($"/api/v1/tran-dau/{tran}/danh-gia",
+                new { DanhGias = new[] { new { CauThuId = ct, SoBanGhiDuoc = ban } } });
+        }
+
+        await client.DeleteAsync($"/api/v1/cau-thu/{ct1}");
+
+        // Trận của B còn nguyên tỷ số.
+        //
+        // ⚠️ Phép kiểm này YẾU trên InMemory: Cascade không chạy nên đánh giá của A vẫn còn, và
+        // tổng cộng lại vẫn ra đúng số cũ cho MỌI trận — kể cả khi code tính lại toàn bộ trận
+        // thay vì chỉ trận liên quan. Phản chứng "tính lại mọi trận" LỌT qua test này.
+        //
+        // Giữ lại vì nó vẫn bắt được ca code xoá trắng tỷ số, nhưng phạm vi tính lại đúng thì
+        // chỉ kiểm được trên PostgreSQL thật (đã kiểm tay 20/08).
+        Assert.Equal(2, (await client.GetFromJsonAsync<JsonElement>($"/api/v1/tran-dau/{tranCuaB}"))
+            .GetProperty("tySoNha").GetInt32());
+
+        // Và đánh giá của B còn nguyên.
+        var dgB = await client.GetFromJsonAsync<List<JsonElement>>(
+            $"/api/v1/tran-dau/{tranCuaB}/danh-gia");
+        Assert.Contains(dgB!, d => d.GetProperty("cauThuId").GetGuid() == ct2);
+    }
+
+    [Theory]
+    [InlineData("{\"tanCong\":99}", "CHI_SO_NGOAI_THANG_DIEM")]
+    [InlineData("{\"tanCong\":0}", "CHI_SO_NGOAI_THANG_DIEM")]
+    [InlineData("{\"tanCong\":-5}", "CHI_SO_NGOAI_THANG_DIEM")]
+    [InlineData("{\"khongCoChiSoNay\":5}", "CHI_SO_KY_NANG_KHONG_HOP_LE")]
+    [InlineData("khong-phai-json", "CHI_SO_KY_NANG_KHONG_HOP_LE")]
+    public async Task Chi_so_ky_nang_ngoai_thang_diem_bi_chan(string json, string _)
+    {
+        // Lỗi thật (rà soát 20/08): API nhận `{"tanCong": 99}` → radar vẽ điểm ra ngoài khung và
+        // điểm trung bình trong bảng xếp hạng bị kéo lệch. Backend trước đây KHÔNG biết danh sách
+        // 6 chỉ số — nó chỉ có ở frontend.
+        var client = await Client();
+        var cauThuId = (await client.GetFromJsonAsync<JsonElement>("/api/v1/cau-thu?soDong=1"))
+            .GetProperty("duLieu")[0].GetProperty("id").GetGuid();
+        var tranId = await TaoTran(client, "2026-04-04T15:00:00Z", khach: 0, trangThai: "DaDienRa");
+
+        await client.PutAsJsonAsync($"/api/v1/tran-dau/{tranId}/doi-hinh",
+            new { ThanhVien = new[] { new { CauThuId = cauThuId, ViTri = "ST" } } });
+
+        var res = await client.PutAsJsonAsync($"/api/v1/tran-dau/{tranId}/danh-gia", new
+        {
+            DanhGias = new[] { new { CauThuId = cauThuId, SoBanGhiDuoc = 1, ChiSoKyNang = json } },
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Chi_so_ky_nang_hop_le_va_cham_THIEU_van_luu_duoc()
+    {
+        // Chấm thiếu là ca BÌNH THƯỜNG: trưởng nhóm không đủ thời gian chấm 6 tiêu chí cho 14
+        // người mỗi trận. Chặn "ngoài thang" không được chặn luôn ca này.
+        var client = await Client();
+        var cauThuId = (await client.GetFromJsonAsync<JsonElement>("/api/v1/cau-thu?soDong=1"))
+            .GetProperty("duLieu")[0].GetProperty("id").GetGuid();
+        var tranId = await TaoTran(client, "2026-04-11T15:00:00Z", khach: 0, trangThai: "DaDienRa");
+
+        await client.PutAsJsonAsync($"/api/v1/tran-dau/{tranId}/doi-hinh",
+            new { ThanhVien = new[] { new { CauThuId = cauThuId, ViTri = "ST" } } });
+
+        // Chỉ chấm 2 trong 6 chỉ số, và dùng cả biên 1 và 10.
+        var res = await client.PutAsJsonAsync($"/api/v1/tran-dau/{tranId}/danh-gia", new
+        {
+            DanhGias = new[]
+            {
+                new
+                {
+                    CauThuId = cauThuId, SoBanGhiDuoc = 1,
+                    ChiSoKyNang = "{\"tanCong\":10,\"theLuc\":1}",
+                },
+            },
+        });
+        res.EnsureSuccessStatusCode();
+    }
+
+    [Fact]
+    public async Task So_ban_qua_lon_bi_chan()
+    {
+        // Lỗi thật (rà soát 20/08): `soBanGhiDuoc = 500` được nhận, tỷ số thành 500-1. Giới hạn
+        // mềm 50 đủ rộng để không cản ai — trận phong trào nhiều bàn nhất cũng không tới đó.
+        var client = await Client();
+        var cauThuId = (await client.GetFromJsonAsync<JsonElement>("/api/v1/cau-thu?soDong=1"))
+            .GetProperty("duLieu")[0].GetProperty("id").GetGuid();
+        var tranId = await TaoTran(client, "2026-03-03T15:00:00Z", khach: 0, trangThai: "DaDienRa");
+
+        await client.PutAsJsonAsync($"/api/v1/tran-dau/{tranId}/doi-hinh",
+            new { ThanhVien = new[] { new { CauThuId = cauThuId, ViTri = "ST" } } });
+
+        var res = await client.PutAsJsonAsync($"/api/v1/tran-dau/{tranId}/danh-gia",
+            new { DanhGias = new[] { new { CauThuId = cauThuId, SoBanGhiDuoc = 500 } } });
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+
+        // Biên 50 vẫn được — chặn lỗi gõ, không chặn dữ liệu thật.
+        var biên = await client.PutAsJsonAsync($"/api/v1/tran-dau/{tranId}/danh-gia",
+            new { DanhGias = new[] { new { CauThuId = cauThuId, SoBanGhiDuoc = 50 } } });
+        biên.EnsureSuccessStatusCode();
     }
 }

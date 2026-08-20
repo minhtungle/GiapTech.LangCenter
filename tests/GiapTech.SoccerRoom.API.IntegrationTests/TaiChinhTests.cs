@@ -792,4 +792,53 @@ public class TaiChinhTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var res = await clientB.GetAsync($"/api/v1/quy/{quyId}");
         Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
     }
+
+    [Fact]
+    public async Task Thu_QUA_so_phai_dong_bi_chan()
+    {
+        // Lỗi thật (rà soát 20/08): thu 999.000.000₫ cho khoản phải đóng 100.000₫ được NHẬN,
+        // tiến độ hiện "999000000 / 100000", người đó tính là đã đóng đủ.
+        //
+        // Đây là tiền và lỗi IM LẶNG: thủ quỹ gõ thêm ba số 0 thì số dư quỹ sai hàng trăm triệu,
+        // con số lan vào thẻ "Số dư quỹ"/"Đã thu"/"Còn phải thu" mà không có bước nào hỏi lại.
+        var client = await Client();
+        var cauThus = await LayCauThuIds(client);
+        var quyId = await TaoQuy(client, "Quỹ chặn thu quá", [(cauThus[0], 100_000m)]);
+        var dongGopId = (await ChiTiet(client, quyId))
+            .GetProperty("dongGops")[0].GetProperty("id").GetGuid();
+
+        var res = await client.PutAsJsonAsync($"/api/v1/quy/dong-gop/{dongGopId}",
+            new { DongGopId = dongGopId, SoTienDaDong = 999_000_000m, GhiChu = (string?)null });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        var loi = await res.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("THU_QUA_SO_PHAI_DONG", loi.GetProperty("errorCode").GetString());
+
+        // Trả kèm số phải đóng để UI nói rõ, không chỉ "sai rồi".
+        Assert.Equal(100_000m,
+            loi.GetProperty("duLieu").GetProperty("soTienCanDong").GetDecimal());
+
+        // Và tiền KHÔNG bị ghi.
+        var ct = await ChiTiet(client, quyId);
+        Assert.Equal(0m, ct.GetProperty("quy").GetProperty("tongDaThu").GetDecimal());
+    }
+
+    [Fact]
+    public async Task Thu_DUNG_so_phai_dong_van_duoc()
+    {
+        // Chặn "quá" không được chặn luôn ca thu ĐỦ — biên phải mở.
+        var client = await Client();
+        var cauThus = await LayCauThuIds(client);
+        var quyId = await TaoQuy(client, "Quỹ thu đủ biên", [(cauThus[0], 100_000m)]);
+        var dongGopId = (await ChiTiet(client, quyId))
+            .GetProperty("dongGops")[0].GetProperty("id").GetGuid();
+
+        var res = await client.PutAsJsonAsync($"/api/v1/quy/dong-gop/{dongGopId}",
+            new { DongGopId = dongGopId, SoTienDaDong = 100_000m, GhiChu = (string?)null });
+        res.EnsureSuccessStatusCode();
+
+        var ct = await ChiTiet(client, quyId);
+        Assert.Equal(100_000m, ct.GetProperty("quy").GetProperty("tongDaThu").GetDecimal());
+        Assert.True(ct.GetProperty("dongGops")[0].GetProperty("daDongDu").GetBoolean());
+    }
 }

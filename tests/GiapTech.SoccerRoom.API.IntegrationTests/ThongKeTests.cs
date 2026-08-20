@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GiapTech.SoccerRoom.API.IntegrationTests;
 
@@ -211,13 +212,32 @@ public class ThongKeTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(JsonValueKind.Null, dong.GetProperty("diemKyNang").ValueKind);
     }
 
-    /// <summary>JSON chỉ số hỏng không được làm sập bảng xếp hạng — chỉ bỏ qua bản ghi đó.</summary>
+    /// <summary>
+    /// JSON chỉ số hỏng không được làm sập bảng xếp hạng — chỉ bỏ qua bản ghi đó.
+    ///
+    /// Từ 20/08/2026 API CHẶN json hỏng ở cổng (`LuuDanhGiaValidator`), nên test phải ghi trực
+    /// tiếp vào DB để dựng được tình huống. Phòng vệ tầng đọc vẫn cần thiết: dữ liệu hỏng đã lọt
+    /// vào DB trước khi có validator, hoặc do sửa tay, không được làm sập màn thống kê.
+    /// </summary>
     [Fact]
     public async Task Chi_so_json_hong_khong_lam_sap_xep_hang()
     {
         var client = await Client();
         var tranId = await TaoTran(client, "2028-07-01T15:00:00+07:00", 0, "DaDienRa");
-        var cauThuId = await GhiKetQua(client, tranId, 1, "{ đây không phải json }");
+        var cauThuId = await GhiKetQua(client, tranId, 1);
+
+        // Làm hỏng json TRỰC TIẾP trong DB — API không cho ghi giá trị này nữa.
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider
+                .GetRequiredService<Infrastructure.Persistence.AppDbContext>();
+            var dg = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
+                .FirstAsync(Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
+                    .IgnoreQueryFilters(db.DanhGiaCauThus),
+                    x => x.TranDauId == tranId && x.CauThuId == cauThuId);
+            dg.ChiSoKyNang = "{ đây không phải json }";
+            await db.SaveChangesAsync();
+        }
 
         var tk = await ThongKe(client, new { TuNgay = "2028-07-01", DenNgay = "2028-07-31" });
         var dong = tk.GetProperty("xepHang").EnumerateArray()

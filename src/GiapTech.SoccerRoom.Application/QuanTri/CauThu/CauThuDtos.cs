@@ -167,7 +167,41 @@ public class XoaCauThuHandler(IAppDbContext db) : IRequestHandler<XoaCauThuComma
             throw new AppException("CAU_THU_DA_CO_DU_LIEU_QUY",
                 $"CauThu {request.Id} còn bản ghi đóng quỹ");
 
+        // Trận nào cầu thủ này có đánh giá — phải TÍNH LẠI tỷ số sau khi xoá.
+        //
+        // Bàn thắng đội nhà là TỔNG bàn trong đánh giá (xem TranDau.DongBoTySoNha). Đánh giá của
+        // cầu thủ bị xoá sẽ Cascade theo, nên nếu không tính lại thì trận vẫn giữ tỷ số cũ —
+        // "thắng 2-1" với 0 bàn trong đánh giá, một con số không giải thích được từ dữ liệu.
+        //
+        // Lỗi này IM LẶNG: không ai biết cho tới khi mở chi tiết trận và thấy tỷ số không khớp
+        // bàn thắng cầu thủ. Nó phá đúng nguyên tắc "một nguồn sự thật cho tỷ số" của FR-10, và
+        // con số sai lan sang thống kê, biểu đồ, bảng xếp hạng.
+        var idTranAnhHuong = await db.DanhGiaCauThus
+            .Where(d => d.CauThuId == request.Id)
+            .Select(d => d.TranDauId)
+            .Distinct()
+            .ToListAsync(ct);
+
         db.CauThus.Remove(cauThu);
+        await db.SaveChangesAsync(ct);
+
+        if (idTranAnhHuong.Count == 0) return;
+
+        // Đọc SAU khi xoá: lúc này đánh giá của cầu thủ đó đã biến mất khỏi DB, nên tổng cộng
+        // được là tổng còn lại thật.
+        var trans = await db.TranDaus
+            .Where(t => idTranAnhHuong.Contains(t.Id))
+            .ToListAsync(ct);
+
+        foreach (var tran in trans)
+        {
+            var tongBanThang = await db.DanhGiaCauThus
+                .Where(d => d.TranDauId == tran.Id)
+                .SumAsync(d => (int?)d.SoBanGhiDuoc, ct) ?? 0;
+
+            tran.DongBoTySoNha(tongBanThang);
+        }
+
         await db.SaveChangesAsync(ct);
     }
 }

@@ -321,6 +321,27 @@ public class GhiNhanThuHandler(IAppDbContext db) : IRequestHandler<GhiNhanThuCom
         var d = await db.DongGopQuys.FirstOrDefaultAsync(x => x.Id == request.DongGopId, ct)
             ?? throw new KhongTimThayException($"DongGopQuy {request.DongGopId}");
 
+        // Không thu QUÁ số phải đóng.
+        //
+        // Đây là tiền, và lỗi này IM LẶNG: thủ quỹ gõ thêm ba số 0 thì số dư quỹ sai hàng trăm
+        // triệu, con số đó lan vào thẻ "Số dư quỹ" / "Đã thu" / "Còn phải thu" ở màn Tài chính,
+        // và không có bước nào hỏi lại.
+        //
+        // Chặn chứ KHÔNG tự cắt xuống: cắt âm thầm là sửa số tiền người dùng gõ, và họ sẽ không
+        // biết mình vừa nhập sai. Trả kèm số phải đóng để UI nói rõ.
+        //
+        // Đóng thừa để bù đợt sau là ca hợp lệ, nhưng nó phải là HAI khoản (đợt này đủ, đợt sau
+        // một phần), không phải một khoản vượt mức.
+        if (request.SoTienDaDong > d.SoTienCanDong)
+            throw new AppException("THU_QUA_SO_PHAI_DONG")
+            {
+                DuLieu = new Dictionary<string, object>
+                {
+                    ["soTienCanDong"] = d.SoTienCanDong,
+                    ["soTienGui"] = request.SoTienDaDong,
+                }
+            };
+
         d.SoTienDaDong = request.SoTienDaDong;
         d.GhiChu = request.GhiChu;
 
