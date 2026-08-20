@@ -61,33 +61,34 @@ public class TinhNangTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task Khai_dangKyClb_bang_false_o_Production()
+    public async Task Dang_ky_CLB_MO_o_ca_Production()
     {
-        // Phản chứng đã lọt một lần: thay `env.IsDevelopment()` bằng hằng `true` mà 4/4 test
-        // vẫn xanh — vì cả bộ chỉ chạy ở Development, nơi hai biểu thức cho cùng kết quả. Chỉ
-        // dựng được một host Production mới phân biệt nổi.
-        using var prod = new ApiFactoryProduction();
-        var client = prod.CreateClient();
-
-        var body = await client.GetFromJsonAsync<JsonElement>("/api/v1/tinh-nang");
-
-        Assert.False(body.GetProperty("dangKyClb").GetBoolean());
-    }
-
-    [Fact]
-    public async Task O_Production_co_tat_va_endpoint_dang_ky_tra_404()
-    {
-        // Cờ tắt PHẢI đi kèm endpoint thật sự đóng. Cờ tắt mà endpoint vẫn mở là lỗ hổng: ai
-        // biết đường dẫn vẫn tạo được CLB rác không giới hạn.
+        // ĐỔI HÀNH VI CÓ CHỦ Ý (20/08/2026, nợ N4): trước đây `/dang-ky-clb` chỉ bật ở
+        // Development. Giờ mở ở mọi môi trường vì luồng lời mời qua link (FR-18) có ca phổ biến
+        // nhất là "đối thủ chưa có tài khoản" — họ bấm link, tạo đội ngay, rồi chấp nhận.
+        //
+        // Hai test cũ (`Khai_dangKyClb_bang_false_o_Production`,
+        // `O_Production_co_tat_va_endpoint_dang_ky_tra_404`) canh hành vi cũ và đã được thay
+        // bằng test này.
         using var prod = new ApiFactoryProduction();
         var client = prod.CreateClient();
 
         var tinhNang = await client.GetFromJsonAsync<JsonElement>("/api/v1/tinh-nang");
-        Assert.False(tinhNang.GetProperty("dangKyClb").GetBoolean());
+        Assert.True(tinhNang.GetProperty("dangKyClb").GetBoolean());
 
         var dangKy = await client.PostAsJsonAsync("/api/v1/dang-ky-clb",
-            new { TenDoi = "CLB không được phép tạo" });
-        Assert.Equal(HttpStatusCode.NotFound, dangKy.StatusCode);
+            new { TenDoi = "CLB tạo ở Production" });
+        Assert.Equal(HttpStatusCode.OK, dangKy.StatusCode);
+
+        // Và đăng nhập được ngay bằng thông tin trả về.
+        var clb = await dangKy.Content.ReadFromJsonAsync<JsonElement>();
+        var dn = await client.PostAsJsonAsync("/api/v1/auth/dang-nhap", new
+        {
+            MaDoi = clb.GetProperty("maDoi").GetString(),
+            Username = clb.GetProperty("username").GetString(),
+            MatKhau = clb.GetProperty("matKhau").GetString(),
+        });
+        Assert.Equal(HttpStatusCode.OK, dn.StatusCode);
     }
 
     [Fact]

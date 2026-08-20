@@ -37,6 +37,12 @@ public interface IAppDbContext
     /// cùng lúc. Mọi truy vấn phải tự lọc `TenantGuiId == x || TenantNhanId == x`.
     /// </summary>
     DbSet<LoiMoiThachDau> LoiMoiThachDaus { get; }
+
+    /// <summary>
+    /// Lời mời qua link (FR-18). CÓ Global Query Filter theo tenant người gửi — chỗ đọc ngoài
+    /// tenant là truy vấn theo token, phải dùng `IgnoreQueryFilters` tường minh.
+    /// </summary>
+    DbSet<LoiMoiLink> LoiMoiLinks { get; }
     DbSet<PhanHoiThamGia> PhanHoiThamGias { get; }
     DbSet<DanhGiaCauThu> DanhGiaCauThus { get; }
     DbSet<VoteMvp> VoteMvps { get; }

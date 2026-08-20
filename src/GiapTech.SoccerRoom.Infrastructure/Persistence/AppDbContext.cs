@@ -31,6 +31,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant
     public DbSet<VideoTran> VideoTrans => Set<VideoTran>();
     public DbSet<LoiMoiThamGia> LoiMoiThamGias => Set<LoiMoiThamGia>();
     public DbSet<LoiMoiThachDau> LoiMoiThachDaus => Set<LoiMoiThachDau>();
+    public DbSet<LoiMoiLink> LoiMoiLinks => Set<LoiMoiLink>();
     public DbSet<PhanHoiThamGia> PhanHoiThamGias => Set<PhanHoiThamGia>();
     public DbSet<DanhGiaCauThu> DanhGiaCauThus => Set<DanhGiaCauThu>();
     public DbSet<VoteMvp> VoteMvps => Set<VoteMvp>();

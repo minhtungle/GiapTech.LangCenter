@@ -249,6 +249,39 @@ public class LoiMoiThachDauConfig : IEntityTypeConfiguration<LoiMoiThachDau>
     }
 }
 
+public class LoiMoiLinkConfig : IEntityTypeConfiguration<LoiMoiLink>
+{
+    public void Configure(EntityTypeBuilder<LoiMoiLink> b)
+    {
+        b.ToTable("LOI_MOI_LINK");
+        b.Property(x => x.TokenHash).HasMaxLength(64).IsRequired();
+        b.Property(x => x.LoiNhan).HasMaxLength(1000);
+        b.Property(x => x.PhanHoi).HasMaxLength(1000);
+        b.Property(x => x.DiaDiem).HasMaxLength(200);
+
+        b.HasIndex(x => x.TenantId);
+
+        // UNIQUE trên hash: hai lời mời cùng token là không thể xảy ra với 32 byte ngẫu nhiên,
+        // nhưng nếu xảy ra (lỗi sinh token) thì phải nổ ở tầng DB chứ không âm thầm cho một
+        // token mở được hai lời mời.
+        b.HasIndex(x => x.TokenHash).IsUnique();
+
+        b.HasOne(x => x.DoiThu).WithMany()
+            .HasForeignKey(x => x.DoiThuId).OnDelete(DeleteBehavior.Cascade);
+
+        // KHÔNG Cascade từ trận: lời mời đã gửi ra ngoài, người nhận có thể đang mở link. Xoá
+        // trận thì lời mời chuyển sang "trận không còn", không biến mất.
+        b.HasOne(x => x.TranDau).WithMany()
+            .HasForeignKey(x => x.TranDauId).OnDelete(DeleteBehavior.SetNull);
+
+        b.HasOne(x => x.Tenant).WithMany()
+            .HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
+
+        // Không FK tới TENANT cho TenantNhanId: cùng lý do với DoiThu.MaDoiHeThong — FK cho phép
+        // join xuyên tenant, và CLB kia xoá tài khoản không được kéo theo lời mời của ta.
+    }
+}
+
 public class PhanHoiThamGiaConfig : IEntityTypeConfiguration<PhanHoiThamGia>
 {
     public void Configure(EntityTypeBuilder<PhanHoiThamGia> b)
