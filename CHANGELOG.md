@@ -34,6 +34,15 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
   `GET /auth/ten-doi/{maDoi:length(7)}` ẩn danh, chỉ trả `tenDoi`, chỉ khớp mã **chính xác** —
   **không** có đường tìm theo tên (quyết định 20/08, xem nhật ký).
 
+**Đăng ký đá trận qua link/QR (FR-19)**
+- Trưởng nhóm sinh link + QR cho lời mời đăng ký; người **không có tài khoản** mở link, chọn tên
+  mình, bấm Tham gia / Chưa chắc / Không. Cập nhật thẳng vào bảng phản hồi.
+- Tab **Đăng ký** trong chi tiết trận (trước đó nút tạo nằm ở Hòm thư, tách rời khỏi trận).
+- Chọn/bỏ ai được mời — trước đó luôn mời tất cả, không có cách bỏ ai. Bỏ người **đã trả lời** bị
+  chặn cho tới khi xác nhận, kèm tên cụ thể (quy tắc #1).
+- Bốn mốc hạn link (5 phút · 1 giờ · tới giờ đá · 7 ngày) chặn ở validator, cộng nút thu hồi.
+- **Không** áp cho vote MVP: "chọn tên mình" phá vỡ tính bí mật của bầu chọn.
+
 **Hạ tầng & chất lượng**
 - **Giới hạn tần suất** cho 7 endpoint ẩn danh (`Microsoft.AspNetCore.RateLimiting`, cửa sổ trượt
   theo IP): tra cứu 30/phút · lời mời theo token 10/phút · xác thực 10/phút. Trả 429

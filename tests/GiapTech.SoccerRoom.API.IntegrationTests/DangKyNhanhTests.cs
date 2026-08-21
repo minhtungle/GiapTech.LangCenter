@@ -339,6 +339,34 @@ public class DangKyNhanhTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task KHONG_hien_san_nha_CLB_lam_dia_diem_tran()
+    {
+        // Lỗi thật đã xảy ra 21/08 và chỉ thấy khi XEM ẢNH CHỤP: bản đầu lấy `Tenant.SanNha` để
+        // lấp chỗ trống địa điểm, nên trận thoả thuận đá ở "Sân Tuyên Sơn" lại hiện "Sân Chi
+        // Lăng" (sân nhà CLB) — người đọc đến sai sân. Tệ hơn hẳn việc không hiện gì.
+        //
+        // `TRAN_DAU` không có cột địa điểm; nó chỉ ở `LOI_MOI_BAT_DOI.dia_diem`, mà bảng đó không
+        // có `TranDauId` nên không nối được đáng tin. Nên trang KHÔNG hiện địa điểm — trưởng nhóm
+        // ghi sân vào lời nhắn.
+        var c = await ClbRieng(Guid.NewGuid().ToString("N")[..6]);
+        var (loiMoiId, _) = await DungLoiMoi(c);
+
+        // Đặt sân nhà cho CLB: nếu code lại lấy nó thì test đỏ.
+        var datSan = await c.PutAsJsonAsync("/api/v1/thiet-lap", new
+        {
+            TenDoi = "DKN san nha", SanNha = "SAN-NHA-KHONG-DUOC-HIEN",
+        });
+        datSan.EnsureSuccessStatusCode();
+
+        var token = await TaoLink(c, loiMoiId);
+        var res = await factory.CreateClient().PostAsJsonAsync($"{GOC}/xem", new { token });
+        var json = await res.Content.ReadAsStringAsync();
+
+        Assert.DoesNotContain("SAN-NHA-KHONG-DUOC-HIEN", json);
+        Assert.DoesNotContain("sanNha", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task Token_cua_loi_moi_A_KHONG_sua_duoc_loi_moi_B()
     {
         // Handler lọc theo CẢ LoiMoiId lẫn CauThuId. Chỉ lọc CauThuId thì token của lời mời A

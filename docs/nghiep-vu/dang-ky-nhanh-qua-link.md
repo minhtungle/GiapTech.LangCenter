@@ -168,6 +168,35 @@ Ai có link **lấy được danh sách thành viên CLB** — đây là đánh 
 Với bóng phong trào thì tên + số áo không phải bí mật; nhưng nó là lý do danh sách phải giới hạn
 đúng ba trường đó.
 
+## Ba lỗi giao diện, không lỗi nào do test bắt
+
+Tất cả lộ ra khi **chụp màn hình và nhìn**, trong khi 369 test backend xanh:
+
+1. **`traLoi` là CHUỖI, frontend so với SỐ.** API serialize enum thành `"ThamGia"`, không phải `1`.
+   Bảng hiện "Chưa trả lời" cho người đã trả lời, dòng thống kê đếm 0. **Không lỗi console.**
+   Che mất lỗi: lệnh *ghi* nhận cả số lẫn chuỗi nên trả lời vẫn thành công — chỉ phần *đọc* sai.
+2. **Danh sách tick về 16/16** dù lời mời chỉ 14 người, vì `useEffect` chạy trước khi `phanHois`
+   tải xong. Bấm "Lưu danh sách" ngay sau khi mở tab sẽ **âm thầm mời lại** người vừa bỏ.
+3. **Hiện `Tenant.SanNha` làm địa điểm trận.** Trận thoả thuận đá ở *Sân Tuyên Sơn* nhưng trang
+   hiện *Sân Chi Lăng* — người đọc đến sai sân. Xem mục "Vì sao không có địa điểm" ở
+   `TrangDangKyNhanh`.
+
+Cả ba giờ có E2E canh (`e2e/dang-ky-nhanh.spec.ts`), và đã phản chứng: đưa từng lỗi trở lại thì
+test đỏ.
+
+## Giới hạn tần suất và bộ test
+
+Rate limit `XacThuc` (10/phút mỗi IP) chặn chính bộ E2E: 48 test, mỗi test tạo CLB rồi đăng nhập
+2 lần từ **cùng một IP**, nên từ test thứ 5 trở đi `waitForURL` timeout ở bước đăng nhập — 8 test
+đỏ vì lý do không liên quan tới thứ chúng kiểm.
+
+Cách sai là nới hạn mức trong `GioiHanTanSuat`: production mất lớp bảo vệ chỉ vì test cần chạy
+nhanh. Cách đúng: `GIOI_HAN_TAN_SUAT=false` trong `docker-compose.dev.yml` — tắt ở đúng môi trường
+cần tắt. Cơ chế vẫn được canh bởi `GioiHanTanSuatTests` (factory riêng tự bật cờ).
+
+Cùng vấn đề và cùng cách sửa với 112 integration test đỏ hôm 21/08.
+
 ## Trạng thái triển khai
 
-Chưa làm. Xem [`docs/ke-hoach.md`](../ke-hoach.md).
+✅ **Xong 21/08/2026.** Backend + tab Đăng ký trong chi tiết trận + trang ẩn danh.
+17 integration test · 4 E2E test · 9 phản chứng (2 lọt lần đầu, đã siết).

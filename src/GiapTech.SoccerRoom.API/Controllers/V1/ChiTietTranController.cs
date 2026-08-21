@@ -55,6 +55,16 @@ public class HomThuController(ISender sender) : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Lời mời đăng ký của một trận — cho tab Đăng ký trong chi tiết trận (FR-19).
+    /// Trả `null` (200) khi trận chưa có lời mời, không phải 404.
+    /// </summary>
+    [HttpGet("dang-ky/theo-tran/{tranDauId:guid}")]
+    [RequirePermission(ChucNang.LichThiDau, HanhDong.Xem)]
+    public async Task<ActionResult<LoiMoiTheoTranDto?>> LoiMoiTheoTran(
+        Guid tranDauId, CancellationToken ct)
+        => Ok(await sender.Send(new LayLoiMoiTheoTranQuery(tranDauId), ct));
+
     /// <summary>Bảng tổng hợp ai đã trả lời gì.</summary>
     [HttpGet("dang-ky/{loiMoiId:guid}/phan-hoi")]
     [RequirePermission(ChucNang.LichThiDau, HanhDong.Xem)]

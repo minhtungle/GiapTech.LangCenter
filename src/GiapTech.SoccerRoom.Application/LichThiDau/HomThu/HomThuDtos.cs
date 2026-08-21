@@ -33,9 +33,19 @@ public record ThuLoiMoiDangKyDto(
     int SoChuaTraLoi);
 
 /// <summary>Một dòng trong bảng tổng hợp phản hồi — chỉ trưởng nhóm xem.</summary>
+/// <param name="SoAo">Thêm 21/08 (FR-19): tab Đăng ký hiện số áo để trưởng nhóm nhận người nhanh.</param>
+/// <param name="SoLanSua">
+/// Số lần câu trả lời bị đổi. Thêm 21/08 vì đăng ký qua link cho phép sửa lại — "người này sửa 6
+/// lần" là dấu hiệu trưởng nhóm cần nhìn thấy.
+/// </param>
+/// <param name="QuaLink">
+/// Câu trả lời đến từ link ẩn danh, KHÔNG xác thực được ai bấm. Trưởng nhóm cần phân biệt khi có
+/// tranh chấp ("tôi không đăng ký mà").
+/// </param>
 public record PhanHoiDto(
     Guid CauThuId, string HoTen, TraLoiThamGia TraLoi, string? GhiChu,
-    DateTimeOffset? ThoiGianTraLoi);
+    DateTimeOffset? ThoiGianTraLoi,
+    int? SoAo = null, int SoLanSua = 0, bool QuaLink = false);
 
 public record HomThuDto(
     /// <summary>Người đang đăng nhập có phải trưởng nhóm không — quyết định UI hiện gì.</summary>
@@ -112,8 +122,38 @@ public class LayPhanHoiHandler(IAppDbContext db)
                 : p.TraLoi == TraLoiThamGia.ChuaTraLoi ? 2 : 3)
             .ThenBy(p => p.CauThu.HoTen)
             .Select(p => new PhanHoiDto(
-                p.CauThuId, p.CauThu.HoTen, p.TraLoi, p.GhiChu, p.ThoiGianTraLoi))
+                p.CauThuId, p.CauThu.HoTen, p.TraLoi, p.GhiChu, p.ThoiGianTraLoi,
+                p.CauThu.SoAo, p.SoLanSua, p.QuaLink))
             .ToListAsync(ct);
+}
+
+/// <summary>
+/// Lời mời đăng ký của MỘT trận — cho tab Đăng ký trong chi tiết trận (FR-19).
+///
+/// Trả null khi trận chưa có lời mời: đó là trạng thái bình thường, không phải lỗi. Trả 404 thì
+/// frontend phải phân biệt "chưa gửi" với "lỗi mạng" bằng status code, dễ hiện sai.
+/// </summary>
+public record LoiMoiTheoTranDto(
+    Guid Id,
+    string? LoiNhan,
+    DateTimeOffset? HanTraLoi,
+    bool DaDong,
+    DateTimeOffset? LinkHetHan,
+    bool LinkDaThuHoi);
+
+public record LayLoiMoiTheoTranQuery(Guid TranDauId) : IRequest<LoiMoiTheoTranDto?>;
+
+public class LayLoiMoiTheoTranHandler(IAppDbContext db)
+    : IRequestHandler<LayLoiMoiTheoTranQuery, LoiMoiTheoTranDto?>
+{
+    public async Task<LoiMoiTheoTranDto?> Handle(
+        LayLoiMoiTheoTranQuery request, CancellationToken ct)
+        => await db.LoiMoiThamGias
+            .Where(l => l.TranDauId == request.TranDauId)
+            .Select(l => new LoiMoiTheoTranDto(
+                l.Id, l.LoiNhan, l.HanTraLoi, l.DaDong,
+                l.LinkHetHan, l.LinkThuHoiLuc != null))
+            .FirstOrDefaultAsync(ct);
 }
 
 // ---------- Commands ----------

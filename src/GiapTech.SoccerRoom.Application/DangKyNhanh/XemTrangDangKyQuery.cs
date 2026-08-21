@@ -66,7 +66,6 @@ public class XemTrangDangKyHandler(IAppDbContext db)
             TenDoiNha: loiMoi.Tenant.TenDoi,
             TenDoiThu: tran.DoiThu?.TenDoi ?? "(chưa rõ)",
             ThoiGian: tran.ThoiGian,
-            SanNha: loiMoi.Tenant.SanNha,
             LoiNhan: loiMoi.LoiNhan,
             HanTraLoi: loiMoi.HanTraLoi,
             LichSu: lichSu,

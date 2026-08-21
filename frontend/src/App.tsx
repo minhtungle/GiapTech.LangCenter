@@ -11,6 +11,7 @@ import DoiThu from '@/pages/lich-thi-dau/DoiThu'
 import CongDong from '@/pages/cong-dong/CongDong'
 import ChiTietClb from '@/pages/cong-dong/ChiTietClb'
 import XemLoiMoiLink from '@/pages/moi-qua-link/XemLoiMoiLink'
+import DangKyNhanh from '@/pages/dang-ky-nhanh/DangKyNhanh'
 import ChiTietTran from '@/pages/lich-thi-dau/ChiTietTran'
 import HomThu from '@/pages/lich-thi-dau/HomThu'
 import MauDoiHinh from '@/pages/lich-thi-dau/MauDoiHinh'
@@ -75,6 +76,8 @@ export default function App() {
             {/* Trang xem lời mời qua link — CÔNG KHAI (FR-18): người nhận có thể chưa có tài
                 khoản. Đặt cùng nhóm với /dang-nhap, ngoài <CanThietDangNhap>. */}
             <Route path="/loi-moi" element={<XemLoiMoiLink />} />
+            {/* FR-19 — trang đăng ký nhanh, KHÔNG cần đăng nhập (người dùng chưa có tài khoản). */}
+            <Route path="/dang-ky-nhanh" element={<DangKyNhanh />} />
             <Route path="/doi-mat-khau" element={<DoiMatKhau />} />
 
             <Route

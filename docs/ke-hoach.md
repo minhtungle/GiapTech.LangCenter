@@ -10,7 +10,7 @@ Hạ tầng    ████████████░░░░  CI/CD sẵn sà
 Còn lại    ██████░░░░░░░░░░  4 việc cần tài khoản/hạ tầng ngoài + 3 nợ kỹ thuật
 ```
 
-## Trạng thái 18 mã FR
+## Trạng thái 19 mã FR
 
 | Mã | Chức năng | Backend | Frontend | Ghi chú |
 |---|---|:---:|:---:|---|
@@ -32,6 +32,7 @@ Còn lại    ██████░░░░░░░░░░  4 việc cần t
 | FR-16 | Thêm/Cập nhật quỹ | ✅ | ✅ | Kèm thông tin chuyển khoản (QR + số TK) theo từng đợt. Nhắc nợ = sao chép danh sách; SMS/Email chưa làm |
 | FR-17 | Cộng đồng (mới 18/08) | ✅ | ✅ | Danh sách CLB, chi tiết công khai, lời mời thách đấu |
 | FR-18 | Lời mời qua link/QR (mới 20/08) | ✅ | ✅ | 13 trường hợp; nâng cấp đối thủ tên gõ tay thành CLB có ID |
+| FR-19 | Đăng ký đá trận qua link/QR (mới 21/08) | ✅ | ✅ | Không cần đăng nhập. Tab Đăng ký trong chi tiết trận, chọn/bỏ ai được mời, 4 mốc hạn link. **Không** làm cho vote MVP — xem [tài liệu](./nghiep-vu/dang-ky-nhanh-qua-link.md) |
 
 ✅ xong · 🟡 dùng được nhưng thiếu phần · ⬜ chưa làm
 
@@ -44,7 +45,7 @@ Còn lại    ██████░░░░░░░░░░  4 việc cần t
 | Cách ly tenant (2 tầng phòng vệ tự động + test) | ✅ |
 | Phân quyền động đọc từ DB + cache | ✅ |
 | Frontend: layout, i18n, design token, auto-refresh token | ✅ |
-| 353 test (57 unit + 296 integration) | ✅ |
+| 370 test (57 unit + 313 integration) | ✅ |
 | Upload ảnh qua MinIO (avatar, logo, ảnh bìa) | ✅ |
 | **Dockerfile cho API** | ✅ 2 giai đoạn, chạy user thường |
 | **`docker compose up` chạy được** | ✅ 5 container, API healthy, migration tự áp |
