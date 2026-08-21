@@ -344,7 +344,7 @@ export default function LichThiDau() {
           }
         />
       ) : (
-        <Table>
+        <Table caoToiDa="max-h-[calc(100vh-16rem)]">
           <thead>
             <tr>
               {(

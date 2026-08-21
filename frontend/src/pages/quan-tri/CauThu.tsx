@@ -143,7 +143,7 @@ export default function CauThu() {
           }
         />
       ) : (
-        <Table>
+        <Table caoToiDa="max-h-[calc(100vh-16rem)]">
           <thead>
             <tr>
               <Th className="w-14" />

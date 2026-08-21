@@ -95,7 +95,13 @@ export function LoiMoiThachDau() {
 
       {ds.map((thu) => (
         <Card key={thu.id}>
-          <CardContent className="flex flex-col gap-2.5 pt-5">
+          {/*
+            Nén lại 21/08: trước đây mỗi trường một dòng riêng với `gap-2.5` — 8 dòng cho nội
+            dung vừa 3 dòng, mỗi thẻ cao ~230px nên 6 lời mời làm trang cao 1933px với viewport
+            800px. Gộp giờ · sân · liên hệ vào MỘT hàng (chúng đều là "thông tin trận, đọc một
+            lượt") và giảm gap.
+          */}
+          <CardContent className="flex flex-col gap-1.5 py-3">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={thu.toiGui ? 'muted' : 'accent'}>
                 {thu.toiGui ? t('congDong.toiGui') : t('congDong.toiNhan')}
@@ -116,17 +122,31 @@ export function LoiMoiThachDau() {
               </span>
             </div>
 
-            <p className="text-sm">{gioDep(thu.thoiGianDeXuat)}</p>
+            {/* Giờ · sân · liên hệ trên cùng một hàng — đọc một lượt, không phải quét dọc. */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+              <span className="font-medium">{gioDep(thu.thoiGianDeXuat)}</span>
 
-            {thu.diaDiem && (
-              <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <MapPin className="h-3.5 w-3.5 shrink-0" />
-                {thu.diaDiem}
-              </p>
-            )}
+              {thu.diaDiem && (
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <MapPin className="h-3.5 w-3.5 shrink-0" />
+                  {thu.diaDiem}
+                </span>
+              )}
+
+              {/* Liên hệ chỉ có sau khi hai bên đồng ý — backend không trả trước đó. */}
+              {thu.lienHeBenKia && (
+                <span className="flex items-center gap-1">
+                  <Phone className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  {thu.lienHeBenKia}
+                </span>
+              )}
+            </div>
 
             {thu.loiNhan && (
-              <p className="rounded-md bg-muted/50 p-2 text-sm" style={{ overflowWrap: 'anywhere' }}>
+              <p
+                className="rounded-md bg-muted/50 px-2 py-1.5 text-sm"
+                style={{ overflowWrap: 'anywhere' }}
+              >
                 {thu.loiNhan}
               </p>
             )}
@@ -135,14 +155,6 @@ export function LoiMoiThachDau() {
               <p className="text-sm text-muted-foreground" style={{ overflowWrap: 'anywhere' }}>
                 <span className="font-medium">{t('congDong.phanHoi')}: </span>
                 {thu.phanHoi}
-              </p>
-            )}
-
-            {/* Liên hệ chỉ có sau khi hai bên đồng ý — backend không trả trước đó. */}
-            {thu.lienHeBenKia && (
-              <p className="flex items-center gap-1.5 text-sm">
-                <Phone className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                {thu.lienHeBenKia}
               </p>
             )}
 
@@ -156,7 +168,7 @@ export function LoiMoiThachDau() {
             )}
 
             {thu.trangThai === 'ChoPhanHoi' && (
-              <div className="flex flex-wrap gap-2 pt-1">
+              <div className="flex flex-wrap gap-2 pt-0.5">
                 {thu.toiGui ? (
                   <Button
                     type="button"

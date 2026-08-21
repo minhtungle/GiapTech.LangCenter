@@ -30,6 +30,17 @@ interface ThietLapDto {
 }
 
 /** FR-06 — thiết lập chung CLB. */
+/**
+ * FR-06 — thiết lập chung của CLB.
+ *
+ * `max-w-5xl` chứ không `max-w-2xl`: đo 21/08 trên màn 1440px thì form chỉ rộng 650px và bỏ trống
+ * hoàn toàn nửa phải, nên trang cao 1420px với viewport 800px — phải cuộn hai lần cho một form.
+ * Hai khối ảnh (Logo + Ảnh bìa) ĐÃ có `flex-wrap` để nằm cạnh nhau; chúng xếp dọc chỉ vì
+ * container quá hẹp.
+ *
+ * Không để rộng vô hạn: dòng nhập dài quá 3-4 inch làm mắt mất điểm neo khi nhảy từ cuối dòng
+ * này sang đầu dòng sau. `5xl` (1024px) là mức còn dễ đọc mà dùng được bề ngang.
+ */
 export default function ThietLap() {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -114,7 +125,8 @@ export default function ThietLap() {
   }
 
   return (
-    <Card className="max-w-2xl">
+    // `max-w-5xl` chứ không `max-w-2xl` — xem ghi chú ở đầu component.
+    <Card className="max-w-5xl">
       <CardContent className="pt-5">
         <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5 sm:col-span-2">

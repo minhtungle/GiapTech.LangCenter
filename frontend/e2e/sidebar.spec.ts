@@ -17,19 +17,15 @@ test.describe('Sidebar', () => {
     await page.setViewportSize({ width: 1440, height: 700 })
     await vaoHeThong(page, request, 'sidebar-cao')
 
-    // Cần trang DÀI hơn viewport. CLB test mới không có dữ liệu nên mọi màn đều ngắn — chốt an
-    // toàn ở dưới đã bắt đúng việc đó khi tôi dùng /thong-ke. Nên tạo dữ liệu: 12 cầu thủ đủ làm
-    // bảng dài hơn 700px, và không phụ thuộc trận đấu hay kết quả.
-    for (let i = 1; i <= 12; i++) {
-      await page.goto('/quan-tri/cau-thu')
-      await page.click('button:has-text("Thêm cầu thủ")')
-      await page.fill('#hoTen', `Cầu thủ số ${i}`)
-      await page.locator('dialog[open] button[type=submit]').click()
-      await expect(page.locator('dialog[open]')).toHaveCount(0)
-    }
-
-    await page.goto('/quan-tri/cau-thu')
-    await page.waitForTimeout(1200)
+    // Cần trang DÀI hơn viewport, và **không phụ thuộc dữ liệu**.
+    //
+    // Hai lần trước tôi chọn sai: `/thong-ke` (CLB test không có dữ liệu → trang ngắn) rồi bảng
+    // cầu thủ (sau khi cho bảng cuộn thì trang cũng ngắn). Chốt an toàn ở dưới bắt được cả hai.
+    //
+    // `/quan-tri/thiet-lap` là form 14 trường, luôn dài hơn 800px với mọi CLB kể cả CLB rỗng —
+    // và nó KHÔNG có bảng nên không bị ảnh hưởng khi tôi cho bảng cuộn.
+    await page.goto('/quan-tri/thiet-lap')
+    await page.waitForTimeout(1500)
 
     const soDo = await page.evaluate(() => {
       const a = document.querySelector('aside')!.getBoundingClientRect()

@@ -216,6 +216,16 @@ export function TabDangKy({
     onError: (e) => onLoi(layMaLoi(e)),
   })
 
+  /** Màu theo câu trả lời — mắt phân biệt được ngay mà không phải đọc chữ. */
+  const mauTraLoi = (tl: string) =>
+    tl === THAM_GIA
+      ? 'text-[hsl(var(--status-win))] font-medium'
+      : tl === KHONG_THAM_GIA
+        ? 'text-destructive'
+        : tl === CHUA_CHAC
+          ? 'text-[hsl(var(--status-draw))]'
+          : 'text-muted-foreground'
+
   const nhanTraLoi = (tl: string) =>
     tl === THAM_GIA
       ? t('homThu.tl.ThamGia')
@@ -370,34 +380,51 @@ export function TabDangKy({
       )}
 
       {/* ----- Bảng phản hồi ----- */}
+      {/*
+        Bảng CUỘN thay vì đẩy trang dài ra.
+        
+        Ba cột "Nguồn" · "Lời nhắn" gộp vào cột trả lời: đo 21/08 thì phần lớn ô của chúng là dấu
+        "—" (chỉ ai trả lời qua link mới có badge, chỉ ai ghi chú mới có chữ), nên hai cột riêng
+        chiếm 1/3 bề ngang để hiển thị gần như không gì. Gộp lại thì mỗi dòng thấp hơn và mắt chỉ
+        phải quét một cột.
+      */}
       {phanHois?.length ? (
-        <Table>
+        <Table caoToiDa="max-h-[22rem]">
           <thead>
             <tr>
-              <Th>{t('cauThu.soAo')}</Th>
+              {/* `w-16` chứ không `w-14`: "Số áo" gãy thành hai dòng ở 14 và làm header cao thêm. */}
+              <Th className="w-16 whitespace-nowrap">{t('cauThu.soAo')}</Th>
               <Th>{t('cauThu.hoTen')}</Th>
               <Th>{t('dangKyNhanh.traLoi')}</Th>
-              <Th>{t('dangKyNhanh.nguon')}</Th>
-              <Th>{t('congDong.loiNhan')}</Th>
             </tr>
           </thead>
           <tbody>
             {phanHois.map((p) => (
-              <tr key={p.cauThuId}>
-                <Td>{p.soAo ?? '—'}</Td>
-                <Td>{p.hoTen}</Td>
-                <Td>{nhanTraLoi(p.traLoi)}</Td>
-                <Td>
-                  {/* Câu trả lời qua link KHÔNG xác thực được ai bấm — trưởng nhóm cần thấy. */}
-                  {p.quaLink && <Badge variant="muted">{t('dangKyNhanh.quaLink')}</Badge>}
-                  {p.soLanSua > 0 && (
-                    <span className="ml-1 inline-flex items-center gap-0.5 text-xs text-muted-foreground">
-                      <Undo2 className="h-3 w-3" />
-                      {t('dangKyNhanh.soLanSua', { so: p.soLanSua })}
-                    </span>
-                  )}
+              <tr key={p.cauThuId} className="hover:bg-muted/40">
+                <Td className="py-1.5 text-center font-mono text-xs text-muted-foreground">
+                  {p.soAo ?? '—'}
                 </Td>
-                <Td className="text-muted-foreground">{p.ghiChu ?? '—'}</Td>
+                <Td className="py-1.5">{p.hoTen}</Td>
+                <Td className="py-1.5">
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    <span className={cn(mauTraLoi(p.traLoi))}>{nhanTraLoi(p.traLoi)}</span>
+                    {/* Câu trả lời qua link KHÔNG xác thực được ai bấm — trưởng nhóm cần thấy. */}
+                    {p.quaLink && (
+                      <span className="text-xs text-muted-foreground">
+                        · {t('dangKyNhanh.quaLink')}
+                      </span>
+                    )}
+                    {p.soLanSua > 0 && (
+                      <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground">
+                        <Undo2 className="h-3 w-3" />
+                        {t('dangKyNhanh.soLanSua', { so: p.soLanSua })}
+                      </span>
+                    )}
+                    {p.ghiChu && (
+                      <span className="text-xs italic text-muted-foreground">“{p.ghiChu}”</span>
+                    )}
+                  </span>
+                </Td>
               </tr>
             ))}
           </tbody>
