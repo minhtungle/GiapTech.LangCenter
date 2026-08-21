@@ -124,8 +124,19 @@ public class LayPhanHoiHandler(IAppDbContext db)
 /// Tạo sẵn hàng phản hồi "chưa trả lời" cho **mọi cầu thủ** của CLB: trưởng nhóm cần thấy ai
 /// chưa trả lời, không chỉ ai đã đồng ý.
 /// </summary>
+/// <param name="CauThuIds">
+/// Ai được mời. **null = mời TẤT CẢ** — giữ hành vi cũ làm mặc định để không phá code đang gọi
+/// và các lời mời đã tạo (FR-19, 21/08).
+///
+/// Trước 21/08 không có tham số này: handler luôn mời mọi cầu thủ, không có cách bỏ ai. Thực tế
+/// thì có người nghỉ dài, người chấn thương, người đã báo trước là không đá — mời họ chỉ làm
+/// bảng phản hồi đầy "chưa trả lời" giả.
+/// </param>
 public record GuiLoiMoiDangKyCommand(
-    Guid TranDauId, string? LoiNhan, DateTimeOffset? HanTraLoi) : IRequest<Guid>;
+    Guid TranDauId,
+    string? LoiNhan,
+    DateTimeOffset? HanTraLoi,
+    IReadOnlyList<Guid>? CauThuIds = null) : IRequest<Guid>;
 
 public class GuiLoiMoiDangKyValidator : AbstractValidator<GuiLoiMoiDangKyCommand>
 {
@@ -158,8 +169,17 @@ public class GuiLoiMoiDangKyHandler(IAppDbContext db, ICurrentUser currentUser)
         };
         db.LoiMoiThamGias.Add(loiMoi);
 
-        var cauThuIds = await db.CauThus.Select(c => c.Id).ToListAsync(ct);
-        if (cauThuIds.Count == 0) throw new AppException("CHUA_CO_CAU_THU_NAO");
+        // Query filter đã lọc theo tenant, nên `db.CauThus` chỉ trả cầu thủ của CLB này.
+        var tatCa = await db.CauThus.Select(c => c.Id).ToListAsync(ct);
+        if (tatCa.Count == 0) throw new AppException("CHUA_CO_CAU_THU_NAO");
+
+        // Giao với danh sách thật thay vì tin id client gửi: id của CLB khác sẽ bị loại ở đây.
+        // Không có bước này thì trưởng nhóm CLB A tạo được hàng phản hồi cho cầu thủ CLB B.
+        var cauThuIds = request.CauThuIds is null
+            ? tatCa
+            : tatCa.Where(id => request.CauThuIds.Contains(id)).ToList();
+
+        if (cauThuIds.Count == 0) throw new AppException("CHUA_CHON_CAU_THU_NAO");
 
         foreach (var cauThuId in cauThuIds)
             db.PhanHoiThamGias.Add(new Domain.Entities.PhanHoiThamGia

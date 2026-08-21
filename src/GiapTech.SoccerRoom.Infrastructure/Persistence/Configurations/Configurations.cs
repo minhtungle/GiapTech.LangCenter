@@ -229,6 +229,16 @@ public class LoiMoiThamGiaConfig : IEntityTypeConfiguration<LoiMoiThamGia>
         // không biết trả lời cái nào mới tính.
         b.HasIndex(x => x.TranDauId).IsUnique();
 
+        // FR-19: token của link đăng ký nhanh.
+        b.Property(x => x.LinkTokenHash).HasMaxLength(64);
+
+        // UNIQUE + filter: tra theo token phải nhanh (mỗi lần ai mở link là một truy vấn), và
+        // hai lời mời không được trùng hash. Filter `IS NOT NULL` để các lời mời CHƯA sinh link
+        // không xung đột với nhau — thiếu filter thì lời mời thứ hai không tạo được.
+        b.HasIndex(x => x.LinkTokenHash).IsUnique()
+            .HasFilter("link_token_hash IS NOT NULL")
+            .HasDatabaseName("UQ_LOI_MOI_THAM_GIA_link_token");
+
         b.HasOne(x => x.TranDau).WithMany()
             .HasForeignKey(x => x.TranDauId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.Tenant).WithMany()
