@@ -1,4 +1,5 @@
 using Asp.Versioning;
+using GiapTech.SoccerRoom.API.RateLimit;
 using GiapTech.SoccerRoom.Application.DangNhap.Commands.DangNhap;
 using GiapTech.SoccerRoom.Application.DangNhap.Commands.DatLaiMatKhauQuaToken;
 using GiapTech.SoccerRoom.Application.DangNhap.Commands.DoiMatKhau;
@@ -7,6 +8,7 @@ using GiapTech.SoccerRoom.Application.DangNhap.Commands.QuenMatKhau;
 using GiapTech.SoccerRoom.Application.DangNhap.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GiapTech.SoccerRoom.API.Controllers.V1;
@@ -32,6 +34,7 @@ public class AuthController(ISender sender) : ControllerBase
     /// </summary>
     [HttpGet("ten-doi/{maDoi:length(7)}")]
     [AllowAnonymous]
+    [EnableRateLimiting(GioiHanTanSuat.TraCuu)]
     [ProducesResponseType<TenDoiTheoMaDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TenDoiTheoMaDto>> TenDoi(string maDoi, CancellationToken ct)
@@ -41,6 +44,7 @@ public class AuthController(ISender sender) : ControllerBase
 
     /// <summary>FR-01 — đăng nhập bằng {ID đội, username, mật khẩu}.</summary>
     [HttpPost("dang-nhap")]
+    [EnableRateLimiting(GioiHanTanSuat.XacThuc)]
     [AllowAnonymous]
     [ProducesResponseType<DangNhapResult>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -68,6 +72,7 @@ public class AuthController(ISender sender) : ControllerBase
     /// Luôn trả 204 dù email có tồn tại hay không, để không tiết lộ email nào đã đăng ký.
     /// </summary>
     [HttpPost("quen-mat-khau")]
+    [EnableRateLimiting(GioiHanTanSuat.XacThuc)]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> QuenMatKhau(
@@ -79,6 +84,7 @@ public class AuthController(ISender sender) : ControllerBase
 
     /// <summary>FR-02 — đặt lại mật khẩu bằng mã nhận qua email.</summary>
     [HttpPost("dat-lai-mat-khau")]
+    [EnableRateLimiting(GioiHanTanSuat.XacThuc)]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

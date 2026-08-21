@@ -1,10 +1,12 @@
 using Asp.Versioning;
+using GiapTech.SoccerRoom.API.RateLimit;
 using GiapTech.SoccerRoom.API.Authorization;
 using GiapTech.SoccerRoom.Application.MoiQuaLink;
 using GiapTech.SoccerRoom.Domain.Common;
 using GiapTech.SoccerRoom.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GiapTech.SoccerRoom.API.Controllers.V1;
@@ -48,6 +50,7 @@ public class MoiQuaLinkController(ISender sender) : ControllerBase
     /// như khi đặt trên URL. Đánh đổi ngữ nghĩa REST để không rò token là đúng chỗ.
     /// </summary>
     [HttpPost("xem")]
+    [EnableRateLimiting(GioiHanTanSuat.LoiMoiTheoToken)]
     [AllowAnonymous]
     public async Task<ActionResult<XemLoiMoiLinkDto>> Xem(
         [FromBody] XemBody body, CancellationToken ct)
@@ -64,6 +67,7 @@ public class MoiQuaLinkController(ISender sender) : ControllerBase
     /// không được tự ý thêm trận.
     /// </summary>
     [HttpPost("tra-loi")]
+    [EnableRateLimiting(GioiHanTanSuat.LoiMoiTheoToken)]
     [RequirePermission(ChucNang.LichThiDau, HanhDong.Them)]
     public async Task<ActionResult<TraLoiLinkKetQua>> TraLoi(
         [FromBody] TraLoiBody body, CancellationToken ct)

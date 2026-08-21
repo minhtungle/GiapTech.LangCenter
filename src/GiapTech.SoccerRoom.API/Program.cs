@@ -2,6 +2,7 @@ using System.Text;
 using Asp.Versioning;
 using GiapTech.SoccerRoom.API.Authorization;
 using GiapTech.SoccerRoom.API.Middleware;
+using GiapTech.SoccerRoom.API.RateLimit;
 using GiapTech.SoccerRoom.Application;
 using GiapTech.SoccerRoom.API.Services;
 using GiapTech.SoccerRoom.Application.Common.Interfaces;
@@ -27,6 +28,7 @@ builder.Services
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.ThemGioiHanTanSuat();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 builder.Services.ThemApplication();
@@ -126,6 +128,15 @@ if (app.Environment.IsDevelopment())
 
 // Bắt exception sớm nhất để mọi lỗi phía sau đều thành { errorCode } (quy tắc #3).
 app.UseMiddleware<ExceptionMiddleware>();
+
+// Giới hạn tần suất cho endpoint ẩn danh (nợ N3). Đặt SAU ExceptionMiddleware để 429 cũng đi
+// qua cùng đường trả lỗi, nhưng TRƯỚC Authentication: chặn được request rác mà không phải
+// giải mã JWT hay truy vấn DB cho nó.
+//
+// Mặc định BẬT. Integration test tắt nó (xem GioiHanTanSuat.CauHinhBat) vì TestServer không có
+// TCP thật nên mọi test dùng chung một phân vùng IP và đốt hết hạn mức của nhau.
+if (app.Configuration.GetValue(GioiHanTanSuat.CauHinhBat, true))
+    app.UseRateLimiter();
 
 // Chỉ redirect HTTPS khi chạy trực tiếp. Sau Caddy, TLS đã kết thúc ở proxy nên bật cái này
 // sẽ đá cả healthcheck lẫn request thật sang cổng HTTPS mà container không nghe.

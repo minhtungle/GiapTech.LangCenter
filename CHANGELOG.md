@@ -35,6 +35,10 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
   **không** có đường tìm theo tên (quyết định 20/08, xem nhật ký).
 
 **Hạ tầng & chất lượng**
+- **Giới hạn tần suất** cho 7 endpoint ẩn danh (`Microsoft.AspNetCore.RateLimiting`, cửa sổ trượt
+  theo IP): tra cứu 30/phút · lời mời theo token 10/phút · xác thực 10/phút. Trả 429
+  `QUA_NHIEU_YEU_CAU` kèm `Retry-After`. Có test quét **toàn bộ** controller để bắt endpoint ẩn
+  danh mới mà quên gắn giới hạn.
 - `EnableRetryOnFailure` cho Npgsql — không có nó thì mỗi lần PostgreSQL restart, request **đầu
   tiên** sau đó trả 500 "Đã có lỗi xảy ra" còn các request sau tự lành.
 - `POST /du-lieu-mau/don-tenant-test` (chỉ Development) + `globalTeardown` của Playwright — E2E

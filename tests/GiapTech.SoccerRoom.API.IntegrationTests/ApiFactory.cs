@@ -78,6 +78,19 @@ public class ApiFactory : WebApplicationFactory<Program>
     /// </summary>
     protected virtual string MoiTruong => Environments.Development;
 
+    /// <summary>
+    /// Giới hạn tần suất TẮT mặc định trong test.
+    ///
+    /// `TestServer` không mở socket thật nên `RemoteIpAddress` là null với mọi request — tất cả
+    /// test rơi vào chung một phân vùng và đốt hết hạn mức của nhau. Bật lên thì 112 test đỏ vì
+    /// nhận `QUA_NHIEU_YEU_CAU` thay vì dữ liệu (đã xảy ra 21/08).
+    ///
+    /// `GioiHanTanSuatTests` override thành `true` để kiểm chính cơ chế này, và override thành
+    /// `null` (không đặt cờ) để kiểm **giá trị mặc định** của ứng dụng — nếu factory luôn đặt cờ
+    /// thì không test nào thấy được việc mặc định bị đổi thành tắt.
+    /// </summary>
+    protected virtual bool? DatCoGioiHanTanSuat => false;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment(MoiTruong);
@@ -85,6 +98,8 @@ public class ApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("JWT_SECRET", JwtSecret);
         builder.UseSetting("JWT_ISSUER", "soccerroom-api");
         builder.UseSetting("JWT_EXPIRY_MINUTES", "60");
+        if (DatCoGioiHanTanSuat is { } bat)
+            builder.UseSetting("GIOI_HAN_TAN_SUAT", bat ? "true" : "false");
 
         builder.ConfigureServices(services =>
         {
