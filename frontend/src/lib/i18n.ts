@@ -143,6 +143,18 @@ const vi = {
     ghiChu: 'Ghi chú',
     coTaiKhoan: 'Có tài khoản',
     themMoi: 'Thêm cầu thủ',
+    loc: { DangDa: 'Đang đá', DaNghi: 'Đã nghỉ', Tatca: 'Tất cả' },
+    daNghi: 'Đã nghỉ',
+    choNghi: 'Cho nghỉ thi đấu',
+    choDaLai: 'Cho đá lại',
+    xacNhanNghiTieuDe: 'Cho {{ten}} nghỉ thi đấu?',
+    xacNhanNghiMoTa:
+      'Hồ sơ và toàn bộ lịch sử (bàn thắng, phiếu MVP, đóng quỹ) được GIỮ NGUYÊN và vẫn tính vào thống kê. Họ chỉ không còn hiện ở các chỗ chọn người cho trận sắp tới. Cho đá lại bất cứ lúc nào.',
+    khoaTaiKhoanKem: 'Khoá luôn tài khoản «{{username}}»',
+    laTaiKhoanChinhMinh:
+      'Cầu thủ này gắn với tài khoản «{{username}}» — chính tài khoản bạn đang dùng. Không thể tự khoá; hồ sơ vẫn cho nghỉ được.',
+    khoaTaiKhoanGoiY:
+      'Không tích nếu họ vẫn giữ vai trò khác trong nhóm (thủ quỹ, trợ lý) và cần đăng nhập.',
     suaTieuDe: 'Sửa hồ sơ cầu thủ',
     chuaCo: 'Chưa có hồ sơ cầu thủ nào. Thêm cầu thủ đầu tiên để bắt đầu.',
   },
@@ -734,6 +746,10 @@ const vi = {
     KHONG_CO_TRONG_DANH_SACH: 'Tên này không có trong danh sách được mời.',
     XOA_SE_MAT_CAU_TRA_LOI: 'Bỏ người đã trả lời sẽ mất câu trả lời của họ.',
     CHUA_CHON_CAU_THU_NAO: 'Chưa chọn ai để mời.',
+    CAU_THU_DA_NGHI_ROI: 'Cầu thủ này đã ở trạng thái nghỉ.',
+    CAU_THU_DANG_DA: 'Cầu thủ này đang đá, không cần cho đá lại.',
+    KHONG_TU_KHOA_TAI_KHOAN_CHINH_MINH:
+      'Không thể tự khoá tài khoản đang đăng nhập. Bỏ tích rồi thử lại.',
     QUA_NHIEU_YEU_CAU: 'Bạn thao tác quá nhanh. Chờ một chút rồi thử lại.',
     LOI_HE_THONG: 'Có lỗi xảy ra, vui lòng thử lại',
     USERNAME_DA_TON_TAI: 'Tên đăng nhập đã tồn tại trong CLB',

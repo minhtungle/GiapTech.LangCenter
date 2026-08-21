@@ -11,11 +11,35 @@ namespace GiapTech.SoccerRoom.Application.QuanTri.CauThu;
 public record CauThuDto(
     Guid Id, string HoTen, string? AnhDaiDien, DateOnly? NgaySinh,
     DateOnly? NgayThamGia, string? GhiChu, bool CoTaiKhoan,
-    int? SoAo, string? ViTriSoTruong);
+    int? SoAo, string? ViTriSoTruong,
+    bool DaNghi = false, DateOnly? NgayNghi = null);
+
+/// <summary>Lọc theo trạng thái hoạt động (21/08).</summary>
+public enum LocTrangThaiCauThu
+{
+    /// <summary>Chỉ người đang đá — **mặc định** cho danh sách hằng ngày.</summary>
+    DangDa = 0,
+
+    /// <summary>Chỉ người đã nghỉ, để rà lại hoặc cho ai đó đá lại.</summary>
+    DaNghi = 1,
+
+    Tatca = 2,
+}
 
 // ---------- Queries ----------
 
-public record LayDanhSachCauThuQuery(string? TimKiem = null, ThamSoTrang? Trang = null)
+/// <param name="Loc">
+/// Mặc định <see cref="LocTrangThaiCauThu.DangDa"/> — danh sách hằng ngày phải gọn.
+///
+/// Mặc định là "đang đá" chứ không "tất cả" vì đây là API dùng chung: mọi chỗ chọn người (mời
+/// đăng ký, xếp đội hình, thu quỹ) đều gọi nó, và không chỗ nào trong số đó muốn thấy người đã
+/// nghỉ. Để mặc định "tất cả" thì mỗi chỗ gọi phải nhớ truyền tham số — quên một chỗ là người
+/// nghỉ lại xuất hiện trong ô chọn.
+/// </param>
+public record LayDanhSachCauThuQuery(
+    string? TimKiem = null,
+    ThamSoTrang? Trang = null,
+    LocTrangThaiCauThu Loc = LocTrangThaiCauThu.DangDa)
     : IRequest<KetQuaTrang<CauThuDto>>;
 
 public class LayDanhSachCauThuHandler(IAppDbContext db)
@@ -26,6 +50,13 @@ public class LayDanhSachCauThuHandler(IAppDbContext db)
     {
         var trang = request.Trang ?? new ThamSoTrang();
         var q = db.CauThus.AsQueryable();
+
+        q = request.Loc switch
+        {
+            LocTrangThaiCauThu.DangDa => q.Where(c => !c.DaNghi),
+            LocTrangThaiCauThu.DaNghi => q.Where(c => c.DaNghi),
+            _ => q,
+        };
 
         if (!string.IsNullOrWhiteSpace(request.TimKiem))
         {
@@ -44,7 +75,8 @@ public class LayDanhSachCauThuHandler(IAppDbContext db)
             .Take(trang.SoDongHopLe)
             .Select(c => new CauThuDto(
                 c.Id, c.HoTen, c.AnhDaiDien, c.NgaySinh, c.NgayThamGia, c.GhiChu,
-                db.NguoiDungs.Any(u => u.CauThuId == c.Id), c.SoAo, c.ViTriSoTruong))
+                db.NguoiDungs.Any(u => u.CauThuId == c.Id), c.SoAo, c.ViTriSoTruong,
+                c.DaNghi, c.NgayNghi))
             .ToListAsync(ct);
 
         return new KetQuaTrang<CauThuDto>(duLieu, tong, trang.TrangHopLe, trang.SoDongHopLe);
@@ -60,7 +92,8 @@ public class LayCauThuHandler(IAppDbContext db) : IRequestHandler<LayCauThuQuery
                .Where(c => c.Id == request.Id)
                .Select(c => new CauThuDto(
                    c.Id, c.HoTen, c.AnhDaiDien, c.NgaySinh, c.NgayThamGia, c.GhiChu,
-                   db.NguoiDungs.Any(u => u.CauThuId == c.Id), c.SoAo, c.ViTriSoTruong))
+                   db.NguoiDungs.Any(u => u.CauThuId == c.Id), c.SoAo, c.ViTriSoTruong,
+                   c.DaNghi, c.NgayNghi))
                .FirstOrDefaultAsync(ct)
            ?? throw new KhongTimThayException($"CauThu {request.Id}");
 }

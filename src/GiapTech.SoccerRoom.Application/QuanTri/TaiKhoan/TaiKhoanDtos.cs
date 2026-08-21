@@ -95,6 +95,9 @@ public class TaoTaiKhoanHandler(IAppDbContext db, IPasswordHasher hasher)
 
         if (request.CauThuId is { } cauThuId)
         {
+            // CỐ Ý không lọc `DaNghi` (21/08): người nghỉ đá vẫn có thể giữ vai trò khác trong
+            // nhóm (thủ quỹ, trợ lý) và cần tài khoản để làm việc đó. Chặn ở đây là ép trưởng
+            // nhóm cho họ "đá lại" chỉ để cấp được tài khoản.
             if (!await db.CauThus.AnyAsync(c => c.Id == cauThuId, ct))
                 throw new KhongTimThayException($"CauThu {cauThuId}");
 

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Plus, Search, Trash2, Pencil } from 'lucide-react'
+import { Plus, RotateCcw, Search, Trash2, Pencil, UserMinus } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong, Textarea,
@@ -10,6 +10,7 @@ import { Modal, ModalChan } from '@/components/ui/Modal'
 import { ChonAnh } from '@/components/ui/ChonAnh'
 import { Anh } from '@/components/ui/Anh'
 import { PhanTrang } from '@/components/ui/PhanTrang'
+import { cn } from '@/lib/utils'
 
 interface CauThuDto {
   id: string
@@ -21,7 +22,12 @@ interface CauThuDto {
   coTaiKhoan: boolean
   soAo: number | null
   viTriSoTruong: string | null
+  daNghi: boolean
+  ngayNghi: string | null
 }
+
+/** Khớp `LocTrangThaiCauThu` ở backend. */
+type Loc = 'DangDa' | 'DaNghi' | 'Tatca'
 
 /** FR-04 — CRUD hồ sơ cầu thủ. Thêm/sửa trong modal, không chèn form vào main view. */
 export default function CauThu() {
@@ -36,19 +42,76 @@ export default function CauThu() {
   /** Khoá ảnh đang hiện trong form — tải ảnh cập nhật ngay, không chờ bấm Lưu. */
   const [anhHienTai, setAnhHienTai] = useState<string | null>(null)
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
+  /**
+   * Mặc định chỉ người đang đá — danh sách hằng ngày phải gọn. Người đã nghỉ vẫn xem lại được
+   * qua bộ lọc (quyết định của chủ sản phẩm 21/08).
+   */
+  const [loc, setLoc] = useState<Loc>('DangDa')
+  /** Cầu thủ đang chờ xác nhận cho nghỉ, kèm username nếu họ có tài khoản. */
+  const [xacNhanNghi, setXacNhanNghi] = useState<{
+    ct: CauThuDto
+    username: string | null
+    /** Là tài khoản của chính người đang đăng nhập — ẩn ô tích, tự khoá là mất đường vào. */
+    laChinhMinh: boolean
+  } | null>(null)
+  const [khoaTaiKhoan, setKhoaTaiKhoan] = useState(false)
 
   const { data: ketQua, isLoading } = useQuery({
-    queryKey: ['cau-thu', timKiem, trang, soDong],
+    queryKey: ['cau-thu', timKiem, trang, soDong, loc],
     queryFn: async () =>
       (
         await api.get<KetQuaTrang<CauThuDto>>('/cau-thu', {
-          params: { timKiem: timKiem || undefined, trang, soDong },
+          params: { timKiem: timKiem || undefined, trang, soDong, loc },
         })
       ).data,
   })
 
   const kq = ketQua ?? trangRong<CauThuDto>()
   const data = kq.duLieu
+
+  /** Mở hộp xác nhận — hỏi tài khoản TRƯỚC để câu hỏi nêu đúng username. */
+  const moXacNhanNghi = async (ct: CauThuDto) => {
+    setMaLoiBang(null)
+    setKhoaTaiKhoan(false)
+    try {
+      const { data } = await api.get<{ username: string | null; laChinhMinh: boolean }>(
+        `/cau-thu/${ct.id}/tai-khoan`,
+      )
+      setXacNhanNghi({ ct, username: data.username, laChinhMinh: data.laChinhMinh })
+    } catch {
+      // Không tra được tài khoản thì vẫn cho nghỉ, chỉ là không hỏi được về tài khoản.
+      setXacNhanNghi({ ct, username: null, laChinhMinh: false })
+    }
+  }
+
+  const choNghi = useMutation({
+    mutationFn: async () =>
+      (
+        await api.post<{ taiKhoanBiKhoa: string | null }>(
+          `/cau-thu/${xacNhanNghi!.ct.id}/nghi-thi-dau`,
+          { ngayNghi: null, khoaTaiKhoan: khoaTaiKhoan },
+        )
+      ).data,
+    onSuccess: () => {
+      setXacNhanNghi(null)
+      void qc.invalidateQueries({ queryKey: ['cau-thu'] })
+      // Danh sách chọn người ở các màn khác cũng phải đổi theo.
+      void qc.invalidateQueries({ queryKey: ['cau-thu-ngan'] })
+    },
+    onError: (e) => {
+      setXacNhanNghi(null)
+      setMaLoiBang(layMaLoi(e))
+    },
+  })
+
+  const daLai = useMutation({
+    mutationFn: async (id: string) => api.post(`/cau-thu/${id}/da-lai`),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['cau-thu'] })
+      void qc.invalidateQueries({ queryKey: ['cau-thu-ngan'] })
+    },
+    onError: (e) => setMaLoiBang(layMaLoi(e)),
+  })
 
   const luu = useMutation({
     mutationFn: async (form: Partial<CauThuDto>) => {
@@ -120,10 +183,34 @@ export default function CauThu() {
             }}
           />
         </div>
-        <Button onClick={moThem}>
-          <Plus className="h-4 w-4" />
-          {t('cauThu.themMoi')}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Ba nút thay vì dropdown: chỉ 3 lựa chọn, và trạng thái đang chọn thấy ngay không
+              phải mở ra xem. */}
+          <div className="flex rounded-md border border-border">
+            {(['DangDa', 'DaNghi', 'Tatca'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => {
+                  setLoc(v)
+                  setTrang(1)
+                }}
+                className={cn(
+                  'px-3 py-1.5 text-xs transition-colors first:rounded-l-md last:rounded-r-md',
+                  loc === v
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted',
+                )}
+              >
+                {t(`cauThu.loc.${v}`)}
+              </button>
+            ))}
+          </div>
+          <Button onClick={moThem}>
+            <Plus className="h-4 w-4" />
+            {t('cauThu.themMoi')}
+          </Button>
+        </div>
       </div>
 
       {maLoiBang && <CanhBaoLoi>{t(`loi.${maLoiBang}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
@@ -158,7 +245,7 @@ export default function CauThu() {
           </thead>
           <tbody>
             {data.map((c) => (
-              <tr key={c.id} className="hover:bg-muted/40">
+              <tr key={c.id} className={cn('hover:bg-muted/40', c.daNghi && 'opacity-60')}>
                 <Td>
                   <Anh
                     khoa={c.anhDaiDien}
@@ -179,7 +266,19 @@ export default function CauThu() {
                     <span className="text-muted-foreground">—</span>
                   )}
                 </Td>
-                <Td className="font-medium">{c.hoTen}</Td>
+                <Td className="font-medium">
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    {c.hoTen}
+                    {/* Hiện nhãn cả ở bộ lọc "Tất cả" — không có nó thì hai nhóm trộn lẫn và
+                        dòng mờ một mình không đủ rõ. */}
+                    {c.daNghi && (
+                      <Badge>
+                        {t('cauThu.daNghi')}
+                        {c.ngayNghi ? ` · ${c.ngayNghi}` : ''}
+                      </Badge>
+                    )}
+                  </span>
+                </Td>
                 <Td className="text-muted-foreground">{c.viTriSoTruong ?? '—'}</Td>
                 <Td className="text-muted-foreground">{c.ngaySinh ?? '—'}</Td>
                 <Td className="text-muted-foreground">{c.ngayThamGia ?? '—'}</Td>
@@ -195,6 +294,29 @@ export default function CauThu() {
                     <Button variant="ghost" size="sm" onClick={() => moSua(c)} title={t('chung.sua')}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
+
+                    {/* Cho nghỉ / đá lại — KHÔNG phải xoá, nên đặt cạnh nút sửa chứ không cạnh
+                        nút xoá, và dùng màu trung tính. */}
+                    {c.daNghi ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title={t('cauThu.choDaLai')}
+                        disabled={daLai.isPending}
+                        onClick={() => daLai.mutate(c.id)}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title={t('cauThu.choNghi')}
+                        onClick={() => void moXacNhanNghi(c)}
+                      >
+                        <UserMinus className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -212,6 +334,57 @@ export default function CauThu() {
             ))}
           </tbody>
         </Table>
+      )}
+
+      {/*
+        Hộp xác nhận cho nghỉ. Không dùng `HopXacNhan` chung vì cần thêm ô tích "khoá tài khoản"
+        — và câu hỏi phải nêu ĐÚNG username, không phải "tài khoản của người này".
+      */}
+      {xacNhanNghi && (
+        <Modal
+          mo
+          onDong={() => setXacNhanNghi(null)}
+          tieuDe={t('cauThu.xacNhanNghiTieuDe', { ten: xacNhanNghi.ct.hoTen })}
+        >
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-muted-foreground">{t('cauThu.xacNhanNghiMoTa')}</p>
+
+            {/* Ẩn ô tích khi đó là tài khoản của chính mình: tự khoá là mất đường vào hệ thống,
+                và nếu là admin duy nhất thì CLB mất luôn. Handler cũng chặn. */}
+            {xacNhanNghi.username && !xacNhanNghi.laChinhMinh && (
+              <label className="flex cursor-pointer items-start gap-2 rounded-md border border-border p-2.5 text-sm">
+                <input
+                  type="checkbox"
+                  checked={khoaTaiKhoan}
+                  onChange={(e) => setKhoaTaiKhoan(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-input"
+                />
+                <span>
+                  {t('cauThu.khoaTaiKhoanKem', { username: xacNhanNghi.username })}
+                  {/* Nói rõ vì sao KHÔNG tự tích: có người nghỉ đá mà vẫn làm thủ quỹ. */}
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    {t('cauThu.khoaTaiKhoanGoiY')}
+                  </span>
+                </span>
+              </label>
+            )}
+
+            {xacNhanNghi.laChinhMinh && (
+              <p className="rounded-md bg-muted/50 px-2.5 py-2 text-xs text-muted-foreground">
+                {t('cauThu.laTaiKhoanChinhMinh', { username: xacNhanNghi.username })}
+              </p>
+            )}
+
+            <ModalChan>
+              <Button variant="outline" onClick={() => setXacNhanNghi(null)}>
+                {t('chung.huy')}
+              </Button>
+              <Button disabled={choNghi.isPending} onClick={() => choNghi.mutate()}>
+                {choNghi.isPending ? t('chung.dangTai') : t('cauThu.choNghi')}
+              </Button>
+            </ModalChan>
+          </div>
+        </Modal>
       )}
 
       {data.length > 0 && (

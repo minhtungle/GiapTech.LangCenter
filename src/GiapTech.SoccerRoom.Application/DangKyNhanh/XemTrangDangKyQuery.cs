@@ -39,6 +39,9 @@ public class XemTrangDangKyHandler(IAppDbContext db)
 
         // Chỉ ba trường cho mỗi cái tên: ai có link đều đọc được danh sách này, nên nó phải là
         // tập nhỏ nhất còn dùng được. KHÔNG ngày sinh, SĐT, email, địa chỉ.
+        // KHÔNG lọc `DaNghi` ở đây: danh sách này là những người ĐÃ ĐƯỢC MỜI cho trận cụ thể
+        // này. Nếu ai đó nghỉ sau khi lời mời đã gửi, họ vẫn phải chọn được tên mình để trả lời
+        // "Không" — lọc đi thì họ mở link và không thấy tên, tưởng link sai.
         var danhSach = await db.PhanHoiThamGias.IgnoreQueryFilters()
             .Where(p => p.LoiMoiId == loiMoi.Id)
             .OrderBy(p => p.CauThu.SoAo == null)

@@ -43,6 +43,16 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 - Bốn mốc hạn link (5 phút · 1 giờ · tới giờ đá · 7 ngày) chặn ở validator, cộng nút thu hồi.
 - **Không** áp cho vote MVP: "chọn tên mình" phá vỡ tính bí mật của bầu chọn.
 
+**Cầu thủ nghỉ thi đấu (FR-04 bổ sung)**
+- Cho cầu thủ dừng hoạt động với nhóm — **không xoá**: hồ sơ và toàn bộ lịch sử (bàn thắng, phiếu
+  MVP, đóng quỹ) giữ nguyên và vẫn tính vào thống kê. Chỉ ẩn khỏi các chỗ chọn người cho việc sắp
+  tới (mời đăng ký, xếp đội hình).
+- Trước đó chỉ có xoá cứng, mà xoá bị chặn nếu cầu thủ từng đóng quỹ — nên người đá lâu năm rồi
+  nghỉ thì không xoá được, cũng không có cách đánh dấu.
+- Bộ lọc `Đang đá / Đã nghỉ / Tất cả`, mặc định "đang đá". Cho đá lại bất cứ lúc nào.
+- Tuỳ chọn khoá kèm tài khoản, **không** tự động: có người nghỉ đá mà vẫn làm thủ quỹ. Chặn tự
+  khoá tài khoản của chính người đang đăng nhập.
+
 **Hạ tầng & chất lượng**
 - **Giới hạn tần suất** cho 7 endpoint ẩn danh (`Microsoft.AspNetCore.RateLimiting`, cửa sổ trượt
   theo IP): tra cứu 30/phút · lời mời theo token 10/phút · xác thực 10/phút. Trả 429

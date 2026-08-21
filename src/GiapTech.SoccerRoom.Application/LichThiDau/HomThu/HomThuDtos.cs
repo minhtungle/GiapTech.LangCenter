@@ -210,7 +210,11 @@ public class GuiLoiMoiDangKyHandler(IAppDbContext db, ICurrentUser currentUser)
         db.LoiMoiThamGias.Add(loiMoi);
 
         // Query filter đã lọc theo tenant, nên `db.CauThus` chỉ trả cầu thủ của CLB này.
-        var tatCa = await db.CauThus.Select(c => c.Id).ToListAsync(ct);
+        //
+        // `!c.DaNghi`: "mời tất cả" nghĩa là tất cả người ĐANG ĐÁ (21/08). Không lọc thì người đã
+        // nghỉ vẫn nhận hàng phản hồi "chưa trả lời" ở mọi trận mới, làm bảng đăng ký đầy tên
+        // không bao giờ trả lời và trưởng nhóm không biết còn chờ ai thật.
+        var tatCa = await db.CauThus.Where(c => !c.DaNghi).Select(c => c.Id).ToListAsync(ct);
         if (tatCa.Count == 0) throw new AppException("CHUA_CO_CAU_THU_NAO");
 
         // Giao với danh sách thật thay vì tin id client gửi: id của CLB khác sẽ bị loại ở đây.

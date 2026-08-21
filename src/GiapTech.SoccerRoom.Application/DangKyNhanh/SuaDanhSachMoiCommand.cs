@@ -79,9 +79,10 @@ public class SuaDanhSachMoiHandler(IAppDbContext db, ICurrentUser currentUser)
             .Where(p => p.LoiMoiId == loiMoi.Id)
             .ToListAsync(ct);
 
-        // Giao với cầu thủ THẬT của tenant này: id client gửi có thể là của CLB khác.
+        // Giao với cầu thủ THẬT và ĐANG ĐÁ của tenant này: id client gửi có thể là của CLB khác,
+        // hoặc của người đã nghỉ (danh sách cũ trong cache của trình duyệt).
         var hopLe = await db.CauThus
-            .Where(c => request.CauThuIds.Contains(c.Id))
+            .Where(c => !c.DaNghi && request.CauThuIds.Contains(c.Id))
             .Select(c => c.Id)
             .ToListAsync(ct);
 
