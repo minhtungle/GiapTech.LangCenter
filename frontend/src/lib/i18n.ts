@@ -91,6 +91,26 @@ const vi = {
     lienHeTruongNhom: 'Liên hệ trưởng nhóm để nhận link mới',
   },
 
+  tongQuan: {
+    moTaTruongNhom: 'Việc cần xử lý và trận đấu gần nhất.',
+    moTaCauThu: 'Việc của bạn và trận đấu gần nhất.',
+    viecCanLam: 'Việc cần làm',
+    khongCoViec: 'Không có việc nào cần xử lý.',
+    viec: {
+      LOI_MOI_THACH_DAU: '{{so}} lời mời thách đấu chờ bạn trả lời',
+      TRAN_CHUA_MOI_DANG_KY: '{{so}} trận sắp tới chưa mời đăng ký',
+      CON_NO_QUY: '{{so}} khoản quỹ chưa thu đủ',
+      TOI_CHUA_TRA_LOI: 'Bạn chưa trả lời {{so}} lời mời đăng ký',
+      TOI_CON_NO_QUY: 'Bạn còn nợ {{so}} khoản quỹ',
+    },
+    tranDau: 'Trận đấu',
+    tranKeTiep: 'Trận kế tiếp',
+    tranVuaRoi: 'Trận vừa rồi',
+    khongCoTran: 'Chưa có.',
+    chuaGuiLoiMoi: 'Chưa mời đăng ký',
+    tienDoNhan: '{{da}}/{{tong}} người đã nhận đá',
+  },
+
   dangNhap: {
     tieuDe: 'Đăng nhập',
     moTa: 'Nhập mã đội, tên đăng nhập và mật khẩu',

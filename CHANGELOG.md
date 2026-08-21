@@ -43,6 +43,14 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 - Bốn mốc hạn link (5 phút · 1 giờ · tới giờ đá · 7 ngày) chặn ở validator, cộng nút thu hồi.
 - **Không** áp cho vote MVP: "chọn tên mình" phá vỡ tính bí mật của bầu chọn.
 
+**Màn Tổng quan (FR-20)**
+- **Việc cần làm** — lời mời thách đấu chờ trả lời · trận chưa mời đăng ký · khoản quỹ chưa thu ·
+  việc của chính mình. Mỗi dòng bấm được để tới đúng chỗ xử lý.
+- **Trận kế tiếp + trận vừa rồi**, kèm tiến độ đăng ký (`chưa mời` khác `0/16`).
+- Phân vai: trưởng nhóm thấy việc của đội, cầu thủ thường chỉ thấy việc của mình.
+- Không bắt quyền: đây là màn đầu tiên sau đăng nhập, bắt quyền thì người không có quyền nào rơi
+  vào trang trắng.
+
 **Cầu thủ nghỉ thi đấu (FR-04 bổ sung)**
 - Cho cầu thủ dừng hoạt động với nhóm — **không xoá**: hồ sơ và toàn bộ lịch sử (bàn thắng, phiếu
   MVP, đóng quỹ) giữ nguyên và vẫn tính vào thống kê. Chỉ ẩn khỏi các chỗ chọn người cho việc sắp

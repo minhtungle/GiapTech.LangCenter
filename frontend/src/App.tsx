@@ -12,6 +12,7 @@ import CongDong from '@/pages/cong-dong/CongDong'
 import ChiTietClb from '@/pages/cong-dong/ChiTietClb'
 import XemLoiMoiLink from '@/pages/moi-qua-link/XemLoiMoiLink'
 import DangKyNhanh from '@/pages/dang-ky-nhanh/DangKyNhanh'
+import TongQuan from '@/pages/TongQuan'
 import ChiTietTran from '@/pages/lich-thi-dau/ChiTietTran'
 import HomThu from '@/pages/lich-thi-dau/HomThu'
 import MauDoiHinh from '@/pages/lich-thi-dau/MauDoiHinh'
@@ -22,7 +23,6 @@ import CauThu from '@/pages/quan-tri/CauThu'
 import TaiKhoan from '@/pages/quan-tri/TaiKhoan'
 import PhanQuyen from '@/pages/quan-tri/PhanQuyen'
 import ThietLap from '@/pages/quan-tri/ThietLap'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,21 +48,6 @@ function CanDangNhap({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-function TongQuan() {
-  const { phien } = useAuth()
-  return (
-    <Card className="max-w-lg">
-      <CardHeader>
-        <CardTitle>Xin chào, {phien?.username}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground">
-          Bạn đang đăng nhập vào CLB <strong>{phien?.maDoi}</strong>.
-        </p>
-      </CardContent>
-    </Card>
-  )
-}
 
 export default function App() {
   return (

@@ -10,7 +10,7 @@ Hạ tầng    ████████████░░░░  CI/CD sẵn sà
 Còn lại    ██████░░░░░░░░░░  4 việc cần tài khoản/hạ tầng ngoài + 3 nợ kỹ thuật
 ```
 
-## Trạng thái 19 mã FR
+## Trạng thái 20 mã FR
 
 | Mã | Chức năng | Backend | Frontend | Ghi chú |
 |---|---|:---:|:---:|---|
@@ -32,6 +32,7 @@ Còn lại    ██████░░░░░░░░░░  4 việc cần t
 | FR-16 | Thêm/Cập nhật quỹ | ✅ | ✅ | Kèm thông tin chuyển khoản (QR + số TK) theo từng đợt. Nhắc nợ = sao chép danh sách; SMS/Email chưa làm |
 | FR-17 | Cộng đồng (mới 18/08) | ✅ | ✅ | Danh sách CLB, chi tiết công khai, lời mời thách đấu |
 | FR-18 | Lời mời qua link/QR (mới 20/08) | ✅ | ✅ | 13 trường hợp; nâng cấp đối thủ tên gõ tay thành CLB có ID |
+| FR-20 | Màn Tổng quan (mới 21/08) | ✅ | ✅ | Việc cần làm + trận sắp tới, phân vai theo trưởng nhóm/cầu thủ |
 | FR-19 | Đăng ký đá trận qua link/QR (mới 21/08) | ✅ | ✅ | Không cần đăng nhập. Tab Đăng ký trong chi tiết trận, chọn/bỏ ai được mời, 4 mốc hạn link. **Không** làm cho vote MVP — xem [tài liệu](./nghiep-vu/dang-ky-nhanh-qua-link.md) |
 
 ✅ xong · 🟡 dùng được nhưng thiếu phần · ⬜ chưa làm
@@ -45,7 +46,7 @@ Còn lại    ██████░░░░░░░░░░  4 việc cần t
 | Cách ly tenant (2 tầng phòng vệ tự động + test) | ✅ |
 | Phân quyền động đọc từ DB + cache | ✅ |
 | Frontend: layout, i18n, design token, auto-refresh token | ✅ |
-| 392 test (57 unit + 335 integration) | ✅ |
+| 399 test (57 unit + 342 integration) | ✅ |
 | Upload ảnh qua MinIO (avatar, logo, ảnh bìa) | ✅ |
 | **Dockerfile cho API** | ✅ 2 giai đoạn, chạy user thường |
 | **`docker compose up` chạy được** | ✅ 5 container, API healthy, migration tự áp |
@@ -67,9 +68,9 @@ Còn lại    ██████░░░░░░░░░░  4 việc cần t
 | ~~N4~~ | ~~Không có đường tạo CLB ở production~~ | — | `/dang-ky-clb` chỉ bật ở Development (mở ẩn danh ở production là cho phép sinh CLB rác không giới hạn). ✅ **Xong 20/08** — mở tự do, vì luồng lời mời qua link (FR-18) cần nó |
 | ~~N5~~ | ~~E2E để lại tenant rác trong DB dev~~ | — | ✅ **Xong 20/08.** Mỗi test tự tạo CLB riêng nên mỗi lần chạy để lại ~44 CLB, và từ 18/08 chúng hiện lên trang Cộng đồng của mọi người — đo thật: **242 rác / 249 tổng**, toàn bộ trang đầu là rác. Dọn tay một lần rồi tích lại ngay sau lần chạy kế tiếp, nên phải tự động: `globalTeardown` gọi `POST /du-lieu-mau/don-tenant-test`. Kiểm chứng 2 lần chạy liên tiếp: xoá 290 rồi 48 CLB, mỗi lần về đúng 7 CLB mẫu |
 | ~~N9~~ | ~~Tự xoá hết quyền của chính mình được~~ | — | ✅ **Xong 21/08.** Chốt ở mức **CLB** chứ không mức cá nhân (quyết định chủ sản phẩm): phải luôn còn ít nhất một người **đang hoạt động** có quyền `PhanQuyen`. Admin A vẫn tự bỏ quyền được nếu admin B còn giữ. Gắn ở **ba** đường: cập nhật tài khoản (gỡ quyền / vô hiệu hoá), xoá tài khoản, và cho nghỉ kèm khoá tài khoản. `PhanQuyen` là chức năng chốt vì nó là cửa duy nhất cấp lại mọi quyền khác |
-| N8 | **E2E flake ~1/50 mỗi lần chạy** | ~1h | Quan sát 20/08 qua 4 lần chạy liên tiếp: 43/44 · 43/44 · 43/44 · **44/44**, và **đỏ một test KHÁC mỗi lần** (phân trang → địa chỉ tài khoản → chuyển khoản). Chạy riêng test đỏ thì luôn xanh. Khác test mỗi lần ⇒ hạ tầng, không phải lỗi tính năng — nghi là đua giữa `invalidateQueries` và `waitForTimeout` cố định. Chưa chẩn được nên chưa sửa; đừng dùng "chạy lại thấy xanh" làm kết luận |
+| N8 | **Test flake không tái hiện** | ~1h | **E2E ~1/50 mỗi lần chạy** (quan sát 20/08 qua 4 lần: 43/44 · 43/44 · 43/44 · 44/44, đỏ một test KHÁC mỗi lần, chạy riêng thì luôn xanh). **Backend cũng gặp 21/08**: 1/342 đỏ một lần rồi xanh 3 lần liên tiếp sau đó — không kịp bắt tên test. Khác test mỗi lần ⇒ hạ tầng, không phải lỗi tính năng; nghi đua giữa `invalidateQueries` và `waitForTimeout` ở E2E, và thứ tự chạy song song ở backend. Đừng dùng "chạy lại thấy xanh" làm kết luận |
 | ~~N7~~ | ~~Thiếu `EnableRetryOnFailure` cho Npgsql~~ | — | ✅ **Xong 20/08.** Kiểm chứng bằng phản chứng: restart postgres rồi gọi ngay — bản **không** retry trả `#1 -> 500`, bản **có** retry trả `#1 -> 200`. Đã rà `src/`: không chỗ nào tự mở `BeginTransaction` nên retry an toàn |
-| N6 | **Màn Tổng quan (`/`) trống** | ~3h | Chỉ hiện "Xin chào, admin". Không thuộc FR nào nên bị bỏ sót khi liệt kê "17/17 FR xong" — phát hiện 20/08 khi đi qua từng màn với bộ dữ liệu mẫu. Là màn ĐẦU TIÊN người dùng thấy sau đăng nhập |
+| ~~N6~~ | ~~Màn Tổng quan trống~~ | — | ✅ **Xong 21/08.** Nội dung do chủ sản phẩm chọn: **việc cần làm + trận sắp tới**, mỗi dòng bấm được để tới đúng chỗ xử lý. Không làm dải 4 số thống kê — đã có ở màn Thống kê/Tài chính. Phân vai: trưởng nhóm thấy việc của đội, cầu thủ thường chỉ thấy việc của mình. **Không** bắt `[RequirePermission]` vì đây là màn đầu tiên sau đăng nhập |
 
 ### Giai đoạn 1 — Lịch thi đấu (FR-07 → FR-11)
 
