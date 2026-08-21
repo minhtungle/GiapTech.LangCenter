@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { vaoHeThong } from './tro-giup'
+import { dangNhap as dangNhapLai, vaoHeThong, type Clb } from './tro-giup'
 
 /**
  * FR-19 — đăng ký đá trận qua link/QR, không cần đăng nhập.
@@ -12,6 +12,17 @@ import { vaoHeThong } from './tro-giup'
  *    khi mở tab sẽ âm thầm mời lại người vừa bỏ.
  * 3. Hiện `Tenant.SanNha` làm địa điểm trận → người đọc đến sai sân.
  */
+
+/**
+ * Nhãn "Ai được mời (n/m)".
+ *
+ * Neo vào NÚT chứa nhãn rồi so text, không dùng `text=/Ai được mời \(2\/3\)/`: tên và số nằm ở
+ * hai thẻ `<span>` khác nhau nên regex một dòng không khớp — đúng lỗi selector đã gặp 21/08.
+ */
+async function soDuocMoi(page: import('@playwright/test').Page) {
+  const txt = await page.locator('button:has-text("Ai được mời")').first().innerText()
+  return txt.replace(/\s+/g, ' ').trim()
+}
 
 /** Tạo một trận rồi trả về URL chi tiết của nó. */
 async function taoTran(page: import('@playwright/test').Page, tenDoiThu: string) {
@@ -46,8 +57,12 @@ test.describe('Đăng ký nhanh qua link', () => {
     await expect(page.locator('button:has-text("Đăng ký")')).toBeVisible()
   })
 
-  test('mặc định tick HẾT, bỏ tick được, và chỉ mời người đã tick', async ({ page, request }) => {
-    await vaoHeThong(page, request, 'dkn-chon')
+  test('mặc định tick HẾT, bỏ tick được, và chỉ mời người đã tick', async ({
+    page,
+    request,
+    browser,
+  }) => {
+    const clb = await vaoHeThong(page, request, 'dkn-chon')
 
     // Cần vài cầu thủ để có gì mà tick.
     for (const ten of ['Người A', 'Người B', 'Người C']) {
@@ -58,15 +73,19 @@ test.describe('Đăng ký nhanh qua link', () => {
       await expect(page.locator('dialog[open]')).toHaveCount(0)
     }
 
-    await taoTran(page, 'FC Chọn Người')
+    const urlTran = await taoTran(page, 'FC Chọn Người')
     await page.click('button:has-text("Đăng ký")')
 
-    // Mặc định tick hết — giữ hành vi cũ "mời tất cả".
-    await expect(page.locator('text=/Ai được mời \\(3\\/3\\)/')).toBeVisible()
+    // Mặc định tick hết — giữ hành vi cũ "mời tất cả". `poll` vì danh sách cầu thủ tải bằng
+    // query riêng: đọc ngay sẽ thấy "(0/0)".
+    await expect.poll(() => soDuocMoi(page), { timeout: 10_000 }).toContain('(3/3)')
 
-    // Bỏ một người rồi gửi: lời mời chỉ có 2 người.
-    await page.locator('input[type=checkbox]').first().uncheck()
-    await expect(page.locator('text=/Ai được mời \\(2\\/3\\)/')).toBeVisible()
+    // Bỏ một người rồi gửi: lời mời chỉ có 2 người. Bấm nút × trên chip — chủ sản phẩm đổi từ
+    // lưới checkbox sang `SelectTimKiemNhieu` (21/08) vì đội 20+ người thì lưới dài hơn màn hình
+    // và không tìm được theo tên.
+    // Nút × là `<span role="button">`, không phải `<button>` — neo vào role + aria-label.
+    await page.locator('#aiDuocMoi [role=button][aria-label^="Bỏ "]').first().click()
+    await expect.poll(() => soDuocMoi(page), { timeout: 5_000 }).toContain('(2/3)')
     await page.click('button:has-text("Gửi lời mời đăng ký")')
 
     await expect(page.locator('tbody tr')).toHaveCount(2)
@@ -75,7 +94,9 @@ test.describe('Đăng ký nhanh qua link', () => {
     // "Lưu danh sách" sẽ âm thầm mời lại người vừa bỏ.
     await page.reload()
     await page.click('button:has-text("Đăng ký")')
-    await expect(page.locator('text=/Ai được mời \\(2\\/3\\)/')).toBeVisible({ timeout: 10_000 })
+    await expect
+      .poll(() => soDuocMoi(page), { timeout: 10_000 })
+      .toContain('(2/3)')
   })
 
   test('người ẨN DANH mở link, chọn tên, trả lời — trưởng nhóm thấy ngay', async ({

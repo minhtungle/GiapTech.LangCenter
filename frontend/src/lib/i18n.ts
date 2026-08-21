@@ -46,6 +46,7 @@ const vi = {
     chuaGuiMoTa: 'Chưa gửi lời mời đăng ký cho trận này. Chọn ai được mời rồi bấm gửi.',
     loiNhanGoiY: 'VD: 15h chủ nhật sân Hoà Xuân, ai đá được vào xác nhận trước tối thứ 6',
     aiDuocMoi: 'Ai được mời',
+    chonNguoiGoiY: 'Chọn người được mời…',
     chonTatCa: 'Chọn tất cả',
     boHet: 'Bỏ hết',
     guiLoiMoi: 'Gửi lời mời đăng ký',

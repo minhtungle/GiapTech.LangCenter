@@ -2,12 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import QRCode from 'qrcode'
-import { Check, ClipboardCopy, Link2, Send, Undo2, XCircle } from 'lucide-react'
+import { Check, ChevronDown, ClipboardCopy, Link2, Send, Undo2, Users, XCircle } from 'lucide-react'
 import { api, layMaLoi } from '@/lib/api'
 import {
   Badge, Button, Input, Label, Table, Td, Th, Textarea, TrangTrong,
 } from '@/components/ui'
 import { HopXacNhan } from '@/components/ui/HopXacNhan'
+import { SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
+import { cn } from '@/lib/utils'
 
 /**
  * FR-19 — tab Đăng ký trong chi tiết trận.
@@ -91,7 +93,7 @@ export function TabDangKy({
         .duLieu,
   })
 
-  const { data: loiMoi } = useQuery({
+  const { data: loiMoi, isPending: dangTaiLoiMoi } = useQuery({
     queryKey: ['dang-ky', tranDauId],
     queryFn: async () =>
       (await api.get<LoiMoiDto | null>(`/hom-thu/dang-ky/theo-tran/${tranDauId}`)).data,
@@ -112,17 +114,23 @@ export function TabDangKy({
    * - Đã có lời mời → tick đúng những người ĐANG trong lời mời.
    * - Chưa có lời mời → tick hết (giữ hành vi cũ "mời tất cả" làm mặc định).
    *
-   * Phải chờ `phanHois` tải xong trước khi quyết định, nếu không sẽ tick hết 16 người trong khi
-   * lời mời chỉ có 14 — lỗi thật đã gặp 21/08: bấm "Lưu danh sách" ngay sau khi mở tab sẽ âm
-   * thầm mời lại 2 người trưởng nhóm vừa bỏ.
+   * Phải chờ **CẢ HAI** query xong trước khi quyết định. Lỗi thật đã gặp HAI LẦN cùng một chỗ:
+   *
+   * - Lần 1 (21/08): chỉ kiểm `phanHois` → tick hết 16 trong khi lời mời có 14.
+   * - Lần 2 (cùng ngày, sau khi đổi sang select): sửa lần 1 vẫn chưa đủ. `dangChoPhanHoi` chỉ
+   *   đúng khi `loiMoi` ĐÃ tải; trong khoảnh khắc `loiMoi === undefined` thì cả hai điều kiện
+   *   đều false nên effect chạy ngay và tick hết 16, rồi `daChon !== null` chặn mọi lần sửa sau.
+   *
+   * Hậu quả cả hai lần giống nhau: bấm "Lưu danh sách" ngay sau khi mở tab sẽ **âm thầm mời lại**
+   * người trưởng nhóm vừa bỏ. Nên điều kiện phải là "chưa biết đủ thì chưa quyết định".
    */
-  const dangChoPhanHoi = !!loiMoi?.id && phanHois === undefined
+  const chuaBietDu = dangTaiLoiMoi || (!!loiMoi?.id && phanHois === undefined)
 
   useEffect(() => {
-    if (daChon !== null || dangChoPhanHoi) return
+    if (daChon !== null || chuaBietDu) return
     if (phanHois) setDaChon(new Set(phanHois.map((p) => p.cauThuId)))
     else if (cauThus?.length) setDaChon(new Set(cauThus.map((c) => c.id)))
-  }, [cauThus, phanHois, daChon, dangChoPhanHoi])
+  }, [cauThus, phanHois, daChon, chuaBietDu])
 
   useEffect(() => {
     if (link && oQr.current) void QRCode.toCanvas(oQr.current, link, { width: 180, margin: 1 })
@@ -208,14 +216,6 @@ export function TabDangKy({
     onError: (e) => onLoi(layMaLoi(e)),
   })
 
-  const doi = (id: string) =>
-    setDaChon((truoc) => {
-      const moi = new Set(truoc ?? [])
-      if (moi.has(id)) moi.delete(id)
-      else moi.add(id)
-      return moi
-    })
-
   const nhanTraLoi = (tl: string) =>
     tl === THAM_GIA
       ? t('homThu.tl.ThamGia')
@@ -255,23 +255,21 @@ export function TabDangKy({
           />
         </div>
 
-        <DanhSachTick
+        <ChonNguoiDuocMoi
           cauThus={cauThus ?? []}
           daChon={daChon}
-          onDoi={doi}
-          onTatCa={() => setDaChon(new Set((cauThus ?? []).map((c) => c.id)))}
-          onBoHet={() => setDaChon(new Set())}
+          onDoi={(ids) => setDaChon(new Set(ids))}
+          hanhDong={
+            <Button
+              size="sm"
+              disabled={guiLoiMoi.isPending || !daChon?.size}
+              onClick={() => guiLoiMoi.mutate()}
+            >
+              <Send className="h-4 w-4" />
+              {guiLoiMoi.isPending ? t('chung.dangTai') : t('dangKyNhanh.guiLoiMoi')}
+            </Button>
+          }
         />
-
-        <div>
-          <Button
-            disabled={guiLoiMoi.isPending || !daChon?.size}
-            onClick={() => guiLoiMoi.mutate()}
-          >
-            <Send className="h-4 w-4" />
-            {guiLoiMoi.isPending ? t('chung.dangTai') : t('dangKyNhanh.guiLoiMoi')}
-          </Button>
-        </div>
       </div>
     )
 
@@ -410,24 +408,21 @@ export function TabDangKy({
 
       {/* ----- Sửa danh sách người được mời ----- */}
       {!loiMoi.daDong && (
-        <div className="flex flex-col gap-3">
-          <DanhSachTick
-            cauThus={cauThus ?? []}
-            daChon={daChon}
-            onDoi={doi}
-            onTatCa={() => setDaChon(new Set((cauThus ?? []).map((c) => c.id)))}
-            onBoHet={() => setDaChon(new Set())}
-          />
-          <div>
+        <ChonNguoiDuocMoi
+          cauThus={cauThus ?? []}
+          daChon={daChon}
+          onDoi={(ids) => setDaChon(new Set(ids))}
+          hanhDong={
             <Button
+              size="sm"
               variant="outline"
               disabled={xemTruoc.isPending || luuDanhSach.isPending || !daChon?.size}
               onClick={() => xemTruoc.mutate()}
             >
               {t('dangKyNhanh.luuDanhSach')}
             </Button>
-          </div>
-        </div>
+          }
+        />
       )}
 
       {canhBaoXoa && (
@@ -445,59 +440,81 @@ export function TabDangKy({
   )
 }
 
-/** Danh sách tick — dùng ở cả lúc gửi lời mời và lúc sửa danh sách. */
-function DanhSachTick({
+/**
+ * Chọn ai được mời — dùng `SelectTimKiemNhieu` giống cách chọn thành viên ở tab Đội hình.
+ *
+ * Bản đầu là 16 checkbox xếp 3 cột. Chủ sản phẩm yêu cầu đổi (21/08) và lý do rõ khi dùng thật:
+ * đội 20+ người thì lưới checkbox dài hơn cả màn hình, phải cuộn để tìm một người, và không gõ
+ * tên để tìm được. Select có ô tìm + chip người đã chọn, thao tác trên điện thoại cũng gọn.
+ *
+ * Gói trong khối gập lại được, cùng khuôn với tab Đội hình để hai chỗ chọn người trông như một.
+ */
+function ChonNguoiDuocMoi({
   cauThus,
   daChon,
   onDoi,
-  onTatCa,
-  onBoHet,
+  hanhDong,
 }: {
   cauThus: CauThuNgan[]
   daChon: Set<string> | null
-  onDoi: (id: string) => void
-  onTatCa: () => void
-  onBoHet: () => void
+  onDoi: (ids: string[]) => void
+  /** Nút bên dưới select — "Gửi lời mời" hoặc "Lưu danh sách" tuỳ ngữ cảnh. */
+  hanhDong: React.ReactNode
 }) {
   const { t } = useTranslation()
+  const [mo, setMo] = useState(true)
+  const soChon = daChon?.size ?? 0
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <Label>
-          {t('dangKyNhanh.aiDuocMoi')} ({daChon?.size ?? 0}/{cauThus.length})
-        </Label>
-        <div className="flex gap-1">
-          <Button type="button" variant="ghost" size="sm" onClick={onTatCa}>
-            {t('dangKyNhanh.chonTatCa')}
-          </Button>
-          <Button type="button" variant="ghost" size="sm" onClick={onBoHet}>
-            {t('dangKyNhanh.boHet')}
-          </Button>
-        </div>
-      </div>
+    <div className="rounded-lg border border-border">
+      <button
+        type="button"
+        onClick={() => setMo((v) => !v)}
+        className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium hover:bg-muted/40"
+      >
+        <span className="flex items-center gap-2">
+          <Users className="h-4 w-4" />
+          {t('dangKyNhanh.aiDuocMoi')}
+          <span className="text-muted-foreground">
+            ({soChon}/{cauThus.length})
+          </span>
+        </span>
+        <ChevronDown className={cn('h-4 w-4 transition-transform', mo && 'rotate-180')} />
+      </button>
 
-      <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
-        {cauThus.map((c) => (
-          <label
-            key={c.id}
-            className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/60"
-          >
-            <input
-              type="checkbox"
-              checked={daChon?.has(c.id) ?? false}
-              onChange={() => onDoi(c.id)}
-              className="h-4 w-4 rounded border-input"
-            />
-            {c.soAo !== null && (
-              <span className="w-6 text-center font-mono text-xs text-muted-foreground">
-                {c.soAo}
-              </span>
-            )}
-            <span className="truncate">{c.hoTen}</span>
-          </label>
-        ))}
-      </div>
+      {mo && (
+        <div className="flex flex-col gap-3 border-t border-border p-3">
+          <SelectTimKiemNhieu
+            id="aiDuocMoi"
+            luaChon={cauThus.map((c) => ({
+              giaTri: c.id,
+              nhan: c.soAo ? `${c.soAo} · ${c.hoTen}` : c.hoTen,
+            }))}
+            giaTri={[...(daChon ?? [])]}
+            onDoi={onDoi}
+            placeholder={t('dangKyNhanh.chonNguoiGoiY')}
+            placeholderTimKiem={t('taiKhoan.timCauThu')}
+          />
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Hai nút này còn giá trị dù đã có select: "chọn tất cả" là ca thường gặp nhất
+                (mời cả đội), và không có nó thì phải bấm từng người. */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => onDoi(cauThus.map((c) => c.id))}
+            >
+              {t('dangKyNhanh.chonTatCa')}
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => onDoi([])}>
+              {t('dangKyNhanh.boHet')}
+            </Button>
+            <span className="mx-1 h-4 w-px bg-border" />
+            {hanhDong}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
