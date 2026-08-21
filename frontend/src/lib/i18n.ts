@@ -748,6 +748,8 @@ const vi = {
     CHUA_CHON_CAU_THU_NAO: 'Chưa chọn ai để mời.',
     CAU_THU_DA_NGHI_ROI: 'Cầu thủ này đã ở trạng thái nghỉ.',
     CAU_THU_DANG_DA: 'Cầu thủ này đang đá, không cần cho đá lại.',
+    CLB_PHAI_CON_NGUOI_PHAN_QUYEN:
+      'CLB phải còn ít nhất một người có quyền Phân quyền. Cấp quyền đó cho người khác trước, rồi thử lại.',
     KHONG_TU_KHOA_TAI_KHOAN_CHINH_MINH:
       'Không thể tự khoá tài khoản đang đăng nhập. Bỏ tích rồi thử lại.',
     QUA_NHIEU_YEU_CAU: 'Bạn thao tác quá nhanh. Chờ một chút rồi thử lại.',

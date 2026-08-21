@@ -186,6 +186,15 @@ public class CapNhatTaiKhoanHandler(
 
         await TaoTaiKhoanHandler.KiemTraQuyenTonTai(db, request.QuyenIds, ct);
 
+        // Nợ N9: CLB phải luôn còn ít nhất một người có quyền Phân quyền.
+        //
+        // Hai đường làm mất người cuối cùng, cùng đi qua lệnh này: gỡ hết quyền
+        // (`QuyenIds = []`) và vô hiệu hoá tài khoản. Kiểm cả hai bằng một phép đếm.
+        var conQuyenPhanQuyen =
+            request.TrangThai == TrangThaiNguoiDung.HoatDong
+            && await ChotConNguoiQuanTri.CoQuyenPhanQuyenAsync(db, request.QuyenIds, ct);
+        await ChotConNguoiQuanTri.KiemAsync(db, request.Id, conQuyenPhanQuyen, ct);
+
         nguoiDung.Email = request.Email;
         nguoiDung.SoDienThoai = request.SoDienThoai;
         nguoiDung.DiaChi = request.DiaChi;
@@ -255,6 +264,10 @@ public class XoaTaiKhoanHandler(IAppDbContext db, ICurrentUser currentUser) : IR
 
         var nguoiDung = await db.NguoiDungs.FirstOrDefaultAsync(u => u.Id == request.Id, ct)
             ?? throw new KhongTimThayException($"NguoiDung {request.Id}");
+
+        // Nợ N9: xoá người quản trị cuối cùng cũng làm CLB mất đường quản trị. Chặn "tự xoá
+        // mình" ở trên không đủ — admin A xoá được admin B là người duy nhất còn quyền.
+        await ChotConNguoiQuanTri.KiemAsync(db, request.Id, false, ct);
 
         // Xóa tài khoản KHÔNG xóa hồ sơ cầu thủ — hai thực thể độc lập (FR-03, FR-04).
         db.NguoiDungs.Remove(nguoiDung);

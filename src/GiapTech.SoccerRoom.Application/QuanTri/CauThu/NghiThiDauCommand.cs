@@ -73,6 +73,11 @@ public class ChoNghiThiDauHandler(IAppDbContext db, ICurrentUser currentUser)
             // buộc phải tồn tại tài khoản.
             if (taiKhoan is not null)
             {
+                // Nợ N9: khoá tài khoản là một đường vô hiệu hoá — cũng phải qua chốt "CLB còn
+                // người quản trị". Không có nó thì cho nghỉ kèm khoá là cách vòng để đạt đúng
+                // hậu quả mà `CapNhatTaiKhoanCommand` đã chặn.
+                await TaiKhoan.ChotConNguoiQuanTri.KiemAsync(db, taiKhoan.Id, false, ct);
+
                 taiKhoan.TrangThai = TrangThaiNguoiDung.VoHieuHoa;
                 daKhoa = taiKhoan.Username;
             }
