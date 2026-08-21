@@ -19,7 +19,7 @@ một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`. Đ
 5 module · 16 mã FR · 3 actor (Admin / Manager / Player) — đọc 1 mạch ở
 [`docs/tong-thuat.md`](./docs/tong-thuat.md).
 
-**Trạng thái:** ✅ **đủ 19 mã FR, chạy đầu-cuối trên PostgreSQL thật**. 370 test backend + 48 E2E xanh.
+**Trạng thái:** ✅ **đủ 19 mã FR, chạy đầu-cuối trên PostgreSQL thật**. 370 test backend + 50 E2E xanh.
 Còn lại là nợ kỹ thuật (test E2E, triển khai VPS) — xem [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ---

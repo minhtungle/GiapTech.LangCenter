@@ -169,10 +169,21 @@ export default function Layout() {
 
   return (
     <div className="flex min-h-screen bg-muted/20">
-      {/* Sidebar cố định — desktop */}
+      {/*
+        Sidebar cố định — desktop.
+
+        `sticky top-0` + `h-screen`: nếu để nó là flex item thường thì nó giãn theo chiều cao của
+        cả trang. Đo thật 21/08 trên màn Thống kê: viewport 700px, trang 1413px, **sidebar cao
+        1412px** — cuộn xuống đáy thì logo và menu trôi hẳn khỏi màn hình (top = -713), người dùng
+        phải cuộn ngược lên mới đổi được trang.
+
+        `h-screen` khoá đúng một viewport, `sticky` giữ nó tại chỗ khi trang cuộn. `nav` bên trong
+        đã có `overflow-y-auto` nên menu dài tự cuộn riêng — trước đây thuộc tính đó vô hiệu vì
+        phần tử cha không bị giới hạn chiều cao.
+      */}
       <aside
         className={cn(
-          'hidden shrink-0 flex-col border-r border-border bg-background transition-[width] duration-200 md:flex',
+          'sticky top-0 hidden h-screen shrink-0 flex-col overflow-hidden border-r border-border bg-background transition-[width] duration-200 md:flex',
           thuGon ? 'w-16' : 'w-56',
         )}
       >
