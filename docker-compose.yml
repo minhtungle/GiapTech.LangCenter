@@ -1,10 +1,10 @@
-# Mọi service (trừ Caddy) chỉ nằm trong network nội bộ "backend" — không expose port ra
-# Internet. Quy tắc bất di bất dịch #5, xem docs/kien-truc/adr/0004-ha-tang-tu-host-vps.md
+# VPS này dùng Nginx + certbot có sẵn làm reverse proxy chung cho mọi domain (không dùng
+# Caddy — tránh xung đột port 80/443 với Nginx đang chạy các dự án khác). Nginx proxy vào
+# service `api` qua 127.0.0.1:<port>, và phục vụ static frontend build trực tiếp.
 #
 # Chạy:  cp .env.example .env  →  điền giá trị  →  docker compose up -d
-# Dev:   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
-name: soccerroom
+name: soccercity
 
 networks:
   backend:
@@ -13,42 +13,21 @@ networks:
 volumes:
   postgres-data:
   minio-data:
-  caddy-data:
-  caddy-config:
   grafana-data:
 
 services:
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    environment:
-      # Caddyfile đọc {$DOMAIN} — không có biến này thì Caddy dựng site tên rỗng và
-      # không ai truy cập được. Bắt buộc đặt trong .env trên VPS.
-      DOMAIN: "${DOMAIN:?can DOMAIN, vi du clb.example.com}"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./frontend/dist:/srv/frontend:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    networks:
-      - backend
-    depends_on:
-      api:
-        condition: service_healthy
-
   api:
     # Build tại chỗ nếu chưa có image; trên VPS thì `docker compose pull` lấy bản CI đã đẩy.
     build:
       context: .
       dockerfile: src/GiapTech.SoccerRoom.API/Dockerfile
-    image: ${IMAGE_API:-ghcr.io/giaptech/soccerroom-api:latest}
+    image: ${IMAGE_API:-ghcr.io/minhtungle/soccercity-api:latest}
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:${API_PORT:-15080}:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
-      # Caddy đã kết thúc TLS — xem Program.cs
+      # Nginx đã kết thúc TLS trước khi proxy vào đây — xem Program.cs
       SAU_REVERSE_PROXY: "true"
       # Host là TÊN SERVICE trong network nội bộ, không phải localhost.
       ConnectionStrings__Default: >-
