@@ -20,9 +20,27 @@ interface ThietLapDto {
   moTa: string | null
   /** Bộ áo đấu của CLB — mã màu trong BANG_MAU_AO. */
   mauAo: string[]
+  khuVuc: string | null
+  sanNha: string | null
+  lienHeCongKhai: string | null
+  soTaiKhoan: string | null
+  tenNganHang: string | null
+  chuTaiKhoan: string | null
+  anhQrUrl: string | null
 }
 
 /** FR-06 — thiết lập chung CLB. */
+/**
+ * FR-06 — thiết lập chung của CLB.
+ *
+ * `max-w-5xl` chứ không `max-w-2xl`: đo 21/08 trên màn 1440px thì form chỉ rộng 650px và bỏ trống
+ * hoàn toàn nửa phải, nên trang cao 1420px với viewport 800px — phải cuộn hai lần cho một form.
+ * Hai khối ảnh (Logo + Ảnh bìa) ĐÃ có `flex-wrap` để nằm cạnh nhau; chúng xếp dọc chỉ vì
+ * container quá hẹp.
+ *
+ * Không để rộng vô hạn: dòng nhập dài quá 3-4 inch làm mắt mất điểm neo khi nhảy từ cuối dòng
+ * này sang đầu dòng sau. `5xl` (1024px) là mức còn dễ đọc mà dùng được bề ngang.
+ */
 export default function ThietLap() {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -31,6 +49,7 @@ export default function ThietLap() {
   const [daLuu, setDaLuu] = useState(false)
   /** null = chưa chạm, lấy giá trị server. */
   const [mauAo, setMauAo] = useState<string[] | null>(null)
+  const [qrNhap, setQrNhap] = useState<string | null | undefined>(undefined)
   /** null = chưa chạm, lấy giá trị server. Ảnh tải ngay nên state này chỉ để hiện lại. */
   const [logoNhap, setLogoNhap] = useState<string | null | undefined>(undefined)
   const [anhBiaNhap, setAnhBiaNhap] = useState<string | null | undefined>(undefined)
@@ -64,6 +83,7 @@ export default function ThietLap() {
 
   const dangChonMau = mauAo ?? data?.mauAo ?? []
   const logo = logoNhap === undefined ? (data?.logoUrl ?? null) : logoNhap
+  const anhQr = qrNhap === undefined ? (data?.anhQrUrl ?? null) : qrNhap
   const anhBia = anhBiaNhap === undefined ? (data?.anhBiaUrl ?? null) : anhBiaNhap
   const setLogo = setLogoNhap
   const setAnhBia = setAnhBiaNhap
@@ -88,11 +108,25 @@ export default function ThietLap() {
       logoUrl: logo,
       anhBiaUrl: anhBia,
       mauAo: dangChonMau,
+      // Ba trường Sàn đối thủ. Gửi CHUỖI RỖNG (không phải null) khi người dùng xoá hết ô:
+      // backend hiểu null = "client không gửi, giữ nguyên", còn '' = "chủ động xoá". Gửi null
+      // ở đây sẽ khiến ô đã xoá lại hiện giá trị cũ sau khi tải lại — trông như không lưu được.
+      khuVuc: (fd.get('khuVuc') as string) ?? '',
+      sanNha: (fd.get('sanNha') as string) ?? '',
+      lienHeCongKhai: (fd.get('lienHeCongKhai') as string) ?? '',
+      // Thông tin chuyển khoản. Cùng quy ước: chuỗi rỗng = xoá, không gửi null (null nghĩa là
+      // "giữ nguyên" nên ô đã xoá sẽ hiện lại giá trị cũ sau khi tải lại trang).
+      soTaiKhoan: (fd.get('soTaiKhoan') as string) ?? '',
+      tenNganHang: (fd.get('tenNganHang') as string) ?? '',
+      chuTaiKhoan: (fd.get('chuTaiKhoan') as string) ?? '',
+      // Ảnh QR do ChonAnh tự tải lên và trả khoá — gửi lại để không bị xoá khi lưu form.
+      anhQrUrl: anhQr,
     })
   }
 
   return (
-    <Card className="max-w-2xl">
+    // `max-w-5xl` chứ không `max-w-2xl` — xem ghi chú ở đầu component.
+    <Card className="max-w-5xl">
       <CardContent className="pt-5">
         <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5 sm:col-span-2">
@@ -188,6 +222,100 @@ export default function ThietLap() {
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label htmlFor="moTa">{t('thietLap.moTa')}</Label>
             <Textarea id="moTa" name="moTa" defaultValue={data?.moTa ?? ''} />
+            <p className="text-xs text-muted-foreground">{t('thietLap.moTaCongKhai')}</p>
+          </div>
+
+          {/* Nhóm Sàn đối thủ. Tách riêng và nói rõ "công khai": ba ô này hiện cho CLB khác
+              xem, khác hẳn các ô còn lại trên form vốn chỉ nội bộ. */}
+          <div className="sm:col-span-2">
+            <h3 className="text-sm font-semibold">{t('thietLap.nhomSan')}</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t('thietLap.nhomSanMoTa')}</p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="khuVuc">{t('thietLap.khuVuc')}</Label>
+            <Input
+              id="khuVuc"
+              name="khuVuc"
+              defaultValue={data?.khuVuc ?? ''}
+              placeholder={t('thietLap.khuVucGoiY')}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sanNha">{t('thietLap.sanNha')}</Label>
+            <Input
+              id="sanNha"
+              name="sanNha"
+              defaultValue={data?.sanNha ?? ''}
+              placeholder={t('thietLap.sanNhaGoiY')}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label htmlFor="lienHeCongKhai">{t('thietLap.lienHeCongKhai')}</Label>
+            <Input
+              id="lienHeCongKhai"
+              name="lienHeCongKhai"
+              defaultValue={data?.lienHeCongKhai ?? ''}
+              placeholder={t('thietLap.lienHeGoiY')}
+            />
+            <p className="text-xs text-muted-foreground">{t('thietLap.lienHeLuuY')}</p>
+          </div>
+
+          {/* Nhóm chuyển khoản quỹ. Tách khỏi nhóm Cộng đồng và nói rõ "chỉ trong đội": ba ô
+              kia CÔNG KHAI, còn số tài khoản thì không — đặt cạnh nhau mà không phân biệt thì
+              người dùng tưởng cả hai nhóm cùng mức riêng tư. */}
+          <div className="sm:col-span-2">
+            <h3 className="text-sm font-semibold">{t('thietLap.nhomChuyenKhoan')}</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {t('thietLap.nhomChuyenKhoanMoTa')}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="soTaiKhoan">{t('thietLap.soTaiKhoan')}</Label>
+            <Input
+              id="soTaiKhoan"
+              name="soTaiKhoan"
+              defaultValue={data?.soTaiKhoan ?? ''}
+              placeholder={t('thietLap.soTaiKhoanGoiY')}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="tenNganHang">{t('thietLap.tenNganHang')}</Label>
+            <Input
+              id="tenNganHang"
+              name="tenNganHang"
+              defaultValue={data?.tenNganHang ?? ''}
+              placeholder={t('thietLap.tenNganHangGoiY')}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="chuTaiKhoan">{t('thietLap.chuTaiKhoan')}</Label>
+            <Input
+              id="chuTaiKhoan"
+              name="chuTaiKhoan"
+              defaultValue={data?.chuTaiKhoan ?? ''}
+              placeholder={t('thietLap.chuTaiKhoanGoiY')}
+            />
+            <p className="text-xs text-muted-foreground">{t('thietLap.chuTaiKhoanLuuY')}</p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label className="mb-1.5 block">{t('thietLap.anhQr')}</Label>
+            <ChonAnh
+              khoa={anhQr}
+              duongDanTai="/anh/clb/qr-chuyen-khoan"
+              duongDanXoa="/anh/clb/qr-chuyen-khoan"
+              onXong={(k) => {
+                setQrNhap(k)
+                void qc.invalidateQueries({ queryKey: ['thiet-lap'] })
+              }}
+            />
+            <p className="text-xs text-muted-foreground">{t('thietLap.anhQrGoiY')}</p>
           </div>
 
           {maLoi && (

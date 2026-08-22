@@ -2,6 +2,7 @@ using System.Text;
 using Asp.Versioning;
 using GiapTech.SoccerRoom.API.Authorization;
 using GiapTech.SoccerRoom.API.Middleware;
+using GiapTech.SoccerRoom.API.RateLimit;
 using GiapTech.SoccerRoom.Application;
 using GiapTech.SoccerRoom.API.Services;
 using GiapTech.SoccerRoom.Application.Common.Interfaces;
@@ -27,6 +28,7 @@ builder.Services
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.ThemGioiHanTanSuat();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 builder.Services.ThemApplication();
@@ -127,6 +129,15 @@ if (app.Environment.IsDevelopment())
 // Bắt exception sớm nhất để mọi lỗi phía sau đều thành { errorCode } (quy tắc #3).
 app.UseMiddleware<ExceptionMiddleware>();
 
+// Giới hạn tần suất cho endpoint ẩn danh (nợ N3). Đặt SAU ExceptionMiddleware để 429 cũng đi
+// qua cùng đường trả lỗi, nhưng TRƯỚC Authentication: chặn được request rác mà không phải
+// giải mã JWT hay truy vấn DB cho nó.
+//
+// Mặc định BẬT. Integration test tắt nó (xem GioiHanTanSuat.CauHinhBat) vì TestServer không có
+// TCP thật nên mọi test dùng chung một phân vùng IP và đốt hết hạn mức của nhau.
+if (app.Configuration.GetValue(GioiHanTanSuat.CauHinhBat, true))
+    app.UseRateLimiter();
+
 // Chỉ redirect HTTPS khi chạy trực tiếp. Sau Caddy, TLS đã kết thúc ở proxy nên bật cái này
 // sẽ đá cả healthcheck lẫn request thật sang cổng HTTPS mà container không nghe.
 if (!app.Configuration.GetValue("SAU_REVERSE_PROXY", false))
@@ -146,6 +157,22 @@ app.MapControllers();
 // Healthcheck cho docker compose và Uptime Kuma. Không cần xác thực — nó phải trả lời được
 // cả khi hệ thống đang hỏng, và không tiết lộ gì ngoài trạng thái sống/chết.
 app.MapHealthChecks("/health").AllowAnonymous();
+
+// Cờ tính năng cho frontend, đọc TRƯỚC khi đăng nhập nên phải ẩn danh.
+//
+// Không nhét vào /health: đó là endpoint hạ tầng cho docker compose và Uptime Kuma, phải trả
+// lời được cả khi hệ thống đang hỏng và không tiết lộ gì ngoài sống/chết.
+//
+// Chỉ khai những gì frontend cần để KHÔNG hiện lối vào dẫn tới ngõ cụt. Không khai tên môi
+// trường: "Production"/"Development" là thông tin thừa với người dùng và thừa với người dò.
+app.MapGet("/api/v1/tinh-nang", () => Results.Ok(new
+{
+    // Đăng ký CLB mở ở MỌI môi trường từ 20/08/2026 (nợ N4) — luồng lời mời qua link cần nó.
+    //
+    // Giữ cờ này thay vì xoá: nó là hợp đồng với frontend, và nếu sau này cần đóng đăng ký
+    // (spam quá nhiều chẳng hạn) thì đổi ở đây là xong, không phải sửa cả trang đăng nhập.
+    dangKyClb = true,
+})).AllowAnonymous();
 
 app.Run();
 

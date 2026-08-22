@@ -21,6 +21,9 @@ public enum LoaiAnh
 
     /// <summary>Ảnh bìa CLB — <c>TENANT.anh_bia_url</c>.</summary>
     AnhBia,
+
+    /// <summary>Mã QR chuyển khoản quỹ — <c>TENANT.anh_qr_url</c>.</summary>
+    AnhQr,
 }
 
 /// <param name="DoiTuongId">Id cầu thủ. Bỏ qua với logo/ảnh bìa vì chúng thuộc về chính CLB.</param>
@@ -42,15 +45,22 @@ public class TaiAnhLenHandler(IAppDbContext db, ILuuTruAnh luuTru, ICurrentTenan
             LoaiAnh.CauThu => await LayKhoaCauThu(request.DoiTuongId, ct),
             LoaiAnh.Logo => await db.Tenants.Where(t => t.Id == tenantId)
                 .Select(t => t.LogoUrl).FirstOrDefaultAsync(ct),
-            _ => await db.Tenants.Where(t => t.Id == tenantId)
+            LoaiAnh.AnhBia => await db.Tenants.Where(t => t.Id == tenantId)
                 .Select(t => t.AnhBiaUrl).FirstOrDefaultAsync(ct),
+            LoaiAnh.AnhQr => await db.Tenants.Where(t => t.Id == tenantId)
+                .Select(t => t.AnhQrUrl).FirstOrDefaultAsync(ct),
+            // Liệt kê ĐỦ mọi nhánh thay vì `_ =>`: nhánh mặc định làm loại ảnh mới âm thầm rơi
+            // vào ảnh bìa — ghi khoá QR lên `anh_bia_url` và xoá mất ảnh bìa thật.
+            _ => throw new AppException("LOAI_ANH_KHONG_HO_TRO"),
         };
 
         var thuMuc = request.Loai switch
         {
             LoaiAnh.CauThu => "cau-thu",
             LoaiAnh.Logo => "logo",
-            _ => "anh-bia",
+            LoaiAnh.AnhBia => "anh-bia",
+            LoaiAnh.AnhQr => "qr-chuyen-khoan",
+            _ => throw new AppException("LOAI_ANH_KHONG_HO_TRO"),
         };
 
         var khoaMoi = await luuTru.TaiLen(request.NoiDung, request.LoaiNoiDung, thuMuc, ct);
@@ -71,11 +81,20 @@ public class TaiAnhLenHandler(IAppDbContext db, ILuuTruAnh luuTru, ICurrentTenan
                 t1.LogoUrl = khoaMoi;
                 break;
 
-            default:
+            case LoaiAnh.AnhBia:
                 var t2 = await db.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId, ct)
                     ?? throw new KhongTimThayException($"Tenant {tenantId}");
                 t2.AnhBiaUrl = khoaMoi;
                 break;
+
+            case LoaiAnh.AnhQr:
+                var t3 = await db.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId, ct)
+                    ?? throw new KhongTimThayException($"Tenant {tenantId}");
+                t3.AnhQrUrl = khoaMoi;
+                break;
+
+            default:
+                throw new AppException("LOAI_ANH_KHONG_HO_TRO");
         }
 
         await db.SaveChangesAsync(ct);
@@ -126,12 +145,22 @@ public class XoaAnhHandler(IAppDbContext db, ILuuTruAnh luuTru, ICurrentTenant t
                 t1.LogoUrl = null;
                 break;
 
-            default:
+            case LoaiAnh.AnhBia:
                 var t2 = await db.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId, ct)
                     ?? throw new KhongTimThayException($"Tenant {tenantId}");
                 khoa = t2.AnhBiaUrl;
                 t2.AnhBiaUrl = null;
                 break;
+
+            case LoaiAnh.AnhQr:
+                var t3 = await db.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId, ct)
+                    ?? throw new KhongTimThayException($"Tenant {tenantId}");
+                khoa = t3.AnhQrUrl;
+                t3.AnhQrUrl = null;
+                break;
+
+            default:
+                throw new AppException("LOAI_ANH_KHONG_HO_TRO");
         }
 
         await db.SaveChangesAsync(ct);

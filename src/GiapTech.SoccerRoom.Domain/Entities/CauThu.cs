@@ -32,6 +32,32 @@ public class CauThu : TenantEntity
     /// </summary>
     public string? ViTriSoTruong { get; set; }
 
+    /// <summary>
+    /// Cầu thủ đã dừng hoạt động với nhóm. Mặc định `false` = đang đá.
+    ///
+    /// Vì sao cần: trước 21/08 chỉ có **xoá cứng**, mà xoá bị chặn nếu cầu thủ từng đóng quỹ
+    /// (FK `DONGGOP_QUY` là Restrict — dữ liệu tài chính phải giữ vết). Nên người đá lâu năm rồi
+    /// nghỉ thì không xoá được, cũng không có cách đánh dấu: cứ nằm mãi trong mọi danh sách chọn
+    /// người, mọi lời mời đăng ký, mọi ô select đội hình.
+    ///
+    /// Cờ này KHÔNG phải "xoá mềm". Khác biệt quan trọng:
+    /// - Lịch sử **giữ nguyên và vẫn tính**: bàn thắng, phiếu MVP, số trận của họ là lịch sử thật
+    ///   của CLB. Ẩn khỏi thống kê sẽ làm tỷ số trận không còn khớp tổng bàn thắng cầu thủ — đúng
+    ///   lỗi im lặng mà `XoaCauThuHandler` phải tính lại tỷ số để tránh.
+    /// - Chỉ ẩn khỏi các chỗ **chọn người cho việc sắp tới**: mời đăng ký, xếp đội hình, thu quỹ.
+    ///
+    /// Quyết định của chủ sản phẩm 21/08.
+    /// </summary>
+    public bool DaNghi { get; set; }
+
+    /// <summary>
+    /// Ngày dừng hoạt động. Null khi còn đá.
+    ///
+    /// Ghi riêng chứ không dùng `NgayCapNhat`: sửa số áo cũng đổi `NgayCapNhat`, nên nó không trả
+    /// lời được "nghỉ từ khi nào" — thứ trưởng nhóm cần khi rà lại đội hình mùa trước.
+    /// </summary>
+    public DateOnly? NgayNghi { get; set; }
+
     public Tenant Tenant { get; set; } = null!;
 
     public ICollection<DoiHinhTranDau> DoiHinhs { get; set; } = [];

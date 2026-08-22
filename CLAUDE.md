@@ -19,7 +19,7 @@ một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`. Đ
 5 module · 16 mã FR · 3 actor (Admin / Manager / Player) — đọc 1 mạch ở
 [`docs/tong-thuat.md`](./docs/tong-thuat.md).
 
-**Trạng thái:** ✅ **đủ 16 mã FR, chạy đầu-cuối trên PostgreSQL thật**. 196 test xanh.
+**Trạng thái:** ✅ **đủ 20 mã FR, chạy đầu-cuối trên PostgreSQL thật**. 399 test backend + 57 E2E xanh.
 Còn lại là nợ kỹ thuật (test E2E, triển khai VPS) — xem [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ---
@@ -66,6 +66,8 @@ Còn lại là nợ kỹ thuật (test E2E, triển khai VPS) — xem [`docs/ke-
 | Cần biết gì | Đọc ở đâu |
 |---|---|
 | **Tiến độ, lộ trình, nợ kỹ thuật** | [`docs/ke-hoach.md`](./docs/ke-hoach.md) |
+| **Bộ dữ liệu mẫu để test tay** (1 lệnh curl) | [`docs/du-lieu-mau.md`](./docs/du-lieu-mau.md) |
+| **Rà soát hệ thống 20/08** — đã kiểm gì, còn gì | [`docs/ra-soat-20-08.md`](./docs/ra-soat-20-08.md) |
 | **Nhật ký theo ngày** (bối cảnh git log không có) | [`docs/nhat-ky/`](./docs/nhat-ky/README.md) |
 | Tổng quan nghiệp vụ, đọc 1 mạch | [`docs/tong-thuat.md`](./docs/tong-thuat.md) |
 | **16 mã FR** theo module | [`docs/nghiep-vu/`](./docs/nghiep-vu/README.md) |
@@ -78,6 +80,7 @@ Còn lại là nợ kỹ thuật (test E2E, triển khai VPS) — xem [`docs/ke-
 | Nguyên tắc UI/UX bắt buộc | [`docs/frontend/ui-ux-nguyen-tac.md`](./docs/frontend/ui-ux-nguyen-tac.md) |
 | Design token | [`docs/frontend/design-tokens.md`](./docs/frontend/design-tokens.md) |
 | Hạ tầng, VPS, runbook sự cố | [`docs/ha-tang/`](./docs/ha-tang/README.md) |
+| **Triển khai lên VPS** (`git pull` + build tại chỗ) | [`docs/ha-tang/trien-khai-pull-code.md`](./docs/ha-tang/trien-khai-pull-code.md) |
 | Kiến trúc tổng quan + trạng thái quyết định | [`docs/kien-truc/TONG-QUAN-KIEN-TRUC.md`](./docs/kien-truc/TONG-QUAN-KIEN-TRUC.md) |
 | 4 ADR đã chốt | [`docs/kien-truc/adr/`](./docs/kien-truc/adr/) |
 | Thuật ngữ dễ nhầm (MVP ≠ Minimum Viable Product) | [`docs/kien-truc/THUAT-NGU.md`](./docs/kien-truc/THUAT-NGU.md) |
@@ -168,7 +171,7 @@ Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 ```bash
 # --- Backend (đã hoạt động) ---
 dotnet build                                        # 0 warning — TreatWarningsAsErrors đang bật
-dotnet test                                         # 196 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực, 5 module nghiệp vụ
+dotnet test                                         # 399 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực, 5 module nghiệp vụ
 dotnet run --project src/GiapTech.SoccerRoom.API    # Swagger tại /swagger
 
 # --- Kiểm tra tài liệu (đã hoạt động) ---

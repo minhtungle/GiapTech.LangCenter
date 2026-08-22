@@ -313,4 +313,70 @@ public class AnhTests(ApiFactory factory) : IClassFixture<ApiFactory>
         // private, không public: ảnh đi qua API có kiểm quyền, proxy chung không được cache.
         Assert.Contains("private", cache);
     }
+
+    // ---------- Ảnh QR chuyển khoản ----------
+
+    [Fact]
+    public async Task Tai_anh_QR_ghi_dung_cot_va_KHONG_de_anh_bia()
+    {
+        // Lỗi chực chờ: cả hai handler ảnh dùng `default:` cho AnhBia, nên thêm loại ảnh mới mà
+        // không đổi thành `case` tường minh sẽ khiến QR âm thầm ghi lên `anh_bia_url` — vừa mất
+        // ảnh bìa thật, vừa làm QR hiện lên Cộng đồng (ảnh bìa là dữ liệu công khai).
+        var client = await Client();
+
+        var bia = await client.PostAsync("/api/v1/anh/clb/anh-bia", Tep(PngNhoNhat));
+        bia.EnsureSuccessStatusCode();
+        var khoaBia = (await bia.Content.ReadAsStringAsync()).Trim('"');
+
+        var qr = await client.PostAsync("/api/v1/anh/clb/qr-chuyen-khoan", Tep(PngNhoNhat));
+        qr.EnsureSuccessStatusCode();
+        var khoaQr = (await qr.Content.ReadAsStringAsync()).Trim('"');
+
+        Assert.NotNull(khoaQr);
+        Assert.NotEqual(khoaBia, khoaQr);
+        // Khoá nằm trong thư mục riêng — không lẫn với ảnh bìa trong kho.
+        Assert.Contains("qr-chuyen-khoan", khoaQr);
+
+        var tl = await client.GetFromJsonAsync<JsonElement>("/api/v1/thiet-lap");
+        Assert.Equal(khoaQr, tl.GetProperty("anhQrUrl").GetString());
+        // ẢNH BÌA CÒN NGUYÊN.
+        Assert.Equal(khoaBia, tl.GetProperty("anhBiaUrl").GetString());
+    }
+
+    [Fact]
+    public async Task Xoa_anh_QR_khong_dung_den_anh_bia()
+    {
+        var client = await Client(factory.MaDoiB);
+
+        var bia = await client.PostAsync("/api/v1/anh/clb/anh-bia", Tep(PngNhoNhat));
+        var khoaBia = (await bia.Content.ReadAsStringAsync()).Trim('"');
+        var qr = await client.PostAsync("/api/v1/anh/clb/qr-chuyen-khoan", Tep(PngNhoNhat));
+        qr.EnsureSuccessStatusCode();
+
+        var xoa = await client.DeleteAsync("/api/v1/anh/clb/qr-chuyen-khoan");
+        xoa.EnsureSuccessStatusCode();
+
+        var tl = await client.GetFromJsonAsync<JsonElement>("/api/v1/thiet-lap");
+        Assert.Null(tl.GetProperty("anhQrUrl").GetString());
+        Assert.Equal(khoaBia, tl.GetProperty("anhBiaUrl").GetString());
+    }
+
+    [Fact]
+    public async Task Anh_QR_khong_lo_ra_Cong_dong()
+    {
+        // Logo và ảnh bìa CÓ lên Cộng đồng; QR thì không — nó gắn với số tài khoản quỹ.
+        var clientA = await Client(factory.MaDoiA);
+        var clientB = await Client(factory.MaDoiB);
+
+        var qr = await clientB.PostAsync("/api/v1/anh/clb/qr-chuyen-khoan", Tep(PngNhoNhat));
+        qr.EnsureSuccessStatusCode();
+        var khoaQr = (await qr.Content.ReadAsStringAsync()).Trim('"');
+        Assert.NotNull(khoaQr);
+
+        var ds = await clientA.GetFromJsonAsync<JsonElement>("/api/v1/cong-dong?soDong=100");
+        Assert.DoesNotContain(khoaQr, ds.GetRawText());
+
+        var ct = await clientA.GetAsync($"/api/v1/cong-dong/{factory.MaDoiB}");
+        Assert.DoesNotContain(khoaQr, await ct.Content.ReadAsStringAsync());
+    }
 }

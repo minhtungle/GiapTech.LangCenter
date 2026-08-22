@@ -62,6 +62,11 @@ public class LuuDoiHinhHandler(IAppDbContext db) : IRequestHandler<LuuDoiHinhCom
 
         // Query filter chỉ đếm cầu thủ của tenant hiện tại, nên id thuộc CLB khác rơi vào
         // nhánh này thay vì được gán âm thầm (quy tắc #2).
+        //
+        // CỐ Ý không lọc `DaNghi` (21/08): đội hình là bản ghi của một trận CỤ THỂ, có thể là
+        // trận đã đá từ mùa trước. Chặn người đã nghỉ ở đây thì không sửa được đội hình cũ — mà
+        // đó chính là lúc cần sửa (nhập bù dữ liệu quá khứ). Việc ẩn họ khỏi ô CHỌN người là
+        // việc của frontend, ở đây chỉ kiểm id có thật.
         if (idCauThu.Count > 0 &&
             await db.CauThus.CountAsync(c => idCauThu.Contains(c.Id), ct) != idCauThu.Count)
             throw new AppException("CAU_THU_KHONG_HOP_LE");

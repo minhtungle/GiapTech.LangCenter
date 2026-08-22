@@ -17,6 +17,18 @@ services:
       context: .
       dockerfile: src/GiapTech.SoccerRoom.API/Dockerfile
     image: soccerroom-api:local
+    environment:
+      # TẮT giới hạn tần suất trên máy dev — chỉ ở đây, KHÔNG ở production.
+      #
+      # Bộ E2E chạy 44 test, mỗi test tạo một CLB rồi đăng nhập 2 lần từ CÙNG một IP. Hạn
+      # `XacThuc` là 10/phút mỗi IP nên từ test thứ 5 trở đi `waitForURL` timeout ở bước đăng
+      # nhập — 8 test đỏ vì lý do không liên quan gì tới thứ chúng kiểm (đã xảy ra 21/08).
+      #
+      # Cách sai là nới hạn mức trong `GioiHanTanSuat`: production sẽ mất lớp bảo vệ chỉ vì test
+      # cần chạy nhanh. Cách đúng là tắt bằng cấu hình ở đúng môi trường cần tắt.
+      #
+      # `GioiHanTanSuatTests` vẫn BẬT cờ trong factory riêng nên cơ chế vẫn được canh.
+      GIOI_HAN_TAN_SUAT: "false"
 
   postgres:
     # Chỉ ở dev: mở port để nối psql/DBeaver từ máy. Bản production KHÔNG có dòng này.

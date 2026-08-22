@@ -31,6 +31,18 @@ public interface IAppDbContext
     DbSet<MauDoiHinh> MauDoiHinhs { get; }
     DbSet<VideoTran> VideoTrans { get; }
     DbSet<LoiMoiThamGia> LoiMoiThamGias { get; }
+
+    /// <summary>
+    /// Lời mời thách đấu giữa hai CLB. KHÔNG có Global Query Filter — nó thuộc về hai tenant
+    /// cùng lúc. Mọi truy vấn phải tự lọc `TenantGuiId == x || TenantNhanId == x`.
+    /// </summary>
+    DbSet<LoiMoiThachDau> LoiMoiThachDaus { get; }
+
+    /// <summary>
+    /// Lời mời qua link (FR-18). CÓ Global Query Filter theo tenant người gửi — chỗ đọc ngoài
+    /// tenant là truy vấn theo token, phải dùng `IgnoreQueryFilters` tường minh.
+    /// </summary>
+    DbSet<LoiMoiLink> LoiMoiLinks { get; }
     DbSet<PhanHoiThamGia> PhanHoiThamGias { get; }
     DbSet<DanhGiaCauThu> DanhGiaCauThus { get; }
     DbSet<VoteMvp> VoteMvps { get; }

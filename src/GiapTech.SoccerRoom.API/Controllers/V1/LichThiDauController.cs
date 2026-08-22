@@ -1,4 +1,5 @@
 using Asp.Versioning;
+using GiapTech.SoccerRoom.API.RateLimit;
 using GiapTech.SoccerRoom.API.Authorization;
 using GiapTech.SoccerRoom.Application.Common.Models;
 using GiapTech.SoccerRoom.Application.LichThiDau.DoiThu;
@@ -7,6 +8,7 @@ using GiapTech.SoccerRoom.Domain.Common;
 using GiapTech.SoccerRoom.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace GiapTech.SoccerRoom.API.Controllers.V1;
 
@@ -27,6 +29,24 @@ public class DoiThuController(ISender sender) : ControllerBase
         CancellationToken ct = default)
         => Ok(await sender.Send(
             new LayDanhSachDoiThuQuery(timKiem, new ThamSoTrang(trang, soDong)), ct));
+
+    /// <summary>
+    /// Tra một CLB khác trong hệ thống theo **mã đội chính xác** (7 ký tự).
+    ///
+    /// Endpoint duy nhất đọc dữ liệu ngoài tenant hiện tại. Chỉ trả tên + mã, không trả id,
+    /// không tìm theo tên, không liệt kê — xem `TraCuuClbQuery` để biết lý do từng ràng buộc.
+    ///
+    /// Trả 404 khi không tìm thấy: cùng một phản hồi cho "mã sai định dạng", "mã không tồn
+    /// tại" và "mã của chính mình" — phân biệt ba trường hợp là cho người dò biết mã nào có thật.
+    /// </summary>
+    [HttpGet("tra-cuu-clb/{maDoi}")]
+    [EnableRateLimiting(GioiHanTanSuat.TraCuu)]
+    [RequirePermission(ChucNang.LichThiDau, HanhDong.Xem)]
+    public async Task<ActionResult<ClbTraCuuDto>> TraCuuClb(string maDoi, CancellationToken ct)
+    {
+        var clb = await sender.Send(new TraCuuClbQuery(maDoi), ct);
+        return clb is null ? NotFound() : Ok(clb);
+    }
 
     [HttpPost]
     [RequirePermission(ChucNang.LichThiDau, HanhDong.Them)]

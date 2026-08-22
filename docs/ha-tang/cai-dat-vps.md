@@ -120,6 +120,9 @@ Kiểm thử restore định kỳ — backup chưa từng restore thử thì ch�
 
 ## 9. Secrets cho CI/CD
 
+> **Bỏ qua mục này** nếu dùng luồng [`git pull` + build tại chỗ](./trien-khai-pull-code.md) —
+> đường đó không cần secret nào nằm ngoài VPS.
+
 Cấu hình trên GitHub repo → Settings → Secrets:
 
 | Secret | Giá trị | Bắt buộc |
@@ -173,19 +176,24 @@ echo "<github-personal-access-token>" | docker login ghcr.io -u <username> --pas
 
 ### Tạo CLB đầu tiên
 
-`/dang-ky-clb` **chỉ chạy ở Development** nên trên production không dùng được. Hiện chưa có
-đường tạo CLB cho môi trường thật — xem [nợ kỹ thuật](../ke-hoach.md). Tạm thời: đặt
-`ASPNETCORE_ENVIRONMENT=Development` một lần để tạo CLB rồi đổi lại `Production`, hoặc chèn
-trực tiếp bằng SQL.
+**Cập nhật 20/08** (nợ N4 đã đóng): `/dang-ky-clb` mở ở **cả Production** — luồng lời mời qua
+link (FR-18) cần nó, vì đội được mời phải tự tạo được CLB. Chỉ cần vào `https://<domain>/dang-ky`
+và điền tên đội.
+
+Không thành đường sinh CLB rác hàng loạt vì có rate limit (nợ N3, xong 21/08): 10 request/phút
+mỗi IP cho endpoint xác thực và đăng ký.
 
 ### Quay lại bản trước khi deploy lỗi
 
-Workflow gắn tag theo commit SHA nên quay lại được ngay, không cần build lại:
+**Với CI/CD qua GHCR** — workflow gắn tag theo commit SHA nên quay lại được ngay, không cần build:
 
 ```bash
 cd /opt/soccerroom
 IMAGE_API=ghcr.io/<chu-repo>/soccerroom-api:<sha-ban-cu> docker compose up -d api
 ```
+
+**Với luồng `git pull`** (không có image tag) — quay lại bằng git rồi build lại. Xem
+[trien-khai-pull-code.md](./trien-khai-pull-code.md#quay-lại-bản-trước).
 
 ## Checklist hoàn tất
 

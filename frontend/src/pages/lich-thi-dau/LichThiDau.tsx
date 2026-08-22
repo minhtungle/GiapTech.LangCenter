@@ -12,6 +12,7 @@ import {
 } from '@/components/ui'
 import { Modal, ModalChan } from '@/components/ui/Modal'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
+import { ChonDoiThu } from '@/components/ChonDoiThu'
 import { cn } from '@/lib/utils'
 import { LichThang, type SuKienLich } from '@/components/LichThang'
 import {
@@ -39,12 +40,6 @@ interface TranDauDto {
   nhanXetChung: string | null
   ghiChu: string | null
 }
-interface DoiThuNgan {
-  id: string
-  tenDoi: string
-  soTranDaDau: number
-}
-
 /** Màu trạng thái theo quy ước cố định — xem docs/frontend/ui-ux-nguyen-tac.md. */
 const MAU_KET_QUA: Record<KetQua, 'win' | 'lose' | 'draw' | 'muted'> = {
   Thang: 'win',
@@ -95,11 +90,6 @@ export default function LichThiDau() {
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
 
-  const { data: doiThus } = useQuery({
-    queryKey: ['doi-thu'],
-    queryFn: async () =>
-      (await api.get<KetQuaTrang<DoiThuNgan>>('/doi-thu', { params: { soDong: 200 } })).data.duLieu,
-  })
 
   const { data: ketQua, isLoading } = useQuery({
     queryKey: ['tran-dau', loc, trang, soDong, sapXep],
@@ -354,7 +344,7 @@ export default function LichThiDau() {
           }
         />
       ) : (
-        <Table>
+        <Table caoToiDa="max-h-[calc(100vh-16rem)]">
           <thead>
             <tr>
               {(
@@ -492,18 +482,7 @@ export default function LichThiDau() {
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="doiThuId">{t('tranDau.doiThu')}</Label>
-            <SelectTimKiem
-              id="doiThuId"
-              luaChon={(doiThus ?? []).map((d) => ({
-                giaTri: d.id,
-                nhan: d.tenDoi,
-                phu: d.soTranDaDau > 0 ? `${d.soTranDaDau} trận đã đấu` : undefined,
-              }))}
-              giaTri={doiThuChon}
-              onDoi={setDoiThuChon}
-              placeholder={t('tranDau.chuaChonDoiThu')}
-              placeholderTimKiem={t('tranDau.timDoiThu')}
-            />
+            <ChonDoiThu giaTri={doiThuChon} onDoi={setDoiThuChon} />
           </div>
 
           <div className="flex flex-col gap-1.5">

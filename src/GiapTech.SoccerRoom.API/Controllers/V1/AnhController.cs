@@ -72,6 +72,25 @@ public class AnhController(ISender sender, ILuuTruAnh luuTru) : ControllerBase
         => Ok(await sender.Send(
             new TaiAnhLenCommand(LoaiAnh.AnhBia, null, tep.OpenReadStream(), tep.ContentType), ct));
 
+    /// <summary>
+    /// Mã QR chuyển khoản quỹ. Quyền `ThietLapChung.Sua` như logo — nó là thông tin CLB.
+    ///
+    /// Ảnh này KHÔNG lên Cộng đồng (khác logo và ảnh bìa): số tài khoản quỹ là dữ liệu nội bộ.
+    /// </summary>
+    [HttpPost("clb/qr-chuyen-khoan")]
+    [RequirePermission(ChucNang.ThietLapChung, HanhDong.Sua)]
+    public async Task<ActionResult<string>> TaiAnhQr(IFormFile tep, CancellationToken ct)
+        => Ok(await sender.Send(
+            new TaiAnhLenCommand(LoaiAnh.AnhQr, null, tep.OpenReadStream(), tep.ContentType), ct));
+
+    [HttpDelete("clb/qr-chuyen-khoan")]
+    [RequirePermission(ChucNang.ThietLapChung, HanhDong.Sua)]
+    public async Task<IActionResult> XoaAnhQr(CancellationToken ct)
+    {
+        await sender.Send(new XoaAnhCommand(LoaiAnh.AnhQr, null), ct);
+        return NoContent();
+    }
+
     [HttpDelete("clb/logo")]
     [RequirePermission(ChucNang.ThietLapChung, HanhDong.Sua)]
     public async Task<IActionResult> XoaLogo(CancellationToken ct)

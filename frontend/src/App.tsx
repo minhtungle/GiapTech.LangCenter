@@ -8,6 +8,11 @@ import QuenMatKhau from '@/pages/QuenMatKhau'
 import DangKyClb from '@/pages/DangKyClb'
 import LichThiDau from '@/pages/lich-thi-dau/LichThiDau'
 import DoiThu from '@/pages/lich-thi-dau/DoiThu'
+import CongDong from '@/pages/cong-dong/CongDong'
+import ChiTietClb from '@/pages/cong-dong/ChiTietClb'
+import XemLoiMoiLink from '@/pages/moi-qua-link/XemLoiMoiLink'
+import DangKyNhanh from '@/pages/dang-ky-nhanh/DangKyNhanh'
+import TongQuan from '@/pages/TongQuan'
 import ChiTietTran from '@/pages/lich-thi-dau/ChiTietTran'
 import HomThu from '@/pages/lich-thi-dau/HomThu'
 import MauDoiHinh from '@/pages/lich-thi-dau/MauDoiHinh'
@@ -18,7 +23,6 @@ import CauThu from '@/pages/quan-tri/CauThu'
 import TaiKhoan from '@/pages/quan-tri/TaiKhoan'
 import PhanQuyen from '@/pages/quan-tri/PhanQuyen'
 import ThietLap from '@/pages/quan-tri/ThietLap'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,21 +48,6 @@ function CanDangNhap({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-function TongQuan() {
-  const { phien } = useAuth()
-  return (
-    <Card className="max-w-lg">
-      <CardHeader>
-        <CardTitle>Xin chào, {phien?.username}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground">
-          Bạn đang đăng nhập vào CLB <strong>{phien?.maDoi}</strong>.
-        </p>
-      </CardContent>
-    </Card>
-  )
-}
 
 export default function App() {
   return (
@@ -69,6 +58,11 @@ export default function App() {
             <Route path="/dang-nhap" element={<DangNhap />} />
             <Route path="/quen-mat-khau" element={<QuenMatKhau />} />
             <Route path="/dang-ky" element={<DangKyClb />} />
+            {/* Trang xem lời mời qua link — CÔNG KHAI (FR-18): người nhận có thể chưa có tài
+                khoản. Đặt cùng nhóm với /dang-nhap, ngoài <CanThietDangNhap>. */}
+            <Route path="/loi-moi" element={<XemLoiMoiLink />} />
+            {/* FR-19 — trang đăng ký nhanh, KHÔNG cần đăng nhập (người dùng chưa có tài khoản). */}
+            <Route path="/dang-ky-nhanh" element={<DangKyNhanh />} />
             <Route path="/doi-mat-khau" element={<DoiMatKhau />} />
 
             <Route
@@ -85,6 +79,8 @@ export default function App() {
               <Route path="/thu-vien-video" element={<ThuVienVideo />} />
               <Route path="/hom-thu" element={<HomThu />} />
               <Route path="/doi-thu" element={<DoiThu />} />
+              <Route path="/cong-dong" element={<CongDong />} />
+              <Route path="/cong-dong/:maDoi" element={<ChiTietClb />} />
               <Route path="/thong-ke" element={<ThongKe />} />
               <Route path="/tai-chinh" element={<TaiChinh />} />
               <Route path="/quan-tri/tai-khoan" element={<TaiKhoan />} />

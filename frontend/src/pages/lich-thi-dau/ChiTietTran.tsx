@@ -13,6 +13,8 @@ import { Modal, ModalChan } from '@/components/ui/Modal'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 import { cn } from '@/lib/utils'
 import { SoDoSan, type CauThuTrenSan, type QuanTrenSan, type Ben } from '@/components/SoDoSan'
+import { ChonDoiThu } from '@/components/ChonDoiThu'
+import { TabDangKy } from './TabDangKy'
 import {
   CAU_HINH_SAN, CAC_LOAI_SAN, BANG_MAU_AO, chuanHoaLoaiSan, timMauAo,
   MAU_MAC_DINH_TA, MAU_MAC_DINH_DOI_THU, type LoaiSan,
@@ -34,10 +36,6 @@ interface TranDauDto {
   trangThai: 'DaLenLich' | 'DaDienRa' | 'DaHuy' | 'LuuTru'
   nhanXetChung: string | null
   ghiChu: string | null
-}
-interface DoiThuNgan {
-  id: string
-  tenDoi: string
 }
 interface DoiHinhDto {
   id: string
@@ -157,7 +155,7 @@ export function docSoDo(json: string | null | undefined): NoiDungSoDo {
  * làm (ai quay thì người đó dán link), còn chấm điểm cầu thủ là việc của ban huấn luyện làm
  * sau. Nhét chung một tab thì mỗi lần dán link phải cuộn qua cả bảng chấm 6 chỉ số × 11 người.
  */
-type Tab = 'thong-tin' | 'doi-hinh' | 'video' | 'danh-gia'
+type Tab = 'thong-tin' | 'dang-ky' | 'doi-hinh' | 'video' | 'danh-gia'
 
 /** FR-10 — chi tiết trận đấu, wizard 3 tab theo đặc tả. */
 export default function ChiTietTran() {
@@ -176,6 +174,9 @@ export default function ChiTietTran() {
   const tabs: { khoa: Tab; nhan: string }[] = [
     // FR-10 tab (a) gồm cả thông tin chung — trước đây phải quay về bảng mới sửa được.
     { khoa: 'thong-tin', nhan: t('chiTiet.tabThongTin') },
+    // FR-19: mời đăng ký thuộc về TRẬN này, đặt ở Hòm thư là sai chỗ — trưởng nhóm phải rời
+    // trận đang xem để đi tìm. Đặt TRƯỚC đội hình vì đăng ký xảy ra trước khi xếp đội hình.
+    { khoa: 'dang-ky', nhan: t('chiTiet.tabDangKy') },
     { khoa: 'doi-hinh', nhan: t('chiTiet.tabDoiHinh') },
     { khoa: 'video', nhan: t('chiTiet.tabVideo') },
     { khoa: 'danh-gia', nhan: t('chiTiet.tabDanhGia') },
@@ -229,6 +230,7 @@ export default function ChiTietTran() {
       {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
       {tab === 'thong-tin' && <TabThongTin tranDauId={id} onLoi={setMaLoi} />}
+      {tab === 'dang-ky' && <TabDangKy tranDauId={id} onLoi={setMaLoi} />}
       {tab === 'doi-hinh' && <TabDoiHinh tranDauId={id} onLoi={setMaLoi} qc={qc} />}
       {tab === 'video' && <QuanLyVideoTran tranDauId={id} onLoi={setMaLoi} />}
       {tab === 'danh-gia' && <TabDanhGia tranDauId={id} onLoi={setMaLoi} />}
@@ -258,11 +260,6 @@ function TabThongTin({
   const { data, isLoading } = useQuery({
     queryKey: ['tran-dau', tranDauId],
     queryFn: async () => (await api.get<TranDauDto>(`/tran-dau/${tranDauId}`)).data,
-  })
-  const { data: doiThus } = useQuery({
-    queryKey: ['doi-thu'],
-    queryFn: async () =>
-      (await api.get<KetQuaTrang<DoiThuNgan>>('/doi-thu', { params: { soDong: 200 } })).data.duLieu,
   })
 
   const luu = useMutation({
@@ -318,14 +315,7 @@ function TabThongTin({
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="doiThuId">{t('tranDau.doiThu')}</Label>
-        <SelectTimKiem
-          id="doiThuId"
-          luaChon={(doiThus ?? []).map((d) => ({ giaTri: d.id, nhan: d.tenDoi }))}
-          giaTri={doiThu}
-          onDoi={setDoiThuChon}
-          placeholder={t('tranDau.chuaChonDoiThu')}
-          placeholderTimKiem={t('tranDau.timDoiThu')}
-        />
+        <ChonDoiThu giaTri={doiThu} onDoi={setDoiThuChon} />
       </div>
 
       <div className="flex flex-col gap-1.5">

@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import {
-  Check, CircleHelp, Lock, LockOpen, Mail, Plus, Trash2, Users, X,
+  Check, CircleHelp, Lock, LockOpen, Mail, Plus, Store, Trash2, Users, X,
 } from 'lucide-react'
 import { api, layMaLoi, type KetQuaTrang } from '@/lib/api'
 import {
@@ -11,6 +11,8 @@ import {
 } from '@/components/ui'
 import { Modal, ModalChan } from '@/components/ui/Modal'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
+import { ChonDoiThu } from '@/components/ChonDoiThu'
+import { LoiMoiThachDau } from '@/pages/cong-dong/LoiMoiThachDau'
 import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import { cn } from '@/lib/utils'
 
@@ -50,10 +52,6 @@ interface PhanHoiDto {
   traLoi: TraLoi
   ghiChu: string | null
   thoiGianTraLoi: string | null
-}
-interface DoiThuNgan {
-  id: string
-  tenDoi: string
 }
 interface TranNgan {
   id: string
@@ -114,6 +112,18 @@ export default function HomThu() {
       {/* Lời mời giao hữu chỉ hiện với trưởng nhóm: cầu thủ thường không quyết định
           đội mình đá với ai. */}
       {laTruongNhom && <KhoiGiaoHuu onLoi={setMaLoi} qc={qc} />}
+
+      {/* Lời mời thách đấu từ Cộng đồng — CLB khác trong hệ thống gửi tới. Cùng lý do chỉ hiện
+          với trưởng nhóm: đồng ý sẽ tạo trận trong lịch đội. */}
+      {laTruongNhom && (
+        <section className="flex flex-col gap-3">
+          <h2 className="flex items-center gap-2 text-base font-semibold">
+            <Store className="h-4 w-4" />
+            {t('congDong.loiMoiTieuDe')}
+          </h2>
+          <LoiMoiThachDau />
+        </section>
+      )}
     </div>
   )
 }
@@ -483,11 +493,6 @@ function KhoiGiaoHuu({
     queryKey: ['loi-moi'],
     queryFn: async () => (await api.get<LoiMoiGiaoHuuDto[]>('/hom-thu/giao-huu')).data,
   })
-  const { data: doiThus } = useQuery({
-    queryKey: ['doi-thu'],
-    queryFn: async () =>
-      (await api.get<KetQuaTrang<DoiThuNgan>>('/doi-thu', { params: { soDong: 200 } })).data.duLieu,
-  })
 
   const tao = useMutation({
     mutationFn: async (form: Record<string, unknown>) => api.post('/hom-thu/giao-huu', form),
@@ -643,14 +648,7 @@ function KhoiGiaoHuu({
         >
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="doiThuId">{t('loiMoi.doiThu')}</Label>
-            <SelectTimKiem
-              id="doiThuId"
-              luaChon={(doiThus ?? []).map((d) => ({ giaTri: d.id, nhan: d.tenDoi }))}
-              giaTri={doiThuChon}
-              onDoi={setDoiThuChon}
-              placeholder={t('tranDau.chuaChonDoiThu')}
-              placeholderTimKiem={t('tranDau.timDoiThu')}
-            />
+            <ChonDoiThu giaTri={doiThuChon} onDoi={setDoiThuChon} />
           </div>
 
           <div className="flex flex-col gap-1.5">

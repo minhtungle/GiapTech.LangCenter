@@ -27,6 +27,15 @@ public class ApiFactory : WebApplicationFactory<Program>
     public Guid TenantBId { get; private set; }
 
     /// <summary>
+    /// CLB thứ ba, dùng làm **mồi** cho test cách ly ba chiều.
+    ///
+    /// Hai tenant chỉ kiểm được "A không thấy dữ liệu B". Có trường hợp cần ba: khi cờ trả về
+    /// phụ thuộc dữ liệu của tenant nào — A tra mã C, trong khi chỉ B mới có C trong sổ. Với
+    /// hai tenant, một truy vấn lỡ `IgnoreQueryFilters()` vẫn cho kết quả trùng đáp án đúng.
+    /// </summary>
+    public Guid TenantCId { get; private set; }
+
+    /// <summary>
     /// Mã đội do seeder sinh — test không đoán trước được nên phải đọc từ đây.
     ///
     /// Truy cập property này ép host khởi tạo (và do đó chạy seed) nếu chưa. Không có bước
@@ -43,8 +52,14 @@ public class ApiFactory : WebApplicationFactory<Program>
         get { BaoDamDaSeed(); return _maDoiB; }
     }
 
+    public string MaDoiC
+    {
+        get { BaoDamDaSeed(); return _maDoiC; }
+    }
+
     private string _maDoiA = "";
     private string _maDoiB = "";
+    private string _maDoiC = "";
 
     private void BaoDamDaSeed()
     {
@@ -54,13 +69,37 @@ public class ApiFactory : WebApplicationFactory<Program>
 
     private readonly string _tenDb = $"api-test-{Guid.NewGuid()}";
 
+    /// <summary>
+    /// Môi trường ứng dụng chạy. Lớp con ghi đè để kiểm hành vi khác biệt theo môi trường —
+    /// mà quan trọng nhất là những thứ chỉ MỞ ở Development (đăng ký CLB ẩn danh, Swagger).
+    ///
+    /// Không có nó thì test "cờ tính năng khớp hành vi thật" là vô nghĩa: ở Development cả cờ
+    /// lẫn endpoint đều bật, nên `env.IsDevelopment()` và hằng `true` cho cùng kết quả.
+    /// </summary>
+    protected virtual string MoiTruong => Environments.Development;
+
+    /// <summary>
+    /// Giới hạn tần suất TẮT mặc định trong test.
+    ///
+    /// `TestServer` không mở socket thật nên `RemoteIpAddress` là null với mọi request — tất cả
+    /// test rơi vào chung một phân vùng và đốt hết hạn mức của nhau. Bật lên thì 112 test đỏ vì
+    /// nhận `QUA_NHIEU_YEU_CAU` thay vì dữ liệu (đã xảy ra 21/08).
+    ///
+    /// `GioiHanTanSuatTests` override thành `true` để kiểm chính cơ chế này, và override thành
+    /// `null` (không đặt cờ) để kiểm **giá trị mặc định** của ứng dụng — nếu factory luôn đặt cờ
+    /// thì không test nào thấy được việc mặc định bị đổi thành tắt.
+    /// </summary>
+    protected virtual bool? DatCoGioiHanTanSuat => false;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseEnvironment(Environments.Development);
+        builder.UseEnvironment(MoiTruong);
 
         builder.UseSetting("JWT_SECRET", JwtSecret);
         builder.UseSetting("JWT_ISSUER", "soccerroom-api");
         builder.UseSetting("JWT_EXPIRY_MINUTES", "60");
+        if (DatCoGioiHanTanSuat is { } bat)
+            builder.UseSetting("GIOI_HAN_TAN_SUAT", bat ? "true" : "false");
 
         builder.ConfigureServices(services =>
         {
@@ -120,7 +159,7 @@ public class ApiFactory : WebApplicationFactory<Program>
         var hasher = sp.GetRequiredService<IPasswordHasher>();
         var currentTenant = sp.GetRequiredService<ICurrentTenant>();
 
-        foreach (var nhan in new[] { "A", "B" })
+        foreach (var nhan in new[] { "A", "B", "C" })
         {
             // Mã đội do hệ thống sinh, test đọc lại từ kết quả thay vì tự đặt.
             var tenant = seeder.TaoTenantMoiAsync($"Đội {nhan}").GetAwaiter().GetResult();
@@ -184,7 +223,8 @@ public class ApiFactory : WebApplicationFactory<Program>
             db.SaveChanges();
 
             if (nhan == "A") { TenantAId = tenant.Id; _maDoiA = tenant.MaDoi; }
-            else { TenantBId = tenant.Id; _maDoiB = tenant.MaDoi; }
+            else if (nhan == "B") { TenantBId = tenant.Id; _maDoiB = tenant.MaDoi; }
+            else { TenantCId = tenant.Id; _maDoiC = tenant.MaDoi; }
         }
     }
 

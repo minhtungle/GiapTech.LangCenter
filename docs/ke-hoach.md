@@ -1,15 +1,16 @@
 # Kế hoạch & tiến độ
 
-> Cập nhật cuối: **2026-08-16**. Nhật ký chi tiết theo ngày: [nhat-ky/](./nhat-ky/README.md).
+> Cập nhật cuối: **2026-08-18**. Nhật ký chi tiết theo ngày: [nhat-ky/](./nhat-ky/README.md).
 
 ## Tiến độ tổng
 
 ```
-Nghiệp vụ  ███████████░░░░░  11/16 FR (FR-10 thiếu bản vẽ sơ đồ kéo-thả)
-Hạ tầng    ████████░░░░░░░░  chạy được ở máy dev, chưa triển khai
+Nghiệp vụ  ████████████████  18/18 FR chạy đầu-cuối
+Hạ tầng    ████████████░░░░  CI/CD sẵn sàng, chờ VPS thật
+Còn lại    ██████░░░░░░░░░░  4 việc cần tài khoản/hạ tầng ngoài + 3 nợ kỹ thuật
 ```
 
-## Trạng thái 16 mã FR
+## Trạng thái 20 mã FR
 
 | Mã | Chức năng | Backend | Frontend | Ghi chú |
 |---|---|:---:|:---:|---|
@@ -28,7 +29,11 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | FR-13 | Biểu đồ diễn biến | ✅ | ✅ | Recharts, bấm điểm → chi tiết trận |
 | FR-14 | Bảng xếp hạng MVP | ✅ | ✅ | 4 tiêu chí, đổi cột không gọi lại API |
 | FR-15 | Danh sách quỹ | ✅ | ✅ | Tiến độ thu, màu theo trạng thái |
-| FR-16 | Thêm/Cập nhật quỹ | ✅ | ✅ | Nhắc nợ = sao chép danh sách; SMS/Email chưa làm |
+| FR-16 | Thêm/Cập nhật quỹ | ✅ | ✅ | Kèm thông tin chuyển khoản (QR + số TK) theo từng đợt. Nhắc nợ = sao chép danh sách; SMS/Email chưa làm |
+| FR-17 | Cộng đồng (mới 18/08) | ✅ | ✅ | Danh sách CLB, chi tiết công khai, lời mời thách đấu |
+| FR-18 | Lời mời qua link/QR (mới 20/08) | ✅ | ✅ | 13 trường hợp; nâng cấp đối thủ tên gõ tay thành CLB có ID |
+| FR-20 | Màn Tổng quan (mới 21/08) | ✅ | ✅ | Việc cần làm + trận sắp tới, phân vai theo trưởng nhóm/cầu thủ |
+| FR-19 | Đăng ký đá trận qua link/QR (mới 21/08) | ✅ | ✅ | Không cần đăng nhập. Tab Đăng ký trong chi tiết trận, chọn/bỏ ai được mời, 4 mốc hạn link. **Không** làm cho vote MVP — xem [tài liệu](./nghiep-vu/dang-ky-nhanh-qua-link.md) |
 
 ✅ xong · 🟡 dùng được nhưng thiếu phần · ⬜ chưa làm
 
@@ -41,11 +46,11 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | Cách ly tenant (2 tầng phòng vệ tự động + test) | ✅ |
 | Phân quyền động đọc từ DB + cache | ✅ |
 | Frontend: layout, i18n, design token, auto-refresh token | ✅ |
-| 208 test (41 unit + 167 integration) | ✅ |
+| 399 test (57 unit + 342 integration) | ✅ |
 | Upload ảnh qua MinIO (avatar, logo, ảnh bìa) | ✅ |
 | **Dockerfile cho API** | ✅ 2 giai đoạn, chạy user thường |
 | **`docker compose up` chạy được** | ✅ 5 container, API healthy, migration tự áp |
-| Test E2E frontend (23 test Playwright) | ✅ |
+| Test E2E frontend (41 test Playwright) | ✅ |
 | CI/CD 4 job: test → E2E → đẩy image → deploy | ✅ |
 | Triển khai VPS (domain, HTTPS, backup) | 🟡 cần server thật |
 
@@ -58,7 +63,15 @@ Hạ tầng    ████████░░░░░░░░  chạy được
 | # | Việc | Ước tính | Vì sao gấp |
 |---|---|---|---|
 | ~~N1~~ | ~~Dockerfile cho API~~ | — | ✅ Xong 16/08 |
-| ~~N2~~ | ~~Test E2E frontend~~ | — | ✅ Xong 17/08 — 23 test Playwright |
+| ~~N2~~ | ~~Test E2E frontend~~ | — | ✅ Xong 17/08 — nay 35 test Playwright |
+| ~~N3~~ | ~~Rate limit cho endpoint ẩn danh~~ | — | ✅ **Xong 21/08.** Làm ở **tầng API** chứ không ở Caddy như kế hoạch ban đầu: `caddy:2-alpine` không có module rate limit (phải tự build bằng `xcaddy`), và Caddy **không đọc được body** nên không phân biệt "một người dò 500 token" với "500 người mở link của mình". .NET 8 có `RateLimiting` sẵn. Cửa sổ trượt theo IP: tra cứu 30/phút · token 10/phút · xác thực 10/phút; trả 429 `QUA_NHIEU_YEU_CAU` kèm `Retry-After`. 7 phản chứng, 2 lọt lần đầu (nới hạn mức mà test chỉ so tên policy; đổi mặc định cờ thành tắt) — đã siết. Không chống DDoS phân tán, việc đó cần Cloudflare |
+| ~~N4~~ | ~~Không có đường tạo CLB ở production~~ | — | `/dang-ky-clb` chỉ bật ở Development (mở ẩn danh ở production là cho phép sinh CLB rác không giới hạn). ✅ **Xong 20/08** — mở tự do, vì luồng lời mời qua link (FR-18) cần nó |
+| ~~N5~~ | ~~E2E để lại tenant rác trong DB dev~~ | — | ✅ **Xong 20/08.** Mỗi test tự tạo CLB riêng nên mỗi lần chạy để lại ~44 CLB, và từ 18/08 chúng hiện lên trang Cộng đồng của mọi người — đo thật: **242 rác / 249 tổng**, toàn bộ trang đầu là rác. Dọn tay một lần rồi tích lại ngay sau lần chạy kế tiếp, nên phải tự động: `globalTeardown` gọi `POST /du-lieu-mau/don-tenant-test`. Kiểm chứng 2 lần chạy liên tiếp: xoá 290 rồi 48 CLB, mỗi lần về đúng 7 CLB mẫu |
+| ~~N9~~ | ~~Tự xoá hết quyền của chính mình được~~ | — | ✅ **Xong 21/08.** Chốt ở mức **CLB** chứ không mức cá nhân (quyết định chủ sản phẩm): phải luôn còn ít nhất một người **đang hoạt động** có quyền `PhanQuyen`. Admin A vẫn tự bỏ quyền được nếu admin B còn giữ. Gắn ở **ba** đường: cập nhật tài khoản (gỡ quyền / vô hiệu hoá), xoá tài khoản, và cho nghỉ kèm khoá tài khoản. `PhanQuyen` là chức năng chốt vì nó là cửa duy nhất cấp lại mọi quyền khác |
+| N8 | **Test flake không tái hiện** | ~1h | **E2E ~1/50 mỗi lần chạy** (quan sát 20/08 qua 4 lần: 43/44 · 43/44 · 43/44 · 44/44, đỏ một test KHÁC mỗi lần, chạy riêng thì luôn xanh). **Backend cũng gặp 21/08**: 1/342 đỏ một lần rồi xanh 3 lần liên tiếp sau đó — không kịp bắt tên test. Khác test mỗi lần ⇒ hạ tầng, không phải lỗi tính năng; nghi đua giữa `invalidateQueries` và `waitForTimeout` ở E2E, và thứ tự chạy song song ở backend. Đừng dùng "chạy lại thấy xanh" làm kết luận |
+| N10 | **Chưa deploy lên VPS** | ~1h | Kế hoạch + script đã xong 22/08: [`trien-khai-pull-code.md`](./ha-tang/trien-khai-pull-code.md) và `scripts/trien-khai.sh` (đã chạy thật trên cụm local, 3/3 endpoint trả 200). Còn lại là việc cần **chủ sản phẩm**: mua/cấu hình VPS ≥2GB, trỏ DNS, đặt `.env` trên VPS. Không cần secret nào trong GitHub vì luồng này VPS tự build |
+| ~~N7~~ | ~~Thiếu `EnableRetryOnFailure` cho Npgsql~~ | — | ✅ **Xong 20/08.** Kiểm chứng bằng phản chứng: restart postgres rồi gọi ngay — bản **không** retry trả `#1 -> 500`, bản **có** retry trả `#1 -> 200`. Đã rà `src/`: không chỗ nào tự mở `BeginTransaction` nên retry an toàn |
+| ~~N6~~ | ~~Màn Tổng quan trống~~ | — | ✅ **Xong 21/08.** Nội dung do chủ sản phẩm chọn: **việc cần làm + trận sắp tới**, mỗi dòng bấm được để tới đúng chỗ xử lý. Không làm dải 4 số thống kê — đã có ở màn Thống kê/Tài chính. Phân vai: trưởng nhóm thấy việc của đội, cầu thủ thường chỉ thấy việc của mình. **Không** bắt `[RequirePermission]` vì đây là màn đầu tiên sau đăng nhập |
 
 ### Giai đoạn 1 — Lịch thi đấu (FR-07 → FR-11)
 

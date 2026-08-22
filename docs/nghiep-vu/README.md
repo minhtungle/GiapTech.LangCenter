@@ -31,6 +31,7 @@ giữa tài liệu, commit, PR, test và code review.
 | FR-14 | Bảng xếp hạng MVP | [Thống kê](./thong-ke.md) |
 | FR-15 | Danh sách quỹ | [Tài chính](./tai-chinh.md) |
 | FR-16 | Thêm/Cập nhật quỹ | [Tài chính](./tai-chinh.md) |
+| FR-19 | Đăng ký đá trận qua link/QR | [Đăng ký nhanh](./dang-ky-nhanh-qua-link.md) |
 
 ## Quy tắc nghiệp vụ xuyên suốt
 

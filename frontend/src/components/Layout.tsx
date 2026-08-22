@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
-  CalendarDays, BarChart3, Wallet, Users, UserCircle, ShieldCheck, Settings, LogOut, Home, Swords, MailOpen,
+  CalendarDays, BarChart3, Wallet, Users, UserCircle, ShieldCheck, Settings, LogOut, Home, Swords, Store, MailOpen,
   ClipboardList, Video,
   PanelLeftClose, PanelLeft, Menu, X,
 } from 'lucide-react'
@@ -60,6 +60,7 @@ export default function Layout() {
         { to: '/lich-thi-dau', nhan: t('menu.lichThiDau'), icon: CalendarDays },
         { to: '/hom-thu', nhan: t('menu.homThu'), icon: MailOpen },
         { to: '/doi-thu', nhan: t('menu.doiThu'), icon: Swords },
+        { to: '/cong-dong', nhan: t('menu.congDong'), icon: Store },
         { to: '/mau-doi-hinh', nhan: t('menu.mauDoiHinh'), icon: ClipboardList },
         { to: '/thu-vien-video', nhan: t('menu.thuVienVideo'), icon: Video },
         { to: '/thong-ke', nhan: t('menu.thongKe'), icon: BarChart3 },
@@ -168,10 +169,21 @@ export default function Layout() {
 
   return (
     <div className="flex min-h-screen bg-muted/20">
-      {/* Sidebar cố định — desktop */}
+      {/*
+        Sidebar cố định — desktop.
+
+        `sticky top-0` + `h-screen`: nếu để nó là flex item thường thì nó giãn theo chiều cao của
+        cả trang. Đo thật 21/08 trên màn Thống kê: viewport 700px, trang 1413px, **sidebar cao
+        1412px** — cuộn xuống đáy thì logo và menu trôi hẳn khỏi màn hình (top = -713), người dùng
+        phải cuộn ngược lên mới đổi được trang.
+
+        `h-screen` khoá đúng một viewport, `sticky` giữ nó tại chỗ khi trang cuộn. `nav` bên trong
+        đã có `overflow-y-auto` nên menu dài tự cuộn riêng — trước đây thuộc tính đó vô hiệu vì
+        phần tử cha không bị giới hạn chiều cao.
+      */}
       <aside
         className={cn(
-          'hidden shrink-0 flex-col border-r border-border bg-background transition-[width] duration-200 md:flex',
+          'sticky top-0 hidden h-screen shrink-0 flex-col overflow-hidden border-r border-border bg-background transition-[width] duration-200 md:flex',
           thuGon ? 'w-16' : 'w-56',
         )}
       >

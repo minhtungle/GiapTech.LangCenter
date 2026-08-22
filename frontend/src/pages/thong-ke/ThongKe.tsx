@@ -151,7 +151,7 @@ export default function ThongKe() {
             {duLieuBieuDo.length === 0 ? (
               <TrangTrong thongDiep={t('thongKe.chuaCoTranDaDau')} />
             ) : (
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={220}>
                 <LineChart
                   data={duLieuBieuDo}
                   margin={{ top: 8, right: 8, bottom: 0, left: -20 }}
@@ -224,7 +224,7 @@ export default function ThongKe() {
             {xepHang.length === 0 ? (
               <TrangTrong thongDiep={t('thongKe.chuaCoDuLieuXepHang')} />
             ) : (
-              <Table>
+              <Table caoToiDa="max-h-[24rem]">
                 <thead>
                   <tr>
                     <Th className="w-12">#</Th>

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Check, ChevronsUpDown, X } from 'lucide-react'
+import { Check, ChevronsUpDown, Plus, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export interface LuaChon {
@@ -27,6 +27,9 @@ export function SelectTimKiem({
   choPhepXoa = true,
   id,
   disabled,
+  onTaoMoi,
+  nhanTaoMoi,
+  duoiDanhSach,
 }: {
   luaChon: LuaChon[]
   giaTri: string | null
@@ -36,6 +39,18 @@ export function SelectTimKiem({
   choPhepXoa?: boolean
   id?: string
   disabled?: boolean
+  /**
+   * Bật khả năng tạo mục mới từ chính ô tìm kiếm: gõ tên không có trong danh sách thì hiện
+   * dòng "Tạo …" ở cuối. Nhận từ khoá đang gõ, trả về giá trị của mục vừa tạo (hoặc null nếu
+   * thất bại) — component tự chọn nó.
+   *
+   * Có nó thì thêm đối thủ mới không phải rời form đang làm, sang màn Đối thủ, rồi quay lại.
+   */
+  onTaoMoi?: (ten: string) => Promise<string | null>
+  /** Nhãn dòng tạo mới, `{ten}` được thay bằng từ khoá. Mặc định: `Tạo "{ten}"`. */
+  nhanTaoMoi?: string
+  /** Nội dung tuỳ ý chèn dưới danh sách — dùng cho ô tra cứu theo mã. */
+  duoiDanhSach?: React.ReactNode
 }) {
   const [mo, setMo] = React.useState(false)
   const [tuKhoa, setTuKhoa] = React.useState('')
@@ -72,9 +87,37 @@ export function SelectTimKiem({
     }
   }, [mo])
 
+  const [dangTao, setDangTao] = React.useState(false)
+
   const chon = (v: string) => {
     onDoi(v)
     setMo(false)
+  }
+
+  /**
+   * Chỉ hiện dòng tạo mới khi từ khoá KHÔNG khớp chính xác mục nào đang có.
+   *
+   * Dùng so khớp chính xác (không phải "danh sách rỗng"): gõ "FC Hải" mà đã có "FC Hải Châu"
+   * thì vẫn cho tạo "FC Hải" — hai đội khác nhau. Nhưng gõ đúng "FC Hải Châu" thì không, vì
+   * đó chắc chắn là ý muốn chọn mục đã có.
+   */
+  const tuKhoaSach = tuKhoa.trim()
+  const hienTaoMoi =
+    Boolean(onTaoMoi) &&
+    tuKhoaSach.length > 0 &&
+    !luaChon.some((l) => l.nhan.trim().toLowerCase() === tuKhoaSach.toLowerCase())
+
+  const taoMoi = async () => {
+    if (!onTaoMoi || dangTao) return
+    setDangTao(true)
+    try {
+      const giaTriMoi = await onTaoMoi(tuKhoaSach)
+      // Thất bại thì GIỮ dropdown mở để người dùng thấy lỗi và sửa từ khoá — đóng lại sẽ
+      // khiến họ tưởng đã tạo xong.
+      if (giaTriMoi) chon(giaTriMoi)
+    } finally {
+      setDangTao(false)
+    }
   }
 
   const banPhim = (e: React.KeyboardEvent) => {
@@ -88,6 +131,9 @@ export function SelectTimKiem({
       e.preventDefault()
       const muc = daLoc[chiSoHighlight]
       if (muc) chon(muc.giaTri)
+      // Không có mục nào khớp mà đang cho tạo mới → Enter là tạo. Người dùng gõ tên mới rồi
+      // nhấn Enter theo phản xạ, không muốn phải rê chuột xuống dòng cuối.
+      else if (hienTaoMoi) void taoMoi()
     } else if (e.key === 'Escape') {
       e.preventDefault()
       setMo(false)
@@ -149,9 +195,13 @@ export function SelectTimKiem({
           </div>
 
           <ul role="listbox" className="max-h-56 overflow-y-auto p-1">
-            {daLoc.length === 0 ? (
+            {daLoc.length === 0 && !hienTaoMoi ? (
               <li className="px-2 py-3 text-center text-sm text-muted-foreground">
-                Không tìm thấy
+                {/* Khi danh sách RỖNG SẴN (chưa gõ gì) mà select này cho tạo mới, "Không tìm
+                    thấy" là câu vô nghĩa — chẳng ai tìm gì cả. Và KHÔNG lặp lại
+                    placeholderTimKiem: nó đã hiện ngay trên đầu ở ô tìm, in lại thành hai
+                    dòng giống nhau. */}
+                {onTaoMoi && tuKhoa.length === 0 ? 'Danh sách còn trống' : 'Không tìm thấy'}
               </li>
             ) : (
               daLoc.map((l, i) => (
@@ -180,7 +230,29 @@ export function SelectTimKiem({
                 </li>
               ))
             )}
+
+            {/* Dòng tạo mới đặt CUỐI danh sách, không phải đầu: mục đã có luôn quan trọng hơn
+                mục chưa có, và đặt đầu thì người dùng dễ bấm nhầm khi danh sách vừa lọc lại. */}
+            {hienTaoMoi && (
+              <li className={cn(daLoc.length > 0 && 'mt-1 border-t border-border pt-1')}>
+                <button
+                  type="button"
+                  disabled={dangTao}
+                  onClick={() => void taoMoi()}
+                  className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-muted disabled:opacity-50"
+                >
+                  <Plus className="h-3.5 w-3.5 shrink-0 text-primary" />
+                  <span className="min-w-0 truncate">
+                    {dangTao
+                      ? 'Đang tạo…'
+                      : (nhanTaoMoi ?? 'Tạo "{ten}"').replace('{ten}', tuKhoaSach)}
+                  </span>
+                </button>
+              </li>
+            )}
           </ul>
+
+          {duoiDanhSach && <div className="border-t border-border p-1.5">{duoiDanhSach}</div>}
         </div>
       )}
     </div>

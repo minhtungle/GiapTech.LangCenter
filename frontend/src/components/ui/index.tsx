@@ -126,10 +126,41 @@ export function CanhBaoLoi({ children }: { children: React.ReactNode }) {
 }
 
 /** Bảng mật độ dòng gọn (compact density) theo nguyên tắc UI/UX. */
-export function Table({ className, ...props }: React.TableHTMLAttributes<HTMLTableElement>) {
+/**
+ * Bảng dữ liệu.
+ *
+ * `caoToiDa` giới hạn chiều cao và cho bảng tự cuộn, kèm **header dính**: bảng 14–20 dòng làm
+ * trang cao gấp đôi màn hình, người dùng cuộn cả trang và mất luôn tiêu đề cột nên không biết
+ * cột nào là gì. Đo 21/08: tab Đăng ký trang cao 1060px với viewport 800px, bảng chiếm 550px cho
+ * 14 dòng mà phần lớn ô là dấu "—".
+ *
+ * Không đặt mặc định cho MỌI bảng: bảng 3–5 dòng mà có khung cuộn riêng trông như bị hỏng, và
+ * bảng ngắn thì cuộn trang là hành vi đúng.
+ */
+export function Table({
+  className,
+  caoToiDa,
+  ...props
+}: React.TableHTMLAttributes<HTMLTableElement> & {
+  /** Lớp Tailwind giới hạn chiều cao, ví dụ `max-h-[22rem]`. Bỏ trống = không giới hạn. */
+  caoToiDa?: string
+}) {
   return (
-    <div className="w-full overflow-x-auto rounded-lg border border-border">
-      <table className={cn('w-full caption-bottom text-sm', className)} {...props} />
+    <div
+      className={cn(
+        'w-full overflow-x-auto rounded-lg border border-border',
+        caoToiDa && `overflow-y-auto ${caoToiDa}`,
+      )}
+    >
+      <table
+        className={cn(
+          'w-full caption-bottom text-sm',
+          // Header dính chỉ có nghĩa khi khung cuộn được.
+          caoToiDa && '[&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10',
+          className,
+        )}
+        {...props}
+      />
     </div>
   )
 }
@@ -175,6 +206,13 @@ export function Badge({
 }
 
 /** Empty-state luôn kèm hành động + hướng dẫn ngắn (nguyên tắc UI/UX). */
+/**
+ * Trạng thái rỗng.
+ *
+ * `py-6` chứ không `py-12`: đo 21/08 thì khối "Chưa có lời mời nào" chiếm 150px chỉ để nói một
+ * câu, trong khi đây là trạng thái RỖNG — nó không nên chiếm chỗ hơn nội dung thật. Có `hanhDong`
+ * (nút) thì nới ra một chút để nút không sát viền.
+ */
 export function TrangTrong({
   thongDiep,
   hanhDong,
@@ -183,7 +221,12 @@ export function TrangTrong({
   hanhDong?: React.ReactNode
 }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border py-12 text-center">
+    <div
+      className={cn(
+        'flex flex-col items-center gap-3 rounded-lg border border-dashed border-border text-center',
+        hanhDong ? 'py-8' : 'py-6',
+      )}
+    >
       <p className="max-w-sm text-sm text-muted-foreground">{thongDiep}</p>
       {hanhDong}
     </div>

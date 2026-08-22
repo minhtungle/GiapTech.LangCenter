@@ -130,6 +130,47 @@ public class CachLyTenantTests
             "Mọi ITenantEntity phải được lọc tự động — xem docs/backend/multi-tenant.md.");
     }
 
+    /// <summary>
+    /// Danh sách entity CỐ Ý không có Global Query Filter, kèm lý do.
+    ///
+    /// Mỗi tên ở đây là một chỗ Query Filter KHÔNG bảo vệ, tức là chỗ phải tự lọc bằng tay và
+    /// dễ rò rỉ dữ liệu chéo CLB nhất. Danh sách phải ngắn và mỗi mục phải giải thích được.
+    /// </summary>
+    private static readonly Dictionary<string, string> NgoaiLeKhongLoc = new()
+    {
+        [nameof(Tenant)] = "Bảng ĐỊNH NGHĨA tenant, không thuộc tenant nào.",
+        [nameof(RefreshToken)] = "Tra theo token trước khi biết tenant nào — xem XacThucNangCao.",
+        [nameof(TokenDatLaiMatKhau)] = "Quên mật khẩu: chưa đăng nhập nên chưa có tenant.",
+        [nameof(LoiMoiThachDau)] =
+            "Thuộc HAI tenant cùng lúc (gửi + nhận). Mọi truy vấn phải tự lọc " +
+            "`TenantGuiId == x || TenantNhanId == x` — canh bởi LoiMoiThachDauTests.",
+    };
+
+    [Fact]
+    public void Khong_co_entity_nao_am_tham_thoat_khoi_query_filter()
+    {
+        // Chiều ngược của test trên. Test kia hỏi "ITenantEntity có bị lọc không"; test này hỏi
+        // "cái KHÔNG bị lọc có phải ngoại lệ có chủ ý không".
+        //
+        // Cần nó vì thêm một entity không kế thừa TenantEntity là đủ để nó nằm ngoài mọi lớp
+        // bảo vệ tự động, mà không test nào kêu. Ai thêm entity mới sẽ phải dừng lại ở đây và
+        // viết ra lý do — hoặc nhận ra là mình quên kế thừa TenantEntity.
+        var tenant = new TenantGia { TenantId = TenantA };
+        var db = TaoContext(tenant, nameof(Khong_co_entity_nao_am_tham_thoat_khoi_query_filter));
+
+        var khongLoc = db.Model.GetEntityTypes()
+            .Where(e => e.GetQueryFilter() is null)
+            .Select(e => e.ClrType.Name)
+            .Where(ten => !NgoaiLeKhongLoc.ContainsKey(ten))
+            .ToList();
+
+        Assert.True(
+            khongLoc.Count == 0,
+            $"Entity không có Query Filter mà chưa khai lý do: {string.Join(", ", khongLoc)}. " +
+            "Nếu nó là dữ liệu của một CLB → cho kế thừa TenantEntity. Nếu cố ý nằm ngoài → " +
+            "thêm vào NgoaiLeKhongLoc kèm lý do, và viết test canh việc tự lọc bằng tay.");
+    }
+
     [Fact]
     public void Bang_con_cung_mang_tenant_id_de_truy_van_truc_tiep_van_duoc_loc()
     {

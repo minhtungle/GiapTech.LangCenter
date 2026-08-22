@@ -109,8 +109,23 @@ public class DoiThuConfig : IEntityTypeConfiguration<DoiThu>
     public void Configure(EntityTypeBuilder<DoiThu> b)
     {
         b.ToTable("DOI_THU");
+
+        // Một đối thủ cho mỗi (tenant, mã đội hệ thống).
+        //
+        // Rà soát 20/08 tìm ra: 5 request chấp nhận lời mời link ĐỒNG THỜI tạo 5 bản ghi đối thủ
+        // cùng trỏ về một CLB, kèm 5 trận. Handler kiểm `FirstOrDefaultAsync` rồi `Add` — hai
+        // request song song đều thấy "chưa có" và đều ghi.
+        //
+        // Chặn ở tầng DB, không chỉ ở tầng ứng dụng: cùng lý do với UNIQUE vote MVP (quy tắc #8).
+        // Filter `IS NOT NULL` vì đối thủ tên gõ tay (mã null) thì trùng bao nhiêu cũng được —
+        // "FC Sông Hàn" của tôi và của bạn là hai đội khác nhau.
+        b.HasIndex(x => new { x.TenantId, x.MaDoiHeThong })
+            .IsUnique()
+            .HasFilter("ma_doi_he_thong IS NOT NULL")
+            .HasDatabaseName("UQ_DOI_THU_tenant_ma_doi_he_thong");
         b.Property(x => x.TenDoi).HasMaxLength(200).IsRequired();
         b.Property(x => x.LienHe).HasMaxLength(200);
+        b.Property(x => x.MaDoiHeThong).HasMaxLength(Domain.Common.MaDoi.DoDai).IsFixedLength();
         b.HasIndex(x => x.TenantId);
 
         b.HasOne(x => x.Tenant).WithMany()
@@ -214,10 +229,99 @@ public class LoiMoiThamGiaConfig : IEntityTypeConfiguration<LoiMoiThamGia>
         // không biết trả lời cái nào mới tính.
         b.HasIndex(x => x.TranDauId).IsUnique();
 
+        // FR-19: token của link đăng ký nhanh.
+        b.Property(x => x.LinkTokenHash).HasMaxLength(64);
+
+        // UNIQUE + filter: tra theo token phải nhanh (mỗi lần ai mở link là một truy vấn), và
+        // hai lời mời không được trùng hash. Filter `IS NOT NULL` để các lời mời CHƯA sinh link
+        // không xung đột với nhau — thiếu filter thì lời mời thứ hai không tạo được.
+        b.HasIndex(x => x.LinkTokenHash).IsUnique()
+            .HasFilter("link_token_hash IS NOT NULL")
+            .HasDatabaseName("UQ_LOI_MOI_THAM_GIA_link_token");
+
         b.HasOne(x => x.TranDau).WithMany()
             .HasForeignKey(x => x.TranDauId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.Tenant).WithMany()
             .HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class LoiMoiThachDauConfig : IEntityTypeConfiguration<LoiMoiThachDau>
+{
+    public void Configure(EntityTypeBuilder<LoiMoiThachDau> b)
+    {
+        b.ToTable("LOI_MOI_BAT_DOI");
+        b.Property(x => x.LoiNhan).HasMaxLength(1000);
+        b.Property(x => x.PhanHoi).HasMaxLength(1000);
+        b.Property(x => x.DiaDiem).HasMaxLength(200);
+
+        // Index cho CẢ HAI chiều: hòm thư đọc "lời mời tôi nhận" và "lời mời tôi gửi", hai
+        // truy vấn khác nhau. Chỉ index một chiều thì chiều kia quét toàn bảng.
+        b.HasIndex(x => x.TenantNhanId);
+        b.HasIndex(x => x.TenantGuiId);
+
+        // Một lời mời ĐANG CHỜ cho mỗi cặp CLB — ràng buộc này vốn chỉ được kiểm ở tầng ứng
+        // dụng (`AnyAsync` rồi `Add`), nên 5 request đồng thời tạo 5 lời mời (rà soát 20/08).
+        //
+        // Filter theo `trang_thai = 0` (ChoPhanHoi): đá xong rồi mời lại lần sau là hợp lệ, nên
+        // chỉ chặn lời mời đang treo.
+        b.HasIndex(x => new { x.TenantGuiId, x.TenantNhanId })
+            .IsUnique()
+            .HasFilter("trang_thai = 0")
+            .HasDatabaseName("UQ_LOI_MOI_BAT_DOI_dang_cho");
+
+        // KHÔNG Cascade: xoá một CLB không được xoá lời mời khỏi hòm thư của CLB kia — đó là
+        // dữ liệu của họ, không phải của bên bị xoá (quy tắc #1). Restrict buộc phải xử lý
+        // tường minh nếu sau này có chức năng xoá CLB.
+        b.HasOne(x => x.TenantGui).WithMany()
+            .HasForeignKey(x => x.TenantGuiId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.TenantNhan).WithMany()
+            .HasForeignKey(x => x.TenantNhanId).OnDelete(DeleteBehavior.Restrict);
+
+        // Không đặt FK tới TRAN_DAU: trận nằm trong tenant của từng bên, mà bảng này xuyên
+        // tenant — FK sẽ mở đường join từ tenant này sang trận của tenant kia.
+    }
+}
+
+public class LoiMoiLinkConfig : IEntityTypeConfiguration<LoiMoiLink>
+{
+    public void Configure(EntityTypeBuilder<LoiMoiLink> b)
+    {
+        b.ToTable("LOI_MOI_LINK");
+        b.Property(x => x.TokenHash).HasMaxLength(64).IsRequired();
+        b.Property(x => x.LoiNhan).HasMaxLength(1000);
+        b.Property(x => x.PhanHoi).HasMaxLength(1000);
+        b.Property(x => x.DiaDiem).HasMaxLength(200);
+
+        b.HasIndex(x => x.TenantId);
+
+        // UNIQUE trên hash: hai lời mời cùng token là không thể xảy ra với 32 byte ngẫu nhiên,
+        // nhưng nếu xảy ra (lỗi sinh token) thì phải nổ ở tầng DB chứ không âm thầm cho một
+        // token mở được hai lời mời.
+        b.HasIndex(x => x.TokenHash).IsUnique();
+
+        // Một link ĐANG CHỜ cho mỗi đối thủ. Cùng lý do với hai ràng buộc trên: 5 request tạo
+        // link đồng thời cho ra 5 token khác nhau, và người nhận nhận được 5 link cho một trận.
+        //
+        // Filter loại cả link đã thu hồi: thu hồi rồi thì gửi lại được.
+        b.HasIndex(x => x.DoiThuId)
+            .IsUnique()
+            .HasFilter("trang_thai = 0 AND thu_hoi_luc IS NULL")
+            .HasDatabaseName("UQ_LOI_MOI_LINK_dang_cho");
+
+        b.HasOne(x => x.DoiThu).WithMany()
+            .HasForeignKey(x => x.DoiThuId).OnDelete(DeleteBehavior.Cascade);
+
+        // KHÔNG Cascade từ trận: lời mời đã gửi ra ngoài, người nhận có thể đang mở link. Xoá
+        // trận thì lời mời chuyển sang "trận không còn", không biến mất.
+        b.HasOne(x => x.TranDau).WithMany()
+            .HasForeignKey(x => x.TranDauId).OnDelete(DeleteBehavior.SetNull);
+
+        b.HasOne(x => x.Tenant).WithMany()
+            .HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
+
+        // Không FK tới TENANT cho TenantNhanId: cùng lý do với DoiThu.MaDoiHeThong — FK cho phép
+        // join xuyên tenant, và CLB kia xoá tài khoản không được kéo theo lời mời của ta.
     }
 }
 

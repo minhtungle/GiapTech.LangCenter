@@ -25,7 +25,9 @@ public record QuyDto(
     int SoNguoi,
     int SoNguoiDaDongDu,
     /// <summary>Quá hạn mà chưa thu đủ — nguồn của màu đỏ trên UI (FR-15).</summary>
-    bool QuaHan);
+    bool QuaHan,
+    /// <summary>Đợt quỹ này có hiện thông tin chuyển khoản của CLB hay không.</summary>
+    bool HienThongTinChuyenKhoan = false);
 
 /// <summary>Khoản đóng của một cầu thủ trong đợt quỹ.</summary>
 public record DongGopDto(
@@ -38,7 +40,30 @@ public record DongGopDto(
     string? GhiChu,
     bool DaDongDu);
 
-public record ChiTietQuyDto(QuyDto Quy, List<DongGopDto> DongGops);
+/// <summary>
+/// Thông tin chuyển khoản của CLB, để thành viên biết chuyển tiền vào đâu.
+///
+/// Hệ thống KHÔNG xử lý tiền: chỉ hiển thị. Không gọi cổng thanh toán, không đối chiếu sao kê,
+/// không tự ghi nhận khi có tiền vào. Thủ quỹ vẫn nhập tay số đã nhận — đó là chủ ý, không phải
+/// thiếu sót: tự động ghi nhận đòi quyền đọc sao kê ngân hàng của CLB.
+/// </summary>
+public record ThongTinChuyenKhoanDto(
+    string? SoTaiKhoan,
+    string? TenNganHang,
+    string? ChuTaiKhoan,
+    string? AnhQrUrl);
+
+public record ChiTietQuyDto(
+    QuyDto Quy,
+    List<DongGopDto> DongGops,
+    /// <summary>
+    /// Null khi đợt quỹ không bật hiển thị, HOẶC khi CLB chưa khai thông tin nào.
+    ///
+    /// Gộp hai trường hợp vào một `null` là có ý: UI chỉ cần biết "có gì để hiện không". Phân
+    /// biệt "tắt" với "chưa khai" thì frontend phải tự suy ra, mà suy sai sẽ hiện một khối
+    /// trống rỗng có tiêu đề "Chuyển khoản" mà không có số nào bên dưới.
+    /// </summary>
+    ThongTinChuyenKhoanDto? ChuyenKhoan = null);
 
 // ---------- Queries ----------
 
@@ -73,7 +98,8 @@ public class LayDanhSachQuyHandler(IAppDbContext db)
                 x.DongGops.Count,
                 x.DongGops.Count(d => d.SoTienDaDong >= d.SoTienCanDong),
                 x.ThoiHan != null && homNay > x.ThoiHan
-                    && x.DongGops.Any(d => d.SoTienDaDong < d.SoTienCanDong)))
+                    && x.DongGops.Any(d => d.SoTienDaDong < d.SoTienCanDong),
+                x.HienThongTinChuyenKhoan))
             .ToListAsync(ct);
 
         return new KetQuaTrang<QuyDto>(duLieu, tong, trang.TrangHopLe, trang.SoDongHopLe);
@@ -82,7 +108,7 @@ public class LayDanhSachQuyHandler(IAppDbContext db)
 
 public record LayChiTietQuyQuery(Guid Id) : IRequest<ChiTietQuyDto>;
 
-public class LayChiTietQuyHandler(IAppDbContext db)
+public class LayChiTietQuyHandler(IAppDbContext db, ICurrentTenant tenant)
     : IRequestHandler<LayChiTietQuyQuery, ChiTietQuyDto>
 {
     public async Task<ChiTietQuyDto> Handle(LayChiTietQuyQuery request, CancellationToken ct)
@@ -98,7 +124,8 @@ public class LayChiTietQuyHandler(IAppDbContext db)
                 x.DongGops.Count,
                 x.DongGops.Count(d => d.SoTienDaDong >= d.SoTienCanDong),
                 x.ThoiHan != null && homNay > x.ThoiHan
-                    && x.DongGops.Any(d => d.SoTienDaDong < d.SoTienCanDong)))
+                    && x.DongGops.Any(d => d.SoTienDaDong < d.SoTienCanDong),
+                x.HienThongTinChuyenKhoan))
             .FirstOrDefaultAsync(ct)
             ?? throw new KhongTimThayException($"Quy {request.Id}");
 
@@ -113,7 +140,30 @@ public class LayChiTietQuyHandler(IAppDbContext db)
                 d.SoTienDaDong >= d.SoTienCanDong))
             .ToListAsync(ct);
 
-        return new ChiTietQuyDto(quy, dongGops);
+        // Chỉ đọc thông tin chuyển khoản khi đợt quỹ BẬT hiển thị — không thì mỗi lần mở màn
+        // thu tiền lại tốn một truy vấn cho dữ liệu không dùng.
+        ThongTinChuyenKhoanDto? chuyenKhoan = null;
+        if (quy.HienThongTinChuyenKhoan)
+        {
+            // TENANT không phải ITenantEntity nên Global Query Filter không áp — nhưng ở đây
+            // không cần lọc tay: `db.Quys` đã bị lọc theo tenant, nên `request.Id` chỉ tìm thấy
+            // đợt quỹ của chính ta. Đọc tenant của chính mình qua ICurrentTenant.
+            var tt = await db.Tenants
+                .Where(t => t.Id == tenant.TenantId)
+                .Select(t => new ThongTinChuyenKhoanDto(
+                    t.SoTaiKhoan, t.TenNganHang, t.ChuTaiKhoan, t.AnhQrUrl))
+                .FirstOrDefaultAsync(ct);
+
+            // CLB bật hiển thị nhưng chưa khai gì thì trả null, không trả object rỗng: UI sẽ
+            // hiện một khối "Chuyển khoản" trống không có số nào bên dưới.
+            var coGiDeHien = tt is not null && (
+                !string.IsNullOrWhiteSpace(tt.SoTaiKhoan) ||
+                !string.IsNullOrWhiteSpace(tt.AnhQrUrl));
+
+            chuyenKhoan = coGiDeHien ? tt : null;
+        }
+
+        return new ChiTietQuyDto(quy, dongGops, chuyenKhoan);
     }
 }
 
@@ -150,7 +200,14 @@ public record LuuQuyCommand(
     DateOnly? ThoiHan,
     string? GhiChu,
     TrangThaiQuy TrangThai,
-    List<ThanhVienDongQuy> ThanhViens) : IRequest<Guid>;
+    List<ThanhVienDongQuy> ThanhViens,
+    /// <summary>
+    /// Mặc định `false` để client cũ (chưa biết trường này) tạo đợt quỹ mà không tự nhiên bật
+    /// hiển thị số tài khoản. Khác với các trường "null = giữ nguyên" ở thiết lập chung: đây là
+    /// `bool` nên không phân biệt được "không gửi" với "gửi false" — chọn false vì nó là phía
+    /// an toàn (không lộ số tài khoản ngoài ý muốn).
+    /// </summary>
+    bool HienThongTinChuyenKhoan = false) : IRequest<Guid>;
 
 public class LuuQuyValidator : AbstractValidator<LuuQuyCommand>
 {
@@ -192,6 +249,7 @@ public class LuuQuyHandler(IAppDbContext db) : IRequestHandler<LuuQuyCommand, Gu
         }
 
         quy.TenQuy = request.TenQuy.Trim();
+        quy.HienThongTinChuyenKhoan = request.HienThongTinChuyenKhoan;
         quy.ThoiHan = request.ThoiHan;
         quy.GhiChu = request.GhiChu;
         quy.TrangThai = request.TrangThai;
@@ -262,6 +320,27 @@ public class GhiNhanThuHandler(IAppDbContext db) : IRequestHandler<GhiNhanThuCom
     {
         var d = await db.DongGopQuys.FirstOrDefaultAsync(x => x.Id == request.DongGopId, ct)
             ?? throw new KhongTimThayException($"DongGopQuy {request.DongGopId}");
+
+        // Không thu QUÁ số phải đóng.
+        //
+        // Đây là tiền, và lỗi này IM LẶNG: thủ quỹ gõ thêm ba số 0 thì số dư quỹ sai hàng trăm
+        // triệu, con số đó lan vào thẻ "Số dư quỹ" / "Đã thu" / "Còn phải thu" ở màn Tài chính,
+        // và không có bước nào hỏi lại.
+        //
+        // Chặn chứ KHÔNG tự cắt xuống: cắt âm thầm là sửa số tiền người dùng gõ, và họ sẽ không
+        // biết mình vừa nhập sai. Trả kèm số phải đóng để UI nói rõ.
+        //
+        // Đóng thừa để bù đợt sau là ca hợp lệ, nhưng nó phải là HAI khoản (đợt này đủ, đợt sau
+        // một phần), không phải một khoản vượt mức.
+        if (request.SoTienDaDong > d.SoTienCanDong)
+            throw new AppException("THU_QUA_SO_PHAI_DONG")
+            {
+                DuLieu = new Dictionary<string, object>
+                {
+                    ["soTienCanDong"] = d.SoTienCanDong,
+                    ["soTienGui"] = request.SoTienDaDong,
+                }
+            };
 
         d.SoTienDaDong = request.SoTienDaDong;
         d.GhiChu = request.GhiChu;

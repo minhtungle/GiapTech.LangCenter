@@ -90,7 +90,10 @@ test.describe('Lịch thi đấu', () => {
     expect(biCat, 'Tên đối thủ bị cắt trong ô lịch').toBeFalsy()
   })
 
-  test('bốn tab ở màn chi tiết trận', async ({ page, request }) => {
+  test('năm tab ở màn chi tiết trận, đúng thứ tự', async ({ page, request }) => {
+    // Thứ tự phản ánh trình tự làm việc thật: xem thông tin → mời đăng ký → xếp đội hình từ
+    // người đã nhận → dán video → đánh giá. "Đăng ký" thêm 21/08 (FR-19) và phải nằm TRƯỚC
+    // đội hình vì đăng ký xảy ra trước khi xếp đội.
     await vaoHeThong(page, request, 'tabs')
     await taoTran(page, '2027-12-01')
     await moChiTiet(page)
@@ -98,6 +101,7 @@ test.describe('Lịch thi đấu', () => {
     const tabs = await page.locator('.border-b button').allInnerTexts()
     expect(tabs.filter(Boolean)).toEqual([
       'Thông tin chung',
+      'Đăng ký',
       'Đội hình & Sơ đồ',
       'Video sau trận',
       'Đánh giá sau trận',
