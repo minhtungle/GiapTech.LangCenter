@@ -79,7 +79,9 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      # Ảnh runtime alpine không có curl/wget; dùng chính .NET để gọi.
+      # `wget` CÓ trong ảnh aspnet:8.0-alpine (BusyBox cung cấp) — đã kiểm chứng: healthcheck
+      # này chạy được và api báo `healthy`. Comment cũ nói ngược lại là sai.
+      # `curl` thì KHÔNG có, nên đừng đổi sang curl.
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
       interval: 10s
       timeout: 5s

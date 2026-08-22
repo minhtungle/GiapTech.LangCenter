@@ -7,6 +7,7 @@
 |---|---|
 | Cài đặt VPS lần đầu (ufw, fail2ban, Docker) | [cai-dat-vps.md](./cai-dat-vps.md) |
 | **Triển khai** bằng `git pull` + build tại chỗ — luồng đang dùng | [trien-khai-pull-code.md](./trien-khai-pull-code.md) |
+| Prompt giao cho Claude trên VPS (copy & dán) | [prompt-trien-khai-vps.md](./prompt-trien-khai-vps.md) |
 | Giải thích từng biến trong `.env.example` | [bien-moi-truong.md](./bien-moi-truong.md) |
 | Runbook xử lý sự cố (VPS down, DB đầy, restore) | [runbook.md](./runbook.md) |
 
