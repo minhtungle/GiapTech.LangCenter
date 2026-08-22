@@ -80,6 +80,7 @@ Còn lại là nợ kỹ thuật (test E2E, triển khai VPS) — xem [`docs/ke-
 | Nguyên tắc UI/UX bắt buộc | [`docs/frontend/ui-ux-nguyen-tac.md`](./docs/frontend/ui-ux-nguyen-tac.md) |
 | Design token | [`docs/frontend/design-tokens.md`](./docs/frontend/design-tokens.md) |
 | Hạ tầng, VPS, runbook sự cố | [`docs/ha-tang/`](./docs/ha-tang/README.md) |
+| **Triển khai lên VPS** (`git pull` + build tại chỗ) | [`docs/ha-tang/trien-khai-pull-code.md`](./docs/ha-tang/trien-khai-pull-code.md) |
 | Kiến trúc tổng quan + trạng thái quyết định | [`docs/kien-truc/TONG-QUAN-KIEN-TRUC.md`](./docs/kien-truc/TONG-QUAN-KIEN-TRUC.md) |
 | 4 ADR đã chốt | [`docs/kien-truc/adr/`](./docs/kien-truc/adr/) |
 | Thuật ngữ dễ nhầm (MVP ≠ Minimum Viable Product) | [`docs/kien-truc/THUAT-NGU.md`](./docs/kien-truc/THUAT-NGU.md) |
