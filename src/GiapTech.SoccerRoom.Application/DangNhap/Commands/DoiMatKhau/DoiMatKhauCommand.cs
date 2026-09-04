@@ -33,7 +33,7 @@ public class DoiMatKhauHandler(
         if (currentUser.UserId is not { } userId)
             throw new AppException(MaLoi.ChuaXacThuc);
 
-        // Query filter đã giới hạn theo tenant, nên không thể đổi nhầm sang user CLB khác.
+        // Query filter đã giới hạn theo tenant, nên không thể đổi nhầm sang user trung tâm khác.
         var nguoiDung = await db.NguoiDungs.FirstOrDefaultAsync(u => u.Id == userId, ct)
             ?? throw new KhongTimThayException($"Không thấy user {userId}");
 

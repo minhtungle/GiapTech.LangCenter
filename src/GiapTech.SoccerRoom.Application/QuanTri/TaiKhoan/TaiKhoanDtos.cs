@@ -18,9 +18,7 @@ namespace GiapTech.SoccerRoom.Application.QuanTri.TaiKhoan;
 public record TaiKhoanDto(
     Guid Id, string Username, string? Email, string? SoDienThoai, string? DiaChi,
     bool PhaiDoiMatKhau, TrangThaiNguoiDung TrangThai,
-    Guid? CauThuId, string? TenCauThu, List<Guid> QuyenIds, List<string> TenQuyens,
-    /// <summary>Trưởng nhóm — người gửi lời mời đăng ký thi đấu ở Hòm thư.</summary>
-    bool LaTruongNhom);
+    List<Guid> QuyenIds, List<string> TenQuyens);
 
 // ---------- Queries ----------
 
@@ -51,11 +49,8 @@ public class LayDanhSachTaiKhoanHandler(IAppDbContext db)
             .Select(u => new TaiKhoanDto(
                 u.Id, u.Username, u.Email, u.SoDienThoai, u.DiaChi,
                 u.PhaiDoiMatKhau, u.TrangThai,
-                u.CauThuId,
-                u.CauThu != null ? u.CauThu.HoTen : null,
                 u.NguoiDungQuyens.Select(nq => nq.QuyenId).ToList(),
-                u.NguoiDungQuyens.Select(nq => nq.Quyen.TenQuyen).ToList(),
-                u.LaTruongNhom))
+                u.NguoiDungQuyens.Select(nq => nq.Quyen.TenQuyen).ToList()))
             .ToListAsync(ct);
 
         return new KetQuaTrang<TaiKhoanDto>(duLieu, tong, trang.TrangHopLe, trang.SoDongHopLe);
@@ -66,8 +61,7 @@ public class LayDanhSachTaiKhoanHandler(IAppDbContext db)
 
 public record TaoTaiKhoanCommand(
     string Username, string MatKhau, string? Email, string? SoDienThoai, string? DiaChi,
-    Guid? CauThuId, List<Guid> QuyenIds, bool PhaiDoiMatKhau = true,
-    bool LaTruongNhom = false) : IRequest<Guid>;
+    List<Guid> QuyenIds, bool PhaiDoiMatKhau = true) : IRequest<Guid>;
 
 public class TaoTaiKhoanValidator : AbstractValidator<TaoTaiKhoanCommand>
 {
@@ -93,19 +87,6 @@ public class TaoTaiKhoanHandler(IAppDbContext db, IPasswordHasher hasher)
         if (await db.NguoiDungs.AnyAsync(u => u.Username == username, ct))
             throw new AppException("USERNAME_DA_TON_TAI");
 
-        if (request.CauThuId is { } cauThuId)
-        {
-            // CỐ Ý không lọc `DaNghi` (21/08): người nghỉ đá vẫn có thể giữ vai trò khác trong
-            // nhóm (thủ quỹ, trợ lý) và cần tài khoản để làm việc đó. Chặn ở đây là ép trưởng
-            // nhóm cho họ "đá lại" chỉ để cấp được tài khoản.
-            if (!await db.CauThus.AnyAsync(c => c.Id == cauThuId, ct))
-                throw new KhongTimThayException($"CauThu {cauThuId}");
-
-            // Một hồ sơ cầu thủ gắn tối đa một tài khoản.
-            if (await db.NguoiDungs.AnyAsync(u => u.CauThuId == cauThuId, ct))
-                throw new AppException("CAU_THU_DA_CO_TAI_KHOAN");
-        }
-
         await KiemTraQuyenTonTai(db, request.QuyenIds, ct);
 
         var nguoiDung = new Domain.Entities.NguoiDung
@@ -115,9 +96,7 @@ public class TaoTaiKhoanHandler(IAppDbContext db, IPasswordHasher hasher)
             Email = request.Email,
             SoDienThoai = request.SoDienThoai,
             DiaChi = request.DiaChi,
-            CauThuId = request.CauThuId,
-            PhaiDoiMatKhau = request.PhaiDoiMatKhau,
-            LaTruongNhom = request.LaTruongNhom
+            PhaiDoiMatKhau = request.PhaiDoiMatKhau
         };
         db.NguoiDungs.Add(nguoiDung);
 
@@ -141,7 +120,7 @@ public class TaoTaiKhoanHandler(IAppDbContext db, IPasswordHasher hasher)
 
         var soHopLe = await db.Quyens.CountAsync(q => quyenIds.Contains(q.Id), ct);
 
-        // Query filter đảm bảo chỉ đếm quyền của tenant hiện tại, nên id thuộc CLB khác
+        // Query filter đảm bảo chỉ đếm quyền của tenant hiện tại, nên id thuộc trung tâm khác
         // sẽ rơi vào nhánh này thay vì được gán âm thầm.
         if (soHopLe != quyenIds.Distinct().Count())
             throw new AppException("QUYEN_KHONG_HOP_LE");
@@ -150,8 +129,7 @@ public class TaoTaiKhoanHandler(IAppDbContext db, IPasswordHasher hasher)
 
 public record CapNhatTaiKhoanCommand(
     Guid Id, string? Email, string? SoDienThoai, string? DiaChi,
-    Guid? CauThuId, List<Guid> QuyenIds, TrangThaiNguoiDung TrangThai,
-    bool LaTruongNhom = false) : IRequest;
+    List<Guid> QuyenIds, TrangThaiNguoiDung TrangThai) : IRequest;
 
 public class CapNhatTaiKhoanValidator : AbstractValidator<CapNhatTaiKhoanCommand>
 {
@@ -175,18 +153,14 @@ public class CapNhatTaiKhoanHandler(
             ?? throw new KhongTimThayException($"NguoiDung {request.Id}");
 
         // Tự vô hiệu hóa mình là đường một chiều: đăng xuất xong không vào lại được, và nếu
-        // đây là admin duy nhất thì cả CLB mất quyền quản trị.
+        // đây là admin duy nhất thì cả trung tâm mất quyền quản trị.
         if (currentUser.UserId == request.Id &&
             request.TrangThai == TrangThaiNguoiDung.VoHieuHoa)
             throw new AppException("KHONG_TU_VO_HIEU_HOA_MINH");
 
-        if (request.CauThuId is { } cauThuId &&
-            await db.NguoiDungs.AnyAsync(u => u.CauThuId == cauThuId && u.Id != request.Id, ct))
-            throw new AppException("CAU_THU_DA_CO_TAI_KHOAN");
-
         await TaoTaiKhoanHandler.KiemTraQuyenTonTai(db, request.QuyenIds, ct);
 
-        // Nợ N9: CLB phải luôn còn ít nhất một người có quyền Phân quyền.
+        // Trung tâm phải luôn còn ít nhất một người có quyền Phân quyền.
         //
         // Hai đường làm mất người cuối cùng, cùng đi qua lệnh này: gỡ hết quyền
         // (`QuyenIds = []`) và vô hiệu hoá tài khoản. Kiểm cả hai bằng một phép đếm.
@@ -198,9 +172,7 @@ public class CapNhatTaiKhoanHandler(
         nguoiDung.Email = request.Email;
         nguoiDung.SoDienThoai = request.SoDienThoai;
         nguoiDung.DiaChi = request.DiaChi;
-        nguoiDung.CauThuId = request.CauThuId;
         nguoiDung.TrangThai = request.TrangThai;
-        nguoiDung.LaTruongNhom = request.LaTruongNhom;
 
         db.NguoiDungQuyens.RemoveRange(nguoiDung.NguoiDungQuyens);
         foreach (var quyenId in request.QuyenIds.Distinct())
@@ -265,11 +237,10 @@ public class XoaTaiKhoanHandler(IAppDbContext db, ICurrentUser currentUser) : IR
         var nguoiDung = await db.NguoiDungs.FirstOrDefaultAsync(u => u.Id == request.Id, ct)
             ?? throw new KhongTimThayException($"NguoiDung {request.Id}");
 
-        // Nợ N9: xoá người quản trị cuối cùng cũng làm CLB mất đường quản trị. Chặn "tự xoá
+        // Xoá người quản trị cuối cùng cũng làm trung tâm mất đường quản trị. Chặn "tự xoá
         // mình" ở trên không đủ — admin A xoá được admin B là người duy nhất còn quyền.
         await ChotConNguoiQuanTri.KiemAsync(db, request.Id, false, ct);
 
-        // Xóa tài khoản KHÔNG xóa hồ sơ cầu thủ — hai thực thể độc lập (FR-03, FR-04).
         db.NguoiDungs.Remove(nguoiDung);
         await db.SaveChangesAsync(ct);
     }

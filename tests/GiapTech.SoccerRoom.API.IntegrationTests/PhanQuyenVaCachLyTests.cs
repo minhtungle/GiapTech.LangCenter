@@ -20,11 +20,11 @@ public class PhanQuyenVaCachLyTests(ApiFactory factory) : IClassFixture<ApiFacto
         var body = await res.Content.ReadFromJsonAsync<JsonElement>();
         return body.GetProperty("duLieu").EnumerateArray().ToList();
     }
-    private async Task<string> LayToken(string maDoi, string username, string matKhau)
+    private async Task<string> LayToken(string maTrungTam, string username, string matKhau)
     {
         var client = factory.CreateClient();
         var res = await client.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaDoi = maDoi, Username = username, MatKhau = matKhau });
+            new { MaTrungTam = maTrungTam, Username = username, MatKhau = matKhau });
         res.EnsureSuccessStatusCode();
         var body = await res.Content.ReadFromJsonAsync<JsonElement>();
         return body.GetProperty("accessToken").GetString()!;
@@ -40,20 +40,20 @@ public class PhanQuyenVaCachLyTests(ApiFactory factory) : IClassFixture<ApiFacto
     [Fact]
     public async Task Khong_co_token_thi_bi_tu_choi()
     {
-        var res = await factory.CreateClient().GetAsync("/api/v1/cau-thu");
+        var res = await factory.CreateClient().GetAsync("/api/v1/tai-khoan");
         Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
     }
 
     /// <summary>
     /// Admin còn cờ PhaiDoiMatKhau bị chặn khỏi endpoint nghiệp vụ (FR-01); đổi xong thì vào được.
     /// Gộp hai khẳng định vào một test vì cả hai đều tiêu thụ mật khẩu mặc định của
-    /// CLB-A/admin — tách ra sẽ thành hai test tranh nhau đổi cùng một mật khẩu.
+    /// trung tâm A/admin — tách ra sẽ thành hai test tranh nhau đổi cùng một mật khẩu.
     /// </summary>
     [Fact]
     public async Task Buoc_doi_mat_khau_chan_truy_cap_va_doi_xong_thi_vao_duoc()
     {
-        var tokenChuaDoi = await LayToken(factory.MaDoiA, "admin", "123456");
-        var resTruoc = await ClientVoiToken(tokenChuaDoi).GetAsync("/api/v1/cau-thu");
+        var tokenChuaDoi = await LayToken(factory.MaTrungTamA, "admin", "123456");
+        var resTruoc = await ClientVoiToken(tokenChuaDoi).GetAsync("/api/v1/tai-khoan");
 
         Assert.Equal(HttpStatusCode.Forbidden, resTruoc.StatusCode);
         var body = await resTruoc.Content.ReadFromJsonAsync<JsonElement>();
@@ -64,8 +64,8 @@ public class PhanQuyenVaCachLyTests(ApiFactory factory) : IClassFixture<ApiFacto
             new { MatKhauCu = "123456", MatKhauMoi = "mat-khau-moi-A" });
         doi.EnsureSuccessStatusCode();
 
-        var tokenSauDoi = await LayToken(factory.MaDoiA, "admin", "mat-khau-moi-A");
-        var resSau = await ClientVoiToken(tokenSauDoi).GetAsync("/api/v1/cau-thu");
+        var tokenSauDoi = await LayToken(factory.MaTrungTamA, "admin", "mat-khau-moi-A");
+        var resSau = await ClientVoiToken(tokenSauDoi).GetAsync("/api/v1/tai-khoan");
 
         Assert.Equal(HttpStatusCode.OK, resSau.StatusCode);
     }
@@ -77,40 +77,40 @@ public class PhanQuyenVaCachLyTests(ApiFactory factory) : IClassFixture<ApiFacto
     [Fact]
     public async Task Xac_thuc_duoc_nhung_thieu_quyen_thi_bi_tu_choi()
     {
-        var client = ClientVoiToken(await LayToken(factory.MaDoiA, "player", "player123"));
-        var res = await client.GetAsync("/api/v1/cau-thu");
+        var client = ClientVoiToken(await LayToken(factory.MaTrungTamA, "player", "player123"));
+        var res = await client.GetAsync("/api/v1/tai-khoan");
 
         Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
     }
 
     /// <summary>
-    /// QUY TẮC #1 — admin CLB A chỉ thấy cầu thủ của CLB A, admin CLB B chỉ thấy của CLB B.
+    /// QUY TẮC #2 — admin trung tâm A chỉ thấy tài khoản của A, admin trung tâm B chỉ thấy của B.
     /// Cả hai gọi cùng một endpoint, không truyền tham số lọc nào.
     /// </summary>
     [Fact]
     public async Task Moi_tenant_chi_thay_du_lieu_cua_minh()
     {
-        var clientA = ClientVoiToken(await LayToken(factory.MaDoiA, "manager", "manager123"));
-        var clientB = ClientVoiToken(await LayToken(factory.MaDoiB, "manager", "manager123"));
+        var clientA = ClientVoiToken(await LayToken(factory.MaTrungTamA, "manager", "manager123"));
+        var clientB = ClientVoiToken(await LayToken(factory.MaTrungTamB, "manager", "manager123"));
 
-        var cuaA = await DocTrang(await clientA.GetAsync("/api/v1/cau-thu"));
-        var cuaB = await DocTrang(await clientB.GetAsync("/api/v1/cau-thu"));
+        var cuaA = await DocTrang(await clientA.GetAsync("/api/v1/tai-khoan"));
+        var cuaB = await DocTrang(await clientB.GetAsync("/api/v1/tai-khoan"));
 
         Assert.NotNull(cuaA);
         Assert.NotNull(cuaB);
 
-        // Kiểm bằng NỘI DUNG chứ không bằng số lượng: fixture thêm hồ sơ cầu thủ là chuyện
-        // thường, mà đếm cứng thì mỗi lần thêm một seed lại phải sửa test này — trong khi
-        // điều cần canh là "không thấy dữ liệu CLB khác", không phải "có đúng N hàng".
-        var tenA = cuaA.Select(x => x.GetProperty("hoTen").GetString()).ToList();
-        var tenB = cuaB.Select(x => x.GetProperty("hoTen").GetString()).ToList();
+        // Kiểm bằng ID chứ không bằng số lượng: fixture thêm tài khoản là chuyện thường, mà
+        // đếm cứng thì mỗi lần thêm một seed lại phải sửa test này — trong khi điều cần canh
+        // là "không thấy dữ liệu trung tâm khác", không phải "có đúng N hàng".
+        var idA = cuaA.Select(x => x.GetProperty("id").GetGuid()).ToList();
+        var idB = cuaB.Select(x => x.GetProperty("id").GetGuid()).ToList();
 
-        Assert.Contains("Cầu thủ của CLB-A", tenA);
-        Assert.Contains("Cầu thủ của CLB-B", tenB);
+        // Mỗi bên thấy tài khoản của mình.
+        Assert.NotEmpty(idA);
+        Assert.NotEmpty(idB);
 
-        // Không bên nào thấy cầu thủ của bên kia.
-        Assert.All(tenA, t => Assert.DoesNotContain("CLB-B", t));
-        Assert.All(tenB, t => Assert.DoesNotContain("CLB-A", t));
+        // Và hai tập KHÔNG giao nhau — không bên nào thấy tài khoản của bên kia.
+        Assert.Empty(idA.Intersect(idB));
     }
 
     [Fact]
@@ -118,12 +118,12 @@ public class PhanQuyenVaCachLyTests(ApiFactory factory) : IClassFixture<ApiFacto
     {
         // Dùng "manager", KHÔNG dùng "admin": test Buoc_doi_mat_khau đổi mật khẩu admin nên
         // hai test chạy song song sẽ tranh nhau — cái chạy sau không đăng nhập được.
-        var token = await LayToken(factory.MaDoiA, "manager", "manager123");
+        var token = await LayToken(factory.MaTrungTamA, "manager", "manager123");
 
         // Đổi ký tự cuối của phần chữ ký.
         var gia = token[..^1] + (token[^1] == 'a' ? 'b' : 'a');
 
-        var res = await ClientVoiToken(gia).GetAsync("/api/v1/cau-thu");
+        var res = await ClientVoiToken(gia).GetAsync("/api/v1/tai-khoan");
         Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
     }
 }

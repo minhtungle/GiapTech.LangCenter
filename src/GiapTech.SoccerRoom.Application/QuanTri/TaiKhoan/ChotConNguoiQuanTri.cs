@@ -7,16 +7,16 @@ using Microsoft.EntityFrameworkCore;
 namespace GiapTech.SoccerRoom.Application.QuanTri.TaiKhoan;
 
 /// <summary>
-/// CLB phải luôn còn **ít nhất một** người có quyền Phân quyền (nợ N9, 21/08).
+/// Trung tâm phải luôn còn **ít nhất một** người có quyền Phân quyền (nợ N9, 21/08).
 ///
 /// Vì sao cần: `PUT /tai-khoan/{id}` cho phép gửi `QuyenIds = []`, nên admin duy nhất tự cắt hết
 /// quyền của mình được — sau đó **mọi** thao tác quản trị trả 403 và không ai sửa lại được, kể cả
-/// chính họ. CLB mất đường quản trị hoàn toàn. Gặp thật 21/08 khi viết test cho tính năng nghỉ
-/// thi đấu.
+/// chính họ. trung tâm mất đường quản trị hoàn toàn. Gặp thật 21/08 khi viết test cho tính năng nghỉ
+/// vai trò quản trị.
 ///
-/// Chặn ở mức **CLB**, không phải mức cá nhân (quyết định của chủ sản phẩm): admin A vẫn tự bỏ
-/// quyền của mình được **nếu** admin B còn quyền đó. Đúng với CLB có nhiều người quản trị, và
-/// không khoá cứng CLB một admin muốn sắp xếp lại vai trò.
+/// Chặn ở mức **trung tâm**, không phải mức cá nhân (quyết định của chủ sản phẩm): admin A vẫn tự bỏ
+/// quyền của mình được **nếu** admin B còn quyền đó. Đúng với trung tâm có nhiều người quản trị, và
+/// không khoá cứng trung tâm một admin muốn sắp xếp lại vai trò.
 ///
 /// `PhanQuyen` là chức năng chốt vì nó là **cửa duy nhất** để cấp lại mọi quyền khác: mất
 /// `TaiChinh` thì người có `PhanQuyen` cấp lại được, nhưng mất `PhanQuyen` thì không gì cứu được.
@@ -24,7 +24,7 @@ namespace GiapTech.SoccerRoom.Application.QuanTri.TaiKhoan;
 internal static class ChotConNguoiQuanTri
 {
     /// <summary>
-    /// Ném lỗi nếu thao tác đang xét làm CLB không còn ai có quyền Phân quyền.
+    /// Ném lỗi nếu thao tác đang xét làm trung tâm không còn ai có quyền Phân quyền.
     /// </summary>
     /// <param name="idDangSua">Tài khoản đang bị sửa — loại khỏi phép đếm "người còn lại".</param>
     /// <param name="sauKhiSuaConQuyenNay">
@@ -39,7 +39,7 @@ internal static class ChotConNguoiQuanTri
 
         // Đếm người KHÁC đang hoạt động mà có quyền Phân quyền.
         //
-        // Query filter đã lọc theo tenant nên phép đếm này chỉ trong CLB hiện tại.
+        // Query filter đã lọc theo tenant nên phép đếm này chỉ trong trung tâm hiện tại.
         var conNguoiKhac = await db.NguoiDungQuyens
             .Where(nq => nq.NguoiDungId != idDangSua
                          && nq.NguoiDung.TrangThai == TrangThaiNguoiDung.HoatDong
@@ -49,7 +49,7 @@ internal static class ChotConNguoiQuanTri
             .AnyAsync(ct);
 
         if (!conNguoiKhac)
-            throw new AppException("CLB_PHAI_CON_NGUOI_PHAN_QUYEN");
+            throw new AppException("TRUNG_TAM_PHAI_CON_NGUOI_PHAN_QUYEN");
     }
 
     /// <summary>

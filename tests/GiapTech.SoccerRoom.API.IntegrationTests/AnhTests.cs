@@ -71,14 +71,14 @@ public class TestLuuTruAnh(ICurrentTenant tenant) : ILuuTruAnh
         Kho.Keys.Count(k => k.StartsWith($"{tenantId}/", StringComparison.Ordinal));
 }
 
-/// <summary>FR-04 avatar cầu thủ, FR-06 logo / ảnh bìa CLB.</summary>
+/// <summary>FR-06 — logo / ảnh bìa / mã QR của trung tâm.</summary>
 public class AnhTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string? maDoi = null)
+    private async Task<HttpClient> Client(string? maTrungTam = null)
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaDoi = maDoi ?? factory.MaDoiA, Username = "manager", MatKhau = "manager123" });
+            new { MaTrungTam = maTrungTam ?? factory.MaTrungTamA, Username = "manager", MatKhau = "manager123" });
         res.EnsureSuccessStatusCode();
         var body = await res.Content.ReadFromJsonAsync<JsonElement>();
 
@@ -102,27 +102,20 @@ public class AnhTests(ApiFactory factory) : IClassFixture<ApiFactory>
         return form;
     }
 
-    private static async Task<Guid> LayCauThuId(HttpClient c)
-    {
-        var ds = await c.GetFromJsonAsync<JsonElement>("/api/v1/cau-thu?soDong=1");
-        return ds.GetProperty("duLieu")[0].GetProperty("id").GetGuid();
-    }
-
     [Fact]
-    public async Task Tai_anh_cau_thu_va_doc_lai()
+    public async Task Tai_anh_va_doc_lai()
     {
         var client = await Client();
-        var cauThuId = await LayCauThuId(client);
 
-        var tai = await client.PostAsync($"/api/v1/anh/cau-thu/{cauThuId}", Tep(PngNhoNhat));
+        var tai = await client.PostAsync("/api/v1/anh/trung-tam/logo", Tep(PngNhoNhat));
         Assert.Equal(HttpStatusCode.OK, tai.StatusCode);
         var khoa = (await tai.Content.ReadAsStringAsync()).Trim('"');
 
-        Assert.Contains("/cau-thu/", khoa);
+        Assert.Contains("/logo/", khoa);
 
-        // Khoá được ghi vào hồ sơ cầu thủ.
-        var ct = await client.GetFromJsonAsync<JsonElement>($"/api/v1/cau-thu/{cauThuId}");
-        Assert.Equal(khoa, ct.GetProperty("anhDaiDien").GetString());
+        // Khoá được ghi vào thiết lập của trung tâm.
+        var tl = await client.GetFromJsonAsync<JsonElement>("/api/v1/thiet-lap");
+        Assert.Equal(khoa, tl.GetProperty("logoUrl").GetString());
 
         // Đọc lại được, đúng nội dung và loại.
         var doc = await client.GetAsync($"/api/v1/anh/{khoa}");
@@ -138,12 +131,11 @@ public class AnhTests(ApiFactory factory) : IClassFixture<ApiFactory>
     public async Task Doi_anh_thi_xoa_anh_cu()
     {
         var client = await Client();
-        var cauThuId = await LayCauThuId(client);
 
-        var lan1 = await client.PostAsync($"/api/v1/anh/cau-thu/{cauThuId}", Tep(PngNhoNhat));
+        var lan1 = await client.PostAsync("/api/v1/anh/trung-tam/logo", Tep(PngNhoNhat));
         var khoaCu = (await lan1.Content.ReadAsStringAsync()).Trim('"');
 
-        var lan2 = await client.PostAsync($"/api/v1/anh/cau-thu/{cauThuId}", Tep(PngNhoNhat));
+        var lan2 = await client.PostAsync("/api/v1/anh/trung-tam/logo", Tep(PngNhoNhat));
         var khoaMoi = (await lan2.Content.ReadAsStringAsync()).Trim('"');
 
         Assert.NotEqual(khoaCu, khoaMoi);
@@ -159,16 +151,15 @@ public class AnhTests(ApiFactory factory) : IClassFixture<ApiFactory>
     public async Task Go_anh_dat_cot_ve_null()
     {
         var client = await Client();
-        var cauThuId = await LayCauThuId(client);
 
-        var tai = await client.PostAsync($"/api/v1/anh/cau-thu/{cauThuId}", Tep(PngNhoNhat));
+        var tai = await client.PostAsync("/api/v1/anh/trung-tam/logo", Tep(PngNhoNhat));
         var khoa = (await tai.Content.ReadAsStringAsync()).Trim('"');
 
         Assert.Equal(HttpStatusCode.NoContent,
-            (await client.DeleteAsync($"/api/v1/anh/cau-thu/{cauThuId}")).StatusCode);
+            (await client.DeleteAsync("/api/v1/anh/trung-tam/logo")).StatusCode);
 
-        var ct = await client.GetFromJsonAsync<JsonElement>($"/api/v1/cau-thu/{cauThuId}");
-        Assert.Equal(JsonValueKind.Null, ct.GetProperty("anhDaiDien").ValueKind);
+        var tl = await client.GetFromJsonAsync<JsonElement>("/api/v1/thiet-lap");
+        Assert.Equal(JsonValueKind.Null, tl.GetProperty("logoUrl").ValueKind);
         Assert.Equal(HttpStatusCode.NotFound,
             (await client.GetAsync($"/api/v1/anh/{khoa}")).StatusCode);
     }
@@ -184,9 +175,8 @@ public class AnhTests(ApiFactory factory) : IClassFixture<ApiFactory>
     public async Task Loai_tep_khong_ho_tro_bi_tu_choi(string loai)
     {
         var client = await Client();
-        var cauThuId = await LayCauThuId(client);
 
-        var res = await client.PostAsync($"/api/v1/anh/cau-thu/{cauThuId}",
+        var res = await client.PostAsync("/api/v1/anh/trung-tam/logo",
             Tep(PngNhoNhat, loai, "x.dat"));
 
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
@@ -198,9 +188,8 @@ public class AnhTests(ApiFactory factory) : IClassFixture<ApiFactory>
     public async Task Anh_qua_lon_bi_tu_choi()
     {
         var client = await Client();
-        var cauThuId = await LayCauThuId(client);
 
-        var res = await client.PostAsync($"/api/v1/anh/cau-thu/{cauThuId}",
+        var res = await client.PostAsync("/api/v1/anh/trung-tam/logo",
             Tep(new byte[6 * 1024 * 1024]));
 
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
@@ -209,19 +198,18 @@ public class AnhTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     /// <summary>
-    /// QUY TẮC #2 — không đọc được ảnh của CLB khác dù biết khoá.
+    /// QUY TẮC #2 — không đọc được ảnh của trung tâm khác dù biết khoá.
     ///
     /// Kho lưu trữ KHÔNG có Global Query Filter, nên cách ly phải tự cài đặt: khoá mang
     /// tenantId ở đầu và tầng lưu trữ kiểm tiền tố trước khi đọc.
     /// </summary>
     [Fact]
-    public async Task Khong_doc_duoc_anh_cua_clb_khac()
+    public async Task Khong_doc_duoc_anh_cua_trung_tam_khac()
     {
-        var a = await Client(factory.MaDoiA);
-        var b = await Client(factory.MaDoiB);
+        var a = await Client(factory.MaTrungTamA);
+        var b = await Client(factory.MaTrungTamB);
 
-        var cauThuA = await LayCauThuId(a);
-        var tai = await a.PostAsync($"/api/v1/anh/cau-thu/{cauThuA}", Tep(PngNhoNhat));
+        var tai = await a.PostAsync("/api/v1/anh/trung-tam/logo", Tep(PngNhoNhat));
         var khoaCuaA = (await tai.Content.ReadAsStringAsync()).Trim('"');
 
         // B biết khoá nhưng vẫn không đọc được.
@@ -236,9 +224,8 @@ public class AnhTests(ApiFactory factory) : IClassFixture<ApiFactory>
     public async Task Khoa_anh_bat_dau_bang_tenant_id()
     {
         var client = await Client();
-        var cauThuId = await LayCauThuId(client);
 
-        var tai = await client.PostAsync($"/api/v1/anh/cau-thu/{cauThuId}", Tep(PngNhoNhat));
+        var tai = await client.PostAsync("/api/v1/anh/trung-tam/logo", Tep(PngNhoNhat));
         var khoa = (await tai.Content.ReadAsStringAsync()).Trim('"');
 
         // Phần đầu khoá phải là một GUID hợp lệ (tenantId).
@@ -247,16 +234,16 @@ public class AnhTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task Tai_logo_va_anh_bia_clb()
+    public async Task Tai_logo_va_anh_bia()
     {
         var client = await Client();
 
-        var logo = await client.PostAsync("/api/v1/anh/clb/logo", Tep(PngNhoNhat));
+        var logo = await client.PostAsync("/api/v1/anh/trung-tam/logo", Tep(PngNhoNhat));
         Assert.Equal(HttpStatusCode.OK, logo.StatusCode);
         var khoaLogo = (await logo.Content.ReadAsStringAsync()).Trim('"');
         Assert.Contains("/logo/", khoaLogo);
 
-        var bia = await client.PostAsync("/api/v1/anh/clb/anh-bia", Tep(PngNhoNhat));
+        var bia = await client.PostAsync("/api/v1/anh/trung-tam/anh-bia", Tep(PngNhoNhat));
         var khoaBia = (await bia.Content.ReadAsStringAsync()).Trim('"');
         Assert.Contains("/anh-bia/", khoaBia);
 
@@ -266,7 +253,7 @@ public class AnhTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     /// <summary>
-    /// QUY TẮC #1 — sửa tên đội KHÔNG được xoá logo đã tải.
+    /// QUY TẮC #1 — sửa tên trung tâm KHÔNG được xoá logo đã tải.
     ///
     /// Form thiết lập gửi lại logoUrl/anhBiaUrl; nếu nó gửi cứng null thì mỗi lần đổi tên là
     /// mất ảnh. Đây chính là kiểu lỗi đã xảy ra với diaChi ngày 16/08.
@@ -276,12 +263,12 @@ public class AnhTests(ApiFactory factory) : IClassFixture<ApiFactory>
     {
         var client = await Client();
 
-        var logo = await client.PostAsync("/api/v1/anh/clb/logo", Tep(PngNhoNhat));
+        var logo = await client.PostAsync("/api/v1/anh/trung-tam/logo", Tep(PngNhoNhat));
         var khoaLogo = (await logo.Content.ReadAsStringAsync()).Trim('"');
 
         var sua = await client.PutAsJsonAsync("/api/v1/thiet-lap", new
         {
-            TenDoi = "CLB Đã Đổi Tên",
+            TenTrungTam = "CLB Đã Đổi Tên",
             TenVietTat = (string?)null,
             NgayThanhLap = (DateOnly?)null,
             LogoUrl = khoaLogo,
@@ -301,9 +288,8 @@ public class AnhTests(ApiFactory factory) : IClassFixture<ApiFactory>
     public async Task Anh_co_cache_header()
     {
         var client = await Client();
-        var cauThuId = await LayCauThuId(client);
 
-        var tai = await client.PostAsync($"/api/v1/anh/cau-thu/{cauThuId}", Tep(PngNhoNhat));
+        var tai = await client.PostAsync("/api/v1/anh/trung-tam/logo", Tep(PngNhoNhat));
         var khoa = (await tai.Content.ReadAsStringAsync()).Trim('"');
 
         var doc = await client.GetAsync($"/api/v1/anh/{khoa}");
@@ -324,11 +310,11 @@ public class AnhTests(ApiFactory factory) : IClassFixture<ApiFactory>
         // ảnh bìa thật, vừa làm QR hiện lên Cộng đồng (ảnh bìa là dữ liệu công khai).
         var client = await Client();
 
-        var bia = await client.PostAsync("/api/v1/anh/clb/anh-bia", Tep(PngNhoNhat));
+        var bia = await client.PostAsync("/api/v1/anh/trung-tam/anh-bia", Tep(PngNhoNhat));
         bia.EnsureSuccessStatusCode();
         var khoaBia = (await bia.Content.ReadAsStringAsync()).Trim('"');
 
-        var qr = await client.PostAsync("/api/v1/anh/clb/qr-chuyen-khoan", Tep(PngNhoNhat));
+        var qr = await client.PostAsync("/api/v1/anh/trung-tam/qr-chuyen-khoan", Tep(PngNhoNhat));
         qr.EnsureSuccessStatusCode();
         var khoaQr = (await qr.Content.ReadAsStringAsync()).Trim('"');
 
@@ -346,14 +332,14 @@ public class AnhTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Xoa_anh_QR_khong_dung_den_anh_bia()
     {
-        var client = await Client(factory.MaDoiB);
+        var client = await Client(factory.MaTrungTamB);
 
-        var bia = await client.PostAsync("/api/v1/anh/clb/anh-bia", Tep(PngNhoNhat));
+        var bia = await client.PostAsync("/api/v1/anh/trung-tam/anh-bia", Tep(PngNhoNhat));
         var khoaBia = (await bia.Content.ReadAsStringAsync()).Trim('"');
-        var qr = await client.PostAsync("/api/v1/anh/clb/qr-chuyen-khoan", Tep(PngNhoNhat));
+        var qr = await client.PostAsync("/api/v1/anh/trung-tam/qr-chuyen-khoan", Tep(PngNhoNhat));
         qr.EnsureSuccessStatusCode();
 
-        var xoa = await client.DeleteAsync("/api/v1/anh/clb/qr-chuyen-khoan");
+        var xoa = await client.DeleteAsync("/api/v1/anh/trung-tam/qr-chuyen-khoan");
         xoa.EnsureSuccessStatusCode();
 
         var tl = await client.GetFromJsonAsync<JsonElement>("/api/v1/thiet-lap");
@@ -361,22 +347,30 @@ public class AnhTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(khoaBia, tl.GetProperty("anhBiaUrl").GetString());
     }
 
+    /// <summary>
+    /// Ảnh QR mang thông tin chuyển khoản nên là dữ liệu nhạy cảm nhất trong nhóm ảnh —
+    /// trung tâm khác không đọc được kể cả khi biết khoá, cùng cơ chế với logo.
+    /// </summary>
     [Fact]
-    public async Task Anh_QR_khong_lo_ra_Cong_dong()
+    public async Task Anh_QR_cua_trung_tam_khac_khong_doc_duoc()
     {
-        // Logo và ảnh bìa CÓ lên Cộng đồng; QR thì không — nó gắn với số tài khoản quỹ.
-        var clientA = await Client(factory.MaDoiA);
-        var clientB = await Client(factory.MaDoiB);
+        var clientA = await Client(factory.MaTrungTamA);
+        var clientB = await Client(factory.MaTrungTamB);
 
-        var qr = await clientB.PostAsync("/api/v1/anh/clb/qr-chuyen-khoan", Tep(PngNhoNhat));
+        var qr = await clientB.PostAsync("/api/v1/anh/trung-tam/qr-chuyen-khoan", Tep(PngNhoNhat));
         qr.EnsureSuccessStatusCode();
         var khoaQr = (await qr.Content.ReadAsStringAsync()).Trim('"');
-        Assert.NotNull(khoaQr);
 
-        var ds = await clientA.GetFromJsonAsync<JsonElement>("/api/v1/cong-dong?soDong=100");
-        Assert.DoesNotContain(khoaQr, ds.GetRawText());
+        // A biết khoá nhưng không đọc được.
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await clientA.GetAsync($"/api/v1/anh/{khoaQr}")).StatusCode);
 
-        var ct = await clientA.GetAsync($"/api/v1/cong-dong/{factory.MaDoiB}");
-        Assert.DoesNotContain(khoaQr, await ct.Content.ReadAsStringAsync());
+        // B vẫn đọc bình thường.
+        Assert.Equal(HttpStatusCode.OK,
+            (await clientB.GetAsync($"/api/v1/anh/{khoaQr}")).StatusCode);
+
+        // Và thiết lập của A không hề mang khoá của B.
+        var tlA = await clientA.GetFromJsonAsync<JsonElement>("/api/v1/thiet-lap");
+        Assert.DoesNotContain(khoaQr, tlA.GetRawText());
     }
 }

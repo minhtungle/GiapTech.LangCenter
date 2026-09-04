@@ -4,8 +4,8 @@ using GiapTech.SoccerRoom.Domain.Enums;
 namespace GiapTech.SoccerRoom.Domain.Entities;
 
 /// <summary>
-/// QUYEN — nhóm quyền do Admin của từng CLB tự định nghĩa (FR-05).
-/// Có tenant_id vì nhóm quyền của CLB A không áp dụng cho CLB B.
+/// QUYEN — nhóm quyền do Admin của từng trung tâm tự định nghĩa (FR-05).
+/// Có tenant_id vì nhóm quyền của trung tâm A không áp dụng cho trung tâm B.
 /// </summary>
 public class Quyen : TenantEntity
 {

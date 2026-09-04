@@ -17,42 +17,13 @@ public interface IAppDbContext
 {
     DbSet<Tenant> Tenants { get; }
     DbSet<NguoiDung> NguoiDungs { get; }
-    DbSet<CauThu> CauThus { get; }
 
     DbSet<Quyen> Quyens { get; }
     DbSet<QuyenChucNang> QuyenChucNangs { get; }
     DbSet<NguoiDungQuyen> NguoiDungQuyens { get; }
 
-    DbSet<DoiThu> DoiThus { get; }
-    DbSet<LoiMoiDoiThu> LoiMoiDoiThus { get; }
-    DbSet<TranDau> TranDaus { get; }
-    DbSet<DoiHinhTranDau> DoiHinhTranDaus { get; }
-    DbSet<SoDoChienThuat> SoDoChienThuats { get; }
-    DbSet<MauDoiHinh> MauDoiHinhs { get; }
-    DbSet<VideoTran> VideoTrans { get; }
-    DbSet<LoiMoiThamGia> LoiMoiThamGias { get; }
-
-    /// <summary>
-    /// Lời mời thách đấu giữa hai CLB. KHÔNG có Global Query Filter — nó thuộc về hai tenant
-    /// cùng lúc. Mọi truy vấn phải tự lọc `TenantGuiId == x || TenantNhanId == x`.
-    /// </summary>
-    DbSet<LoiMoiThachDau> LoiMoiThachDaus { get; }
-
-    /// <summary>
-    /// Lời mời qua link (FR-18). CÓ Global Query Filter theo tenant người gửi — chỗ đọc ngoài
-    /// tenant là truy vấn theo token, phải dùng `IgnoreQueryFilters` tường minh.
-    /// </summary>
-    DbSet<LoiMoiLink> LoiMoiLinks { get; }
-    DbSet<PhanHoiThamGia> PhanHoiThamGias { get; }
-    DbSet<DanhGiaCauThu> DanhGiaCauThus { get; }
-    DbSet<VoteMvp> VoteMvps { get; }
-
     DbSet<RefreshToken> RefreshTokens { get; }
     DbSet<TokenDatLaiMatKhau> TokenDatLaiMatKhaus { get; }
-
-    DbSet<Quy> Quys { get; }
-    DbSet<DongGopQuy> DongGopQuys { get; }
-    DbSet<KhoanChi> KhoanChis { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

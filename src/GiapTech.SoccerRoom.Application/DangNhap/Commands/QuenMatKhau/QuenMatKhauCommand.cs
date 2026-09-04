@@ -10,13 +10,13 @@ using Microsoft.Extensions.Logging;
 namespace GiapTech.SoccerRoom.Application.DangNhap.Commands.QuenMatKhau;
 
 /// <summary>FR-02 — yêu cầu đặt lại mật khẩu qua email.</summary>
-public record QuenMatKhauCommand(string MaDoi, string Email) : IRequest;
+public record QuenMatKhauCommand(string MaTrungTam, string Email) : IRequest;
 
 public class QuenMatKhauValidator : AbstractValidator<QuenMatKhauCommand>
 {
     public QuenMatKhauValidator()
     {
-        RuleFor(x => x.MaDoi).NotEmpty().MaximumLength(20);
+        RuleFor(x => x.MaTrungTam).NotEmpty().MaximumLength(20);
         RuleFor(x => x.Email).NotEmpty().EmailAddress();
     }
 }
@@ -35,10 +35,10 @@ public class QuenMatKhauHandler(
     {
         var email = request.Email.Trim();
 
-        var maDoi = Domain.Common.MaDoi.ChuanHoa(request.MaDoi);
+        var maTrungTam = Domain.Common.MaTrungTam.ChuanHoa(request.MaTrungTam);
 
         var tenant = await db.Tenants
-            .FirstOrDefaultAsync(t => t.MaDoi == maDoi, ct);
+            .FirstOrDefaultAsync(t => t.MaTrungTam == maTrungTam, ct);
 
         var nguoiDung = tenant is null
             ? null
@@ -48,11 +48,11 @@ public class QuenMatKhauHandler(
                     u => u.TenantId == tenant.Id && u.Email == email, ct);
 
         // KHÔNG ném lỗi khi không tìm thấy: phản hồi phải giống hệt nhau dù email có tồn tại
-        // hay không, nếu không kẻ tấn công dò được email nào đã đăng ký ở CLB nào.
+        // hay không, nếu không kẻ tấn công dò được email nào đã đăng ký ở trung tâm nào.
         if (nguoiDung is null || tenant is null)
         {
             logger.LogInformation(
-                "Yêu cầu quên mật khẩu cho email không khớp ({MaDoi})", request.MaDoi);
+                "Yêu cầu quên mật khẩu cho email không khớp ({MaTrungTam})", request.MaTrungTam);
             return;
         }
 
@@ -85,7 +85,7 @@ public class QuenMatKhauHandler(
             "Đặt lại mật khẩu SoccerRoom",
             $"""
              <p>Bạn (hoặc ai đó) đã yêu cầu đặt lại mật khẩu cho tài khoản
-             <strong>{nguoiDung.Username}</strong> tại CLB <strong>{tenant.TenDoi}</strong>.</p>
+             <strong>{nguoiDung.Username}</strong> tại trung tâm <strong>{tenant.TenTrungTam}</strong>.</p>
              <p>Mã đặt lại: <code>{tokenTho}</code></p>
              <p>Mã có hiệu lực trong {ThoiHan.TotalMinutes:0} phút và chỉ dùng được một lần.</p>
              <p>Nếu không phải bạn yêu cầu, hãy bỏ qua email này.</p>

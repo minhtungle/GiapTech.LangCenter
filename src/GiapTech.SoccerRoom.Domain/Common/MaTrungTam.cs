@@ -3,12 +3,12 @@ using System.Security.Cryptography;
 namespace GiapTech.SoccerRoom.Domain.Common;
 
 /// <summary>
-/// Mã đội — định danh CLB người dùng gõ khi đăng nhập (FR-01).
+/// Mã trung tâm — định danh tenant người dùng gõ khi đăng nhập (FR-01).
 ///
-/// Dùng mã sinh tự động thay vì để người dùng tự đặt: tên dạng "FC ..." rất dễ trùng giữa
-/// các CLB phong trào, mà mã phải duy nhất toàn hệ thống.
+/// Dùng mã sinh tự động thay vì để người dùng tự đặt: tên trung tâm rất dễ trùng, mà mã
+/// phải duy nhất toàn hệ thống.
 /// </summary>
-public static class MaDoi
+public static class MaTrungTam
 {
     public const int DoDai = 7;
 

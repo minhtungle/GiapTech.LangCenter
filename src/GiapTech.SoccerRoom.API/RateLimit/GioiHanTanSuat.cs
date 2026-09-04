@@ -21,19 +21,13 @@ namespace GiapTech.SoccerRoom.API.RateLimit;
 /// hơn). Chấp nhận được ở quy mô này; nếu sau bị tấn công thật thì thêm một lớp ở Caddy **bên
 /// trên** lớp này, không thay thế nó.
 ///
-/// Chống được gì: dò token/mã đội theo kiểu vét cạn. **Không** chống được DDoS phân tán — việc
+/// Chống được gì: dò token/mã trung tâm theo kiểu vét cạn. **Không** chống được DDoS phân tán — việc
 /// đó cần Cloudflare hoặc tương đương, xem `docs/ha-tang/`.
 /// </summary>
 public static class GioiHanTanSuat
 {
-    /// <summary>Endpoint tra mã đội ở trang đăng nhập và tra CLB — chỉ ĐỌC.</summary>
+    /// <summary>Endpoint tra mã trung tâm ở trang đăng nhập — chỉ ĐỌC.</summary>
     public const string TraCuu = "tra-cuu";
-
-    /// <summary>
-    /// Endpoint xem/trả lời lời mời qua token — trong đó có endpoint **GHI** dữ liệu.
-    /// Chặt hơn <see cref="TraCuu"/> vì dò thành công ở đây là *sửa* dữ liệu của CLB khác.
-    /// </summary>
-    public const string LoiMoiTheoToken = "loi-moi-token";
 
     /// <summary>Đăng nhập và quên mật khẩu — chống dò mật khẩu.</summary>
     public const string XacThuc = "xac-thuc";
@@ -45,7 +39,6 @@ public static class GioiHanTanSuat
     // bắt được việc ai đó nới số — phản chứng 21/08 lọt đúng kiểu đó: đổi 10 thành 3000 mà 5/5
     // vẫn xanh. Con số phải kiểm được, không chỉ cái tên.
     public const int HanMucTraCuu = 30;
-    public const int HanMucLoiMoiTheoToken = 10;
     public const int HanMucXacThuc = 10;
 
     /// <summary>
@@ -94,7 +87,6 @@ public static class GioiHanTanSuat
 
             // Chặt hơn: 10/phút. Người dùng thật mở link một lần rồi trả lời một lần — 10 là
             // đã rất rộng, còn người dò cần hàng nghìn lần mới có hy vọng.
-            options.AddPolicy(LoiMoiTheoToken, KhoaTheoIp(HanMucLoiMoiTheoToken, phut: 1));
 
             options.AddPolicy(XacThuc, KhoaTheoIp(HanMucXacThuc, phut: 1));
         });

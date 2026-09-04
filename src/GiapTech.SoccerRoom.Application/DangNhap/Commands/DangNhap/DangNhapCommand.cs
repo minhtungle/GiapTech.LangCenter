@@ -7,8 +7,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GiapTech.SoccerRoom.Application.DangNhap.Commands.DangNhap;
 
-/// <summary>FR-01 — đăng nhập bằng bộ ba {ID đội, username, password}.</summary>
-public record DangNhapCommand(string MaDoi, string Username, string MatKhau)
+/// <summary>FR-01 — đăng nhập bằng bộ ba {mã trung tâm, username, password}.</summary>
+public record DangNhapCommand(string MaTrungTam, string Username, string MatKhau)
     : IRequest<DangNhapResult>;
 
 /// <param name="PhaiDoiMatKhau">
@@ -21,7 +21,7 @@ public class DangNhapValidator : AbstractValidator<DangNhapCommand>
 {
     public DangNhapValidator()
     {
-        RuleFor(x => x.MaDoi).NotEmpty().MaximumLength(20);
+        RuleFor(x => x.MaTrungTam).NotEmpty().MaximumLength(20);
         RuleFor(x => x.Username).NotEmpty().MaximumLength(100);
         RuleFor(x => x.MatKhau).NotEmpty();
     }
@@ -38,17 +38,17 @@ public class DangNhapHandler(
     {
         // Chuẩn hoá: người dùng gõ mã bằng tay nên hoa/thường và khoảng trắng thừa là
         // chuyện thường. Không chuẩn hoá thì họ bị từ chối chỉ vì bàn phím đang ở chế độ thường.
-        var maDoi = Domain.Common.MaDoi.ChuanHoa(request.MaDoi);
+        var maTrungTam = Domain.Common.MaTrungTam.ChuanHoa(request.MaTrungTam);
 
         // TENANT không phải ITenantEntity nên không bị Global Query Filter chặn — cần thiết,
         // vì lúc này chưa biết tenant nào để mà lọc.
         var tenant = await db.Tenants
-            .FirstOrDefaultAsync(t => t.MaDoi == maDoi, ct);
+            .FirstOrDefaultAsync(t => t.MaTrungTam == maTrungTam, ct);
 
-        // Sai ID đội, sai username, sai mật khẩu → CÙNG một mã lỗi. Phân biệt sẽ cho phép
-        // dò xem CLB nào tồn tại và tài khoản nào có thật.
+        // Sai mã trung tâm, sai username, sai mật khẩu → CÙNG một mã lỗi. Phân biệt sẽ cho phép
+        // dò xem trung tâm nào tồn tại và tài khoản nào có thật.
         if (tenant is null)
-            throw new AppException(MaLoi.DangNhapThatBai, $"Không có tenant {maDoi}");
+            throw new AppException(MaLoi.DangNhapThatBai, $"Không có tenant {maTrungTam}");
 
         var nguoiDung = await db.NguoiDungs
             .IgnoreQueryFilters() // chưa có tenant trong context ở bước đăng nhập
@@ -65,7 +65,7 @@ public class DangNhapHandler(
             throw new AppException(MaLoi.TaiKhoanBiVoHieuHoa);
 
         var token = tokenService.PhatHanh(new ThongTinToken(
-            tenant.Id, tenant.MaDoi, tenant.TenDoi, nguoiDung.Id, nguoiDung.Username));
+            tenant.Id, tenant.MaTrungTam, tenant.TenTrungTam, nguoiDung.Id, nguoiDung.Username));
 
         // Lưu HASH của refresh token, không lưu token thô — người đọc được DB sẽ không mạo
         // danh được ai (cùng lý do với password_hash).

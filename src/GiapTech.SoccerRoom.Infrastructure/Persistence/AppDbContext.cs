@@ -16,32 +16,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant
 {
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<NguoiDung> NguoiDungs => Set<NguoiDung>();
-    public DbSet<CauThu> CauThus => Set<CauThu>();
 
     public DbSet<Quyen> Quyens => Set<Quyen>();
     public DbSet<QuyenChucNang> QuyenChucNangs => Set<QuyenChucNang>();
     public DbSet<NguoiDungQuyen> NguoiDungQuyens => Set<NguoiDungQuyen>();
 
-    public DbSet<DoiThu> DoiThus => Set<DoiThu>();
-    public DbSet<LoiMoiDoiThu> LoiMoiDoiThus => Set<LoiMoiDoiThu>();
-    public DbSet<TranDau> TranDaus => Set<TranDau>();
-    public DbSet<DoiHinhTranDau> DoiHinhTranDaus => Set<DoiHinhTranDau>();
-    public DbSet<SoDoChienThuat> SoDoChienThuats => Set<SoDoChienThuat>();
-    public DbSet<MauDoiHinh> MauDoiHinhs => Set<MauDoiHinh>();
-    public DbSet<VideoTran> VideoTrans => Set<VideoTran>();
-    public DbSet<LoiMoiThamGia> LoiMoiThamGias => Set<LoiMoiThamGia>();
-    public DbSet<LoiMoiThachDau> LoiMoiThachDaus => Set<LoiMoiThachDau>();
-    public DbSet<LoiMoiLink> LoiMoiLinks => Set<LoiMoiLink>();
-    public DbSet<PhanHoiThamGia> PhanHoiThamGias => Set<PhanHoiThamGia>();
-    public DbSet<DanhGiaCauThu> DanhGiaCauThus => Set<DanhGiaCauThu>();
-    public DbSet<VoteMvp> VoteMvps => Set<VoteMvp>();
-
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<TokenDatLaiMatKhau> TokenDatLaiMatKhaus => Set<TokenDatLaiMatKhau>();
-
-    public DbSet<Quy> Quys => Set<Quy>();
-    public DbSet<DongGopQuy> DongGopQuys => Set<DongGopQuy>();
-    public DbSet<KhoanChi> KhoanChis => Set<KhoanChi>();
 
     /// <summary>
     /// Tenant của context này, đọc bởi Global Query Filter.
@@ -105,7 +86,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant
     /// TẦNG PHÒNG VỆ 1 — áp Global Query Filter cho MỌI entity cài <see cref="ITenantEntity"/>.
     ///
     /// Duyệt toàn bộ model bằng reflection thay vì khai báo thủ công từng entity: entity mới
-    /// được bảo vệ TỰ ĐỘNG. Khai báo tay thì chỉ cần một lần quên là rò rỉ dữ liệu chéo CLB.
+    /// được bảo vệ TỰ ĐỘNG. Khai báo tay thì chỉ cần một lần quên là rò rỉ dữ liệu chéo trung tâm.
     ///
     /// Filter đọc currentTenant.TenantId qua closure nên đánh giá lại mỗi truy vấn,
     /// không bị "đóng băng" giá trị lúc dựng model.
@@ -125,7 +106,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant
             //
             // Nhánh "TenantId == null" cho phép hạ tầng (migration, seeder cấp hệ thống) chạy
             // khi chưa có tenant. Middleware bắt buộc mọi endpoint nghiệp vụ phải có tenant,
-            // nên nhánh này không mở đường cho request thường đọc chéo CLB.
+            // nên nhánh này không mở đường cho request thường đọc chéo trung tâm.
             var thamSo = Expression.Parameter(entityType.ClrType, "e");
 
             var tenantHienTai = Expression.Property(
@@ -183,7 +164,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant
 
                 case EntityState.Modified:
                     entry.Entity.NgayCapNhat = bayGio;
-                    // Không cho đổi tenant của bản ghi đã tồn tại — đó là chuyển dữ liệu sang CLB khác.
+                    // Không cho đổi tenant của bản ghi đã tồn tại — đó là chuyển dữ liệu sang trung tâm khác.
                     if (entry.Entity is ITenantEntity)
                         entry.Property(nameof(ITenantEntity.TenantId)).IsModified = false;
                     break;

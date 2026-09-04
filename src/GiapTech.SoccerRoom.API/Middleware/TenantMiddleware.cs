@@ -27,7 +27,7 @@ public class TenantMiddleware(RequestDelegate next)
             {
                 // Token hợp lệ về chữ ký nhưng thiếu/hỏng claim tenant. Không thể phục vụ
                 // an toàn: bỏ qua sẽ khiến filter chạy ở chế độ "không tenant" và lộ dữ liệu
-                // của mọi CLB. Chặn tại đây.
+                // của mọi trung tâm. Chặn tại đây.
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 await context.Response.WriteAsJsonAsync(new { errorCode = "TOKEN_THIEU_TENANT" });
                 return;

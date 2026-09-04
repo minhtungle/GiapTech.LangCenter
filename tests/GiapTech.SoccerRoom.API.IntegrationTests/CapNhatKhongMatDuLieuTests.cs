@@ -28,7 +28,7 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaDoi = factory.MaDoiA, Username = "manager", MatKhau = "manager123" });
+            new { MaTrungTam = factory.MaTrungTamA, Username = "manager", MatKhau = "manager123" });
         res.EnsureSuccessStatusCode();
         var body = await res.Content.ReadFromJsonAsync<JsonElement>();
 
@@ -62,7 +62,7 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
         var u = ds!.Single(x => x.GetProperty("username").GetString() == "du-truong");
 
         // Đây là danh sách trường CapNhatTaiKhoanCommand ghi đè.
-        foreach (var truong in new[] { "email", "soDienThoai", "diaChi", "cauThuId", "trangThai", "quyenIds" })
+        foreach (var truong in new[] { "email", "soDienThoai", "diaChi", "trangThai", "quyenIds" })
         {
             Assert.True(
                 u.TryGetProperty(truong, out _),
@@ -98,7 +98,6 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
             Email = "moi@example.com",
             SoDienThoai = "0900000002",
             DiaChi = "456 Đường Giữ Nguyên",
-            CauThuId = (Guid?)null,
             QuyenIds = Array.Empty<Guid>(),
             TrangThai = "HoatDong"
         });
@@ -133,7 +132,6 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
             Email = "abc@example.com",
             SoDienThoai = (string?)null,
             DiaChi = (string?)null,
-            CauThuId = (Guid?)null,
             QuyenIds = Array.Empty<Guid>(),
             TrangThai = "HoatDong"
         });
@@ -145,43 +143,5 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
         Assert.True(
             u.GetProperty("phaiDoiMatKhau").GetBoolean(),
             "Cờ buộc đổi mật khẩu bị mất sau khi cập nhật thông tin liên hệ.");
-    }
-
-    /// <summary>Cập nhật giữ nguyên liên kết hồ sơ cầu thủ đang gắn.</summary>
-    [Fact]
-    public async Task Sua_tai_khoan_giu_duoc_cau_thu_dang_gan()
-    {
-        var client = await Client();
-
-        var taoCt = await client.PostAsJsonAsync("/api/v1/cau-thu", new { HoTen = "Cầu thủ gắn kèm" });
-        var cauThuId = await taoCt.Content.ReadFromJsonAsync<Guid>();
-
-        var tao = await client.PostAsJsonAsync("/api/v1/tai-khoan", new
-        {
-            Username = "co-cau-thu",
-            MatKhau = "matkhau123",
-            CauThuId = cauThuId,
-            QuyenIds = Array.Empty<Guid>(),
-            PhaiDoiMatKhau = false
-        });
-        var id = await tao.Content.ReadFromJsonAsync<Guid>();
-
-        var res = await client.PutAsJsonAsync($"/api/v1/tai-khoan/{id}", new
-        {
-            Id = id,
-            Email = "x@example.com",
-            SoDienThoai = (string?)null,
-            DiaChi = (string?)null,
-            CauThuId = cauThuId,
-            QuyenIds = Array.Empty<Guid>(),
-            TrangThai = "HoatDong"
-        });
-
-        // Không được coi "cầu thủ đã có tài khoản" là xung đột với CHÍNH tài khoản đó.
-        Assert.Equal(HttpStatusCode.NoContent, res.StatusCode);
-
-        var ds = await DocTrang(await client.GetAsync("/api/v1/tai-khoan"));
-        var u = ds!.Single(x => x.GetProperty("username").GetString() == "co-cau-thu");
-        Assert.Equal(cauThuId.ToString(), u.GetProperty("cauThuId").GetString());
     }
 }

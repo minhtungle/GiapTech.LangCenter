@@ -7,7 +7,7 @@ namespace GiapTech.SoccerRoom.Application.UnitTests.MultiTenancy;
 
 /// <summary>
 /// Kiểm chứng cách ly dữ liệu giữa các tenant — quy tắc bất di bất dịch #2.
-/// Rò rỉ dữ liệu chéo CLB là lỗi nghiêm trọng nhất hệ thống này có thể mắc,
+/// Rò rỉ dữ liệu chéo trung tâm là lỗi nghiêm trọng nhất hệ thống này có thể mắc,
 /// nên nó phải có test chứ không chỉ có tài liệu. Xem docs/backend/multi-tenant.md.
 /// </summary>
 public class CachLyTenantTests
@@ -49,30 +49,30 @@ public class CachLyTenantTests
 
         using (var ctxA = TaoContext(new TenantGia { TenantId = TenantA }, db))
         {
-            ctxA.CauThus.Add(new CauThu { HoTen = "Cầu thủ của CLB A" });
+            ctxA.Quyens.Add(new Quyen { TenQuyen = "Nhóm quyền của trung tâm A" });
             ctxA.SaveChanges();
         }
 
         using (var ctxB = TaoContext(new TenantGia { TenantId = TenantB }, db))
         {
-            ctxB.CauThus.Add(new CauThu { HoTen = "Cầu thủ của CLB B" });
+            ctxB.Quyens.Add(new Quyen { TenQuyen = "Nhóm quyền của trung tâm B" });
             ctxB.SaveChanges();
         }
 
         // Đứng ở tenant B thì chỉ thấy dữ liệu của B.
         using (var ctxB = TaoContext(new TenantGia { TenantId = TenantB }, db))
         {
-            var cuaB = ctxB.CauThus.ToList();
+            var cuaB = ctxB.Quyens.ToList();
             Assert.Single(cuaB);
-            Assert.Equal("Cầu thủ của CLB B", cuaB[0].HoTen);
+            Assert.Equal("Nhóm quyền của trung tâm B", cuaB[0].TenQuyen);
         }
 
         // Đứng ở tenant A thì chỉ thấy dữ liệu của A.
         using (var ctxA = TaoContext(new TenantGia { TenantId = TenantA }, db))
         {
-            var cuaA = ctxA.CauThus.ToList();
+            var cuaA = ctxA.Quyens.ToList();
             Assert.Single(cuaA);
-            Assert.Equal("Cầu thủ của CLB A", cuaA[0].HoTen);
+            Assert.Equal("Nhóm quyền của trung tâm A", cuaA[0].TenQuyen);
         }
     }
 
@@ -84,16 +84,16 @@ public class CachLyTenantTests
         Guid idCuaA;
         using (var ctxA = TaoContext(new TenantGia { TenantId = TenantA }, db))
         {
-            var cauThuA = new CauThu { HoTen = "Bí mật của CLB A" };
-            ctxA.CauThus.Add(cauThuA);
+            var quyenA = new Quyen { TenQuyen = "Bí mật của trung tâm A" };
+            ctxA.Quyens.Add(quyenA);
             ctxA.SaveChanges();
-            idCuaA = cauThuA.Id;
+            idCuaA = quyenA.Id;
         }
 
         // Kẻ tấn công biết đúng Id nhưng đang đăng nhập tenant B.
         using (var ctxB = TaoContext(new TenantGia { TenantId = TenantB }, db))
         {
-            Assert.Null(ctxB.CauThus.FirstOrDefault(x => x.Id == idCuaA));
+            Assert.Null(ctxB.Quyens.FirstOrDefault(x => x.Id == idCuaA));
         }
     }
 
@@ -104,12 +104,12 @@ public class CachLyTenantTests
         var db = TaoContext(tenant, nameof(SaveChanges_tu_gan_tenant_id_khi_them_moi));
 
         // Cố tình KHÔNG gán TenantId — tầng Application không phải nhớ việc này.
-        var cauThu = new CauThu { HoTen = "Không gán tenant thủ công" };
-        db.CauThus.Add(cauThu);
+        var quyen = new Quyen { TenQuyen = "Không gán tenant thủ công" };
+        db.Quyens.Add(quyen);
         db.SaveChanges();
 
-        Assert.Equal(TenantA, cauThu.TenantId);
-        Assert.NotEqual(default, cauThu.NgayTao);
+        Assert.Equal(TenantA, quyen.TenantId);
+        Assert.NotEqual(default, quyen.NgayTao);
     }
 
     [Fact]
@@ -134,16 +134,13 @@ public class CachLyTenantTests
     /// Danh sách entity CỐ Ý không có Global Query Filter, kèm lý do.
     ///
     /// Mỗi tên ở đây là một chỗ Query Filter KHÔNG bảo vệ, tức là chỗ phải tự lọc bằng tay và
-    /// dễ rò rỉ dữ liệu chéo CLB nhất. Danh sách phải ngắn và mỗi mục phải giải thích được.
+    /// dễ rò rỉ dữ liệu chéo trung tâm nhất. Danh sách phải ngắn và mỗi mục phải giải thích được.
     /// </summary>
     private static readonly Dictionary<string, string> NgoaiLeKhongLoc = new()
     {
         [nameof(Tenant)] = "Bảng ĐỊNH NGHĨA tenant, không thuộc tenant nào.",
         [nameof(RefreshToken)] = "Tra theo token trước khi biết tenant nào — xem XacThucNangCao.",
         [nameof(TokenDatLaiMatKhau)] = "Quên mật khẩu: chưa đăng nhập nên chưa có tenant.",
-        [nameof(LoiMoiThachDau)] =
-            "Thuộc HAI tenant cùng lúc (gửi + nhận). Mọi truy vấn phải tự lọc " +
-            "`TenantGuiId == x || TenantNhanId == x` — canh bởi LoiMoiThachDauTests.",
     };
 
     [Fact]
@@ -167,7 +164,7 @@ public class CachLyTenantTests
         Assert.True(
             khongLoc.Count == 0,
             $"Entity không có Query Filter mà chưa khai lý do: {string.Join(", ", khongLoc)}. " +
-            "Nếu nó là dữ liệu của một CLB → cho kế thừa TenantEntity. Nếu cố ý nằm ngoài → " +
+            "Nếu nó là dữ liệu của một trung tâm → cho kế thừa TenantEntity. Nếu cố ý nằm ngoài → " +
             "thêm vào NgoaiLeKhongLoc kèm lý do, và viết test canh việc tự lọc bằng tay.");
     }
 
@@ -177,13 +174,8 @@ public class CachLyTenantTests
         var tenant = new TenantGia { TenantId = TenantA };
         var db = TaoContext(tenant, nameof(Bang_con_cung_mang_tenant_id_de_truy_van_truc_tiep_van_duoc_loc));
 
-        // Quyết định thiết kế: 7 bảng chi tiết mang tenant_id riêng thay vì join lên bảng cha.
-        string[] bangCon =
-        [
-            nameof(VoteMvp), nameof(DoiHinhTranDau), nameof(DongGopQuy),
-            nameof(DanhGiaCauThu), nameof(SoDoChienThuat),
-            nameof(QuyenChucNang), nameof(NguoiDungQuyen)
-        ];
+        // Quyết định thiết kế: bảng chi tiết mang tenant_id riêng thay vì join lên bảng cha.
+        string[] bangCon = [nameof(QuyenChucNang), nameof(NguoiDungQuyen)];
 
         foreach (var ten in bangCon)
         {

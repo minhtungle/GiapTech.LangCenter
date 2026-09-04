@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GiapTech.SoccerRoom.API.Controllers.V1;
 
 /// <summary>
-/// Ảnh đại diện cầu thủ (FR-04) và logo / ảnh bìa CLB (FR-06).
+/// Logo / ảnh bìa / mã QR của trung tâm (FR-06).
 ///
 /// **API làm proxy**, không dùng presigned URL: MinIO không expose ra Internet (quy tắc #6),
 /// và đi qua API thì mỗi lần đọc đều kiểm được tenant. Đánh đổi là mỗi ảnh tốn một vòng qua
@@ -27,11 +27,12 @@ public class AnhController(ISender sender, ILuuTruAnh luuTru) : ControllerBase
     /// Khoá chứa dấu `/` nên dùng `{*khoa}` để bắt cả đường dẫn. Cách ly tenant kiểm ở tầng
     /// lưu trữ (`MinioLuuTruAnh.TaiVe`) — kho lưu trữ không có Global Query Filter.
     ///
-    /// Chỉ cần quyền **Xem cầu thủ**: ảnh hiện ở nhiều màn (đội hình, xếp hạng, sidebar), bắt
-    /// quyền riêng cho từng loại ảnh sẽ khiến avatar biến mất ở nửa số màn.
+    /// Gác bằng <see cref="ChucNang.Anh"/> chứ không bằng quyền của một module cụ thể: ảnh
+    /// hiện ở nhiều màn, gác theo module sẽ khiến ảnh biến mất ở nửa số màn với người thiếu
+    /// đúng quyền đó — một cách âm thầm, không có thông báo lỗi nào người dùng hiểu được.
     /// </summary>
     [HttpGet("{*khoa}")]
-    [RequirePermission(ChucNang.CauThu, HanhDong.Xem)]
+    [RequirePermission(ChucNang.Anh, HanhDong.Xem)]
     public async Task<IActionResult> Doc(string khoa, CancellationToken ct)
     {
         var anh = await luuTru.TaiVe(khoa, ct);
@@ -44,66 +45,48 @@ public class AnhController(ISender sender, ILuuTruAnh luuTru) : ControllerBase
         return File(anh.NoiDung, anh.LoaiNoiDung);
     }
 
-    [HttpPost("cau-thu/{cauThuId:guid}")]
-    [RequirePermission(ChucNang.CauThu, HanhDong.Sua)]
-    public async Task<ActionResult<string>> TaiAnhCauThu(
-        Guid cauThuId, IFormFile tep, CancellationToken ct)
-        => Ok(await sender.Send(
-            new TaiAnhLenCommand(LoaiAnh.CauThu, cauThuId, tep.OpenReadStream(), tep.ContentType),
-            ct));
-
-    [HttpDelete("cau-thu/{cauThuId:guid}")]
-    [RequirePermission(ChucNang.CauThu, HanhDong.Sua)]
-    public async Task<IActionResult> XoaAnhCauThu(Guid cauThuId, CancellationToken ct)
-    {
-        await sender.Send(new XoaAnhCommand(LoaiAnh.CauThu, cauThuId), ct);
-        return NoContent();
-    }
-
-    [HttpPost("clb/logo")]
+    [HttpPost("trung-tam/logo")]
     [RequirePermission(ChucNang.ThietLapChung, HanhDong.Sua)]
     public async Task<ActionResult<string>> TaiLogo(IFormFile tep, CancellationToken ct)
         => Ok(await sender.Send(
-            new TaiAnhLenCommand(LoaiAnh.Logo, null, tep.OpenReadStream(), tep.ContentType), ct));
+            new TaiAnhLenCommand(LoaiAnh.Logo, tep.OpenReadStream(), tep.ContentType), ct));
 
-    [HttpPost("clb/anh-bia")]
+    [HttpPost("trung-tam/anh-bia")]
     [RequirePermission(ChucNang.ThietLapChung, HanhDong.Sua)]
     public async Task<ActionResult<string>> TaiAnhBia(IFormFile tep, CancellationToken ct)
         => Ok(await sender.Send(
-            new TaiAnhLenCommand(LoaiAnh.AnhBia, null, tep.OpenReadStream(), tep.ContentType), ct));
+            new TaiAnhLenCommand(LoaiAnh.AnhBia, tep.OpenReadStream(), tep.ContentType), ct));
 
     /// <summary>
-    /// Mã QR chuyển khoản quỹ. Quyền `ThietLapChung.Sua` như logo — nó là thông tin CLB.
-    ///
-    /// Ảnh này KHÔNG lên Cộng đồng (khác logo và ảnh bìa): số tài khoản quỹ là dữ liệu nội bộ.
+    /// Mã QR chuyển khoản. Quyền `ThietLapChung.Sua` như logo — nó là thông tin trung tâm.
     /// </summary>
-    [HttpPost("clb/qr-chuyen-khoan")]
+    [HttpPost("trung-tam/qr-chuyen-khoan")]
     [RequirePermission(ChucNang.ThietLapChung, HanhDong.Sua)]
     public async Task<ActionResult<string>> TaiAnhQr(IFormFile tep, CancellationToken ct)
         => Ok(await sender.Send(
-            new TaiAnhLenCommand(LoaiAnh.AnhQr, null, tep.OpenReadStream(), tep.ContentType), ct));
+            new TaiAnhLenCommand(LoaiAnh.AnhQr, tep.OpenReadStream(), tep.ContentType), ct));
 
-    [HttpDelete("clb/qr-chuyen-khoan")]
+    [HttpDelete("trung-tam/qr-chuyen-khoan")]
     [RequirePermission(ChucNang.ThietLapChung, HanhDong.Sua)]
     public async Task<IActionResult> XoaAnhQr(CancellationToken ct)
     {
-        await sender.Send(new XoaAnhCommand(LoaiAnh.AnhQr, null), ct);
+        await sender.Send(new XoaAnhCommand(LoaiAnh.AnhQr), ct);
         return NoContent();
     }
 
-    [HttpDelete("clb/logo")]
+    [HttpDelete("trung-tam/logo")]
     [RequirePermission(ChucNang.ThietLapChung, HanhDong.Sua)]
     public async Task<IActionResult> XoaLogo(CancellationToken ct)
     {
-        await sender.Send(new XoaAnhCommand(LoaiAnh.Logo, null), ct);
+        await sender.Send(new XoaAnhCommand(LoaiAnh.Logo), ct);
         return NoContent();
     }
 
-    [HttpDelete("clb/anh-bia")]
+    [HttpDelete("trung-tam/anh-bia")]
     [RequirePermission(ChucNang.ThietLapChung, HanhDong.Sua)]
     public async Task<IActionResult> XoaAnhBia(CancellationToken ct)
     {
-        await sender.Send(new XoaAnhCommand(LoaiAnh.AnhBia, null), ct);
+        await sender.Send(new XoaAnhCommand(LoaiAnh.AnhBia), ct);
         return NoContent();
     }
 }

@@ -11,13 +11,19 @@ namespace GiapTech.SoccerRoom.Domain.Common;
 /// </summary>
 public static class ChucNang
 {
-    public const string LichThiDau = nameof(LichThiDau);
-    public const string ThongKe = nameof(ThongKe);
-    public const string TaiChinh = nameof(TaiChinh);
     public const string TaiKhoan = nameof(TaiKhoan);
-    public const string CauThu = nameof(CauThu);
     public const string PhanQuyen = nameof(PhanQuyen);
     public const string ThietLapChung = nameof(ThietLapChung);
+
+    /// <summary>
+    /// Tải / đọc / xóa ảnh (logo, ảnh bìa, ảnh QR).
+    ///
+    /// Là chức năng RIÊNG chứ không ghép vào <see cref="ThietLapChung"/>: endpoint đọc ảnh
+    /// dùng chung cho mọi loại ảnh, nên nó cần một quyền không phụ thuộc loại đối tượng —
+    /// gác bằng quyền của một module cụ thể sẽ khiến người thiếu quyền đó không xem được
+    /// cả logo, một cách âm thầm.
+    /// </summary>
+    public const string Anh = nameof(Anh);
 
     /// <summary>
     /// Đổi mật khẩu cho tài khoản KHÁC — đặc quyền chỉ Admin có (FR-03).
@@ -28,7 +34,6 @@ public static class ChucNang
 
     public static readonly IReadOnlyList<string> TatCa =
     [
-        LichThiDau, ThongKe, TaiChinh, TaiKhoan,
-        CauThu, PhanQuyen, ThietLapChung, DoiMatKhauNguoiKhac
+        TaiKhoan, PhanQuyen, ThietLapChung, Anh, DoiMatKhauNguoiKhac
     ];
 }

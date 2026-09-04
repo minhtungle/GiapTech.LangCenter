@@ -10,29 +10,35 @@ namespace GiapTech.SoccerRoom.API.IntegrationTests;
 /// <summary>
 /// Ràng buộc "chỉ một" phải chặn ở TẦNG DB, không chỉ ở tầng ứng dụng.
 ///
-/// Rà soát vòng hai (20/08) tìm ra: mọi ràng buộc kiểu này được kiểm bằng `AnyAsync` rồi `Add`.
+/// Bài học từ rà soát 20/08: ràng buộc kiểu này rất dễ được kiểm bằng `AnyAsync` rồi `Add`.
 /// Hai request song song đều thấy "chưa có" và đều ghi — 5 request đồng thời cho ra 5 bản ghi.
-///
-/// Vote MVP không bị vì nó ĐÃ có UNIQUE ở DB (quy tắc #8). Ba luồng còn lại thì chưa.
 ///
 /// **Bộ test này KHÔNG mô phỏng được đua thật** — provider InMemory không có UNIQUE index và
 /// không chạy song song ở tầng DB. Nó canh phần kiểm được: ràng buộc **được khai** trong model,
-/// và tầng ứng dụng trả mã lỗi đúng cho request thứ hai. Việc chặn đua thật đã kiểm tay trên
-/// PostgreSQL (5 request đồng thời → 1 bản ghi).
+/// và tầng ứng dụng trả mã lỗi đúng cho request thứ hai.
 /// </summary>
 public class DongThoiTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
     /// <summary>
-    /// Bốn ràng buộc "chỉ một" phải là UNIQUE INDEX trong model, không phải chỉ `if` trong handler.
+    /// Mọi ràng buộc "chỉ một" của tầng hệ thống phải là UNIQUE INDEX trong model, không phải
+    /// chỉ `if` trong handler.
     ///
     /// Test này là thứ CI bắt được khi ai đó thêm một ràng buộc kiểu này mà quên tầng DB.
+    /// Thêm entity nghiệp vụ mới có ràng buộc "chỉ một" → thêm một dòng InlineData ở đây.
     /// </summary>
     [Theory]
-    [InlineData("VoteMvp", "UQ_VOTE_MVP_tran_dau_nguoi_vote")]
-    [InlineData("DoiThu", "UQ_DOI_THU_tenant_ma_doi_he_thong")]
-    [InlineData("LoiMoiThachDau", "UQ_LOI_MOI_BAT_DOI_dang_cho")]
-    [InlineData("LoiMoiLink", "UQ_LOI_MOI_LINK_dang_cho")]
-    public void Rang_buoc_chi_mot_phai_co_UNIQUE_o_tang_DB(string tenEntity, string tenIndex)
+    // Mã trung tâm là một nửa bộ ba đăng nhập — trùng mã là hai trung tâm cùng cửa vào.
+    [InlineData("Tenant", new[] { "MaTrungTam" })]
+    // Username chỉ duy nhất TRONG tenant, không phải toàn cục (quy tắc multi-tenant).
+    [InlineData("NguoiDung", new[] { "TenantId", "Username" })]
+    [InlineData("Quyen", new[] { "TenantId", "TenQuyen" })]
+    // Không lặp cùng một (nhóm quyền, chức năng, thao tác).
+    [InlineData("QuyenChucNang", new[] { "QuyenId", "TenChucNang", "HanhDong" })]
+    [InlineData("NguoiDungQuyen", new[] { "NguoiDungId", "QuyenId" })]
+    // Tra cứu lúc làm mới token đi thẳng từ hash → trùng hash là nhầm phiên của người khác.
+    [InlineData("RefreshToken", new[] { "TokenHash" })]
+    [InlineData("TokenDatLaiMatKhau", new[] { "TokenHash" })]
+    public void Rang_buoc_chi_mot_phai_co_UNIQUE_o_tang_DB(string tenEntity, string[] cot)
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider
@@ -41,130 +47,113 @@ public class DongThoiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var entity = db.Model.GetEntityTypes()
             .Single(e => e.ClrType.Name == tenEntity);
 
-        var index = entity.GetIndexes()
-            .FirstOrDefault(i => i.GetDatabaseName() == tenIndex);
+        var index = entity.GetIndexes().FirstOrDefault(i =>
+            i.Properties.Select(p => p.Name).SequenceEqual(cot));
 
-        Assert.NotNull(index);
-        Assert.True(index!.IsUnique,
-            $"{tenIndex} phải UNIQUE — không thì hai request song song đều ghi được. "
+        Assert.True(index is not null,
+            $"{tenEntity} thiếu index trên ({string.Join(", ", cot)}) — "
+            + "không thì hai request song song đều ghi được. "
             + "Kiểm ở tầng ứng dụng (`AnyAsync` rồi `Add`) KHÔNG đủ.");
+
+        Assert.True(index!.IsUnique,
+            $"Index trên {tenEntity}({string.Join(", ", cot)}) phải UNIQUE.");
     }
 
+    /// <summary>
+    /// Username duy nhất theo TENANT, không phải toàn cục.
+    ///
+    /// Kiểm cả chiều ngược: nếu ai đó "sửa" thành UNIQUE(username) thì hai trung tâm không
+    /// cùng có tài khoản "admin" được nữa — chính lý do dự án không dùng cả Identity stack.
+    /// </summary>
     [Fact]
-    public void Ba_UNIQUE_moi_deu_co_FILTER_dung()
+    public void UNIQUE_username_phai_gom_ca_tenant_id()
     {
-        // Filter quan trọng ngang bản thân UNIQUE:
-        // - DOI_THU: đối thủ tên gõ tay (mã null) trùng bao nhiêu cũng được — "FC Sông Hàn" của
-        //   tôi và của bạn là hai đội khác nhau.
-        // - LOI_MOI_*: chỉ chặn lời mời ĐANG CHỜ; đá xong rồi mời lại lần sau là hợp lệ.
-        //
-        // Thiếu filter thì UNIQUE chặn luôn ca hợp lệ, và người dùng không mời lại được.
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider
             .GetRequiredService<Infrastructure.Persistence.AppDbContext>();
 
-        var mong = new Dictionary<string, string>
-        {
-            ["UQ_DOI_THU_tenant_ma_doi_he_thong"] = "ma_doi_he_thong IS NOT NULL",
-            ["UQ_LOI_MOI_BAT_DOI_dang_cho"] = "trang_thai = 0",
-            ["UQ_LOI_MOI_LINK_dang_cho"] = "trang_thai = 0 AND thu_hoi_luc IS NULL",
-        };
+        var nguoiDung = db.Model.GetEntityTypes().Single(e => e.ClrType.Name == "NguoiDung");
 
-        foreach (var (tenIndex, filter) in mong)
-        {
-            var index = db.Model.GetEntityTypes()
-                .SelectMany(e => e.GetIndexes())
-                .FirstOrDefault(i => i.GetDatabaseName() == tenIndex);
+        var chiUsername = nguoiDung.GetIndexes().Any(i =>
+            i.IsUnique && i.Properties.Count == 1 && i.Properties[0].Name == "Username");
 
-            Assert.NotNull(index);
-            Assert.Equal(filter, index!.GetFilter());
-        }
-    }
-
-    // ---------- Tầng ứng dụng vẫn phải trả mã lỗi đúng ----------
-
-    private async Task<(HttpClient Client, string MaDoi)> ClbRieng(string nhan)
-    {
-        var moTai = factory.CreateClient();
-        var dangKy = await moTai.PostAsJsonAsync("/api/v1/dang-ky-clb",
-            new { TenDoi = $"DongThoi {nhan} {Guid.NewGuid():N}"[..40] });
-        dangKy.EnsureSuccessStatusCode();
-        var clb = await dangKy.Content.ReadFromJsonAsync<JsonElement>();
-        var ma = clb.GetProperty("maDoi").GetString()!;
-
-        var dn1 = await moTai.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaDoi = ma, Username = "admin", MatKhau = "123456" });
-        var t1 = (await dn1.Content.ReadFromJsonAsync<JsonElement>())
-            .GetProperty("accessToken").GetString();
-        var tam = factory.CreateClient();
-        tam.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", t1);
-        await tam.PostAsJsonAsync("/api/v1/auth/doi-mat-khau",
-            new { MatKhauCu = "123456", MatKhauMoi = "dongthoi123" });
-
-        var dn2 = await moTai.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaDoi = ma, Username = "admin", MatKhau = "dongthoi123" });
-        var t2 = (await dn2.Content.ReadFromJsonAsync<JsonElement>())
-            .GetProperty("accessToken").GetString();
-
-        var client = factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", t2);
-        return (client, ma);
+        Assert.False(chiUsername,
+            "UNIQUE(username) toàn cục sẽ chặn hai trung tâm cùng có tài khoản 'admin'. "
+            + "Phải là UNIQUE(tenant_id, username).");
     }
 
     [Fact]
-    public async Task Vi_pham_UNIQUE_tra_409_khong_phai_500()
+    public async Task Vi_pham_rang_buoc_tra_400_khong_phai_500()
     {
-        // Nếu UNIQUE chặn mà middleware không xử lý, người dùng nhận 500 "Lỗi hệ thống" và tưởng
-        // app hỏng — trong khi thực ra họ bấm hai lần và lần thứ hai bị chặn ĐÚNG.
-        //
-        // Không dựng được vi phạm UNIQUE thật trên InMemory, nên test này canh phần kiểm được:
-        // middleware CÓ nhánh xử lý DbUpdateException với SQLSTATE 23505.
-        var middleware = typeof(Middleware.ExceptionMiddleware);
-        var nguon = middleware.Assembly.Location;
-        Assert.True(File.Exists(nguon));
+        // Nếu ràng buộc chặn mà middleware không xử lý, người dùng nhận 500 "Lỗi hệ thống" và
+        // tưởng app hỏng — trong khi thực ra họ bấm hai lần và lần thứ hai bị chặn ĐÚNG.
+        var client = await Client();
 
-        // Kiểm qua hành vi: gọi hai lần cùng một thao tác "chỉ một" ở tầng ứng dụng.
-        var (a, _) = await ClbRieng("trung-app");
-        var (_, maB) = await ClbRieng("trung-app-b");
+        var than = new
+        {
+            Username = "trungusername",
+            MatKhau = "matkhau123",
+            Email = (string?)null,
+            SoDienThoai = (string?)null,
+            DiaChi = (string?)null,
+            QuyenIds = Array.Empty<Guid>(),
+            PhaiDoiMatKhau = false
+        };
 
-        var lan1 = await a.PostAsJsonAsync("/api/v1/cong-dong/loi-moi",
-            new { MaDoiNhan = maB, ThoiGianDeXuat = (string?)null, DiaDiem = (string?)null, LoiNhan = (string?)null });
+        var lan1 = await client.PostAsJsonAsync("/api/v1/tai-khoan", than);
         lan1.EnsureSuccessStatusCode();
 
-        var lan2 = await a.PostAsJsonAsync("/api/v1/cong-dong/loi-moi",
-            new { MaDoiNhan = maB, ThoiGianDeXuat = (string?)null, DiaDiem = (string?)null, LoiNhan = (string?)null });
+        var lan2 = await client.PostAsJsonAsync("/api/v1/tai-khoan", than);
 
-        // Tầng ứng dụng bắt trước → 400 với mã nghiệp vụ. UNIQHE ở DB chỉ là lưới cuối cho đua.
+        // Tầng ứng dụng bắt trước → 400 với mã nghiệp vụ. UNIQUE ở DB là lưới cuối cho đua.
         Assert.Equal(HttpStatusCode.BadRequest, lan2.StatusCode);
-        Assert.Equal("DA_GUI_LOI_MOI_DANG_CHO",
+        Assert.Equal("USERNAME_DA_TON_TAI",
             (await lan2.Content.ReadFromJsonAsync<JsonElement>())
                 .GetProperty("errorCode").GetString());
     }
 
+    /// <summary>
+    /// Cùng một username tạo được ở HAI trung tâm khác nhau — chiều ngược của test trên.
+    ///
+    /// Không có test này thì ai đó "sửa" lỗi trùng username bằng cách bỏ tenant_id khỏi UNIQUE
+    /// mà bộ test vẫn xanh.
+    /// </summary>
     [Fact]
-    public async Task Doi_thu_tren_gõ_tay_trung_ten_van_tao_duoc_o_hai_CLB()
+    public async Task Cung_username_tao_duoc_o_hai_trung_tam()
     {
-        // UNIQUE trên DOI_THU có filter `ma_doi_he_thong IS NOT NULL`. Thiếu filter thì hai CLB
-        // khác nhau không cùng có đối thủ tên "FC Sông Hàn" được — mà đó là ca bình thường.
-        var (a, _) = await ClbRieng("go-tay-a");
-        var (b, _) = await ClbRieng("go-tay-b");
+        var a = await Client(factory.MaTrungTamA);
+        var b = await Client(factory.MaTrungTamB);
 
-        foreach (var client in new[] { a, b })
+        var than = new
         {
-            var res = await client.PostAsJsonAsync("/api/v1/doi-thu", new
-            {
-                TenDoi = "FC Sông Hàn", MaDoiHeThong = (string?)null,
-                LienHe = (string?)null, GhiChu = (string?)null,
-            });
-            res.EnsureSuccessStatusCode();
-        }
+            Username = "trunggiuahaitenant",
+            MatKhau = "matkhau123",
+            Email = (string?)null,
+            SoDienThoai = (string?)null,
+            DiaChi = (string?)null,
+            QuyenIds = Array.Empty<Guid>(),
+            PhaiDoiMatKhau = false
+        };
 
-        // Và CÙNG một CLB tạo hai đối thủ tên gõ tay khác nhau cũng được.
-        var them = await a.PostAsJsonAsync("/api/v1/doi-thu", new
+        (await a.PostAsJsonAsync("/api/v1/tai-khoan", than)).EnsureSuccessStatusCode();
+        (await b.PostAsJsonAsync("/api/v1/tai-khoan", than)).EnsureSuccessStatusCode();
+    }
+
+    private async Task<HttpClient> Client(string? maTrungTam = null)
+    {
+        var c = factory.CreateClient();
+        var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap", new
         {
-            TenDoi = "FC Thanh Bình", MaDoiHeThong = (string?)null,
-            LienHe = (string?)null, GhiChu = (string?)null,
+            MaTrungTam = maTrungTam ?? factory.MaTrungTamA,
+            Username = "manager",
+            MatKhau = "manager123"
         });
-        them.EnsureSuccessStatusCode();
+        res.EnsureSuccessStatusCode();
+        var body = await res.Content.ReadFromJsonAsync<JsonElement>();
+
+        var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", body.GetProperty("accessToken").GetString());
+        return client;
     }
 }

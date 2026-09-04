@@ -10,31 +10,31 @@ using Microsoft.Extensions.DependencyInjection;
 namespace GiapTech.SoccerRoom.API.IntegrationTests;
 
 /// <summary>
-/// Nợ N9 — CLB phải luôn còn ít nhất một người có quyền Phân quyền.
+/// Nợ N9 — Trung tâm phải luôn còn ít nhất một người có quyền Phân quyền.
 ///
 /// Lỗ hổng gặp thật 21/08: `PUT /tai-khoan/{id}` với `QuyenIds = []` cho phép admin duy nhất tự
 /// cắt hết quyền của mình, sau đó **mọi** thao tác quản trị trả 403 và không ai sửa lại được — kể
-/// cả chính họ. CLB mất đường quản trị hoàn toàn.
+/// cả chính họ. trung tâm mất đường quản trị hoàn toàn.
 ///
-/// Chặn ở mức **CLB** chứ không mức cá nhân (quyết định của chủ sản phẩm): admin A vẫn tự bỏ quyền
+/// Chặn ở mức **trung tâm** chứ không mức cá nhân (quyết định của chủ sản phẩm): admin A vẫn tự bỏ quyền
 /// được **nếu** admin B còn quyền đó.
 /// </summary>
 public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
     private const string MatKhauMoi = "connguoiqt123";
 
-    private async Task<(HttpClient Client, string MaDoi)> ClbRieng(string nhan)
+    private async Task<(HttpClient Client, string MaTrungTam)> ClbRieng(string nhan)
     {
         var moTai = factory.CreateClient();
         var ten = $"CNQT {nhan} {Guid.NewGuid():N}";
         if (ten.Length > 40) ten = ten[..40];
-        var dangKy = await moTai.PostAsJsonAsync("/api/v1/dang-ky-clb", new { TenDoi = ten });
+        var dangKy = await moTai.PostAsJsonAsync("/api/v1/dang-ky-trung-tam", new { TenTrungTam = ten });
         dangKy.EnsureSuccessStatusCode();
         var ma = (await dangKy.Content.ReadFromJsonAsync<JsonElement>())
-            .GetProperty("maDoi").GetString()!;
+            .GetProperty("maTrungTam").GetString()!;
 
         var dn1 = await moTai.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaDoi = ma, Username = "admin", MatKhau = "123456" });
+            new { MaTrungTam = ma, Username = "admin", MatKhau = "123456" });
         var t1 = (await dn1.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("accessToken").GetString();
 
@@ -44,7 +44,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
             new { MatKhauCu = "123456", MatKhauMoi = MatKhauMoi });
 
         var dn2 = await moTai.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaDoi = ma, Username = "admin", MatKhau = MatKhauMoi });
+            new { MaTrungTam = ma, Username = "admin", MatKhau = MatKhauMoi });
         var t2 = (await dn2.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("accessToken").GetString();
 
@@ -81,10 +81,10 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         {
             Id = adminId, Email = (string?)null, SoDienThoai = (string?)null,
             DiaChi = (string?)null, CauThuId = (Guid?)null,
-            QuyenIds = Array.Empty<string>(), TrangThai = 0, LaTruongNhom = true,
+            QuyenIds = Array.Empty<string>(), TrangThai = 0,
         });
 
-        Assert.Contains("CLB_PHAI_CON_NGUOI_PHAN_QUYEN", await res.Content.ReadAsStringAsync());
+        Assert.Contains("TRUNG_TAM_PHAI_CON_NGUOI_PHAN_QUYEN", await res.Content.ReadAsStringAsync());
 
         // Và quyền VẪN CÒN — chặn nghĩa là không đổi gì, không phải đổi một nửa.
         var sau = await c.GetAsync("/api/v1/tai-khoan?soDong=50");
@@ -104,13 +104,13 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         {
             Id = adminId, Email = (string?)null, SoDienThoai = (string?)null,
             DiaChi = (string?)null, CauThuId = (Guid?)null,
-            QuyenIds = quyen, TrangThai = 1, LaTruongNhom = true,
+            QuyenIds = quyen, TrangThai = 1,
         });
 
         var body = await res.Content.ReadAsStringAsync();
         Assert.True(
             body.Contains("KHONG_TU_VO_HIEU_HOA_MINH")
-            || body.Contains("CLB_PHAI_CON_NGUOI_PHAN_QUYEN"),
+            || body.Contains("TRUNG_TAM_PHAI_CON_NGUOI_PHAN_QUYEN"),
             $"phải bị chặn, thực tế: {body}");
     }
 
@@ -128,8 +128,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         var tao = await c.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
             Username = "admin2", MatKhau = "admin2matkhau", CauThuId = (Guid?)null,
-            Email = (string?)null, SoDienThoai = (string?)null, DiaChi = (string?)null,
-            LaTruongNhom = true, QuyenIds = quyen,
+            Email = (string?)null, SoDienThoai = (string?)null, DiaChi = (string?)null, QuyenIds = quyen,
         });
         tao.EnsureSuccessStatusCode();
 
@@ -139,7 +138,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         {
             Id = adminId, Email = (string?)null, SoDienThoai = (string?)null,
             DiaChi = (string?)null, CauThuId = (Guid?)null,
-            QuyenIds = Array.Empty<string>(), TrangThai = 0, LaTruongNhom = true,
+            QuyenIds = Array.Empty<string>(), TrangThai = 0,
         });
 
         Assert.Equal(HttpStatusCode.NoContent, res.StatusCode);
@@ -178,8 +177,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         var tao = await c.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
             Username = "chuquyen", MatKhau = "chuquyenmatkhau", CauThuId = (Guid?)null,
-            Email = (string?)null, SoDienThoai = (string?)null, DiaChi = (string?)null,
-            LaTruongNhom = true, QuyenIds = quyenDayDu,
+            Email = (string?)null, SoDienThoai = (string?)null, DiaChi = (string?)null, QuyenIds = quyenDayDu,
         });
         tao.EnsureSuccessStatusCode();
         var (chuQuyenId, _) = await LayTaiKhoan(c, "chuquyen");
@@ -190,7 +188,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         {
             Id = adminId, Email = (string?)null, SoDienThoai = (string?)null,
             DiaChi = (string?)null, CauThuId = (Guid?)null,
-            QuyenIds = new[] { nhomChiTaiKhoan }, TrangThai = 0, LaTruongNhom = true,
+            QuyenIds = new[] { nhomChiTaiKhoan }, TrangThai = 0,
         });
         Assert.Equal(HttpStatusCode.NoContent, ha.StatusCode);
 
@@ -198,13 +196,13 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         // bởi chốt N9 (không phải bởi lớp "tự xoá mình", vì đây là người khác).
         var xoa = await c.DeleteAsync($"/api/v1/tai-khoan/{chuQuyenId}");
 
-        Assert.Contains("CLB_PHAI_CON_NGUOI_PHAN_QUYEN", await xoa.Content.ReadAsStringAsync());
+        Assert.Contains("TRUNG_TAM_PHAI_CON_NGUOI_PHAN_QUYEN", await xoa.Content.ReadAsStringAsync());
 
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
         Assert.True(
             await db.NguoiDungs.IgnoreQueryFilters().AnyAsync(u => u.Username == "chuquyen"),
-            "người quản trị cuối cùng đã bị xoá — CLB mất đường quản trị");
+            "người quản trị cuối cùng đã bị xoá — trung tâm mất đường quản trị");
     }
 
     [Fact]
@@ -220,8 +218,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         var tao = await c.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
             Username = "nguoibikhoa", MatKhau = "nguoibikhoamk", CauThuId = (Guid?)null,
-            Email = (string?)null, SoDienThoai = (string?)null, DiaChi = (string?)null,
-            LaTruongNhom = false, QuyenIds = quyen,
+            Email = (string?)null, SoDienThoai = (string?)null, DiaChi = (string?)null, QuyenIds = quyen,
         });
         tao.EnsureSuccessStatusCode();
         var (biKhoaId, _) = await LayTaiKhoan(c, "nguoibikhoa");
@@ -230,7 +227,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         {
             Id = biKhoaId, Email = (string?)null, SoDienThoai = (string?)null,
             DiaChi = (string?)null, CauThuId = (Guid?)null,
-            QuyenIds = quyen, TrangThai = 1, LaTruongNhom = false,
+            QuyenIds = quyen, TrangThai = 1,
         });
         Assert.Equal(HttpStatusCode.NoContent, khoa.StatusCode);
 
@@ -240,49 +237,13 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         {
             Id = adminId, Email = (string?)null, SoDienThoai = (string?)null,
             DiaChi = (string?)null, CauThuId = (Guid?)null,
-            QuyenIds = Array.Empty<string>(), TrangThai = 0, LaTruongNhom = true,
+            QuyenIds = Array.Empty<string>(), TrangThai = 0,
         });
 
-        Assert.Contains("CLB_PHAI_CON_NGUOI_PHAN_QUYEN", await res.Content.ReadAsStringAsync());
+        Assert.Contains("TRUNG_TAM_PHAI_CON_NGUOI_PHAN_QUYEN", await res.Content.ReadAsStringAsync());
     }
 
     // ----- Đường vòng: cho nghỉ kèm khoá tài khoản -----
-
-    [Fact]
-    public async Task Cho_nghi_kem_khoa_KHONG_lam_mat_nguoi_quan_tri_cuoi_cung()
-    {
-        // Nếu đường này không qua chốt thì "cho nghỉ + khoá" là cách vòng để đạt đúng hậu quả mà
-        // `CapNhatTaiKhoanCommand` đã chặn.
-        var (c, _) = await ClbRieng("vong-nghi");
-
-        var ct = await c.PostAsJsonAsync("/api/v1/cau-thu",
-            new { HoTen = "Admin Kiêm Cầu Thủ", SoAo = (int?)null, ViTri = "CM" });
-        var cauThuId = await ct.Content.ReadFromJsonAsync<Guid>();
-
-        var (adminId, _) = await LayTaiKhoan(c, "admin");
-        var quyen = await QuyenIds(c);
-        var gan = await c.PutAsJsonAsync($"/api/v1/tai-khoan/{adminId}", new
-        {
-            Id = adminId, Email = (string?)null, SoDienThoai = (string?)null,
-            DiaChi = (string?)null, CauThuId = cauThuId,
-            QuyenIds = quyen, TrangThai = 0, LaTruongNhom = true,
-        });
-        gan.EnsureSuccessStatusCode();
-
-        // Handler chặn tự khoá chính mình TRƯỚC chốt N9 — cả hai đều đúng, chỉ cần bị chặn.
-        var res = await c.PostAsJsonAsync($"/api/v1/cau-thu/{cauThuId}/nghi-thi-dau",
-            new { KhoaTaiKhoan = true });
-        var body = await res.Content.ReadAsStringAsync();
-        Assert.True(
-            body.Contains("KHONG_TU_KHOA_TAI_KHOAN_CHINH_MINH")
-            || body.Contains("CLB_PHAI_CON_NGUOI_PHAN_QUYEN"),
-            $"phải bị chặn, thực tế: {body}");
-
-        using var scope = factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
-        var nd = await db.NguoiDungs.IgnoreQueryFilters().FirstAsync(u => u.Id.ToString() == adminId);
-        Assert.Equal(TrangThaiNguoiDung.HoatDong, nd.TrangThai);
-    }
 
     [Fact]
     public async Task Chot_doc_tu_QUYEN_CHUC_NANG_khong_suy_tu_TEN_nhom()
@@ -306,8 +267,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         var tao = await c.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
             Username = "troly", MatKhau = "trolymatkhau1", CauThuId = (Guid?)null,
-            Email = (string?)null, SoDienThoai = (string?)null, DiaChi = (string?)null,
-            LaTruongNhom = false, QuyenIds = new[] { quyenMoiId },
+            Email = (string?)null, SoDienThoai = (string?)null, DiaChi = (string?)null, QuyenIds = new[] { quyenMoiId },
         });
         tao.EnsureSuccessStatusCode();
 
@@ -317,7 +277,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         {
             Id = adminId, Email = (string?)null, SoDienThoai = (string?)null,
             DiaChi = (string?)null, CauThuId = (Guid?)null,
-            QuyenIds = Array.Empty<string>(), TrangThai = 0, LaTruongNhom = true,
+            QuyenIds = Array.Empty<string>(), TrangThai = 0,
         });
 
         Assert.Equal(HttpStatusCode.NoContent, res.StatusCode);

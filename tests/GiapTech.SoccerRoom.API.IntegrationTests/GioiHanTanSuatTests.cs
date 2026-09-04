@@ -27,7 +27,7 @@ public class GioiHanTanSuatTests(GioiHanTanSuatTests.ApiFactoryCoGioiHan factory
     public async Task Tra_ma_doi_bi_chan_sau_30_request_moi_phut()
     {
         var client = factory.CreateClient();
-        var ma = factory.MaDoiA;
+        var ma = factory.MaTrungTamA;
 
         // 30 request đầu phải qua. Gọi tuần tự — song song sẽ làm cửa sổ trượt trả kết quả
         // không xác định ở đúng ranh giới, và test đó sẽ chập chờn.
@@ -56,7 +56,7 @@ public class GioiHanTanSuatTests(GioiHanTanSuatTests.ApiFactoryCoGioiHan factory
         for (var i = 0; i < 60; i++)
         {
             var res = await client.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-                new { maDoi = factory.MaDoiA, username = "khong-ton-tai", matKhau = "sai" });
+                new { maTrungTam = factory.MaTrungTamA, username = "khong-ton-tai", matKhau = "sai" });
             if (res.StatusCode == HttpStatusCode.TooManyRequests) { biChan = res; break; }
         }
 
@@ -121,32 +121,6 @@ public class GioiHanTanSuatTests(GioiHanTanSuatTests.ApiFactoryCoGioiHan factory
     }
 
     [Fact]
-    public void Endpoint_GHI_theo_token_phai_chat_hon_endpoint_chi_DOC()
-    {
-        // Dò trúng token ở endpoint ghi là SỬA dữ liệu của CLB khác; dò trúng ở endpoint đọc chỉ
-        // là xem. Hai mức đó không được bằng nhau.
-        //
-        // Kiểm bằng tên policy trên method — số cụ thể nằm trong GioiHanTanSuat và có comment.
-        var xemLoiMoi = typeof(MoiQuaLinkController).GetMethod("Xem")!
-            .GetCustomAttributes(typeof(EnableRateLimitingAttribute), false)
-            .Cast<EnableRateLimitingAttribute>().Single();
-
-        Assert.Equal(GioiHanTanSuat.LoiMoiTheoToken, xemLoiMoi.PolicyName);
-        Assert.NotEqual(GioiHanTanSuat.TraCuu, xemLoiMoi.PolicyName);
-
-        // So cả CON SỐ, không chỉ tên policy. Phản chứng 21/08: nới hạn mức endpoint ghi từ 10
-        // lên 3000 mà bộ test vẫn 5/5 xanh — vì tên policy không đổi. Đúng cái nó phải canh.
-        Assert.True(GioiHanTanSuat.HanMucLoiMoiTheoToken < GioiHanTanSuat.HanMucTraCuu,
-            $"endpoint GHI ({GioiHanTanSuat.HanMucLoiMoiTheoToken}/phút) phải chặt hơn endpoint " +
-            $"ĐỌC ({GioiHanTanSuat.HanMucTraCuu}/phút)");
-
-        // Và một chặn trên tuyệt đối: hạn mức nới quá thì "có rate limit" thành hình thức.
-        // Người dùng thật mở link 1 lần, trả lời 1 lần — 60/phút đã là rất rộng.
-        Assert.True(GioiHanTanSuat.HanMucLoiMoiTheoToken <= 60,
-            $"hạn mức {GioiHanTanSuat.HanMucLoiMoiTheoToken}/phút quá rộng để chặn việc dò token");
-    }
-
-    [Fact]
     public async Task MAC_DINH_phai_BAT_khi_khong_dat_cau_hinh()
     {
         // Phản chứng đã lọt: đổi mặc định `GetValue(CauHinhBat, true)` thành `false` mà 5/5 vẫn
@@ -158,7 +132,7 @@ public class GioiHanTanSuatTests(GioiHanTanSuatTests.ApiFactoryCoGioiHan factory
         // Nên test này dùng factory KHÔNG đặt cờ, và khẳng định giới hạn VẪN hoạt động.
         await using var factoryKhongDatCo = new ApiFactoryKhongDatCoGioiHan();
         var client = factoryKhongDatCo.CreateClient();
-        var ma = factoryKhongDatCo.MaDoiA;
+        var ma = factoryKhongDatCo.MaTrungTamA;
 
         HttpStatusCode? cuoi = null;
         for (var i = 0; i < 40; i++)

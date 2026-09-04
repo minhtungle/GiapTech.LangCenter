@@ -3,7 +3,7 @@ namespace GiapTech.SoccerRoom.Application.Common.Models;
 /// <summary>
 /// Tham số phân trang cho mọi danh sách.
 ///
-/// Phân trang ở SERVER chứ không cắt ở trình duyệt: bảng trận đấu và cầu thủ của một CLB hoạt
+/// Phân trang ở SERVER chứ không cắt ở trình duyệt: bảng dữ liệu của một trung tâm hoạt
 /// động vài năm sẽ lên hàng nghìn dòng, tải hết về rồi mới cắt sẽ chậm dần và không ai để ý
 /// cho tới khi quá muộn.
 /// </summary>

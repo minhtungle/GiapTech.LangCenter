@@ -31,7 +31,7 @@ public class MinioLuuTruAnh : ILuuTruAnh
         ["image/gif"] = ".gif",
     };
 
-    /// <summary>5 MB — ảnh đại diện và logo CLB không cần hơn, mà chặn ở đây rẻ hơn ở tầng lưu.</summary>
+    /// <summary>5 MB — logo và ảnh bìa không cần hơn, mà chặn ở đây rẻ hơn ở tầng lưu.</summary>
     public const long KichThuocToiDa = 5 * 1024 * 1024;
 
     private readonly IMinioClient _minio;
@@ -98,7 +98,7 @@ public class MinioLuuTruAnh : ILuuTruAnh
 
     public async Task<AnhTaiVe?> TaiVe(string khoa, CancellationToken ct)
     {
-        // QUY TẮC #2 — chặn đọc ảnh của CLB khác.
+        // QUY TẮC #2 — chặn đọc ảnh của trung tâm khác.
         //
         // Khoá đến từ cột DB đã lọc theo tenant nên về lý là an toàn, nhưng endpoint đọc ảnh
         // nhận khoá trực tiếp từ URL. Không kiểm ở đây thì đoán được khoá là đọc được ảnh

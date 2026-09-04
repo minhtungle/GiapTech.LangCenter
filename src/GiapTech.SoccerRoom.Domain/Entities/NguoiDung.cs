@@ -6,7 +6,7 @@ namespace GiapTech.SoccerRoom.Domain.Entities;
 /// <summary>
 /// NGUOI_DUNG — tài khoản đăng nhập (FR-03).
 ///
-/// Username chỉ duy nhất TRONG PHẠM VI tenant: hai CLB khác nhau đều có thể có tài khoản
+/// Username chỉ duy nhất TRONG PHẠM VI tenant: hai tenant khác nhau đều có thể có tài khoản
 /// tên "admin" — ràng buộc UNIQUE(tenant_id, username), không phải UNIQUE(username).
 /// </summary>
 public class NguoiDung : TenantEntity
@@ -25,21 +25,6 @@ public class NguoiDung : TenantEntity
     public bool PhaiDoiMatKhau { get; set; }
 
     public TrangThaiNguoiDung TrangThai { get; set; } = TrangThaiNguoiDung.HoatDong;
-
-    /// <summary>
-    /// Trưởng nhóm — người gửi lời mời đăng ký thi đấu và chốt đội hình.
-    ///
-    /// Là **cờ riêng**, không suy từ nhóm quyền: "được sửa lịch thi đấu" và "là người triệu
-    /// tập đội" là hai chuyện khác nhau — thư ký CLB có thể sửa lịch mà không phải trưởng nhóm.
-    ///
-    /// Một đội có thể có nhiều trưởng nhóm (CLB lớn chia đội hình A/B). Admin của mỗi CLB
-    /// được bật sẵn khi tạo đội.
-    /// </summary>
-    public bool LaTruongNhom { get; set; }
-
-    /// <summary>Hồ sơ cầu thủ liên kết (0..1) — tài khoản quản lý thuần túy thì để null.</summary>
-    public Guid? CauThuId { get; set; }
-    public CauThu? CauThu { get; set; }
 
     public Tenant Tenant { get; set; } = null!;
 

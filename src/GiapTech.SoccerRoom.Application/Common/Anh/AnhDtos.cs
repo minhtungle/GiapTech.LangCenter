@@ -6,29 +6,25 @@ using Microsoft.EntityFrameworkCore;
 namespace GiapTech.SoccerRoom.Application.Common.Anh;
 
 /// <summary>
-/// Tải ảnh cho hồ sơ cầu thủ (FR-04) và CLB (FR-06).
+/// Tải ảnh cho trung tâm (FR-06).
 ///
 /// Gộp một chỗ thay vì mỗi module tự viết: luồng giống hệt nhau (tải lên kho, xoá ảnh cũ, ghi
 /// khoá vào DB), khác mỗi cột đích. Ba bản sao là ba cơ hội quên bước xoá ảnh cũ.
 /// </summary>
 public enum LoaiAnh
 {
-    /// <summary>Ảnh đại diện cầu thủ — <c>CAU_THU.anh_dai_dien</c>.</summary>
-    CauThu,
-
-    /// <summary>Logo CLB — <c>TENANT.logo_url</c>.</summary>
+    /// <summary>Logo trung tâm — <c>TENANT.logo_url</c>.</summary>
     Logo,
 
-    /// <summary>Ảnh bìa CLB — <c>TENANT.anh_bia_url</c>.</summary>
+    /// <summary>Ảnh bìa trung tâm — <c>TENANT.anh_bia_url</c>.</summary>
     AnhBia,
 
-    /// <summary>Mã QR chuyển khoản quỹ — <c>TENANT.anh_qr_url</c>.</summary>
+    /// <summary>Mã QR chuyển khoản — <c>TENANT.anh_qr_url</c>.</summary>
     AnhQr,
 }
 
-/// <param name="DoiTuongId">Id cầu thủ. Bỏ qua với logo/ảnh bìa vì chúng thuộc về chính CLB.</param>
 public record TaiAnhLenCommand(
-    LoaiAnh Loai, Guid? DoiTuongId, Stream NoiDung, string LoaiNoiDung) : IRequest<string>;
+    LoaiAnh Loai, Stream NoiDung, string LoaiNoiDung) : IRequest<string>;
 
 public class TaiAnhLenHandler(IAppDbContext db, ILuuTruAnh luuTru, ICurrentTenant tenant)
     : IRequestHandler<TaiAnhLenCommand, string>
@@ -39,10 +35,9 @@ public class TaiAnhLenHandler(IAppDbContext db, ILuuTruAnh luuTru, ICurrentTenan
             throw new AppException(MaLoi.ChuaXacThuc);
 
         // Đọc khoá ảnh CŨ trước khi ghi cái mới, để xoá nó sau khi ghi thành công.
-        // Không dọn thì mỗi lần đổi avatar để lại một tệp mồ côi vĩnh viễn trong MinIO.
+        // Không dọn thì mỗi lần đổi ảnh để lại một tệp mồ côi vĩnh viễn trong MinIO.
         var khoaCu = request.Loai switch
         {
-            LoaiAnh.CauThu => await LayKhoaCauThu(request.DoiTuongId, ct),
             LoaiAnh.Logo => await db.Tenants.Where(t => t.Id == tenantId)
                 .Select(t => t.LogoUrl).FirstOrDefaultAsync(ct),
             LoaiAnh.AnhBia => await db.Tenants.Where(t => t.Id == tenantId)
@@ -56,7 +51,6 @@ public class TaiAnhLenHandler(IAppDbContext db, ILuuTruAnh luuTru, ICurrentTenan
 
         var thuMuc = request.Loai switch
         {
-            LoaiAnh.CauThu => "cau-thu",
             LoaiAnh.Logo => "logo",
             LoaiAnh.AnhBia => "anh-bia",
             LoaiAnh.AnhQr => "qr-chuyen-khoan",
@@ -65,32 +59,22 @@ public class TaiAnhLenHandler(IAppDbContext db, ILuuTruAnh luuTru, ICurrentTenan
 
         var khoaMoi = await luuTru.TaiLen(request.NoiDung, request.LoaiNoiDung, thuMuc, ct);
 
+        var tenantHienTai = await db.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId, ct)
+            ?? throw new KhongTimThayException($"Tenant {tenantId}");
+
         // Ghi khoá mới vào DB TRƯỚC khi xoá ảnh cũ: xoá trước mà ghi DB lỗi thì mất cả hai.
         switch (request.Loai)
         {
-            case LoaiAnh.CauThu:
-                var cauThu = await db.CauThus
-                    .FirstOrDefaultAsync(c => c.Id == request.DoiTuongId, ct)
-                    ?? throw new KhongTimThayException($"CauThu {request.DoiTuongId}");
-                cauThu.AnhDaiDien = khoaMoi;
-                break;
-
             case LoaiAnh.Logo:
-                var t1 = await db.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId, ct)
-                    ?? throw new KhongTimThayException($"Tenant {tenantId}");
-                t1.LogoUrl = khoaMoi;
+                tenantHienTai.LogoUrl = khoaMoi;
                 break;
 
             case LoaiAnh.AnhBia:
-                var t2 = await db.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId, ct)
-                    ?? throw new KhongTimThayException($"Tenant {tenantId}");
-                t2.AnhBiaUrl = khoaMoi;
+                tenantHienTai.AnhBiaUrl = khoaMoi;
                 break;
 
             case LoaiAnh.AnhQr:
-                var t3 = await db.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId, ct)
-                    ?? throw new KhongTimThayException($"Tenant {tenantId}");
-                t3.AnhQrUrl = khoaMoi;
+                tenantHienTai.AnhQrUrl = khoaMoi;
                 break;
 
             default:
@@ -103,20 +87,10 @@ public class TaiAnhLenHandler(IAppDbContext db, ILuuTruAnh luuTru, ICurrentTenan
 
         return khoaMoi;
     }
-
-    private async Task<string?> LayKhoaCauThu(Guid? id, CancellationToken ct)
-    {
-        if (id is not { } cauThuId) throw new AppException("THIEU_ID_CAU_THU");
-
-        return await db.CauThus
-            .Where(c => c.Id == cauThuId)
-            .Select(c => c.AnhDaiDien)
-            .FirstOrDefaultAsync(ct);
-    }
 }
 
 /// <summary>Gỡ ảnh — đặt cột về null và xoá tệp khỏi kho.</summary>
-public record XoaAnhCommand(LoaiAnh Loai, Guid? DoiTuongId) : IRequest;
+public record XoaAnhCommand(LoaiAnh Loai) : IRequest;
 
 public class XoaAnhHandler(IAppDbContext db, ILuuTruAnh luuTru, ICurrentTenant tenant)
     : IRequestHandler<XoaAnhCommand>
@@ -126,37 +100,26 @@ public class XoaAnhHandler(IAppDbContext db, ILuuTruAnh luuTru, ICurrentTenant t
         if (tenant.TenantId is not { } tenantId)
             throw new AppException(MaLoi.ChuaXacThuc);
 
-        string? khoa = null;
+        var tenantHienTai = await db.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId, ct)
+            ?? throw new KhongTimThayException($"Tenant {tenantId}");
+
+        string? khoa;
 
         switch (request.Loai)
         {
-            case LoaiAnh.CauThu:
-                var cauThu = await db.CauThus
-                    .FirstOrDefaultAsync(c => c.Id == request.DoiTuongId, ct)
-                    ?? throw new KhongTimThayException($"CauThu {request.DoiTuongId}");
-                khoa = cauThu.AnhDaiDien;
-                cauThu.AnhDaiDien = null;
-                break;
-
             case LoaiAnh.Logo:
-                var t1 = await db.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId, ct)
-                    ?? throw new KhongTimThayException($"Tenant {tenantId}");
-                khoa = t1.LogoUrl;
-                t1.LogoUrl = null;
+                khoa = tenantHienTai.LogoUrl;
+                tenantHienTai.LogoUrl = null;
                 break;
 
             case LoaiAnh.AnhBia:
-                var t2 = await db.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId, ct)
-                    ?? throw new KhongTimThayException($"Tenant {tenantId}");
-                khoa = t2.AnhBiaUrl;
-                t2.AnhBiaUrl = null;
+                khoa = tenantHienTai.AnhBiaUrl;
+                tenantHienTai.AnhBiaUrl = null;
                 break;
 
             case LoaiAnh.AnhQr:
-                var t3 = await db.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId, ct)
-                    ?? throw new KhongTimThayException($"Tenant {tenantId}");
-                khoa = t3.AnhQrUrl;
-                t3.AnhQrUrl = null;
+                khoa = tenantHienTai.AnhQrUrl;
+                tenantHienTai.AnhQrUrl = null;
                 break;
 
             default:

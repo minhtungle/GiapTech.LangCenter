@@ -53,7 +53,7 @@ public static class DependencyInjection
         services.AddScoped<IEmailSender, SmtpEmailSender>();
 
         // Scoped chứ không Singleton: MinioLuuTruAnh phụ thuộc ICurrentTenant (theo request)
-        // để cách ly ảnh giữa các CLB. Singleton sẽ giữ tenant của request ĐẦU TIÊN cho mọi
+        // để cách ly ảnh giữa các trung tâm. Singleton sẽ giữ tenant của request ĐẦU TIÊN cho mọi
         // request sau — đúng kiểu rò rỉ chéo mà quy tắc #2 cấm.
         services.AddScoped<ILuuTruAnh, MinioLuuTruAnh>();
 

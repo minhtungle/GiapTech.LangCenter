@@ -8,7 +8,7 @@ namespace GiapTech.SoccerRoom.Infrastructure.Identity;
 /// mật khẩu, số vòng lặp theo mặc định hiện hành của framework).
 ///
 /// Dùng riêng PasswordHasher thay vì kéo cả Identity stack: Identity giả định username duy
-/// nhất toàn cục, còn ở đây username chỉ duy nhất trong phạm vi tenant (hai CLB đều có thể
+/// nhất toàn cục, còn ở đây username chỉ duy nhất trong phạm vi tenant (hai trung tâm đều có thể
 /// có tài khoản "admin"). Ghép vào sẽ phải chống lại giả định đó ở mọi bước.
 /// </summary>
 public class AppPasswordHasher : IPasswordHasher

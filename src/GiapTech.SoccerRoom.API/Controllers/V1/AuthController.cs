@@ -20,9 +20,9 @@ namespace GiapTech.SoccerRoom.API.Controllers.V1;
 public class AuthController(ISender sender) : ControllerBase
 {
     /// <summary>
-    /// Tra tên CLB theo mã đội — ĐỂ HIỂN THỊ ở trang đăng nhập, ẩn danh.
+    /// Tra tên trung tâm theo mã trung tâm — ĐỂ HIỂN THỊ ở trang đăng nhập, ẩn danh.
     ///
-    /// Mã đội 7 ký tự không có nghĩa gì với người dùng; sai một chữ thì họ nhận "Sai thông tin
+    /// Mã trung tâm 7 ký tự không có nghĩa gì với người dùng; sai một chữ thì họ nhận "Sai thông tin
     /// đăng nhập" mà không biết sai ở mã hay ở mật khẩu.
     ///
     /// Trả **404 cho cả mã sai định dạng và mã không tồn tại** — phân biệt được thì người dò biết
@@ -32,17 +32,17 @@ public class AuthController(ISender sender) : ControllerBase
     /// `POST /moi-qua-link/xem`). **Rate limit ở Caddy (nợ N3) là bắt buộc** trước khi lên
     /// Internet.
     /// </summary>
-    [HttpGet("ten-doi/{maDoi:length(7)}")]
+    [HttpGet("ten-doi/{maTrungTam:length(7)}")]
     [AllowAnonymous]
     [EnableRateLimiting(GioiHanTanSuat.TraCuu)]
-    [ProducesResponseType<TenDoiTheoMaDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<TenTrungTamTheoMaDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<TenDoiTheoMaDto>> TenDoi(string maDoi, CancellationToken ct)
-        => await sender.Send(new TraTenDoiQuery(maDoi), ct) is { } dto
+    public async Task<ActionResult<TenTrungTamTheoMaDto>> TenTrungTam(string maTrungTam, CancellationToken ct)
+        => await sender.Send(new TraTenTrungTamQuery(maTrungTam), ct) is { } dto
             ? Ok(dto)
             : NotFound();
 
-    /// <summary>FR-01 — đăng nhập bằng {ID đội, username, mật khẩu}.</summary>
+    /// <summary>FR-01 — đăng nhập bằng {mã trung tâm, username, mật khẩu}.</summary>
     [HttpPost("dang-nhap")]
     [EnableRateLimiting(GioiHanTanSuat.XacThuc)]
     [AllowAnonymous]

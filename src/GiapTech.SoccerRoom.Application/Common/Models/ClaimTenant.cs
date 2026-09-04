@@ -7,11 +7,11 @@ namespace GiapTech.SoccerRoom.Application.Common.Models;
 public static class ClaimTenant
 {
     public const string TenantId = "tenant_id";
-    public const string MaDoi = "ma_doi";
+    public const string MaTrungTam = "ma_trung_tam";
 
     /// <summary>
-    /// Tên đội — đưa vào token để sidebar hiển thị được ngay khi tải trang, không phải chờ
+    /// Tên trung tâm — đưa vào token để sidebar hiển thị được ngay khi tải trang, không phải chờ
     /// một lượt gọi API chỉ để lấy một chuỗi.
     /// </summary>
-    public const string TenDoi = "ten_doi";
+    public const string TenTrungTam = "ten_trung_tam";
 }

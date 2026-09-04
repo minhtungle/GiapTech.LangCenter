@@ -56,8 +56,8 @@ public class ChuanHoaThoiGianTests
     {
         using var db = TaoContext();
 
-        var prop = db.Model.FindEntityType(typeof(TranDau))!
-            .GetProperty(nameof(TranDau.ThoiGian));
+        var prop = db.Model.FindEntityType(typeof(RefreshToken))!
+            .GetProperty(nameof(RefreshToken.HetHan));
         var converter = prop.GetValueConverter();
         Assert.NotNull(converter);
 

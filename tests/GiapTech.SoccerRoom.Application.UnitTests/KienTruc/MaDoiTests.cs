@@ -2,14 +2,14 @@ using GiapTech.SoccerRoom.Domain.Common;
 
 namespace GiapTech.SoccerRoom.Application.UnitTests.KienTruc;
 
-/// <summary>Mã đội 7 ký tự sinh tự động — định danh CLB khi đăng nhập (FR-01).</summary>
-public class MaDoiTests
+/// <summary>Mã trung tâm 7 ký tự sinh tự động — định danh CLB khi đăng nhập (FR-01).</summary>
+public class MaTrungTamTests
 {
     [Fact]
     public void Ma_sinh_ra_dung_7_ky_tu()
     {
         for (var i = 0; i < 50; i++)
-            Assert.Equal(7, MaDoi.Sinh().Length);
+            Assert.Equal(7, MaTrungTam.Sinh().Length);
     }
 
     /// <summary>
@@ -24,16 +24,16 @@ public class MaDoiTests
     [InlineData('L')]
     public void Ma_khong_chua_ky_tu_de_nham(char kyTuCam)
     {
-        Assert.DoesNotContain(kyTuCam, MaDoi.BoKyTu);
+        Assert.DoesNotContain(kyTuCam, MaTrungTam.BoKyTu);
 
         for (var i = 0; i < 200; i++)
-            Assert.DoesNotContain(kyTuCam, MaDoi.Sinh());
+            Assert.DoesNotContain(kyTuCam, MaTrungTam.Sinh());
     }
 
     [Fact]
     public void Ma_chi_gom_chu_hoa_va_so()
     {
-        var ma = MaDoi.Sinh();
+        var ma = MaTrungTam.Sinh();
         Assert.All(ma, c => Assert.True(char.IsAsciiLetterUpper(c) || char.IsAsciiDigit(c)));
     }
 
@@ -42,7 +42,7 @@ public class MaDoiTests
     public void Hai_lan_sinh_lien_tiep_khong_trung_nhau()
     {
         var tap = new HashSet<string>();
-        for (var i = 0; i < 500; i++) tap.Add(MaDoi.Sinh());
+        for (var i = 0; i < 500; i++) tap.Add(MaTrungTam.Sinh());
 
         Assert.True(tap.Count > 490, $"Chỉ sinh được {tap.Count}/500 mã khác nhau — nghi RNG hỏng.");
     }
@@ -52,7 +52,7 @@ public class MaDoiTests
     [InlineData("  A3K9M2P  ", "A3K9M2P")]
     [InlineData("A3k9M2p", "A3K9M2P")]
     public void Chuan_hoa_bo_khoang_trang_va_chuyen_hoa(string nhap, string mongDoi)
-        => Assert.Equal(mongDoi, MaDoi.ChuanHoa(nhap));
+        => Assert.Equal(mongDoi, MaTrungTam.ChuanHoa(nhap));
 
     [Theory]
     [InlineData("A3K9M2P", true)]
@@ -63,5 +63,5 @@ public class MaDoiTests
     [InlineData("A3K9M21", false)]     // chứa 1 — không thuộc bộ ký tự
     [InlineData("", false)]
     public void Hop_le_kiem_dung_dinh_dang(string ma, bool mongDoi)
-        => Assert.Equal(mongDoi, MaDoi.HopLe(ma));
+        => Assert.Equal(mongDoi, MaTrungTam.HopLe(ma));
 }

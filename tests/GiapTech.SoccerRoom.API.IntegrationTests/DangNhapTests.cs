@@ -7,7 +7,7 @@ namespace GiapTech.SoccerRoom.API.IntegrationTests;
 /// <summary>FR-01 — đăng nhập qua API thật, đủ middleware.</summary>
 public class DangNhapTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private record Req(string MaDoi, string Username, string MatKhau);
+    private record Req(string MaTrungTam, string Username, string MatKhau);
 
     private async Task<(HttpStatusCode, JsonElement)> Post(Req req)
     {
@@ -20,7 +20,7 @@ public class DangNhapTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Dang_nhap_dung_thi_tra_ve_token()
     {
-        var (status, body) = await Post(new Req(factory.MaDoiA, "admin", "123456"));
+        var (status, body) = await Post(new Req(factory.MaTrungTamA, "admin", "123456"));
 
         Assert.Equal(HttpStatusCode.OK, status);
         Assert.False(string.IsNullOrWhiteSpace(body.GetProperty("accessToken").GetString()));
@@ -33,7 +33,7 @@ public class DangNhapTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Sai_mat_khau_tra_ve_ma_loi_chung()
     {
-        var (status, body) = await Post(new Req(factory.MaDoiA, "admin", "sai-mat-khau"));
+        var (status, body) = await Post(new Req(factory.MaTrungTamA, "admin", "sai-mat-khau"));
 
         Assert.Equal(HttpStatusCode.BadRequest, status);
         Assert.Equal("DANG_NHAP_THAT_BAI", body.GetProperty("errorCode").GetString());
@@ -41,14 +41,14 @@ public class DangNhapTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
     /// <summary>
     /// Ba trường hợp sai phải trả về CÙNG một mã lỗi. Nếu phân biệt được, kẻ tấn công dò ra
-    /// CLB nào tồn tại và tài khoản nào có thật.
+    /// trung tâm nào tồn tại và tài khoản nào có thật.
     /// </summary>
     [Fact]
     public async Task Khong_phan_biet_sai_tenant_sai_user_hay_sai_mat_khau()
     {
         var (s1, b1) = await Post(new Req("CLB-KHONG-TON-TAI", "admin", "123456"));
-        var (s2, b2) = await Post(new Req(factory.MaDoiA, "user-khong-ton-tai", "123456"));
-        var (s3, b3) = await Post(new Req(factory.MaDoiA, "admin", "sai"));
+        var (s2, b2) = await Post(new Req(factory.MaTrungTamA, "user-khong-ton-tai", "123456"));
+        var (s3, b3) = await Post(new Req(factory.MaTrungTamA, "admin", "sai"));
 
         Assert.Equal(s1, s2);
         Assert.Equal(s2, s3);
@@ -60,8 +60,8 @@ public class DangNhapTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Username_trung_nhau_o_hai_tenant_van_dang_nhap_dung_tenant()
     {
-        var (sA, bA) = await Post(new Req(factory.MaDoiA, "admin", "123456"));
-        var (sB, bB) = await Post(new Req(factory.MaDoiB, "admin", "123456"));
+        var (sA, bA) = await Post(new Req(factory.MaTrungTamA, "admin", "123456"));
+        var (sB, bB) = await Post(new Req(factory.MaTrungTamB, "admin", "123456"));
 
         Assert.Equal(HttpStatusCode.OK, sA);
         Assert.Equal(HttpStatusCode.OK, sB);

@@ -4,14 +4,14 @@ namespace GiapTech.SoccerRoom.Application.Common.Interfaces;
 public record AnhTaiVe(Stream NoiDung, string LoaiNoiDung);
 
 /// <summary>
-/// Kho lưu trữ ảnh (avatar cầu thủ, logo/ảnh bìa CLB).
+/// Kho lưu trữ ảnh (logo, ảnh bìa, mã QR của trung tâm).
 ///
 /// Trừu tượng hoá để `Application` không biết tới MinIO — cài đặt nằm ở `Infrastructure`
 /// (quy tắc #10). Đổi sang S3 hay ổ đĩa cục bộ sau này chỉ cần thay lớp cài đặt.
 ///
 /// **Khoá ảnh mang tenant ở đầu** (`{tenantId}/{loai}/{guid}.jpg`): kho lưu trữ không có
 /// Global Query Filter như EF Core, nên cách ly phải nằm ngay trong đường dẫn. Không có nó
-/// thì đoán được khoá của CLB khác là đọc được ảnh của họ.
+/// thì đoán được khoá của trung tâm khác là đọc được ảnh của họ.
 /// </summary>
 public interface ILuuTruAnh
 {

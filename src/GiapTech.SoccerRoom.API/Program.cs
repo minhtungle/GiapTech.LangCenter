@@ -81,7 +81,7 @@ builder.Services.AddScoped<IAuthorizationHandler, QuyenAuthorizationHandler>();
 
 builder.Services.AddSwaggerGen(o =>
 {
-    o.SwaggerDoc("v1", new OpenApiInfo { Title = "SoccerRoom API", Version = "v1" });
+    o.SwaggerDoc("v1", new OpenApiInfo { Title = "LangCenter LMS API", Version = "v1" });
     o.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Type = SecuritySchemeType.Http,
@@ -167,11 +167,9 @@ app.MapHealthChecks("/health").AllowAnonymous();
 // trường: "Production"/"Development" là thông tin thừa với người dùng và thừa với người dò.
 app.MapGet("/api/v1/tinh-nang", () => Results.Ok(new
 {
-    // Đăng ký CLB mở ở MỌI môi trường từ 20/08/2026 (nợ N4) — luồng lời mời qua link cần nó.
-    //
     // Giữ cờ này thay vì xoá: nó là hợp đồng với frontend, và nếu sau này cần đóng đăng ký
     // (spam quá nhiều chẳng hạn) thì đổi ở đây là xong, không phải sửa cả trang đăng nhập.
-    dangKyClb = true,
+    dangKyTrungTam = true,
 })).AllowAnonymous();
 
 app.Run();

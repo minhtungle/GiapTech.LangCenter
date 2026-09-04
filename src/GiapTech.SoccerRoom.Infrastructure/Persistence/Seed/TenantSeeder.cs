@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GiapTech.SoccerRoom.Infrastructure.Persistence.Seed;
 
-/// <summary>Khởi tạo CLB mới với admin mặc định và nhóm quyền đầy đủ.</summary>
+/// <summary>Khởi tạo trung tâm mới với admin mặc định và nhóm quyền đầy đủ.</summary>
 public class TenantSeeder(AppDbContext db, IPasswordHasher hasher, ICurrentTenant currentTenant)
     : ITenantSeeder
 {
@@ -17,14 +17,14 @@ public class TenantSeeder(AppDbContext db, IPasswordHasher hasher, ICurrentTenan
     private const int SoLanThuSinhMa = 10;
 
     public async Task<Tenant> TaoTenantMoiAsync(
-        string tenDoi, string matKhauAdmin = "123456", CancellationToken ct = default)
+        string tenTrungTam, string matKhauAdmin = "123456", CancellationToken ct = default)
     {
-        var maDoi = await SinhMaChuaDungAsync(ct);
+        var maTrungTam = await SinhMaChuaDungAsync(ct);
 
-        var tenant = new Tenant { MaDoi = maDoi, TenDoi = tenDoi };
+        var tenant = new Tenant { MaTrungTam = maTrungTam, TenTrungTam = tenTrungTam };
         db.Tenants.Add(tenant);
 
-        // SaveChanges tự gán tenant_id theo ICurrentTenant, nhưng lúc tạo CLB mới thì
+        // SaveChanges tự gán tenant_id theo ICurrentTenant, nhưng lúc tạo trung tâm mới thì
         // context chưa có tenant nào. Đặt phạm vi tường minh để các bản ghi bên dưới
         // nhận đúng tenant vừa tạo.
         using var _ = currentTenant.DatPhamVi(tenant.Id);
@@ -60,10 +60,7 @@ public class TenantSeeder(AppDbContext db, IPasswordHasher hasher, ICurrentTenan
             PasswordHash = hasher.Bam(matKhauAdmin),
             // Mật khẩu mặc định ai cũng biết → bắt buộc đổi trước khi vào hệ thống (FR-01).
             PhaiDoiMatKhau = true,
-            TrangThai = TrangThaiNguoiDung.HoatDong,
-            // Admin của CLB mới là trưởng nhóm mặc định — không thì không ai gửi được lời
-            // mời đăng ký và tính năng hòm thư nằm chết cho tới khi có người tự bật cờ.
-            LaTruongNhom = true
+            TrangThai = TrangThaiNguoiDung.HoatDong
         };
         db.NguoiDungs.Add(admin);
 
@@ -90,16 +87,16 @@ public class TenantSeeder(AppDbContext db, IPasswordHasher hasher, ICurrentTenan
     {
         for (var i = 0; i < SoLanThuSinhMa; i++)
         {
-            var ma = MaDoi.Sinh();
+            var ma = MaTrungTam.Sinh();
 
             var daDung = await db.Tenants
                 .IgnoreQueryFilters()
-                .AnyAsync(t => t.MaDoi == ma, ct);
+                .AnyAsync(t => t.MaTrungTam == ma, ct);
 
             if (!daDung) return ma;
         }
 
         throw new InvalidOperationException(
-            $"Không sinh được mã đội chưa dùng sau {SoLanThuSinhMa} lần thử.");
+            $"Không sinh được mã trung tâm chưa dùng sau {SoLanThuSinhMa} lần thử.");
     }
 }

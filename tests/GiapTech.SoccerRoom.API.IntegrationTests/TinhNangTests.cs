@@ -31,14 +31,14 @@ public class TinhNangTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task Khai_dangKyClb_bang_true_o_Development()
+    public async Task Khai_dangKyTrungTam_bang_true_o_Development()
     {
         // ApiFactory chạy ở Development (xem UseEnvironment), nơi DangKyClbController mở.
         var client = factory.CreateClient();
 
         var body = await client.GetFromJsonAsync<JsonElement>("/api/v1/tinh-nang");
 
-        Assert.True(body.GetProperty("dangKyClb").GetBoolean());
+        Assert.True(body.GetProperty("dangKyTrungTam").GetBoolean());
     }
 
     [Fact]
@@ -49,10 +49,10 @@ public class TinhNangTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var client = factory.CreateClient();
 
         var tinhNang = await client.GetFromJsonAsync<JsonElement>("/api/v1/tinh-nang");
-        var choPhep = tinhNang.GetProperty("dangKyClb").GetBoolean();
+        var choPhep = tinhNang.GetProperty("dangKyTrungTam").GetBoolean();
 
-        var dangKy = await client.PostAsJsonAsync("/api/v1/dang-ky-clb",
-            new { TenDoi = "CLB kiểm cờ tính năng" });
+        var dangKy = await client.PostAsJsonAsync("/api/v1/dang-ky-trung-tam",
+            new { TenTrungTam = "Trung tâm kiểm cờ tính năng" });
 
         if (choPhep)
             Assert.NotEqual(HttpStatusCode.NotFound, dangKy.StatusCode);
@@ -61,30 +61,30 @@ public class TinhNangTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task Dang_ky_CLB_MO_o_ca_Production()
+    public async Task Dang_ky_trung_tam_MO_o_ca_Production()
     {
-        // ĐỔI HÀNH VI CÓ CHỦ Ý (20/08/2026, nợ N4): trước đây `/dang-ky-clb` chỉ bật ở
+        // Endpoint `/dang-ky-trung-tam` mở ở MỌI môi trường: trước đây chỉ bật ở
         // Development. Giờ mở ở mọi môi trường vì luồng lời mời qua link (FR-18) có ca phổ biến
         // nhất là "đối thủ chưa có tài khoản" — họ bấm link, tạo đội ngay, rồi chấp nhận.
         //
-        // Hai test cũ (`Khai_dangKyClb_bang_false_o_Production`,
+        // Hai test cũ (`Khai_dangKyTrungTam_bang_false_o_Production`,
         // `O_Production_co_tat_va_endpoint_dang_ky_tra_404`) canh hành vi cũ và đã được thay
         // bằng test này.
         using var prod = new ApiFactoryProduction();
         var client = prod.CreateClient();
 
         var tinhNang = await client.GetFromJsonAsync<JsonElement>("/api/v1/tinh-nang");
-        Assert.True(tinhNang.GetProperty("dangKyClb").GetBoolean());
+        Assert.True(tinhNang.GetProperty("dangKyTrungTam").GetBoolean());
 
-        var dangKy = await client.PostAsJsonAsync("/api/v1/dang-ky-clb",
-            new { TenDoi = "CLB tạo ở Production" });
+        var dangKy = await client.PostAsJsonAsync("/api/v1/dang-ky-trung-tam",
+            new { TenTrungTam = "Trung tâm tạo ở Production" });
         Assert.Equal(HttpStatusCode.OK, dangKy.StatusCode);
 
         // Và đăng nhập được ngay bằng thông tin trả về.
         var clb = await dangKy.Content.ReadFromJsonAsync<JsonElement>();
         var dn = await client.PostAsJsonAsync("/api/v1/auth/dang-nhap", new
         {
-            MaDoi = clb.GetProperty("maDoi").GetString(),
+            MaTrungTam = clb.GetProperty("maTrungTam").GetString(),
             Username = clb.GetProperty("username").GetString(),
             MatKhau = clb.GetProperty("matKhau").GetString(),
         });
@@ -101,6 +101,6 @@ public class TinhNangTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var body = await client.GetFromJsonAsync<JsonElement>("/api/v1/tinh-nang");
 
         var truong = body.EnumerateObject().Select(p => p.Name).ToList();
-        Assert.Equal(new[] { "dangKyClb" }, truong);
+        Assert.Equal(new[] { "dangKyTrungTam" }, truong);
     }
 }

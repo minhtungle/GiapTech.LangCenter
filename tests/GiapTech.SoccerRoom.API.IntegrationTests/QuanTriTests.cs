@@ -5,17 +5,17 @@ using System.Text.Json;
 
 namespace GiapTech.SoccerRoom.API.IntegrationTests;
 
-/// <summary>Cụm quản trị hệ thống — FR-03 tài khoản, FR-04 cầu thủ, FR-05 quyền, FR-06 thiết lập.</summary>
+/// <summary>Cụm quản trị hệ thống — FR-03 tài khoản, FR-05 quyền, FR-06 thiết lập.</summary>
 public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    /// <param name="maDoi">Null = dùng CLB A. Không đặt mặc định được vì mã do seeder sinh
+    /// <param name="maTrungTam">Null = dùng trung tâm A. Không đặt mặc định được vì mã do seeder sinh
     /// lúc chạy, mà tham số mặc định phải là hằng biên dịch.</param>
-    private async Task<HttpClient> Client(string? maDoi = null, string user = "manager",
+    private async Task<HttpClient> Client(string? maTrungTam = null, string user = "manager",
         string mk = "manager123")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaDoi = maDoi ?? factory.MaDoiA, Username = user, MatKhau = mk });
+            new { MaTrungTam = maTrungTam ?? factory.MaTrungTamA, Username = user, MatKhau = mk });
         res.EnsureSuccessStatusCode();
         var body = await res.Content.ReadFromJsonAsync<JsonElement>();
 
@@ -25,60 +25,53 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
         return client;
     }
 
-    // ---------- FR-04 hồ sơ cầu thủ ----------
+    // ---------- FR-03 cách ly tenant ở tầng GHI ----------
 
+    /// <summary>
+    /// Cách ly tenant ở tầng GHI, không chỉ tầng đọc: trung tâm B không đọc/sửa/xoá được tài
+    /// khoản của trung tâm A dù biết đúng id.
+    ///
+    /// Query Filter lo phần đọc; phần ghi dựa vào việc handler tìm bản ghi qua cùng filter đó
+    /// trước khi sửa. Test này canh đúng chỗ đó — bỏ `FirstOrDefault` đi mà `Update` thẳng thì
+    /// nó đỏ.
+    /// </summary>
     [Fact]
-    public async Task Tao_va_doc_lai_ho_so_cau_thu()
+    public async Task Khong_sua_duoc_tai_khoan_cua_tenant_khac()
     {
-        var client = await Client();
-
-        var tao = await client.PostAsJsonAsync("/api/v1/cau-thu", new
+        var clientA = await Client(factory.MaTrungTamA);
+        var tao = await clientA.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
-            HoTen = "Nguyễn Văn Test",
-            NgaySinh = "1995-05-20",
-            NgayThamGia = "2024-01-15"
+            Username = "chicuaa",
+            MatKhau = "matkhau123",
+            Email = (string?)null,
+            SoDienThoai = (string?)null,
+            DiaChi = (string?)null,
+            QuyenIds = Array.Empty<Guid>(),
+            PhaiDoiMatKhau = false
         });
-
-        Assert.Equal(HttpStatusCode.Created, tao.StatusCode);
-        var id = await tao.Content.ReadFromJsonAsync<Guid>();
-
-        var chiTiet = await client.GetFromJsonAsync<JsonElement>($"/api/v1/cau-thu/{id}");
-        Assert.Equal("Nguyễn Văn Test", chiTiet.GetProperty("hoTen").GetString());
-
-        // Cầu thủ mới chưa gắn tài khoản nào (FR-04: độc lập với NGUOI_DUNG).
-        Assert.False(chiTiet.GetProperty("coTaiKhoan").GetBoolean());
-    }
-
-    [Fact]
-    public async Task Ho_so_cau_thu_thieu_ho_ten_bi_tu_choi()
-    {
-        var client = await Client();
-        var res = await client.PostAsJsonAsync("/api/v1/cau-thu", new { HoTen = "" });
-
-        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
-        var body = await res.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal("DU_LIEU_KHONG_HOP_LE", body.GetProperty("errorCode").GetString());
-    }
-
-    /// <summary>Cách ly tenant ở tầng ghi: CLB B không sửa/xóa được cầu thủ của CLB A.</summary>
-    [Fact]
-    public async Task Khong_sua_duoc_cau_thu_cua_tenant_khac()
-    {
-        var clientA = await Client(factory.MaDoiA);
-        var tao = await clientA.PostAsJsonAsync("/api/v1/cau-thu", new { HoTen = "Chỉ của A" });
+        tao.EnsureSuccessStatusCode();
         var idCuaA = await tao.Content.ReadFromJsonAsync<Guid>();
 
-        var clientB = await Client(factory.MaDoiB);
+        var clientB = await Client(factory.MaTrungTamB);
 
-        var doc = await clientB.GetAsync($"/api/v1/cau-thu/{idCuaA}");
-        Assert.Equal(HttpStatusCode.NotFound, doc.StatusCode);
-
-        var sua = await clientB.PutAsJsonAsync($"/api/v1/cau-thu/{idCuaA}",
-            new { Id = idCuaA, HoTen = "Bị B sửa" });
+        var sua = await clientB.PutAsJsonAsync($"/api/v1/tai-khoan/{idCuaA}", new
+        {
+            Id = idCuaA,
+            Email = "bi-b-sua@example.com",
+            SoDienThoai = (string?)null,
+            DiaChi = (string?)null,
+            QuyenIds = Array.Empty<Guid>(),
+            TrangThai = 0
+        });
         Assert.Equal(HttpStatusCode.NotFound, sua.StatusCode);
 
-        var xoa = await clientB.DeleteAsync($"/api/v1/cau-thu/{idCuaA}");
+        var xoa = await clientB.DeleteAsync($"/api/v1/tai-khoan/{idCuaA}");
         Assert.Equal(HttpStatusCode.NotFound, xoa.StatusCode);
+
+        // Và A không hề bị ảnh hưởng.
+        var dsA = await clientA.GetFromJsonAsync<JsonElement>("/api/v1/tai-khoan?timKiem=chicuaa");
+        var emailA = dsA.GetProperty("duLieu")[0].GetProperty("email");
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, emailA.ValueKind);
     }
 
     // ---------- FR-05 phân quyền ----------
@@ -158,7 +151,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         // Tài khoản vừa tạo phải đăng nhập được ngay.
         var dangNhap = await factory.CreateClient().PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaDoi = factory.MaDoiA, Username = "nhanvien1", MatKhau = "matkhau123" });
+            new { MaTrungTam = factory.MaTrungTamA, Username = "nhanvien1", MatKhau = "matkhau123" });
         Assert.Equal(HttpStatusCode.OK, dangNhap.StatusCode);
     }
 
@@ -169,7 +162,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var res = await client.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
-            Username = "admin", // đã tồn tại trong CLB-A
+            Username = "admin", // đã tồn tại trong trung tâm A
             MatKhau = "matkhau123",
             QuyenIds = Array.Empty<Guid>()
         });
@@ -179,15 +172,15 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal("USERNAME_DA_TON_TAI", body.GetProperty("errorCode").GetString());
     }
 
-    /// <summary>Không gán được nhóm quyền của CLB khác — id thuộc tenant khác phải bị từ chối.</summary>
+    /// <summary>Không gán được nhóm quyền của trung tâm khác — id thuộc tenant khác phải bị từ chối.</summary>
     [Fact]
     public async Task Khong_gan_duoc_quyen_cua_tenant_khac()
     {
-        var clientB = await Client(factory.MaDoiB);
+        var clientB = await Client(factory.MaTrungTamB);
         var quyenCuaB = (await clientB.GetFromJsonAsync<List<JsonElement>>("/api/v1/quyen"))![0]
             .GetProperty("id").GetGuid();
 
-        var clientA = await Client(factory.MaDoiA);
+        var clientA = await Client(factory.MaTrungTamA);
         var res = await clientA.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
             Username = "user-lai-quyen",
@@ -224,7 +217,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.NoContent, datLai.StatusCode);
 
         var dangNhap = await factory.CreateClient().PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaDoi = factory.MaDoiA, Username = "bi-dat-lai-mk", MatKhau = "matkhautam123" });
+            new { MaTrungTam = factory.MaTrungTamA, Username = "bi-dat-lai-mk", MatKhau = "matkhautam123" });
 
         var body = await dangNhap.Content.ReadFromJsonAsync<JsonElement>();
         Assert.True(body.GetProperty("phaiDoiMatKhau").GetBoolean());
@@ -239,17 +232,17 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var cn = await client.PutAsJsonAsync("/api/v1/thiet-lap", new
         {
-            TenDoi = "FC Đã Đổi Tên",
+            TenTrungTam = "FC Đã Đổi Tên",
             TenVietTat = "FCDDT",
             MoTa = "Mô tả mới"
         });
         Assert.Equal(HttpStatusCode.NoContent, cn.StatusCode);
 
         var doc = await client.GetFromJsonAsync<JsonElement>("/api/v1/thiet-lap");
-        Assert.Equal("FC Đã Đổi Tên", doc.GetProperty("tenDoi").GetString());
+        Assert.Equal("FC Đã Đổi Tên", doc.GetProperty("tenTrungTam").GetString());
 
-        // MaDoi không đổi được: người dùng gõ nó mỗi lần đăng nhập.
-        Assert.Equal(factory.MaDoiA, doc.GetProperty("maDoi").GetString());
+        // MaTrungTam không đổi được: người dùng gõ nó mỗi lần đăng nhập.
+        Assert.Equal(factory.MaTrungTamA, doc.GetProperty("maTrungTam").GetString());
     }
 
     // ---------- Phân quyền trên cụm quản trị ----------
@@ -257,10 +250,10 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Player_khong_quyen_bi_tu_choi_moi_endpoint_quan_tri()
     {
-        var client = await Client(factory.MaDoiA, "player", "player123");
+        var client = await Client(factory.MaTrungTamA, "player", "player123");
 
         foreach (var url in new[]
-                 { "/api/v1/cau-thu", "/api/v1/tai-khoan", "/api/v1/quyen", "/api/v1/thiet-lap" })
+                 { "/api/v1/tai-khoan", "/api/v1/quyen", "/api/v1/thiet-lap" })
         {
             var res = await client.GetAsync(url);
             Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);

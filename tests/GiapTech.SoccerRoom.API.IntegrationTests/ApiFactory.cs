@@ -27,7 +27,7 @@ public class ApiFactory : WebApplicationFactory<Program>
     public Guid TenantBId { get; private set; }
 
     /// <summary>
-    /// CLB thứ ba, dùng làm **mồi** cho test cách ly ba chiều.
+    /// Trung tâm thứ ba, dùng làm **mồi** cho test cách ly ba chiều.
     ///
     /// Hai tenant chỉ kiểm được "A không thấy dữ liệu B". Có trường hợp cần ba: khi cờ trả về
     /// phụ thuộc dữ liệu của tenant nào — A tra mã C, trong khi chỉ B mới có C trong sổ. Với
@@ -36,42 +36,42 @@ public class ApiFactory : WebApplicationFactory<Program>
     public Guid TenantCId { get; private set; }
 
     /// <summary>
-    /// Mã đội do seeder sinh — test không đoán trước được nên phải đọc từ đây.
+    /// Mã trung tâm do seeder sinh — test không đoán trước được nên phải đọc từ đây.
     ///
     /// Truy cập property này ép host khởi tạo (và do đó chạy seed) nếu chưa. Không có bước
     /// đó, test nào đọc mã TRƯỚC khi gọi CreateClient() sẽ nhận chuỗi rỗng và đăng nhập
     /// thất bại với lỗi 400 rất khó lần ra nguyên nhân.
     /// </summary>
-    public string MaDoiA
+    public string MaTrungTamA
     {
-        get { BaoDamDaSeed(); return _maDoiA; }
+        get { BaoDamDaSeed(); return _maTrungTamA; }
     }
 
-    public string MaDoiB
+    public string MaTrungTamB
     {
-        get { BaoDamDaSeed(); return _maDoiB; }
+        get { BaoDamDaSeed(); return _maTrungTamB; }
     }
 
-    public string MaDoiC
+    public string MaTrungTamC
     {
-        get { BaoDamDaSeed(); return _maDoiC; }
+        get { BaoDamDaSeed(); return _maTrungTamC; }
     }
 
-    private string _maDoiA = "";
-    private string _maDoiB = "";
-    private string _maDoiC = "";
+    private string _maTrungTamA = "";
+    private string _maTrungTamB = "";
+    private string _maTrungTamC = "";
 
     private void BaoDamDaSeed()
     {
         // Services là lazy: chạm vào nó sẽ dựng host, kéo theo CreateHost và seed.
-        if (_maDoiA.Length == 0) _ = Services;
+        if (_maTrungTamA.Length == 0) _ = Services;
     }
 
     private readonly string _tenDb = $"api-test-{Guid.NewGuid()}";
 
     /// <summary>
     /// Môi trường ứng dụng chạy. Lớp con ghi đè để kiểm hành vi khác biệt theo môi trường —
-    /// mà quan trọng nhất là những thứ chỉ MỞ ở Development (đăng ký CLB ẩn danh, Swagger).
+    /// mà quan trọng nhất là những thứ chỉ MỞ ở Development (đăng ký trung tâm ẩn danh, Swagger).
     ///
     /// Không có nó thì test "cờ tính năng khớp hành vi thật" là vô nghĩa: ở Development cả cờ
     /// lẫn endpoint đều bật, nên `env.IsDevelopment()` và hằng `true` cho cùng kết quả.
@@ -142,7 +142,7 @@ public class ApiFactory : WebApplicationFactory<Program>
     }
 
     /// <summary>
-    /// Hai CLB, mỗi CLB một admin đủ quyền và một player không quyền.
+    /// Ba trung tâm, mỗi trung tâm một admin đủ quyền, một manager và một player không quyền.
     ///
     /// Dùng chính <see cref="ITenantSeeder"/> của production thay vì dựng dữ liệu bằng tay:
     /// mọi test bên dưới do đó cũng là bằng chứng seeder chạy đúng, và dữ liệu test không
@@ -161,8 +161,8 @@ public class ApiFactory : WebApplicationFactory<Program>
 
         foreach (var nhan in new[] { "A", "B", "C" })
         {
-            // Mã đội do hệ thống sinh, test đọc lại từ kết quả thay vì tự đặt.
-            var tenant = seeder.TaoTenantMoiAsync($"Đội {nhan}").GetAwaiter().GetResult();
+            // Mã trung tâm do hệ thống sinh, test đọc lại từ kết quả thay vì tự đặt.
+            var tenant = seeder.TaoTenantMoiAsync($"Trung tâm {nhan}").GetAwaiter().GetResult();
 
             using var _ = currentTenant.DatPhamVi(tenant.Id);
 
@@ -192,39 +192,11 @@ public class ApiFactory : WebApplicationFactory<Program>
                 TenantId = tenant.Id, NguoiDungId = manager.Id, QuyenId = quyenQuanTri.Id
             });
 
-            // Trưởng nhóm: cùng quyền với manager nhưng CÓ cờ LaTruongNhom. Cần cả hai để
-            // kiểm chứng cờ này thật sự chặn — dùng chung một tài khoản thì test "không phải
-            // trưởng nhóm bị chặn" không viết được.
-            var truongNhom = new NguoiDung
-            {
-                TenantId = tenant.Id,
-                Username = "truongnhom",
-                PasswordHash = hasher.Bam("truongnhom123"),
-                PhaiDoiMatKhau = false,
-                LaTruongNhom = true
-            };
-            db.NguoiDungs.Add(truongNhom);
-            db.NguoiDungQuyens.Add(new NguoiDungQuyen
-            {
-                TenantId = tenant.Id, NguoiDungId = truongNhom.Id, QuyenId = quyenQuanTri.Id
-            });
-
-            // Trưởng nhóm GẮN hồ sơ cầu thủ: ngoài việc gửi lời mời, họ cũng là người đá bóng
-            // nên phải tự trả lời được. Tài khoản quản lý thuần tuý (không gắn hồ sơ) là
-            // trường hợp riêng, kiểm bằng `manager`.
-            var cauThuTruongNhom = new CauThu
-            {
-                TenantId = tenant.Id, HoTen = $"Trưởng nhóm CLB-{nhan}"
-            };
-            db.CauThus.Add(cauThuTruongNhom);
-            truongNhom.CauThuId = cauThuTruongNhom.Id;
-
-            db.CauThus.Add(new CauThu { TenantId = tenant.Id, HoTen = $"Cầu thủ của CLB-{nhan}" });
             db.SaveChanges();
 
-            if (nhan == "A") { TenantAId = tenant.Id; _maDoiA = tenant.MaDoi; }
-            else if (nhan == "B") { TenantBId = tenant.Id; _maDoiB = tenant.MaDoi; }
-            else { TenantCId = tenant.Id; _maDoiC = tenant.MaDoi; }
+            if (nhan == "A") { TenantAId = tenant.Id; _maTrungTamA = tenant.MaTrungTam; }
+            else if (nhan == "B") { TenantBId = tenant.Id; _maTrungTamB = tenant.MaTrungTam; }
+            else { TenantCId = tenant.Id; _maTrungTamC = tenant.MaTrungTam; }
         }
     }
 
