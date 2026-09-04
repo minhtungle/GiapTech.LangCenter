@@ -10,17 +10,31 @@
 
 ## 1. Dự án này là gì
 
-Ứng dụng web **quản lý câu lạc bộ đá bóng phong trào**, mô hình **multi-tenant** — mỗi CLB đăng ký là
-một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`. Đăng nhập bằng bộ ba
-**{ID đội, tên đăng nhập, mật khẩu}**.
+**Hệ thống quản lý trung tâm ngoại ngữ (LMS)**, mô hình **multi-tenant** — mỗi trung tâm đăng ký
+là một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`. Đăng nhập bằng bộ ba
+**{mã trung tâm, tên đăng nhập, mật khẩu}**.
 
 **Tên chuẩn:** `GiapTech.LangCenter.LMS` (namespace, solution, image `ghcr.io/giaptech/langcenter-lms-api`).
 
-5 module · 16 mã FR · 3 actor (Admin / Manager / Player) — đọc 1 mạch ở
-[`docs/tong-thuat.md`](./docs/tong-thuat.md).
+### ⚠️ Trạng thái: BASE, chưa có nghiệp vụ
 
-**Trạng thái:** ✅ **đủ 20 mã FR, chạy đầu-cuối trên PostgreSQL thật**. 399 test backend + 57 E2E xanh.
-Còn lại là nợ kỹ thuật (test E2E, triển khai VPS) — xem [`docs/ke-hoach.md`](./docs/ke-hoach.md).
+Dự án này tách ra từ một ứng dụng quản lý CLB đá bóng đã hoàn thiện (04/09/2026), **giữ lại
+toàn bộ tầng hệ thống và bỏ hết nghiệp vụ bóng đá**. Những gì đang chạy:
+
+| Có sẵn, dùng được ngay | Chưa có |
+|---|---|
+| Multi-tenant + Global Query Filter tự động | Nghiệp vụ LMS (lớp, học viên, giáo viên, học phí, điểm danh) |
+| Phân quyền động đọc từ `QUYEN_CHUC_NANG` | Màn Tổng quan có nội dung (đang là khung dẫn đường) |
+| JWT access + refresh token có xoay vòng | |
+| Đăng nhập, quên mật khẩu, buộc đổi mật khẩu lần đầu | |
+| CRUD tài khoản · nhóm quyền · thiết lập chung | |
+| Tải ảnh (logo / ảnh bìa / QR) qua MinIO | |
+| Clean Architecture 4 lớp + test canh luật phụ thuộc | |
+
+**126 test backend xanh** (35 unit + 91 integration), build 0 warning, frontend typecheck sạch.
+
+> **Tài liệu trong `docs/` vẫn là của dự án bóng đá** — cố ý giữ nguyên để tham khảo cách viết
+> FR/ERD/ADR. Khi có thiết kế LMS thì cập nhật, đừng coi `docs/nghiep-vu/` là nghiệp vụ hiện tại.
 
 ---
 
@@ -40,18 +54,22 @@ Còn lại là nợ kỹ thuật (test E2E, triển khai VPS) — xem [`docs/ke-
    Canh bởi `CapNhatKhongMatDuLieuTests`.
 
 2. **Mọi bảng nghiệp vụ có `tenant_id` + EF Core Global Query Filter** — không được quên ở entity mới.
-   Rò rỉ dữ liệu chéo CLB là lỗi nghiêm trọng nhất hệ thống này có thể mắc.
+   Rò rỉ dữ liệu chéo trung tâm là lỗi nghiêm trọng nhất hệ thống này có thể mắc.
    → [multi-tenant.md](./docs/backend/multi-tenant.md)
 3. **API không hard-code message lỗi một ngôn ngữ** — trả **mã lỗi**, frontend dịch qua `react-i18next`.
    → [cqrs-mediatr.md](./docs/backend/cqrs-mediatr.md#trả-lỗi)
 4. **Đổi schema/API → cập nhật tài liệu trong cùng PR**, không tách "làm sau".
 5. **Không push thẳng `main`**, không force-push, không amend commit đã publish, không `--no-verify`
    (trừ yêu cầu tường minh). → [CONTRIBUTING.md](./CONTRIBUTING.md)
-6. **Mọi service ngoài Caddy không expose port ra Internet.**
+6. **Mọi service ngoài reverse proxy không expose port ra Internet.**
    → [ADR-0004](./docs/kien-truc/adr/0004-ha-tang-tu-host-vps.md)
 7. **Quyết định kiến trúc lớn/khó đảo ngược → viết ADR mới**, không sửa đè ADR cũ.
-8. **Mỗi cầu thủ chỉ vote MVP 1 lần/trận** — `UNIQUE(tran_dau_id, nguoi_vote_id)` ở **tầng DB**, không
-   chỉ chặn ở UI. → [ERD](./docs/database/erd.md#ràng-buộc-nghiệp-vụ-quan-trọng)
+8. **Ràng buộc "chỉ một" phải là UNIQUE INDEX ở tầng DB**, không chỉ `if` trong handler.
+   Kiểm bằng `AnyAsync` rồi `Add` là bẫy kinh điển: hai request song song đều thấy "chưa có" và
+   đều ghi. Thêm ràng buộc kiểu này → thêm một dòng `InlineData` vào `DongThoiTests`.
+   Lưu ý riêng của multi-tenant: username duy nhất **trong tenant**, tức
+   `UNIQUE(tenant_id, username)` — làm `UNIQUE(username)` toàn cục sẽ chặn hai trung tâm cùng có
+   tài khoản `admin`.
 9. **Phân quyền đọc động từ bảng `QUYEN_CHUC_NANG`** — không hard-code `[Authorize(Roles=...)]`.
    → [phan-quyen-dong.md](./docs/backend/phan-quyen-dong.md)
 10. **`Domain` không phụ thuộc EF Core / ASP.NET Core** — cấu hình EF đặt ở `Infrastructure`.
@@ -63,17 +81,12 @@ Còn lại là nợ kỹ thuật (test E2E, triển khai VPS) — xem [`docs/ke-
 
 ## 3. Bản đồ tài liệu
 
+**Tài liệu kỹ thuật — vẫn đúng, dùng được ngay:**
+
 | Cần biết gì | Đọc ở đâu |
 |---|---|
-| **Tiến độ, lộ trình, nợ kỹ thuật** | [`docs/ke-hoach.md`](./docs/ke-hoach.md) |
-| **Bộ dữ liệu mẫu để test tay** (1 lệnh curl) | [`docs/du-lieu-mau.md`](./docs/du-lieu-mau.md) |
-| **Rà soát hệ thống 20/08** — đã kiểm gì, còn gì | [`docs/ra-soat-20-08.md`](./docs/ra-soat-20-08.md) |
-| **Nhật ký theo ngày** (bối cảnh git log không có) | [`docs/nhat-ky/`](./docs/nhat-ky/README.md) |
-| Tổng quan nghiệp vụ, đọc 1 mạch | [`docs/tong-thuat.md`](./docs/tong-thuat.md) |
-| **16 mã FR** theo module | [`docs/nghiep-vu/`](./docs/nghiep-vu/README.md) |
-| **ERD 16 bảng** + ràng buộc | [`docs/database/erd.md`](./docs/database/erd.md) |
-| Quy ước đặt tên, migration EF Core | [`docs/database/quy-uoc-migration.md`](./docs/database/quy-uoc-migration.md) |
 | Clean Architecture, luật phụ thuộc | [`docs/backend/clean-architecture.md`](./docs/backend/clean-architecture.md) |
+| Quy ước đặt tên, migration EF Core | [`docs/database/quy-uoc-migration.md`](./docs/database/quy-uoc-migration.md) |
 | CQRS/MediatR, tổ chức handler theo FR | [`docs/backend/cqrs-mediatr.md`](./docs/backend/cqrs-mediatr.md) |
 | Multi-tenant, chỗ Query Filter **không** bảo vệ | [`docs/backend/multi-tenant.md`](./docs/backend/multi-tenant.md) |
 | Phân quyền động | [`docs/backend/phan-quyen-dong.md`](./docs/backend/phan-quyen-dong.md) |
@@ -82,10 +95,23 @@ Còn lại là nợ kỹ thuật (test E2E, triển khai VPS) — xem [`docs/ke-
 | Hạ tầng, VPS, runbook sự cố | [`docs/ha-tang/`](./docs/ha-tang/README.md) |
 | **Triển khai lên VPS** (`git pull` + build tại chỗ) | [`docs/ha-tang/trien-khai-pull-code.md`](./docs/ha-tang/trien-khai-pull-code.md) |
 | Kiến trúc tổng quan + trạng thái quyết định | [`docs/kien-truc/TONG-QUAN-KIEN-TRUC.md`](./docs/kien-truc/TONG-QUAN-KIEN-TRUC.md) |
-| 4 ADR đã chốt | [`docs/kien-truc/adr/`](./docs/kien-truc/adr/) |
-| Thuật ngữ dễ nhầm (MVP ≠ Minimum Viable Product) | [`docs/kien-truc/THUAT-NGU.md`](./docs/kien-truc/THUAT-NGU.md) |
+| 5 ADR đã chốt | [`docs/kien-truc/adr/`](./docs/kien-truc/adr/) |
 | Git flow, commit convention, PR checklist | [`CONTRIBUTING.md`](./CONTRIBUTING.md) |
 | Chính sách bảo mật | [`SECURITY.md`](./SECURITY.md) |
+
+**Tài liệu của DỰ ÁN CŨ (quản lý CLB bóng đá)** — giữ để tham khảo cách viết FR/ERD/nhật ký,
+**không phải nghiệp vụ hiện tại**. Cập nhật khi có thiết kế LMS:
+
+| Nội dung | Đường dẫn |
+|---|---|
+| Tổng quan nghiệp vụ cũ, đọc 1 mạch | [`docs/tong-thuat.md`](./docs/tong-thuat.md) |
+| 16 mã FR của dự án cũ | [`docs/nghiep-vu/`](./docs/nghiep-vu/README.md) |
+| ERD 16 bảng cũ (nay còn 7 bảng hệ thống) | [`docs/database/erd.md`](./docs/database/erd.md) |
+| Tiến độ / nợ kỹ thuật của dự án cũ | [`docs/ke-hoach.md`](./docs/ke-hoach.md) |
+| Bộ dữ liệu mẫu (endpoint đã bỏ) | [`docs/du-lieu-mau.md`](./docs/du-lieu-mau.md) |
+| Rà soát hệ thống 20/08 | [`docs/ra-soat-20-08.md`](./docs/ra-soat-20-08.md) |
+| Nhật ký theo ngày | [`docs/nhat-ky/`](./docs/nhat-ky/README.md) |
+| Thuật ngữ dễ nhầm (MVP ≠ Minimum Viable Product) | [`docs/kien-truc/THUAT-NGU.md`](./docs/kien-truc/THUAT-NGU.md) |
 
 ---
 
@@ -97,12 +123,11 @@ Còn lại là nợ kỹ thuật (test E2E, triển khai VPS) — xem [`docs/ke-
 | ORM / DB | EF Core (Code-First) + **PostgreSQL** (không SQL Server — tránh license) | [0001](./docs/kien-truc/adr/0001-lua-chon-cong-nghe.md) |
 | Auth | ASP.NET Core Identity + JWT Bearer (access + refresh token) | — |
 | Frontend | **React + TypeScript** trên nền **shadcn-admin** (Vite + Tailwind + shadcn/ui + Radix) — **không Blazor** | [0002](./docs/kien-truc/adr/0002-frontend-shadcn-admin.md) |
-| FE data/form | TanStack Table · TanStack Query · React Hook Form + Zod · Recharts | [0002](./docs/kien-truc/adr/0002-frontend-shadcn-admin.md) |
+| FE data/form | TanStack Query · React Hook Form + Zod | [0002](./docs/kien-truc/adr/0002-frontend-shadcn-admin.md) |
 | Đa ngôn ngữ | BE `.resx` theo culture · FE `react-i18next` · API trả **mã lỗi** | — |
 | API versioning | URL segment `/api/v1/...`, `Asp.Versioning.Mvc` | [0003](./docs/kien-truc/adr/0003-api-versioning.md) |
-| Hạ tầng | 1 VPS · Docker Compose · **Caddy** (auto HTTPS) · **MinIO** · Redis (tuỳ chọn) | [0004](./docs/kien-truc/adr/0004-ha-tang-tu-host-vps.md) |
+| Hạ tầng | 1 VPS · Docker Compose · **Nginx + certbot** (có sẵn trên VPS) · **MinIO** · Redis (tuỳ chọn) | [0004](./docs/kien-truc/adr/0004-ha-tang-tu-host-vps.md) |
 | CI/CD | GitHub Actions → build & test → image → **ghcr.io** → SSH `docker compose pull && up -d` | [0004](./docs/kien-truc/adr/0004-ha-tang-tu-host-vps.md) |
-| Video sau trận | Chỉ lưu **link** (Youtube/Drive), không lưu file video | — |
 | Thông báo | SMTP (SendGrid/Gmail API) + SMS Gateway nội địa (eSMS/Speedsms) | — |
 | Quan sát | Loki+Promtail (log) · Prometheus+Grafana (metrics) · Uptime Kuma (alert) · Sentry (error) | [0004](./docs/kien-truc/adr/0004-ha-tang-tu-host-vps.md) |
 
@@ -116,51 +141,72 @@ src/
 ├── GiapTech.LangCenter.LMS.Application     # CQRS: mỗi FR-xx = Command/Query riêng, DTO, interface, FluentValidation
 ├── GiapTech.LangCenter.LMS.Infrastructure  # EF Core DbContext, Repository, gửi SMS/Email, MinIO client
 └── GiapTech.LangCenter.LMS.API             # Controller theo version (Controllers/V1/...), Middleware, JWT, Swagger
-frontend/                               # React + shadcn-admin (Vite)
-docs/                                   # Tài liệu (xem mục 3)
+frontend/                                    # React (Vite + Tailwind + TanStack Query)
+docs/                                        # Tài liệu (xem mục 3)
 ```
+
+Tầng hệ thống hiện có, đặt ở đâu:
+
+| Việc | Nơi đặt |
+|---|---|
+| Cách ly tenant (Query Filter, tự gán `tenant_id`) | `Infrastructure/Persistence/AppDbContext.cs` |
+| Danh mục chức năng phân quyền | `Domain/Common/ChucNang.cs` |
+| Kiểm quyền ở endpoint | `API/Authorization/RequirePermission.cs` |
+| Mã lỗi trả về client | `Application/Common/Exceptions/MaLoi.cs` + `frontend/src/lib/i18n.ts` |
+| Khởi tạo tenant mới (admin + nhóm quyền) | `Infrastructure/Persistence/Seed/TenantSeeder.cs` |
+| Phân trang | `Application/Common/Models/Trang.cs` |
+| Tải ảnh | `Application/Common/Anh/AnhDtos.cs` |
 
 ### Thứ tự làm việc khi thêm tính năng mới
 
-1. Đọc mô tả **FR-xx** ở [`docs/nghiep-vu/`](./docs/nghiep-vu/README.md).
+1. Viết mô tả **FR-xx** vào [`docs/nghiep-vu/`](./docs/nghiep-vu/README.md) trước khi code.
 2. Cập nhật [ERD](./docs/database/erd.md) + migration nếu đổi dữ liệu.
-3. Viết code: **Domain → Application → Infrastructure → API**.
+3. Viết code: **Domain → Application → Infrastructure → API**. Entity mới **bắt buộc** kế thừa
+   `TenantEntity` (quy tắc #2) và thêm hằng vào `ChucNang.TatCa` nếu là module mới (quy tắc #9).
 4. Cập nhật Swagger/OpenAPI + tài liệu API.
 5. Viết test — unit cho `Application`, integration cho endpoint (**bắt buộc có test cách ly tenant**).
-6. Cập nhật [`CHANGELOG.md`](./CHANGELOG.md).
-7. Ghi [nhật ký ngày](./docs/nhat-ky/README.md) + cập nhật trạng thái ở
-   [`docs/ke-hoach.md`](./docs/ke-hoach.md) — làm ngay sau khi commit, không dồn lại.
+   Ràng buộc "chỉ một" → thêm `InlineData` vào `DongThoiTests` (quy tắc #8).
+6. Thêm mã lỗi mới vào **cả** `MaLoi.cs` **và** `i18n.ts` — thiếu bản dịch thì người dùng thấy
+   chuỗi mã lỗi trên màn hình (quy tắc #3).
+7. Cập nhật [`CHANGELOG.md`](./CHANGELOG.md) + ghi [nhật ký ngày](./docs/nhat-ky/README.md) —
+   làm ngay sau khi commit, không dồn lại.
 
 ---
 
-## 6. Bootstrap checklist
+## 6. Base này đã có sẵn những gì
 
-- [x] `git init` + `.gitignore` (.NET + Node + **`.env`**), commit đầu tiên.
-- [x] Khởi tạo solution .NET theo [mục 5](#5-cấu-trúc-mã-nguồn): 4 project + 2 test project,
-      `Directory.Build.props` (net8.0, nullable, warnings-as-errors), test canh luật phụ thuộc.
-- [x] Cài EF Core + Npgsql, tạo `DbContext` với 16 entity, migration `InitialCreate` (15 bảng).
-      Đã chốt: [denormalize `tenant_id` xuống cả 7 bảng con](./docs/database/erd.md#denormalize-tenant_id-xuống-bảng-con).
-- [x] [Global Query Filter](./docs/backend/multi-tenant.md) tự động + tự gán `tenant_id` khi ghi,
-      có `CachLyTenantTests` canh. **Còn thiếu:** middleware đọc claim ở tầng API.
-- [x] JWT Bearer + `Asp.Versioning.Mvc` (`/api/v1/`) + Swagger có ô nhập token.
-      Dùng riêng `PasswordHasher` của Identity, **không** kéo cả Identity stack (nó giả định
-      username duy nhất toàn cục — trái với multi-tenant).
-- [x] [Phân quyền động](./docs/backend/phan-quyen-dong.md): `[RequirePermission]` + policy sinh
-      động + `IAuthorizationHandler` đọc `QUYEN_CHUC_NANG` có cache. Đã kiểm chứng bằng phản chứng.
-- [x] Middleware tenant đọc claim → `ICurrentTenant`; exception middleware trả **mã lỗi**.
-- [x] FR-01 đăng nhập (CQRS + FluentValidation), 10 integration test.
-- [x] **Cụm quản trị hệ thống (FR-03 → FR-06)**: CRUD tài khoản · hồ sơ cầu thủ · nhóm quyền ·
-      thiết lập chung. Seeder tạo CLB mới (admin/123456 + nhóm "Quản trị viên" đầy đủ).
-      Middleware buộc đổi mật khẩu lần đầu — chặn ở tầng API, không phó mặc frontend.
-- [x] **FR-02 quên mật khẩu** (token hash, hạn 30 phút, dùng một lần) + **refresh token** có xoay
-      vòng và phát hiện tái sử dụng. Migration `ThemBangToken`.
-- [x] **Frontend** (Vite + React + TS + Tailwind + TanStack Query): đăng nhập, đổi mật khẩu,
-      quên mật khẩu, và 4 màn quản trị (tài khoản/cầu thủ/phân quyền/thiết lập).
-      Interceptor tự làm mới token, có khử đua để không kích hoạt cơ chế chống đánh cắp.
-- [x] Chốt [design token](./docs/frontend/design-tokens.md): xanh sân cỏ + cam nhấn + 3 màu trạng thái.
-- [x] **Kiểm chứng trên PostgreSQL thật**: migration áp sạch, 17 bảng, UNIQUE vote MVP chặn đúng
-      khi thử vi phạm trực tiếp bằng SQL.
-- [ ] Cập nhật [mục 7](#7-lệnh-buildtestdev) bằng lệnh thật chạy được.
+Đã kiểm chứng và đang chạy — **không phải làm lại**:
+
+- **Multi-tenant**: [Global Query Filter](./docs/backend/multi-tenant.md) tự áp cho mọi
+  `ITenantEntity`, tự gán `tenant_id` khi ghi. Canh bởi `CachLyTenantTests` — trong đó có test
+  hỏi chiều ngược: *"entity KHÔNG bị lọc có phải ngoại lệ có chủ ý không"*, buộc người thêm
+  entity mới phải dừng lại khai lý do.
+- **Phân quyền động**: `[RequirePermission]` + policy sinh động + `IAuthorizationHandler` đọc
+  `QUYEN_CHUC_NANG` có cache. → [phan-quyen-dong.md](./docs/backend/phan-quyen-dong.md)
+- **Xác thực**: JWT Bearer + refresh token **có xoay vòng và phát hiện tái sử dụng**; quên mật
+  khẩu (token hash, hạn 30 phút, dùng một lần); middleware buộc đổi mật khẩu lần đầu chặn ở
+  **tầng API**, không phó mặc frontend.
+  Dùng riêng `PasswordHasher` của Identity, **không** kéo cả Identity stack — nó giả định
+  username duy nhất toàn cục, trái với multi-tenant.
+- **Quản trị**: CRUD tài khoản · nhóm quyền · thiết lập chung. Có chốt
+  `ChotConNguoiQuanTri` không cho trung tâm mất người quản trị cuối cùng.
+- **Ảnh**: tải/đọc/xoá qua MinIO, API làm proxy (MinIO không expose ra Internet — quy tắc #6),
+  khoá mang `tenantId` ở đầu để cách ly.
+- **Frontend**: đăng nhập, đổi mật khẩu, quên mật khẩu, đăng ký trung tâm, 3 màn quản trị.
+  Interceptor tự làm mới token, **có khử đua** để không kích hoạt cơ chế chống đánh cắp.
+- **Hạ tầng**: Docker Compose, CI GitHub Actions, script triển khai VPS.
+
+### Việc cần làm khi bắt đầu dự án mới
+
+- [ ] Đưa thiết kế nghiệp vụ LMS → viết FR vào [`docs/nghiep-vu/`](./docs/nghiep-vu/README.md),
+      cập nhật [ERD](./docs/database/erd.md).
+- [ ] Thay [design token](./docs/frontend/design-tokens.md) — bảng màu hiện tại là "xanh sân cỏ
+      + cam nhấn" của dự án bóng đá.
+- [ ] Đổi tên biến trạng thái `--status-win/lose/draw` trong `frontend/src/index.css` sang tên
+      trung tính (`ok/error/warn`) — hiện đang dùng cho trạng thái tài khoản.
+- [ ] Làm lại màn Tổng quan khi đã có nghiệp vụ để tóm lược.
+- [ ] Làm lại endpoint dọn tenant test + `globalTeardown` cho E2E (xem ghi chú trong
+      `frontend/playwright.config.ts`).
 
 ---
 
@@ -169,33 +215,63 @@ docs/                                   # Tài liệu (xem mục 3)
 Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 
 ```bash
-# --- Backend (đã hoạt động) ---
-dotnet build                                        # 0 warning — TreatWarningsAsErrors đang bật
-dotnet test                                         # 399 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực, 5 module nghiệp vụ
-dotnet run --project src/GiapTech.LangCenter.LMS.API    # Swagger tại /swagger
+# --- Backend ---
+dotnet build          # 0 warning — TreatWarningsAsErrors đang bật
+dotnet test           # 128 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực, quản trị
 
-# --- Kiểm tra tài liệu (đã hoạt động) ---
+# Chạy API cần 2 biến bắt buộc (thiếu là 500 lúc đăng nhập / tải ảnh, không phải lúc khởi động):
+export JWT_SECRET="chuoi-bi-mat-dev-dai-hon-32-ky-tu-cho-du-an-toan"
+export Minio__Endpoint="localhost:59000" Minio__AccessKey="devminio" \
+       Minio__SecretKey="devminio123" Minio__UseSsl="false"
+dotnet run --project src/GiapTech.LangCenter.LMS.API   # Swagger tại /swagger, cổng 5229
+
+# --- Kiểm tra tài liệu ---
 python3 scripts/check-doc-links.py
 
-# --- Frontend (đã hoạt động) ---
-cd frontend && npm install && npm run dev   # http://localhost:5173, proxy /api -> :5229
+# --- Frontend ---
+cd frontend && npm install
+npm run dev     # http://localhost:5173, proxy /api -> :5229
+npm run build   # tsc -b && vite build
+npx oxlint src e2e
 
-# --- PostgreSQL cho dev ---
-docker run -d --name sr-pg -e POSTGRES_PASSWORD=devpass -e POSTGRES_USER=langcenter_lms \
+# --- PostgreSQL + MinIO cho dev ---
+docker run -d --name lms-minio -p 59000:9000 \
+  -e MINIO_ROOT_USER=devminio -e MINIO_ROOT_PASSWORD=devminio123 \
+  minio/minio:latest server /data
+docker run -d --name lms-pg -e POSTGRES_PASSWORD=devpass -e POSTGRES_USER=langcenter_lms \
   -e POSTGRES_DB=langcenter_lms -p 55432:5432 postgres:16-alpine
 export ConnectionStrings__Default="Host=localhost;Port=55432;Database=langcenter_lms;Username=langcenter_lms;Password=devpass"
 dotnet ef database update --project src/GiapTech.LangCenter.LMS.Infrastructure \
   --startup-project src/GiapTech.LangCenter.LMS.API
+# → 7 bảng: TENANT, NGUOI_DUNG, QUYEN, QUYEN_CHUC_NANG, NGUOIDUNG_QUYEN,
+#           REFRESH_TOKEN, TOKEN_DATLAI_MATKHAU
 
-# Tạo CLB thử (chỉ chạy ở Development): POST /api/v1/dang-ky-clb {"maDoi":"FCDEV","tenDoi":"..."}
-# → admin/123456, bắt buộc đổi mật khẩu lần đầu
+# Tạo trung tâm thử — endpoint ẩn danh, mã 7 ký tự do hệ thống sinh:
+curl -X POST localhost:5229/api/v1/dang-ky-trung-tam \
+  -H 'Content-Type: application/json' -d '{"tenTrungTam":"Trung tâm Ngoại ngữ Dev"}'
+# → { maTrungTam: "A3K9M2P", username: "admin", matKhau: "123456" }
+#   Bắt buộc đổi mật khẩu ở lần đăng nhập đầu.
 ```
+
+### Thêm migration
+
+```bash
+dotnet ef migrations add TenMigration \
+  --project src/GiapTech.LangCenter.LMS.Infrastructure \
+  --startup-project src/GiapTech.LangCenter.LMS.API \
+  --output-dir Persistence/Migrations
+```
+
+`--output-dir` là bắt buộc: không có nó EF đặt migration vào `Infrastructure/Migrations/`, lệch
+khỏi chỗ các migration hiện tại đang nằm.
 
 > `TreatWarningsAsErrors=true` trong `Directory.Build.props` — cảnh báo làm build đỏ. Sửa cảnh báo,
 > đừng tắt cờ.
 
-### Test luật phụ thuộc
+### Ba test canh kiến trúc, đáng biết trước khi sửa code
 
-`tests/GiapTech.LangCenter.LMS.Application.UnitTests/KienTruc/LuatPhuThuocTests.cs` biến quy tắc #10 thành
-thứ CI bắt được: nếu `Domain` lỡ tham chiếu EF Core / ASP.NET Core / MediatR, hoặc `Application` tham
-chiếu ngược lên `Infrastructure`/`API`, test đỏ ngay kèm hướng dẫn sửa.
+| Test | Canh gì |
+|---|---|
+| `KienTruc/LuatPhuThuocTests.cs` | Quy tắc #10: `Domain` lỡ tham chiếu EF Core / ASP.NET Core / MediatR, hoặc `Application` tham chiếu ngược lên `Infrastructure`/`API` → đỏ ngay kèm hướng dẫn sửa. |
+| `MultiTenancy/CachLyTenantTests.cs` | Quy tắc #2, **cả hai chiều**: mọi `ITenantEntity` có Query Filter, VÀ mọi entity không bị lọc phải nằm trong danh sách ngoại lệ có khai lý do. |
+| `DongThoiTests.cs` | Quy tắc #8: ràng buộc "chỉ một" là UNIQUE ở tầng DB. Có cả test chiều ngược: `UNIQUE(username)` toàn cục sẽ chặn hai trung tâm cùng có tài khoản `admin`. |

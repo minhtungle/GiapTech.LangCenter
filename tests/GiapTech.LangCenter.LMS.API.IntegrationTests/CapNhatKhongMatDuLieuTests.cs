@@ -144,4 +144,91 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
             u.GetProperty("phaiDoiMatKhau").GetBoolean(),
             "Cờ buộc đổi mật khẩu bị mất sau khi cập nhật thông tin liên hệ.");
     }
+
+    /// <summary>
+    /// Thiết lập chung: gửi lệnh cập nhật CHỈ CÓ tên — mọi trường khác phải giữ nguyên.
+    ///
+    /// Đây là ca của client cũ (hoặc form thiếu ô), và là chỗ quy tắc #1 dễ vỡ nhất vì handler
+    /// có 10 trường tuỳ chọn. Kiểm chứng tay 04/09 phát hiện `tenVietTat` và `moTa` bị xoá:
+    /// hai trường đó gán trực tiếp `t.MoTa = request.MoTa` trong khi các trường khác dùng
+    /// `is { }` để phân biệt "không gửi" với "gửi rỗng" — hai quy ước trái ngược trong cùng
+    /// một handler. Test này canh việc chúng không lệch lại.
+    /// </summary>
+    [Fact]
+    public async Task Cap_nhat_thiet_lap_thieu_truong_KHONG_xoa_truong_do()
+    {
+        var client = await Client();
+
+        // Điền đủ mọi trường trước.
+        var day = await client.PutAsJsonAsync("/api/v1/thiet-lap", new
+        {
+            TenTrungTam = "Trung tâm Kiểm Quy Tắc 1",
+            TenVietTat = "TTKQT",
+            MoTa = "Mô tả ban đầu",
+            DiaChi = "99 Lê Duẩn",
+            LienHe = "0905123456",
+            SoTaiKhoan = "0123456789",
+            TenNganHang = "Vietcombank",
+            ChuTaiKhoan = "NGUYEN VAN A"
+        });
+        Assert.Equal(HttpStatusCode.NoContent, day.StatusCode);
+
+        // Lệnh cập nhật CHỈ mang tên — mô phỏng client không biết các trường còn lại.
+        var chiTen = await client.PutAsJsonAsync("/api/v1/thiet-lap",
+            new { TenTrungTam = "Tên Đã Đổi" });
+        Assert.Equal(HttpStatusCode.NoContent, chiTen.StatusCode);
+
+        var tl = await client.GetFromJsonAsync<JsonElement>("/api/v1/thiet-lap");
+
+        Assert.Equal("Tên Đã Đổi", tl.GetProperty("tenTrungTam").GetString());
+
+        // Không trường nào được biến mất.
+        foreach (var (truong, mongDoi) in new[]
+                 {
+                     ("tenVietTat", "TTKQT"),
+                     ("moTa", "Mô tả ban đầu"),
+                     ("diaChi", "99 Lê Duẩn"),
+                     ("lienHe", "0905123456"),
+                     ("soTaiKhoan", "0123456789"),
+                     ("tenNganHang", "Vietcombank"),
+                     ("chuTaiKhoan", "NGUYEN VAN A"),
+                 })
+        {
+            Assert.Equal(mongDoi, tl.GetProperty(truong).GetString());
+        }
+    }
+
+    /// <summary>
+    /// Chiều ngược: gửi CHUỖI RỖNG là chủ động xoá, phải ghi null.
+    ///
+    /// Không có test này thì "giữ nguyên khi null" dễ bị làm quá thành "không bao giờ xoá
+    /// được" — người dùng xoá ô, lưu, tải lại thấy giá trị cũ hiện lại và tưởng không lưu được.
+    /// </summary>
+    [Fact]
+    public async Task Gui_chuoi_rong_la_chu_dong_xoa_truong_do()
+    {
+        var client = await Client();
+
+        await client.PutAsJsonAsync("/api/v1/thiet-lap", new
+        {
+            TenTrungTam = "Trung tâm Kiểm Xoá Ô",
+            DiaChi = "Địa chỉ sẽ bị xoá",
+            MoTa = "Mô tả sẽ bị xoá"
+        });
+
+        var tl1 = await client.GetFromJsonAsync<JsonElement>("/api/v1/thiet-lap");
+        Assert.Equal("Địa chỉ sẽ bị xoá", tl1.GetProperty("diaChi").GetString());
+
+        // Chuỗi rỗng = xoá.
+        await client.PutAsJsonAsync("/api/v1/thiet-lap", new
+        {
+            TenTrungTam = "Trung tâm Kiểm Xoá Ô",
+            DiaChi = "",
+            MoTa = ""
+        });
+
+        var tl2 = await client.GetFromJsonAsync<JsonElement>("/api/v1/thiet-lap");
+        Assert.Equal(JsonValueKind.Null, tl2.GetProperty("diaChi").ValueKind);
+        Assert.Equal(JsonValueKind.Null, tl2.GetProperty("moTa").ValueKind);
+    }
 }

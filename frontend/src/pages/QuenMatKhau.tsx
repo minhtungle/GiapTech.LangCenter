@@ -15,7 +15,7 @@ import {
 export default function QuenMatKhau() {
   const { t } = useTranslation()
   const [buoc, setBuoc] = useState<1 | 2>(1)
-  const [maTrungTam, setMaDoi] = useState('')
+  const [maTrungTam, setMaTrungTam] = useState('')
   const [email, setEmail] = useState('')
   const [token, setToken] = useState('')
   const [matKhauMoi, setMatKhauMoi] = useState('')
@@ -79,7 +79,7 @@ export default function QuenMatKhau() {
                   placeholder="A3K9M2P"
                   className="font-mono uppercase tracking-widest"
                   value={maTrungTam}
-                  onChange={(e) => setMaDoi(e.target.value.toUpperCase())}
+                  onChange={(e) => setMaTrungTam(e.target.value.toUpperCase())}
                   required
                 />
               </div>

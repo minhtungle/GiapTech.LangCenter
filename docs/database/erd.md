@@ -1,5 +1,13 @@
 # ERD — Mô hình dữ liệu
 
+> ⚠️ **ERD này là của dự án cũ** (16 bảng, quản lý CLB đá bóng). Từ 05/09/2026 database chỉ
+> còn **7 bảng hệ thống**: `TENANT`, `NGUOI_DUNG`, `QUYEN`, `QUYEN_CHUC_NANG`,
+> `NGUOIDUNG_QUYEN`, `REFRESH_TOKEN`, `TOKEN_DATLAI_MATKHAU`.
+>
+> Phần **vẫn đúng và nên đọc**: quy ước đặt tên, cách denormalize `tenant_id` xuống bảng con,
+> và nguyên tắc đưa ràng buộc "chỉ một" xuống tầng DB. Phần bảng nghiệp vụ bóng đá chỉ để tham
+> khảo cấu trúc mô tả.
+
 ## Nguyên tắc bắt buộc
 
 > Mọi bảng nghiệp vụ có cột `tenant_id` (FK → `TENANT`) và **bắt buộc** áp dụng EF Core Global Query

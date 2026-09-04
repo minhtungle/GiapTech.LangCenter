@@ -1,5 +1,9 @@
 # Bộ dữ liệu mẫu để test tay
 
+> ⚠️ **Tài liệu của DỰ ÁN CŨ** (quản lý CLB đá bóng phong trào). Từ 05/09/2026 repo này là
+> base cho hệ thống quản lý trung tâm ngoại ngữ — **phần nghiệp vụ dưới đây không còn trong
+> code**. Giữ lại để tham khảo cách viết đặc tả. Xem [`CLAUDE.md`](../CLAUDE.md) mục 1.
+
 > Dựng bằng một lệnh, chỉ chạy ở **Development**. Chặn ở production giống `/dang-ky-clb` — và ở
 > đây còn nặng hơn: endpoint này có tuỳ chọn **xoá sạch mọi dữ liệu**.
 

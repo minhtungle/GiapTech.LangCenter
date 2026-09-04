@@ -268,13 +268,12 @@ public class AnhTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var sua = await client.PutAsJsonAsync("/api/v1/thiet-lap", new
         {
-            TenTrungTam = "CLB Đã Đổi Tên",
+            TenTrungTam = "Trung tâm Đã Đổi Tên",
             TenVietTat = (string?)null,
             NgayThanhLap = (DateOnly?)null,
             LogoUrl = khoaLogo,
             AnhBiaUrl = (string?)null,
             MoTa = (string?)null,
-            MauAo = (string[]?)null,
         });
         sua.EnsureSuccessStatusCode();
 

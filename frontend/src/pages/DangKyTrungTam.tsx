@@ -25,7 +25,7 @@ interface KetQua {
 export default function DangKyTrungTam() {
   const { t } = useTranslation()
   const tinhNang = useTinhNang()
-  const [tenTrungTam, setTenDoi] = useState('')
+  const [tenTrungTam, setTenTrungTam] = useState('')
   const [ketQua, setKetQua] = useState<KetQua | null>(null)
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [dangGui, setDangGui] = useState(false)
@@ -137,7 +137,7 @@ export default function DangKyTrungTam() {
                   maxLength={200}
                   placeholder="VD: Trung tâm Ngoại ngữ Sông Hàn"
                   value={tenTrungTam}
-                  onChange={(e) => setTenDoi(e.target.value)}
+                  onChange={(e) => setTenTrungTam(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">{t('dangKy.giaiThichMa')}</p>
               </div>

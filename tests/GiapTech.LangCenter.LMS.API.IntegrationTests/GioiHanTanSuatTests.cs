@@ -35,7 +35,7 @@ public class GioiHanTanSuatTests(GioiHanTanSuatTests.ApiFactoryCoGioiHan factory
         HttpStatusCode? cuoi = null;
         for (var i = 0; i < 40; i++)
         {
-            var res = await client.GetAsync($"/api/v1/auth/ten-doi/{ma}");
+            var res = await client.GetAsync($"/api/v1/auth/ten-trung-tam/{ma}");
             cuoi = res.StatusCode;
             if (res.StatusCode == HttpStatusCode.OK) soOk++;
             else break;
@@ -137,7 +137,7 @@ public class GioiHanTanSuatTests(GioiHanTanSuatTests.ApiFactoryCoGioiHan factory
         HttpStatusCode? cuoi = null;
         for (var i = 0; i < 40; i++)
         {
-            var res = await client.GetAsync($"/api/v1/auth/ten-doi/{ma}");
+            var res = await client.GetAsync($"/api/v1/auth/ten-trung-tam/{ma}");
             cuoi = res.StatusCode;
             if (res.StatusCode != HttpStatusCode.OK) break;
         }

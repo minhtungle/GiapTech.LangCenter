@@ -19,12 +19,12 @@ public record TenTrungTamTheoMaDto(string TenTrungTam);
 /// "Sai thông tin đăng nhập" mà không biết sai ở mã hay ở mật khẩu. Hiện tên trung tâm ngay dưới ô mã
 /// cho họ biết mình đang đăng nhập vào đâu.
 ///
-/// Thiết kế chặt hơn cả <c>TraCuuClbQuery</c> — endpoint đó ít nhất còn đòi đăng nhập:
+/// Đây là endpoint ẨN DANH nên thiết kế phải chặt:
 ///
 /// 1. **Chỉ so khớp CHÍNH XÁC mã 7 ký tự.** Không tìm theo tên, không `Contains`, không liệt kê.
-///    Chủ sản phẩm đã cân nhắc việc cho tìm theo tên (20/08) và **quyết định không làm**: trang
+///    Đã cân nhắc việc cho tìm theo tên và **quyết định không làm**: trang
 ///    đăng nhập là công khai, cho tìm theo tên nghĩa là ai cũng liệt kê được mọi trung tâm kèm mã trung tâm —
-///    tức biết một nửa bộ ba đăng nhập của mọi đội.
+///    tức biết một nửa bộ ba đăng nhập của mọi trung tâm.
 /// 2. **Chỉ trả tên trung tâm.** Không id (có id là mở đường gọi endpoint khác), không gì khác.
 /// 3. **Kiểm định dạng TRƯỚC khi chạm DB.** Mã sai ký tự thì chắc chắn không tồn tại; truy vấn
 ///    chỉ tốn một vòng tới PostgreSQL cho mỗi ký tự người dùng gõ.

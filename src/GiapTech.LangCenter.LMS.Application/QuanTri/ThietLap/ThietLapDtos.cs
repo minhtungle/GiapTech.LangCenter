@@ -86,15 +86,22 @@ public class CapNhatThietLapHandler(IAppDbContext db, ICurrentTenant tenant)
         var t = await db.Tenants.FirstOrDefaultAsync(x => x.Id == tid, ct)
             ?? throw new KhongTimThayException($"Tenant {tid}");
 
+        // MỘT quy ước cho MỌI trường tuỳ chọn (quy tắc #1):
+        //   null       = client không gửi trường này  → GIỮ NGUYÊN giá trị đang có
+        //   chuỗi rỗng = người dùng chủ động xoá ô     → ghi null
+        //
+        // Không phân biệt hai ca này thì client cũ (hoặc form thiếu ô) sẽ âm thầm xoá dữ liệu
+        // người dùng chưa từng đụng tới — đúng lỗi đã xảy ra 16/08 với ô địa chỉ.
+        //
+        // Trước 04/09 bốn trường tenVietTat/logoUrl/anhBiaUrl/moTa gán trực tiếp
+        // (`t.MoTa = request.MoTa`) nên KHÔNG theo quy ước này: gửi lệnh cập nhật thiếu chúng
+        // là xoá chúng. An toàn ở dự án cũ chỉ vì form luôn gửi đủ — tức là an toàn nhờ may,
+        // không nhờ thiết kế. Đã đưa về cùng một quy ước.
         t.TenTrungTam = request.TenTrungTam.Trim();
-        t.TenVietTat = request.TenVietTat;
-        t.LogoUrl = request.LogoUrl;
-        t.AnhBiaUrl = request.AnhBiaUrl;
-        t.MoTa = request.MoTa;
 
-        // null = client không gửi → giữ nguyên. Chuỗi rỗng = người dùng chủ động xoá → ghi
-        // null. Không phân biệt hai ca này thì mỗi lần lưu thiết lập từ màn cũ sẽ âm thầm xoá
-        // địa chỉ và liên hệ — đúng lỗi đã xảy ra 16/08 với ô địa chỉ.
+        if (request.TenVietTat is { } tvt)
+            t.TenVietTat = string.IsNullOrWhiteSpace(tvt) ? null : tvt.Trim();
+        if (request.MoTa is { } mt) t.MoTa = string.IsNullOrWhiteSpace(mt) ? null : mt.Trim();
         if (request.DiaChi is { } dc) t.DiaChi = string.IsNullOrWhiteSpace(dc) ? null : dc.Trim();
         if (request.LienHe is { } lh) t.LienHe = string.IsNullOrWhiteSpace(lh) ? null : lh.Trim();
 
@@ -105,10 +112,10 @@ public class CapNhatThietLapHandler(IAppDbContext db, ICurrentTenant tenant)
         if (request.ChuTaiKhoan is { } ctk)
             t.ChuTaiKhoan = string.IsNullOrWhiteSpace(ctk) ? null : ctk.Trim();
 
-        // Ảnh QR: null = client không gửi → giữ nguyên; chuỗi rỗng = người dùng xoá ảnh.
-        // Cùng cách xử lý với logo và ảnh bìa.
-        if (request.AnhQrUrl is { } qr)
-            t.AnhQrUrl = string.IsNullOrWhiteSpace(qr) ? null : qr;
+        // Ba khoá ảnh: cùng quy ước — chuỗi rỗng = người dùng gỡ ảnh.
+        if (request.LogoUrl is { } lg) t.LogoUrl = string.IsNullOrWhiteSpace(lg) ? null : lg;
+        if (request.AnhBiaUrl is { } ab) t.AnhBiaUrl = string.IsNullOrWhiteSpace(ab) ? null : ab;
+        if (request.AnhQrUrl is { } qr) t.AnhQrUrl = string.IsNullOrWhiteSpace(qr) ? null : qr;
 
         // MaTrungTam cố tình KHÔNG cho sửa: người dùng gõ nó mỗi lần đăng nhập, đổi sẽ khóa
         // cả trung tâm ra ngoài. Muốn đổi thì cần quy trình riêng có cảnh báo rõ.

@@ -8,7 +8,7 @@ namespace GiapTech.LangCenter.LMS.API.IntegrationTests;
 /// `GET /api/v1/tinh-nang` — cờ tính năng cho frontend.
 ///
 /// Tồn tại vì frontend không tự biết đang nói chuyện với môi trường nào. Không có nó thì trang
-/// đăng nhập vẫn hiện link "Tạo câu lạc bộ" trên production, người dùng bấm vào, điền tên, rồi
+/// đăng nhập vẫn hiện link "Tạo trung tâm" khi máy chủ đã tắt, người dùng bấm vào, điền tên, rồi
 /// nhận "Đã có lỗi xảy ra" từ một 404 — trông như app hỏng chứ không phải "chức năng chưa mở".
 /// </summary>
 public class TinhNangTests(ApiFactory factory) : IClassFixture<ApiFactory>
@@ -33,7 +33,7 @@ public class TinhNangTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Khai_dangKyTrungTam_bang_true_o_Development()
     {
-        // ApiFactory chạy ở Development (xem UseEnvironment), nơi DangKyClbController mở.
+        // ApiFactory chạy ở Development (xem UseEnvironment), nơi DangKyTrungTamController mở.
         var client = factory.CreateClient();
 
         var body = await client.GetFromJsonAsync<JsonElement>("/api/v1/tinh-nang");
@@ -81,12 +81,12 @@ public class TinhNangTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.OK, dangKy.StatusCode);
 
         // Và đăng nhập được ngay bằng thông tin trả về.
-        var clb = await dangKy.Content.ReadFromJsonAsync<JsonElement>();
+        var trungTam = await dangKy.Content.ReadFromJsonAsync<JsonElement>();
         var dn = await client.PostAsJsonAsync("/api/v1/auth/dang-nhap", new
         {
-            MaTrungTam = clb.GetProperty("maTrungTam").GetString(),
-            Username = clb.GetProperty("username").GetString(),
-            MatKhau = clb.GetProperty("matKhau").GetString(),
+            MaTrungTam = trungTam.GetProperty("maTrungTam").GetString(),
+            Username = trungTam.GetProperty("username").GetString(),
+            MatKhau = trungTam.GetProperty("matKhau").GetString(),
         });
         Assert.Equal(HttpStatusCode.OK, dn.StatusCode);
     }

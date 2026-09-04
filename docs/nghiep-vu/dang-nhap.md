@@ -1,5 +1,9 @@
 # Module Đăng nhập (FR-01, FR-02)
 
+> ℹ️ FR này **vẫn còn trong code**, nhưng từ ngữ đã đổi (05/09/2026): "đội"/"CLB" →
+> "trung tâm", `MaDoi` → `MaTrungTam`, route `/dang-ky-clb` → `/dang-ky-trung-tam`. Phần hồ sơ
+> cầu thủ (FR-04) đã bỏ.
+
 ## FR-01 — Đăng nhập
 
 Xác thực bằng **bộ ba**: `{mã đội, tên đăng nhập, mật khẩu}`. Username chỉ duy nhất **trong

@@ -1,5 +1,9 @@
 # Module Lịch thi đấu (FR-07 → FR-11)
 
+> ⚠️ **Tài liệu của DỰ ÁN CŨ** (quản lý CLB đá bóng phong trào). Từ 05/09/2026 repo này là
+> base cho hệ thống quản lý trung tâm ngoại ngữ — **phần nghiệp vụ dưới đây không còn trong
+> code**. Giữ lại để tham khảo cách viết đặc tả. Xem [`CLAUDE.md`](../../CLAUDE.md) mục 1.
+
 ## FR-07 — Lọc thông tin
 
 Bộ lọc dùng chung với module [Thống kê](./thong-ke.md) (FR-12) — cùng một component, cùng một tập tham số:

@@ -1,5 +1,9 @@
 # Module Thống kê (FR-12 → FR-14)
 
+> ⚠️ **Tài liệu của DỰ ÁN CŨ** (quản lý CLB đá bóng phong trào). Từ 05/09/2026 repo này là
+> base cho hệ thống quản lý trung tâm ngoại ngữ — **phần nghiệp vụ dưới đây không còn trong
+> code**. Giữ lại để tham khảo cách viết đặc tả. Xem [`CLAUDE.md`](../../CLAUDE.md) mục 1.
+
 ## FR-12 — Lọc thông tin
 
 **Dùng chung bộ lọc với module [Lịch thi đấu](./lich-thi-dau.md)** (FR-07) — cùng component, cùng tập

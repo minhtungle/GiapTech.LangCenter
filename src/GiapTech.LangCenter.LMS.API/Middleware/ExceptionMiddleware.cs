@@ -46,9 +46,9 @@ public class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddlewa
         }
         catch (DbUpdateException ex) when (LaViPhamUnique(ex))
         {
-            // UNIQUE index ở tầng DB là chốt chặn CUỐI cho các ràng buộc "chỉ một": vote MVP,
-            // phản hồi tham gia, đối thủ theo mã trung tâm, lời mời đang chờ. Kiểm ở tầng ứng dụng
-            // (`AnyAsync` rồi `Add`) không đủ — hai request song song đều thấy "chưa có".
+            // UNIQUE index ở tầng DB là chốt chặn CUỐI cho các ràng buộc "chỉ một" (mã trung
+            // tâm, username trong tenant, hash token…). Kiểm ở tầng ứng dụng (`AnyAsync` rồi
+            // `Add`) không đủ — hai request song song đều thấy "chưa có" và đều ghi.
             //
             // Không có nhánh này thì vi phạm UNIQUE thành 500 "Lỗi hệ thống", người dùng tưởng
             // app hỏng trong khi thực ra họ bấm hai lần và lần thứ hai bị chặn đúng.

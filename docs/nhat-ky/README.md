@@ -36,6 +36,15 @@ Lỗi đã bắt được, thứ tưởng đúng mà sai, giới hạn chưa g�
 
 ## Mục lục
 
+> Các ngày 16–21/08 thuộc **dự án cũ** (quản lý CLB đá bóng). Giữ lại vì phần lớn bài học là về
+> tầng hệ thống và vẫn còn đúng — đặc biệt sự cố quy tắc #1 ngày 16/08 và rate limit ngày 21/08.
+
 | Ngày | Nội dung chính |
 |---|---|
+| [2026-09-05](./2026-09-05.md) | **Tách base cho dự án LMS** — bỏ nghiệp vụ bóng đá, đổi tên, 4 lỗi tìm ra |
+| [2026-08-21](./2026-08-21.md) | Rate limit (nợ N3) + FR-19 đăng ký đá trận qua link/QR |
+| [2026-08-20](./2026-08-20.md) | Hoàn tác khoản đã thu |
+| [2026-08-19](./2026-08-19.md) | Thông tin chuyển khoản quỹ |
+| [2026-08-18](./2026-08-18.md) | Sàn đối thủ: mở đúng thứ hôm qua vừa chặn |
+| [2026-08-17](./2026-08-17.md) | Chọn đối thủ: tạo tại chỗ + tra mã CLB khác |
 | [2026-08-16](./2026-08-16.md) | Khởi tạo dự án → xác thực + cụm quản trị chạy thật trên PostgreSQL |

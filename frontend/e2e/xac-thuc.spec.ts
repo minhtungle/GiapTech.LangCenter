@@ -28,7 +28,7 @@ test.describe('Xác thực', () => {
   test('sidebar hiện TÊN đội, không phải mã đội', async ({ page, request }) => {
     // Lỗi thật ngày 16/08: claim ten_doi chỉ có trong token MỚI, người đang mở phiên cầm
     // token cũ nên sidebar chỉ hiện mã đội.
-    const trungTam = await taoTrungTam(request, 'ten-doi')
+    const trungTam = await taoTrungTam(request, 'ten-trung-tam')
     await dangNhap(page, trungTam)
 
     const sidebar = page.locator('aside, nav').first()

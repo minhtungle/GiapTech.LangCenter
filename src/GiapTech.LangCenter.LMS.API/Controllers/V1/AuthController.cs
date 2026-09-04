@@ -28,11 +28,10 @@ public class AuthController(ISender sender) : ControllerBase
     /// Trả **404 cho cả mã sai định dạng và mã không tồn tại** — phân biệt được thì người dò biết
     /// mã nào đúng định dạng, thu hẹp không gian dò. Frontend chỉ cần biết "không tìm thấy".
     ///
-    /// ⚠️ Endpoint ẩn danh thứ hai nhận input do người gọi kiểm soát (sau
-    /// `POST /moi-qua-link/xem`). **Rate limit ở Caddy (nợ N3) là bắt buộc** trước khi lên
-    /// Internet.
+    /// ⚠️ Endpoint ẩn danh nhận input do người gọi kiểm soát. **Rate limit ở reverse proxy là
+    /// bắt buộc** trước khi lên Internet — lớp `EnableRateLimiting` dưới đây chỉ là lớp trong.
     /// </summary>
-    [HttpGet("ten-doi/{maTrungTam:length(7)}")]
+    [HttpGet("ten-trung-tam/{maTrungTam:length(7)}")]
     [AllowAnonymous]
     [EnableRateLimiting(GioiHanTanSuat.TraCuu)]
     [ProducesResponseType<TenTrungTamTheoMaDto>(StatusCodes.Status200OK)]

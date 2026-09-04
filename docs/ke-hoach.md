@@ -1,5 +1,9 @@
 # Kế hoạch & tiến độ
 
+> ⚠️ **Tài liệu của DỰ ÁN CŨ** (quản lý CLB đá bóng phong trào). Từ 05/09/2026 repo này là
+> base cho hệ thống quản lý trung tâm ngoại ngữ — **phần nghiệp vụ dưới đây không còn trong
+> code**. Giữ lại để tham khảo cách viết đặc tả. Xem [`CLAUDE.md`](../CLAUDE.md) mục 1.
+
 > Cập nhật cuối: **2026-08-18**. Nhật ký chi tiết theo ngày: [nhat-ky/](./nhat-ky/README.md).
 
 ## Tiến độ tổng

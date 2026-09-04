@@ -1,5 +1,9 @@
 # Rà soát hệ thống — 20/08/2026
 
+> ⚠️ **Tài liệu của DỰ ÁN CŨ** (quản lý CLB đá bóng phong trào). Từ 05/09/2026 repo này là
+> base cho hệ thống quản lý trung tâm ngoại ngữ — **phần nghiệp vụ dưới đây không còn trong
+> code**. Giữ lại để tham khảo cách viết đặc tả. Xem [`CLAUDE.md`](../CLAUDE.md) mục 1.
+
 > Cách làm: dựng CLB mới hoàn toàn, đi qua từng luồng như người dùng thật, thử cả **đường chính**
 > và **đường sai** (số âm, số quá lớn, xoá thứ đang được dùng, bấm hai lần).
 >

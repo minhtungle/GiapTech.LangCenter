@@ -1,5 +1,9 @@
 # FR-19 — Đăng ký đá trận nhanh qua link/QR (không cần đăng nhập)
 
+> ⚠️ **Tài liệu của DỰ ÁN CŨ** (quản lý CLB đá bóng phong trào). Từ 05/09/2026 repo này là
+> base cho hệ thống quản lý trung tâm ngoại ngữ — **phần nghiệp vụ dưới đây không còn trong
+> code**. Giữ lại để tham khảo cách viết đặc tả. Xem [`CLAUDE.md`](../../CLAUDE.md) mục 1.
+
 > Bổ sung 21/08/2026. Liên quan: [FR-13 Đăng ký tham gia](./lich-thi-dau.md) ·
 > [FR-18 Lời mời qua link](./loi-moi-qua-link.md) (dùng chung cơ chế token)
 

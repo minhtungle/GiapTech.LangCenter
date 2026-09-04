@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace GiapTech.LangCenter.LMS.API.IntegrationTests;
 
 /// <summary>
-/// `GET /auth/ten-doi/{maTrungTam}` — tra tên trung tâm ở trang đăng nhập, ẨN DANH.
+/// `GET /auth/ten-trung-tam/{maTrungTam}` — tra tên trung tâm ở trang đăng nhập, ẨN DANH.
 ///
 /// Bộ test này canh chủ yếu những gì endpoint **không** được làm. Nó là endpoint ẩn danh trả về
 /// dữ liệu của một tenant, nên mọi field thêm vào là một thứ lộ cho người chưa đăng nhập.
@@ -22,7 +22,7 @@ public class TraTenTrungTamTests(ApiFactory factory) : IClassFixture<ApiFactory>
         // (họ đang ở trang đăng nhập) nên endpoint phải mở.
         var client = factory.CreateClient();
 
-        var res = await client.GetAsync($"/api/v1/auth/ten-doi/{factory.MaTrungTamA}");
+        var res = await client.GetAsync($"/api/v1/auth/ten-trung-tam/{factory.MaTrungTamA}");
 
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
         var body = await res.Content.ReadFromJsonAsync<JsonElement>();
@@ -37,7 +37,7 @@ public class TraTenTrungTamTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var client = factory.CreateClient();
 
         var body = await client.GetFromJsonAsync<JsonElement>(
-            $"/api/v1/auth/ten-doi/{factory.MaTrungTamA}");
+            $"/api/v1/auth/ten-trung-tam/{factory.MaTrungTamA}");
 
         Assert.Equal(new[] { "tenTrungTam" },
             body.EnumerateObject().Select(p => p.Name).ToArray());
@@ -50,7 +50,7 @@ public class TraTenTrungTamTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var client = factory.CreateClient();
 
         var res = await client.GetAsync(
-            $"/api/v1/auth/ten-doi/{factory.MaTrungTamA.ToLowerInvariant()}");
+            $"/api/v1/auth/ten-trung-tam/{factory.MaTrungTamA.ToLowerInvariant()}");
 
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
     }
@@ -65,7 +65,7 @@ public class TraTenTrungTamTests(ApiFactory factory) : IClassFixture<ApiFactory>
         // dò biết mã nào đúng định dạng và thu hẹp không gian dò rất nhiều.
         var client = factory.CreateClient();
 
-        var res = await client.GetAsync($"/api/v1/auth/ten-doi/{ma}");
+        var res = await client.GetAsync($"/api/v1/auth/ten-trung-tam/{ma}");
 
         Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
     }
@@ -79,13 +79,13 @@ public class TraTenTrungTamTests(ApiFactory factory) : IClassFixture<ApiFactory>
         // endpoint thành nơi nhận input tuỳ ý.
         var client = factory.CreateClient();
 
-        var res = await client.GetAsync($"/api/v1/auth/ten-doi/{ma}");
+        var res = await client.GetAsync($"/api/v1/auth/ten-trung-tam/{ma}");
 
         Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
     }
 
     [Fact]
-    public async Task Go_TEN_doi_vao_o_ma_thi_KHONG_tra_gi()
+    public async Task Go_TEN_vao_o_ma_thi_KHONG_tra_gi()
     {
         // Phản chứng đã lọt HAI LẦN: đổi `t.MaTrungTam == ma` thành `|| t.TenTrungTam.Contains(...)` mà bộ
         // test vẫn xanh.
@@ -101,12 +101,12 @@ public class TraTenTrungTamTests(ApiFactory factory) : IClassFixture<ApiFactory>
         using var scope = factory.Services.CreateScope();
         var seeder = scope.ServiceProvider.GetRequiredService<ITenantSeeder>();
         const string tenDai = "Cong Hoa Thanh Nien Ha Noi";
-        var clb = await seeder.TaoTenantMoiAsync(tenDai);
+        var trungTam = await seeder.TaoTenantMoiAsync(tenDai);
 
         var client = factory.CreateClient();
 
         // Mã thật vẫn tra được — nếu không, test dưới đây xanh một cách vô nghĩa.
-        var ok = await client.GetAsync($"/api/v1/auth/ten-doi/{clb.MaTrungTam}");
+        var ok = await client.GetAsync($"/api/v1/auth/ten-trung-tam/{trungTam.MaTrungTam}");
         Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
 
         // Mọi đoạn 7 ký tự cắt từ tên trung tâm phải 404. Bản có nhánh `Contains` sẽ trả 200.
@@ -114,7 +114,7 @@ public class TraTenTrungTamTests(ApiFactory factory) : IClassFixture<ApiFactory>
         {
             var doan = tenDai.Substring(i, 7);
             var res = await client.GetAsync(
-                $"/api/v1/auth/ten-doi/{Uri.EscapeDataString(doan)}");
+                $"/api/v1/auth/ten-trung-tam/{Uri.EscapeDataString(doan)}");
 
             Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
         }
@@ -155,7 +155,7 @@ public class TraTenTrungTamTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         // Và kiểm bằng hành vi: gọi không token phải ra 200, KHÔNG phải 401.
         var res = await factory.CreateClient()
-            .GetAsync($"/api/v1/auth/ten-doi/{factory.MaTrungTamA}");
+            .GetAsync($"/api/v1/auth/ten-trung-tam/{factory.MaTrungTamA}");
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
     }
 

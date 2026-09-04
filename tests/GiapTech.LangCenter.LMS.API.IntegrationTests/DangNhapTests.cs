@@ -46,7 +46,7 @@ public class DangNhapTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Khong_phan_biet_sai_tenant_sai_user_hay_sai_mat_khau()
     {
-        var (s1, b1) = await Post(new Req("CLB-KHONG-TON-TAI", "admin", "123456"));
+        var (s1, b1) = await Post(new Req("KHONGCO", "admin", "123456"));
         var (s2, b2) = await Post(new Req(factory.MaTrungTamA, "user-khong-ton-tai", "123456"));
         var (s3, b3) = await Post(new Req(factory.MaTrungTamA, "admin", "sai"));
 
@@ -56,7 +56,7 @@ public class DangNhapTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(b2.GetProperty("errorCode").GetString(), b3.GetProperty("errorCode").GetString());
     }
 
-    /// <summary>Cùng username "admin" ở hai CLB — phải là hai tài khoản khác nhau.</summary>
+    /// <summary>Cùng username "admin" ở hai trung tâm — phải là hai tài khoản khác nhau.</summary>
     [Fact]
     public async Task Username_trung_nhau_o_hai_tenant_van_dang_nhap_dung_tenant()
     {

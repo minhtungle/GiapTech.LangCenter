@@ -1,5 +1,9 @@
 # Module Tài chính — Quỹ đội (FR-15, FR-16)
 
+> ⚠️ **Tài liệu của DỰ ÁN CŨ** (quản lý CLB đá bóng phong trào). Từ 05/09/2026 repo này là
+> base cho hệ thống quản lý trung tâm ngoại ngữ — **phần nghiệp vụ dưới đây không còn trong
+> code**. Giữ lại để tham khảo cách viết đặc tả. Xem [`CLAUDE.md`](../../CLAUDE.md) mục 1.
+
 > Đây là dữ liệu nhạy cảm. Mọi PR đụng tới module này **bắt buộc có security review** — xem
 > [CONTRIBUTING.md](../../CONTRIBUTING.md) mục 4.
 

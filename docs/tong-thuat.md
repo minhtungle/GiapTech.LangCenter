@@ -1,5 +1,9 @@
 # Tổng thuật — đọc 1 mạch trước khi đào sâu
 
+> ⚠️ **Tài liệu của DỰ ÁN CŨ** (quản lý CLB đá bóng phong trào). Từ 05/09/2026 repo này là
+> base cho hệ thống quản lý trung tâm ngoại ngữ — **phần nghiệp vụ dưới đây không còn trong
+> code**. Giữ lại để tham khảo cách viết đặc tả. Xem [`CLAUDE.md`](../CLAUDE.md) mục 1.
+
 Hệ thống Quản lý Câu lạc bộ đá bóng là ứng dụng web **multi-tenant**: mỗi CLB đăng ký là 1 tenant độc
 lập, dữ liệu cách ly hoàn toàn theo `tenant_id`. Đăng nhập bằng bộ ba **{ID đội, tên đăng nhập, mật
 khẩu}**.

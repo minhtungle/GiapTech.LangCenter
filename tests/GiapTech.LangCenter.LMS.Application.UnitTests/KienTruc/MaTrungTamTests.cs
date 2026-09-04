@@ -2,7 +2,7 @@ using GiapTech.LangCenter.LMS.Domain.Common;
 
 namespace GiapTech.LangCenter.LMS.Application.UnitTests.KienTruc;
 
-/// <summary>Mã trung tâm 7 ký tự sinh tự động — định danh CLB khi đăng nhập (FR-01).</summary>
+/// <summary>Mã trung tâm 7 ký tự sinh tự động — định danh trung tâm khi đăng nhập (FR-01).</summary>
 public class MaTrungTamTests
 {
     [Fact]

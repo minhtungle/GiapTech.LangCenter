@@ -1,5 +1,9 @@
 # Module Quản trị hệ thống (FR-03 → FR-06)
 
+> ℹ️ FR này **vẫn còn trong code**, nhưng từ ngữ đã đổi (05/09/2026): "đội"/"CLB" →
+> "trung tâm", `MaDoi` → `MaTrungTam`, route `/dang-ky-clb` → `/dang-ky-trung-tam`. Phần hồ sơ
+> cầu thủ (FR-04) đã bỏ.
+
 ## FR-03 — Tài khoản người dùng
 
 CRUD tài khoản đăng nhập.

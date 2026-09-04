@@ -8,6 +8,75 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+## [2.0.0] — 2026-09-05 — Tách base cho dự án LMS
+
+Repo chuyển từ **quản lý CLB đá bóng** (`GiapTech.SoccerRoom`) thành **base cho hệ thống quản
+lý trung tâm ngoại ngữ** (`GiapTech.LangCenter.LMS`): giữ toàn bộ tầng hệ thống, bỏ hết nghiệp
+vụ bóng đá. Bản bóng đá đầy đủ vẫn còn ở repo cũ.
+
+### Removed
+
+- **Nghiệp vụ bóng đá** (~55.000 dòng): lịch thi đấu, chi tiết trận, đội hình + sơ đồ chiến
+  thuật, mẫu đội hình, video, đối thủ, Cộng đồng/sàn bắt đối, lời mời (thách đấu · qua link ·
+  đăng ký nhanh), tài chính (quỹ · khoản chi), thống kê, hồ sơ cầu thủ, dữ liệu mẫu.
+- `NguoiDung`: bỏ `CauThuId` (liên kết hồ sơ) và `LaTruongNhom`.
+- `Tenant`: bỏ `MauAoJson`, `SanNha`, `NgayThanhLap`. Giữ nhóm chung, nhóm liên hệ và nhóm
+  ngân hàng/QR (trung tâm cũng cần thu học phí).
+- 14 migration cũ → tạo lại một `InitialCreate` gồm 7 bảng hệ thống.
+- 5 thư viện frontend không còn ai dùng: `recharts`, `@calendarjs/ce`, `qrcode`,
+  `@tanstack/react-table`, `class-variance-authority`.
+
+### Changed
+
+- **Đổi tên đồng bộ** toàn source: 4 project + 2 test project, solution, namespace, Dockerfile,
+  compose, CI, docs.
+- **Thống nhất 4 lược đặt tên** vốn lẫn lộn từ trước — `GiapTech.SoccerRoom` (code),
+  `soccercity` (compose + image), `soccerroom` (JWT issuer · MinIO bucket · SMTP), `clubmgmt`
+  (DB name) — về một tên `langcenter-lms`. CI trước đây push
+  `ghcr.io/$owner/soccerroom-api` còn compose kéo `soccercity-api`: **hai bên đã lệch nhau**,
+  nay khớp.
+- **Từ ngữ định danh**: `MaDoi`/`TenDoi` → `MaTrungTam`/`TenTrungTam`; claim JWT
+  `ma_doi`/`ten_doi` → `ma_trung_tam`/`ten_trung_tam`; route `/dang-ky-clb` →
+  `/dang-ky-trung-tam`, `/auth/ten-doi/{ma}` → `/auth/ten-trung-tam/{ma}`, `/anh/clb/*` →
+  `/anh/trung-tam/*`. `KhuVuc` → `DiaChi`, `LienHeCongKhai` → `LienHe`.
+- `ChucNang`: còn `TaiKhoan`, `PhanQuyen`, `ThietLapChung`, `DoiMatKhauNguoiKhac` và **thêm
+  `Anh`** — xem phần Fixed.
+- i18n 814 → 207 dòng (bỏ 17 namespace + 58 mã lỗi nghiệp vụ, giữ 29 mã hệ thống).
+- Frontend: 15 → 4 route bảo vệ, 13 → 4 mục menu; `index.css` 276 → 89 dòng. Màn Tổng quan
+  thành khung dẫn tới các màn quản trị, chờ thiết kế mới.
+- localStorage `sr_*` → `lms_*` (người đang có phiên sẽ phải đăng nhập lại một lần).
+
+### Fixed
+
+- **Endpoint đọc ảnh dùng chung không còn gác bằng quyền của một module cụ thể.** Trước đây nó
+  dùng `[RequirePermission(ChucNang.CauThu, Xem)]`; bỏ danh mục đó mà không đổi thì **mọi ảnh
+  kể cả logo trả 403** — âm thầm, không test nào bắt được. Nay có `ChucNang.Anh` riêng.
+- **Quy tắc #1 — cập nhật thiết lập không còn xoá trường không gửi.** `TenVietTat`, `MoTa`,
+  `LogoUrl`, `AnhBiaUrl` gán trực tiếp (`t.MoTa = request.MoTa`) trong khi các trường khác dùng
+  `is { }` để phân biệt "không gửi" với "gửi rỗng" — hai quy ước trái ngược trong cùng một
+  handler. Phát hiện khi kiểm tay trên PostgreSQL thật, đã đưa về một quy ước và có
+  `CapNhatKhongMatDuLieuTests` canh (đã kiểm bằng phản chứng).
+- **Route tra tên trung tâm khớp lại giữa BE và FE.** Backend còn `ten-doi` trong khi frontend
+  đã gọi `ten-trung-tam`; test cũng dùng tên cũ nên **vẫn xanh dù thực tế đã lệch**. Đã đồng bộ
+  và soát toàn bộ endpoint FE gọi so với Swagger.
+
+### Added
+
+- `DongThoiTests` viết lại trên 7 ràng buộc UNIQUE hệ thống, **thêm hai test chiều ngược** mà
+  bản gốc chưa có: `UNIQUE(username)` phải gồm `tenant_id`, và cùng một username tạo được ở hai
+  tenant khác nhau.
+- Test E2E quy tắc #1 cho màn Thiết lập — nơi quy ước `null`/`''` khác màn Tài khoản.
+- Ghi chú trong `playwright.config.ts` về việc làm lại endpoint dọn tenant test khi có nghiệp vụ.
+
+### Kiểm chứng
+
+- 128 test backend xanh (35 unit + 93 integration), `dotnet build` 0 warning.
+- Frontend `tsc -b` + `vite build` sạch.
+- **PostgreSQL thật**: migration áp sạch, đúng 7 bảng, `ix_nguoi_dung_tenant_id_username` gồm
+  `tenant_id`; chạy đầu-cuối tạo trung tâm → đăng nhập → bị chặn buộc đổi mật khẩu → đổi → vào
+  hệ thống → tải logo (MinIO) đọc lại 200; tenant 2 đọc ảnh của tenant 1 trả 404 đúng.
+
+
 ### Added
 
 **Tài liệu**

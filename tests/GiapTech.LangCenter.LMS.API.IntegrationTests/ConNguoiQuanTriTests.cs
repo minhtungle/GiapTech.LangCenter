@@ -23,7 +23,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
 {
     private const string MatKhauMoi = "connguoiqt123";
 
-    private async Task<(HttpClient Client, string MaTrungTam)> ClbRieng(string nhan)
+    private async Task<(HttpClient Client, string MaTrungTam)> TrungTamRieng(string nhan)
     {
         var moTai = factory.CreateClient();
         var ten = $"CNQT {nhan} {Guid.NewGuid():N}";
@@ -74,13 +74,13 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
     public async Task Admin_DUY_NHAT_khong_tu_cat_het_quyen_cua_minh()
     {
         // Đây là ca chính xác đã gặp: gửi `QuyenIds = []` cho chính mình.
-        var (c, _) = await ClbRieng("cat-het");
+        var (c, _) = await TrungTamRieng("cat-het");
         var (adminId, _) = await LayTaiKhoan(c, "admin");
 
         var res = await c.PutAsJsonAsync($"/api/v1/tai-khoan/{adminId}", new
         {
             Id = adminId, Email = (string?)null, SoDienThoai = (string?)null,
-            DiaChi = (string?)null, CauThuId = (Guid?)null,
+            DiaChi = (string?)null,
             QuyenIds = Array.Empty<string>(), TrangThai = 0,
         });
 
@@ -96,14 +96,14 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
     {
         // Vô hiệu hoá cũng làm mất người quản trị. Đã có chặn "tự vô hiệu hoá mình" từ trước,
         // test này canh để nó không bị bỏ khi ai đó sửa handler.
-        var (c, _) = await ClbRieng("vo-hieu");
+        var (c, _) = await TrungTamRieng("vo-hieu");
         var (adminId, _) = await LayTaiKhoan(c, "admin");
         var quyen = await QuyenIds(c);
 
         var res = await c.PutAsJsonAsync($"/api/v1/tai-khoan/{adminId}", new
         {
             Id = adminId, Email = (string?)null, SoDienThoai = (string?)null,
-            DiaChi = (string?)null, CauThuId = (Guid?)null,
+            DiaChi = (string?)null,
             QuyenIds = quyen, TrangThai = 1,
         });
 
@@ -114,20 +114,20 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
             $"phải bị chặn, thực tế: {body}");
     }
 
-    // ----- Chặn ở mức CLB, không mức cá nhân -----
+    // ----- Chặn ở mức TRUNG TÂM, không mức cá nhân -----
 
     [Fact]
     public async Task Tu_bo_quyen_duoc_NEU_con_nguoi_khac_giu_quyen_do()
     {
-        // Quyết định của chủ sản phẩm: chặn ở mức CLB. CLB nhiều người quản trị thì admin A sắp
+        // Quyết định của chủ sản phẩm: chặn ở mức trung tâm. Trung tâm nhiều người quản trị thì admin A sắp
         // xếp lại vai trò của mình được — không khoá cứng vì lo xa.
-        var (c, _) = await ClbRieng("con-nguoi-khac");
+        var (c, _) = await TrungTamRieng("con-nguoi-khac");
         var quyen = await QuyenIds(c);
 
         // Tạo admin thứ hai CÓ quyền đầy đủ.
         var tao = await c.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
-            Username = "admin2", MatKhau = "admin2matkhau", CauThuId = (Guid?)null,
+            Username = "admin2", MatKhau = "admin2matkhau",
             Email = (string?)null, SoDienThoai = (string?)null, DiaChi = (string?)null, QuyenIds = quyen,
         });
         tao.EnsureSuccessStatusCode();
@@ -137,7 +137,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         var res = await c.PutAsJsonAsync($"/api/v1/tai-khoan/{adminId}", new
         {
             Id = adminId, Email = (string?)null, SoDienThoai = (string?)null,
-            DiaChi = (string?)null, CauThuId = (Guid?)null,
+            DiaChi = (string?)null,
             QuyenIds = Array.Empty<string>(), TrangThai = 0,
         });
 
@@ -156,7 +156,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         // Tình huống ĐÚNG: admin gốc **hết quyền Phân quyền** nhưng vẫn còn quyền TaiKhoan (đủ để
         // gọi API xoá), và `chuquyen` là người duy nhất còn quyền Phân quyền. Lúc đó xoá
         // `chuquyen` là xoá người quản trị cuối cùng.
-        var (c, _) = await ClbRieng("xoa-cuoi");
+        var (c, _) = await TrungTamRieng("xoa-cuoi");
 
         // Nhóm quyền CHỈ có TaiKhoan (không có PhanQuyen) — để admin gốc còn gọi được API.
         var taoNhom = await c.PostAsJsonAsync("/api/v1/quyen", new
@@ -176,7 +176,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         // `chuquyen` giữ quyền đầy đủ (có PhanQuyen).
         var tao = await c.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
-            Username = "chuquyen", MatKhau = "chuquyenmatkhau", CauThuId = (Guid?)null,
+            Username = "chuquyen", MatKhau = "chuquyenmatkhau",
             Email = (string?)null, SoDienThoai = (string?)null, DiaChi = (string?)null, QuyenIds = quyenDayDu,
         });
         tao.EnsureSuccessStatusCode();
@@ -187,7 +187,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         var ha = await c.PutAsJsonAsync($"/api/v1/tai-khoan/{adminId}", new
         {
             Id = adminId, Email = (string?)null, SoDienThoai = (string?)null,
-            DiaChi = (string?)null, CauThuId = (Guid?)null,
+            DiaChi = (string?)null,
             QuyenIds = new[] { nhomChiTaiKhoan }, TrangThai = 0,
         });
         Assert.Equal(HttpStatusCode.NoContent, ha.StatusCode);
@@ -210,14 +210,14 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
     {
         // Phản chứng 21/08 lọt: bỏ điều kiện `TrangThai == HoatDong` mà 6/6 vẫn xanh — vì không
         // test nào có tài khoản bị vô hiệu hoá. Người bị khoá KHÔNG đăng nhập được, nên đếm họ là
-        // "còn người quản trị" là sai: CLB vẫn mất đường vào.
-        var (c, _) = await ClbRieng("vo-hieu-hoa");
+        // "còn người quản trị" là sai: trung tâm vẫn mất đường vào.
+        var (c, _) = await TrungTamRieng("vo-hieu-hoa");
         var quyen = await QuyenIds(c);
 
         // `nguoibikhoa` có quyền đầy đủ nhưng bị vô hiệu hoá ngay.
         var tao = await c.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
-            Username = "nguoibikhoa", MatKhau = "nguoibikhoamk", CauThuId = (Guid?)null,
+            Username = "nguoibikhoa", MatKhau = "nguoibikhoamk",
             Email = (string?)null, SoDienThoai = (string?)null, DiaChi = (string?)null, QuyenIds = quyen,
         });
         tao.EnsureSuccessStatusCode();
@@ -226,7 +226,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         var khoa = await c.PutAsJsonAsync($"/api/v1/tai-khoan/{biKhoaId}", new
         {
             Id = biKhoaId, Email = (string?)null, SoDienThoai = (string?)null,
-            DiaChi = (string?)null, CauThuId = (Guid?)null,
+            DiaChi = (string?)null,
             QuyenIds = quyen, TrangThai = 1,
         });
         Assert.Equal(HttpStatusCode.NoContent, khoa.StatusCode);
@@ -236,7 +236,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         var res = await c.PutAsJsonAsync($"/api/v1/tai-khoan/{adminId}", new
         {
             Id = adminId, Email = (string?)null, SoDienThoai = (string?)null,
-            DiaChi = (string?)null, CauThuId = (Guid?)null,
+            DiaChi = (string?)null,
             QuyenIds = Array.Empty<string>(), TrangThai = 0,
         });
 
@@ -250,7 +250,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
     {
         // Tên nhóm quyền là chuỗi người dùng tự đặt. Một nhóm tên "Trợ lý" hoàn toàn có thể được
         // cấp quyền Phân quyền — nếu chốt suy từ tên thì nó bỏ sót người đó và chặn oan.
-        var (c, _) = await ClbRieng("theo-du-lieu");
+        var (c, _) = await TrungTamRieng("theo-du-lieu");
 
         // Tạo nhóm quyền tên KHÔNG liên quan gì tới "quản trị", nhưng CÓ quyền PhanQuyen.
         var taoQuyen = await c.PostAsJsonAsync("/api/v1/quyen", new
@@ -266,7 +266,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
 
         var tao = await c.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
-            Username = "troly", MatKhau = "trolymatkhau1", CauThuId = (Guid?)null,
+            Username = "troly", MatKhau = "trolymatkhau1",
             Email = (string?)null, SoDienThoai = (string?)null, DiaChi = (string?)null, QuyenIds = new[] { quyenMoiId },
         });
         tao.EnsureSuccessStatusCode();
@@ -276,7 +276,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         var res = await c.PutAsJsonAsync($"/api/v1/tai-khoan/{adminId}", new
         {
             Id = adminId, Email = (string?)null, SoDienThoai = (string?)null,
-            DiaChi = (string?)null, CauThuId = (Guid?)null,
+            DiaChi = (string?)null,
             QuyenIds = Array.Empty<string>(), TrangThai = 0,
         });
 

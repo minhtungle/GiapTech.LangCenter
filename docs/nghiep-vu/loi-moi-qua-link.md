@@ -1,5 +1,9 @@
 # FR-18 — Lời mời thách đấu qua link/QR
 
+> ⚠️ **Tài liệu của DỰ ÁN CŨ** (quản lý CLB đá bóng phong trào). Từ 05/09/2026 repo này là
+> base cho hệ thống quản lý trung tâm ngoại ngữ — **phần nghiệp vụ dưới đây không còn trong
+> code**. Giữ lại để tham khảo cách viết đặc tả. Xem [`CLAUDE.md`](../../CLAUDE.md) mục 1.
+
 > Bổ sung 20/08/2026. Liên quan: [FR-17 Cộng đồng](./lich-thi-dau.md#fr-17--cộng-đồng-bổ-sung-18082026)
 > · [multi-tenant.md](../backend/multi-tenant.md) · [ADR-0005](../kien-truc/adr/0005-loi-moi-qua-link.md)
 
