@@ -5,21 +5,8 @@ import Layout from '@/components/Layout'
 import DangNhap from '@/pages/DangNhap'
 import DoiMatKhau from '@/pages/DoiMatKhau'
 import QuenMatKhau from '@/pages/QuenMatKhau'
-import DangKyClb from '@/pages/DangKyClb'
-import LichThiDau from '@/pages/lich-thi-dau/LichThiDau'
-import DoiThu from '@/pages/lich-thi-dau/DoiThu'
-import CongDong from '@/pages/cong-dong/CongDong'
-import ChiTietClb from '@/pages/cong-dong/ChiTietClb'
-import XemLoiMoiLink from '@/pages/moi-qua-link/XemLoiMoiLink'
-import DangKyNhanh from '@/pages/dang-ky-nhanh/DangKyNhanh'
+import DangKyTrungTam from '@/pages/DangKyTrungTam'
 import TongQuan from '@/pages/TongQuan'
-import ChiTietTran from '@/pages/lich-thi-dau/ChiTietTran'
-import HomThu from '@/pages/lich-thi-dau/HomThu'
-import MauDoiHinh from '@/pages/lich-thi-dau/MauDoiHinh'
-import ThuVienVideo from '@/pages/lich-thi-dau/ThuVienVideo'
-import TaiChinh from '@/pages/tai-chinh/TaiChinh'
-import ThongKe from '@/pages/thong-ke/ThongKe'
-import CauThu from '@/pages/quan-tri/CauThu'
 import TaiKhoan from '@/pages/quan-tri/TaiKhoan'
 import PhanQuyen from '@/pages/quan-tri/PhanQuyen'
 import ThietLap from '@/pages/quan-tri/ThietLap'
@@ -48,7 +35,6 @@ function CanDangNhap({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -57,12 +43,7 @@ export default function App() {
           <Routes>
             <Route path="/dang-nhap" element={<DangNhap />} />
             <Route path="/quen-mat-khau" element={<QuenMatKhau />} />
-            <Route path="/dang-ky" element={<DangKyClb />} />
-            {/* Trang xem lời mời qua link — CÔNG KHAI (FR-18): người nhận có thể chưa có tài
-                khoản. Đặt cùng nhóm với /dang-nhap, ngoài <CanThietDangNhap>. */}
-            <Route path="/loi-moi" element={<XemLoiMoiLink />} />
-            {/* FR-19 — trang đăng ký nhanh, KHÔNG cần đăng nhập (người dùng chưa có tài khoản). */}
-            <Route path="/dang-ky-nhanh" element={<DangKyNhanh />} />
+            <Route path="/dang-ky" element={<DangKyTrungTam />} />
             <Route path="/doi-mat-khau" element={<DoiMatKhau />} />
 
             <Route
@@ -73,18 +54,7 @@ export default function App() {
               }
             >
               <Route path="/" element={<TongQuan />} />
-              <Route path="/lich-thi-dau" element={<LichThiDau />} />
-              <Route path="/lich-thi-dau/:id" element={<ChiTietTran />} />
-              <Route path="/mau-doi-hinh" element={<MauDoiHinh />} />
-              <Route path="/thu-vien-video" element={<ThuVienVideo />} />
-              <Route path="/hom-thu" element={<HomThu />} />
-              <Route path="/doi-thu" element={<DoiThu />} />
-              <Route path="/cong-dong" element={<CongDong />} />
-              <Route path="/cong-dong/:maDoi" element={<ChiTietClb />} />
-              <Route path="/thong-ke" element={<ThongKe />} />
-              <Route path="/tai-chinh" element={<TaiChinh />} />
               <Route path="/quan-tri/tai-khoan" element={<TaiKhoan />} />
-              <Route path="/quan-tri/cau-thu" element={<CauThu />} />
               <Route path="/quan-tri/phan-quyen" element={<PhanQuyen />} />
               <Route path="/quan-tri/thiet-lap" element={<ThietLap />} />
             </Route>

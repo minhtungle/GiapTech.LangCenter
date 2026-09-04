@@ -15,7 +15,7 @@ import {
 export default function QuenMatKhau() {
   const { t } = useTranslation()
   const [buoc, setBuoc] = useState<1 | 2>(1)
-  const [maDoi, setMaDoi] = useState('')
+  const [maTrungTam, setMaDoi] = useState('')
   const [email, setEmail] = useState('')
   const [token, setToken] = useState('')
   const [matKhauMoi, setMatKhauMoi] = useState('')
@@ -28,7 +28,7 @@ export default function QuenMatKhau() {
     setMaLoi(null)
     setDangGui(true)
     try {
-      await api.post('/auth/quen-mat-khau', { maDoi, email })
+      await api.post('/auth/quen-mat-khau', { maTrungTam, email })
       setBuoc(2)
     } catch (err) {
       setMaLoi(layMaLoi(err))
@@ -71,14 +71,14 @@ export default function QuenMatKhau() {
           ) : buoc === 1 ? (
             <form onSubmit={guiYeuCau} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="maDoi">{t('dangNhap.maDoi')}</Label>
+                <Label htmlFor="maTrungTam">{t('dangNhap.maTrungTam')}</Label>
                 <Input
-                  id="maDoi"
+                  id="maTrungTam"
                   autoFocus
                   maxLength={7}
                   placeholder="A3K9M2P"
                   className="font-mono uppercase tracking-widest"
-                  value={maDoi}
+                  value={maTrungTam}
                   onChange={(e) => setMaDoi(e.target.value.toUpperCase())}
                   required
                 />

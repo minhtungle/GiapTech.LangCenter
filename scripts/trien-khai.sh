@@ -6,7 +6,7 @@
 # vừa pull. Đơn giản hơn CI/CD vì không cần registry, không cần SSH key trong GitHub — đổi lại
 # VPS phải đủ RAM để build (~1GB cho .NET, ~550MB cho frontend).
 #
-#   cd /opt/soccerroom && ./scripts/trien-khai.sh
+#   cd /opt/langcenter-lms && ./scripts/trien-khai.sh
 #
 # Script này CỐ Ý không tự `git pull`: bạn cần thấy mình đang deploy commit nào trước khi build.
 # Chạy `git pull` rồi mới chạy script.

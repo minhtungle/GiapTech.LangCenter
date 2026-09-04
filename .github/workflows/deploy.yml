@@ -12,7 +12,7 @@ env:
   #
   # `github.repository_owner` viết hoa được (GitHub cho phép), nhưng GHCR chỉ nhận chữ
   # thường — hạ về lowercase ở bước riêng bên dưới.
-  IMAGE_NAME: soccerroom-api
+  IMAGE_NAME: langcenter-lms-api
 
 jobs:
   kiem-tra:
@@ -77,14 +77,14 @@ jobs:
         run: |
           cat > .env <<'EOF'
           ASPNETCORE_ENVIRONMENT=Development
-          POSTGRES_DB=soccerroom
-          POSTGRES_USER=soccerroom
+          POSTGRES_DB=langcenter_lms
+          POSTGRES_USER=langcenter_lms_app
           POSTGRES_PASSWORD=ci-chi-dung-mot-lan
           JWT_SECRET=ci-jwt-secret-toi-thieu-32-ky-tu-de-chay-test
-          JWT_ISSUER=soccerroom-api
+          JWT_ISSUER=langcenter-lms-api
           MINIO_ROOT_USER=ci-minio-user
           MINIO_ROOT_PASSWORD=ci-minio-password
-          MINIO_BUCKET=soccerroom-anh
+          MINIO_BUCKET=langcenter-lms-anh
           DOMAIN=localhost
           EOF
 
@@ -166,7 +166,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: src/GiapTech.SoccerRoom.API/Dockerfile
+          file: src/GiapTech.LangCenter.LMS.API/Dockerfile
           push: true
           # Gắn cả `latest` và SHA: `latest` để compose pull, SHA để quay lại bản cũ khi cần
           # (`IMAGE_API=...:<sha> docker compose up -d`).

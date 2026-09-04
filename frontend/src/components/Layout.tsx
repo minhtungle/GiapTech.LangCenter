@@ -2,31 +2,30 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
-  CalendarDays, BarChart3, Wallet, Users, UserCircle, ShieldCheck, Settings, LogOut, Home, Swords, Store, MailOpen,
-  ClipboardList, Video,
+  Users, ShieldCheck, Settings, LogOut, Home,
   PanelLeftClose, PanelLeft, Menu, X,
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
-const KHOA_THU_GON = 'sr_sidebar_thu_gon'
+const KHOA_THU_GON = 'lms_sidebar_thu_gon'
 
 /**
- * Chữ viết tắt cho ô logo: lấy chữ cái đầu của 2 từ cuối, bỏ tiền tố "FC"/"CLB" vì gần như
- * CLB nào cũng có, để lại thì mọi ô đều hiện "FC".
+ * Chữ viết tắt cho ô logo: lấy chữ cái đầu của 2 từ cuối, bỏ các từ chung ("trung tâm",
+ * "ngoại ngữ") vì gần như tên nào cũng có — để lại thì mọi ô đều hiện "TT".
  */
-function vietTat(tenDoi?: string) {
-  if (!tenDoi) return 'SR'
-  const tu = tenDoi
+function vietTat(tenTrungTam?: string) {
+  if (!tenTrungTam) return 'TT'
+  const tu = tenTrungTam
     .trim()
     .split(/\s+/)
-    .filter((t) => !['fc', 'clb', 'cau', 'lac', 'bo'].includes(t.toLowerCase()))
+    .filter((t) => !['trung', 'tam', 'tt', 'ngoai', 'ngu'].includes(t.toLowerCase()))
   const lay = tu.slice(-2)
-  return (lay.map((t) => t[0]).join('') || tenDoi[0]).toUpperCase()
+  return (lay.map((t) => t[0]).join('') || tenTrungTam[0]).toUpperCase()
 }
 
-/** Sidebar theo 5 module, thu gọn được (docs/frontend/ui-ux-nguyen-tac.md). */
+/** Sidebar thu gọn được (docs/frontend/ui-ux-nguyen-tac.md). */
 export default function Layout() {
   const { t } = useTranslation()
   const { phien, dangXuat } = useAuth()
@@ -56,22 +55,9 @@ export default function Layout() {
       muc: [{ to: '/', nhan: t('menu.tongQuan'), icon: Home, cuoi: true }],
     },
     {
-      muc: [
-        { to: '/lich-thi-dau', nhan: t('menu.lichThiDau'), icon: CalendarDays },
-        { to: '/hom-thu', nhan: t('menu.homThu'), icon: MailOpen },
-        { to: '/doi-thu', nhan: t('menu.doiThu'), icon: Swords },
-        { to: '/cong-dong', nhan: t('menu.congDong'), icon: Store },
-        { to: '/mau-doi-hinh', nhan: t('menu.mauDoiHinh'), icon: ClipboardList },
-        { to: '/thu-vien-video', nhan: t('menu.thuVienVideo'), icon: Video },
-        { to: '/thong-ke', nhan: t('menu.thongKe'), icon: BarChart3 },
-        { to: '/tai-chinh', nhan: t('menu.taiChinh'), icon: Wallet },
-      ],
-    },
-    {
       tieuDe: t('menu.quanTri'),
       muc: [
         { to: '/quan-tri/tai-khoan', nhan: t('menu.taiKhoan'), icon: Users },
-        { to: '/quan-tri/cau-thu', nhan: t('menu.cauThu'), icon: UserCircle },
         { to: '/quan-tri/phan-quyen', nhan: t('menu.phanQuyen'), icon: ShieldCheck },
         { to: '/quan-tri/thiet-lap', nhan: t('menu.thietLap'), icon: Settings },
       ],
@@ -85,7 +71,7 @@ export default function Layout() {
   const noiDungSidebar = (
     <>
       {/*
-        Tên đội là dòng chính, mã đội là dòng phụ: người dùng nhận ra CLB qua tên, mã chỉ
+        Tên trung tâm là dòng chính, mã là dòng phụ: người dùng nhận ra trung tâm qua tên, mã chỉ
         cần khi đăng nhập hoặc đọc cho người khác.
       */}
       <div
@@ -96,19 +82,19 @@ export default function Layout() {
       >
         <div
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-primary text-xs font-bold text-primary-foreground"
-          title={thuGon ? `${phien?.tenDoi ?? ''} · ${phien?.maDoi ?? ''}` : undefined}
+          title={thuGon ? `${phien?.tenTrungTam ?? ''} · ${phien?.maTrungTam ?? ''}` : undefined}
         >
-          {vietTat(phien?.tenDoi)}
+          {vietTat(phien?.tenTrungTam)}
         </div>
         {!thuGon && (
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold leading-tight" title={phien?.tenDoi}>
+            <p className="truncate text-sm font-semibold leading-tight" title={phien?.tenTrungTam}>
               {/* Token cũ chưa có claim ten_doi: hiện mã đội thay vì để trống. */}
-              {phien?.tenDoi || phien?.maDoi || '—'}
+              {phien?.tenTrungTam || phien?.maTrungTam || '—'}
             </p>
-            {phien?.tenDoi && (
+            {phien?.tenTrungTam && (
               <p className="truncate font-mono text-[11px] leading-tight tracking-wide text-muted-foreground">
-                {phien.maDoi}
+                {phien.maTrungTam}
               </p>
             )}
           </div>

@@ -4,13 +4,13 @@ import { api } from '@/lib/api'
 /**
  * Cờ tính năng do API khai (`GET /api/v1/tinh-nang`), đọc được khi chưa đăng nhập.
  *
- * Dùng để KHÔNG hiện lối vào dẫn tới ngõ cụt: đăng ký CLB ẩn danh chỉ bật ở Development, mà
+ * Dùng để KHÔNG hiện lối vào dẫn tới ngõ cụt: nếu đăng ký ẩn danh bị tắt ở máy chủ, mà
  * frontend không tự biết mình đang nói chuyện với môi trường nào. Không có cờ này thì trên
- * production người dùng bấm "Tạo câu lạc bộ", điền tên, rồi nhận "Đã có lỗi xảy ra" từ một
+ * frontend vẫn hiện nút thì người dùng bấm "Tạo trung tâm", điền tên, rồi nhận lỗi từ một
  * 404 — trông như app hỏng chứ không phải "chức năng chưa mở".
  */
 export interface TinhNang {
-  dangKyClb: boolean
+  dangKyTrungTam: boolean
 }
 
 export function useTinhNang() {
@@ -24,5 +24,5 @@ export function useTinhNang() {
 
   // Mặc định ẨN khi chưa biết: hiện nhầm rồi bấm vào ngõ cụt tệ hơn là thiếu một link vài trăm
   // mili-giây. Cũng là cách an toàn khi API cũ chưa có endpoint này (404 → data undefined).
-  return data ?? { dangKyClb: false }
+  return data ?? { dangKyTrungTam: false }
 }

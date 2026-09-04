@@ -12,7 +12,7 @@ export interface LuaChon {
 /**
  * Select có ô tìm kiếm (combobox) — thay cho `<select>` cơ bản.
  *
- * Lý do: danh sách cầu thủ và nhóm quyền của một CLB có thể lên vài chục mục. Với `<select>`
+ * Lý do: danh sách nhóm quyền của một trung tâm có thể lên vài chục mục. Với `<select>`
  * người dùng phải cuộn tay tìm; ở đây gõ vài ký tự là lọc.
  *
  * Tìm kiếm bỏ dấu tiếng Việt: gõ "nguyen" vẫn ra "Nguyễn" — người dùng thường không bỏ dấu
@@ -44,7 +44,7 @@ export function SelectTimKiem({
    * dòng "Tạo …" ở cuối. Nhận từ khoá đang gõ, trả về giá trị của mục vừa tạo (hoặc null nếu
    * thất bại) — component tự chọn nó.
    *
-   * Có nó thì thêm đối thủ mới không phải rời form đang làm, sang màn Đối thủ, rồi quay lại.
+   * Có nó thì thêm mục mới không phải rời form đang làm, sang màn quản lý, rồi quay lại.
    */
   onTaoMoi?: (ten: string) => Promise<string | null>
   /** Nhãn dòng tạo mới, `{ten}` được thay bằng từ khoá. Mặc định: `Tạo "{ten}"`. */
@@ -97,8 +97,8 @@ export function SelectTimKiem({
   /**
    * Chỉ hiện dòng tạo mới khi từ khoá KHÔNG khớp chính xác mục nào đang có.
    *
-   * Dùng so khớp chính xác (không phải "danh sách rỗng"): gõ "FC Hải" mà đã có "FC Hải Châu"
-   * thì vẫn cho tạo "FC Hải" — hai đội khác nhau. Nhưng gõ đúng "FC Hải Châu" thì không, vì
+   * Dùng so khớp chính xác (không phải "danh sách rỗng"): gõ "Ban A" mà đã có "Ban A1" thì
+   * vẫn cho tạo "Ban A" — hai mục khác nhau. Nhưng gõ đúng "Ban A1" thì không, vì
    * đó chắc chắn là ý muốn chọn mục đã có.
    */
   const tuKhoaSach = tuKhoa.trim()

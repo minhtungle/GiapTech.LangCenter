@@ -4,7 +4,7 @@
 #
 # Chạy:  cp .env.example .env  →  điền giá trị  →  docker compose up -d
 
-name: soccercity
+name: langcenter-lms
 
 networks:
   backend:
@@ -20,8 +20,8 @@ services:
     # Build tại chỗ nếu chưa có image; trên VPS thì `docker compose pull` lấy bản CI đã đẩy.
     build:
       context: .
-      dockerfile: src/GiapTech.SoccerRoom.API/Dockerfile
-    image: ${IMAGE_API:-ghcr.io/minhtungle/soccercity-api:latest}
+      dockerfile: src/GiapTech.LangCenter.LMS.API/Dockerfile
+    image: ${IMAGE_API:-ghcr.io/minhtungle/langcenter-lms-api:latest}
     restart: unless-stopped
     ports:
       - "127.0.0.1:${API_PORT:-15080}:8080"
@@ -33,13 +33,13 @@ services:
       ConnectionStrings__Default: >-
         Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET:?can JWT_SECRET toi thieu 32 ky tu}
-      JWT_ISSUER: ${JWT_ISSUER:-soccerroom-api}
+      JWT_ISSUER: ${JWT_ISSUER:-langcenter-lms-api}
       JWT_EXPIRY_MINUTES: ${JWT_EXPIRY_MINUTES:-60}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SMTP_FROM: ${SMTP_FROM:-no-reply@soccerroom.local}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@langcenter-lms.local}
       SMS_PROVIDER: ${SMS_PROVIDER:-}
       SMS_API_KEY: ${SMS_API_KEY:-}
       SMS_SECRET_KEY: ${SMS_SECRET_KEY:-}
@@ -49,7 +49,7 @@ services:
       Minio__Endpoint: minio:9000
       Minio__AccessKey: ${MINIO_ROOT_USER:?can MINIO_ROOT_USER}
       Minio__SecretKey: ${MINIO_ROOT_PASSWORD:?can MINIO_ROOT_PASSWORD}
-      Minio__Bucket: ${MINIO_BUCKET:-soccerroom-anh}
+      Minio__Bucket: ${MINIO_BUCKET:-langcenter-lms-anh}
       Minio__UseSsl: "false"
       SENTRY_DSN: ${SENTRY_DSN:-}
     networks:

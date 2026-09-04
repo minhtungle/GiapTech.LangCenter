@@ -67,13 +67,13 @@ docker --version && docker compose version
 ## 5. Thư mục triển khai
 
 ```bash
-sudo mkdir -p /opt/soccerroom
-sudo chown deploy:deploy /opt/soccerroom
-cd /opt/soccerroom
+sudo mkdir -p /opt/langcenter-lms
+sudo chown deploy:deploy /opt/langcenter-lms
+cd /opt/langcenter-lms
 
 # Clone repo — cần `docker-compose.yml` và `Caddyfile` bản mới nhất mỗi lần đổi hạ tầng.
 # Chép tay hai file đó sẽ trôi lệch khỏi repo ngay lần sửa đầu tiên.
-git clone --depth 1 https://github.com/<chu-repo>/GiapTech.SoccerRoom.git .
+git clone --depth 1 https://github.com/<chu-repo>/GiapTech.LangCenter.LMS.git .
 
 # Thư mục Caddy mount để phục vụ frontend — CI chép build vào đây.
 mkdir -p frontend/dist
@@ -97,7 +97,7 @@ phải commit vào repo, mà CI/CD không nên biết domain của môi trườn
 ## 7. Khởi động
 
 ```bash
-cd /opt/clubmgmt
+cd /opt/langcenter-lms
 docker compose pull
 docker compose up -d
 docker compose ps
@@ -108,7 +108,7 @@ docker compose logs -f caddy   # xác nhận Caddy cấp chứng chỉ HTTPS th�
 
 ```bash
 # crontab -e — pg_dump hằng ngày lúc 2h sáng
-0 2 * * * docker compose -f /opt/clubmgmt/docker-compose.yml exec -T postgres \
+0 2 * * * docker compose -f /opt/langcenter-lms/docker-compose.yml exec -T postgres \
   pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" | gzip > /opt/backup/db-$(date +\%F).sql.gz
 ```
 
@@ -130,19 +130,19 @@ Cấu hình trên GitHub repo → Settings → Secrets:
 | `VPS_HOST` | IP hoặc domain VPS | ✅ |
 | `VPS_USER` | `deploy` | ✅ |
 | `VPS_SSH_KEY` | Khóa riêng SSH của cặp khóa **dành riêng cho CI** (không dùng lại khóa cá nhân) | ✅ |
-| `VPS_PATH` | Thư mục triển khai, vd `/opt/soccerroom` | ✅ |
+| `VPS_PATH` | Thư mục triển khai, vd `/opt/langcenter-lms` | ✅ |
 | `VPS_PORT` | Cổng SSH nếu khác 22 | — |
 
 Tạo khóa riêng cho CI trên **máy cá nhân**, không tạo trên VPS:
 
 ```bash
-ssh-keygen -t ed25519 -f ~/.ssh/soccerroom-ci -C "github-actions" -N ""
+ssh-keygen -t ed25519 -f ~/.ssh/langcenter-lms-ci -C "github-actions" -N ""
 
 # Public key → VPS
-ssh-copy-id -i ~/.ssh/soccerroom-ci.pub deploy@<IP_VPS>
+ssh-copy-id -i ~/.ssh/langcenter-lms-ci.pub deploy@<IP_VPS>
 
 # Private key → dán vào secret VPS_SSH_KEY (dán CẢ hai dòng BEGIN/END)
-cat ~/.ssh/soccerroom-ci
+cat ~/.ssh/langcenter-lms-ci
 ```
 
 Khóa riêng cho CI để **thu hồi được độc lập**: nếu nghi ngờ bị lộ, xoá đúng dòng đó khỏi
@@ -159,7 +159,7 @@ người dùng thật — CI xanh không đồng nghĩa với "an toàn để đ
 CI/CD chỉ chạy `docker compose pull && up -d`, **không tự khởi tạo lần đầu**. Lần đầu làm tay:
 
 ```bash
-cd /opt/soccerroom
+cd /opt/langcenter-lms
 docker compose pull        # cần image đã đẩy lên GHCR ít nhất một lần
 docker compose up -d
 docker compose ps
@@ -188,8 +188,8 @@ mỗi IP cho endpoint xác thực và đăng ký.
 **Với CI/CD qua GHCR** — workflow gắn tag theo commit SHA nên quay lại được ngay, không cần build:
 
 ```bash
-cd /opt/soccerroom
-IMAGE_API=ghcr.io/<chu-repo>/soccerroom-api:<sha-ban-cu> docker compose up -d api
+cd /opt/langcenter-lms
+IMAGE_API=ghcr.io/<chu-repo>/langcenter-lms-api:<sha-ban-cu> docker compose up -d api
 ```
 
 **Với luồng `git pull`** (không có image tag) — quay lại bằng git rồi build lại. Xem

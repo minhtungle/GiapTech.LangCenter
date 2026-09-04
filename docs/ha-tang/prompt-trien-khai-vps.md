@@ -11,14 +11,14 @@
 
 ---
 
-Tôi cần bạn triển khai trọn bộ ứng dụng **GiapTech.SoccerRoom** lên VPS này, từ máy trắng đến chạy được trên HTTPS.
+Tôi cần bạn triển khai trọn bộ ứng dụng **GiapTech.LangCenter.LMS** lên VPS này, từ máy trắng đến chạy được trên HTTPS.
 
 ## Thông tin
 
 - **Domain**: `ballcity.giaptex.com` (DNS đã trỏ về VPS này — hãy kiểm chứng trước khi khởi động Caddy)
-- **Repo**: `https://github.com/minhtungle/GiapTech.SoccerRoom.git` — public, clone không cần xác thực
+- **Repo**: `https://github.com/minhtungle/GiapTech.LangCenter.LMS.git` — public, clone không cần xác thực
 - **Nhánh**: `main`
-- **Thư mục triển khai**: `/opt/soccerroom`
+- **Thư mục triển khai**: `/opt/langcenter-lms`
 - **Ứng dụng**: quản lý CLB bóng đá phong trào, multi-tenant. ASP.NET Core 8 + PostgreSQL + React, chạy bằng Docker Compose sau Caddy (Caddy tự xin HTTPS Let's Encrypt).
 
 ## Đọc tài liệu trước khi làm
@@ -46,8 +46,8 @@ Xác nhận `dig +short ballcity.giaptex.com` trả về đúng IP công khai c�
 
 ### 3. Clone và cấu hình
 ```
-sudo mkdir -p /opt/soccerroom && sudo chown $USER:$USER /opt/soccerroom
-git clone https://github.com/minhtungle/GiapTech.SoccerRoom.git /opt/soccerroom
+sudo mkdir -p /opt/langcenter-lms && sudo chown $USER:$USER /opt/langcenter-lms
+git clone https://github.com/minhtungle/GiapTech.LangCenter.LMS.git /opt/langcenter-lms
 ```
 
 Tạo `.env` từ `.env.example`. Những biến **bắt buộc** đặt đúng:
@@ -70,7 +70,7 @@ Dùng `openssl rand -base64 48` hoặc tương đương để sinh. **Đừng d�
 Repo có `scripts/trien-khai.sh` làm sẵn toàn bộ việc này. **Dùng nó, đừng tự chạy `docker compose` bằng tay** — script có những bước dễ bỏ sót:
 
 ```
-cd /opt/soccerroom
+cd /opt/langcenter-lms
 ./scripts/trien-khai.sh
 ```
 

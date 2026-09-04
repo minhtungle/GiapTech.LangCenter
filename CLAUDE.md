@@ -14,7 +14,7 @@
 một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`. Đăng nhập bằng bộ ba
 **{ID đội, tên đăng nhập, mật khẩu}**.
 
-**Tên chuẩn:** `GiapTech.SoccerRoom` (namespace, solution, image `ghcr.io/giaptech/soccerroom-api`).
+**Tên chuẩn:** `GiapTech.LangCenter.LMS` (namespace, solution, image `ghcr.io/giaptech/langcenter-lms-api`).
 
 5 module · 16 mã FR · 3 actor (Admin / Manager / Player) — đọc 1 mạch ở
 [`docs/tong-thuat.md`](./docs/tong-thuat.md).
@@ -112,10 +112,10 @@ Còn lại là nợ kỹ thuật (test E2E, triển khai VPS) — xem [`docs/ke-
 
 ```
 src/
-├── GiapTech.SoccerRoom.Domain          # Entity, Enum, quy tắc nghiệp vụ thuần — KHÔNG phụ thuộc EF Core/ASP.NET
-├── GiapTech.SoccerRoom.Application     # CQRS: mỗi FR-xx = Command/Query riêng, DTO, interface, FluentValidation
-├── GiapTech.SoccerRoom.Infrastructure  # EF Core DbContext, Repository, gửi SMS/Email, MinIO client
-└── GiapTech.SoccerRoom.API             # Controller theo version (Controllers/V1/...), Middleware, JWT, Swagger
+├── GiapTech.LangCenter.LMS.Domain          # Entity, Enum, quy tắc nghiệp vụ thuần — KHÔNG phụ thuộc EF Core/ASP.NET
+├── GiapTech.LangCenter.LMS.Application     # CQRS: mỗi FR-xx = Command/Query riêng, DTO, interface, FluentValidation
+├── GiapTech.LangCenter.LMS.Infrastructure  # EF Core DbContext, Repository, gửi SMS/Email, MinIO client
+└── GiapTech.LangCenter.LMS.API             # Controller theo version (Controllers/V1/...), Middleware, JWT, Swagger
 frontend/                               # React + shadcn-admin (Vite)
 docs/                                   # Tài liệu (xem mục 3)
 ```
@@ -172,7 +172,7 @@ Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 # --- Backend (đã hoạt động) ---
 dotnet build                                        # 0 warning — TreatWarningsAsErrors đang bật
 dotnet test                                         # 399 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực, 5 module nghiệp vụ
-dotnet run --project src/GiapTech.SoccerRoom.API    # Swagger tại /swagger
+dotnet run --project src/GiapTech.LangCenter.LMS.API    # Swagger tại /swagger
 
 # --- Kiểm tra tài liệu (đã hoạt động) ---
 python3 scripts/check-doc-links.py
@@ -181,11 +181,11 @@ python3 scripts/check-doc-links.py
 cd frontend && npm install && npm run dev   # http://localhost:5173, proxy /api -> :5229
 
 # --- PostgreSQL cho dev ---
-docker run -d --name sr-pg -e POSTGRES_PASSWORD=devpass -e POSTGRES_USER=soccerroom \
-  -e POSTGRES_DB=soccerroom -p 55432:5432 postgres:16-alpine
-export ConnectionStrings__Default="Host=localhost;Port=55432;Database=soccerroom;Username=soccerroom;Password=devpass"
-dotnet ef database update --project src/GiapTech.SoccerRoom.Infrastructure \
-  --startup-project src/GiapTech.SoccerRoom.API
+docker run -d --name sr-pg -e POSTGRES_PASSWORD=devpass -e POSTGRES_USER=langcenter_lms \
+  -e POSTGRES_DB=langcenter_lms -p 55432:5432 postgres:16-alpine
+export ConnectionStrings__Default="Host=localhost;Port=55432;Database=langcenter_lms;Username=langcenter_lms;Password=devpass"
+dotnet ef database update --project src/GiapTech.LangCenter.LMS.Infrastructure \
+  --startup-project src/GiapTech.LangCenter.LMS.API
 
 # Tạo CLB thử (chỉ chạy ở Development): POST /api/v1/dang-ky-clb {"maDoi":"FCDEV","tenDoi":"..."}
 # → admin/123456, bắt buộc đổi mật khẩu lần đầu
@@ -196,6 +196,6 @@ dotnet ef database update --project src/GiapTech.SoccerRoom.Infrastructure \
 
 ### Test luật phụ thuộc
 
-`tests/GiapTech.SoccerRoom.Application.UnitTests/KienTruc/LuatPhuThuocTests.cs` biến quy tắc #10 thành
+`tests/GiapTech.LangCenter.LMS.Application.UnitTests/KienTruc/LuatPhuThuocTests.cs` biến quy tắc #10 thành
 thứ CI bắt được: nếu `Domain` lỡ tham chiếu EF Core / ASP.NET Core / MediatR, hoặc `Application` tham
 chiếu ngược lên `Infrastructure`/`API`, test đỏ ngay kèm hướng dẫn sửa.

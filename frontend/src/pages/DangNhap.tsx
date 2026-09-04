@@ -8,13 +8,13 @@ import { Check, CircleAlert } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { layMaLoi } from '@/lib/api'
 import { useTinhNang } from '@/lib/tinhNang'
-import { useTraTenDoi } from '@/lib/traTenDoi'
+import { useTraTenTrungTam } from '@/lib/traTenTrungTam'
 import {
   Button, CanhBaoLoi, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label,
 } from '@/components/ui'
 
 const schema = z.object({
-  maDoi: z.string().min(1).transform((v) => v.trim().toUpperCase()),
+  maTrungTam: z.string().min(1).transform((v) => v.trim().toUpperCase()),
   username: z.string().min(1),
   matKhau: z.string().min(1),
 })
@@ -31,17 +31,17 @@ export default function DangNhap() {
 
   const { register, handleSubmit, formState, watch } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { maDoi: '', username: '', matKhau: '' },
+    defaultValues: { maTrungTam: '', username: '', matKhau: '' },
   })
 
   // Tra tên đội ngay khi mã đủ 7 ký tự: gõ sai một chữ mà chỉ biết sau khi điền cả mật khẩu
   // rồi nhận "sai thông tin đăng nhập" thì không phân biệt được là sai mã hay sai mật khẩu.
-  const { tenDoi, dangTra } = useTraTenDoi(watch('maDoi') ?? '')
+  const { tenTrungTam, dangTra } = useTraTenTrungTam(watch('maTrungTam') ?? '')
 
   const onSubmit = async (data: FormData) => {
     setMaLoi(null)
     try {
-      const { phaiDoiMatKhau } = await dangNhap(data.maDoi, data.username, data.matKhau)
+      const { phaiDoiMatKhau } = await dangNhap(data.maTrungTam, data.username, data.matKhau)
       // Bắt buộc đổi mật khẩu trước khi vào hệ thống (FR-01). Backend cũng chặn ở
       // middleware, nên điều hướng này chỉ để trải nghiệm mượt, không phải lớp bảo vệ.
       navigate(phaiDoiMatKhau ? '/doi-mat-khau' : '/', { replace: true })
@@ -60,9 +60,9 @@ export default function DangNhap() {
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="maDoi">{t('dangNhap.maDoi')}</Label>
+              <Label htmlFor="maTrungTam">{t('dangNhap.maTrungTam')}</Label>
               <Input
-                id="maDoi"
+                id="maTrungTam"
                 autoFocus
                 autoComplete="organization"
                 maxLength={7}
@@ -70,25 +70,25 @@ export default function DangNhap() {
                 // Hiển thị hoa ngay khi gõ để khớp với mã được cấp; backend cũng chuẩn hoá
                 // nên gõ thường vẫn vào được, đây chỉ là gợi ý trực quan.
                 className="font-mono uppercase tracking-widest placeholder:tracking-widest"
-                {...register('maDoi')}
+                {...register('maTrungTam')}
               />
-              {/* Ba trạng thái, mỗi trạng thái một câu: đang tra / tìm thấy tên / không có CLB
+              {/* Ba trạng thái, mỗi trạng thái một câu: đang tra / tìm thấy tên / không có trung tâm
                   nào. Khi mã chưa đủ 7 ký tự thì giữ nguyên câu gợi ý — hiện "không tìm thấy"
                   lúc người dùng còn đang gõ là báo sai. */}
               {dangTra ? (
-                <p className="text-xs text-muted-foreground">{t('dangNhap.dangTraTenDoi')}</p>
-              ) : tenDoi ? (
+                <p className="text-xs text-muted-foreground">{t('dangNhap.dangTraTenTrungTam')}</p>
+              ) : tenTrungTam ? (
                 <p className="flex items-center gap-1 text-xs font-medium text-primary">
                   <Check className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">{tenDoi}</span>
+                  <span className="truncate">{tenTrungTam}</span>
                 </p>
-              ) : tenDoi === null ? (
+              ) : tenTrungTam === null ? (
                 <p className="flex items-center gap-1 text-xs text-destructive">
                   <CircleAlert className="h-3.5 w-3.5 shrink-0" />
-                  {t('dangNhap.khongTimThayDoi')}
+                  {t('dangNhap.khongTimThayTrungTam')}
                 </p>
               ) : (
-                <p className="text-xs text-muted-foreground">{t('dangNhap.maDoiGoiY')}</p>
+                <p className="text-xs text-muted-foreground">{t('dangNhap.maTrungTamGoiY')}</p>
               )}
             </div>
 
@@ -120,11 +120,11 @@ export default function DangNhap() {
               {t('dangNhap.quenMatKhau')}
             </Link>
 
-            {/* Chỉ hiện khi API khai là đăng ký CLB đang bật. Trên production endpoint đó trả
+            {/* Chỉ hiện khi API khai là đăng ký đang bật. Nếu máy chủ tắt thì endpoint đó trả
                 404, người dùng bấm vào sẽ điền cả form rồi nhận "Đã có lỗi xảy ra". */}
-            {tinhNang.dangKyClb && (
+            {tinhNang.dangKyTrungTam && (
               <p className="text-center text-sm text-muted-foreground">
-                {t('dangNhap.chuaCoClb')}{' '}
+                {t('dangNhap.chuaCoTrungTam')}{' '}
                 <Link to="/dang-ky" className="text-primary hover:underline">
                   {t('dangKy.nut')}
                 </Link>

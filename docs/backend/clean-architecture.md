@@ -4,10 +4,10 @@
 
 ```
 src/
-├── GiapTech.SoccerRoom.Domain          # Entity, Enum, quy tắc nghiệp vụ thuần
-├── GiapTech.SoccerRoom.Application     # CQRS Command/Query, DTO, interface, FluentValidation
-├── GiapTech.SoccerRoom.Infrastructure  # EF Core DbContext, Repository, SMS/Email, MinIO client
-└── GiapTech.SoccerRoom.API             # Controller theo version, Middleware, JWT, Swagger
+├── GiapTech.LangCenter.LMS.Domain          # Entity, Enum, quy tắc nghiệp vụ thuần
+├── GiapTech.LangCenter.LMS.Application     # CQRS Command/Query, DTO, interface, FluentValidation
+├── GiapTech.LangCenter.LMS.Infrastructure  # EF Core DbContext, Repository, SMS/Email, MinIO client
+└── GiapTech.LangCenter.LMS.API             # Controller theo version, Middleware, JWT, Swagger
 frontend/                               # React + shadcn-admin (Vite)
 ```
 

@@ -14,10 +14,10 @@
 
 ```
 src/
-├── GiapTech.SoccerRoom.Domain          # Entity, Enum, quy tắc nghiệp vụ thuần
-├── GiapTech.SoccerRoom.Application     # CQRS Command/Query, DTO, interface, FluentValidation
-├── GiapTech.SoccerRoom.Infrastructure  # EF Core DbContext, Repository, SMS/Email, MinIO client
-└── GiapTech.SoccerRoom.API             # Controller theo version, Middleware, JWT, Swagger
+├── GiapTech.LangCenter.LMS.Domain          # Entity, Enum, quy tắc nghiệp vụ thuần
+├── GiapTech.LangCenter.LMS.Application     # CQRS Command/Query, DTO, interface, FluentValidation
+├── GiapTech.LangCenter.LMS.Infrastructure  # EF Core DbContext, Repository, SMS/Email, MinIO client
+└── GiapTech.LangCenter.LMS.API             # Controller theo version, Middleware, JWT, Swagger
 frontend/                               # React + shadcn-admin (Vite)
 ```
 
@@ -38,7 +38,7 @@ Luật phụ thuộc giữa các lớp: [../backend/clean-architecture.md](../ba
 | Multi-tenant qua `tenant_id` | ✅ Đã chốt | [multi-tenant.md](../backend/multi-tenant.md) |
 | Phân quyền động theo chức năng/thao tác | ✅ Đã chốt | Custom `IAuthorizationHandler` đọc `QUYEN_CHUC_NANG` |
 | Đa ngôn ngữ | ✅ Đã chốt | Backend `.resx` theo culture; Frontend `react-i18next` |
-| Tên namespace/solution | ✅ Đã chốt | `GiapTech.SoccerRoom.*` |
+| Tên namespace/solution | ✅ Đã chốt | `GiapTech.LangCenter.LMS.*` |
 | Giá trị design token (màu cụ thể) | 🕓 Chưa chốt | Chốt cùng lúc dựng style-guide — [design-tokens.md](../frontend/design-tokens.md) |
 | `tenant_id` ở bảng con | ✅ Đã chốt | Denormalize xuống cả 7 bảng con — [ERD](../database/erd.md#denormalize-tenant_id-xuống-bảng-con) |
 | Mobile app | 🕓 Chưa triển khai | Dùng lại API hiện có, ưu tiên React Native khi cần |

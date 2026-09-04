@@ -17,10 +17,7 @@ interface TaiKhoanDto {
   soDienThoai: string | null
   diaChi: string | null
   phaiDoiMatKhau: boolean
-  laTruongNhom: boolean
   trangThai: 'HoatDong' | 'VoHieuHoa'
-  cauThuId: string | null
-  tenCauThu: string | null
   quyenIds: string[]
   tenQuyens: string[]
 }
@@ -28,13 +25,6 @@ interface QuyenNgan {
   id: string
   tenQuyen: string
 }
-interface CauThuNgan {
-  id: string
-  hoTen: string
-  ngaySinh: string | null
-  coTaiKhoan: boolean
-}
-
 /** FR-03 — tài khoản người dùng. */
 export default function TaiKhoan() {
   const { t } = useTranslation()
@@ -45,12 +35,9 @@ export default function TaiKhoan() {
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
   const [quyenChon, setQuyenChon] = useState<string[]>([])
-  const [cauThuChon, setCauThuChon] = useState<string | null>(null)
   const [datLaiCho, setDatLaiCho] = useState<TaiKhoanDto | null>(null)
   // Mặc định BẬT: tài khoản do người khác tạo hộ thì mật khẩu ban đầu người tạo cũng biết.
   const [buocDoiMk, setBuocDoiMk] = useState(true)
-  /** null = chưa chạm, lấy giá trị của tài khoản đang sửa. */
-  const [truongNhom, setTruongNhom] = useState<boolean | null>(null)
   const [dangSua, setDangSua] = useState<TaiKhoanDto | null>(null)
   const [trangThai, setTrangThai] = useState<'HoatDong' | 'VoHieuHoa'>('HoatDong')
 
@@ -66,12 +53,6 @@ export default function TaiKhoan() {
     queryKey: ['quyen'],
     queryFn: async () => (await api.get<QuyenNgan[]>('/quyen')).data,
   })
-  const { data: cauThus } = useQuery({
-    queryKey: ['cau-thu'],
-    queryFn: async () =>
-      (await api.get<KetQuaTrang<CauThuNgan>>('/cau-thu', { params: { soDong: 200 } })).data.duLieu,
-  })
-
   const tao = useMutation({
     mutationFn: async (form: Record<string, unknown>) => api.post('/tai-khoan', form),
     onSuccess: () => {
@@ -114,8 +95,6 @@ export default function TaiKhoan() {
     setDangSua(null)
     setQuyenChon([])
     setBuocDoiMk(true)
-    setTruongNhom(null)
-    setCauThuChon(null)
     setTrangThai('HoatDong')
     setMaLoi(null)
     setMoForm(true)
@@ -124,8 +103,6 @@ export default function TaiKhoan() {
   const moSua = (u: TaiKhoanDto) => {
     setDangSua(u)
     setQuyenChon(u.quyenIds)
-    setTruongNhom(null)
-    setCauThuChon(u.cauThuId)
     setTrangThai(u.trangThai)
     setMaLoi(null)
     setMoForm(true)
@@ -135,8 +112,6 @@ export default function TaiKhoan() {
     setMoForm(false)
     setDangSua(null)
     setQuyenChon([])
-    setTruongNhom(null)
-    setCauThuChon(null)
     setMaLoi(null)
   }
 
@@ -150,9 +125,7 @@ export default function TaiKhoan() {
       email: (fd.get('email') as string) || null,
       soDienThoai: (fd.get('soDienThoai') as string) || null,
       diaChi: (fd.get('diaChi') as string) || null,
-      cauThuId: cauThuChon,
       quyenIds: quyenChon,
-      laTruongNhom: truongNhom ?? dangSua?.laTruongNhom ?? false,
     }
 
     if (dangSua) {
@@ -170,17 +143,6 @@ export default function TaiKhoan() {
   }
 
   const dangLuu = tao.isPending || capNhat.isPending
-
-  // Chỉ cầu thủ chưa gắn tài khoản mới chọn được — một hồ sơ tối đa một tài khoản (FR-03).
-  // Khi sửa, giữ lại cầu thủ đang gắn cho CHÍNH tài khoản này, nếu không nó biến mất khỏi
-  // danh sách và người dùng vô tình gỡ liên kết chỉ vì mở form ra xem.
-  const cauThuKhaDung = (cauThus ?? [])
-    .filter((c) => !c.coTaiKhoan || c.id === dangSua?.cauThuId)
-    .map((c) => ({
-      giaTri: c.id,
-      nhan: c.hoTen,
-      phu: c.ngaySinh ? `Sinh ${c.ngaySinh}` : undefined,
-    }))
 
   return (
     <div className="flex flex-col gap-4">
@@ -203,7 +165,6 @@ export default function TaiKhoan() {
             <tr>
               <Th>{t('taiKhoan.username')}</Th>
               <Th>{t('taiKhoan.email')}</Th>
-              <Th>{t('taiKhoan.cauThuLienKet')}</Th>
               <Th>{t('taiKhoan.quyen')}</Th>
               <Th>{t('taiKhoan.trangThai')}</Th>
               <Th className="w-24" />
@@ -214,7 +175,6 @@ export default function TaiKhoan() {
               <tr key={u.id} className="hover:bg-muted/40">
                 <Td className="font-medium">{u.username}</Td>
                 <Td className="text-muted-foreground">{u.email ?? '—'}</Td>
-                <Td className="text-muted-foreground">{u.tenCauThu ?? '—'}</Td>
                 <Td>
                   <div className="flex flex-wrap gap-1">
                     {u.tenQuyens.length ? (
@@ -352,18 +312,6 @@ export default function TaiKhoan() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="cauThuId">{t('taiKhoan.cauThuLienKet')}</Label>
-            <SelectTimKiem
-              id="cauThuId"
-              luaChon={cauThuKhaDung}
-              giaTri={cauThuChon}
-              onDoi={setCauThuChon}
-              placeholder={t('taiKhoan.chuaGan')}
-              placeholderTimKiem={t('taiKhoan.timCauThu')}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
             <Label htmlFor="quyenIds">{t('taiKhoan.quyen')}</Label>
             <SelectTimKiemNhieu
               id="quyenIds"
@@ -373,27 +321,6 @@ export default function TaiKhoan() {
               placeholder={t('taiKhoan.chonQuyen')}
               placeholderTimKiem={t('taiKhoan.timQuyen')}
             />
-          </div>
-
-          {/*
-            Trưởng nhóm — người gửi lời mời đăng ký thi đấu ở Hòm thư. Là cờ riêng chứ không
-            suy từ nhóm quyền: "được sửa lịch" và "là người triệu tập đội" là hai chuyện khác.
-          */}
-          <div className="sm:col-span-2">
-            <label className="flex items-start gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="mt-0.5 h-4 w-4 accent-[hsl(var(--primary))]"
-                checked={truongNhom ?? dangSua?.laTruongNhom ?? false}
-                onChange={(e) => setTruongNhom(e.target.checked)}
-              />
-              <span>
-                {t('taiKhoan.laTruongNhom')}
-                <span className="block text-xs text-muted-foreground">
-                  {t('taiKhoan.laTruongNhomGoiY')}
-                </span>
-              </span>
-            </label>
           </div>
 
           {/* Chỉ khi TẠO: sửa tài khoản không đặt lại mật khẩu nên cờ này không có nghĩa. */}

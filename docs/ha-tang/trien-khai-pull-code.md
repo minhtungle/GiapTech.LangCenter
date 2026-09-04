@@ -45,7 +45,7 @@ curl -s ifconfig.me    # so với dòng trên
 ## Deploy
 
 ```bash
-cd /opt/soccerroom
+cd /opt/langcenter-lms
 git pull
 ./scripts/trien-khai.sh
 ```
@@ -71,7 +71,7 @@ in ra commit đó ở đầu.
 Không có image tag như CI/CD, nên quay lại bằng git:
 
 ```bash
-cd /opt/soccerroom
+cd /opt/langcenter-lms
 git log --oneline -5          # tìm commit tốt cuối cùng
 git checkout <sha>
 ./scripts/trien-khai.sh
@@ -81,10 +81,10 @@ Sau khi sửa xong ở local và pull bản mới: `git checkout main && git pul
 
 ### Nếu migration mới làm hỏng dữ liệu
 
-Bản `pg_dump` ở bước 2 nằm trong `/opt/soccerroom/backup/`:
+Bản `pg_dump` ở bước 2 nằm trong `/opt/langcenter-lms/backup/`:
 
 ```bash
-cd /opt/soccerroom
+cd /opt/langcenter-lms
 ls -lt backup/ | head -5
 
 # Dừng API để không ai ghi vào giữa lúc restore
@@ -108,15 +108,15 @@ Chủ sản phẩm chọn mang 7 CLB mẫu lên để test trên VPS trước.
 
 ```bash
 # --- Trên MÁY LOCAL ---
-cd /path/to/GiapTech.SoccerRoom
+cd /path/to/GiapTech.LangCenter.LMS
 set -a; . ./.env; set +a
-docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" soccerroom-postgres-1 \
+docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" langcenter-lms-postgres-1 \
   pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" > /tmp/du-lieu-mau.sql
 
 scp /tmp/du-lieu-mau.sql <user>@<vps>:/tmp/
 
 # --- Trên VPS ---
-cd /opt/soccerroom
+cd /opt/langcenter-lms
 set -a; . ./.env; set +a
 
 # Sao lưu trước, kể cả khi VPS đang rỗng — mất 1 giây, cứu được cả buổi.

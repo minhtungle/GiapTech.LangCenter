@@ -30,18 +30,18 @@ Domain không được phụ thuộc EF Core (xem [clean-architecture](../backen
 ```bash
 # Tạo migration mới (chạy từ thư mục gốc solution)
 dotnet ef migrations add <TenMigration> \
-  --project src/GiapTech.SoccerRoom.Infrastructure \
-  --startup-project src/GiapTech.SoccerRoom.API
+  --project src/GiapTech.LangCenter.LMS.Infrastructure \
+  --startup-project src/GiapTech.LangCenter.LMS.API
 
 # Áp dụng vào DB
 dotnet ef database update \
-  --project src/GiapTech.SoccerRoom.Infrastructure \
-  --startup-project src/GiapTech.SoccerRoom.API
+  --project src/GiapTech.LangCenter.LMS.Infrastructure \
+  --startup-project src/GiapTech.LangCenter.LMS.API
 
 # Xuất script SQL để review trước khi chạy production
 dotnet ef migrations script --idempotent -o migration.sql \
-  --project src/GiapTech.SoccerRoom.Infrastructure \
-  --startup-project src/GiapTech.SoccerRoom.API
+  --project src/GiapTech.LangCenter.LMS.Infrastructure \
+  --startup-project src/GiapTech.LangCenter.LMS.API
 ```
 
 ### Nguyên tắc

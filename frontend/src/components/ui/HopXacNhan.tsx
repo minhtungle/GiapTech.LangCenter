@@ -7,7 +7,7 @@ import { Modal, ModalChan } from '@/components/ui/Modal'
  * Hộp xác nhận cho thao tác **phá huỷ** — xoá hết sơ đồ, chép đè hiệp, áp mẫu.
  *
  * Dùng thay `confirm()` của trình duyệt vì hai lẽ: `confirm()` không nói được **cụ thể mất
- * cái gì** ("Xoá 11 cầu thủ khỏi sơ đồ hiệp 2"), và nó chặn cả luồng JS nên không dịch được
+ * cái gì** ("Xoá 3 nhóm quyền"), và nó chặn cả luồng JS nên không dịch được
  * theo ngôn ngữ đang chọn.
  *
  * Chỉ dùng cho việc **ghi đè/xoá hàng loạt không hoàn tác được**. Thao tác một quân (nháy đúp

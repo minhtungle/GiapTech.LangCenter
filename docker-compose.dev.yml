@@ -15,8 +15,8 @@ services:
   api:
     build:
       context: .
-      dockerfile: src/GiapTech.SoccerRoom.API/Dockerfile
-    image: soccerroom-api:local
+      dockerfile: src/GiapTech.LangCenter.LMS.API/Dockerfile
+    image: langcenter-lms-api:local
     environment:
       # TẮT giới hạn tần suất trên máy dev — chỉ ở đây, KHÔNG ở production.
       #

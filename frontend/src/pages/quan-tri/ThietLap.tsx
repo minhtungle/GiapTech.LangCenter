@@ -5,38 +5,31 @@ import { api, layMaLoi } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import { Button, CanhBaoLoi, Card, CardContent, Input, Label, Textarea,
 } from '@/components/ui'
-import { cn } from '@/lib/utils'
-import { BANG_MAU_AO } from '@/components/soDo/loaiSan'
 import { ChonAnh } from '@/components/ui/ChonAnh'
 
 interface ThietLapDto {
   id: string
-  maDoi: string
-  tenDoi: string
+  maTrungTam: string
+  tenTrungTam: string
   tenVietTat: string | null
-  ngayThanhLap: string | null
   logoUrl: string | null
   anhBiaUrl: string | null
   moTa: string | null
-  /** Bộ áo đấu của CLB — mã màu trong BANG_MAU_AO. */
-  mauAo: string[]
-  khuVuc: string | null
-  sanNha: string | null
-  lienHeCongKhai: string | null
+  diaChi: string | null
+  lienHe: string | null
   soTaiKhoan: string | null
   tenNganHang: string | null
   chuTaiKhoan: string | null
   anhQrUrl: string | null
 }
 
-/** FR-06 — thiết lập chung CLB. */
 /**
- * FR-06 — thiết lập chung của CLB.
+ * FR-06 — thiết lập chung của trung tâm.
  *
- * `max-w-5xl` chứ không `max-w-2xl`: đo 21/08 trên màn 1440px thì form chỉ rộng 650px và bỏ trống
- * hoàn toàn nửa phải, nên trang cao 1420px với viewport 800px — phải cuộn hai lần cho một form.
- * Hai khối ảnh (Logo + Ảnh bìa) ĐÃ có `flex-wrap` để nằm cạnh nhau; chúng xếp dọc chỉ vì
- * container quá hẹp.
+ * `max-w-5xl` chứ không `max-w-2xl`: đo 21/08 trên màn 1440px thì form chỉ rộng 650px và bỏ
+ * trống hoàn toàn nửa phải, nên trang cao 1420px với viewport 800px — phải cuộn hai lần cho
+ * một form. Hai khối ảnh (Logo + Ảnh bìa) ĐÃ có `flex-wrap` để nằm cạnh nhau; chúng xếp dọc
+ * chỉ vì container quá hẹp.
  *
  * Không để rộng vô hạn: dòng nhập dài quá 3-4 inch làm mắt mất điểm neo khi nhảy từ cuối dòng
  * này sang đầu dòng sau. `5xl` (1024px) là mức còn dễ đọc mà dùng được bề ngang.
@@ -44,11 +37,9 @@ interface ThietLapDto {
 export default function ThietLap() {
   const { t } = useTranslation()
   const qc = useQueryClient()
-  const { capNhatTenDoi } = useAuth()
+  const { capNhatTenTrungTam } = useAuth()
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [daLuu, setDaLuu] = useState(false)
-  /** null = chưa chạm, lấy giá trị server. */
-  const [mauAo, setMauAo] = useState<string[] | null>(null)
   const [qrNhap, setQrNhap] = useState<string | null | undefined>(undefined)
   /** null = chưa chạm, lấy giá trị server. Ảnh tải ngay nên state này chỉ để hiện lại. */
   const [logoNhap, setLogoNhap] = useState<string | null | undefined>(undefined)
@@ -66,12 +57,11 @@ export default function ThietLap() {
     },
     onSuccess: (form) => {
       void qc.invalidateQueries({ queryKey: ['thiet-lap'] })
-      setMauAo(null)
       setLogoNhap(undefined)
       setAnhBiaNhap(undefined)
-      // Tên đội nằm trong JWT nên token đang cầm vẫn mang tên cũ tới lần làm mới kế tiếp;
-      // không đồng bộ thì sidebar hiện tên cũ dù người dùng vừa đổi xong.
-      if (form.tenDoi) capNhatTenDoi(form.tenDoi)
+      // Tên trung tâm nằm trong JWT nên token đang cầm vẫn mang tên cũ tới lần làm mới kế
+      // tiếp; không đồng bộ thì sidebar hiện tên cũ dù người dùng vừa đổi xong.
+      if (form.tenTrungTam) capNhatTenTrungTam(form.tenTrungTam)
       setMaLoi(null)
       setDaLuu(true)
       setTimeout(() => setDaLuu(false), 2500)
@@ -81,19 +71,11 @@ export default function ThietLap() {
 
   if (isLoading) return <p className="text-sm text-muted-foreground">{t('chung.dangTai')}</p>
 
-  const dangChonMau = mauAo ?? data?.mauAo ?? []
   const logo = logoNhap === undefined ? (data?.logoUrl ?? null) : logoNhap
   const anhQr = qrNhap === undefined ? (data?.anhQrUrl ?? null) : qrNhap
   const anhBia = anhBiaNhap === undefined ? (data?.anhBiaUrl ?? null) : anhBiaNhap
   const setLogo = setLogoNhap
   const setAnhBia = setAnhBiaNhap
-
-  const bat = (ma: string) =>
-    setMauAo(
-      dangChonMau.includes(ma)
-        ? dangChonMau.filter((m) => m !== ma)
-        : [...dangChonMau, ma],
-    )
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -101,21 +83,17 @@ export default function ThietLap() {
     // Mọi trường lệnh cập nhật ghi đè đều gửi lại (quy tắc #1) — kể cả logo/ảnh bìa chưa có
     // ô trên form, nếu không mỗi lần lưu sẽ xoá chúng.
     luu.mutate({
-      tenDoi: String(fd.get('tenDoi')),
+      tenTrungTam: String(fd.get('tenTrungTam')),
       tenVietTat: (fd.get('tenVietTat') as string) || null,
-      ngayThanhLap: (fd.get('ngayThanhLap') as string) || null,
       moTa: (fd.get('moTa') as string) || null,
       logoUrl: logo,
       anhBiaUrl: anhBia,
-      mauAo: dangChonMau,
-      // Ba trường Sàn đối thủ. Gửi CHUỖI RỖNG (không phải null) khi người dùng xoá hết ô:
-      // backend hiểu null = "client không gửi, giữ nguyên", còn '' = "chủ động xoá". Gửi null
-      // ở đây sẽ khiến ô đã xoá lại hiện giá trị cũ sau khi tải lại — trông như không lưu được.
-      khuVuc: (fd.get('khuVuc') as string) ?? '',
-      sanNha: (fd.get('sanNha') as string) ?? '',
-      lienHeCongKhai: (fd.get('lienHeCongKhai') as string) ?? '',
-      // Thông tin chuyển khoản. Cùng quy ước: chuỗi rỗng = xoá, không gửi null (null nghĩa là
-      // "giữ nguyên" nên ô đã xoá sẽ hiện lại giá trị cũ sau khi tải lại trang).
+      // Gửi CHUỖI RỖNG (không phải null) khi người dùng xoá hết ô: backend hiểu null =
+      // "client không gửi, giữ nguyên", còn '' = "chủ động xoá". Gửi null ở đây sẽ khiến ô đã
+      // xoá lại hiện giá trị cũ sau khi tải lại — trông như không lưu được.
+      diaChi: (fd.get('diaChi') as string) ?? '',
+      lienHe: (fd.get('lienHe') as string) ?? '',
+      // Thông tin chuyển khoản. Cùng quy ước: chuỗi rỗng = xoá, không gửi null.
       soTaiKhoan: (fd.get('soTaiKhoan') as string) ?? '',
       tenNganHang: (fd.get('tenNganHang') as string) ?? '',
       chuTaiKhoan: (fd.get('chuTaiKhoan') as string) ?? '',
@@ -130,14 +108,14 @@ export default function ThietLap() {
       <CardContent className="pt-5">
         <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5 sm:col-span-2">
-            <Label htmlFor="maDoi">{t('thietLap.maDoi')}</Label>
-            <Input id="maDoi" value={data?.maDoi ?? ''} disabled />
-            <p className="text-xs text-muted-foreground">{t('thietLap.maDoiKhongDoi')}</p>
+            <Label htmlFor="maTrungTam">{t('thietLap.maTrungTam')}</Label>
+            <Input id="maTrungTam" value={data?.maTrungTam ?? ''} disabled />
+            <p className="text-xs text-muted-foreground">{t('thietLap.maTrungTamKhongDoi')}</p>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="tenDoi">{t('thietLap.tenDoi')}</Label>
-            <Input id="tenDoi" name="tenDoi" defaultValue={data?.tenDoi} required />
+            <Label htmlFor="tenTrungTam">{t('thietLap.tenTrungTam')}</Label>
+            <Input id="tenTrungTam" name="tenTrungTam" defaultValue={data?.tenTrungTam} required />
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -145,27 +123,13 @@ export default function ThietLap() {
             <Input id="tenVietTat" name="tenVietTat" defaultValue={data?.tenVietTat ?? ''} />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="ngayThanhLap">{t('thietLap.ngayThanhLap')}</Label>
-            <Input
-              id="ngayThanhLap"
-              name="ngayThanhLap"
-              type="date"
-              defaultValue={data?.ngayThanhLap ?? ''}
-            />
-          </div>
-
-          {/*
-            Bộ áo đấu — bảng chiến thuật chỉ cho chọn trong bộ này. Khai ở đây một lần thay vì
-            mỗi trận chọn lại một màu khác, xem lại lịch sử không nhận ra đội mình mặc gì.
-          */}
           <div className="flex flex-wrap gap-6 sm:col-span-2">
             <div>
               <Label className="mb-1.5 block">{t('thietLap.logo')}</Label>
               <ChonAnh
                 khoa={logo}
-                duongDanTai="/anh/clb/logo"
-                duongDanXoa="/anh/clb/logo"
+                duongDanTai="/anh/trung-tam/logo"
+                duongDanXoa="/anh/trung-tam/logo"
                 onXong={(k) => {
                   setLogo(k)
                   void qc.invalidateQueries({ queryKey: ['thiet-lap'] })
@@ -176,8 +140,8 @@ export default function ThietLap() {
               <Label className="mb-1.5 block">{t('thietLap.anhBia')}</Label>
               <ChonAnh
                 khoa={anhBia}
-                duongDanTai="/anh/clb/anh-bia"
-                duongDanXoa="/anh/clb/anh-bia"
+                duongDanTai="/anh/trung-tam/anh-bia"
+                duongDanXoa="/anh/trung-tam/anh-bia"
                 onXong={(k) => {
                   setAnhBia(k)
                   void qc.invalidateQueries({ queryKey: ['thiet-lap'] })
@@ -186,86 +150,34 @@ export default function ThietLap() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
-            <Label>{t('thietLap.mauAo')}</Label>
-            <div className="flex flex-wrap gap-2">
-              {BANG_MAU_AO.map((m) => {
-                const daChon = dangChonMau.includes(m.ma)
-                return (
-                  <button
-                    key={m.ma}
-                    type="button"
-                    onClick={() => bat(m.ma)}
-                    aria-pressed={daChon}
-                    aria-label={t(`soDo.mau.${m.ma}`)}
-                    className={cn(
-                      'flex items-center gap-2 rounded-md border px-2 py-1.5 text-xs transition-colors',
-                      daChon
-                        ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent))]/10 font-medium'
-                        : 'border-border hover:bg-muted',
-                    )}
-                  >
-                    <span
-                      style={{ background: m.nen }}
-                      className="h-4 w-4 rounded-full border border-white/70 shadow-sm"
-                    />
-                    {t(`soDo.mau.${m.ma}`)}
-                  </button>
-                )
-              })}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {dangChonMau.length === 0 ? t('thietLap.mauAoChuaChon') : t('thietLap.mauAoGoiY')}
-            </p>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="diaChi">{t('thietLap.diaChi')}</Label>
+            <Input
+              id="diaChi"
+              name="diaChi"
+              defaultValue={data?.diaChi ?? ''}
+              placeholder={t('thietLap.diaChiGoiY')}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="lienHe">{t('thietLap.lienHe')}</Label>
+            <Input
+              id="lienHe"
+              name="lienHe"
+              defaultValue={data?.lienHe ?? ''}
+              placeholder={t('thietLap.lienHeGoiY')}
+            />
           </div>
 
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label htmlFor="moTa">{t('thietLap.moTa')}</Label>
             <Textarea id="moTa" name="moTa" defaultValue={data?.moTa ?? ''} />
-            <p className="text-xs text-muted-foreground">{t('thietLap.moTaCongKhai')}</p>
           </div>
 
-          {/* Nhóm Sàn đối thủ. Tách riêng và nói rõ "công khai": ba ô này hiện cho CLB khác
-              xem, khác hẳn các ô còn lại trên form vốn chỉ nội bộ. */}
-          <div className="sm:col-span-2">
-            <h3 className="text-sm font-semibold">{t('thietLap.nhomSan')}</h3>
-            <p className="mt-0.5 text-xs text-muted-foreground">{t('thietLap.nhomSanMoTa')}</p>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="khuVuc">{t('thietLap.khuVuc')}</Label>
-            <Input
-              id="khuVuc"
-              name="khuVuc"
-              defaultValue={data?.khuVuc ?? ''}
-              placeholder={t('thietLap.khuVucGoiY')}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="sanNha">{t('thietLap.sanNha')}</Label>
-            <Input
-              id="sanNha"
-              name="sanNha"
-              defaultValue={data?.sanNha ?? ''}
-              placeholder={t('thietLap.sanNhaGoiY')}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
-            <Label htmlFor="lienHeCongKhai">{t('thietLap.lienHeCongKhai')}</Label>
-            <Input
-              id="lienHeCongKhai"
-              name="lienHeCongKhai"
-              defaultValue={data?.lienHeCongKhai ?? ''}
-              placeholder={t('thietLap.lienHeGoiY')}
-            />
-            <p className="text-xs text-muted-foreground">{t('thietLap.lienHeLuuY')}</p>
-          </div>
-
-          {/* Nhóm chuyển khoản quỹ. Tách khỏi nhóm Cộng đồng và nói rõ "chỉ trong đội": ba ô
-              kia CÔNG KHAI, còn số tài khoản thì không — đặt cạnh nhau mà không phân biệt thì
-              người dùng tưởng cả hai nhóm cùng mức riêng tư. */}
+          {/* Nhóm chuyển khoản. Tách riêng và nói rõ mức riêng tư: số tài khoản không phải
+              thông tin để hiện công khai như tên hay logo — đặt cạnh nhau mà không phân biệt
+              thì người dùng tưởng cả hai nhóm cùng mức. */}
           <div className="sm:col-span-2">
             <h3 className="text-sm font-semibold">{t('thietLap.nhomChuyenKhoan')}</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
@@ -308,8 +220,8 @@ export default function ThietLap() {
             <Label className="mb-1.5 block">{t('thietLap.anhQr')}</Label>
             <ChonAnh
               khoa={anhQr}
-              duongDanTai="/anh/clb/qr-chuyen-khoan"
-              duongDanXoa="/anh/clb/qr-chuyen-khoan"
+              duongDanTai="/anh/trung-tam/qr-chuyen-khoan"
+              duongDanXoa="/anh/trung-tam/qr-chuyen-khoan"
               onXong={(k) => {
                 setQrNhap(k)
                 void qc.invalidateQueries({ queryKey: ['thiet-lap'] })
@@ -328,7 +240,7 @@ export default function ThietLap() {
             <Button type="submit" disabled={luu.isPending}>
               {t('chung.luu')}
             </Button>
-            {daLuu && <span className="text-sm text-status-win">Đã lưu</span>}
+            {daLuu && <span className="text-sm text-status-win">{t('chung.daLuu')}</span>}
           </div>
         </form>
       </CardContent>

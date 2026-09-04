@@ -1,7 +1,7 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 
-const KHOA_ACCESS = 'sr_access_token'
-const KHOA_REFRESH = 'sr_refresh_token'
+const KHOA_ACCESS = 'lms_access_token'
+const KHOA_REFRESH = 'lms_refresh_token'
 
 export const luuToken = (access: string, refresh: string) => {
   localStorage.setItem(KHOA_ACCESS, access)
@@ -97,7 +97,7 @@ export function layMaLoi(error: unknown): string {
  * Kết quả phân trang từ API.
  *
  * Bốn endpoint danh sách (`/cau-thu`, `/tai-khoan`, `/doi-thu`, `/tran-dau`) trả về hình dạng
- * này thay vì mảng trần. Các endpoint còn lại (quyền, lời mời, đội hình, đánh giá) vẫn trả
+ * này thay vì mảng trần. Các endpoint còn lại (vd: nhóm quyền) vẫn trả
  * mảng vì số lượng bị chặn tự nhiên bởi nghiệp vụ.
  */
 export interface KetQuaTrang<T> {

@@ -5,14 +5,14 @@ interface PhienDangNhap {
   nguoiDungId: string
   username: string
   tenantId: string
-  maDoi: string
-  tenDoi: string
+  maTrungTam: string
+  tenTrungTam: string
 }
 
 interface AuthContextValue {
   phien: PhienDangNhap | null
   daDangNhap: boolean
-  dangNhap: (maDoi: string, username: string, matKhau: string) => Promise<{ phaiDoiMatKhau: boolean }>
+  dangNhap: (maTrungTam: string, username: string, matKhau: string) => Promise<{ phaiDoiMatKhau: boolean }>
   dangXuat: () => void
   /** Gọi sau khi đổi mật khẩu để gỡ trạng thái "phải đổi". */
   danhDauDaDoiMatKhau: () => void
@@ -22,7 +22,7 @@ interface AuthContextValue {
    * vẫn mang tên cũ cho tới lần làm mới kế tiếp — không đồng bộ thì sidebar hiện tên cũ
    * dù người dùng vừa đổi xong.
    */
-  capNhatTenDoi: (tenDoi: string) => void
+  capNhatTenTrungTam: (tenTrungTam: string) => void
 }
 
 const AuthContext = React.createContext<AuthContextValue | null>(null)
@@ -43,8 +43,8 @@ function docPhienTuToken(token: string | null): PhienDangNhap | null {
         claims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ?? '',
       username: claims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ?? '',
       tenantId: claims.tenant_id ?? '',
-      maDoi: claims.ma_doi ?? '',
-      tenDoi: claims.ten_doi ?? '',
+      maTrungTam: claims.ma_trung_tam ?? '',
+      tenTrungTam: claims.ten_trung_tam ?? '',
     }
   } catch {
     return null
@@ -57,34 +57,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
   const [phaiDoiMatKhau, setPhaiDoiMatKhau] = React.useState(false)
 
-  /**
-   * Bù tên đội cho token phát hành TRƯỚC khi claim `ten_doi` tồn tại.
-   *
-   * Không có bước này, người đang có phiên mở sẽ thấy sidebar trống chỗ tên đội cho tới khi
-   * họ đăng xuất — mà họ không có lý do gì để nghĩ tới việc đó. Gọi API một lần rồi thôi.
-   */
-  React.useEffect(() => {
-    if (!phien || phien.tenDoi) return
-
-    let huy = false
-    api
-      .get<{ tenDoi: string }>('/thiet-lap')
-      .then(({ data }) => {
-        if (!huy && data.tenDoi) setPhien((p) => (p ? { ...p, tenDoi: data.tenDoi } : p))
-      })
-      .catch(() => {
-        // Thiếu quyền xem thiết lập chung, hoặc lỗi mạng: sidebar hiện mã đội thay tên.
-        // Không chặn người dùng vì một chuỗi hiển thị.
-      })
-
-    return () => {
-      huy = true
-    }
-  }, [phien])
-
   const dangNhap = React.useCallback(
-    async (maDoi: string, username: string, matKhau: string) => {
-      const { data } = await api.post('/auth/dang-nhap', { maDoi, username, matKhau })
+    async (maTrungTam: string, username: string, matKhau: string) => {
+      const { data } = await api.post('/auth/dang-nhap', { maTrungTam, username, matKhau })
       luuToken(data.accessToken, data.refreshToken)
       setPhien(docPhienTuToken(data.accessToken))
       setPhaiDoiMatKhau(Boolean(data.phaiDoiMatKhau))
@@ -101,8 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const danhDauDaDoiMatKhau = React.useCallback(() => setPhaiDoiMatKhau(false), [])
 
-  const capNhatTenDoi = React.useCallback(
-    (tenDoi: string) => setPhien((p) => (p ? { ...p, tenDoi } : p)),
+  const capNhatTenTrungTam = React.useCallback(
+    (tenTrungTam: string) => setPhien((p) => (p ? { ...p, tenTrungTam } : p)),
     [],
   )
 
@@ -114,9 +89,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dangXuat,
       danhDauDaDoiMatKhau,
       phaiDoiMatKhau,
-      capNhatTenDoi,
+      capNhatTenTrungTam,
     }),
-    [phien, dangNhap, dangXuat, danhDauDaDoiMatKhau, phaiDoiMatKhau, capNhatTenDoi],
+    [phien, dangNhap, dangXuat, danhDauDaDoiMatKhau, phaiDoiMatKhau, capNhatTenTrungTam],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

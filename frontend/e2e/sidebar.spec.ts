@@ -19,11 +19,9 @@ test.describe('Sidebar', () => {
 
     // Cần trang DÀI hơn viewport, và **không phụ thuộc dữ liệu**.
     //
-    // Hai lần trước tôi chọn sai: `/thong-ke` (CLB test không có dữ liệu → trang ngắn) rồi bảng
-    // cầu thủ (sau khi cho bảng cuộn thì trang cũng ngắn). Chốt an toàn ở dưới bắt được cả hai.
-    //
-    // `/quan-tri/thiet-lap` là form 14 trường, luôn dài hơn 800px với mọi CLB kể cả CLB rỗng —
-    // và nó KHÔNG có bảng nên không bị ảnh hưởng khi tôi cho bảng cuộn.
+    // Chọn màn KHÔNG phụ thuộc dữ liệu: `/quan-tri/thiet-lap` là form nhiều trường, luôn dài
+    // hơn viewport 700px kể cả với trung tâm vừa tạo, và nó không có bảng nên không bị ảnh
+    // hưởng nếu sau này cho bảng cuộn. Chốt an toàn ở dưới bắt được nếu giả định này hết đúng.
     await page.goto('/quan-tri/thiet-lap')
     await page.waitForTimeout(1500)
 
@@ -58,19 +56,23 @@ test.describe('Sidebar', () => {
     expect(sauCuon.top, 'sidebar trôi khỏi màn hình sau khi cuộn').toBeCloseTo(0, 0)
 
     // Và menu bấm được ngay ở đáy trang — đây là hậu quả thật của lỗi.
-    await page.click('a[href="/tai-chinh"]')
-    await expect(page).toHaveURL(/tai-chinh/)
+    await page.click('a[href="/quan-tri/tai-khoan"]')
+    await expect(page).toHaveURL(/quan-tri\/tai-khoan/)
   })
 
   test('màn hình thấp: menu cuộn TRONG sidebar, nút Đăng xuất vẫn thấy', async ({
     page,
     request,
   }) => {
-    // 13 mục menu + header + chân > 420px. Nếu sidebar không cho cuộn bên trong thì nút Đăng xuất
-    // bị đẩy ra ngoài và không ai bấm được.
+    // Ở viewport rất thấp, nút Đăng xuất (nằm dưới cùng sidebar) không được bị đẩy ra ngoài
+    // màn hình — nếu bị thì không ai đăng xuất được.
+    //
+    // Bản base chỉ có 4 mục menu nên nav CHƯA cần cuộn ở 420px; test vì thế chỉ khẳng định
+    // "Đăng xuất thấy được", không khẳng định "nav cuộn được". Khi thêm module và menu dài
+    // hơn viewport, thêm lại khẳng định `nav.scrollHeight > nav.clientHeight`.
     await vaoHeThong(page, request, 'sidebar-thap')
     await page.setViewportSize({ width: 1280, height: 420 })
-    await page.goto('/thong-ke')
+    await page.goto('/quan-tri/thiet-lap')
     await page.waitForTimeout(1200)
 
     const d = await page.evaluate(() => {
@@ -79,12 +81,12 @@ test.describe('Sidebar', () => {
         .find((e) => e.textContent?.includes('Đăng xuất'))!
         .getBoundingClientRect()
       return {
-        navCuonDuoc: nav.scrollHeight > nav.clientHeight,
         dangXuatTrongTamNhin: dangXuat.top >= 0 && dangXuat.bottom <= window.innerHeight,
+        navCaoHopLe: nav.clientHeight > 0,
       }
     })
 
-    expect(d.navCuonDuoc, 'menu không cuộn được trong sidebar').toBeTruthy()
+    expect(d.navCaoHopLe).toBeTruthy()
     expect(d.dangXuatTrongTamNhin, 'nút Đăng xuất bị đẩy ra ngoài màn hình').toBeTruthy()
   })
 })

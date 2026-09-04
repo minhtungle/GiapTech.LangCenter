@@ -1,4 +1,4 @@
-# GiapTech.SoccerRoom — Hệ thống Quản lý Câu lạc bộ đá bóng
+# GiapTech.LangCenter.LMS — Hệ thống Quản lý Câu lạc bộ đá bóng
 
 > README này chỉ là **mục lục điều hướng** — không lặp lại nội dung chi tiết. Đọc
 > [`CLAUDE.md`](./CLAUDE.md) trước khi chỉnh sửa code hoặc tài liệu trong repo này.

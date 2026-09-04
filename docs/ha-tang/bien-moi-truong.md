@@ -9,7 +9,7 @@ Copy [`.env.example`](../../.env.example) thành `.env`, điền giá trị th�
 | Biến | Mô tả |
 |---|---|
 | `DOMAIN` | Domain để Caddy xin chứng chỉ HTTPS — **bắt buộc**, compose dừng nếu thiếu |
-| `POSTGRES_DB` | Tên database. Mặc định `clubmgmt` |
+| `POSTGRES_DB` | Tên database. Mặc định `langcenter_lms` |
 | `POSTGRES_USER` | User ứng dụng dùng để kết nối |
 | `POSTGRES_PASSWORD` | Mật khẩu — **bắt buộc đổi**, sinh ngẫu nhiên đủ dài |
 
@@ -22,7 +22,7 @@ nhân để quản trị: dùng SSH tunnel.
 |---|---|
 | `MINIO_ROOT_USER` | Tài khoản quản trị MinIO — **bắt buộc đổi** |
 | `MINIO_ROOT_PASSWORD` | Mật khẩu quản trị — **bắt buộc đổi** |
-| `MINIO_BUCKET` | Bucket chứa ảnh, mặc định `soccerroom-anh` — tạo tự động lần tải đầu |
+| `MINIO_BUCKET` | Bucket chứa ảnh, mặc định `langcenter-lms-anh` — tạo tự động lần tải đầu |
 
 Console MinIO (cổng 9001) không public — truy cập qua SSH tunnel khi cần quản trị. Client upload file
 (ảnh đại diện cầu thủ, logo, ảnh bìa) qua **presigned URL**, không đi qua backend.
@@ -32,7 +32,7 @@ Console MinIO (cổng 9001) không public — truy cập qua SSH tunnel khi cầ
 | Biến | Mô tả |
 |---|---|
 | `JWT_SECRET` | Khóa ký token — **tối thiểu 32 ký tự**, sinh ngẫu nhiên. Đổi khóa này làm mọi token đang lưu hành mất hiệu lực |
-| `JWT_ISSUER` | Định danh bên phát hành. Mặc định `clubmgmt-api` |
+| `JWT_ISSUER` | Định danh bên phát hành. Mặc định `langcenter-lms-api` |
 | `JWT_EXPIRY_MINUTES` | Thời hạn access token (phút). Giữ ngắn, dùng refresh token để gia hạn |
 
 ## SMTP (email — quên mật khẩu, nhắc đóng quỹ)
@@ -78,5 +78,5 @@ Dấu `__` (hai gạch dưới) là quy ước của ASP.NET Core để biểu d
 - [ ] Mọi giá trị `doi-gia-tri-nay` trong `.env` đã được thay bằng giá trị thật, sinh ngẫu nhiên.
 - [ ] `chmod 600 .env` trên VPS.
 - [ ] `.env` nằm trong `.gitignore`.
-- [ ] Domain thật đã thay `clubmgmt.example.com` trong [`Caddyfile`](../../Caddyfile).
+- [ ] Domain thật đã thay `langcenter-lms.example.com` trong [`Caddyfile`](../../Caddyfile).
 - [ ] Secrets CI đã cấu hình trên GitHub: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`.

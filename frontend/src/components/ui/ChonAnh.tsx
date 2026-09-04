@@ -7,7 +7,7 @@ import { Anh, xoaCacheAnh } from '@/components/ui/Anh'
 import { cn } from '@/lib/utils'
 
 /**
- * Chọn và tải ảnh lên (FR-04 avatar cầu thủ, FR-06 logo / ảnh bìa CLB).
+ * Chọn và tải ảnh lên (FR-06 logo / ảnh bìa / mã QR của trung tâm).
  *
  * **Tải ngay khi chọn tệp**, không chờ bấm Lưu của form bao quanh: ảnh đi qua endpoint riêng
  * (multipart) chứ không nằm trong JSON của form, gộp vào một nút Lưu sẽ phải gửi hai request
@@ -30,7 +30,7 @@ export function ChonAnh({
   duongDanTai: string
   /** Endpoint DELETE. */
   duongDanXoa: string
-  /** Avatar cầu thủ hiển thị tròn; logo và ảnh bìa hiển thị chữ nhật. */
+  /** Ảnh đại diện hiển thị tròn; logo và ảnh bìa hiển thị chữ nhật. */
   hinhTron?: boolean
   onXong: (khoaMoi: string | null) => void
 }) {

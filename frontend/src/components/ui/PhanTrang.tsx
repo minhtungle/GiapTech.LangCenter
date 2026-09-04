@@ -9,7 +9,7 @@ export const CAC_MUC_SO_DONG = [10, 20, 50, 100] as const
 /**
  * Thanh phân trang dùng chung cho mọi bảng.
  *
- * Hiển thị cả **tổng số dòng**, không chỉ số trang: người dùng cần biết "có bao nhiêu cầu thủ"
+ * Hiển thị cả **tổng số dòng**, không chỉ số trang: người dùng cần biết "có bao nhiêu bản ghi"
  * mà không phải nhân số trang với số dòng.
  */
 export function PhanTrang({

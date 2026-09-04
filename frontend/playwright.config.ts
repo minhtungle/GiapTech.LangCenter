@@ -23,9 +23,13 @@ export default defineConfig({
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   timeout: 30_000,
 
-  // Xoá CLB do test sinh ra sau khi chạy xong. Không có bước này thì mỗi lần chạy để lại ~44
-  // CLB và chúng hiện lên trang Cộng đồng của mọi người (nợ N5).
-  globalTeardown: './e2e/don-rac.ts',
+  // KHÔNG có globalTeardown dọn tenant test: endpoint dọn rác thuộc module dữ liệu mẫu, đã bị
+  // bỏ ở bản base. Mỗi lần chạy cả bộ E2E để lại một ít tenant "E2E ..." trong DB dev.
+  //
+  // Bài học từ dự án trước: rác này tích rất nhanh (đo thật: 242/249 tenant là rác sau vài lần
+  // chạy) và làm DB dev không dùng được để kiểm tay nữa. Khi thêm nghiệp vụ, hãy làm lại
+  // endpoint dọn theo tiền tố tên + globalTeardown, và nhớ: teardown thất bại chỉ được in cảnh
+  // báo, KHÔNG làm cả bộ test đỏ — nếu không thì "rác chưa dọn" bị hiểu thành "có test đỏ".
 
   use: {
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:8080',

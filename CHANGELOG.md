@@ -165,7 +165,7 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ### Changed
 - Chuyển bộ khung từ `repo-scaffold/` lên gốc repo — sửa link hỏng và đường dẫn sai trong CI.
-- Chốt tên `GiapTech.SoccerRoom` cho namespace/solution/image.
+- Chốt tên `GiapTech.LangCenter.LMS` cho namespace/solution/image.
 - **`ma_doi` đổi từ chuỗi người dùng tự đặt sang mã 7 ký tự sinh tự động** (bộ 31 ký tự bỏ `0/O`
   và `1/I/L`, không phân biệt hoa/thường). Tên dạng "FC ..." rất dễ trùng giữa các CLB.
 - CI bỏ bước build image frontend — frontend là static do Caddy phục vụ (ADR-0004).
