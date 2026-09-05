@@ -26,6 +26,17 @@ RUN dotnet publish src/GiapTech.LangCenter.LMS.API/GiapTech.LangCenter.LMS.API.c
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS runtime
 WORKDIR /app
 
+# tzdata + icu-libs — BẮT BUỘC, thiếu là hỏng NGẦM chỉ trên production.
+#
+# Lịch học lưu UTC nhưng "buổi học ngày nào" là câu hỏi theo giờ địa phương, nên code gọi
+# `TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh")`. Alpine không có sẵn:
+#   - thiếu tzdata   -> TimeZoneNotFoundException
+#   - thiếu icu-libs -> "Couldn't find a valid ICU package"
+# Cả hai chỉ nổ trên VPS; máy dev (macOS/Windows) chạy hoàn hảo và mọi test đều xanh.
+# Đã kiểm chứng bằng cách dựng thử 4 tổ hợp container — chỉ đủ cả hai gói mới chạy.
+# Canh bởi MuiGioTests.
+RUN apk add --no-cache tzdata icu-libs
+
 # Chạy bằng user thường, không phải root: nếu ứng dụng bị chiếm quyền thì kẻ tấn công
 # cũng không có root trong container.
 RUN addgroup -S langcenter-lms && adduser -S langcenter-lms -G langcenter-lms

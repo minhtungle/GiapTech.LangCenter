@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
-  Users, ShieldCheck, Settings, LogOut, Home,
+  Users, ShieldCheck, Settings, LogOut, Home, GraduationCap,
   PanelLeftClose, PanelLeft, Menu, X,
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
@@ -53,6 +53,10 @@ export default function Layout() {
   const nhomMenu: { tieuDe?: string; muc: MucMenu[] }[] = [
     {
       muc: [{ to: '/', nhan: t('menu.tongQuan'), icon: Home, cuoi: true }],
+    },
+    {
+      tieuDe: t('menu.daoTao'),
+      muc: [{ to: '/lop-hoc', nhan: t('menu.lopHoc'), icon: GraduationCap }],
     },
     {
       tieuDe: t('menu.quanTri'),

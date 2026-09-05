@@ -19,6 +19,8 @@ giữa tài liệu, commit, PR, test và code review.
 
 | Mã | Chức năng | Module |
 |---|---|---|
+| FR-07 | Lớp học | [Lớp học](./lop-hoc.md) |
+| FR-08 | Học viên trong lớp | [Lớp học](./lop-hoc.md) |
 | FR-01 | Đăng nhập | [Đăng nhập](./dang-nhap.md) |
 | FR-02 | Quên mật khẩu | [Đăng nhập](./dang-nhap.md) |
 | FR-03 | Tài khoản người dùng | [Quản trị hệ thống](./quan-tri-he-thong.md) |

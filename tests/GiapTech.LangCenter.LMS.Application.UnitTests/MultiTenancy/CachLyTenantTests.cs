@@ -175,7 +175,11 @@ public class CachLyTenantTests
         var db = TaoContext(tenant, nameof(Bang_con_cung_mang_tenant_id_de_truy_van_truc_tiep_van_duoc_loc));
 
         // Quyết định thiết kế: bảng chi tiết mang tenant_id riêng thay vì join lên bảng cha.
-        string[] bangCon = [nameof(QuyenChucNang), nameof(NguoiDungQuyen)];
+        string[] bangCon =
+        [
+            nameof(QuyenChucNang), nameof(NguoiDungQuyen),
+            nameof(LopHocHocVien), nameof(LopHocTroGiang)
+        ];
 
         foreach (var ten in bangCon)
         {

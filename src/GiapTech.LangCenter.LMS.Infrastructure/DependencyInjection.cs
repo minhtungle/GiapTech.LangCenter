@@ -47,6 +47,7 @@ public static class DependencyInjection
 
         services.AddMemoryCache();
         services.AddScoped<IQuyenService, QuyenService>();
+        services.AddScoped<IPhamViLopHoc, PhamViLopHoc>();
         services.AddSingleton<IPasswordHasher, AppPasswordHasher>();
         services.AddSingleton<ITokenService, TokenService>();
         services.AddScoped<ITenantSeeder, TenantSeeder>();

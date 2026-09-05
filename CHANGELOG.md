@@ -8,6 +8,26 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — LMS giai đoạn 1: Lớp học (06/09/2026)
+
+- `LOP_HOC` + `LOP_HOC_HOC_VIEN` + `LOP_HOC_TRO_GIANG`, CRUD đầy đủ, **có giao diện**.
+- `IPhamViLopHoc` — tầng giới hạn "chỉ lớp mình phụ trách". `[RequirePermission]` chỉ quyết
+  định có gọi được endpoint hay không, Query Filter chỉ lọc tenant; không có tầng này thì giáo
+  viên đọc được mọi lớp của trung tâm kèm học phí và ghi chú nội bộ.
+- Vòng đời lớp: Nháp → Sắp khai giảng → Đang học → Đã kết thúc, nhánh phụ Đã huỷ. Hai trạng
+  thái giữa **suy từ ngày lúc đọc**, không lưu cột — tránh phải có job đổi trạng thái lúc nửa
+  đêm (job chết là lớp kẹt sai trạng thái mà không ai biết).
+- Học phí theo từng học viên (`hoc_phi_ap_dung`, snapshot lúc vào lớp) — cho phép miễn giảm,
+  và sửa học phí lớp không đổi hồi tố công nợ người đã đóng.
+
+### Fixed
+
+- **Dockerfile thiếu `tzdata` + `icu-libs`** — lỗi chỉ nổ trên production. Lịch học lưu UTC
+  nhưng "buổi học ngày nào" là câu hỏi theo giờ địa phương, nên code cần
+  `TimeZoneInfo.FindSystemTimeZoneById`. Alpine không có sẵn cả hai gói; máy dev chạy hoàn hảo
+  và mọi test xanh. Đã kiểm chứng bằng cách dựng thử 4 tổ hợp container.
+
+
 ### Added — LMS giai đoạn 0 (06/09/2026)
 
 Đặt nền cho nghiệp vụ LMS theo đặc tả Vietgenedu. Chưa có entity nghiệp vụ; giai đoạn này vá hai

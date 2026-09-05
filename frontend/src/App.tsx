@@ -7,6 +7,7 @@ import DoiMatKhau from '@/pages/DoiMatKhau'
 import QuenMatKhau from '@/pages/QuenMatKhau'
 import DangKyTrungTam from '@/pages/DangKyTrungTam'
 import TongQuan from '@/pages/TongQuan'
+import LopHoc from '@/pages/dao-tao/LopHoc'
 import TaiKhoan from '@/pages/quan-tri/TaiKhoan'
 import PhanQuyen from '@/pages/quan-tri/PhanQuyen'
 import ThietLap from '@/pages/quan-tri/ThietLap'
@@ -54,6 +55,7 @@ export default function App() {
               }
             >
               <Route path="/" element={<TongQuan />} />
+              <Route path="/lop-hoc" element={<LopHoc />} />
               <Route path="/quan-tri/tai-khoan" element={<TaiKhoan />} />
               <Route path="/quan-tri/phan-quyen" element={<PhanQuyen />} />
               <Route path="/quan-tri/thiet-lap" element={<ThietLap />} />

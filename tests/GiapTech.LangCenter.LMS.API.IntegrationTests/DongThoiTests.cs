@@ -38,6 +38,9 @@ public class DongThoiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     // Tra cứu lúc làm mới token đi thẳng từ hash → trùng hash là nhầm phiên của người khác.
     [InlineData("RefreshToken", new[] { "TokenHash" })]
     [InlineData("TokenDatLaiMatKhau", new[] { "TokenHash" })]
+    // Một học viên MỘT bản ghi trong một lớp — chống import/bấm hai lần tạo hàng trùng.
+    [InlineData("LopHocHocVien", new[] { "LopHocId", "HocVienId" })]
+    [InlineData("LopHocTroGiang", new[] { "LopHocId", "TroGiangId" })]
     public void Rang_buoc_chi_mot_phai_co_UNIQUE_o_tang_DB(string tenEntity, string[] cot)
     {
         using var scope = factory.Services.CreateScope();
