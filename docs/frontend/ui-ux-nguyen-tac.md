@@ -14,9 +14,9 @@
 - **Sidebar** theo 5 module + **breadcrumb** ở mọi trang con. **Thu gọn được** (chỉ còn icon,
   nhớ lựa chọn trong `localStorage`); trên mobile chuyển thành ngăn kéo vì sidebar cố định
   chiếm quá nhiều bề ngang.
-- **Thêm/Cập nhật trận đấu** = wizard 3 bước, đúng 3 tab đã đặc tả ở
-  [FR-10](../nghiep-vu/lich-thi-dau.md#fr-10--thêm--cập-nhật-trận-đấu). **Cho phép lưu nháp giữa chừng** —
-  người dùng không bị mất dữ liệu khi rời tab.
+- **Tạo lớp học** = wizard nhiều bước, xem
+  [FR-07](../nghiep-vu/lop-hoc.md). **Cho phép lưu nháp giữa chừng** — người dùng không bị
+  mất dữ liệu khi rời tab, và lớp nháp không chiếm tên.
 - **Tạo tài khoản** = wizard tuần tự đúng quy trình
   [FR-03](../nghiep-vu/quan-tri-he-thong.md#quy-trình-chuẩn-tạo-tài-khoản-wizard-tuần-tự): hồ sơ cầu thủ
   → nhóm quyền → tài khoản.

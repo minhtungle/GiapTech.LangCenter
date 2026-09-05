@@ -16,25 +16,23 @@ là một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`
 
 **Tên chuẩn:** `GiapTech.LangCenter.LMS` (namespace, solution, image `ghcr.io/giaptech/langcenter-lms-api`).
 
-### ⚠️ Trạng thái: BASE, chưa có nghiệp vụ
+### Trạng thái
 
-Dự án này tách ra từ một ứng dụng quản lý CLB đá bóng đã hoàn thiện (04/09/2026), **giữ lại
-toàn bộ tầng hệ thống và bỏ hết nghiệp vụ bóng đá**. Những gì đang chạy:
+Tách ra từ một ứng dụng quản lý CLB đá bóng (04/09/2026), giữ toàn bộ tầng hệ thống. Nghiệp vụ
+LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 
-| Có sẵn, dùng được ngay | Chưa có |
+**14/15 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 214 test backend xanh.
+
+| Đã chạy đầu-cuối | Chưa có |
 |---|---|
-| Multi-tenant + Global Query Filter tự động | Nghiệp vụ LMS (lớp, học viên, giáo viên, học phí, điểm danh) |
-| Phân quyền động đọc từ `QUYEN_CHUC_NANG` | Màn Tổng quan có nội dung (đang là khung dẫn đường) |
-| JWT access + refresh token có xoay vòng | |
-| Đăng nhập, quên mật khẩu, buộc đổi mật khẩu lần đầu | |
-| CRUD tài khoản · nhóm quyền · thiết lập chung | |
-| Tải ảnh (logo / ảnh bìa / QR) qua MinIO | |
-| Clean Architecture 4 lớp + test canh luật phụ thuộc | |
+| Đăng nhập · quên mật khẩu · buộc đổi mật khẩu lần đầu | **FR-15 Thống kê / Dashboard** |
+| CRUD tài khoản · nhóm quyền · thiết lập chung | **Bài kiểm tra** — có schema, chưa có API/UI |
+| Lớp học: vòng đời, phân công, ghi danh, học phí riêng từng người | Ẩn nút theo quyền ở frontend (nợ N2) |
+| Buổi học: sinh lịch tự động; điểm danh hai nguồn | Nhắc nợ / thông báo qua email |
+| Bài tập, bài nộp nhiều lần, tài liệu, tệp đính kèm | Import Excel học viên |
+| Học phí: sổ thu + công nợ tính động | Danh mục ngày nghỉ khi sinh lịch |
 
-**126 test backend xanh** (35 unit + 91 integration), build 0 warning, frontend typecheck sạch.
-
-> **Tài liệu trong `docs/` vẫn là của dự án bóng đá** — cố ý giữ nguyên để tham khảo cách viết
-> FR/ERD/ADR. Khi có thiết kế LMS thì cập nhật, đừng coi `docs/nghiep-vu/` là nghiệp vụ hiện tại.
+Chi tiết và nợ kỹ thuật: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ---
 
@@ -81,10 +79,13 @@ toàn bộ tầng hệ thống và bỏ hết nghiệp vụ bóng đá**. Nhữn
 
 ## 3. Bản đồ tài liệu
 
-**Tài liệu kỹ thuật — vẫn đúng, dùng được ngay:**
-
 | Cần biết gì | Đọc ở đâu |
 |---|---|
+| **Tiến độ, lộ trình, nợ kỹ thuật** | [`docs/ke-hoach.md`](./docs/ke-hoach.md) |
+| Tổng quan nghiệp vụ, đọc 1 mạch | [`docs/tong-thuat.md`](./docs/tong-thuat.md) |
+| **15 mã FR** theo module | [`docs/nghiep-vu/`](./docs/nghiep-vu/README.md) |
+| **ERD 20 bảng** + ràng buộc + hành vi xoá | [`docs/database/erd.md`](./docs/database/erd.md) |
+| **Nhật ký theo ngày** (bối cảnh git log không có) | [`docs/nhat-ky/`](./docs/nhat-ky/README.md) |
 | Clean Architecture, luật phụ thuộc | [`docs/backend/clean-architecture.md`](./docs/backend/clean-architecture.md) |
 | Quy ước đặt tên, migration EF Core | [`docs/database/quy-uoc-migration.md`](./docs/database/quy-uoc-migration.md) |
 | CQRS/MediatR, tổ chức handler theo FR | [`docs/backend/cqrs-mediatr.md`](./docs/backend/cqrs-mediatr.md) |
@@ -98,20 +99,7 @@ toàn bộ tầng hệ thống và bỏ hết nghiệp vụ bóng đá**. Nhữn
 | 5 ADR đã chốt | [`docs/kien-truc/adr/`](./docs/kien-truc/adr/) |
 | Git flow, commit convention, PR checklist | [`CONTRIBUTING.md`](./CONTRIBUTING.md) |
 | Chính sách bảo mật | [`SECURITY.md`](./SECURITY.md) |
-
-**Tài liệu của DỰ ÁN CŨ (quản lý CLB bóng đá)** — giữ để tham khảo cách viết FR/ERD/nhật ký,
-**không phải nghiệp vụ hiện tại**. Cập nhật khi có thiết kế LMS:
-
-| Nội dung | Đường dẫn |
-|---|---|
-| Tổng quan nghiệp vụ cũ, đọc 1 mạch | [`docs/tong-thuat.md`](./docs/tong-thuat.md) |
-| 16 mã FR của dự án cũ | [`docs/nghiep-vu/`](./docs/nghiep-vu/README.md) |
-| ERD 16 bảng cũ (nay còn 7 bảng hệ thống) | [`docs/database/erd.md`](./docs/database/erd.md) |
-| Tiến độ / nợ kỹ thuật của dự án cũ | [`docs/ke-hoach.md`](./docs/ke-hoach.md) |
-| Bộ dữ liệu mẫu (endpoint đã bỏ) | [`docs/du-lieu-mau.md`](./docs/du-lieu-mau.md) |
-| Rà soát hệ thống 20/08 | [`docs/ra-soat-20-08.md`](./docs/ra-soat-20-08.md) |
-| Nhật ký theo ngày | [`docs/nhat-ky/`](./docs/nhat-ky/README.md) |
-| Thuật ngữ dễ nhầm (MVP ≠ Minimum Viable Product) | [`docs/kien-truc/THUAT-NGU.md`](./docs/kien-truc/THUAT-NGU.md) |
+| Thuật ngữ dễ nhầm | [`docs/kien-truc/THUAT-NGU.md`](./docs/kien-truc/THUAT-NGU.md) |
 
 ---
 
@@ -173,7 +161,7 @@ Tầng hệ thống hiện có, đặt ở đâu:
 
 ---
 
-## 6. Base này đã có sẵn những gì
+## 6. Nền tảng đã có sẵn
 
 Đã kiểm chứng và đang chạy — **không phải làm lại**:
 
@@ -196,17 +184,23 @@ Tầng hệ thống hiện có, đặt ở đâu:
   Interceptor tự làm mới token, **có khử đua** để không kích hoạt cơ chế chống đánh cắp.
 - **Hạ tầng**: Docker Compose, CI GitHub Actions, script triển khai VPS.
 
-### Việc cần làm khi bắt đầu dự án mới
+### Nghiệp vụ LMS đã dựng
 
-- [ ] Đưa thiết kế nghiệp vụ LMS → viết FR vào [`docs/nghiep-vu/`](./docs/nghiep-vu/README.md),
-      cập nhật [ERD](./docs/database/erd.md).
-- [ ] Thay [design token](./docs/frontend/design-tokens.md) — bảng màu hiện tại là "xanh sân cỏ
-      + cam nhấn" của dự án bóng đá.
-- [ ] Đổi tên biến trạng thái `--status-win/lose/draw` trong `frontend/src/index.css` sang tên
-      trung tính (`ok/error/warn`) — hiện đang dùng cho trạng thái tài khoản.
-- [ ] Làm lại màn Tổng quan khi đã có nghiệp vụ để tóm lược.
-- [ ] Làm lại endpoint dọn tenant test + `globalTeardown` cho E2E (xem ghi chú trong
-      `frontend/playwright.config.ts`).
+- **Lớp học** (FR-07, FR-08): vòng đời nháp → sắp khai giảng → đang học → kết thúc; giáo viên
+  chính + trợ giảng; ghi danh học viên với **học phí riêng từng người**.
+- **Buổi học & điểm danh** (FR-09, FR-10): sinh lịch tự động theo thứ trong tuần; điểm danh
+  **hai nguồn** — học viên tự khai (giới hạn khung giờ) và giáo viên chốt.
+- **Học liệu** (FR-11 → FR-13): bài tập, bài nộp nhiều lần giữ lịch sử, tài liệu, tệp đính kèm.
+- **Học phí** (FR-14): sổ thu + công nợ **tính động, không lưu cột**.
+- **Ba tầng bảo vệ riêng biệt** — đừng gộp:
+
+  | Tầng | Lo việc gì |
+  |---|---|
+  | `[RequirePermission]` | Có gọi được endpoint không |
+  | Global Query Filter | Cách ly **tenant** |
+  | `IPhamViLopHoc` / `IPhamViHocPhi` | Phạm vi **bên trong** tenant: "lớp mình dạy", "sổ của mình" |
+
+Nợ kỹ thuật: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ---
 
@@ -217,7 +211,8 @@ Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 ```bash
 # --- Backend ---
 dotnet build          # 0 warning — TreatWarningsAsErrors đang bật
-dotnet test           # 128 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực, quản trị
+dotnet test           # 214 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
+                      #           quản trị, lớp học, điểm danh, học liệu, học phí
 
 # Chạy API cần 2 biến bắt buộc (thiếu là 500 lúc đăng nhập / tải ảnh, không phải lúc khởi động):
 export JWT_SECRET="chuoi-bi-mat-dev-dai-hon-32-ky-tu-cho-du-an-toan"
@@ -243,8 +238,7 @@ docker run -d --name lms-pg -e POSTGRES_PASSWORD=devpass -e POSTGRES_USER=langce
 export ConnectionStrings__Default="Host=localhost;Port=55432;Database=langcenter_lms;Username=langcenter_lms;Password=devpass"
 dotnet ef database update --project src/GiapTech.LangCenter.LMS.Infrastructure \
   --startup-project src/GiapTech.LangCenter.LMS.API
-# → 7 bảng: TENANT, NGUOI_DUNG, QUYEN, QUYEN_CHUC_NANG, NGUOIDUNG_QUYEN,
-#           REFRESH_TOKEN, TOKEN_DATLAI_MATKHAU
+# → 20 bảng (7 hệ thống + 13 nghiệp vụ) — xem docs/database/erd.md
 
 # Tạo trung tâm thử — endpoint ẩn danh, mã 7 ký tự do hệ thống sinh:
 curl -X POST localhost:5229/api/v1/dang-ky-trung-tam \

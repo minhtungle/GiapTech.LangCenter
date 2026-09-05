@@ -48,6 +48,7 @@ public static class DependencyInjection
         services.AddMemoryCache();
         services.AddScoped<IQuyenService, QuyenService>();
         services.AddScoped<IPhamViLopHoc, PhamViLopHoc>();
+        services.AddScoped<IPhamViHocPhi, PhamViHocPhi>();
         services.AddScoped<IMuiGioTrungTam, MuiGioTrungTam>();
         services.AddSingleton<IPasswordHasher, AppPasswordHasher>();
         services.AddSingleton<ITokenService, TokenService>();

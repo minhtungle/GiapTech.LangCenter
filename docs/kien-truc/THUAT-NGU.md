@@ -2,9 +2,14 @@
 
 | Thuật ngữ | Ý nghĩa trong dự án này | Lưu ý tránh nhầm lẫn |
 |---|---|---|
-| Tenant | Một CLB độc lập, dữ liệu cách ly qua `tenant_id` | Không nhầm với "user" hay "organization" trong tài liệu bên thứ ba |
-| Quyền (Role) | Nhóm quyền tự định nghĩa theo chức năng + thao tác (bảng `QUYEN`, `QUYEN_CHUC_NANG`) | Khác với `[Authorize(Roles=...)]` cố định kiểu mẫu thông thường của ASP.NET Core — đây là hệ phân quyền động đọc từ DB |
-| Hồ sơ cầu thủ (CAU_THU) | Thông tin cầu thủ, độc lập với tài khoản đăng nhập | Một cầu thủ có thể **chưa có** tài khoản; một tài khoản có tối đa 1 hồ sơ cầu thủ liên kết |
-| MVP | Most Valuable Player (cầu thủ xuất sắc nhất), **không phải** "Minimum Viable Product" | Ngữ cảnh luôn là bình chọn/thống kê trận đấu |
-| FR-xx | Mã chức năng (Functional Requirement) trong tài liệu SRS | Dùng để tham chiếu chéo giữa SRS, ADR, code review |
-| v1/v2 (API) | Phiên bản hợp đồng API theo URL segment | Không nhầm với version của ứng dụng (semver trong `CHANGELOG.md`) |
+| Tenant | Một **trung tâm ngoại ngữ** độc lập, dữ liệu cách ly qua `tenant_id` | Không nhầm với "user" hay "organization" trong tài liệu bên thứ ba |
+| Quyền (`QUYEN`) | **Nhóm quyền** tự định nghĩa theo chức năng + thao tác | Khác `[Authorize(Roles=...)]` cố định của ASP.NET Core — đây là hệ phân quyền **động** đọc từ DB |
+| Vai trò (Giáo viên, Học viên…) | Chỉ là **nhóm quyền dựng sẵn** do seeder tạo, người dùng đổi được | **Không** phải enum cứng trong code. `LoaiNguoiDung` chỉ dùng lọc danh sách, không bao giờ dùng phân quyền |
+| Phạm vi (`IPhamViLopHoc`, `IPhamViHocPhi`) | Lọc **dữ liệu** bên trong một tenant: "lớp mình dạy", "sổ thu của mình" | Khác với **quyền** (gác cửa endpoint) và khác **Query Filter** (chỉ lọc tenant). Ba tầng riêng biệt |
+| Buổi học (`BUOI_HOC`) | Một buổi cụ thể trong lịch của lớp, có `bat_dau`/`ket_thuc` tuyệt đối | Không có cột "ngày học" — ngày suy từ `TENANT.mui_gio` khi hiển thị |
+| Trạng thái tự khai / chính thức | Hai cột riêng trong `DIEM_DANH` | `trang_thai_chinh_thuc` là **nguồn duy nhất cho mọi báo cáo**; tự khai chỉ là lời khai của học viên |
+| Học phí áp dụng | `LOP_HOC_HOC_VIEN.hoc_phi_ap_dung` — snapshot lúc ghi danh | **Không** phải `LOP_HOC.hoc_phi`. Sửa học phí lớp không đổi hồi tố công nợ người đã đóng |
+| Công nợ | Tính động `hoc_phi_ap_dung − SUM(so_tien)` | **Không có cột nào lưu nó.** Đừng thêm — xem [FR-14](../nghiep-vu/hoc-phi.md) |
+| Bài tập vs Bài kiểm tra | Bài tập gắn **buổi học**, nộp nhiều lần; Bài kiểm tra gắn **lớp**, làm một lần | Hai bảng riêng và hai chức năng quyền riêng, vì ma trận quyền phân biệt chúng |
+| FR-xx | Mã chức năng (Functional Requirement) | Dùng tham chiếu chéo giữa tài liệu, commit, test, code review |
+| v1/v2 (API) | Phiên bản hợp đồng API theo URL segment | Không nhầm với version ứng dụng (semver trong `CHANGELOG.md`) |

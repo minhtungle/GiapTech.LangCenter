@@ -44,8 +44,8 @@ Console MinIO (cổng 9001) không public — truy cập qua SSH tunnel khi cầ
 | `SMTP_USER` | Với SendGrid là chuỗi cố định `apikey` |
 | `SMTP_PASSWORD` | API key thực tế của nhà cung cấp |
 
-Dùng cho [FR-02 quên mật khẩu](../nghiep-vu/dang-nhap.md#fr-02--quên-mật-khẩu) và
-[FR-16 nhắc đóng quỹ](../nghiep-vu/tai-chinh.md#nhắc-nhở).
+Dùng cho [FR-02 quên mật khẩu](../nghiep-vu/dang-nhap.md#fr-02--quên-mật-khẩu). Nhắc nợ học
+phí qua email ([FR-14](../nghiep-vu/hoc-phi.md#chưa-làm)) chưa nối.
 
 ## SMS Gateway
 

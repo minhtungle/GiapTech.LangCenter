@@ -8,6 +8,39 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — LMS giai đoạn 4: Học phí (05/09/2026)
+
+- `KHOAN_THU_HOC_PHI` — sổ thu từng khoản: số tiền, ngày thu, hình thức, số phiếu đối chiếu,
+  người thu. `numeric(18,2)` + `CHECK (so_tien > 0)` ở tầng DB. Không UNIQUE: nộp nhiều đợt là
+  chuyện thường.
+- **Công nợ tính động, không có cột `da_thu`** — `hoc_phi_ap_dung − SUM(so_tien)`, cộng dồn
+  trong SQL. Lưu cột là mở cửa cho sai lệch khi ai đó sửa hoặc xoá một khoản thu.
+- Cảnh báo quá hạn theo `TENANT.so_ngay_canh_bao_no_hoc_phi` (mặc định 14 ngày) tính từ ngày
+  khai giảng. Lớp chưa khai giảng không bao giờ quá hạn.
+- Màn Học phí hai tab: Công nợ và Sổ thu. Học viên vào cùng màn này để tự tra nợ.
+- `IPhamViHocPhi` — **tầng phạm vi riêng cho dữ liệu tiền**, tách khỏi `IPhamViLopHoc`. Giáo
+  viên thấy lớp mình dạy nhưng học phí là quan hệ giữa học viên và trung tâm; dùng chung một
+  tầng lọc là mở sổ thu cho toàn bộ giáo viên.
+
+### Fixed
+
+- **Đường ghi sổ thu lỏng hơn đường sửa.** `ThuHocPhiHandler` ban đầu cổng bằng phạm vi *lớp*,
+  nghĩa là giáo viên ghi được tiền vào sổ — trong khi họ không sửa hay xoá lại được, tạo ra
+  khoản thu không ai gỡ nổi. Nay ghi đi qua đúng điều kiện với sửa (`DuocGhiSo`).
+- **DTO trả `nguoiThu`, UI đọc `tenNguoiThu`** — cột "Người thu" luôn trống. 11 test tích hợp
+  xanh hết vì không test nào chạm cột đó; chỉ lộ khi chạy tay trên PostgreSQL thật. Đổi tên cho
+  nhất quán và thêm hai test khoá hợp đồng JSON.
+
+### Changed
+
+- **Dọn dứt điểm tài liệu dự án cũ.** `docs/` trước đó phần lớn vẫn là hệ quản lý CLB bóng đá,
+  mang cảnh báo "tài liệu dự án cũ" ở đầu file, và bảng tra FR còn **trùng mã** (FR-07 vừa là
+  Lớp học vừa là Lọc trận đấu). Xoá 5 file nghiệp vụ cũ; viết lại `nghiep-vu/README.md`,
+  `tong-thuat.md`, `ke-hoach.md`, và `database/erd.md` (20 bảng, **đối chiếu từ
+  `information_schema` của DB thật**). Liên kết chết trong CHANGELOG/ADR/nhật ký cũ được gỡ
+  nhưng giữ nguyên chữ — lịch sử không sửa.
+
+
 ### Added — LMS giai đoạn 3: Học liệu (06/09/2026)
 
 - `TEP_DINH_KEM` một bảng dùng chung với năm cột FK loại trừ nhau + `CHECK` constraint. Mảng
@@ -265,7 +298,7 @@ vụ bóng đá. Bản bóng đá đầy đủ vẫn còn ở repo cũ.
 - Sinh link + QR mời đối thủ **chưa liên kết**. Họ mở link (KHÔNG cần đăng nhập để xem), đăng
   nhập hoặc **tạo đội mới ngay tại đó**, chấp nhận → đối thủ "chỉ là cái tên" **nâng cấp thành
   CLB có ID thật**, trận vào lịch cả hai bên.
-- Xử lý **13 trường hợp** — xem [FR-18](./docs/nghiep-vu/loi-moi-qua-link.md) và
+- Xử lý **13 trường hợp** — xem FR-18 và
   [ADR-0005](./docs/kien-truc/adr/0005-loi-moi-qua-link.md). Gồm: link bị chuyển tiếp (xác nhận
   danh tính + huỷ liên kết được) · hết hạn · thu hồi · dùng token hai lần · mời chéo (gộp trận) ·
   trận đã đá xong · đối thủ trùng lặp (gộp).
@@ -280,7 +313,7 @@ vụ bóng đá. Bản bóng đá đầy đủ vẫn còn ở repo cũ.
 
 **Bộ dữ liệu mẫu để test tay**
 - `POST /api/v1/du-lieu-mau/seed` (chỉ Development): 7 CLB, 39 cầu thủ, 64 trận, 8 đợt quỹ,
-  4 lời mời thách đấu — dựng trong ~8 giây. Xem [docs/du-lieu-mau.md](./docs/du-lieu-mau.md).
+  4 lời mời thách đấu — dựng trong ~8 giây. Tài liệu đã gỡ cùng nghiệp vụ cũ.
 - Hai CLB đầy đủ NGANG NHAU để test cách ly dữ liệu và lời mời hai chiều; ba vai mỗi CLB
   (admin/manager/player) để test phân quyền.
 - 6 tháng quá khứ + 1 tháng tương lai; đủ mọi trạng thái quỹ, lời mời, trận đấu.
@@ -308,7 +341,7 @@ vụ bóng đá. Bản bóng đá đầy đủ vẫn còn ở repo cũ.
   "hiện CÔNG KHAI".
 - ⚠️ **Quyết định của chủ sản phẩm:** mọi CLB tự động lên cộng đồng, không tắt được, kèm thành tích
   thắng/hoà/thua. Cố ý đi ngược thiết kế của `tra-cuu-clb` (vốn dựng để chặn liệt kê CLB) — xem
-  [FR-17](./docs/nghiep-vu/lich-thi-dau.md#fr-17--cộng-đồng-bổ-sung-18082026).
+  FR-17.
 - Canh bởi `CongDongTests` (16 test, 8 phản chứng) + `e2e/cong-dong.spec.ts` (5 test).
 - `CachLyTenantTests` thêm test **chiều ngược**: entity KHÔNG có Query Filter phải là ngoại lệ
   đã khai lý do. Thêm entity không kế thừa `TenantEntity` giờ làm test đỏ thay vì lọt im lặng.
@@ -343,7 +376,7 @@ vụ bóng đá. Bản bóng đá đầy đủ vẫn còn ở repo cũ.
   hai request song song đều thấy "chưa có". Vote MVP không bị vì đã có UNIQUE ở DB.
   Thêm ba UNIQUE index có filter riêng, và middleware trả **409 `THAO_TAC_TRUNG`** cho SQLSTATE
   23505 thay vì 500 "Lỗi hệ thống".
-- **Rà soát toàn hệ thống 20/08** — xem [docs/ra-soat-20-08.md](./docs/ra-soat-20-08.md). Năm
+- **Rà soát toàn hệ thống 20/08** — tài liệu đã gỡ cùng nghiệp vụ cũ. Năm
   thiếu sót, tất cả đã sửa:
   - **Thu quỹ QUÁ số phải đóng** được nhận: thu 999.000.000₫ cho khoản 100.000₫ → tiến độ hiện
     `999000000 / 100000`, người đó tính là đã đóng đủ, và số sai lan vào mọi thẻ ở màn Tài chính.

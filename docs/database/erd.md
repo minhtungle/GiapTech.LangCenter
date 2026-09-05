@@ -1,128 +1,173 @@
 # ERD — Mô hình dữ liệu
 
-> ⚠️ **ERD này là của dự án cũ** (16 bảng, quản lý CLB đá bóng). Từ 05/09/2026 database chỉ
-> còn **7 bảng hệ thống**: `TENANT`, `NGUOI_DUNG`, `QUYEN`, `QUYEN_CHUC_NANG`,
-> `NGUOIDUNG_QUYEN`, `REFRESH_TOKEN`, `TOKEN_DATLAI_MATKHAU`.
->
-> Phần **vẫn đúng và nên đọc**: quy ước đặt tên, cách denormalize `tenant_id` xuống bảng con,
-> và nguyên tắc đưa ràng buộc "chỉ một" xuống tầng DB. Phần bảng nghiệp vụ bóng đá chỉ để tham
-> khảo cấu trúc mô tả.
+**20 bảng**, PostgreSQL. Nội dung dưới đây khớp với schema thật (kiểm bằng
+`information_schema` sau khi áp toàn bộ migration), không phải bản thiết kế trên giấy.
 
 ## Nguyên tắc bắt buộc
 
-> Mọi bảng nghiệp vụ có cột `tenant_id` (FK → `TENANT`) và **bắt buộc** áp dụng EF Core Global Query
-> Filter theo `tenant_id` đang đăng nhập. Không được quên ở bất kỳ entity mới nào.
+> Mọi bảng nghiệp vụ có cột `tenant_id` (FK → `TENANT`) và **bắt buộc** áp dụng EF Core Global
+> Query Filter theo `tenant_id` đang đăng nhập. Không được quên ở bất kỳ entity mới nào.
 > Cách triển khai: [../backend/multi-tenant.md](../backend/multi-tenant.md).
 
-Áp dụng cho **cả bảng chi tiết** (`DOIHINH_TRANDAU`, `SODO_CHIENTHUAT`, `DANHGIA_CAUTHU`, `VOTE_MVP`,
-`QUYEN_CHUC_NANG`, `NGUOIDUNG_QUYEN`, `DONGGOP_QUY`) — xem
+Áp dụng cho **cả bảng chi tiết** — xem
 [Denormalize tenant_id xuống bảng con](#denormalize-tenant_id-xuống-bảng-con).
+
+## Quy ước đặt tên
+
+| Đối tượng | Quy ước | Ví dụ |
+|---|---|---|
+| Bảng | `UPPER_SNAKE_CASE`, số ít | `LOP_HOC`, `KHOAN_THU_HOC_PHI` |
+| Cột | `lower_snake_case` | `giao_vien_chinh_id`, `hoc_phi_ap_dung` |
+| Khoá chính | `id` (`uuid`) | |
+| Khoá ngoại | `<bảng>_id` | `lop_hoc_id` |
+| Index | `ix_<bảng>_<cột>` | `ix_buoi_hoc_lop_hoc_id_thu_tu` |
+
+Sinh tự động bởi `UseSnakeCaseNamingConvention` — xem
+[quy-uoc-migration.md](./quy-uoc-migration.md).
 
 ## Sơ đồ tổng quan
 
 ```mermaid
 erDiagram
     TENANT ||--o{ NGUOI_DUNG : "có"
-    TENANT ||--o{ CAU_THU : "có"
     TENANT ||--o{ QUYEN : "có"
-    TENANT ||--o{ DOI_THU : "có"
-    TENANT ||--o{ TRAN_DAU : "có"
-    TENANT ||--o{ QUY : "có"
-    TENANT ||--o{ LOI_MOI_DOI_THU : "có"
+    TENANT ||--o{ LOP_HOC : "có"
+    TENANT ||--o{ TAI_LIEU : "có"
 
-    NGUOI_DUNG }o--o| CAU_THU : "liên kết 0..1"
     NGUOI_DUNG }o--o{ QUYEN : "NGUOIDUNG_QUYEN"
     QUYEN ||--o{ QUYEN_CHUC_NANG : "chi tiết quyền"
+    NGUOI_DUNG ||--o{ REFRESH_TOKEN : "phiên"
+    NGUOI_DUNG ||--o{ TOKEN_DATLAI_MATKHAU : "đặt lại mật khẩu"
 
-    DOI_THU ||--o{ TRAN_DAU : "đối thủ"
-    DOI_THU ||--o{ LOI_MOI_DOI_THU : "gửi lời mời"
+    LOP_HOC ||--o{ LOP_HOC_HOC_VIEN : "ghi danh"
+    LOP_HOC ||--o{ LOP_HOC_TRO_GIANG : "phân công"
+    LOP_HOC ||--o{ BUOI_HOC : "lịch học"
+    LOP_HOC ||--o{ BAI_KIEM_TRA : "bài kiểm tra"
+    LOP_HOC ||--o{ TAI_LIEU_LOP_HOC : "gán tài liệu"
+    LOP_HOC ||--o{ KHOAN_THU_HOC_PHI : "sổ thu"
+    NGUOI_DUNG ||--o{ LOP_HOC : "dạy chính"
 
-    TRAN_DAU ||--o{ DOIHINH_TRANDAU : "đội hình"
-    TRAN_DAU ||--|| SODO_CHIENTHUAT : "sơ đồ 1-1"
-    TRAN_DAU ||--o{ DANHGIA_CAUTHU : "đánh giá"
-    TRAN_DAU ||--o{ VOTE_MVP : "bình chọn"
+    BUOI_HOC ||--o{ DIEM_DANH : "điểm danh"
+    BUOI_HOC ||--o{ BAI_TAP : "giao bài"
+    BAI_TAP ||--o{ BAI_NOP : "nộp nhiều lần"
+    BAI_KIEM_TRA ||--o{ BAI_LAM : "bài làm"
+    TAI_LIEU ||--o{ TAI_LIEU_LOP_HOC : "gán lớp"
 
-    CAU_THU ||--o{ DOIHINH_TRANDAU : "tham gia"
-    CAU_THU ||--o{ DANHGIA_CAUTHU : "được đánh giá"
-    CAU_THU ||--o{ DONGGOP_QUY : "đóng góp"
+    BAI_TAP ||--o{ TEP_DINH_KEM : "đính kèm"
+    BAI_NOP ||--o{ TEP_DINH_KEM : "đính kèm"
+    BAI_KIEM_TRA ||--o{ TEP_DINH_KEM : "đính kèm"
+    BAI_LAM ||--o{ TEP_DINH_KEM : "đính kèm"
+    TAI_LIEU ||--o{ TEP_DINH_KEM : "đính kèm"
 
-    QUY ||--o{ DONGGOP_QUY : "khoản đóng"
+    NGUOI_DUNG ||--o{ LOP_HOC_HOC_VIEN : "là học viên"
+    NGUOI_DUNG ||--o{ DIEM_DANH : "được điểm danh"
+    NGUOI_DUNG ||--o{ KHOAN_THU_HOC_PHI : "nộp học phí"
 ```
 
 ## Chi tiết bảng
 
-### Nhóm nền tảng
+### Nhóm nền tảng (7 bảng — kế thừa từ base)
 
-| Bảng | Mục đích | Trường chính | Quan hệ |
-|---|---|---|---|
-| `TENANT` | CLB | id, **ma_doi** `char(7)` UNIQUE (sinh tự động), ten_doi, ten_viet_tat, ngay_thanh_lap, logo_url, anh_bia_url, mo_ta, mau_ao_json, **khu_vuc**, **san_nha**, **lien_he_cong_khai**, **so_tai_khoan**, **ten_ngan_hang**, **chu_tai_khoan**, **anh_qr_url** | 1—N với hầu hết bảng khác qua `tenant_id` |
-| `NGUOI_DUNG` | Tài khoản đăng nhập | id, tenant_id, username, password_hash, email, so_dien_thoai, dia_chi, phai_doi_mk, cau_thu_id (FK nullable), trang_thai, la_truong_nhom | N—1 TENANT; 0..1 với CAU_THU; N—N với QUYEN qua `NGUOIDUNG_QUYEN` |
-| `CAU_THU` | Hồ sơ cầu thủ | id, tenant_id, anh_dai_dien, ho_ten, ngay_sinh, ngay_tham_gia, ghi_chu, so_ao, vi_tri_so_truong | Độc lập với NGUOI_DUNG |
+| Bảng | Vai trò | Ghi chú |
+|---|---|---|
+| `TENANT` | Trung tâm | `ma_trung_tam` 7 ký tự, duy nhất **toàn hệ thống**. `mui_gio` (mặc định `Asia/Ho_Chi_Minh`), `so_ngay_canh_bao_no_hoc_phi` (mặc định 14) |
+| `NGUOI_DUNG` | Tài khoản | `ho_ten` bắt buộc, `loai_nguoi_dung` **chỉ để lọc danh sách**, không dùng phân quyền |
+| `QUYEN` | Nhóm quyền | Seeder tạo sẵn 4 nhóm: Quản trị viên / Giáo viên / Trợ giảng / Học viên |
+| `QUYEN_CHUC_NANG` | Chi tiết quyền | `(quyen_id, ten_chuc_nang, hanh_dong)` — nguồn của phân quyền động |
+| `NGUOIDUNG_QUYEN` | Gán nhóm quyền | Nhiều–nhiều |
+| `REFRESH_TOKEN` | Phiên đăng nhập | Xoay vòng, phát hiện tái sử dụng |
+| `TOKEN_DATLAI_MATKHAU` | Quên mật khẩu | Hash, hạn 30 phút, dùng một lần |
 
-### Nhóm phân quyền
+### Nhóm lớp học (3 bảng)
 
-| Bảng | Mục đích | Trường chính | Quan hệ |
-|---|---|---|---|
-| `QUYEN` | Nhóm quyền | id, tenant_id, ten_quyen | 1—N với `QUYEN_CHUC_NANG` |
-| `QUYEN_CHUC_NANG` | Chi tiết quyền | id, quyen_id, ten_chuc_nang, hanh_dong (xem/them/sua/xoa) | N—1 QUYEN |
-| `NGUOIDUNG_QUYEN` | Bảng trung gian | nguoi_dung_id, quyen_id | N—N |
+| Bảng | Cột đáng chú ý |
+|---|---|
+| `LOP_HOC` | `giao_vien_chinh_id` NOT NULL (đúng 1 người), `hoc_phi` nullable (`null` = chưa nhập ≠ `0` = miễn phí), `suc_chua_toi_da` nullable = không giới hạn, `nhan_ban_tu_lop_id` (dấu vết nguồn gốc), `trang_thai` |
+| `LOP_HOC_HOC_VIEN` | `ngay_vao_lop`, `ngay_roi_lop`, `trang_thai`, **`hoc_phi_ap_dung`** — snapshot lúc ghi danh, cho phép miễn giảm từng người |
+| `LOP_HOC_TRO_GIANG` | Bảng **riêng**, không gộp với học viên bằng cột `vai_tro`: gộp thì nửa số cột luôn NULL và mọi query học viên phải nhớ `WHERE vai_tro = 1` |
 
-### Nhóm trận đấu
+### Nhóm buổi học & điểm danh (2 bảng)
 
-| Bảng | Mục đích | Trường chính | Quan hệ |
-|---|---|---|---|
-| `DOI_THU` | Đối thủ | id, tenant_id, ten_doi, lien_he, **ma_doi_he_thong** | 1—N TRAN_DAU, 1—N LOI_MOI_DOI_THU |
-| `LOI_MOI_DOI_THU` | Lời mời giao hữu | id, tenant_id, doi_thu_id, thoi_gian_de_xuat, trang_thai | N—1 DOI_THU |
-| `TRAN_DAU` | Trận đấu | id, tenant_id, thoi_gian, doi_thu_id, ty_so_nha *(tự cộng từ DANHGIA_CAUTHU, không nhập tay)*, ty_so_khach, ket_qua, nhan_xet_chung, trang_thai | 1—N DOIHINH_TRANDAU, 1—1 SODO_CHIENTHUAT, 1—N DANHGIA_CAUTHU, 1—N VOTE_MVP, 1—N VIDEO_TRAN |
-| `DOIHINH_TRANDAU` | Đội hình tham gia | id, tran_dau_id, cau_thu_id, vi_tri | N—1 TRAN_DAU, N—1 CAU_THU |
-| `SODO_CHIENTHUAT` | Sơ đồ chiến thuật | id, tran_dau_id (1—1), so_do_json, ghi_chu_chien_thuat | 1—1 TRAN_DAU |
-| `VIDEO_TRAN` | Link video sau trận | id, tenant_id, tran_dau_id, ten, url, mo_ta, thu_tu | N—1 TRAN_DAU (Cascade) |
-| `LOI_MOI_THAM_GIA` | Trưởng nhóm mời đăng ký thi đấu | id, tenant_id, tran_dau_id **UNIQUE**, nguoi_gui_id, loi_nhan, han_tra_loi, da_dong | N—1 TRAN_DAU (Cascade), 1—N PHAN_HOI_THAM_GIA |
-| `LOI_MOI_BAT_DOI` | Lời mời thách đấu giữa hai CLB (Cộng đồng). **Tên bảng giữ nguyên** dù entity C# đã đổi thành `LoiMoiThachDau` — đổi tên bảng là mất dữ liệu đang có (quy tắc #1) | id, **tenant_gui_id**, **tenant_nhan_id**, thoi_gian_de_xuat, dia_diem, loi_nhan, trang_thai, phan_hoi, tran_dau_nhan_id, tran_dau_gui_id | N—1 TENANT ×2 (**Restrict**) |
-| `LOI_MOI_LINK` | Lời mời thách đấu qua link/QR (FR-18) | id, tenant_id (người GỬI), doi_thu_id, tran_dau_id, **token_hash** UNIQUE, het_han, trang_thai, phan_hoi, thu_hoi_luc, tenant_nhan_id, da_huy_lien_ket | N—1 DOI_THU (Cascade), N—1 TRAN_DAU (**SetNull**) |
-| `PHAN_HOI_THAM_GIA` | Câu trả lời của cầu thủ | id, tenant_id, loi_moi_id, cau_thu_id, tra_loi, ghi_chu, thoi_gian_tra_loi, **UNIQUE(loi_moi_id, cau_thu_id)** | N—1 LOI_MOI_THAM_GIA, N—1 CAU_THU |
-| `MAU_DOI_HINH` | Đội hình mẫu dùng lại | id, tenant_id, ten, loai_san (5/7/9/11), noi_dung_json, ghi_chu, **UNIQUE(tenant_id, ten)** | độc lập — không FK tới TRAN_DAU |
-| `DANHGIA_CAUTHU` | Đánh giá sau trận | id, tran_dau_id, cau_thu_id, so_ban_ghi_duoc, so_ban_cuu_thua, chi_so_ky_nang (JSON), ghi_chu | N—1 TRAN_DAU, N—1 CAU_THU |
-| `VOTE_MVP` | Bình chọn MVP | id, tran_dau_id, nguoi_vote_id, nguoi_duoc_vote_id, **UNIQUE(tran_dau_id, nguoi_vote_id)** | N—1 TRAN_DAU |
+| Bảng | Cột đáng chú ý |
+|---|---|
+| `BUOI_HOC` | `bat_dau`, `ket_thuc` là `timestamptz` — **không có cột `ngay_hoc`**: cột ngày tách rời sẽ lệch khi trung tâm đổi múi giờ. `giao_vien_id` nullable = dùng giáo viên của lớp. `la_hoc_bu` |
+| `DIEM_DANH` | **Hai cột trạng thái**: `trang_thai_tu_khai` (nullable — học viên tự khai; null ≠ Vắng) và `trang_thai_chinh_thuc` (NOT NULL — **nguồn sự thật duy nhất cho mọi báo cáo**). Gộp một cột là mất vĩnh viễn thông tin học viên đã khai gì trước khi giáo viên ghi đè |
 
-### Nhóm tài chính
+### Nhóm học liệu (6 bảng)
 
-| Bảng | Mục đích | Trường chính | Quan hệ |
-|---|---|---|---|
-| `QUY` | Đợt quỹ | id, tenant_id, ten_quy, thoi_han, ghi_chu, trang_thai, **hien_thong_tin_chuyen_khoan** | 1—N DONGGOP_QUY |
-| `DONGGOP_QUY` | Đóng góp quỹ | id, quy_id, cau_thu_id, so_tien_can_dong, so_tien_da_dong, ngay_dong | N—1 QUY, N—1 CAU_THU |
-| `KHOAN_CHI` | Khoản chi từ quỹ | id, tenant_id, quy_id (nullable), noi_dung, so_tien, ngay_chi, nguoi_chi, ghi_chu | N—1 QUY (**SetNull**) |
+| Bảng | Cột đáng chú ý |
+|---|---|
+| `BAI_TAP` | Gắn vào `buoi_hoc_id` |
+| `BAI_NOP` | **`lan_nop`** — nộp nhiều lần, giữ lịch sử; bài mới nhất là `MAX(lan_nop)` |
+| `BAI_KIEM_TRA` | Gắn vào `lop_hoc_id`. `loai` giữ sẵn `TracNghiemOnline` cho tương lai, hiện chỉ nộp file |
+| `BAI_LAM` | `han_nop_rieng` nullable = gia hạn riêng; hạn hiệu lực = `han_nop_rieng ?? bai_kiem_tra.dong_luc` |
+| `TAI_LIEU` + `TAI_LIEU_LOP_HOC` | **Không có hàng nào** trong bảng gán = tài liệu chung toàn trung tâm |
+| `TEP_DINH_KEM` | Một bảng dùng chung, **5 cột FK nullable loại trừ nhau**, ép bằng `CHECK` |
+
+### Nhóm học phí (1 bảng)
+
+| Bảng | Cột đáng chú ý |
+|---|---|
+| `KHOAN_THU_HOC_PHI` | `so_tien numeric(18,2)` + `CHECK (so_tien > 0)`, `phuong_thuc`, `so_phieu` (đối chiếu phiếu giấy), `nguoi_thu_id`. **Không có cột `da_thu` ở đâu cả** — công nợ tính động bằng `SUM` |
 
 ## Ràng buộc nghiệp vụ quan trọng
 
 | Ràng buộc | Bảng | Lý do |
 |---|---|---|
-| `UNIQUE(tran_dau_id, nguoi_vote_id)` | `VOTE_MVP` | Mỗi người tối đa 1 tim/trận (FR-10) — quy tắc bất di bất dịch #8 |
-| `UNIQUE(tenant_id, username)` | `NGUOI_DUNG` | Username duy nhất **trong phạm vi tenant**, hai CLB có thể cùng có `admin` |
-| `UNIQUE(tran_dau_id)` | `SODO_CHIENTHUAT` | Quan hệ 1—1 với trận đấu |
-| `UNIQUE(tran_dau_id)` | `LOI_MOI_THAM_GIA` | Mỗi trận tối đa một lời mời — gửi hai lần thì cầu thủ thấy hai thẻ giống hệt |
-| `UNIQUE(loi_moi_id, cau_thu_id)` | `PHAN_HOI_THAM_GIA` | Mỗi cầu thủ một phản hồi/lời mời, chặn ở tầng DB như vote MVP |
-| `UNIQUE(tenant_id, ten)` | `MAU_DOI_HINH` | Tên mẫu duy nhất **trong tenant**, hai CLB đều đặt được "Đội hình mạnh nhất" |
-| `UNIQUE(quy_id, cau_thu_id)` | `DONGGOP_QUY` | Một cầu thủ chỉ có 1 khoản đóng trong mỗi đợt quỹ |
-| `UNIQUE(ma_doi)` | `TENANT` | Mã đội 7 ký tự sinh tự động, duy nhất **toàn hệ thống** — xem [FR-01](../nghiep-vu/dang-nhap.md#mã-đội) |
-| `cau_thu_id` nullable | `NGUOI_DUNG` | Tài khoản có thể không gắn hồ sơ cầu thủ nào (0..1) |
-| `so_tien_da_dong <= so_tien_can_dong` | `DONGGOP_QUY` | Kiểm tra ở tầng Application (FluentValidation) |
+| `UNIQUE(ma_trung_tam)` | `TENANT` | Mã 7 ký tự sinh tự động, duy nhất **toàn hệ thống** — xem [FR-01](../nghiep-vu/dang-nhap.md#mã-đội) |
+| `UNIQUE(tenant_id, username)` | `NGUOI_DUNG` | Username duy nhất **trong phạm vi trung tâm**; hai trung tâm đều có thể có `admin` |
+| `UNIQUE(tenant_id, ten) WHERE trang_thai <> 0` | `LOP_HOC` | Tên lớp duy nhất trong trung tâm, **nhưng lớp nháp không chiếm tên** — nháp bỏ ngang không được chặn người khác ba tháng sau |
+| `UNIQUE(lop_hoc_id, hoc_vien_id)` | `LOP_HOC_HOC_VIEN` | Ghi danh một lần |
+| `UNIQUE(lop_hoc_id, tro_giang_id)` | `LOP_HOC_TRO_GIANG` | Phân công một lần |
+| `UNIQUE(lop_hoc_id, thu_tu)` | `BUOI_HOC` | Số thứ tự buổi không trùng trong lớp |
+| `UNIQUE(buoi_hoc_id, hoc_vien_id)` | `DIEM_DANH` | Mỗi học viên một dòng điểm danh/buổi — chặn ở **tầng DB**, không chỉ ở UI |
+| `UNIQUE(bai_tap_id, hoc_vien_id, lan_nop)` | `BAI_NOP` | Nộp nhiều lần nhưng không trùng số lần |
+| `UNIQUE(bai_kiem_tra_id, hoc_vien_id)` | `BAI_LAM` | Bài kiểm tra làm một lần (khác bài tập) |
+| `UNIQUE(tai_lieu_id, lop_hoc_id)` | `TAI_LIEU_LOP_HOC` | Gán một lần |
+| `CHECK` đúng một FK khác null | `TEP_DINH_KEM` | `ck_tep_dinh_kem_dung_mot_chu` — không dựa vào validate ở handler |
+| `CHECK (so_tien > 0)` | `KHOAN_THU_HOC_PHI` | `ck_khoan_thu_so_tien_duong`. Số âm làm mọi báo cáo tổng thu sai mà không ai nhìn ra |
+
+Các UNIQUE trên bảng con **không kèm `tenant_id`**: cột đầu đã là FK về bảng đã mang tenant.
+
+## Hành vi xoá — Restrict ở đâu và vì sao
+
+| Quan hệ | Delete | Lý do |
+|---|---|---|
+| `LOP_HOC → NGUOI_DUNG` (giáo viên chính) | Restrict | Xoá giáo viên đang dạy phải bị chặn, buộc bàn giao lớp trước |
+| `BUOI_HOC → LOP_HOC` | Restrict | Cascade sẽ cuốn sạch lịch sử chuyên cần khi xoá lớp |
+| `DIEM_DANH → BUOI_HOC` | Restrict | Điểm danh là bằng chứng |
+| `KHOAN_THU_HOC_PHI → NGUOI_DUNG` / `→ LOP_HOC` | Restrict | Dữ liệu tiền không được biến mất theo tài khoản hay theo lớp |
+| `DIEM_DANH → NGUOI_DUNG` (người xác nhận) | SetNull | Chỉ là dấu vết; Restrict sẽ khoá cứng mọi tài khoản giáo viên vĩnh viễn |
+| `KHOAN_THU_HOC_PHI → NGUOI_DUNG` (người thu) | SetNull | Cùng lý do |
+| `LOP_HOC → LOP_HOC` (nhân bản từ) | SetNull | Chỉ là dấu vết nguồn gốc; bản sao là lớp thật đang chạy |
+| `TEP_DINH_KEM → *` | Cascade | Tệp đi theo nội dung chứa nó |
+
+Vì Restrict chồng Restrict, UI đưa **"Huỷ lớp"** làm hành động mặc định; xoá cứng chỉ cho lớp
+nháp chưa có buổi học.
 
 ## Denormalize tenant_id xuống bảng con
 
-Bảy bảng chi tiết (`QUYEN_CHUC_NANG`, `NGUOIDUNG_QUYEN`, `DOIHINH_TRANDAU`, `SODO_CHIENTHUAT`,
-`DANHGIA_CAUTHU`, `VOTE_MVP`, `DONGGOP_QUY`) **mang cột `tenant_id` riêng** thay vì chỉ kế thừa phạm vi
-qua bảng cha.
+Mọi bảng chi tiết (`QUYEN_CHUC_NANG`, `NGUOIDUNG_QUYEN`, `LOP_HOC_HOC_VIEN`,
+`LOP_HOC_TRO_GIANG`, `BUOI_HOC`, `DIEM_DANH`, `BAI_TAP`, `BAI_NOP`, `BAI_LAM`,
+`TAI_LIEU_LOP_HOC`, `TEP_DINH_KEM`, `KHOAN_THU_HOC_PHI`) **mang cột `tenant_id` riêng** thay vì
+chỉ kế thừa phạm vi qua bảng cha.
 
-**Vì sao:** Global Query Filter chỉ áp cho entity có `TenantId`. Nếu bảng con không có, mọi truy vấn
-trực tiếp — đếm phiếu MVP, tổng đóng quỹ, kiểm tra quyền — đều phải nhớ join lên bảng cha. Quên một lần
-là rò rỉ dữ liệu chéo CLB, đúng lỗi nghiêm trọng nhất hệ thống này có thể mắc.
+**Vì sao:** Global Query Filter chỉ áp cho entity có `TenantId`. Nếu bảng con không có, mọi truy
+vấn trực tiếp — đếm buổi vắng, cộng dồn học phí, kiểm tra quyền — đều phải nhớ join lên bảng cha.
+Quên một lần là rò rỉ dữ liệu chéo trung tâm, đúng lỗi nghiêm trọng nhất hệ thống này có thể mắc.
 
-**Đánh đổi đã chấp nhận:** thừa một cột `uuid` mỗi bảng, và cần giữ `tenant_id` của bản ghi con nhất
-quán với cha. Việc gán đã tự động hóa trong `AppDbContext.SaveChanges` nên tầng Application không phải
-nhớ; `CachLyTenantTests` canh cả 7 bảng đều có cột và có filter.
+**Đánh đổi đã chấp nhận:** thừa một cột `uuid` mỗi bảng, và cần giữ `tenant_id` của bản ghi con
+nhất quán với cha. Việc gán đã tự động hoá trong `AppDbContext.SaveChanges` nên tầng Application
+không phải nhớ; `CachLyTenantTests` canh mọi bảng đều có cột và có filter.
+
+## Chỗ ERD không bảo vệ được
+
+**Kho tệp MinIO không có Query Filter.** Cách ly tenant ở đó dựa hoàn toàn vào quy ước khoá
+`{tenantId}/{loai}/{guid}{ext}` và việc `TaiVe`/`Xoa` kiểm lại tiền tố. Xem
+[multi-tenant.md](../backend/multi-tenant.md).
 
 ## Tham chiếu
 
 - Nghiệp vụ dùng các bảng này: [../nghiep-vu/](../nghiep-vu/README.md)
 - Cách áp Global Query Filter: [../backend/multi-tenant.md](../backend/multi-tenant.md)
+- Quy ước migration: [quy-uoc-migration.md](./quy-uoc-migration.md)

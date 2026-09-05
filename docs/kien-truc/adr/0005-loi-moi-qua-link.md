@@ -2,7 +2,7 @@
 
 - **Trạng thái:** Đã chốt
 - **Ngày:** 20/08/2026
-- **Liên quan:** [ADR-0004](./0004-ha-tang-tu-host-vps.md) · [FR-18](../../nghiep-vu/loi-moi-qua-link.md)
+- **Liên quan:** [ADR-0004](./0004-ha-tang-tu-host-vps.md) · FR-18
 
 ## Bối cảnh
 

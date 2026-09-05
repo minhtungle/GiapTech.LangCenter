@@ -44,7 +44,7 @@ Integration test bắt buộc cho mỗi module: tạo dữ liệu ở tenant A, 
 | Trường hợp | Rủi ro | Xử lý |
 |---|---|---|
 | **Raw SQL** (`FromSqlRaw`, `ExecuteSqlRaw`, Dapper) | Filter không áp dụng | Tự thêm `WHERE tenant_id = @tenant` trong mọi câu lệnh |
-| **Truy vấn thống kê aggregate** | Thường viết dạng raw SQL / group-by phức tạp | Điểm rủi ro cao nhất — xem [FR-13, FR-14](../nghiep-vu/thong-ke.md) |
+| **Truy vấn thống kê aggregate** | Thường viết dạng raw SQL / group-by phức tạp | Điểm rủi ro cao nhất — báo cáo điểm danh và công nợ đều là group-by nhiều bảng |
 | **`IgnoreQueryFilters()`** | Vô hiệu hóa filter hoàn toàn | Chỉ dùng cho tác vụ quản trị hệ thống, phải review kỹ |
 | ~~Bảng con không có `tenant_id`~~ | ~~Truy vấn trực tiếp bảng con không bị lọc~~ | ✅ **Đã xử lý:** mọi bảng con mang `tenant_id` riêng — xem [ERD](../database/erd.md#denormalize-tenant_id-xuống-bảng-con) |
 | **Kho tệp MinIO** (`ILuuTruAnh`, `ILuuTruTep`) | Kho lưu trữ không có Query Filter — đoán được khoá là đọc được tệp trung tâm khác | Khoá mang tenant ở đầu (`{tenantId}/{loai}/{guid}`) và `TaiVe`/`Xoa` kiểm lại tiền tố trước khi đọc. Canh bởi `AnhTests` |

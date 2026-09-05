@@ -141,3 +141,16 @@ public enum LoaiTaiLieu
     DeThi = 3,
     Khac = 4
 }
+
+/// <summary>
+/// Phương thức thu học phí.
+///
+/// Hệ thống KHÔNG xử lý tiền: không gọi cổng thanh toán, không đối chiếu sao kê, không tự ghi
+/// nhận. Tiền đi trực tiếp giữa hai bên, thủ quỹ vào nhập tay số đã nhận.
+/// </summary>
+public enum PhuongThucThanhToan
+{
+    TienMat = 0,
+    ChuyenKhoan = 1,
+    Khac = 2
+}

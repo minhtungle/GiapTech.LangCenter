@@ -1,41 +1,46 @@
 # Tổng thuật — đọc 1 mạch trước khi đào sâu
 
-> ⚠️ **Tài liệu của DỰ ÁN CŨ** (quản lý CLB đá bóng phong trào). Từ 05/09/2026 repo này là
-> base cho hệ thống quản lý trung tâm ngoại ngữ — **phần nghiệp vụ dưới đây không còn trong
-> code**. Giữ lại để tham khảo cách viết đặc tả. Xem [`CLAUDE.md`](../CLAUDE.md) mục 1.
-
-Hệ thống Quản lý Câu lạc bộ đá bóng là ứng dụng web **multi-tenant**: mỗi CLB đăng ký là 1 tenant độc
-lập, dữ liệu cách ly hoàn toàn theo `tenant_id`. Đăng nhập bằng bộ ba **{ID đội, tên đăng nhập, mật
-khẩu}**.
+**LMS cho trung tâm ngoại ngữ** (Vietgenedu) — ứng dụng web **multi-tenant**: mỗi trung tâm đăng
+ký là 1 tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`. Đăng nhập bằng bộ ba
+**{mã trung tâm, tên đăng nhập, mật khẩu}**.
 
 ## 5 nhóm chức năng
 
 | # | Module | Nội dung | Mã FR |
 |---|---|---|---|
-| 1 | [Đăng nhập](./nghiep-vu/dang-nhap.md) | Xác thực theo tenant, quên mật khẩu | FR-01 → FR-02 |
-| 2 | [Lịch thi đấu](./nghiep-vu/lich-thi-dau.md) | Tạo/sửa/xóa trận, đội hình & sơ đồ chiến thuật, đánh giá sau trận (chỉ số kỹ năng, video, vote MVP bằng tim — mỗi người 1 tim/trận), chấp nhận lời mời đối thủ | FR-07 → FR-11 |
-| 3 | [Thống kê](./nghiep-vu/thong-ke.md) | Biểu đồ diễn biến thắng/thua, bảng xếp hạng MVP theo 4 tiêu chí | FR-12 → FR-14 |
-| 4 | [Tài chính](./nghiep-vu/tai-chinh.md) | Quản lý quỹ đội, tiến độ đóng góp, nhắc nhở qua SMS/Email | FR-15 → FR-16 |
-| 5 | [Quản trị hệ thống](./nghiep-vu/quan-tri-he-thong.md) | Tài khoản, hồ sơ cầu thủ, phân quyền động theo chức năng/thao tác, thiết lập chung CLB | FR-03 → FR-06 |
+| 1 | [Đăng nhập](./nghiep-vu/dang-nhap.md) | Xác thực theo trung tâm, quên mật khẩu, refresh token có xoay vòng | FR-01 → FR-02 |
+| 2 | [Quản trị hệ thống](./nghiep-vu/quan-tri-he-thong.md) | Tài khoản, hồ sơ, phân quyền động theo chức năng/thao tác, thiết lập chung | FR-03 → FR-06 |
+| 3 | [Lớp học](./nghiep-vu/lop-hoc.md) | Vòng đời lớp (nháp → sắp khai giảng → đang học → kết thúc), phân công giáo viên/trợ giảng, ghi danh học viên với học phí riêng từng người | FR-07 → FR-08 |
+| 4 | [Buổi học & Điểm danh](./nghiep-vu/buoi-hoc-diem-danh.md) | Sinh lịch tự động theo thứ trong tuần, điểm danh **2 nguồn** (học viên tự khai + giáo viên chốt) | FR-09 → FR-10 |
+| 5 | [Học liệu](./nghiep-vu/hoc-lieu.md) · [Học phí](./nghiep-vu/hoc-phi.md) | Bài tập (nộp nhiều lần, giữ lịch sử), tài liệu, tệp đính kèm; sổ thu và công nợ | FR-11 → FR-14 |
 
-## 3 actor
+## 4 actor
 
-- **Admin** — 1 tài khoản mặc định mỗi tenant (`admin`/`123456`), toàn quyền, duy nhất được đổi mật khẩu
-  cho tài khoản khác, bắt buộc đổi mật khẩu ở lần đăng nhập đầu.
-- **Manager** — tài khoản được cấp quyền theo từng chức năng/thao tác, thường phụ trách vận hành trận
-  đấu / tài chính / thống kê.
-- **Player** — tài khoản gắn 1 hồ sơ cầu thủ (0..1); xem lịch/thống kê, vote MVP, xem tiến độ quỹ.
+- **Admin** — 1 tài khoản mặc định mỗi trung tâm, toàn quyền, duy nhất được đổi mật khẩu cho tài
+  khoản khác, bắt buộc đổi mật khẩu ở lần đăng nhập đầu. Người duy nhất thấy **mọi lớp** và
+  **toàn bộ sổ học phí**.
+- **Giáo viên** — chỉ thao tác trên lớp mình phụ trách. **Không** thấy học phí.
+- **Trợ giảng** — như giáo viên, hẹp hơn ở bài kiểm tra và xoá buổi học.
+- **Học viên** — xem lịch, tự điểm danh trong khung giờ, nộp bài, tra **công nợ của chính mình**.
+
+Vai trò là **nhóm quyền có sẵn**, không phải enum cứng trong code.
 
 ## Điểm cần nắm trước khi code
 
 1. **Cách ly tenant** là quy tắc số một — [multi-tenant.md](./backend/multi-tenant.md).
-2. **Phân quyền đọc động từ DB**, không dùng role cố định — [phan-quyen-dong.md](./backend/phan-quyen-dong.md).
-3. **Vote MVP ràng buộc UNIQUE ở tầng DB**, không chỉ chặn ở UI — [ERD](./database/erd.md#ràng-buộc-nghiệp-vụ-quan-trọng).
-4. **API trả mã lỗi**, frontend dịch qua `react-i18next` — [cqrs-mediatr.md](./backend/cqrs-mediatr.md#trả-lỗi).
+2. **Phân quyền đọc động từ DB**, không dùng role cố định —
+   [phan-quyen-dong.md](./backend/phan-quyen-dong.md).
+3. **Phạm vi bên trong tenant là tầng riêng.** `[RequirePermission]` chỉ gác cửa endpoint;
+   Query Filter chỉ lọc tenant. "Chỉ lớp mình dạy" và "chỉ sổ học phí của mình" là **hai tầng
+   khác nhau** (`IPhamViLopHoc`, `IPhamViHocPhi`) — gộp chúng là mở sổ thu cho mọi giáo viên.
+4. **Mọi thời điểm là `DateTimeOffset` UTC**; giờ địa phương suy từ `TENANT.mui_gio` khi hiển
+   thị. Không lưu cột "ngày" tách rời — nó sẽ lệch khi trung tâm đổi múi giờ.
+5. **API trả mã lỗi**, frontend dịch qua `react-i18next` —
+   [cqrs-mediatr.md](./backend/cqrs-mediatr.md#trả-lỗi).
 
 ## Tiến độ
 
-Xem [ke-hoach.md](./ke-hoach.md) — bảng trạng thái 16 mã FR, lộ trình và nợ kỹ thuật.
+Xem [ke-hoach.md](./ke-hoach.md) — bảng trạng thái mã FR, lộ trình và nợ kỹ thuật.
 
 ## Đi tiếp
 

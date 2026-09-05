@@ -41,6 +41,8 @@ Lỗi đã bắt được, thứ tưởng đúng mà sai, giới hạn chưa g�
 
 | Ngày | Nội dung chính |
 |---|---|
+| [2026-09-05 (gd4)](./2026-09-05-gd4-hoc-phi.md) | **LMS giai đoạn 4** — học phí: công nợ tính động, phạm vi tiền tách khỏi phạm vi lớp; dọn dứt điểm `docs/` |
+| [2026-09-05 (gd1–3)](./2026-09-05-gd1-3-nghiep-vu-cot-loi.md) | **LMS giai đoạn 1–3** — lớp học, sinh lịch + điểm danh hai nguồn, học liệu & tệp đính kèm |
 | [2026-09-06](./2026-09-06.md) | **LMS giai đoạn 0** — vá base (HoTen, ILuuTruTep), 16 chức năng, 4 nhóm quyền |
 | [2026-09-05](./2026-09-05.md) | **Tách base cho dự án LMS** — bỏ nghiệp vụ bóng đá, đổi tên, 4 lỗi tìm ra |
 | [2026-08-21](./2026-08-21.md) | Rate limit (nợ N3) + FR-19 đăng ký đá trận qua link/QR |

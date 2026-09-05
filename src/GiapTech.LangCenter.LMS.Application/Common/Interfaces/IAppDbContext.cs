@@ -37,6 +37,8 @@ public interface IAppDbContext
     DbSet<TaiLieu> TaiLieus { get; }
     DbSet<TaiLieuLopHoc> TaiLieuLopHocs { get; }
 
+    DbSet<KhoanThuHocPhi> KhoanThuHocPhis { get; }
+
     DbSet<RefreshToken> RefreshTokens { get; }
     DbSet<TokenDatLaiMatKhau> TokenDatLaiMatKhaus { get; }
 
