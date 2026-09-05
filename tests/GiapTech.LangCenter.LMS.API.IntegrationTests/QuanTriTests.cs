@@ -42,7 +42,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var tao = await clientA.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
             Username = "chicuaa",
-            MatKhau = "matkhau123",
+            MatKhau = "matkhau123", HoTen = "Test chicuaa",
             Email = (string?)null,
             SoDienThoai = (string?)null,
             DiaChi = (string?)null,
@@ -56,7 +56,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var sua = await clientB.PutAsJsonAsync($"/api/v1/tai-khoan/{idCuaA}", new
         {
-            Id = idCuaA,
+            Id = idCuaA, HoTen = "Test",
             Email = "bi-b-sua@example.com",
             SoDienThoai = (string?)null,
             DiaChi = (string?)null,
@@ -142,7 +142,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var tao = await client.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
             Username = "nhanvien1",
-            MatKhau = "matkhau123",
+            MatKhau = "matkhau123", HoTen = "Test nhanvien1",
             Email = "nv1@example.com",
             QuyenIds = new[] { quyenId },
             PhaiDoiMatKhau = false
@@ -164,6 +164,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
         {
             Username = "admin", // đã tồn tại trong trung tâm A
             MatKhau = "matkhau123",
+            HoTen = "Trùng username",
             QuyenIds = Array.Empty<Guid>()
         });
 
@@ -184,7 +185,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var res = await clientA.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
             Username = "user-lai-quyen",
-            MatKhau = "matkhau123",
+            MatKhau = "matkhau123", HoTen = "Test user-lai-quyen",
             QuyenIds = new[] { quyenCuaB }
         });
 
@@ -205,7 +206,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var tao = await client.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
             Username = "bi-dat-lai-mk",
-            MatKhau = "matkhaucu123",
+            MatKhau = "matkhaucu123", HoTen = "Test bi-dat-lai-mk",
             QuyenIds = Array.Empty<Guid>(),
             PhaiDoiMatKhau = false
         });

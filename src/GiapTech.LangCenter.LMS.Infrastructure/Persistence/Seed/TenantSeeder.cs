@@ -11,7 +11,7 @@ public class TenantSeeder(AppDbContext db, IPasswordHasher hasher, ICurrentTenan
     : ITenantSeeder
 {
     /// <summary>Tên nhóm quyền quản trị — dùng lại khi cần kiểm tra/khôi phục.</summary>
-    public const string NhomQuyenQuanTri = "Quản trị viên";
+    public const string NhomQuyenQuanTri = NhomQuyenMacDinh.QuanTri;
 
     /// <summary>Số lần thử sinh mã trước khi bỏ cuộc — xem <see cref="SinhMaChuaDungAsync"/>.</summary>
     private const int SoLanThuSinhMa = 10;
@@ -30,33 +30,28 @@ public class TenantSeeder(AppDbContext db, IPasswordHasher hasher, ICurrentTenan
         using var _ = currentTenant.DatPhamVi(tenant.Id);
 
         // Nhóm quyền đầy đủ: admin có toàn quyền QUA DỮ LIỆU, không qua ngoại lệ trong code
-        // (xem QuyenAuthorizationHandler).
-        var quyenQuanTri = new Quyen
-        {
-            TenantId = tenant.Id,
-            TenQuyen = NhomQuyenQuanTri,
-            MoTa = "Toàn quyền trên mọi chức năng"
-        };
-        db.Quyens.Add(quyenQuanTri);
+        // (xem QuyenAuthorizationHandler). Vòng lặp `ChucNang.TatCa` chứ không liệt kê tay —
+        // nhờ vậy module thêm sau này tự thuộc về admin của trung tâm mới.
+        var quyenQuanTri = ThemNhomQuyen(
+            tenant.Id, NhomQuyenMacDinh.QuanTri, "Toàn quyền trên mọi chức năng",
+            ChucNang.TatCa.Select(cn => (cn, Enum.GetValues<HanhDong>())).ToArray());
 
-        foreach (var chucNang in ChucNang.TatCa)
-        {
-            foreach (var hanhDong in Enum.GetValues<HanhDong>())
-            {
-                db.QuyenChucNangs.Add(new QuyenChucNang
-                {
-                    TenantId = tenant.Id,
-                    QuyenId = quyenQuanTri.Id,
-                    TenChucNang = chucNang,
-                    HanhDong = hanhDong
-                });
-            }
-        }
+        // Ba nhóm còn lại khai TƯỜNG MINH ma trận — xem NhomQuyenMacDinh.
+        ThemNhomQuyen(tenant.Id, NhomQuyenMacDinh.GiaoVien,
+            "Phụ trách trọn vẹn lớp được phân công", NhomQuyenMacDinh.CuaGiaoVien);
+
+        ThemNhomQuyen(tenant.Id, NhomQuyenMacDinh.TroGiang,
+            "Hỗ trợ giáo viên; không xoá buổi học, không ra đề kiểm tra",
+            NhomQuyenMacDinh.CuaTroGiang);
+
+        ThemNhomQuyen(tenant.Id, NhomQuyenMacDinh.HocVien,
+            "Chỉ xem và nộp bài của chính mình", NhomQuyenMacDinh.CuaHocVien);
 
         var admin = new NguoiDung
         {
             TenantId = tenant.Id,
             Username = "admin",
+            HoTen = "Quản trị viên",
             PasswordHash = hasher.Bam(matKhauAdmin),
             // Mật khẩu mặc định ai cũng biết → bắt buộc đổi trước khi vào hệ thống (FR-01).
             PhaiDoiMatKhau = true,
@@ -73,6 +68,36 @@ public class TenantSeeder(AppDbContext db, IPasswordHasher hasher, ICurrentTenan
 
         await db.SaveChangesAsync(ct);
         return tenant;
+    }
+
+    /// <summary>
+    /// Thêm một nhóm quyền kèm ma trận (chức năng × thao tác) của nó.
+    ///
+    /// Chưa gọi SaveChanges — mọi bản ghi của seeder ghi trong MỘT transaction ở cuối, để
+    /// trung tâm tạo dở dang không bao giờ tồn tại.
+    /// </summary>
+    private Quyen ThemNhomQuyen(
+        Guid tenantId, string tenQuyen, string moTa,
+        IReadOnlyCollection<(string ChucNang, HanhDong[] HanhDongs)> maTran)
+    {
+        var quyen = new Quyen { TenantId = tenantId, TenQuyen = tenQuyen, MoTa = moTa };
+        db.Quyens.Add(quyen);
+
+        foreach (var (chucNang, hanhDongs) in maTran)
+        {
+            foreach (var hanhDong in hanhDongs)
+            {
+                db.QuyenChucNangs.Add(new QuyenChucNang
+                {
+                    TenantId = tenantId,
+                    QuyenId = quyen.Id,
+                    TenChucNang = chucNang,
+                    HanhDong = hanhDong
+                });
+            }
+        }
+
+        return quyen;
     }
 
     /// <summary>

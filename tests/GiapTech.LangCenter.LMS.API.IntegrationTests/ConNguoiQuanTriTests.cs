@@ -62,10 +62,20 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         return (tk.GetProperty("id").GetString()!, username);
     }
 
+    /// <summary>
+    /// Id nhóm "Quản trị viên" — nhóm DUY NHẤT có quyền Phân quyền.
+    ///
+    /// Không lấy mọi nhóm: seeder tạo sẵn 4 nhóm (Quản trị viên / Giáo viên / Trợ giảng /
+    /// Học viên), gán hết cho một người là gán cả nhóm Học viên — không phải ý định của các
+    /// test dưới đây, vốn nói về "người còn giữ quyền quản trị".
+    /// </summary>
     private static async Task<string[]> QuyenIds(HttpClient c)
     {
         var q = await (await c.GetAsync("/api/v1/quyen")).Content.ReadFromJsonAsync<JsonElement>();
-        return q.EnumerateArray().Select(x => x.GetProperty("id").GetString()!).ToArray();
+        return q.EnumerateArray()
+            .Where(x => x.GetProperty("tenQuyen").GetString() == "Quản trị viên")
+            .Select(x => x.GetProperty("id").GetString()!)
+            .ToArray();
     }
 
     // ----- Lỗ hổng gốc -----
@@ -79,7 +89,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
 
         var res = await c.PutAsJsonAsync($"/api/v1/tai-khoan/{adminId}", new
         {
-            Id = adminId, Email = (string?)null, SoDienThoai = (string?)null,
+            Id = adminId, HoTen = "Test", Email = (string?)null, SoDienThoai = (string?)null,
             DiaChi = (string?)null,
             QuyenIds = Array.Empty<string>(), TrangThai = 0,
         });
@@ -102,7 +112,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
 
         var res = await c.PutAsJsonAsync($"/api/v1/tai-khoan/{adminId}", new
         {
-            Id = adminId, Email = (string?)null, SoDienThoai = (string?)null,
+            Id = adminId, HoTen = "Test", Email = (string?)null, SoDienThoai = (string?)null,
             DiaChi = (string?)null,
             QuyenIds = quyen, TrangThai = 1,
         });
@@ -127,7 +137,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         // Tạo admin thứ hai CÓ quyền đầy đủ.
         var tao = await c.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
-            Username = "admin2", MatKhau = "admin2matkhau",
+            Username = "admin2", MatKhau = "admin2matkhau", HoTen = "Test admin2",
             Email = (string?)null, SoDienThoai = (string?)null, DiaChi = (string?)null, QuyenIds = quyen,
         });
         tao.EnsureSuccessStatusCode();
@@ -136,7 +146,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         var (adminId, _) = await LayTaiKhoan(c, "admin");
         var res = await c.PutAsJsonAsync($"/api/v1/tai-khoan/{adminId}", new
         {
-            Id = adminId, Email = (string?)null, SoDienThoai = (string?)null,
+            Id = adminId, HoTen = "Test", Email = (string?)null, SoDienThoai = (string?)null,
             DiaChi = (string?)null,
             QuyenIds = Array.Empty<string>(), TrangThai = 0,
         });
@@ -176,7 +186,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         // `chuquyen` giữ quyền đầy đủ (có PhanQuyen).
         var tao = await c.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
-            Username = "chuquyen", MatKhau = "chuquyenmatkhau",
+            Username = "chuquyen", MatKhau = "chuquyenmatkhau", HoTen = "Test chuquyen",
             Email = (string?)null, SoDienThoai = (string?)null, DiaChi = (string?)null, QuyenIds = quyenDayDu,
         });
         tao.EnsureSuccessStatusCode();
@@ -186,7 +196,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         var (adminId, _) = await LayTaiKhoan(c, "admin");
         var ha = await c.PutAsJsonAsync($"/api/v1/tai-khoan/{adminId}", new
         {
-            Id = adminId, Email = (string?)null, SoDienThoai = (string?)null,
+            Id = adminId, HoTen = "Test", Email = (string?)null, SoDienThoai = (string?)null,
             DiaChi = (string?)null,
             QuyenIds = new[] { nhomChiTaiKhoan }, TrangThai = 0,
         });
@@ -217,7 +227,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         // `nguoibikhoa` có quyền đầy đủ nhưng bị vô hiệu hoá ngay.
         var tao = await c.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
-            Username = "nguoibikhoa", MatKhau = "nguoibikhoamk",
+            Username = "nguoibikhoa", MatKhau = "nguoibikhoamk", HoTen = "Test nguoibikhoa",
             Email = (string?)null, SoDienThoai = (string?)null, DiaChi = (string?)null, QuyenIds = quyen,
         });
         tao.EnsureSuccessStatusCode();
@@ -225,7 +235,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
 
         var khoa = await c.PutAsJsonAsync($"/api/v1/tai-khoan/{biKhoaId}", new
         {
-            Id = biKhoaId, Email = (string?)null, SoDienThoai = (string?)null,
+            Id = biKhoaId, HoTen = "Test", Email = (string?)null, SoDienThoai = (string?)null,
             DiaChi = (string?)null,
             QuyenIds = quyen, TrangThai = 1,
         });
@@ -235,7 +245,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         var (adminId, _) = await LayTaiKhoan(c, "admin");
         var res = await c.PutAsJsonAsync($"/api/v1/tai-khoan/{adminId}", new
         {
-            Id = adminId, Email = (string?)null, SoDienThoai = (string?)null,
+            Id = adminId, HoTen = "Test", Email = (string?)null, SoDienThoai = (string?)null,
             DiaChi = (string?)null,
             QuyenIds = Array.Empty<string>(), TrangThai = 0,
         });
@@ -266,7 +276,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
 
         var tao = await c.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
-            Username = "troly", MatKhau = "trolymatkhau1",
+            Username = "troly", MatKhau = "trolymatkhau1", HoTen = "Test troly",
             Email = (string?)null, SoDienThoai = (string?)null, DiaChi = (string?)null, QuyenIds = new[] { quyenMoiId },
         });
         tao.EnsureSuccessStatusCode();
@@ -275,7 +285,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         var (adminId, _) = await LayTaiKhoan(c, "admin");
         var res = await c.PutAsJsonAsync($"/api/v1/tai-khoan/{adminId}", new
         {
-            Id = adminId, Email = (string?)null, SoDienThoai = (string?)null,
+            Id = adminId, HoTen = "Test", Email = (string?)null, SoDienThoai = (string?)null,
             DiaChi = (string?)null,
             QuyenIds = Array.Empty<string>(), TrangThai = 0,
         });

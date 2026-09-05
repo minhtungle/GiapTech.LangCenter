@@ -8,6 +8,43 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — LMS giai đoạn 0 (06/09/2026)
+
+Đặt nền cho nghiệp vụ LMS theo đặc tả Vietgenedu. Chưa có entity nghiệp vụ; giai đoạn này vá hai
+lỗ hổng của base và dựng danh mục quyền.
+
+- `NguoiDung`: thêm `HoTen` (bắt buộc), `NgaySinh`, `AnhDaiDienUrl`, `LoaiNguoiDung`. Mọi màn LMS
+  hiển thị họ tên, không ai hiển thị username. Theo quy tắc #1, trường mới vào **cả** DTO, form và
+  payload trong cùng PR.
+- `Tenant`: thêm `MuiGio` (tiền đề để tính "buổi học ngày nào" — lớp 6h sáng giờ VN rơi sang ngày
+  UTC hôm trước) và `SoNgayCanhBaoNoHocPhi` (mỗi trung tâm một chính sách thu).
+- `ILuuTruTep` + `MinioLuuTruTep`: kho tệp PDF/Office/ZIP, hạn mức 20 MB. **Tách khỏi**
+  `ILuuTruAnh` chứ không nới nó — nới ra là cho phép tải PDF lên làm logo.
+- Danh mục `ChucNang`: 5 → **16 chức năng**. Tách nhỏ vì ma trận đặc tả lệch cột-theo-cột (trợ
+  giảng toàn quyền bài tập nhưng chỉ xem bài kiểm tra).
+- `LopHocToanTrungTam` — không phải module mà là **phạm vi**, cách nhận ra người quản trị mà không
+  hard-code vai trò (suy từ dữ liệu quyền, không từ tên nhóm).
+- `TenantSeeder` tạo sẵn **4 nhóm quyền** (Quản trị viên / Giáo viên / Trợ giảng / Học viên) đúng
+  ma trận đặc tả — giữ phân quyền động (quy tắc #9) thay vì đổi sang role enum cứng.
+- `BoKhuyetQuyenQuanTri`: cấp bù quyền cho nhóm quản trị của trung tâm **đã tồn tại** khi danh mục
+  chức năng dài ra. Không có bước này thì thêm module = admin trung tâm cũ bị 403 trên toàn bộ
+  tính năng mới, âm thầm và rất khó chẩn.
+
+### Fixed
+
+- Suýt làm hẹp cột `NGUOI_DUNG.dia_chi` từ `text` xuống `varchar(300)` — EF cảnh báo "may result
+  in the loss of data", đã bỏ `HasMaxLength` và tạo lại migration (quy tắc #1).
+- Sửa hai `defaultValue` EF sinh sai trong migration: `mui_gio` `""` → `Asia/Ho_Chi_Minh` (rỗng
+  làm mọi buổi học lệch ngày), `so_ngay_canh_bao_no_hoc_phi` `0` → `14` (0 = cảnh báo nợ ngay hôm
+  khai giảng).
+
+### Kiểm chứng
+
+143 test xanh (35 unit + 108 integration, tăng 15), build 0 warning, frontend typecheck sạch.
+Trên PostgreSQL thật: migration áp sạch, trung tâm mới có 4 nhóm với 64/25/18/14 quyền, xoá 96
+hàng quyền rồi khởi động lại thì bổ khuyết cấp lại đúng 44 quyền và không đụng nhóm khác.
+
+
 ## [2.0.0] — 2026-09-05 — Tách base cho dự án LMS
 
 Repo chuyển từ **quản lý CLB đá bóng** (`GiapTech.SoccerRoom`) thành **base cho hệ thống quản

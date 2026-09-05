@@ -51,13 +51,70 @@ chuỗi tùy ý), tương ứng các module nghiệp vụ:
 
 | `ten_chuc_nang` | Module | FR |
 |---|---|---|
-| `LichThiDau` | [Lịch thi đấu](../nghiep-vu/lich-thi-dau.md) | FR-07 → FR-11 |
-| `ThongKe` | [Thống kê](../nghiep-vu/thong-ke.md) | FR-12 → FR-14 |
-| `TaiChinh` | [Tài chính](../nghiep-vu/tai-chinh.md) | FR-15, FR-16 |
 | `TaiKhoan` | [Quản trị](../nghiep-vu/quan-tri-he-thong.md) | FR-03 |
-| `CauThu` | [Quản trị](../nghiep-vu/quan-tri-he-thong.md) | FR-04 |
 | `PhanQuyen` | [Quản trị](../nghiep-vu/quan-tri-he-thong.md) | FR-05 |
 | `ThietLapChung` | [Quản trị](../nghiep-vu/quan-tri-he-thong.md) | FR-06 |
+| `Anh` | Ảnh dùng chung (logo, ảnh bìa, QR, ảnh đại diện) | — |
+| `DoiMatKhauNguoiKhac` | [Quản trị](../nghiep-vu/quan-tri-he-thong.md) | FR-03 |
+| `LopHoc` | Lớp học | *(đang làm)* |
+| `BuoiHoc` | Buổi học | *(đang làm)* |
+| `DiemDanh` | Điểm danh | *(đang làm)* |
+| `BaiTap` | Bài tập giao trong buổi | *(đang làm)* |
+| `BaiNopBaiTap` | Bài học viên nộp | *(đang làm)* |
+| `BaiKiemTra` | Bài kiểm tra | *(đang làm)* |
+| `BaiLamKiemTra` | Bài làm của học viên | *(đang làm)* |
+| `TaiLieu` | Tài liệu giảng dạy | *(đang làm)* |
+| `HocPhi` | Học phí | *(đang làm)* |
+| `ThongKe` | Thống kê / dashboard | *(đang làm)* |
+| `LopHocToanTrungTam` | **Phạm vi**, không phải module — xem dưới | — |
+
+### Vì sao tách nhỏ tới mức này
+
+Tiêu chí gộp/tách: **so cột-theo-cột trong ma trận phân quyền; khác một ô là tách**.
+
+- `BaiTap` vs `BaiKiemTra`: trợ giảng **toàn quyền** với bài tập nhưng **chỉ xem** bài kiểm tra.
+  Gộp lại thì không diễn đạt nổi khác biệt đó.
+- `BaiTap` vs `BaiNopBaiTap`: học viên **tạo** bài nộp nhưng **không tạo** bài tập.
+
+### `LopHocToanTrungTam` — cách nhận ra "người quản trị" mà không hard-code vai trò
+
+Giáo viên có `LopHoc.Xem` nhưng **không** có `LopHocToanTrungTam` → handler giới hạn họ trong lớp
+được phân công. Admin có cả hai → thấy hết.
+
+Suy từ **dữ liệu quyền**, không suy từ **tên nhóm quyền**: tên là chuỗi người dùng tự sửa được,
+đổi tên nhóm "Quản trị viên" thành "Ban giám hiệu" không được phép làm mất quyền quản trị.
+
+Phân biệt theo thao tác: cấp `Xem` mà không cấp `Sua` = xem được mọi lớp nhưng chỉ sửa lớp mình.
+
+## Bốn nhóm quyền dựng sẵn
+
+`TenantSeeder` tạo sẵn 4 nhóm khi lập trung tâm mới — xem
+`Infrastructure/Persistence/Seed/NhomQuyenMacDinh.cs`:
+
+| Nhóm | Tinh thần |
+|---|---|
+| **Quản trị viên** | Toàn quyền. Sinh bằng vòng lặp `ChucNang.TatCa` × `HanhDong` nên module thêm sau tự thuộc về nhóm này |
+| **Giáo viên** | Trọn vẹn lớp mình dạy: toàn quyền buổi học, bài tập, bài kiểm tra |
+| **Trợ giảng** | Như giáo viên nhưng **không xoá buổi học** và **không ra đề kiểm tra** |
+| **Học viên** | Chỉ dữ liệu của mình; `DiemDanh.Them` để tự điểm danh |
+
+Đây là **điểm khởi đầu, không phải luật cứng** — admin vào màn Phân quyền sửa từng ô, hoặc tạo
+nhóm khác hẳn. Canh bởi `NhomQuyenMacDinhTests`.
+
+### ⚠️ Thêm chức năng mới và trung tâm đã tồn tại
+
+`TenantSeeder` chỉ chạy **một lần lúc tạo trung tâm**. Thêm hằng vào `ChucNang` thì trung tâm lập
+trước đó **không có hàng nào** trong `QUYEN_CHUC_NANG` cho hằng mới → admin của họ nhận 403 trên
+toàn bộ tính năng mới. Triệu chứng rất khó chẩn: đăng nhập được, mọi màn cũ chạy bình thường, chỉ
+màn mới hỏng — dễ bị quy oan cho frontend.
+
+`BoKhuyetQuyenQuanTri` chạy lúc khởi động vá chuyện này: cấp cho nhóm **"Quản trị viên"** mọi cặp
+(chức năng, thao tác) còn thiếu. **Idempotent, chỉ thêm không xoá** — admin đã cố ý bỏ bớt một ô
+thì lần khởi động sau không được lặng lẽ cấp lại.
+
+Nó **cố tình không đụng** ba nhóm còn lại: sửa nhóm "Giáo viên" là quyết định của admin, hệ thống
+tự nới quyền cho họ là lỗ hổng. Hệ quả cần biết: thêm module mới thì **giáo viên/trợ giảng/học
+viên của trung tâm cũ phải được admin cấp quyền bằng tay** ở màn Phân quyền.
 
 Thêm module mới → thêm hằng số **và** cập nhật bảng này trong cùng PR.
 

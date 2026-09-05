@@ -35,6 +35,7 @@ public class PhanTrangTests(ApiFactory factory) : IClassFixture<ApiFactory>
             {
                 Username = $"{tienTo}{i:D2}",
                 MatKhau = "matkhau123",
+                HoTen = $"{tienTo}{i:D2}",
                 Email = (string?)null,
                 SoDienThoai = (string?)null,
                 DiaChi = (string?)null,

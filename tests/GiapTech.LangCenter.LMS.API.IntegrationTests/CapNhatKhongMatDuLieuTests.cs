@@ -50,7 +50,7 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
         await client.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
             Username = "du-truong",
-            MatKhau = "matkhau123",
+            MatKhau = "matkhau123", HoTen = "Test du-truong",
             Email = "dt@example.com",
             SoDienThoai = "0900000001",
             DiaChi = "123 Đường Test",
@@ -62,7 +62,11 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
         var u = ds!.Single(x => x.GetProperty("username").GetString() == "du-truong");
 
         // Đây là danh sách trường CapNhatTaiKhoanCommand ghi đè.
-        foreach (var truong in new[] { "email", "soDienThoai", "diaChi", "trangThai", "quyenIds" })
+        foreach (var truong in new[]
+                 {
+                     "hoTen", "email", "soDienThoai", "diaChi", "ngaySinh",
+                     "loaiNguoiDung", "trangThai", "quyenIds"
+                 })
         {
             Assert.True(
                 u.TryGetProperty(truong, out _),
@@ -82,7 +86,7 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
         var tao = await client.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
             Username = "giu-nguyen",
-            MatKhau = "matkhau123",
+            MatKhau = "matkhau123", HoTen = "Test giu-nguyen",
             Email = "cu@example.com",
             SoDienThoai = "0900000002",
             DiaChi = "456 Đường Giữ Nguyên",
@@ -94,7 +98,7 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
         // Gửi lại nguyên vẹn mọi trường, chỉ đổi email — đúng cách form sửa phải làm.
         var res = await client.PutAsJsonAsync($"/api/v1/tai-khoan/{id}", new
         {
-            Id = id,
+            Id = id, HoTen = "Test",
             Email = "moi@example.com",
             SoDienThoai = "0900000002",
             DiaChi = "456 Đường Giữ Nguyên",
@@ -120,7 +124,7 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
         var tao = await client.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
             Username = "co-buoc-doi",
-            MatKhau = "matkhau123",
+            MatKhau = "matkhau123", HoTen = "Test co-buoc-doi",
             QuyenIds = Array.Empty<Guid>(),
             PhaiDoiMatKhau = true
         });
@@ -128,7 +132,7 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
 
         await client.PutAsJsonAsync($"/api/v1/tai-khoan/{id}", new
         {
-            Id = id,
+            Id = id, HoTen = "Test",
             Email = "abc@example.com",
             SoDienThoai = (string?)null,
             DiaChi = (string?)null,
@@ -230,5 +234,57 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
         var tl2 = await client.GetFromJsonAsync<JsonElement>("/api/v1/thiet-lap");
         Assert.Equal(JsonValueKind.Null, tl2.GetProperty("diaChi").ValueKind);
         Assert.Equal(JsonValueKind.Null, tl2.GetProperty("moTa").ValueKind);
+    }
+
+    /// <summary>
+    /// Sửa email không được làm mất họ tên — `HoTen` là trường bắt buộc nên nếu form quên gửi
+    /// thì API từ chối, nhưng nếu form gửi CHUỖI RỖNG thì phải là lỗi validation chứ không
+    /// phải âm thầm ghi rỗng vào DB.
+    /// </summary>
+    [Fact]
+    public async Task Sua_tai_khoan_khong_lam_mat_ho_ten()
+    {
+        var client = await Client();
+
+        var tao = await client.PostAsJsonAsync("/api/v1/tai-khoan", new
+        {
+            Username = "giu-ho-ten",
+            MatKhau = "matkhau123",
+            HoTen = "Nguyễn Văn Giữ",
+            QuyenIds = Array.Empty<Guid>(),
+            PhaiDoiMatKhau = false
+        });
+        tao.EnsureSuccessStatusCode();
+        var id = await tao.Content.ReadFromJsonAsync<Guid>();
+
+        // Gửi lại nguyên vẹn — đúng cách form sửa phải làm.
+        var sua = await client.PutAsJsonAsync($"/api/v1/tai-khoan/{id}", new
+        {
+            Id = id,
+            HoTen = "Nguyễn Văn Giữ",
+            Email = "moi@example.com",
+            SoDienThoai = (string?)null,
+            DiaChi = (string?)null,
+            QuyenIds = Array.Empty<Guid>(),
+            TrangThai = 0
+        });
+        Assert.Equal(HttpStatusCode.NoContent, sua.StatusCode);
+
+        var ds = await DocTrang(await client.GetAsync("/api/v1/tai-khoan?timKiem=giu-ho-ten"));
+        var u = ds.Single(x => x.GetProperty("username").GetString() == "giu-ho-ten");
+        Assert.Equal("Nguyễn Văn Giữ", u.GetProperty("hoTen").GetString());
+
+        // Họ tên rỗng phải bị TỪ CHỐI, không được ghi rỗng vào DB.
+        var rong = await client.PutAsJsonAsync($"/api/v1/tai-khoan/{id}", new
+        {
+            Id = id,
+            HoTen = "",
+            Email = "moi@example.com",
+            SoDienThoai = (string?)null,
+            DiaChi = (string?)null,
+            QuyenIds = Array.Empty<Guid>(),
+            TrangThai = 0
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, rong.StatusCode);
     }
 }

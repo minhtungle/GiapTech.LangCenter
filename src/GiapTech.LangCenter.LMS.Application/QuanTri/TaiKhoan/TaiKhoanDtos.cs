@@ -16,7 +16,8 @@ namespace GiapTech.LangCenter.LMS.Application.QuanTri.TaiKhoan;
 /// dữ liệu người dùng chưa từng đụng tới.
 /// </summary>
 public record TaiKhoanDto(
-    Guid Id, string Username, string? Email, string? SoDienThoai, string? DiaChi,
+    Guid Id, string Username, string HoTen, string? Email, string? SoDienThoai, string? DiaChi,
+    DateTimeOffset? NgaySinh, string? AnhDaiDienUrl, LoaiNguoiDung LoaiNguoiDung,
     bool PhaiDoiMatKhau, TrangThaiNguoiDung TrangThai,
     List<Guid> QuyenIds, List<string> TenQuyens);
 
@@ -37,17 +38,19 @@ public class LayDanhSachTaiKhoanHandler(IAppDbContext db)
         if (!string.IsNullOrWhiteSpace(request.TimKiem))
         {
             var tu = request.TimKiem.Trim().ToLower();
-            q = q.Where(u => u.Username.ToLower().Contains(tu));
+            q = q.Where(u => u.Username.ToLower().Contains(tu)
+                             || u.HoTen.ToLower().Contains(tu));
         }
 
         var tong = await q.CountAsync(ct);
 
         var duLieu = await q
-            .OrderBy(u => u.Username)
+            .OrderBy(u => u.HoTen)
             .Skip(trang.BoQua)
             .Take(trang.SoDongHopLe)
             .Select(u => new TaiKhoanDto(
-                u.Id, u.Username, u.Email, u.SoDienThoai, u.DiaChi,
+                u.Id, u.Username, u.HoTen, u.Email, u.SoDienThoai, u.DiaChi,
+                u.NgaySinh, u.AnhDaiDienUrl, u.LoaiNguoiDung,
                 u.PhaiDoiMatKhau, u.TrangThai,
                 u.NguoiDungQuyens.Select(nq => nq.QuyenId).ToList(),
                 u.NguoiDungQuyens.Select(nq => nq.Quyen.TenQuyen).ToList()))
@@ -60,7 +63,9 @@ public class LayDanhSachTaiKhoanHandler(IAppDbContext db)
 // ---------- Commands ----------
 
 public record TaoTaiKhoanCommand(
-    string Username, string MatKhau, string? Email, string? SoDienThoai, string? DiaChi,
+    string Username, string MatKhau, string HoTen,
+    string? Email, string? SoDienThoai, string? DiaChi,
+    DateTimeOffset? NgaySinh, LoaiNguoiDung LoaiNguoiDung,
     List<Guid> QuyenIds, bool PhaiDoiMatKhau = true) : IRequest<Guid>;
 
 public class TaoTaiKhoanValidator : AbstractValidator<TaoTaiKhoanCommand>
@@ -70,6 +75,7 @@ public class TaoTaiKhoanValidator : AbstractValidator<TaoTaiKhoanCommand>
         RuleFor(x => x.Username).NotEmpty().MaximumLength(100)
             .Matches("^[a-zA-Z0-9._-]+$").WithErrorCode("USERNAME_KY_TU_KHONG_HOP_LE");
         RuleFor(x => x.MatKhau).NotEmpty().MinimumLength(6).WithErrorCode("MAT_KHAU_QUA_NGAN");
+        RuleFor(x => x.HoTen).NotEmpty().MaximumLength(200);
         RuleFor(x => x.Email).EmailAddress().When(x => !string.IsNullOrWhiteSpace(x.Email));
     }
 }
@@ -93,9 +99,12 @@ public class TaoTaiKhoanHandler(IAppDbContext db, IPasswordHasher hasher)
         {
             Username = username,
             PasswordHash = hasher.Bam(request.MatKhau),
+            HoTen = request.HoTen.Trim(),
             Email = request.Email,
             SoDienThoai = request.SoDienThoai,
             DiaChi = request.DiaChi,
+            NgaySinh = request.NgaySinh,
+            LoaiNguoiDung = request.LoaiNguoiDung,
             PhaiDoiMatKhau = request.PhaiDoiMatKhau
         };
         db.NguoiDungs.Add(nguoiDung);
@@ -128,14 +137,18 @@ public class TaoTaiKhoanHandler(IAppDbContext db, IPasswordHasher hasher)
 }
 
 public record CapNhatTaiKhoanCommand(
-    Guid Id, string? Email, string? SoDienThoai, string? DiaChi,
-    List<Guid> QuyenIds, TrangThaiNguoiDung TrangThai) : IRequest;
+    Guid Id, string HoTen, string? Email, string? SoDienThoai, string? DiaChi,
+    DateTimeOffset? NgaySinh, LoaiNguoiDung LoaiNguoiDung,
+    List<Guid> QuyenIds, TrangThaiNguoiDung TrangThai,
+    /// <summary>null = client không gửi → giữ ảnh đang có (quy tắc #1).</summary>
+    string? AnhDaiDienUrl = null) : IRequest;
 
 public class CapNhatTaiKhoanValidator : AbstractValidator<CapNhatTaiKhoanCommand>
 {
     public CapNhatTaiKhoanValidator()
     {
         RuleFor(x => x.Id).NotEmpty();
+        RuleFor(x => x.HoTen).NotEmpty().MaximumLength(200);
         RuleFor(x => x.Email).EmailAddress().When(x => !string.IsNullOrWhiteSpace(x.Email));
         RuleFor(x => x.SoDienThoai).MaximumLength(20);
     }
@@ -169,10 +182,18 @@ public class CapNhatTaiKhoanHandler(
             && await ChotConNguoiQuanTri.CoQuyenPhanQuyenAsync(db, request.QuyenIds, ct);
         await ChotConNguoiQuanTri.KiemAsync(db, request.Id, conQuyenPhanQuyen, ct);
 
+        nguoiDung.HoTen = request.HoTen.Trim();
         nguoiDung.Email = request.Email;
         nguoiDung.SoDienThoai = request.SoDienThoai;
         nguoiDung.DiaChi = request.DiaChi;
+        nguoiDung.NgaySinh = request.NgaySinh;
+        nguoiDung.LoaiNguoiDung = request.LoaiNguoiDung;
         nguoiDung.TrangThai = request.TrangThai;
+
+        // null = client không gửi trường này → GIỮ NGUYÊN ảnh đang có; chuỗi rỗng = chủ động
+        // gỡ ảnh. Cùng quy ước với màn Thiết lập (quy tắc #1).
+        if (request.AnhDaiDienUrl is { } anh)
+            nguoiDung.AnhDaiDienUrl = string.IsNullOrWhiteSpace(anh) ? null : anh;
 
         db.NguoiDungQuyens.RemoveRange(nguoiDung.NguoiDungQuyens);
         foreach (var quyenId in request.QuyenIds.Distinct())

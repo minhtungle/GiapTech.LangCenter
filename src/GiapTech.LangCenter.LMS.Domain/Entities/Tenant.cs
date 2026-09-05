@@ -32,6 +32,22 @@ public class Tenant : BaseEntity
     /// <summary>Thông tin liên hệ (điện thoại / email hành chính).</summary>
     public string? LienHe { get; set; }
 
+    /// <summary>
+    /// Múi giờ của trung tâm, dạng IANA (`Asia/Ho_Chi_Minh`).
+    ///
+    /// Cần thiết vì mọi mốc thời gian lưu ở UTC (xem `AppDbContext.ChuanHoaThoiGianVeUtc`),
+    /// nhưng "buổi học ngày nào" là câu hỏi theo giờ ĐỊA PHƯƠNG: lớp 6h sáng giờ Việt Nam
+    /// rơi vào ngày UTC hôm trước. Không có trường này thì màn "lịch hôm nay" sai với các
+    /// lớp sáng sớm và tối muộn.
+    /// </summary>
+    public string MuiGio { get; set; } = "Asia/Ho_Chi_Minh";
+
+    /// <summary>
+    /// Sau bao nhiêu ngày kể từ khai giảng thì học viên còn nợ học phí bị cảnh báo trên
+    /// dashboard. Mỗi trung tâm một chính sách thu khác nhau nên để cấu hình được.
+    /// </summary>
+    public int SoNgayCanhBaoNoHocPhi { get; set; } = 14;
+
     // --- Thông tin chuyển khoản ---
     //
     // Chỉ để HIỂN THỊ cho người học biết chuyển tiền vào đâu. Hệ thống KHÔNG xử lý tiền:

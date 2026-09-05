@@ -87,6 +87,7 @@ public class TinhNangTests(ApiFactory factory) : IClassFixture<ApiFactory>
             MaTrungTam = trungTam.GetProperty("maTrungTam").GetString(),
             Username = trungTam.GetProperty("username").GetString(),
             MatKhau = trungTam.GetProperty("matKhau").GetString(),
+            HoTen = "Test",
         });
         Assert.Equal(HttpStatusCode.OK, dn.StatusCode);
     }

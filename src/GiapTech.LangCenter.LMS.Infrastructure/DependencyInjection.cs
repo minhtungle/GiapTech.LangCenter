@@ -50,12 +50,14 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, AppPasswordHasher>();
         services.AddSingleton<ITokenService, TokenService>();
         services.AddScoped<ITenantSeeder, TenantSeeder>();
+        services.AddScoped<Persistence.Seed.BoKhuyetQuyenQuanTri>();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
 
         // Scoped chứ không Singleton: MinioLuuTruAnh phụ thuộc ICurrentTenant (theo request)
         // để cách ly ảnh giữa các trung tâm. Singleton sẽ giữ tenant của request ĐẦU TIÊN cho mọi
         // request sau — đúng kiểu rò rỉ chéo mà quy tắc #2 cấm.
         services.AddScoped<ILuuTruAnh, MinioLuuTruAnh>();
+        services.AddScoped<ILuuTruTep, MinioLuuTruTep>();
 
         return services;
     }

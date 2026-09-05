@@ -46,11 +46,11 @@ Integration test bắt buộc cho mỗi module: tạo dữ liệu ở tenant A, 
 | **Raw SQL** (`FromSqlRaw`, `ExecuteSqlRaw`, Dapper) | Filter không áp dụng | Tự thêm `WHERE tenant_id = @tenant` trong mọi câu lệnh |
 | **Truy vấn thống kê aggregate** | Thường viết dạng raw SQL / group-by phức tạp | Điểm rủi ro cao nhất — xem [FR-13, FR-14](../nghiep-vu/thong-ke.md) |
 | **`IgnoreQueryFilters()`** | Vô hiệu hóa filter hoàn toàn | Chỉ dùng cho tác vụ quản trị hệ thống, phải review kỹ |
-| ~~Bảng con không có `tenant_id`~~ | ~~Truy vấn trực tiếp bảng con không bị lọc~~ | ✅ **Đã xử lý:** cả 7 bảng con đều mang `tenant_id` riêng — xem [ERD](../database/erd.md#denormalize-tenant_id-xuống-bảng-con) |
+| ~~Bảng con không có `tenant_id`~~ | ~~Truy vấn trực tiếp bảng con không bị lọc~~ | ✅ **Đã xử lý:** mọi bảng con mang `tenant_id` riêng — xem [ERD](../database/erd.md#denormalize-tenant_id-xuống-bảng-con) |
+| **Kho tệp MinIO** (`ILuuTruAnh`, `ILuuTruTep`) | Kho lưu trữ không có Query Filter — đoán được khoá là đọc được tệp trung tâm khác | Khoá mang tenant ở đầu (`{tenantId}/{loai}/{guid}`) và `TaiVe`/`Xoa` kiểm lại tiền tố trước khi đọc. Canh bởi `AnhTests` |
+| **Bổ khuyết quyền lúc khởi động** (`BoKhuyetQuyenQuanTri`) | Chạy khi chưa có tenant trong ngữ cảnh nên phải `IgnoreQueryFilters` trên `QUYEN` và `QUYEN_CHUC_NANG` | Chỉ THÊM, không xoá; chỉ nhắm nhóm tên `"Quản trị viên"`; luôn gán `TenantId` lấy từ chính nhóm đang xét, không từ `ICurrentTenant`. Canh bởi `NhomQuyenMacDinhTests` |
 | **Include/navigation từ entity chưa lọc** | Kéo theo dữ liệu tenant khác | Bắt đầu truy vấn từ entity có filter |
 | **Background job / cron** | Không có HTTP context → không có claim tenant | Truyền `tenant_id` tường minh vào job, không dựa vào `ICurrentTenant` |
-| **`LOI_MOI_BAT_DOI`** — bảng duy nhất thuộc **hai** tenant | Không thể có filter (một lời mời phải hiện ở hòm thư CẢ hai bên) | Mọi truy vấn tự lọc `TenantGuiId == toi \|\| TenantNhanId == toi`; ghi thì kiểm đúng vai (chỉ bên nhận trả lời, chỉ bên gửi huỷ) — canh bởi `CongDongTests` |
-| **Cộng đồng** (`CongDongDtos`) | Đọc `TENANT` + đếm `TRAN_DAU` của CLB khác bằng `IgnoreQueryFilters` | Từng phép đếm phải có `td.TenantId == t.Id`; DTO khoá cứng danh sách field, có test so khớp chính xác |
 
 ### Năm endpoint đọc/ghi ngoài tenant, xếp theo mức rộng
 

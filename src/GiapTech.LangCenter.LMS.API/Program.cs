@@ -118,6 +118,13 @@ if (app.Configuration.GetValue("TU_DONG_MIGRATE", true))
     // Provider in-memory (integration test) không có khái niệm migration.
     if (db.Database.IsRelational())
         await db.Database.MigrateAsync();
+
+    // Cấp cho nhóm quản trị của trung tâm CŨ những chức năng vừa thêm vào danh mục. Không có
+    // bước này thì thêm module mới = admin của mọi trung tâm đang chạy bị 403 trên tính năng
+    // đó, âm thầm. Idempotent nên chạy mỗi lần khởi động là an toàn.
+    await scope.ServiceProvider
+        .GetRequiredService<GiapTech.LangCenter.LMS.Infrastructure.Persistence.Seed.BoKhuyetQuyenQuanTri>()
+        .ChayAsync();
 }
 
 if (app.Environment.IsDevelopment())

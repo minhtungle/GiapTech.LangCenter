@@ -41,6 +41,7 @@ Lỗi đã bắt được, thứ tưởng đúng mà sai, giới hạn chưa g�
 
 | Ngày | Nội dung chính |
 |---|---|
+| [2026-09-06](./2026-09-06.md) | **LMS giai đoạn 0** — vá base (HoTen, ILuuTruTep), 16 chức năng, 4 nhóm quyền |
 | [2026-09-05](./2026-09-05.md) | **Tách base cho dự án LMS** — bỏ nghiệp vụ bóng đá, đổi tên, 4 lỗi tìm ra |
 | [2026-08-21](./2026-08-21.md) | Rate limit (nợ N3) + FR-19 đăng ký đá trận qua link/QR |
 | [2026-08-20](./2026-08-20.md) | Hoàn tác khoản đã thu |

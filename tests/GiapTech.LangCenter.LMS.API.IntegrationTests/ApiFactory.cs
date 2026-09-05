@@ -1,7 +1,9 @@
 using GiapTech.LangCenter.LMS.Application.Common.Interfaces;
 using GiapTech.LangCenter.LMS.Domain.Common;
 using GiapTech.LangCenter.LMS.Domain.Entities;
+using GiapTech.LangCenter.LMS.Domain.Enums;
 using GiapTech.LangCenter.LMS.Infrastructure.Persistence;
+using GiapTech.LangCenter.LMS.Infrastructure.Persistence.Seed;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -172,17 +174,23 @@ public class ApiFactory : WebApplicationFactory<Program>
             {
                 TenantId = tenant.Id,
                 Username = "player",
+                HoTen = $"Học viên {nhan}",
+                LoaiNguoiDung = LoaiNguoiDung.HocVien,
                 PasswordHash = hasher.Bam("player123")
             });
 
             // Manager: đủ quyền và KHÔNG bị buộc đổi mật khẩu. Các test nghiệp vụ dùng tài
             // khoản này để không phải tiêu thụ mật khẩu mặc định của admin — nhiều test cùng
             // đổi mật khẩu một tài khoản sẽ phụ thuộc thứ tự chạy.
-            var quyenQuanTri = db.Quyens.Single(q => q.TenantId == tenant.Id);
+            // Seeder tạo 4 nhóm quyền (Quản trị viên / Giáo viên / Trợ giảng / Học viên) —
+            // lọc theo TÊN chứ không `Single` theo tenant.
+            var quyenQuanTri = db.Quyens.Single(
+                q => q.TenantId == tenant.Id && q.TenQuyen == TenantSeeder.NhomQuyenQuanTri);
             var manager = new NguoiDung
             {
                 TenantId = tenant.Id,
                 Username = "manager",
+                HoTen = $"Quản lý {nhan}",
                 PasswordHash = hasher.Bam("manager123"),
                 PhaiDoiMatKhau = false
             };

@@ -193,6 +193,7 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
         {
             Username = username,
             MatKhau = "matkhaugoc123",
+            HoTen = "Test",
             Email = email,
             QuyenIds = Array.Empty<Guid>(),
             PhaiDoiMatKhau = false

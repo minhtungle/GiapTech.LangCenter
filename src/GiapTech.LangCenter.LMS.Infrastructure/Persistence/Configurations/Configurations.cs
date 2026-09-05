@@ -24,6 +24,7 @@ public class TenantConfig : IEntityTypeConfiguration<Tenant>
         b.Property(x => x.SoTaiKhoan).HasMaxLength(50);
         b.Property(x => x.TenNganHang).HasMaxLength(100);
         b.Property(x => x.ChuTaiKhoan).HasMaxLength(200);
+        b.Property(x => x.MuiGio).HasMaxLength(64).IsRequired();
 
         // Mã trung tâm người dùng gõ khi đăng nhập — phải duy nhất toàn hệ thống.
         b.HasIndex(x => x.MaTrungTam).IsUnique();
@@ -37,8 +38,12 @@ public class NguoiDungConfig : IEntityTypeConfiguration<NguoiDung>
         b.ToTable("NGUOI_DUNG");
         b.Property(x => x.Username).HasMaxLength(100).IsRequired();
         b.Property(x => x.PasswordHash).IsRequired();
+        b.Property(x => x.HoTen).HasMaxLength(200).IsRequired();
         b.Property(x => x.Email).HasMaxLength(256);
         b.Property(x => x.SoDienThoai).HasMaxLength(20);
+
+        // Lọc "chọn giáo viên" / "chọn học viên" chạy trên cột này ở mọi màn nghiệp vụ.
+        b.HasIndex(x => new { x.TenantId, x.LoaiNguoiDung });
 
         // Username duy nhất TRONG tenant — hai trung tâm đều có thể có tài khoản "admin".
         b.HasIndex(x => new { x.TenantId, x.Username }).IsUnique();

@@ -92,7 +92,7 @@ public class DongThoiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var than = new
         {
             Username = "trungusername",
-            MatKhau = "matkhau123",
+            MatKhau = "matkhau123", HoTen = "Test trungusername",
             Email = (string?)null,
             SoDienThoai = (string?)null,
             DiaChi = (string?)null,
@@ -127,7 +127,7 @@ public class DongThoiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var than = new
         {
             Username = "trunggiuahaitenant",
-            MatKhau = "matkhau123",
+            MatKhau = "matkhau123", HoTen = "Test trunggiuahaitenant",
             Email = (string?)null,
             SoDienThoai = (string?)null,
             DiaChi = (string?)null,

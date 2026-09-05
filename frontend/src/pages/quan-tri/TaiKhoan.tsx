@@ -10,10 +10,18 @@ import { Modal, ModalChan } from '@/components/ui/Modal'
 import { PhanTrang } from '@/components/ui/PhanTrang'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 
+type LoaiNguoiDung = 'NhanVien' | 'GiaoVien' | 'TroGiang' | 'HocVien'
+
+const CAC_LOAI_NGUOI_DUNG: LoaiNguoiDung[] = ['NhanVien', 'GiaoVien', 'TroGiang', 'HocVien']
+
 interface TaiKhoanDto {
   id: string
   username: string
+  hoTen: string
   email: string | null
+  ngaySinh: string | null
+  anhDaiDienUrl: string | null
+  loaiNguoiDung: LoaiNguoiDung
   soDienThoai: string | null
   diaChi: string | null
   phaiDoiMatKhau: boolean
@@ -122,9 +130,12 @@ export default function TaiKhoan() {
     // Mọi trường mà lệnh cập nhật ghi đè đều phải đọc TỪ FORM. Gửi cứng null sẽ xóa dữ
     // liệu người dùng chưa từng đụng tới — đúng lỗi đã xảy ra với diaChi.
     const chung = {
+      hoTen: String(fd.get('hoTen')),
       email: (fd.get('email') as string) || null,
       soDienThoai: (fd.get('soDienThoai') as string) || null,
       diaChi: (fd.get('diaChi') as string) || null,
+      ngaySinh: (fd.get('ngaySinh') as string) || null,
+      loaiNguoiDung: (fd.get('loaiNguoiDung') as LoaiNguoiDung) || 'NhanVien',
       quyenIds: quyenChon,
     }
 
@@ -163,7 +174,9 @@ export default function TaiKhoan() {
         <Table>
           <thead>
             <tr>
+              <Th>{t('taiKhoan.hoTen')}</Th>
               <Th>{t('taiKhoan.username')}</Th>
+              <Th>{t('taiKhoan.loaiNguoiDung')}</Th>
               <Th>{t('taiKhoan.email')}</Th>
               <Th>{t('taiKhoan.quyen')}</Th>
               <Th>{t('taiKhoan.trangThai')}</Th>
@@ -173,7 +186,9 @@ export default function TaiKhoan() {
           <tbody>
             {data.map((u) => (
               <tr key={u.id} className="hover:bg-muted/40">
-                <Td className="font-medium">{u.username}</Td>
+                <Td className="font-medium">{u.hoTen}</Td>
+                <Td className="text-muted-foreground">{u.username}</Td>
+                <Td className="text-muted-foreground">{t(`loaiNguoiDung.${u.loaiNguoiDung}`)}</Td>
                 <Td className="text-muted-foreground">{u.email ?? '—'}</Td>
                 <Td>
                   <div className="flex flex-wrap gap-1">
@@ -293,6 +308,37 @@ export default function TaiKhoan() {
               </div>
             </>
           )}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="hoTen">{t('taiKhoan.hoTen')}</Label>
+            <Input id="hoTen" name="hoTen" defaultValue={dangSua?.hoTen ?? ''} required />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="loaiNguoiDung">{t('taiKhoan.loaiNguoiDung')}</Label>
+            <select
+              id="loaiNguoiDung"
+              name="loaiNguoiDung"
+              defaultValue={dangSua?.loaiNguoiDung ?? 'NhanVien'}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              {CAC_LOAI_NGUOI_DUNG.map((l) => (
+                <option key={l} value={l}>
+                  {t(`loaiNguoiDung.${l}`)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="ngaySinh">{t('taiKhoan.ngaySinh')}</Label>
+            <Input
+              id="ngaySinh"
+              name="ngaySinh"
+              type="date"
+              defaultValue={dangSua?.ngaySinh ? dangSua.ngaySinh.slice(0, 10) : ''}
+            />
+          </div>
+
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="email">{t('taiKhoan.email')}</Label>
             <Input id="email" name="email" type="email" defaultValue={dangSua?.email ?? ''} />

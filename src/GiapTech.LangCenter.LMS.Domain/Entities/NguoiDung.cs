@@ -14,9 +14,25 @@ public class NguoiDung : TenantEntity
     public string Username { get; set; } = null!;
     public string PasswordHash { get; set; } = null!;
 
+    /// <summary>
+    /// Họ tên đầy đủ — thứ hiển thị ở MỌI màn nghiệp vụ (danh sách lớp, bảng điểm danh,
+    /// sổ đầu bài). Username chỉ dùng để đăng nhập, không ai đọc nó.
+    /// </summary>
+    public string HoTen { get; set; } = null!;
+
     public string? Email { get; set; }
     public string? SoDienThoai { get; set; }
     public string? DiaChi { get; set; }
+    public DateTimeOffset? NgaySinh { get; set; }
+
+    /// <summary>Khoá ảnh đại diện trong MinIO — cùng cơ chế với logo trung tâm.</summary>
+    public string? AnhDaiDienUrl { get; set; }
+
+    /// <summary>
+    /// Vai trò NGHIỆP VỤ (giáo viên / trợ giảng / học viên / nhân viên) — dùng để lọc danh
+    /// sách khi chọn người, KHÔNG dùng để gác quyền. Quyền đọc từ `QUYEN_CHUC_NANG`.
+    /// </summary>
+    public LoaiNguoiDung LoaiNguoiDung { get; set; } = LoaiNguoiDung.NhanVien;
 
     /// <summary>
     /// Bắt buộc đổi mật khẩu trước khi vào hệ thống (FR-01).
