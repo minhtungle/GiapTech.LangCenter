@@ -8,6 +8,24 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — LMS giai đoạn 2: Buổi học & Điểm danh (06/09/2026)
+
+- `BUOI_HOC` + `DIEM_DANH`, sinh lịch tự động theo tần suất, **có giao diện**.
+- `SinhLichBuoiHoc` — hàm thuần ở Domain, 19 unit test phủ mọi ca biên. Ngày lễ ảnh hưởng
+  **khác nhau** tuỳ điều kiện dừng: theo số buổi thì vẫn đủ buổi (ngày kết thúc lùi ra), theo
+  ngày thì ít buổi đi.
+- **Điểm danh hai nguồn, hai cột trạng thái.** Giáo viên luôn thắng và ghi đè là một chiều,
+  nhưng lời khai của học viên được GIỮ để đối chiếu khi tranh chấp. Gộp một cột thì sau khi ghi
+  đè không còn biết học viên khai gì — mà "em có điểm danh mà sao bị tính vắng" là tình huống
+  thường xuyên.
+- Endpoint tự điểm danh **không nhận id học viên** (lấy từ token) — không có tham số nào để lạm
+  dụng, dù có quyền `DiemDanh.Them`.
+- `IMuiGioTrungTam` — bọc `TimeZoneInfo` với cache và fallback. Không có nó thì một id múi giờ
+  gõ sai làm sập cả module lịch.
+- **Không có cột "ngày học"**: lọc theo khoảng thời gian tuyệt đối. Cột riêng là dữ liệu thừa và
+  sai âm thầm khi trung tâm đổi múi giờ.
+
+
 ### Added — LMS giai đoạn 1: Lớp học (06/09/2026)
 
 - `LOP_HOC` + `LOP_HOC_HOC_VIEN` + `LOP_HOC_TRO_GIANG`, CRUD đầy đủ, **có giao diện**.

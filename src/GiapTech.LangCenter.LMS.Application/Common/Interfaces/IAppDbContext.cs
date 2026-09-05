@@ -26,6 +26,9 @@ public interface IAppDbContext
     DbSet<LopHocHocVien> LopHocHocViens { get; }
     DbSet<LopHocTroGiang> LopHocTroGiangs { get; }
 
+    DbSet<BuoiHoc> BuoiHocs { get; }
+    DbSet<DiemDanh> DiemDanhs { get; }
+
     DbSet<RefreshToken> RefreshTokens { get; }
     DbSet<TokenDatLaiMatKhau> TokenDatLaiMatKhaus { get; }
 

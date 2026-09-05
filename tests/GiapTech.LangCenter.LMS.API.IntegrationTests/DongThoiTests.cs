@@ -41,6 +41,9 @@ public class DongThoiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     // Một học viên MỘT bản ghi trong một lớp — chống import/bấm hai lần tạo hàng trùng.
     [InlineData("LopHocHocVien", new[] { "LopHocId", "HocVienId" })]
     [InlineData("LopHocTroGiang", new[] { "LopHocId", "TroGiangId" })]
+    [InlineData("BuoiHoc", new[] { "LopHocId", "ThuTu" })]
+    // Mỗi học viên đúng một bản ghi điểm danh cho mỗi buổi.
+    [InlineData("DiemDanh", new[] { "BuoiHocId", "HocVienId" })]
     public void Rang_buoc_chi_mot_phai_co_UNIQUE_o_tang_DB(string tenEntity, string[] cot)
     {
         using var scope = factory.Services.CreateScope();

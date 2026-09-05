@@ -83,3 +83,23 @@ public enum TrangThaiBuoiHoc
     DaHoanThanh = 1,
     DaHuy = 2
 }
+
+/// <summary>
+/// Trạng thái điểm danh. Dùng chung cho CẢ giá trị học viên tự khai lẫn giá trị chính thức —
+/// tách hai enum thì mọi phép so "giáo viên có sửa khác lời khai không" phải map qua lại.
+/// </summary>
+public enum TrangThaiDiemDanh
+{
+    CoMat = 0,
+    Vang = 1,
+    DiMuon = 2,
+    VangCoPhep = 3
+}
+
+/// <summary>Ai đặt ra trạng thái điểm danh CHÍNH THỨC.</summary>
+public enum NguonDiemDanh
+{
+    HocVienTuKhai = 0,
+    GiaoVien = 1,
+    QuanTri = 2
+}

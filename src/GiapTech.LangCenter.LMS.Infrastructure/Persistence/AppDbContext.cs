@@ -25,6 +25,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant
     public DbSet<LopHocHocVien> LopHocHocViens => Set<LopHocHocVien>();
     public DbSet<LopHocTroGiang> LopHocTroGiangs => Set<LopHocTroGiang>();
 
+    public DbSet<BuoiHoc> BuoiHocs => Set<BuoiHoc>();
+    public DbSet<DiemDanh> DiemDanhs => Set<DiemDanh>();
+
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<TokenDatLaiMatKhau> TokenDatLaiMatKhaus => Set<TokenDatLaiMatKhau>();
 

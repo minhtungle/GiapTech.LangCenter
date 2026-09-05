@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Pencil, Plus, Trash2, Users, X } from 'lucide-react'
+import { CalendarDays, Pencil, Plus, Trash2, Users, X } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang, type ThamSoTrang } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
@@ -11,6 +11,7 @@ import { Modal } from '@/components/ui/Modal'
 import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import { PhanTrang } from '@/components/ui/PhanTrang'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
+import { LichVaDiemDanh } from './LichVaDiemDanh'
 
 type HinhThucHoc = 'ChuaChon' | 'Online' | 'Offline' | 'KetHop'
 type TrangThaiLopHoc = 'Nhap' | 'SapKhaiGiang' | 'DangHoc' | 'DaKetThuc' | 'DaHuy'
@@ -85,6 +86,7 @@ export default function LopHoc() {
   const [xoaCho, setXoaCho] = useState<LopHocDto | null>(null)
   const [huyCho, setHuyCho] = useState<LopHocDto | null>(null)
   const [lopXemHocVien, setLopXemHocVien] = useState<LopHocDto | null>(null)
+  const [lopXemLich, setLopXemLich] = useState<LopHocDto | null>(null)
 
   const thamSo: ThamSoTrang = { trang, soDong }
 
@@ -315,6 +317,14 @@ export default function LopHoc() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            title={t('buoiHoc.lich')}
+                            onClick={() => setLopXemLich(l)}
+                          >
+                            <CalendarDays className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             title={t('lopHoc.hocVien')}
                             onClick={() => setLopXemHocVien(l)}
                           >
@@ -500,6 +510,14 @@ export default function LopHoc() {
           </div>
         </form>
       </Modal>
+
+      {lopXemLich && (
+        <LichVaDiemDanh
+          lopHocId={lopXemLich.id}
+          tenLop={lopXemLich.ten}
+          onDong={() => setLopXemLich(null)}
+        />
+      )}
 
       {lopXemHocVien && (
         <HocVienCuaLop

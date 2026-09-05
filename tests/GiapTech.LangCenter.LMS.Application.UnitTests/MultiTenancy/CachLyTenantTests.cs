@@ -178,7 +178,8 @@ public class CachLyTenantTests
         string[] bangCon =
         [
             nameof(QuyenChucNang), nameof(NguoiDungQuyen),
-            nameof(LopHocHocVien), nameof(LopHocTroGiang)
+            nameof(LopHocHocVien), nameof(LopHocTroGiang),
+            nameof(BuoiHoc), nameof(DiemDanh)
         ];
 
         foreach (var ten in bangCon)

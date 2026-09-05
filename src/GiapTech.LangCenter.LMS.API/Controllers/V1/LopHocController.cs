@@ -84,6 +84,39 @@ public class LopHocController(ISender sender) : ControllerBase
         return NoContent();
     }
 
+    // ---------- Buổi học (bước 2 của wizard) ----------
+
+    [HttpGet("{id:guid}/buoi-hoc")]
+    [RequirePermission(ChucNang.BuoiHoc, HanhDong.Xem)]
+    public async Task<ActionResult<List<Application.DaoTao.BuoiHoc.BuoiHocDto>>> BuoiHoc(
+        Guid id, CancellationToken ct)
+        => Ok(await sender.Send(new Application.DaoTao.BuoiHoc.LayBuoiHocCuaLopQuery(id), ct));
+
+    /// <summary>
+    /// Sinh toàn bộ lịch theo tần suất. Gọi lại sẽ SINH LẠI từ đầu — chỉ cho phép khi lớp
+    /// chưa có buổi nào được điểm danh.
+    ///
+    /// Gác bằng `LopHoc.Sua` chứ không `BuoiHoc.Them`: sinh lịch là một phần không tách rời
+    /// của việc lập lớp. Đòi thêm `BuoiHoc.Them` sẽ làm người có nhóm Trợ giảng kẹt giữa
+    /// wizard — tạo được lớp nhưng không sinh được lịch.
+    /// </summary>
+    [HttpPost("{id:guid}/sinh-lich")]
+    [RequirePermission(ChucNang.LopHoc, HanhDong.Sua)]
+    public async Task<ActionResult<List<Application.DaoTao.BuoiHoc.BuoiHocDto>>> SinhLich(
+        Guid id, [FromBody] SinhLichBody body, CancellationToken ct)
+        => Ok(await sender.Send(new Application.DaoTao.BuoiHoc.SinhLichChoLopCommand(
+            id, body.NgayKhaiGiang, body.ThuTrongTuan, body.GioBatDau, body.GioKetThuc,
+            body.SoBuoi, body.DenNgay, body.NgayLoaiTru), ct));
+
+    public record SinhLichBody(
+        DateOnly NgayKhaiGiang,
+        List<DayOfWeek> ThuTrongTuan,
+        TimeOnly GioBatDau,
+        TimeOnly GioKetThuc,
+        int? SoBuoi = null,
+        DateOnly? DenNgay = null,
+        List<DateOnly>? NgayLoaiTru = null);
+
     // ---------- Học viên trong lớp (bước 3 của wizard) ----------
 
     [HttpGet("{id:guid}/hoc-vien")]
