@@ -29,6 +29,14 @@ public interface IAppDbContext
     DbSet<BuoiHoc> BuoiHocs { get; }
     DbSet<DiemDanh> DiemDanhs { get; }
 
+    DbSet<TepDinhKem> TepDinhKems { get; }
+    DbSet<BaiTap> BaiTaps { get; }
+    DbSet<BaiNop> BaiNops { get; }
+    DbSet<BaiKiemTra> BaiKiemTras { get; }
+    DbSet<BaiLam> BaiLams { get; }
+    DbSet<TaiLieu> TaiLieus { get; }
+    DbSet<TaiLieuLopHoc> TaiLieuLopHocs { get; }
+
     DbSet<RefreshToken> RefreshTokens { get; }
     DbSet<TokenDatLaiMatKhau> TokenDatLaiMatKhaus { get; }
 

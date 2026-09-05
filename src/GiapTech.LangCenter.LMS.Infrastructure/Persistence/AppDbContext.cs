@@ -28,6 +28,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant
     public DbSet<BuoiHoc> BuoiHocs => Set<BuoiHoc>();
     public DbSet<DiemDanh> DiemDanhs => Set<DiemDanh>();
 
+    public DbSet<TepDinhKem> TepDinhKems => Set<TepDinhKem>();
+    public DbSet<BaiTap> BaiTaps => Set<BaiTap>();
+    public DbSet<BaiNop> BaiNops => Set<BaiNop>();
+    public DbSet<BaiKiemTra> BaiKiemTras => Set<BaiKiemTra>();
+    public DbSet<BaiLam> BaiLams => Set<BaiLam>();
+    public DbSet<TaiLieu> TaiLieus => Set<TaiLieu>();
+    public DbSet<TaiLieuLopHoc> TaiLieuLopHocs => Set<TaiLieuLopHoc>();
+
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<TokenDatLaiMatKhau> TokenDatLaiMatKhaus => Set<TokenDatLaiMatKhau>();
 

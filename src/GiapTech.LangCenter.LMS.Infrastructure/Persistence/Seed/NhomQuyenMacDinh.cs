@@ -45,7 +45,8 @@ internal static class NhomQuyenMacDinh
         (ChucNang.BaiLamKiemTra, [HanhDong.Xem, HanhDong.Sua]),
         (ChucNang.TaiLieu, [HanhDong.Xem, HanhDong.Them]),
         (ChucNang.TaiKhoan, DocThoi),                            // xem học viên lớp mình
-        (ChucNang.Anh, DocThoi),
+        // Đính kèm đề bài và tài liệu — endpoint /tep dùng chung gác bằng chức năng này.
+        (ChucNang.Anh, ToanBo),
         (ChucNang.ThongKe, DocThoi),
     ];
 
@@ -66,7 +67,7 @@ internal static class NhomQuyenMacDinh
         (ChucNang.BaiLamKiemTra, DocThoi),
         (ChucNang.TaiLieu, DocThoi),
         (ChucNang.TaiKhoan, DocThoi),
-        (ChucNang.Anh, DocThoi),
+        (ChucNang.Anh, ToanBo),
         (ChucNang.ThongKe, DocThoi),
     ];
 
@@ -90,7 +91,9 @@ internal static class NhomQuyenMacDinh
         (ChucNang.BaiLamKiemTra, [HanhDong.Xem, HanhDong.Them]),
         (ChucNang.TaiLieu, DocThoi),
         (ChucNang.HocPhi, DocThoi),
-        (ChucNang.Anh, DocThoi),
+        // Đính kèm bài nộp. Có Xoa để gỡ tệp nộp nhầm — quyền trên TỆP, không phải trên bài
+        // của người khác: handler kiểm tệp phải thuộc bài nộp của chính họ.
+        (ChucNang.Anh, [HanhDong.Xem, HanhDong.Them, HanhDong.Xoa]),
         (ChucNang.ThongKe, DocThoi),
     ];
 }

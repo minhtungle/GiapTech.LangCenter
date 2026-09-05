@@ -23,6 +23,9 @@ giữa tài liệu, commit, PR, test và code review.
 | FR-08 | Học viên trong lớp | [Lớp học](./lop-hoc.md) |
 | FR-09 | Buổi học | [Buổi học & Điểm danh](./buoi-hoc-diem-danh.md) |
 | FR-10 | Điểm danh | [Buổi học & Điểm danh](./buoi-hoc-diem-danh.md) |
+| FR-11 | Bài tập | [Học liệu](./hoc-lieu.md) |
+| FR-12 | Bài nộp | [Học liệu](./hoc-lieu.md) |
+| FR-13 | Tài liệu | [Học liệu](./hoc-lieu.md) |
 | FR-01 | Đăng nhập | [Đăng nhập](./dang-nhap.md) |
 | FR-02 | Quên mật khẩu | [Đăng nhập](./dang-nhap.md) |
 | FR-03 | Tài khoản người dùng | [Quản trị hệ thống](./quan-tri-he-thong.md) |

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CalendarDays, Pencil, Plus, Trash2, Users, X } from 'lucide-react'
+import { CalendarDays, ClipboardList, Pencil, Plus, Trash2, Users, X } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang, type ThamSoTrang } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
@@ -12,6 +12,7 @@ import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import { PhanTrang } from '@/components/ui/PhanTrang'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 import { LichVaDiemDanh } from './LichVaDiemDanh'
+import { BaiTapCuaLop } from './BaiTapCuaLop'
 
 type HinhThucHoc = 'ChuaChon' | 'Online' | 'Offline' | 'KetHop'
 type TrangThaiLopHoc = 'Nhap' | 'SapKhaiGiang' | 'DangHoc' | 'DaKetThuc' | 'DaHuy'
@@ -87,6 +88,7 @@ export default function LopHoc() {
   const [huyCho, setHuyCho] = useState<LopHocDto | null>(null)
   const [lopXemHocVien, setLopXemHocVien] = useState<LopHocDto | null>(null)
   const [lopXemLich, setLopXemLich] = useState<LopHocDto | null>(null)
+  const [lopXemBaiTap, setLopXemBaiTap] = useState<LopHocDto | null>(null)
 
   const thamSo: ThamSoTrang = { trang, soDong }
 
@@ -325,6 +327,14 @@ export default function LopHoc() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            title={t('hocLieu.baiTap')}
+                            onClick={() => setLopXemBaiTap(l)}
+                          >
+                            <ClipboardList className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             title={t('lopHoc.hocVien')}
                             onClick={() => setLopXemHocVien(l)}
                           >
@@ -516,6 +526,14 @@ export default function LopHoc() {
           lopHocId={lopXemLich.id}
           tenLop={lopXemLich.ten}
           onDong={() => setLopXemLich(null)}
+        />
+      )}
+
+      {lopXemBaiTap && (
+        <BaiTapCuaLop
+          lopHocId={lopXemBaiTap.id}
+          tenLop={lopXemBaiTap.ten}
+          onDong={() => setLopXemBaiTap(null)}
         />
       )}
 

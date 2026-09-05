@@ -103,3 +103,41 @@ public enum NguonDiemDanh
     GiaoVien = 1,
     QuanTri = 2
 }
+
+/// <summary>Trạng thái bài học viên nộp cho bài tập.</summary>
+public enum TrangThaiBaiNop
+{
+    DaNop = 0,
+    NopMuon = 1,
+    DaCham = 2
+}
+
+/// <summary>
+/// Hình thức bài kiểm tra.
+///
+/// Giai đoạn này chỉ làm <see cref="NopFile"/>; giữ sẵn <see cref="TracNghiemOnline"/> trong
+/// enum để thêm ngân hàng câu hỏi sau này không phải đổi schema.
+/// </summary>
+public enum LoaiBaiKiemTra
+{
+    NopFile = 0,
+    TracNghiemOnline = 1
+}
+
+/// <summary>Trạng thái bài kiểm tra.</summary>
+public enum TrangThaiBaiKiemTra
+{
+    Nhap = 0,
+    DaPhatHanh = 1,
+    DaDong = 2
+}
+
+/// <summary>Phân loại tài liệu giảng dạy.</summary>
+public enum LoaiTaiLieu
+{
+    GiaoTrinh = 0,
+    BaiGiang = 1,
+    ThamKhao = 2,
+    DeThi = 3,
+    Khac = 4
+}

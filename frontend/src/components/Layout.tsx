@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
-  Users, ShieldCheck, Settings, LogOut, Home, GraduationCap,
+  Users, ShieldCheck, Settings, LogOut, Home, GraduationCap, BookOpen,
   PanelLeftClose, PanelLeft, Menu, X,
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
@@ -56,7 +56,10 @@ export default function Layout() {
     },
     {
       tieuDe: t('menu.daoTao'),
-      muc: [{ to: '/lop-hoc', nhan: t('menu.lopHoc'), icon: GraduationCap }],
+      muc: [
+        { to: '/lop-hoc', nhan: t('menu.lopHoc'), icon: GraduationCap },
+        { to: '/tai-lieu', nhan: t('menu.taiLieu'), icon: BookOpen },
+      ],
     },
     {
       tieuDe: t('menu.quanTri'),

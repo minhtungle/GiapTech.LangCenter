@@ -120,6 +120,7 @@ public class ApiFactory : WebApplicationFactory<Program>
             // kiểm được cách ly.
             services.RemoveAll<ILuuTruAnh>();
             services.AddScoped<ILuuTruAnh, TestLuuTruAnh>();
+            services.AddScoped<ILuuTruTep, TestLuuTruTep>();
 
             services.AddDbContext<AppDbContext>(o => o
                 .UseInMemoryDatabase(_tenDb)

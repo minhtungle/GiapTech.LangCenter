@@ -8,6 +8,25 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — LMS giai đoạn 3: Học liệu (06/09/2026)
+
+- `TEP_DINH_KEM` một bảng dùng chung với năm cột FK loại trừ nhau + `CHECK` constraint. Mảng
+  jsonb thì không dọn được tệp mồ côi và không có `tenant_id`; năm bảng riêng thì job dọn rác
+  phải UNION cả năm.
+- `BAI_TAP` + `BAI_NOP` (nộp nhiều lần, giữ lịch sử), `BAI_KIEM_TRA` + `BAI_LAM` (schema sẵn,
+  API sau), `TAI_LIEU` + `TAI_LIEU_LOP_HOC`. **Có giao diện** cho bài tập và tài liệu.
+- Chấm điểm là endpoint riêng, command không có trường nội dung — quyền `Sua` trên bài nộp là
+  để chấm, không phải sửa bài học viên.
+
+### Fixed
+
+- **Quyền trên tệp không kiểm chủ sở hữu.** `Anh.Xoa` chỉ nói "được xoá tệp", không nói "xoá
+  tệp nào" — học viên gỡ được tệp trong bài nộp của bạn cùng lớp chỉ cần đoán đúng id (mà id
+  nằm ngay trong danh sách bài nộp). Phát hiện khi kiểm tay, đã vá và có test canh cả hai chiều.
+- Ma trận quyền mặc định thiếu `Anh.Them` cho cả bốn nhóm — học viên không đính kèm được bài
+  nộp, giáo viên không đính kèm được đề bài. Lộ ra ngay khi chạy thật.
+
+
 ### Added — LMS giai đoạn 2: Buổi học & Điểm danh (06/09/2026)
 
 - `BUOI_HOC` + `DIEM_DANH`, sinh lịch tự động theo tần suất, **có giao diện**.

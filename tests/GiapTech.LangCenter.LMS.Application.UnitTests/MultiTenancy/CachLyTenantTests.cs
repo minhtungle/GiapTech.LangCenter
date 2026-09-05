@@ -179,7 +179,8 @@ public class CachLyTenantTests
         [
             nameof(QuyenChucNang), nameof(NguoiDungQuyen),
             nameof(LopHocHocVien), nameof(LopHocTroGiang),
-            nameof(BuoiHoc), nameof(DiemDanh)
+            nameof(BuoiHoc), nameof(DiemDanh),
+            nameof(BaiNop), nameof(BaiLam), nameof(TaiLieuLopHoc), nameof(TepDinhKem)
         ];
 
         foreach (var ten in bangCon)

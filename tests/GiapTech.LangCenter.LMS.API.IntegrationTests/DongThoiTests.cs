@@ -44,6 +44,11 @@ public class DongThoiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [InlineData("BuoiHoc", new[] { "LopHocId", "ThuTu" })]
     // Mỗi học viên đúng một bản ghi điểm danh cho mỗi buổi.
     [InlineData("DiemDanh", new[] { "BuoiHocId", "HocVienId" })]
+    // Nộp nhiều lần: khoá gồm cả LanNop, chống hai request cùng tạo một lần nộp.
+    [InlineData("BaiNop", new[] { "BaiTapId", "HocVienId", "LanNop" })]
+    // Bài kiểm tra KHÔNG cho nộp lại — mỗi học viên đúng một bài làm.
+    [InlineData("BaiLam", new[] { "BaiKiemTraId", "HocVienId" })]
+    [InlineData("TaiLieuLopHoc", new[] { "TaiLieuId", "LopHocId" })]
     public void Rang_buoc_chi_mot_phai_co_UNIQUE_o_tang_DB(string tenEntity, string[] cot)
     {
         using var scope = factory.Services.CreateScope();
