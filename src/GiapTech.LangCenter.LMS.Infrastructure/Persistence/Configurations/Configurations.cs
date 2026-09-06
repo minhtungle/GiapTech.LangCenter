@@ -36,8 +36,6 @@ public class NguoiDungConfig : IEntityTypeConfiguration<NguoiDung>
     public void Configure(EntityTypeBuilder<NguoiDung> b)
     {
         b.ToTable("NGUOI_DUNG");
-        b.Property(x => x.Username).HasMaxLength(100).IsRequired();
-        b.Property(x => x.PasswordHash).IsRequired();
         b.Property(x => x.HoTen).HasMaxLength(200).IsRequired();
         b.Property(x => x.Email).HasMaxLength(256);
         b.Property(x => x.SoDienThoai).HasMaxLength(20);
@@ -45,11 +43,87 @@ public class NguoiDungConfig : IEntityTypeConfiguration<NguoiDung>
         // Lọc "chọn giáo viên" / "chọn học viên" chạy trên cột này ở mọi màn nghiệp vụ.
         b.HasIndex(x => new { x.TenantId, x.LoaiNguoiDung });
 
+        b.HasOne(x => x.Tenant).WithMany(t => t.NguoiDungs)
+            .HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class TaiKhoanConfig : IEntityTypeConfiguration<TaiKhoan>
+{
+    public void Configure(EntityTypeBuilder<TaiKhoan> b)
+    {
+        b.ToTable("TAI_KHOAN");
+        b.Property(x => x.Username).HasMaxLength(100).IsRequired();
+        b.Property(x => x.PasswordHash).IsRequired();
+
         // Username duy nhất TRONG tenant — hai trung tâm đều có thể có tài khoản "admin".
         b.HasIndex(x => new { x.TenantId, x.Username }).IsUnique();
 
-        b.HasOne(x => x.Tenant).WithMany(t => t.NguoiDungs)
+        // Một người tối đa một tài khoản: hai tài khoản cùng người thì không biết quyền nào
+        // thắng. Filter cho phép nhiều hàng NULL (tài khoản kỹ thuật không gắn ai).
+        b.HasIndex(x => x.NguoiDungId).IsUnique()
+            .HasFilter("nguoi_dung_id IS NOT NULL");
+
+        // SetNull chứ không Cascade: xoá người để lại tài khoản mồ côi — còn dấu vết ai từng
+        // đăng nhập. Cascade sẽ xoá luôn cả lịch sử phiên.
+        b.HasOne(x => x.NguoiDung).WithOne(n => n.TaiKhoan)
+            .HasForeignKey<TaiKhoan>(x => x.NguoiDungId).OnDelete(DeleteBehavior.SetNull);
+
+        b.HasOne(x => x.Tenant).WithMany()
             .HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+/// <summary>
+/// Ba bảng hồ sơ theo vai trò, cùng khuôn: 1–1 với NGUOI_DUNG, Cascade (hồ sơ là một phần của
+/// người, không có nghĩa khi đứng riêng), UNIQUE trên nguoi_dung_id.
+/// </summary>
+public class HoSoGiaoVienConfig : IEntityTypeConfiguration<HoSoGiaoVien>
+{
+    public void Configure(EntityTypeBuilder<HoSoGiaoVien> b)
+    {
+        b.ToTable("HO_SO_GIAO_VIEN");
+        b.Property(x => x.BangCap).HasMaxLength(300);
+        b.Property(x => x.ChuyenMon).HasMaxLength(300);
+
+        b.HasIndex(x => x.NguoiDungId).IsUnique();
+        b.HasIndex(x => x.TenantId);
+
+        b.HasOne(x => x.NguoiDung).WithOne(n => n.HoSoGiaoVien)
+            .HasForeignKey<HoSoGiaoVien>(x => x.NguoiDungId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class HoSoHocVienConfig : IEntityTypeConfiguration<HoSoHocVien>
+{
+    public void Configure(EntityTypeBuilder<HoSoHocVien> b)
+    {
+        b.ToTable("HO_SO_HOC_VIEN");
+        b.Property(x => x.TruongLop).HasMaxLength(300);
+        b.Property(x => x.TenPhuHuynh).HasMaxLength(200);
+        b.Property(x => x.SoDienThoaiPhuHuynh).HasMaxLength(20);
+
+        b.HasIndex(x => x.NguoiDungId).IsUnique();
+        b.HasIndex(x => x.TenantId);
+
+        b.HasOne(x => x.NguoiDung).WithOne(n => n.HoSoHocVien)
+            .HasForeignKey<HoSoHocVien>(x => x.NguoiDungId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class HoSoNhanVienConfig : IEntityTypeConfiguration<HoSoNhanVien>
+{
+    public void Configure(EntityTypeBuilder<HoSoNhanVien> b)
+    {
+        b.ToTable("HO_SO_NHAN_VIEN");
+        b.Property(x => x.ChucVu).HasMaxLength(200);
+        b.Property(x => x.PhongBan).HasMaxLength(200);
+
+        b.HasIndex(x => x.NguoiDungId).IsUnique();
+        b.HasIndex(x => x.TenantId);
+
+        b.HasOne(x => x.NguoiDung).WithOne(n => n.HoSoNhanVien)
+            .HasForeignKey<HoSoNhanVien>(x => x.NguoiDungId).OnDelete(DeleteBehavior.Cascade);
     }
 }
 
@@ -87,11 +161,11 @@ public class NguoiDungQuyenConfig : IEntityTypeConfiguration<NguoiDungQuyen>
     public void Configure(EntityTypeBuilder<NguoiDungQuyen> b)
     {
         b.ToTable("NGUOIDUNG_QUYEN");
-        b.HasIndex(x => new { x.NguoiDungId, x.QuyenId }).IsUnique();
+        b.HasIndex(x => new { x.TaiKhoanId, x.QuyenId }).IsUnique();
         b.HasIndex(x => x.TenantId);
 
-        b.HasOne(x => x.NguoiDung).WithMany(n => n.NguoiDungQuyens)
-            .HasForeignKey(x => x.NguoiDungId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(x => x.TaiKhoan).WithMany(n => n.NguoiDungQuyens)
+            .HasForeignKey(x => x.TaiKhoanId).OnDelete(DeleteBehavior.Cascade);
 
         b.HasOne(x => x.Quyen).WithMany(q => q.NguoiDungQuyens)
             .HasForeignKey(x => x.QuyenId).OnDelete(DeleteBehavior.Cascade);

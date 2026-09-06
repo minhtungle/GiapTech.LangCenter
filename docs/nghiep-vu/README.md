@@ -26,8 +26,8 @@ git history.
 |---|---|---|
 | FR-01 | Đăng nhập | [Đăng nhập](./dang-nhap.md) |
 | FR-02 | Quên mật khẩu | [Đăng nhập](./dang-nhap.md) |
-| FR-03 | Tài khoản người dùng | [Quản trị hệ thống](./quan-tri-he-thong.md) |
-| FR-04 | Hồ sơ người dùng | [Quản trị hệ thống](./quan-tri-he-thong.md) |
+| FR-03 | Người dùng (hồ sơ con người) | [Quản trị hệ thống](./quan-tri-he-thong.md) |
+| FR-04 | Tài khoản đăng nhập | [Quản trị hệ thống](./quan-tri-he-thong.md) |
 | FR-05 | Phân quyền truy cập | [Quản trị hệ thống](./quan-tri-he-thong.md) |
 | FR-06 | Thiết lập chung | [Quản trị hệ thống](./quan-tri-he-thong.md) |
 | FR-07 | Lớp học | [Lớp học](./lop-hoc.md) |
@@ -50,5 +50,7 @@ git history.
    tenant. Việc "chỉ lớp mình phụ trách" do `IPhamViLopHoc` lo, "chỉ sổ học phí của mình" do
    `IPhamViHocPhi` lo — **hai tầng riêng**, xem [Học phí](./hoc-phi.md#phạm-vi-truy-cập--tách-khỏi-phạm-vi-lớp).
 4. **API trả mã lỗi**, không trả text cứng một ngôn ngữ; frontend tự dịch qua `react-i18next`.
-5. **Không xoá cứng dữ liệu đã dùng**: học viên nghỉ thì đổi trạng thái, lớp đã chạy thì huỷ —
+5. **Người ≠ tài khoản.** `NGUOI_DUNG` là con người, `TAI_KHOAN` là cách họ đăng nhập. Vô hiệu
+   hoá tài khoản không đụng tới dữ liệu người dùng — đó là lý do hai bảng tách nhau.
+6. **Không xoá cứng dữ liệu đã dùng**: học viên nghỉ thì đổi trạng thái, lớp đã chạy thì huỷ —
    xoá làm điểm danh và học phí thành dữ liệu treo (quy tắc #1).

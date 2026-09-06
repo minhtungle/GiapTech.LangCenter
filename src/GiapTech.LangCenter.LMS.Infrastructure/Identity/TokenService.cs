@@ -27,12 +27,18 @@ public class TokenService(IConfiguration config) : ITokenService
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(ClaimTypes.NameIdentifier, tt.NguoiDungId.ToString()),
             new(ClaimTypes.Name, tt.Username),
+            new(ClaimTenant.TaiKhoanId, tt.TaiKhoanId.ToString()),
             new(ClaimTenant.TenantId, tt.TenantId.ToString()),
             new(ClaimTenant.MaTrungTam, tt.MaTrungTam),
             new(ClaimTenant.TenTrungTam, tt.TenTrungTam)
         };
+
+        // NameIdentifier = id NGƯỜI, không phải id tài khoản — xem ClaimTenant.TaiKhoanId.
+        // Bỏ hẳn claim khi tài khoản không gắn người, thay vì phát Guid.Empty: chuỗi rỗng sẽ
+        // parse thành Guid.Empty ở phía đọc và có thể khớp nhầm một hàng dữ liệu.
+        if (tt.NguoiDungId is { } nd)
+            claims.Add(new Claim(ClaimTypes.NameIdentifier, nd.ToString()));
 
         var khoa = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(secret));
 

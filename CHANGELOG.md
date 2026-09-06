@@ -8,6 +8,43 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — Tách người dùng khỏi tài khoản (07/09/2026)
+
+- **`NGUOI_DUNG` nay là bảng "con người", `TAI_KHOAN` là bảng đăng nhập.** Trước đó một cột
+  `TrangThai` gánh hai nghĩa — "còn đăng nhập được" và "còn làm ở trung tâm" — nên vô hiệu hoá
+  tài khoản một giáo viên đã nghỉ thì không phân công được họ vào lớp cũ nữa. Nay hai cột
+  riêng: `NGUOI_DUNG.trang_thai_nhan_su` và `TAI_KHOAN.trang_thai`.
+- Ba bảng hồ sơ theo vai trò: `HO_SO_GIAO_VIEN` (bằng cấp, chuyên môn, ngày vào làm),
+  `HO_SO_HOC_VIEN` (trường/lớp, tên và SĐT phụ huynh), `HO_SO_NHAN_VIEN` (chức vụ, phòng ban).
+  Đổi vai trò **không xoá** hồ sơ cũ — bằng cấp là sự thật lịch sử.
+- **12 khoá ngoại nghiệp vụ không đổi một dòng nào** — `NGUOI_DUNG` giữ nguyên tên và id. Chỉ
+  3 khoá ngoại đăng nhập (`NGUOIDUNG_QUYEN`, `REFRESH_TOKEN`, `TOKEN_DATLAI_MATKHAU`) chuyển
+  sang `TAI_KHOAN`.
+- Màn Quản trị → Tài khoản nay có **hai tab**: Người dùng và Tài khoản. Tạo người mới có thể
+  tích ô tạo luôn tài khoản — một lượt gọi, một giao dịch.
+- Tài khoản có thể **không gắn ai** (tài khoản kỹ thuật) và người có thể **không có tài khoản**
+  (học viên nhỏ tuổi, giáo viên thỉnh giảng).
+- JWT thêm claim `tai_khoan_id`; `NameIdentifier` **giữ nguyên là id người**. Token cũ không có
+  claim mới → ba thao tác trên chính tài khoản từ chối rõ ràng thay vì đoán nhầm.
+
+### Fixed
+
+- **Việc lọc theo vai trò trước nay chỉ nằm ở frontend** — gọi API trực tiếp là gán được một
+  học viên làm giáo viên chính. Nay `KiemNhanSu` kiểm cả vai trò.
+- Ba chỗ tra quyền vẫn truyền id người sau khi quyền chuyển sang khoá theo tài khoản:
+  `QuyenAuthorizationHandler` (cổng quyền toàn hệ thống), `PhamViLopHoc` và `PhamViHocPhi`
+  (admin không thấy sổ học phí nào). Ranh giới nay ghi vào `CLAUDE.md`.
+- Dropdown chọn giáo viên/học viên nay lọc `DangLamViec` ở server, không còn hiện người đã nghỉ
+  rồi mới bị backend từ chối.
+
+### Migration
+
+`TachNguoiDungVaTaiKhoan` — **viết tay phần chuyển dữ liệu**. Bản EF tự sinh xoá thẳng
+`username`/`password_hash` rồi tạo `TAI_KHOAN` rỗng: mọi tài khoản mất mật khẩu và không ai
+đăng nhập được (quy tắc #1). Thứ tự đúng: tạo bảng → chuyển dữ liệu → đổi khoá ngoại → xoá cột.
+Đã `pg_dump` trước khi áp; kiểm chứng đăng nhập bằng mật khẩu cũ sau migration.
+
+
 ### Added — LMS giai đoạn 4: Học phí (05/09/2026)
 
 - `KHOAN_THU_HOC_PHI` — sổ thu từng khoản: số tiền, ngày thu, hình thức, số phiếu đối chiếu,

@@ -189,15 +189,21 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var dn = await DangNhap(factory.MaTrungTamA, "manager", "manager123");
         var client = ClientVoiToken(dn.GetProperty("accessToken").GetString()!);
 
-        await client.PostAsJsonAsync("/api/v1/tai-khoan", new
+        // Email nằm ở NGUOI_DUNG còn tài khoản ở TAI_KHOAN — tạo cả hai trong một lượt gọi.
+        var res = await client.PostAsJsonAsync("/api/v1/nguoi-dung", new
         {
-            Username = username,
-            MatKhau = "matkhaugoc123",
-            HoTen = "Test",
+            HoTen = $"Test {username}",
             Email = email,
-            QuyenIds = Array.Empty<Guid>(),
-            PhaiDoiMatKhau = false
+            LoaiNguoiDung = "NhanVien",
+            TaiKhoan = new
+            {
+                Username = username,
+                MatKhau = "matkhaugoc123",
+                QuyenIds = Array.Empty<Guid>(),
+                PhaiDoiMatKhau = false
+            }
         });
+        res.EnsureSuccessStatusCode();
 
         return client;
     }
@@ -214,8 +220,9 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var banGhi = db.TokenDatLaiMatKhaus
             .IgnoreQueryFilters()
-            .Include(t => t.NguoiDung)
-            .Where(t => t.NguoiDung.Email == email && t.DaDungLuc == null)
+            .Include(t => t.TaiKhoan).ThenInclude(tk => tk.NguoiDung)
+            .Where(t => t.TaiKhoan.NguoiDung != null
+                        && t.TaiKhoan.NguoiDung.Email == email && t.DaDungLuc == null)
             .OrderByDescending(t => t.NgayTao)
             .FirstOrDefault();
 

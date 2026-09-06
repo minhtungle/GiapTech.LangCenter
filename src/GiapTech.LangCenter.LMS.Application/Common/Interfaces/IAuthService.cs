@@ -10,8 +10,14 @@ public interface IPasswordHasher
 }
 
 /// <summary>Thông tin đưa vào JWT.</summary>
+/// <param name="NguoiDungId">
+/// Id NGƯỜI — null nếu tài khoản kỹ thuật không gắn con người nào. Đây là thứ mọi khoá ngoại
+/// nghiệp vụ trỏ tới.
+/// </param>
+/// <param name="TaiKhoanId">Id TÀI KHOẢN — dùng cho thao tác trên chính tài khoản.</param>
 public record ThongTinToken(
-    Guid TenantId, string MaTrungTam, string TenTrungTam, Guid NguoiDungId, string Username);
+    Guid TenantId, string MaTrungTam, string TenTrungTam,
+    Guid? NguoiDungId, Guid TaiKhoanId, string Username);
 
 /// <summary>Cặp token trả về sau đăng nhập.</summary>
 public record CapToken(string AccessToken, string RefreshToken, DateTimeOffset HetHan);

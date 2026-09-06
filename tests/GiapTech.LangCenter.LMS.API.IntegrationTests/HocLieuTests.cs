@@ -32,10 +32,15 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
     private static async Task<Guid> TaoNguoiDung(
         HttpClient c, string username, string loai, string[]? quyenIds = null)
     {
-        var res = await c.PostAsJsonAsync("/api/v1/tai-khoan", new
+        var res = await c.PostAsJsonAsync("/api/v1/nguoi-dung", new
         {
-            Username = username, MatKhau = "matkhau123", HoTen = $"Người {username}",
-            LoaiNguoiDung = loai, QuyenIds = quyenIds ?? [], PhaiDoiMatKhau = false
+            HoTen = $"Người {username}",
+            LoaiNguoiDung = loai,
+            TaiKhoan = new
+            {
+                Username = username, MatKhau = "matkhau123",
+                QuyenIds = quyenIds ?? [], PhaiDoiMatKhau = false
+            }
         });
         res.EnsureSuccessStatusCode();
         return await res.Content.ReadFromJsonAsync<Guid>();

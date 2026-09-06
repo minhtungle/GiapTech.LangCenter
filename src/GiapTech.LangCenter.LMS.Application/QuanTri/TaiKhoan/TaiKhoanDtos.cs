@@ -9,22 +9,27 @@ using Microsoft.EntityFrameworkCore;
 namespace GiapTech.LangCenter.LMS.Application.QuanTri.TaiKhoan;
 
 /// <summary>
-/// FR-03 — tài khoản người dùng. Không bao giờ trả PasswordHash ra ngoài.
+/// FR-04 — tài khoản đăng nhập. Không bao giờ trả PasswordHash ra ngoài.
 ///
-/// Dữ liệu tài khoản trả về client. PHẢI chứa đủ mọi trường mà lệnh cập nhật ghi đè —
-/// thiếu một trường thì form sửa không điền lại được, và khi lưu sẽ gửi null lên, xóa mất
-/// dữ liệu người dùng chưa từng đụng tới.
+/// Chỉ thông tin cần để vào hệ thống. Hồ sơ con người nằm ở
+/// <see cref="NguoiDung.NguoiDungDto"/> — tách từ 07/09/2026 để vô hiệu hoá tài khoản không
+/// đụng tới dữ liệu người dùng.
 /// </summary>
 public record TaiKhoanDto(
-    Guid Id, string Username, string HoTen, string? Email, string? SoDienThoai, string? DiaChi,
-    DateTimeOffset? NgaySinh, string? AnhDaiDienUrl, LoaiNguoiDung LoaiNguoiDung,
+    Guid Id, string Username,
+    /// <summary>Người sở hữu — null với tài khoản kỹ thuật không gắn ai.</summary>
+    Guid? NguoiDungId,
+    /// <summary>Tên người sở hữu, để danh sách đọc được mà không phải gọi thêm API.</summary>
+    string? HoTenNguoiDung,
     bool PhaiDoiMatKhau, TrangThaiNguoiDung TrangThai,
     List<Guid> QuyenIds, List<string> TenQuyens);
 
 // ---------- Queries ----------
 
-public record LayDanhSachTaiKhoanQuery(string? TimKiem = null, ThamSoTrang? Trang = null)
-    : IRequest<KetQuaTrang<TaiKhoanDto>>;
+public record LayDanhSachTaiKhoanQuery(
+    string? TimKiem = null,
+    TrangThaiNguoiDung? TrangThai = null,
+    ThamSoTrang? Trang = null) : IRequest<KetQuaTrang<TaiKhoanDto>>;
 
 public class LayDanhSachTaiKhoanHandler(IAppDbContext db)
     : IRequestHandler<LayDanhSachTaiKhoanQuery, KetQuaTrang<TaiKhoanDto>>
@@ -33,24 +38,26 @@ public class LayDanhSachTaiKhoanHandler(IAppDbContext db)
         LayDanhSachTaiKhoanQuery request, CancellationToken ct)
     {
         var trang = request.Trang ?? new ThamSoTrang();
-        var q = db.NguoiDungs.AsQueryable();
+        var q = db.TaiKhoans.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(request.TimKiem))
         {
             var tu = request.TimKiem.Trim().ToLower();
             q = q.Where(u => u.Username.ToLower().Contains(tu)
-                             || u.HoTen.ToLower().Contains(tu));
+                             || (u.NguoiDung != null && u.NguoiDung.HoTen.ToLower().Contains(tu)));
         }
+
+        if (request.TrangThai is { } tt) q = q.Where(u => u.TrangThai == tt);
 
         var tong = await q.CountAsync(ct);
 
         var duLieu = await q
-            .OrderBy(u => u.HoTen)
+            .OrderBy(u => u.Username)
             .Skip(trang.BoQua)
             .Take(trang.SoDongHopLe)
             .Select(u => new TaiKhoanDto(
-                u.Id, u.Username, u.HoTen, u.Email, u.SoDienThoai, u.DiaChi,
-                u.NgaySinh, u.AnhDaiDienUrl, u.LoaiNguoiDung,
+                u.Id, u.Username, u.NguoiDungId,
+                u.NguoiDung == null ? null : u.NguoiDung.HoTen,
                 u.PhaiDoiMatKhau, u.TrangThai,
                 u.NguoiDungQuyens.Select(nq => nq.QuyenId).ToList(),
                 u.NguoiDungQuyens.Select(nq => nq.Quyen.TenQuyen).ToList()))
@@ -63,9 +70,12 @@ public class LayDanhSachTaiKhoanHandler(IAppDbContext db)
 // ---------- Commands ----------
 
 public record TaoTaiKhoanCommand(
-    string Username, string MatKhau, string HoTen,
-    string? Email, string? SoDienThoai, string? DiaChi,
-    DateTimeOffset? NgaySinh, LoaiNguoiDung LoaiNguoiDung,
+    string Username, string MatKhau,
+    /// <summary>
+    /// Người sở hữu. Bỏ trống = tài khoản kỹ thuật không gắn ai — hiếm, nhưng cần cho tích
+    /// hợp và seed.
+    /// </summary>
+    Guid? NguoiDungId,
     List<Guid> QuyenIds, bool PhaiDoiMatKhau = true) : IRequest<Guid>;
 
 public class TaoTaiKhoanValidator : AbstractValidator<TaoTaiKhoanCommand>
@@ -75,8 +85,6 @@ public class TaoTaiKhoanValidator : AbstractValidator<TaoTaiKhoanCommand>
         RuleFor(x => x.Username).NotEmpty().MaximumLength(100)
             .Matches("^[a-zA-Z0-9._-]+$").WithErrorCode("USERNAME_KY_TU_KHONG_HOP_LE");
         RuleFor(x => x.MatKhau).NotEmpty().MinimumLength(6).WithErrorCode("MAT_KHAU_QUA_NGAN");
-        RuleFor(x => x.HoTen).NotEmpty().MaximumLength(200);
-        RuleFor(x => x.Email).EmailAddress().When(x => !string.IsNullOrWhiteSpace(x.Email));
     }
 }
 
@@ -90,36 +98,42 @@ public class TaoTaiKhoanHandler(IAppDbContext db, IPasswordHasher hasher)
         // Username chỉ duy nhất TRONG tenant — query filter đã giới hạn phạm vi nên
         // kiểm tra này tự động đúng phạm vi. DB cũng có UNIQUE(tenant_id, username) chặn
         // trường hợp hai request đồng thời.
-        if (await db.NguoiDungs.AnyAsync(u => u.Username == username, ct))
+        if (await db.TaiKhoans.AnyAsync(u => u.Username == username, ct))
             throw new AppException("USERNAME_DA_TON_TAI");
+
+        if (request.NguoiDungId is { } ndId)
+        {
+            if (!await db.NguoiDungs.AnyAsync(u => u.Id == ndId, ct))
+                throw new AppException("NGUOI_DUNG_KHONG_HOP_LE");
+
+            // Một người tối đa một tài khoản — hai tài khoản cùng người thì không biết quyền
+            // nào thắng. DB cũng có UNIQUE chặn đua.
+            if (await db.TaiKhoans.AnyAsync(u => u.NguoiDungId == ndId, ct))
+                throw new AppException("NGUOI_DUNG_DA_CO_TAI_KHOAN");
+        }
 
         await KiemTraQuyenTonTai(db, request.QuyenIds, ct);
 
-        var nguoiDung = new Domain.Entities.NguoiDung
+        var taiKhoan = new Domain.Entities.TaiKhoan
         {
             Username = username,
             PasswordHash = hasher.Bam(request.MatKhau),
-            HoTen = request.HoTen.Trim(),
-            Email = request.Email,
-            SoDienThoai = request.SoDienThoai,
-            DiaChi = request.DiaChi,
-            NgaySinh = request.NgaySinh,
-            LoaiNguoiDung = request.LoaiNguoiDung,
+            NguoiDungId = request.NguoiDungId,
             PhaiDoiMatKhau = request.PhaiDoiMatKhau
         };
-        db.NguoiDungs.Add(nguoiDung);
+        db.TaiKhoans.Add(taiKhoan);
 
         foreach (var quyenId in request.QuyenIds.Distinct())
         {
             db.NguoiDungQuyens.Add(new Domain.Entities.NguoiDungQuyen
             {
-                NguoiDungId = nguoiDung.Id,
+                TaiKhoanId = taiKhoan.Id,
                 QuyenId = quyenId
             });
         }
 
         await db.SaveChangesAsync(ct);
-        return nguoiDung.Id;
+        return taiKhoan.Id;
     }
 
     internal static async Task KiemTraQuyenTonTai(
@@ -136,22 +150,16 @@ public class TaoTaiKhoanHandler(IAppDbContext db, IPasswordHasher hasher)
     }
 }
 
+/// <summary>
+/// Sửa tài khoản: gán người sở hữu, đổi nhóm quyền, bật/tắt hiệu lực.
+/// **Không** sửa được username và mật khẩu (đổi mật khẩu có lệnh riêng).
+/// </summary>
 public record CapNhatTaiKhoanCommand(
-    Guid Id, string HoTen, string? Email, string? SoDienThoai, string? DiaChi,
-    DateTimeOffset? NgaySinh, LoaiNguoiDung LoaiNguoiDung,
-    List<Guid> QuyenIds, TrangThaiNguoiDung TrangThai,
-    /// <summary>null = client không gửi → giữ ảnh đang có (quy tắc #1).</summary>
-    string? AnhDaiDienUrl = null) : IRequest;
+    Guid Id, Guid? NguoiDungId, List<Guid> QuyenIds, TrangThaiNguoiDung TrangThai) : IRequest;
 
 public class CapNhatTaiKhoanValidator : AbstractValidator<CapNhatTaiKhoanCommand>
 {
-    public CapNhatTaiKhoanValidator()
-    {
-        RuleFor(x => x.Id).NotEmpty();
-        RuleFor(x => x.HoTen).NotEmpty().MaximumLength(200);
-        RuleFor(x => x.Email).EmailAddress().When(x => !string.IsNullOrWhiteSpace(x.Email));
-        RuleFor(x => x.SoDienThoai).MaximumLength(20);
-    }
+    public CapNhatTaiKhoanValidator() => RuleFor(x => x.Id).NotEmpty();
 }
 
 public class CapNhatTaiKhoanHandler(
@@ -160,16 +168,27 @@ public class CapNhatTaiKhoanHandler(
 {
     public async Task Handle(CapNhatTaiKhoanCommand request, CancellationToken ct)
     {
-        var nguoiDung = await db.NguoiDungs
+        var taiKhoan = await db.TaiKhoans
             .Include(u => u.NguoiDungQuyens)
             .FirstOrDefaultAsync(u => u.Id == request.Id, ct)
-            ?? throw new KhongTimThayException($"NguoiDung {request.Id}");
+            ?? throw new KhongTimThayException($"TaiKhoan {request.Id}");
 
         // Tự vô hiệu hóa mình là đường một chiều: đăng xuất xong không vào lại được, và nếu
         // đây là admin duy nhất thì cả trung tâm mất quyền quản trị.
-        if (currentUser.UserId == request.Id &&
+        //
+        // So bằng TaiKhoanId chứ không phải UserId — đây là thao tác trên tài khoản.
+        if (currentUser.TaiKhoanId == request.Id &&
             request.TrangThai == TrangThaiNguoiDung.VoHieuHoa)
             throw new AppException("KHONG_TU_VO_HIEU_HOA_MINH");
+
+        if (request.NguoiDungId is { } ndId && ndId != taiKhoan.NguoiDungId)
+        {
+            if (!await db.NguoiDungs.AnyAsync(u => u.Id == ndId, ct))
+                throw new AppException("NGUOI_DUNG_KHONG_HOP_LE");
+
+            if (await db.TaiKhoans.AnyAsync(u => u.NguoiDungId == ndId && u.Id != request.Id, ct))
+                throw new AppException("NGUOI_DUNG_DA_CO_TAI_KHOAN");
+        }
 
         await TaoTaiKhoanHandler.KiemTraQuyenTonTai(db, request.QuyenIds, ct);
 
@@ -182,25 +201,15 @@ public class CapNhatTaiKhoanHandler(
             && await ChotConNguoiQuanTri.CoQuyenPhanQuyenAsync(db, request.QuyenIds, ct);
         await ChotConNguoiQuanTri.KiemAsync(db, request.Id, conQuyenPhanQuyen, ct);
 
-        nguoiDung.HoTen = request.HoTen.Trim();
-        nguoiDung.Email = request.Email;
-        nguoiDung.SoDienThoai = request.SoDienThoai;
-        nguoiDung.DiaChi = request.DiaChi;
-        nguoiDung.NgaySinh = request.NgaySinh;
-        nguoiDung.LoaiNguoiDung = request.LoaiNguoiDung;
-        nguoiDung.TrangThai = request.TrangThai;
+        taiKhoan.NguoiDungId = request.NguoiDungId;
+        taiKhoan.TrangThai = request.TrangThai;
 
-        // null = client không gửi trường này → GIỮ NGUYÊN ảnh đang có; chuỗi rỗng = chủ động
-        // gỡ ảnh. Cùng quy ước với màn Thiết lập (quy tắc #1).
-        if (request.AnhDaiDienUrl is { } anh)
-            nguoiDung.AnhDaiDienUrl = string.IsNullOrWhiteSpace(anh) ? null : anh;
-
-        db.NguoiDungQuyens.RemoveRange(nguoiDung.NguoiDungQuyens);
+        db.NguoiDungQuyens.RemoveRange(taiKhoan.NguoiDungQuyens);
         foreach (var quyenId in request.QuyenIds.Distinct())
         {
             db.NguoiDungQuyens.Add(new Domain.Entities.NguoiDungQuyen
             {
-                NguoiDungId = nguoiDung.Id,
+                TaiKhoanId = taiKhoan.Id,
                 QuyenId = quyenId
             });
         }
@@ -209,16 +218,16 @@ public class CapNhatTaiKhoanHandler(
 
         // Gán/gỡ quyền hoặc vô hiệu hóa tài khoản → cache quyền cũ phải chết ngay.
         if (tenant.TenantId is { } tid)
-            quyenService.XoaCache(tid, nguoiDung.Id);
+            quyenService.XoaCache(tid, taiKhoan.Id);
     }
 }
 
 /// <summary>
-/// FR-03 — Admin đổi mật khẩu cho tài khoản KHÁC.
+/// FR-04 — Admin đổi mật khẩu cho tài khoản KHÁC.
 /// Đặc quyền riêng, biểu diễn bằng chức năng <c>DoiMatKhauNguoiKhac</c> trong hệ phân quyền
 /// chứ không bằng ngoại lệ hard-code.
 /// </summary>
-public record DatLaiMatKhauCommand(Guid NguoiDungId, string MatKhauMoi) : IRequest;
+public record DatLaiMatKhauCommand(Guid TaiKhoanId, string MatKhauMoi) : IRequest;
 
 public class DatLaiMatKhauValidator : AbstractValidator<DatLaiMatKhauCommand>
 {
@@ -232,15 +241,15 @@ public class DatLaiMatKhauHandler(IAppDbContext db, IPasswordHasher hasher)
 {
     public async Task Handle(DatLaiMatKhauCommand request, CancellationToken ct)
     {
-        var nguoiDung = await db.NguoiDungs
-            .FirstOrDefaultAsync(u => u.Id == request.NguoiDungId, ct)
-            ?? throw new KhongTimThayException($"NguoiDung {request.NguoiDungId}");
+        var taiKhoan = await db.TaiKhoans
+            .FirstOrDefaultAsync(u => u.Id == request.TaiKhoanId, ct)
+            ?? throw new KhongTimThayException($"TaiKhoan {request.TaiKhoanId}");
 
-        nguoiDung.PasswordHash = hasher.Bam(request.MatKhauMoi);
+        taiKhoan.PasswordHash = hasher.Bam(request.MatKhauMoi);
 
         // Admin đặt mật khẩu tạm → người dùng phải tự đổi ở lần đăng nhập kế tiếp, để admin
         // không giữ mật khẩu đang dùng của người khác.
-        nguoiDung.PhaiDoiMatKhau = true;
+        taiKhoan.PhaiDoiMatKhau = true;
 
         await db.SaveChangesAsync(ct);
     }
@@ -248,21 +257,24 @@ public class DatLaiMatKhauHandler(IAppDbContext db, IPasswordHasher hasher)
 
 public record XoaTaiKhoanCommand(Guid Id) : IRequest;
 
-public class XoaTaiKhoanHandler(IAppDbContext db, ICurrentUser currentUser) : IRequestHandler<XoaTaiKhoanCommand>
+public class XoaTaiKhoanHandler(IAppDbContext db, ICurrentUser currentUser)
+    : IRequestHandler<XoaTaiKhoanCommand>
 {
     public async Task Handle(XoaTaiKhoanCommand request, CancellationToken ct)
     {
-        if (currentUser.UserId == request.Id)
+        if (currentUser.TaiKhoanId == request.Id)
             throw new AppException("KHONG_TU_XOA_TAI_KHOAN_CUA_MINH");
 
-        var nguoiDung = await db.NguoiDungs.FirstOrDefaultAsync(u => u.Id == request.Id, ct)
-            ?? throw new KhongTimThayException($"NguoiDung {request.Id}");
+        var taiKhoan = await db.TaiKhoans.FirstOrDefaultAsync(u => u.Id == request.Id, ct)
+            ?? throw new KhongTimThayException($"TaiKhoan {request.Id}");
 
         // Xoá người quản trị cuối cùng cũng làm trung tâm mất đường quản trị. Chặn "tự xoá
         // mình" ở trên không đủ — admin A xoá được admin B là người duy nhất còn quyền.
         await ChotConNguoiQuanTri.KiemAsync(db, request.Id, false, ct);
 
-        db.NguoiDungs.Remove(nguoiDung);
+        // Xoá TÀI KHOẢN không xoá NGƯỜI: hồ sơ, lịch sử điểm danh, sổ học phí giữ nguyên.
+        // Đây chính là lý do tách hai bảng.
+        db.TaiKhoans.Remove(taiKhoan);
         await db.SaveChangesAsync(ct);
     }
 }

@@ -9,75 +9,106 @@ import {
 import { Modal, ModalChan } from '@/components/ui/Modal'
 import { PhanTrang } from '@/components/ui/PhanTrang'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
-
-type LoaiNguoiDung = 'NhanVien' | 'GiaoVien' | 'TroGiang' | 'HocVien'
-
-const CAC_LOAI_NGUOI_DUNG: LoaiNguoiDung[] = ['NhanVien', 'GiaoVien', 'TroGiang', 'HocVien']
+import type { NguoiDungDto } from './NguoiDung'
 
 interface TaiKhoanDto {
   id: string
   username: string
-  hoTen: string
-  email: string | null
-  ngaySinh: string | null
-  anhDaiDienUrl: string | null
-  loaiNguoiDung: LoaiNguoiDung
-  soDienThoai: string | null
-  diaChi: string | null
+  nguoiDungId: string | null
+  hoTenNguoiDung: string | null
   phaiDoiMatKhau: boolean
   trangThai: 'HoatDong' | 'VoHieuHoa'
   quyenIds: string[]
   tenQuyens: string[]
 }
+
 interface QuyenNgan {
   id: string
   tenQuyen: string
 }
-/** FR-03 — tài khoản người dùng. */
+
+/**
+ * FR-04 — tài khoản đăng nhập.
+ *
+ * Chỉ thông tin để vào hệ thống. Họ tên, ngày sinh, hồ sơ vai trò nằm ở tab Người dùng —
+ * tách từ 07/09/2026 để vô hiệu hoá tài khoản không đụng tới dữ liệu người dùng.
+ */
 export default function TaiKhoan() {
   const { t } = useTranslation()
   const qc = useQueryClient()
-  const [moForm, setMoForm] = useState(false)
+
   const [trang, setTrang] = useState(1)
   const [soDong, setSoDong] = useState(20)
-  const [maLoi, setMaLoi] = useState<string | null>(null)
-  const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
+  const [timKiem, setTimKiem] = useState('')
+
+  const [moForm, setMoForm] = useState(false)
+  const [dangSua, setDangSua] = useState<TaiKhoanDto | null>(null)
+  const [nguoiChon, setNguoiChon] = useState<string | null>(null)
   const [quyenChon, setQuyenChon] = useState<string[]>([])
-  const [datLaiCho, setDatLaiCho] = useState<TaiKhoanDto | null>(null)
+  const [trangThai, setTrangThai] = useState<'HoatDong' | 'VoHieuHoa'>('HoatDong')
   // Mặc định BẬT: tài khoản do người khác tạo hộ thì mật khẩu ban đầu người tạo cũng biết.
   const [buocDoiMk, setBuocDoiMk] = useState(true)
-  const [dangSua, setDangSua] = useState<TaiKhoanDto | null>(null)
-  const [trangThai, setTrangThai] = useState<'HoatDong' | 'VoHieuHoa'>('HoatDong')
+  const [datLaiCho, setDatLaiCho] = useState<TaiKhoanDto | null>(null)
+  const [maLoi, setMaLoi] = useState<string | null>(null)
+  const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
 
-  const { data: ketQua, isLoading } = useQuery({
-    queryKey: ['tai-khoan', trang, soDong],
+  const { data: kq = trangRong<TaiKhoanDto>(), isLoading } = useQuery({
+    queryKey: ['tai-khoan', timKiem, trang, soDong],
     queryFn: async () =>
-      (await api.get<KetQuaTrang<TaiKhoanDto>>('/tai-khoan', { params: { trang, soDong } })).data,
+      (await api.get<KetQuaTrang<TaiKhoanDto>>('/tai-khoan', {
+        params: { timKiem: timKiem || undefined, trang, soDong },
+      })).data,
   })
 
-  const kq = ketQua ?? trangRong<TaiKhoanDto>()
-  const data = kq.duLieu
   const { data: quyens } = useQuery({
     queryKey: ['quyen'],
     queryFn: async () => (await api.get<QuyenNgan[]>('/quyen')).data,
   })
-  const tao = useMutation({
-    mutationFn: async (form: Record<string, unknown>) => api.post('/tai-khoan', form),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['tai-khoan'] })
-      void qc.invalidateQueries({ queryKey: ['cau-thu'] })
-      dongForm()
-    },
-    onError: (e) => setMaLoi(layMaLoi(e)),
+
+  /** Người dùng để gán — lấy nhiều để đủ chọn; danh sách này cũng dùng ở màn Lớp học. */
+  const { data: nguoiDungs } = useQuery({
+    queryKey: ['nguoi-dung-ngan'],
+    queryFn: async () =>
+      (await api.get<KetQuaTrang<NguoiDungDto>>('/nguoi-dung', { params: { soDong: 200 } }))
+        .data.duLieu,
   })
 
-  const capNhat = useMutation({
-    mutationFn: async (form: Record<string, unknown>) =>
-      api.put(`/tai-khoan/${dangSua!.id}`, { ...form, id: dangSua!.id }),
+  const lamMoi = () => {
+    void qc.invalidateQueries({ queryKey: ['tai-khoan'] })
+    // Cột "tài khoản" ở tab Người dùng đổi theo.
+    void qc.invalidateQueries({ queryKey: ['nguoi-dung'] })
+  }
+
+  const dong = () => {
+    setMoForm(false)
+    setDangSua(null)
+    setNguoiChon(null)
+    setQuyenChon([])
+    setMaLoi(null)
+  }
+
+  const luu = useMutation({
+    mutationFn: async (fd: FormData) => {
+      if (dangSua) {
+        await api.put(`/tai-khoan/${dangSua.id}`, {
+          id: dangSua.id,
+          nguoiDungId: nguoiChon,
+          quyenIds: quyenChon,
+          trangThai,
+        })
+      } else {
+        await api.post('/tai-khoan', {
+          username: String(fd.get('username')).trim(),
+          matKhau: String(fd.get('matKhau')),
+          nguoiDungId: nguoiChon,
+          quyenIds: quyenChon,
+          phaiDoiMatKhau: buocDoiMk,
+        })
+      }
+    },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['tai-khoan'] })
-      void qc.invalidateQueries({ queryKey: ['cau-thu'] })
-      dongForm()
+      lamMoi()
+      dong()
     },
     onError: (e) => setMaLoi(layMaLoi(e)),
   })
@@ -86,7 +117,7 @@ export default function TaiKhoan() {
     mutationFn: async ({ id, mk }: { id: string; mk: string }) =>
       api.post(`/tai-khoan/${id}/dat-lai-mat-khau`, { matKhauMoi: mk }),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['tai-khoan'] })
+      lamMoi()
       setDatLaiCho(null)
       setMaLoi(null)
     },
@@ -95,355 +126,280 @@ export default function TaiKhoan() {
 
   const xoa = useMutation({
     mutationFn: async (id: string) => api.delete(`/tai-khoan/${id}`),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['tai-khoan'] }),
+    onSuccess: lamMoi,
     onError: (e) => setMaLoiBang(layMaLoi(e)),
   })
 
-  const moThem = () => {
-    setDangSua(null)
-    setQuyenChon([])
-    setBuocDoiMk(true)
-    setTrangThai('HoatDong')
-    setMaLoi(null)
-    setMoForm(true)
-  }
-
-  const moSua = (u: TaiKhoanDto) => {
-    setDangSua(u)
-    setQuyenChon(u.quyenIds)
-    setTrangThai(u.trangThai)
-    setMaLoi(null)
-    setMoForm(true)
-  }
-
-  const dongForm = () => {
-    setMoForm(false)
-    setDangSua(null)
-    setQuyenChon([])
-    setMaLoi(null)
-  }
-
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const fd = new FormData(e.currentTarget)
-
-    // Mọi trường mà lệnh cập nhật ghi đè đều phải đọc TỪ FORM. Gửi cứng null sẽ xóa dữ
-    // liệu người dùng chưa từng đụng tới — đúng lỗi đã xảy ra với diaChi.
-    const chung = {
-      hoTen: String(fd.get('hoTen')),
-      email: (fd.get('email') as string) || null,
-      soDienThoai: (fd.get('soDienThoai') as string) || null,
-      diaChi: (fd.get('diaChi') as string) || null,
-      ngaySinh: (fd.get('ngaySinh') as string) || null,
-      loaiNguoiDung: (fd.get('loaiNguoiDung') as LoaiNguoiDung) || 'NhanVien',
-      quyenIds: quyenChon,
-    }
-
-    if (dangSua) {
-      // Username và mật khẩu KHÔNG sửa ở đây: username là định danh đăng nhập, đổi sẽ khoá
-      // người dùng ra ngoài; mật khẩu có luồng riêng (đặt lại) để luôn bật cờ buộc đổi.
-      capNhat.mutate({ ...chung, trangThai })
-    } else {
-      tao.mutate({
-        ...chung,
-        username: String(fd.get('username')),
-        matKhau: String(fd.get('matKhau')),
-        phaiDoiMatKhau: buocDoiMk,
-      })
-    }
-  }
-
-  const dangLuu = tao.isPending || capNhat.isPending
+  const luaChonNguoi = (nguoiDungs ?? []).map((n) => ({
+    giaTri: n.id,
+    nhan: n.hoTen,
+    phu: t(`loaiNguoiDung.${n.loaiNguoiDung}`),
+  }))
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
-        <Button onClick={moThem}>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="w-56">
+          <Label htmlFor="tim-tk">{t('chung.timKiem')}</Label>
+          <Input
+            id="tim-tk"
+            value={timKiem}
+            onChange={(e) => {
+              setTimKiem(e.target.value)
+              setTrang(1)
+            }}
+            placeholder={t('taiKhoan.username')}
+          />
+        </div>
+
+        <Button
+          onClick={() => {
+            setDangSua(null)
+            setNguoiChon(null)
+            setQuyenChon([])
+            setTrangThai('HoatDong')
+            setBuocDoiMk(true)
+            setMaLoi(null)
+            setMoForm(true)
+          }}
+        >
           <Plus className="h-4 w-4" />
-          {t('taiKhoan.themMoi')}
+          {t('chung.them')}
         </Button>
       </div>
 
       {maLoiBang && <CanhBaoLoi>{t(`loi.${maLoiBang}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">{t('chung.dangTai')}</p>
-      ) : !data.length ? (
+        <TrangTrong thongDiep={t('chung.dangTai')} />
+      ) : kq.duLieu.length === 0 ? (
         <TrangTrong thongDiep={t('chung.khongCoDuLieu')} />
       ) : (
-        <Table>
-          <thead>
-            <tr>
-              <Th>{t('taiKhoan.hoTen')}</Th>
-              <Th>{t('taiKhoan.username')}</Th>
-              <Th>{t('taiKhoan.loaiNguoiDung')}</Th>
-              <Th>{t('taiKhoan.email')}</Th>
-              <Th>{t('taiKhoan.quyen')}</Th>
-              <Th>{t('taiKhoan.trangThai')}</Th>
-              <Th className="w-24" />
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((u) => (
-              <tr key={u.id} className="hover:bg-muted/40">
-                <Td className="font-medium">{u.hoTen}</Td>
-                <Td className="text-muted-foreground">{u.username}</Td>
-                <Td className="text-muted-foreground">{t(`loaiNguoiDung.${u.loaiNguoiDung}`)}</Td>
-                <Td className="text-muted-foreground">{u.email ?? '—'}</Td>
-                <Td>
-                  <div className="flex flex-wrap gap-1">
-                    {u.tenQuyens.length ? (
-                      u.tenQuyens.map((q) => (
-                        <Badge key={q} variant="accent">
-                          {q}
-                        </Badge>
-                      ))
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </div>
-                </Td>
-                <Td>
-                  <div className="flex flex-wrap gap-1">
-                    {u.trangThai === 'HoatDong' ? (
-                      <Badge variant="win">{t('taiKhoan.hoatDong')}</Badge>
-                    ) : (
-                      <Badge variant="lose">{t('taiKhoan.voHieuHoa')}</Badge>
-                    )}
-                    {u.phaiDoiMatKhau && (
-                      <Badge variant="draw">{t('taiKhoan.canDoiMatKhau')}</Badge>
-                    )}
-                  </div>
-                </Td>
-                <Td>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      title={t('chung.sua')}
-                      onClick={() => moSua(u)}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      title={t('taiKhoan.datLaiMatKhau')}
-                      onClick={() => {
-                        setMaLoi(null)
-                        setDatLaiCho(u)
-                      }}
-                    >
-                      <KeyRound className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      title={t('chung.xoa')}
-                      onClick={() => {
-                        setMaLoiBang(null)
-                        if (confirm(t('chung.xacNhanXoa'))) xoa.mutate(u.id)
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                    </Button>
-                  </div>
-                </Td>
+        <>
+          <Table>
+            <thead>
+              <tr>
+                <Th>{t('taiKhoan.username')}</Th>
+                <Th>{t('nguoiDung.nguoiSoHuu')}</Th>
+                <Th>{t('taiKhoan.quyen')}</Th>
+                <Th>{t('taiKhoan.trangThai')}</Th>
+                <Th />
               </tr>
-            ))}
-          </tbody>
-        </Table>
+            </thead>
+            <tbody>
+              {kq.duLieu.map((u) => (
+                <tr key={u.id}>
+                  <Td className="font-medium">{u.username}</Td>
+                  <Td>
+                    {u.hoTenNguoiDung ?? (
+                      <span className="text-muted-foreground">{t('nguoiDung.khongGanAi')}</span>
+                    )}
+                  </Td>
+                  <Td>
+                    <div className="flex flex-wrap gap-1">
+                      {u.tenQuyens.length === 0 ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : (
+                        u.tenQuyens.map((q) => (
+                          <Badge key={q} variant="muted">
+                            {q}
+                          </Badge>
+                        ))
+                      )}
+                    </div>
+                  </Td>
+                  <Td>
+                    <div className="flex flex-wrap gap-1">
+                      <Badge variant={u.trangThai === 'HoatDong' ? 'win' : 'lose'}>
+                        {t(`taiKhoan.${u.trangThai}`)}
+                      </Badge>
+                      {u.phaiDoiMatKhau && (
+                        <Badge variant="draw">{t('taiKhoan.phaiDoiMatKhau')}</Badge>
+                      )}
+                    </div>
+                  </Td>
+                  <Td>
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={t('chung.sua')}
+                        onClick={() => {
+                          setDangSua(u)
+                          setNguoiChon(u.nguoiDungId)
+                          setQuyenChon(u.quyenIds)
+                          setTrangThai(u.trangThai)
+                          setMaLoi(null)
+                          setMoForm(true)
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={t('taiKhoan.datLaiMatKhau')}
+                        onClick={() => {
+                          setDatLaiCho(u)
+                          setMaLoi(null)
+                        }}
+                      >
+                        <KeyRound className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={t('chung.xoa')}
+                        onClick={() => xoa.mutate(u.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+
+          <PhanTrang
+            trang={trang}
+            soDong={soDong}
+            tongSoDong={kq.tongSoDong}
+            tongSoTrang={Math.max(1, Math.ceil(kq.tongSoDong / soDong))}
+            onDoiTrang={setTrang}
+            onDoiSoDong={(n) => {
+              setSoDong(n)
+              setTrang(1)
+            }}
+          />
+        </>
       )}
 
-      {data.length > 0 && (
-        <PhanTrang
-          trang={kq.trang}
-          soDong={kq.soDong}
-          tongSoDong={kq.tongSoDong}
-          tongSoTrang={kq.tongSoTrang}
-          onDoiTrang={setTrang}
-          onDoiSoDong={(n) => {
-            setSoDong(n)
-            setTrang(1)
-          }}
-        />
-      )}
-
-      {/* ---------- Modal thêm tài khoản ---------- */}
       <Modal
         mo={moForm}
-        onDong={dongForm}
-        chanDoiKhiXuLy={dangLuu}
-        tieuDe={dangSua ? t('taiKhoan.suaTieuDe') : t('taiKhoan.themMoi')}
-        moTa={dangSua ? dangSua.username : t('taiKhoan.wizardGoiY')}
+        onDong={dong}
+        tieuDe={dangSua ? t('taiKhoan.suaTaiKhoan') : t('taiKhoan.themTaiKhoan')}
+        rong="md"
       >
         <form
           key={dangSua?.id ?? 'moi'}
-          onSubmit={onSubmit}
-          className="grid gap-4 sm:grid-cols-2"
+          onSubmit={(e) => {
+            e.preventDefault()
+            luu.mutate(new FormData(e.currentTarget))
+          }}
+          className="space-y-4"
         >
           {dangSua ? (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="trangThai">{t('taiKhoan.trangThai')}</Label>
-              <SelectTimKiem
-                id="trangThai"
-                choPhepXoa={false}
-                luaChon={[
-                  { giaTri: 'HoatDong', nhan: t('taiKhoan.hoatDong') },
-                  { giaTri: 'VoHieuHoa', nhan: t('taiKhoan.voHieuHoa') },
-                ]}
-                giaTri={trangThai}
-                onDoi={(v) => setTrangThai((v as 'HoatDong' | 'VoHieuHoa') ?? 'HoatDong')}
-              />
-            </div>
+            <p className="text-sm text-muted-foreground">
+              {t('taiKhoan.username')}: <strong>{dangSua.username}</strong>
+            </p>
           ) : (
-            <>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="username">{t('taiKhoan.username')}</Label>
-                <Input id="username" name="username" required autoFocus />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="username">{t('taiKhoan.username')} *</Label>
+                <Input id="username" name="username" required />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="matKhau">{t('dangNhap.matKhau')}</Label>
+              <div>
+                <Label htmlFor="matKhau">{t('taiKhoan.matKhau')} *</Label>
                 <Input id="matKhau" name="matKhau" type="password" minLength={6} required />
               </div>
-            </>
+            </div>
           )}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="hoTen">{t('taiKhoan.hoTen')}</Label>
-            <Input id="hoTen" name="hoTen" defaultValue={dangSua?.hoTen ?? ''} required />
-          </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="loaiNguoiDung">{t('taiKhoan.loaiNguoiDung')}</Label>
-            <select
-              id="loaiNguoiDung"
-              name="loaiNguoiDung"
-              defaultValue={dangSua?.loaiNguoiDung ?? 'NhanVien'}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              {CAC_LOAI_NGUOI_DUNG.map((l) => (
-                <option key={l} value={l}>
-                  {t(`loaiNguoiDung.${l}`)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="ngaySinh">{t('taiKhoan.ngaySinh')}</Label>
-            <Input
-              id="ngaySinh"
-              name="ngaySinh"
-              type="date"
-              defaultValue={dangSua?.ngaySinh ? dangSua.ngaySinh.slice(0, 10) : ''}
+          <div>
+            <Label htmlFor="nguoiDungId">{t('nguoiDung.nguoiSoHuu')}</Label>
+            <SelectTimKiem
+              id="nguoiDungId"
+              luaChon={luaChonNguoi}
+              giaTri={nguoiChon}
+              onDoi={setNguoiChon}
+              placeholder={t('nguoiDung.khongGanAi')}
             />
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t('nguoiDung.giaiThichGanNguoi')}
+            </p>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="email">{t('taiKhoan.email')}</Label>
-            <Input id="email" name="email" type="email" defaultValue={dangSua?.email ?? ''} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="soDienThoai">{t('taiKhoan.soDienThoai')}</Label>
-            <Input
-              id="soDienThoai"
-              name="soDienThoai"
-              defaultValue={dangSua?.soDienThoai ?? ''}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
-            <Label htmlFor="diaChi">{t('taiKhoan.diaChi')}</Label>
-            <Input id="diaChi" name="diaChi" defaultValue={dangSua?.diaChi ?? ''} />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
+          <div>
             <Label htmlFor="quyenIds">{t('taiKhoan.quyen')}</Label>
             <SelectTimKiemNhieu
               id="quyenIds"
               luaChon={(quyens ?? []).map((q) => ({ giaTri: q.id, nhan: q.tenQuyen }))}
               giaTri={quyenChon}
               onDoi={setQuyenChon}
-              placeholder={t('taiKhoan.chonQuyen')}
-              placeholderTimKiem={t('taiKhoan.timQuyen')}
             />
           </div>
 
-          {/* Chỉ khi TẠO: sửa tài khoản không đặt lại mật khẩu nên cờ này không có nghĩa. */}
-          {!dangSua && (
-            <div className="sm:col-span-2">
-              <label className="flex items-start gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  className="mt-0.5 h-4 w-4 accent-[hsl(var(--primary))]"
-                  checked={buocDoiMk}
-                  onChange={(e) => setBuocDoiMk(e.target.checked)}
-                />
-                <span>
-                  {t('taiKhoan.buocDoiMk')}
-                  <span className="block text-xs text-muted-foreground">
-                    {t('taiKhoan.buocDoiMkGoiY')}
-                  </span>
-                </span>
-              </label>
+          {dangSua ? (
+            <div>
+              <Label htmlFor="trangThai">{t('taiKhoan.trangThai')}</Label>
+              <SelectTimKiem
+                id="trangThai"
+                luaChon={[
+                  { giaTri: 'HoatDong', nhan: t('taiKhoan.HoatDong') },
+                  { giaTri: 'VoHieuHoa', nhan: t('taiKhoan.VoHieuHoa') },
+                ]}
+                giaTri={trangThai}
+                onDoi={(v) => setTrangThai((v as 'HoatDong' | 'VoHieuHoa') ?? 'HoatDong')}
+                choPhepXoa={false}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t('nguoiDung.giaiThichVoHieuHoa')}
+              </p>
             </div>
+          ) : (
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={buocDoiMk}
+                onChange={(e) => setBuocDoiMk(e.target.checked)}
+                className="h-4 w-4 rounded border-input"
+              />
+              {t('taiKhoan.buocDoiMatKhau')}
+            </label>
           )}
 
-          {maLoi && (
-            <div className="sm:col-span-2">
-              <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>
-            </div>
-          )}
+          {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
-          <div className="sm:col-span-2">
-            <ModalChan>
-              <Button type="button" variant="outline" onClick={dongForm} disabled={dangLuu}>
-                {t('chung.huy')}
-              </Button>
-              <Button type="submit" disabled={dangLuu}>
-                {dangLuu ? t('chung.dangTai') : t('chung.luu')}
-              </Button>
-            </ModalChan>
-          </div>
+          <ModalChan>
+            <Button type="button" variant="outline" onClick={dong}>
+              {t('chung.huy')}
+            </Button>
+            <Button type="submit" disabled={luu.isPending}>
+              {t('chung.luu')}
+            </Button>
+          </ModalChan>
         </form>
       </Modal>
 
-      {/* ---------- Modal đặt lại mật khẩu (thay cho prompt trình duyệt) ---------- */}
       <Modal
-        mo={datLaiCho !== null}
+        mo={!!datLaiCho}
         onDong={() => setDatLaiCho(null)}
-        chanDoiKhiXuLy={datLaiMk.isPending}
         tieuDe={t('taiKhoan.datLaiMatKhau')}
-        moTa={datLaiCho?.username}
         rong="sm"
       >
         <form
           onSubmit={(e) => {
             e.preventDefault()
-            const mk = String(new FormData(e.currentTarget).get('mkMoi'))
-            if (datLaiCho) datLaiMk.mutate({ id: datLaiCho.id, mk })
+            const fd = new FormData(e.currentTarget)
+            datLaiMk.mutate({ id: datLaiCho!.id, mk: String(fd.get('mkMoi')) })
           }}
-          className="flex flex-col gap-4"
+          className="space-y-4"
         >
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="mkMoi">{t('dangNhap.matKhauMoi')}</Label>
-            <Input id="mkMoi" name="mkMoi" type="password" minLength={6} required autoFocus />
-            <p className="text-xs text-muted-foreground">{t('taiKhoan.datLaiGoiY')}</p>
+          <p className="text-sm text-muted-foreground">{datLaiCho?.username}</p>
+          <div>
+            <Label htmlFor="mkMoi">{t('taiKhoan.matKhauMoi')} *</Label>
+            <Input id="mkMoi" name="mkMoi" type="password" minLength={6} required />
           </div>
 
           {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
           <ModalChan>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDatLaiCho(null)}
-              disabled={datLaiMk.isPending}
-            >
+            <Button type="button" variant="outline" onClick={() => setDatLaiCho(null)}>
               {t('chung.huy')}
             </Button>
             <Button type="submit" disabled={datLaiMk.isPending}>
-              {datLaiMk.isPending ? t('chung.dangTai') : t('chung.luu')}
+              {t('chung.luu')}
             </Button>
           </ModalChan>
         </form>

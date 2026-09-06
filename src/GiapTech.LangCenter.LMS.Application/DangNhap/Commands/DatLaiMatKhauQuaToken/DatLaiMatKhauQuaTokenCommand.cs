@@ -33,16 +33,16 @@ public class DatLaiMatKhauQuaTokenHandler(IAppDbContext db, IPasswordHasher hash
         // gắn sẵn với đúng một tài khoản.
         var token = await db.TokenDatLaiMatKhaus
             .IgnoreQueryFilters()
-            .Include(t => t.NguoiDung)
+            .Include(t => t.TaiKhoan)
             .FirstOrDefaultAsync(t => t.TokenHash == hash, ct);
 
         if (token is null || !token.ConHieuLuc(bayGio))
             throw new AppException(MaLoi.TokenDatLaiKhongHopLe);
 
-        token.NguoiDung.PasswordHash = hasher.Bam(request.MatKhauMoi);
+        token.TaiKhoan.PasswordHash = hasher.Bam(request.MatKhauMoi);
 
         // Người dùng vừa tự đặt mật khẩu mới → không bắt đổi lại lần nữa.
-        token.NguoiDung.PhaiDoiMatKhau = false;
+        token.TaiKhoan.PhaiDoiMatKhau = false;
 
         // Dùng một lần.
         token.DaDungLuc = bayGio;
@@ -51,7 +51,7 @@ public class DatLaiMatKhauQuaTokenHandler(IAppDbContext db, IPasswordHasher hash
         // nếu không refresh token cũ vẫn cấp access token mới vô thời hạn.
         var phienDangMo = await db.RefreshTokens
             .IgnoreQueryFilters()
-            .Where(r => r.NguoiDungId == token.NguoiDungId && r.ThuHoiLuc == null)
+            .Where(r => r.TaiKhoanId == token.TaiKhoanId && r.ThuHoiLuc == null)
             .ToListAsync(ct);
 
         foreach (var r in phienDangMo)

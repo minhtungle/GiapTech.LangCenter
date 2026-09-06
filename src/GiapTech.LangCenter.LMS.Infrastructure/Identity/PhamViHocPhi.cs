@@ -56,10 +56,12 @@ public class PhamViHocPhi(IQuyenService quyenService, ICurrentTenant tenant, ICu
     /// </summary>
     private async Task<bool> ThayToanBoSo(HanhDong hanhDong, CancellationToken ct)
     {
-        if (tenant.TenantId is not { } tid || currentUser.UserId is not { } uid) return false;
+        // TaiKhoanId cho tra quyền, UserId cho lọc dữ liệu — xem chú thích ở PhamViLopHoc.
+        if (tenant.TenantId is not { } tid || currentUser.TaiKhoanId is not { } tkId)
+            return false;
 
-        return await quyenService.CoQuyenAsync(tid, uid, ChucNang.HocPhi, hanhDong, ct)
+        return await quyenService.CoQuyenAsync(tid, tkId, ChucNang.HocPhi, hanhDong, ct)
                && await quyenService.CoQuyenAsync(
-                   tid, uid, ChucNang.LopHocToanTrungTam, HanhDong.Xem, ct);
+                   tid, tkId, ChucNang.LopHocToanTrungTam, HanhDong.Xem, ct);
     }
 }

@@ -2,6 +2,7 @@ using Asp.Versioning;
 using GiapTech.LangCenter.LMS.API.Authorization;
 using GiapTech.LangCenter.LMS.Application.Common.Models;
 using GiapTech.LangCenter.LMS.Application.QuanTri.Quyen;
+using GiapTech.LangCenter.LMS.Application.QuanTri.NguoiDung;
 using GiapTech.LangCenter.LMS.Application.QuanTri.TaiKhoan;
 using GiapTech.LangCenter.LMS.Application.QuanTri.ThietLap;
 using GiapTech.LangCenter.LMS.Domain.Common;
@@ -11,7 +12,57 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GiapTech.LangCenter.LMS.API.Controllers.V1;
 
-/// <summary>FR-03 — tài khoản người dùng.</summary>
+/// <summary>
+/// FR-03 — người dùng (hồ sơ con người).
+///
+/// Dùng chung chức năng phân quyền <c>TaiKhoan</c> chứ không thêm chức năng thứ 17: ai quản lý
+/// được tài khoản thì quản lý được hồ sơ. Thêm hằng mới vào `ChucNang` sẽ làm admin của mọi
+/// trung tâm ĐANG TỒN TẠI bị 403 trên màn mới cho tới khi chạy bổ khuyết quyền — bẫy đã gặp ở
+/// giai đoạn 0.
+/// </summary>
+[ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/nguoi-dung")]
+public class NguoiDungController(ISender sender) : ControllerBase
+{
+    [HttpGet]
+    [RequirePermission(ChucNang.TaiKhoan, HanhDong.Xem)]
+    public async Task<ActionResult<KetQuaTrang<NguoiDungDto>>> DanhSach(
+        [FromQuery] string? timKiem,
+        [FromQuery] LoaiNguoiDung? loaiNguoiDung,
+        [FromQuery] TrangThaiNhanSu? trangThaiNhanSu,
+        [FromQuery] int trang = 1,
+        [FromQuery] int soDong = 20,
+        CancellationToken ct = default)
+        => Ok(await sender.Send(new LayDanhSachNguoiDungQuery(
+            timKiem, loaiNguoiDung, trangThaiNhanSu, new ThamSoTrang(trang, soDong)), ct));
+
+    [HttpPost]
+    [RequirePermission(ChucNang.TaiKhoan, HanhDong.Them)]
+    public async Task<ActionResult<Guid>> Tao(
+        [FromBody] TaoNguoiDungCommand command, CancellationToken ct)
+        => Ok(await sender.Send(command, ct));
+
+    [HttpPut("{id:guid}")]
+    [RequirePermission(ChucNang.TaiKhoan, HanhDong.Sua)]
+    public async Task<IActionResult> CapNhat(
+        Guid id, [FromBody] CapNhatNguoiDungCommand command, CancellationToken ct)
+    {
+        if (id != command.Id) return BadRequest(new { errorCode = "ID_KHONG_KHOP" });
+        await sender.Send(command, ct);
+        return NoContent();
+    }
+
+    [HttpDelete("{id:guid}")]
+    [RequirePermission(ChucNang.TaiKhoan, HanhDong.Xoa)]
+    public async Task<IActionResult> Xoa(Guid id, CancellationToken ct)
+    {
+        await sender.Send(new XoaNguoiDungCommand(id), ct);
+        return NoContent();
+    }
+}
+
+/// <summary>FR-04 — tài khoản đăng nhập.</summary>
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/tai-khoan")]
@@ -21,11 +72,12 @@ public class TaiKhoanController(ISender sender) : ControllerBase
     [RequirePermission(ChucNang.TaiKhoan, HanhDong.Xem)]
     public async Task<ActionResult<KetQuaTrang<TaiKhoanDto>>> DanhSach(
         [FromQuery] string? timKiem,
+        [FromQuery] TrangThaiNguoiDung? trangThai,
         [FromQuery] int trang = 1,
         [FromQuery] int soDong = 20,
         CancellationToken ct = default)
         => Ok(await sender.Send(
-            new LayDanhSachTaiKhoanQuery(timKiem, new ThamSoTrang(trang, soDong)), ct));
+            new LayDanhSachTaiKhoanQuery(timKiem, trangThai, new ThamSoTrang(trang, soDong)), ct));
 
     [HttpPost]
     [RequirePermission(ChucNang.TaiKhoan, HanhDong.Them)]

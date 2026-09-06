@@ -30,11 +30,17 @@ public class DongThoiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     // Mã trung tâm là một nửa bộ ba đăng nhập — trùng mã là hai trung tâm cùng cửa vào.
     [InlineData("Tenant", new[] { "MaTrungTam" })]
     // Username chỉ duy nhất TRONG tenant, không phải toàn cục (quy tắc multi-tenant).
-    [InlineData("NguoiDung", new[] { "TenantId", "Username" })]
+    // Username thuộc TÀI KHOẢN, không thuộc người (tách 07/09/2026).
+    [InlineData("TaiKhoan", new[] { "TenantId", "Username" })]
+    // Một người tối đa một tài khoản — hai tài khoản cùng người thì không biết quyền nào thắng.
+    [InlineData("TaiKhoan", new[] { "NguoiDungId" })]
+    [InlineData("HoSoGiaoVien", new[] { "NguoiDungId" })]
+    [InlineData("HoSoHocVien", new[] { "NguoiDungId" })]
+    [InlineData("HoSoNhanVien", new[] { "NguoiDungId" })]
     [InlineData("Quyen", new[] { "TenantId", "TenQuyen" })]
     // Không lặp cùng một (nhóm quyền, chức năng, thao tác).
     [InlineData("QuyenChucNang", new[] { "QuyenId", "TenChucNang", "HanhDong" })]
-    [InlineData("NguoiDungQuyen", new[] { "NguoiDungId", "QuyenId" })]
+    [InlineData("NguoiDungQuyen", new[] { "TaiKhoanId", "QuyenId" })]
     // Tra cứu lúc làm mới token đi thẳng từ hash → trùng hash là nhầm phiên của người khác.
     [InlineData("RefreshToken", new[] { "TokenHash" })]
     [InlineData("TokenDatLaiMatKhau", new[] { "TokenHash" })]

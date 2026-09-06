@@ -16,6 +16,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant
 {
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<NguoiDung> NguoiDungs => Set<NguoiDung>();
+    public DbSet<TaiKhoan> TaiKhoans => Set<TaiKhoan>();
+    public DbSet<HoSoGiaoVien> HoSoGiaoViens => Set<HoSoGiaoVien>();
+    public DbSet<HoSoHocVien> HoSoHocViens => Set<HoSoHocVien>();
+    public DbSet<HoSoNhanVien> HoSoNhanViens => Set<HoSoNhanVien>();
 
     public DbSet<Quyen> Quyens => Set<Quyen>();
     public DbSet<QuyenChucNang> QuyenChucNangs => Set<QuyenChucNang>();

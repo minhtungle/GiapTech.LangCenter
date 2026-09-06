@@ -211,7 +211,7 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
         Assert.True(
-            await db.NguoiDungs.IgnoreQueryFilters().AnyAsync(u => u.Username == "chuquyen"),
+            await db.TaiKhoans.IgnoreQueryFilters().AnyAsync(u => u.Username == "chuquyen"),
             "người quản trị cuối cùng đã bị xoá — trung tâm mất đường quản trị");
     }
 

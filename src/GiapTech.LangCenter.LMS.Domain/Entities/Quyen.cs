@@ -37,13 +37,17 @@ public class QuyenChucNang : TenantEntity
 }
 
 /// <summary>
-/// NGUOIDUNG_QUYEN — bảng trung gian N—N.
+/// NGUOIDUNG_QUYEN — bảng trung gian N—N giữa TÀI KHOẢN và nhóm quyền.
+///
+/// Gán cho tài khoản chứ không cho người: quyền là chuyện đăng nhập. Người không có tài khoản
+/// thì không có quyền nào để nói tới.
+///
 /// Một tài khoản nhiều nhóm quyền; quyền hiệu lực = HỢP của mọi nhóm (không có deny ghi đè).
 /// </summary>
 public class NguoiDungQuyen : TenantEntity
 {
-    public Guid NguoiDungId { get; set; }
-    public NguoiDung NguoiDung { get; set; } = null!;
+    public Guid TaiKhoanId { get; set; }
+    public TaiKhoan TaiKhoan { get; set; } = null!;
 
     public Guid QuyenId { get; set; }
     public Quyen Quyen { get; set; } = null!;

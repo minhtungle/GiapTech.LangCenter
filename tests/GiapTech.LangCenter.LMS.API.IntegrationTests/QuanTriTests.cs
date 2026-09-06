@@ -39,39 +39,36 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
     public async Task Khong_sua_duoc_tai_khoan_cua_tenant_khac()
     {
         var clientA = await Client(factory.MaTrungTamA);
-        var tao = await clientA.PostAsJsonAsync("/api/v1/tai-khoan", new
+        var tao = await clientA.PostAsJsonAsync("/api/v1/nguoi-dung", new
         {
-            Username = "chicuaa",
-            MatKhau = "matkhau123", HoTen = "Test chicuaa",
+            HoTen = "Test chicuaa",
             Email = (string?)null,
-            SoDienThoai = (string?)null,
-            DiaChi = (string?)null,
-            QuyenIds = Array.Empty<Guid>(),
-            PhaiDoiMatKhau = false
+            LoaiNguoiDung = "NhanVien"
         });
         tao.EnsureSuccessStatusCode();
         var idCuaA = await tao.Content.ReadFromJsonAsync<Guid>();
 
         var clientB = await Client(factory.MaTrungTamB);
 
-        var sua = await clientB.PutAsJsonAsync($"/api/v1/tai-khoan/{idCuaA}", new
+        var sua = await clientB.PutAsJsonAsync($"/api/v1/nguoi-dung/{idCuaA}", new
         {
-            Id = idCuaA, HoTen = "Test",
+            Id = idCuaA, HoTen = "Bị B sửa",
             Email = "bi-b-sua@example.com",
-            SoDienThoai = (string?)null,
-            DiaChi = (string?)null,
-            QuyenIds = Array.Empty<Guid>(),
-            TrangThai = 0
+            LoaiNguoiDung = "NhanVien",
+            TrangThaiNhanSu = "DangLamViec"
         });
         Assert.Equal(HttpStatusCode.NotFound, sua.StatusCode);
 
-        var xoa = await clientB.DeleteAsync($"/api/v1/tai-khoan/{idCuaA}");
+        var xoa = await clientB.DeleteAsync($"/api/v1/nguoi-dung/{idCuaA}");
         Assert.Equal(HttpStatusCode.NotFound, xoa.StatusCode);
 
-        // Và A không hề bị ảnh hưởng.
-        var dsA = await clientA.GetFromJsonAsync<JsonElement>("/api/v1/tai-khoan?timKiem=chicuaa");
-        var emailA = dsA.GetProperty("duLieu")[0].GetProperty("email");
-        Assert.Equal(System.Text.Json.JsonValueKind.Null, emailA.ValueKind);
+        // Và A không hề bị ảnh hưởng — khẳng định thứ ba, dễ quên nhất.
+        var dsA = await clientA.GetFromJsonAsync<JsonElement>(
+            "/api/v1/nguoi-dung?timKiem=Test chicuaa");
+        var nguoiA = dsA.GetProperty("duLieu")[0];
+        Assert.Equal("Test chicuaa", nguoiA.GetProperty("hoTen").GetString());
+        Assert.Equal(
+            System.Text.Json.JsonValueKind.Null, nguoiA.GetProperty("email").ValueKind);
     }
 
     // ---------- FR-05 phân quyền ----------

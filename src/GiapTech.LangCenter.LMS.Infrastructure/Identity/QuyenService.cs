@@ -21,24 +21,24 @@ public class QuyenService(AppDbContext db, IMemoryCache cache) : IQuyenService
     private static readonly TimeSpan ThoiGianSong = TimeSpan.FromMinutes(5);
 
     public async Task<bool> CoQuyenAsync(
-        Guid tenantId, Guid nguoiDungId, string chucNang, HanhDong hanhDong,
+        Guid tenantId, Guid taiKhoanId, string chucNang, HanhDong hanhDong,
         CancellationToken ct = default)
     {
-        var quyens = await LayQuyenHieuLucAsync(tenantId, nguoiDungId, ct);
+        var quyens = await LayQuyenHieuLucAsync(tenantId, taiKhoanId, ct);
         return quyens.Contains((chucNang, hanhDong));
     }
 
     private async Task<HashSet<(string, HanhDong)>> LayQuyenHieuLucAsync(
-        Guid tenantId, Guid nguoiDungId, CancellationToken ct)
+        Guid tenantId, Guid taiKhoanId, CancellationToken ct)
     {
-        var khoa = Khoa(tenantId, nguoiDungId);
+        var khoa = Khoa(tenantId, taiKhoanId);
 
         if (cache.TryGetValue<HashSet<(string, HanhDong)>>(khoa, out var daCo) && daCo is not null)
             return daCo;
 
         // Quyền hiệu lực = HỢP của mọi nhóm quyền gán cho tài khoản (không có deny ghi đè).
         var danhSach = await db.NguoiDungQuyens
-            .Where(nq => nq.NguoiDungId == nguoiDungId)
+            .Where(nq => nq.TaiKhoanId == taiKhoanId)
             .SelectMany(nq => nq.Quyen.ChucNangs)
             .Select(cn => new { cn.TenChucNang, cn.HanhDong })
             .ToListAsync(ct);
@@ -56,8 +56,8 @@ public class QuyenService(AppDbContext db, IMemoryCache cache) : IQuyenService
         return ketQua;
     }
 
-    public void XoaCache(Guid tenantId, Guid nguoiDungId)
-        => cache.Remove(Khoa(tenantId, nguoiDungId));
+    public void XoaCache(Guid tenantId, Guid taiKhoanId)
+        => cache.Remove(Khoa(tenantId, taiKhoanId));
 
     /// <summary>
     /// Xoá toàn bộ cache quyền của tenant bằng cách huỷ token gắn với mọi entry của tenant đó.
@@ -70,7 +70,7 @@ public class QuyenService(AppDbContext db, IMemoryCache cache) : IQuyenService
             cts.Cancel();
     }
 
-    private static string Khoa(Guid tenantId, Guid nguoiDungId) => $"quyen:{tenantId}:{nguoiDungId}";
+    private static string Khoa(Guid tenantId, Guid taiKhoanId) => $"quyen:{tenantId}:{taiKhoanId}";
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, CancellationTokenSource>
         TokenTheoTenant = new();

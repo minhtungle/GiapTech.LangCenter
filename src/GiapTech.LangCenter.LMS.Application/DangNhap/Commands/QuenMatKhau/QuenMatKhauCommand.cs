@@ -40,16 +40,21 @@ public class QuenMatKhauHandler(
         var tenant = await db.Tenants
             .FirstOrDefaultAsync(t => t.MaTrungTam == maTrungTam, ct);
 
-        var nguoiDung = tenant is null
+        // Email nằm ở NGUOI_DUNG còn token gắn với TAI_KHOAN, nên phải đi qua quan hệ 1–1.
+        // Tài khoản không gắn người nào (tài khoản kỹ thuật) không có email → không đặt lại
+        // mật khẩu kiểu này được, đúng như mong đợi.
+        var taiKhoan = tenant is null
             ? null
-            : await db.NguoiDungs
+            : await db.TaiKhoans
                 .IgnoreQueryFilters() // chưa đăng nhập nên context chưa có tenant
+                .Include(u => u.NguoiDung)
                 .FirstOrDefaultAsync(
-                    u => u.TenantId == tenant.Id && u.Email == email, ct);
+                    u => u.TenantId == tenant.Id
+                         && u.NguoiDung != null && u.NguoiDung.Email == email, ct);
 
         // KHÔNG ném lỗi khi không tìm thấy: phản hồi phải giống hệt nhau dù email có tồn tại
         // hay không, nếu không kẻ tấn công dò được email nào đã đăng ký ở trung tâm nào.
-        if (nguoiDung is null || tenant is null)
+        if (taiKhoan is null || tenant is null)
         {
             logger.LogInformation(
                 "Yêu cầu quên mật khẩu cho email không khớp ({MaTrungTam})", request.MaTrungTam);
@@ -64,7 +69,7 @@ public class QuenMatKhauHandler(
         // Vô hiệu hoá các token cũ chưa dùng: nhiều link còn sống cùng lúc nhân rộng bề mặt
         // tấn công mà không đem lại lợi ích gì cho người dùng.
         var tokenCu = await db.TokenDatLaiMatKhaus
-            .Where(t => t.NguoiDungId == nguoiDung.Id && t.DaDungLuc == null)
+            .Where(t => t.TaiKhoanId == taiKhoan.Id && t.DaDungLuc == null)
             .ToListAsync(ct);
 
         foreach (var t in tokenCu)
@@ -73,7 +78,7 @@ public class QuenMatKhauHandler(
         db.TokenDatLaiMatKhaus.Add(new TokenDatLaiMatKhau
         {
             TenantId = tenant.Id,
-            NguoiDungId = nguoiDung.Id,
+            TaiKhoanId = taiKhoan.Id,
             TokenHash = BamToken.Bam(tokenTho),
             HetHan = DateTimeOffset.UtcNow.Add(ThoiHan)
         });
@@ -85,7 +90,7 @@ public class QuenMatKhauHandler(
             "Đặt lại mật khẩu LangCenter.LMS",
             $"""
              <p>Bạn (hoặc ai đó) đã yêu cầu đặt lại mật khẩu cho tài khoản
-             <strong>{nguoiDung.Username}</strong> tại trung tâm <strong>{tenant.TenTrungTam}</strong>.</p>
+             <strong>{taiKhoan.Username}</strong> tại trung tâm <strong>{tenant.TenTrungTam}</strong>.</p>
              <p>Mã đặt lại: <code>{tokenTho}</code></p>
              <p>Mã có hiệu lực trong {ThoiHan.TotalMinutes:0} phút và chỉ dùng được một lần.</p>
              <p>Nếu không phải bạn yêu cầu, hãy bỏ qua email này.</p>

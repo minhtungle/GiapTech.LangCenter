@@ -90,7 +90,8 @@ public class ThemHocVienVaoLopHandler(IAppDbContext db, IPhamViLopHoc phamVi)
         // trung tâm khác tự rơi vào nhánh lỗi.
         var soHopLe = await db.NguoiDungs
             .CountAsync(u => ids.Contains(u.Id)
-                             && u.TrangThai == TrangThaiNguoiDung.HoatDong, ct);
+                             && u.TrangThaiNhanSu == TrangThaiNhanSu.DangLamViec
+                             && u.LoaiNguoiDung == LoaiNguoiDung.HocVien, ct);
         if (soHopLe != ids.Count) throw new AppException("HOC_VIEN_KHONG_HOP_LE");
 
         var daCo = await db.LopHocHocViens

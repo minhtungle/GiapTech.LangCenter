@@ -79,6 +79,7 @@ const vi = {
     hocPhi: 'Học phí',
     quanTri: 'Quản trị hệ thống',
     taiKhoan: 'Tài khoản',
+    nguoiDung: 'Người dùng',
     phanQuyen: 'Phân quyền',
     thietLap: 'Thiết lập chung',
   },
@@ -115,6 +116,37 @@ const vi = {
       ChuyenKhoan: 'Chuyển khoản',
       Khac: 'Khác',
     },
+  },
+  nguoiDung: {
+    themNguoiDung: 'Thêm người dùng',
+    suaNguoiDung: 'Sửa người dùng',
+    timTheo: 'Họ tên, email, SĐT',
+    trangThaiNhanSu: 'Nhân sự',
+    DangLamViec: 'Đang làm việc',
+    DaNghi: 'Đã nghỉ',
+    hoSo: 'Hồ sơ',
+    hoSo_GiaoVien: 'Hồ sơ giáo viên',
+    hoSo_HocVien: 'Hồ sơ học viên',
+    hoSo_NhanVien: 'Hồ sơ nhân viên',
+    bangCap: 'Bằng cấp',
+    chuyenMon: 'Chuyên môn',
+    ngayVaoLam: 'Ngày vào làm',
+    truongLop: 'Trường / lớp',
+    tenPhuHuynh: 'Tên phụ huynh',
+    sdtPhuHuynh: 'SĐT phụ huynh',
+    chucVu: 'Chức vụ',
+    phongBan: 'Phòng ban',
+    taiKhoan: 'Tài khoản',
+    chuaCoTaiKhoan: 'Chưa có',
+    nguoiSoHuu: 'Người dùng',
+    khongGanAi: 'Không gắn ai',
+    taoTaiKhoanDangNhap: 'Tạo tài khoản đăng nhập',
+    khongCanDangNhap:
+      'Người này sẽ không đăng nhập được. Có thể tạo tài khoản cho họ sau ở tab Tài khoản.',
+    giaiThichGanNguoi:
+      'Bỏ trống nếu đây là tài khoản kỹ thuật, không thuộc về ai.',
+    giaiThichVoHieuHoa:
+      'Vô hiệu hoá chỉ chặn đăng nhập. Hồ sơ và toàn bộ dữ liệu của người này giữ nguyên.',
   },
   tongQuan: {
     chuaCoNoiDung:
@@ -321,6 +353,15 @@ const vi = {
     buocDoiMk: 'Bắt buộc đổi mật khẩu ở lần đăng nhập đầu',
     buocDoiMkGoiY: 'Nên bật: mật khẩu bạn đặt hộ thì bạn cũng biết.',
     datLaiGoiY: 'Người dùng sẽ được yêu cầu đổi lại ở lần đăng nhập kế tiếp.',
+    matKhau: 'Mật khẩu',
+    matKhauMoi: 'Mật khẩu mới',
+    themTaiKhoan: 'Thêm tài khoản',
+    suaTaiKhoan: 'Cập nhật tài khoản',
+    buocDoiMatKhau: 'Bắt buộc đổi mật khẩu ở lần đăng nhập đầu',
+    phaiDoiMatKhau: 'Cần đổi mật khẩu',
+    // Khoá theo TÊN ENUM để t(`taiKhoan.${trangThai}`) tra thẳng được.
+    HoatDong: 'Hoạt động',
+    VoHieuHoa: 'Vô hiệu hóa',
   },
   quyen: {
     tieuDe: 'Phân quyền truy cập',
@@ -449,6 +490,12 @@ const vi = {
     MAT_KHAU_MOI_TRUNG_CU: 'Mật khẩu mới phải khác mật khẩu hiện tại',
     USERNAME_KY_TU_KHONG_HOP_LE: 'Tên đăng nhập chỉ gồm chữ, số và . _ -',
     ID_KHONG_KHOP: 'Dữ liệu không khớp',
+    NGUOI_DUNG_KHONG_HOP_LE: 'Người dùng không hợp lệ',
+    NGUOI_DUNG_DA_CO_TAI_KHOAN:
+      'Người này đã có tài khoản. Mỗi người chỉ được một tài khoản đăng nhập.',
+    NGUOI_DUNG_DANG_CO_DU_LIEU:
+      'Không xoá được: người này đang có lớp, điểm danh hoặc học phí. '
+      + 'Đánh dấu "Đã nghỉ" thay vì xoá để giữ lại dữ liệu.',
     SO_TIEN_PHAI_DUONG: 'Số tiền phải lớn hơn 0',
   },
 }

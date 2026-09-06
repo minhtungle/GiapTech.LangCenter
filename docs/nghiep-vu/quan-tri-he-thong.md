@@ -4,45 +4,84 @@
 > "trung tâm", `MaDoi` → `MaTrungTam`, route `/dang-ky-clb` → `/dang-ky-trung-tam`. Phần hồ sơ
 > cầu thủ (FR-04) đã bỏ.
 
-## FR-03 — Tài khoản người dùng
+## FR-03 — Người dùng (hồ sơ con người)
 
-CRUD tài khoản đăng nhập.
+**`NGUOI_DUNG` là bảng "con người", không phải bảng đăng nhập.** Đây là phân biệt quan trọng
+nhất của module này: một người tồn tại trong hệ thống độc lập với việc họ có đăng nhập được
+hay không.
 
-**Trường dữ liệu:** username, password, cờ "bắt buộc đổi mật khẩu", email, số điện thoại, địa chỉ,
-danh sách quyền (nhiều nhóm quyền / tài khoản), hồ sơ cầu thủ liên kết (0..1).
+**Trường chung mọi vai trò:** họ tên, ngày sinh, email, số điện thoại, địa chỉ, ảnh đại diện,
+vai trò (`LoaiNguoiDung`), **trạng thái nhân sự**.
 
-### Quy trình chuẩn tạo tài khoản (wizard tuần tự)
+### Vì sao tách khỏi tài khoản
 
-1. **Tạo hồ sơ cầu thủ** nếu chưa có (FR-04) — hoặc chọn hồ sơ đã tồn tại, hoặc bỏ qua nếu tài khoản
-   không gắn cầu thủ nào.
-2. **Tạo/chọn nhóm quyền** nếu chưa có (FR-05).
-3. **Tạo tài khoản**, gán quyền + hồ sơ cầu thủ.
+Trước 07/09/2026, `NGUOI_DUNG` gánh cả hai việc và một cột `TrangThai` mang hai nghĩa: "còn
+đăng nhập được" **và** "còn làm ở trung tâm". Hệ quả cụ thể: vô hiệu hoá tài khoản một giáo
+viên đã nghỉ thì **không phân công được họ vào lớp cũ nữa** — `KiemNhanSu` đòi
+`TrangThai == HoatDong`. Hai khái niệm khác nhau bị nhốt chung một cột.
+
+Nay tách đôi:
+
+| Khái niệm | Nằm ở | Ý nghĩa |
+|---|---|---|
+| `NGUOI_DUNG.trang_thai_nhan_su` | Người | `DangLamViec` / `DaNghi` — còn thuộc trung tâm không |
+| `TAI_KHOAN.trang_thai` | Tài khoản | `HoatDong` / `VoHieuHoa` — còn đăng nhập được không |
+
+Người **đã nghỉ** vẫn giữ nguyên mọi dữ liệu lịch sử: tên trong bảng điểm danh, sổ học phí, bài
+đã chấm. Tài khoản **vô hiệu hoá** chỉ chặn đăng nhập.
+
+### Hồ sơ riêng theo vai trò
+
+Mỗi vai trò có một bảng hồ sơ riêng, quan hệ **1–1** với `NGUOI_DUNG`:
+
+| Bảng | Trường |
+|---|---|
+| `HO_SO_GIAO_VIEN` | bằng cấp, chuyên môn, ngày vào làm |
+| `HO_SO_HOC_VIEN` | trường/lớp đang học, tên phụ huynh, SĐT phụ huynh |
+| `HO_SO_NHAN_VIEN` | chức vụ, phòng ban |
+
+**Mỗi người một vai trò** — `loai_nguoi_dung` quyết định hồ sơ nào áp dụng. Trợ giảng dùng
+chung `HO_SO_GIAO_VIEN` (cùng loại thông tin: bằng cấp, chuyên môn).
+
+**Đổi vai trò không xoá hồ sơ cũ.** Giáo viên chuyển sang làm nhân viên văn phòng thì hàng
+`HO_SO_GIAO_VIEN` giữ lại — bằng cấp và ngày vào làm vẫn là sự thật lịch sử, và họ có thể quay
+lại dạy (quy tắc #1).
 
 ### Quy tắc
 
-- Chỉ **Admin** được đổi mật khẩu cho tài khoản khác. Người dùng thường chỉ đổi mật khẩu của chính mình.
-- Một tài khoản liên kết **tối đa 1** hồ sơ cầu thủ (`NGUOI_DUNG.cau_thu_id` nullable).
-- Username duy nhất trong phạm vi tenant, không phải toàn hệ thống.
-- Xóa tài khoản không xóa hồ sơ cầu thủ liên kết — hai thực thể độc lập.
+- **Tạo người dùng không bắt buộc tạo tài khoản.** Học viên nhỏ tuổi không cần đăng nhập; giáo
+  viên thỉnh giảng có thể chỉ cần có tên trong lịch dạy.
+- Hồ sơ vai trò **tự sinh khi cần**: đặt `loai_nguoi_dung = GiaoVien` thì hàng
+  `HO_SO_GIAO_VIEN` được tạo (rỗng) nếu chưa có. Không bắt người dùng điền ngay.
+- **Người đã nghỉ vẫn phân công được vào lớp cũ** — chỉ cảnh báo, không chặn. Chặn cứng sẽ làm
+  không sửa nổi dữ liệu lịch sử.
+- **Không xoá cứng người dùng đang có dữ liệu**: 12 khoá ngoại nghiệp vụ trỏ tới `NGUOI_DUNG`,
+  7 trong số đó là `Restrict`. Dùng `trang_thai_nhan_su = DaNghi`.
 
-## FR-04 — Hồ sơ cầu thủ
+## FR-04 — Tài khoản đăng nhập
 
-CRUD hồ sơ: ảnh đại diện, họ tên, **số áo**, **vị trí sở trường**, ngày sinh, ngày tham gia, ghi chú.
-
-Số áo và vị trí sở trường là **nguồn mặc định cho bảng chiến thuật** (FR-10 tab b) — không có
-chúng thì phải gõ lại số áo cho từng người ở từng trận. Sơ đồ của một trận vẫn ghi đè được
-(mượn áo, trùng số).
-
-**Số áo KHÔNG đặt UNIQUE**: CLB phong trào hay trùng số, ràng buộc cứng sẽ chặn cả việc nhập
-liệu bình thường.
+`TAI_KHOAN` — chỉ thông tin cần để vào hệ thống: username, mật khẩu, cờ buộc đổi mật khẩu,
+trạng thái, và **`nguoi_dung_id` (nullable)** trỏ tới người sở hữu.
 
 ### Quy tắc
 
-- **Độc lập hoàn toàn với tài khoản đăng nhập** — một cầu thủ có thể chưa có tài khoản (ví dụ cầu thủ
-  mới, chỉ cần có mặt trong đội hình và danh sách đóng quỹ).
-- Ảnh đại diện upload lên MinIO qua presigned URL, DB chỉ lưu đường dẫn.
-- Trước khi xóa hồ sơ cầu thủ: cảnh báo nếu cầu thủ đang có dữ liệu liên quan (đội hình trận, đánh giá,
-  đóng góp quỹ, vote MVP).
+- **Username duy nhất trong phạm vi trung tâm**, không phải toàn hệ thống —
+  `UNIQUE(tenant_id, username)`. Hai trung tâm đều có thể có `admin`.
+- **Một người tối đa một tài khoản** — `UNIQUE(nguoi_dung_id)`. Hai tài khoản cùng một người thì
+  không biết quyền nào thắng.
+- `nguoi_dung_id` **nullable**: tài khoản kỹ thuật (tích hợp, seed) không gắn con người nào.
+- Chỉ **Admin** đổi được mật khẩu cho tài khoản khác. Người dùng thường chỉ đổi của chính mình.
+- **Vô hiệu hoá tài khoản không đụng tới người dùng.** Đây chính là mục tiêu của việc tách bảng.
+- Nhóm quyền gán cho **tài khoản**, không phải người — quyền là chuyện đăng nhập.
+
+### Xoá dữ liệu
+
+| Quan hệ | Delete | Vì sao |
+|---|---|---|
+| `TAI_KHOAN → NGUOI_DUNG` | SetNull | Xoá người thì tài khoản thành mồ côi chứ không biến mất — còn dấu vết ai từng đăng nhập |
+| `NGUOIDUNG_QUYEN → TAI_KHOAN` | Cascade | Quyền vô nghĩa khi không còn tài khoản |
+| `REFRESH_TOKEN`, `TOKEN_DATLAI_MATKHAU → TAI_KHOAN` | Cascade | Phiên và token đặt lại chết cùng tài khoản |
+| `HO_SO_* → NGUOI_DUNG` | Cascade | Hồ sơ là một phần của người, không có nghĩa khi đứng riêng |
 
 ## FR-05 — Phân quyền truy cập
 

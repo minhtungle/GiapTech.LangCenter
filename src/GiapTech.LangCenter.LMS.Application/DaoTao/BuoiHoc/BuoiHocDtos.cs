@@ -307,7 +307,10 @@ public class CapNhatBuoiHocHandler(IAppDbContext db, IPhamViLopHoc phamVi)
         if (request.GiaoVienId is { } gv)
         {
             var hopLe = await db.NguoiDungs.AnyAsync(
-                u => u.Id == gv && u.TrangThai == TrangThaiNguoiDung.HoatDong, ct);
+                u => u.Id == gv
+                     && u.TrangThaiNhanSu == TrangThaiNhanSu.DangLamViec
+                     && (u.LoaiNguoiDung == LoaiNguoiDung.GiaoVien
+                         || u.LoaiNguoiDung == LoaiNguoiDung.TroGiang), ct);
             if (!hopLe) throw new AppException("NHAN_SU_KHONG_HOP_LE");
         }
 

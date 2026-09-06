@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using GiapTech.LangCenter.LMS.Application.Common.Models;
 using GiapTech.LangCenter.LMS.Application.Common.Exceptions;
 using GiapTech.LangCenter.LMS.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -34,14 +35,17 @@ public class BuocDoiMatKhauMiddleware(RequestDelegate next)
             return;
         }
 
-        if (!Guid.TryParse(context.User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+        // Claim tài khoản, không phải NameIdentifier: cờ buộc đổi mật khẩu thuộc về TÀI KHOẢN.
+        // Token cũ (trước 07/09/2026) không có claim này → cho qua, vì chặn ở đây sẽ khoá cứng
+        // mọi phiên đang mở mà không có đường ra.
+        if (!Guid.TryParse(context.User.FindFirstValue(ClaimTenant.TaiKhoanId), out var taiKhoanId))
         {
             await next(context);
             return;
         }
 
-        var phaiDoi = await db.NguoiDungs
-            .Where(u => u.Id == userId)
+        var phaiDoi = await db.TaiKhoans
+            .Where(u => u.Id == taiKhoanId)
             .Select(u => u.PhaiDoiMatKhau)
             .FirstOrDefaultAsync(context.RequestAborted);
 

@@ -171,12 +171,18 @@ public class ApiFactory : WebApplicationFactory<Program>
 
             // Player: có tài khoản hợp lệ nhưng KHÔNG được gán nhóm quyền nào — dùng để
             // kiểm chứng phân quyền thật sự đọc từ DB.
-            db.NguoiDungs.Add(new NguoiDung
+            var nguoiPlayer = new NguoiDung
+            {
+                TenantId = tenant.Id,
+                HoTen = $"Học viên {nhan}",
+                LoaiNguoiDung = LoaiNguoiDung.HocVien
+            };
+            db.NguoiDungs.Add(nguoiPlayer);
+            db.TaiKhoans.Add(new TaiKhoan
             {
                 TenantId = tenant.Id,
                 Username = "player",
-                HoTen = $"Học viên {nhan}",
-                LoaiNguoiDung = LoaiNguoiDung.HocVien,
+                NguoiDungId = nguoiPlayer.Id,
                 PasswordHash = hasher.Bam("player123")
             });
 
@@ -187,18 +193,26 @@ public class ApiFactory : WebApplicationFactory<Program>
             // lọc theo TÊN chứ không `Single` theo tenant.
             var quyenQuanTri = db.Quyens.Single(
                 q => q.TenantId == tenant.Id && q.TenQuyen == TenantSeeder.NhomQuyenQuanTri);
-            var manager = new NguoiDung
+            var nguoiManager = new NguoiDung
+            {
+                TenantId = tenant.Id,
+                HoTen = $"Quản lý {nhan}",
+                LoaiNguoiDung = LoaiNguoiDung.NhanVien
+            };
+            db.NguoiDungs.Add(nguoiManager);
+
+            var manager = new TaiKhoan
             {
                 TenantId = tenant.Id,
                 Username = "manager",
-                HoTen = $"Quản lý {nhan}",
+                NguoiDungId = nguoiManager.Id,
                 PasswordHash = hasher.Bam("manager123"),
                 PhaiDoiMatKhau = false
             };
-            db.NguoiDungs.Add(manager);
+            db.TaiKhoans.Add(manager);
             db.NguoiDungQuyens.Add(new NguoiDungQuyen
             {
-                TenantId = tenant.Id, NguoiDungId = manager.Id, QuyenId = quyenQuanTri.Id
+                TenantId = tenant.Id, TaiKhoanId = manager.Id, QuyenId = quyenQuanTri.Id
             });
 
             db.SaveChanges();

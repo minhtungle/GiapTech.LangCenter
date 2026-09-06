@@ -22,11 +22,16 @@ public class QuyenAuthorizationHandler(IQuyenService quyenService, ILogger<Quyen
             return; // chưa xác thực → không Succeed, trả 401
 
         var tenantId = context.User.FindFirstValue(ClaimTenant.TenantId);
-        var nguoiDungId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (!Guid.TryParse(tenantId, out var tid) || !Guid.TryParse(nguoiDungId, out var uid))
+        // Quyền gán cho TÀI KHOẢN, không cho người — nên tra bằng claim tài khoản, không phải
+        // NameIdentifier (vốn mang id người). Token phát hành trước 07/09/2026 không có claim
+        // này: từ chối, người dùng đăng nhập lại là xong. Thà 403 rõ ràng còn hơn tra nhầm id
+        // và trả về tập quyền của một hàng dữ liệu khác.
+        var taiKhoanId = context.User.FindFirstValue(ClaimTenant.TaiKhoanId);
+
+        if (!Guid.TryParse(tenantId, out var tid) || !Guid.TryParse(taiKhoanId, out var uid))
         {
-            logger.LogWarning("Token thiếu claim tenant_id hoặc NameIdentifier");
+            logger.LogWarning("Token thiếu claim tenant_id hoặc tai_khoan_id");
             return;
         }
 

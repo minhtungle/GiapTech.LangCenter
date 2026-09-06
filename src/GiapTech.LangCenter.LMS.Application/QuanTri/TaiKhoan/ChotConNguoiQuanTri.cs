@@ -26,7 +26,11 @@ internal static class ChotConNguoiQuanTri
     /// <summary>
     /// Ném lỗi nếu thao tác đang xét làm trung tâm không còn ai có quyền Phân quyền.
     /// </summary>
-    /// <param name="idDangSua">Tài khoản đang bị sửa — loại khỏi phép đếm "người còn lại".</param>
+    /// <param name="idDangSua">
+    /// Id TÀI KHOẢN đang bị sửa — loại khỏi phép đếm "người còn lại". Đếm theo tài khoản chứ
+    /// không theo người vì quyền gán cho tài khoản; người không đăng nhập được thì không cứu
+    /// được trung tâm dù hồ sơ của họ vẫn còn.
+    /// </param>
     /// <param name="sauKhiSuaConQuyenNay">
     /// Sau thao tác này, tài khoản đó có còn quyền Phân quyền không. `false` khi gỡ quyền hoặc vô
     /// hiệu hoá tài khoản.
@@ -41,8 +45,8 @@ internal static class ChotConNguoiQuanTri
         //
         // Query filter đã lọc theo tenant nên phép đếm này chỉ trong trung tâm hiện tại.
         var conNguoiKhac = await db.NguoiDungQuyens
-            .Where(nq => nq.NguoiDungId != idDangSua
-                         && nq.NguoiDung.TrangThai == TrangThaiNguoiDung.HoatDong
+            .Where(nq => nq.TaiKhoanId != idDangSua
+                         && nq.TaiKhoan.TrangThai == TrangThaiNguoiDung.HoatDong
                          && db.QuyenChucNangs.Any(qcn =>
                              qcn.QuyenId == nq.QuyenId
                              && qcn.TenChucNang == ChucNang.PhanQuyen))

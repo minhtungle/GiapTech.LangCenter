@@ -177,9 +177,17 @@ public class TaoLopHocHandler(IAppDbContext db, ICurrentUser currentUser)
         canCo.AddRange(troGiangIds);
         canCo = canCo.Distinct().ToList();
 
+        // TrangThaiNhanSu chứ không phải trạng thái TÀI KHOẢN: người dạy không nhất thiết
+        // phải đăng nhập được. Trước 07/09/2026 hai thứ này chung một cột nên vô hiệu hoá
+        // tài khoản một giáo viên là mất luôn khả năng phân công họ.
+        //
+        // Cũng kiểm ĐÚNG VAI TRÒ tại đây: trước đó việc lọc chỉ nằm ở frontend, nên gọi API
+        // trực tiếp là gán được một học viên làm giáo viên chính.
         var soHopLe = await db.NguoiDungs
             .CountAsync(u => canCo.Contains(u.Id)
-                             && u.TrangThai == TrangThaiNguoiDung.HoatDong, ct);
+                             && u.TrangThaiNhanSu == TrangThaiNhanSu.DangLamViec
+                             && (u.LoaiNguoiDung == LoaiNguoiDung.GiaoVien
+                                 || u.LoaiNguoiDung == LoaiNguoiDung.TroGiang), ct);
 
         if (soHopLe != canCo.Count) throw new AppException("NHAN_SU_KHONG_HOP_LE");
 

@@ -17,6 +17,10 @@ public interface IAppDbContext
 {
     DbSet<Tenant> Tenants { get; }
     DbSet<NguoiDung> NguoiDungs { get; }
+    DbSet<TaiKhoan> TaiKhoans { get; }
+    DbSet<HoSoGiaoVien> HoSoGiaoViens { get; }
+    DbSet<HoSoHocVien> HoSoHocViens { get; }
+    DbSet<HoSoNhanVien> HoSoNhanViens { get; }
 
     DbSet<Quyen> Quyens { get; }
     DbSet<QuyenChucNang> QuyenChucNangs { get; }

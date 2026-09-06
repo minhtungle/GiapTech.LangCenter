@@ -103,11 +103,16 @@ export default function LopHoc() {
   })
 
   // Danh sách người dùng để chọn giáo viên / trợ giảng / học viên.
+  //
+  // Lọc `DangLamViec` ngay ở server: người đã nghỉ hiện ra trong dropdown rồi mới bị backend
+  // từ chối là trải nghiệm tệ, và người dùng không hiểu vì sao. Họ VẪN được giữ trong các lớp
+  // cũ — chỉ không phân công vào lớp mới nữa.
   const { data: nguoiDungs } = useQuery({
-    queryKey: ['tai-khoan-ngan'],
+    queryKey: ['nguoi-dung-ngan'],
     queryFn: async () =>
-      (await api.get<KetQuaTrang<NguoiDungNgan>>('/tai-khoan', { params: { soDong: 200 } }))
-        .data.duLieu,
+      (await api.get<KetQuaTrang<NguoiDungNgan>>('/nguoi-dung', {
+        params: { soDong: 200, trangThaiNhanSu: 'DangLamViec' },
+      })).data.duLieu,
   })
 
   const dong = () => {

@@ -1,6 +1,6 @@
 # ERD — Mô hình dữ liệu
 
-**20 bảng**, PostgreSQL. Nội dung dưới đây khớp với schema thật (kiểm bằng
+**24 bảng**, PostgreSQL. Nội dung dưới đây khớp với schema thật (kiểm bằng
 `information_schema` sau khi áp toàn bộ migration), không phải bản thiết kế trên giấy.
 
 ## Nguyên tắc bắt buộc
@@ -30,14 +30,20 @@ Sinh tự động bởi `UseSnakeCaseNamingConvention` — xem
 ```mermaid
 erDiagram
     TENANT ||--o{ NGUOI_DUNG : "có"
+    TENANT ||--o{ TAI_KHOAN : "có"
     TENANT ||--o{ QUYEN : "có"
     TENANT ||--o{ LOP_HOC : "có"
     TENANT ||--o{ TAI_LIEU : "có"
 
-    NGUOI_DUNG }o--o{ QUYEN : "NGUOIDUNG_QUYEN"
+    NGUOI_DUNG ||--o| TAI_KHOAN : "đăng nhập 0..1"
+    NGUOI_DUNG ||--o| HO_SO_GIAO_VIEN : "hồ sơ 0..1"
+    NGUOI_DUNG ||--o| HO_SO_HOC_VIEN : "hồ sơ 0..1"
+    NGUOI_DUNG ||--o| HO_SO_NHAN_VIEN : "hồ sơ 0..1"
+
+    TAI_KHOAN }o--o{ QUYEN : "NGUOIDUNG_QUYEN"
     QUYEN ||--o{ QUYEN_CHUC_NANG : "chi tiết quyền"
-    NGUOI_DUNG ||--o{ REFRESH_TOKEN : "phiên"
-    NGUOI_DUNG ||--o{ TOKEN_DATLAI_MATKHAU : "đặt lại mật khẩu"
+    TAI_KHOAN ||--o{ REFRESH_TOKEN : "phiên"
+    TAI_KHOAN ||--o{ TOKEN_DATLAI_MATKHAU : "đặt lại mật khẩu"
 
     LOP_HOC ||--o{ LOP_HOC_HOC_VIEN : "ghi danh"
     LOP_HOC ||--o{ LOP_HOC_TRO_GIANG : "phân công"
@@ -66,17 +72,34 @@ erDiagram
 
 ## Chi tiết bảng
 
-### Nhóm nền tảng (7 bảng — kế thừa từ base)
+### Nhóm nền tảng (11 bảng)
+
+**Người và tài khoản là hai bảng riêng** (tách 07/09/2026). `NGUOI_DUNG` là bảng "con người",
+`TAI_KHOAN` là cách họ đăng nhập — xem [FR-03](../nghiep-vu/quan-tri-he-thong.md#fr-03--người-dùng-hồ-sơ-con-người).
 
 | Bảng | Vai trò | Ghi chú |
 |---|---|---|
 | `TENANT` | Trung tâm | `ma_trung_tam` 7 ký tự, duy nhất **toàn hệ thống**. `mui_gio` (mặc định `Asia/Ho_Chi_Minh`), `so_ngay_canh_bao_no_hoc_phi` (mặc định 14) |
-| `NGUOI_DUNG` | Tài khoản | `ho_ten` bắt buộc, `loai_nguoi_dung` **chỉ để lọc danh sách**, không dùng phân quyền |
+| `NGUOI_DUNG` | **Con người** | `ho_ten` bắt buộc, `loai_nguoi_dung` **chỉ để lọc và chọn hồ sơ**, không dùng phân quyền. `trang_thai_nhan_su` = còn thuộc trung tâm không. **12 khoá ngoại nghiệp vụ trỏ vào đây** |
+| `TAI_KHOAN` | **Đăng nhập** | `username`, `password_hash`, `phai_doi_mat_khau`, `trang_thai` = còn đăng nhập được không. `nguoi_dung_id` nullable (tài khoản kỹ thuật) |
+| `HO_SO_GIAO_VIEN` | Hồ sơ người dạy | Bằng cấp, chuyên môn, ngày vào làm. **Trợ giảng dùng chung** |
+| `HO_SO_HOC_VIEN` | Hồ sơ người học | Trường/lớp, tên và SĐT phụ huynh — trung tâm dạy trẻ em cần gọi được cho phụ huynh |
+| `HO_SO_NHAN_VIEN` | Hồ sơ vận hành | Chức vụ, phòng ban |
 | `QUYEN` | Nhóm quyền | Seeder tạo sẵn 4 nhóm: Quản trị viên / Giáo viên / Trợ giảng / Học viên |
 | `QUYEN_CHUC_NANG` | Chi tiết quyền | `(quyen_id, ten_chuc_nang, hanh_dong)` — nguồn của phân quyền động |
-| `NGUOIDUNG_QUYEN` | Gán nhóm quyền | Nhiều–nhiều |
+| `NGUOIDUNG_QUYEN` | Gán nhóm quyền | Nhiều–nhiều, gán cho **TÀI KHOẢN** (`tai_khoan_id`) chứ không cho người |
 | `REFRESH_TOKEN` | Phiên đăng nhập | Xoay vòng, phát hiện tái sử dụng |
 | `TOKEN_DATLAI_MATKHAU` | Quên mật khẩu | Hash, hạn 30 phút, dùng một lần |
+
+**Hai cột trạng thái, đừng nhầm:**
+
+| Cột | Câu hỏi | Ảnh hưởng |
+|---|---|---|
+| `NGUOI_DUNG.trang_thai_nhan_su` | Còn làm ở trung tâm không? | Chặn phân công vào lớp **mới** |
+| `TAI_KHOAN.trang_thai` | Còn đăng nhập được không? | Chặn đăng nhập, **không đụng dữ liệu** |
+
+Trước 07/09/2026 một cột gánh cả hai, nên vô hiệu hoá tài khoản một giáo viên đã nghỉ thì
+không phân công được họ vào lớp cũ nữa.
 
 ### Nhóm lớp học (3 bảng)
 
@@ -115,7 +138,9 @@ erDiagram
 | Ràng buộc | Bảng | Lý do |
 |---|---|---|
 | `UNIQUE(ma_trung_tam)` | `TENANT` | Mã 7 ký tự sinh tự động, duy nhất **toàn hệ thống** — xem [FR-01](../nghiep-vu/dang-nhap.md#mã-đội) |
-| `UNIQUE(tenant_id, username)` | `NGUOI_DUNG` | Username duy nhất **trong phạm vi trung tâm**; hai trung tâm đều có thể có `admin` |
+| `UNIQUE(tenant_id, username)` | `TAI_KHOAN` | Username duy nhất **trong phạm vi trung tâm**; hai trung tâm đều có thể có `admin` |
+| `UNIQUE(nguoi_dung_id) WHERE NOT NULL` | `TAI_KHOAN` | Một người tối đa một tài khoản — hai tài khoản cùng người thì không biết quyền nào thắng |
+| `UNIQUE(nguoi_dung_id)` | `HO_SO_*` | Quan hệ 1–1 với người |
 | `UNIQUE(tenant_id, ten) WHERE trang_thai <> 0` | `LOP_HOC` | Tên lớp duy nhất trong trung tâm, **nhưng lớp nháp không chiếm tên** — nháp bỏ ngang không được chặn người khác ba tháng sau |
 | `UNIQUE(lop_hoc_id, hoc_vien_id)` | `LOP_HOC_HOC_VIEN` | Ghi danh một lần |
 | `UNIQUE(lop_hoc_id, tro_giang_id)` | `LOP_HOC_TRO_GIANG` | Phân công một lần |
@@ -141,13 +166,17 @@ Các UNIQUE trên bảng con **không kèm `tenant_id`**: cột đầu đã là 
 | `KHOAN_THU_HOC_PHI → NGUOI_DUNG` (người thu) | SetNull | Cùng lý do |
 | `LOP_HOC → LOP_HOC` (nhân bản từ) | SetNull | Chỉ là dấu vết nguồn gốc; bản sao là lớp thật đang chạy |
 | `TEP_DINH_KEM → *` | Cascade | Tệp đi theo nội dung chứa nó |
+| `TAI_KHOAN → NGUOI_DUNG` | SetNull | Xoá người để lại tài khoản mồ côi chứ không xoá kèm — còn dấu vết ai từng đăng nhập |
+| `HO_SO_* → NGUOI_DUNG` | Cascade | Hồ sơ là một phần của người, vô nghĩa khi đứng riêng |
+| `NGUOIDUNG_QUYEN`, `REFRESH_TOKEN`, `TOKEN_DATLAI_MATKHAU → TAI_KHOAN` | Cascade | Quyền và phiên chết cùng tài khoản |
 
 Vì Restrict chồng Restrict, UI đưa **"Huỷ lớp"** làm hành động mặc định; xoá cứng chỉ cho lớp
 nháp chưa có buổi học.
 
 ## Denormalize tenant_id xuống bảng con
 
-Mọi bảng chi tiết (`QUYEN_CHUC_NANG`, `NGUOIDUNG_QUYEN`, `LOP_HOC_HOC_VIEN`,
+Mọi bảng chi tiết (`QUYEN_CHUC_NANG`, `NGUOIDUNG_QUYEN`, `HO_SO_GIAO_VIEN`,
+`HO_SO_HOC_VIEN`, `HO_SO_NHAN_VIEN`, `LOP_HOC_HOC_VIEN`,
 `LOP_HOC_TRO_GIANG`, `BUOI_HOC`, `DIEM_DANH`, `BAI_TAP`, `BAI_NOP`, `BAI_LAM`,
 `TAI_LIEU_LOP_HOC`, `TEP_DINH_KEM`, `KHOAN_THU_HOC_PHI`) **mang cột `tenant_id` riêng** thay vì
 chỉ kế thừa phạm vi qua bảng cha.

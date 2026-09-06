@@ -19,7 +19,18 @@ public interface ICurrentTenant
 /// <summary>Người dùng của request hiện tại.</summary>
 public interface ICurrentUser
 {
+    /// <summary>
+    /// Id NGƯỜI (`NGUOI_DUNG.id`) — thứ mọi khoá ngoại nghiệp vụ trỏ tới. Null khi tài khoản
+    /// không gắn con người nào.
+    /// </summary>
     Guid? UserId { get; }
+
+    /// <summary>
+    /// Id TÀI KHOẢN (`TAI_KHOAN.id`) — chỉ dùng cho thao tác trên chính tài khoản (đổi mật
+    /// khẩu, tự vô hiệu hoá). Null với token phát hành trước 07/09/2026.
+    /// </summary>
+    Guid? TaiKhoanId { get; }
+
     string? Username { get; }
     bool DaXacThuc { get; }
 }

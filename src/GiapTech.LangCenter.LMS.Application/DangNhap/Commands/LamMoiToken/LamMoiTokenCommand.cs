@@ -31,7 +31,7 @@ public class LamMoiTokenHandler(
 
         var token = await db.RefreshTokens
             .IgnoreQueryFilters() // chưa có access token nên context chưa có tenant
-            .Include(r => r.NguoiDung)
+            .Include(r => r.TaiKhoan)
             .FirstOrDefaultAsync(r => r.TokenHash == hash, ct);
 
         if (token is null)
@@ -44,11 +44,11 @@ public class LamMoiTokenHandler(
         {
             logger.LogWarning(
                 "Phát hiện tái sử dụng refresh token đã thu hồi của {NguoiDung} — thu hồi toàn bộ phiên",
-                token.NguoiDungId);
+                token.TaiKhoanId);
 
             var tatCa = await db.RefreshTokens
                 .IgnoreQueryFilters()
-                .Where(r => r.NguoiDungId == token.NguoiDungId && r.ThuHoiLuc == null)
+                .Where(r => r.TaiKhoanId == token.TaiKhoanId && r.ThuHoiLuc == null)
                 .ToListAsync(ct);
 
             foreach (var r in tatCa)
@@ -61,7 +61,7 @@ public class LamMoiTokenHandler(
         if (!token.ConHieuLuc(bayGio))
             throw new AppException(MaLoi.TokenDatLaiKhongHopLe, "Refresh token hết hạn");
 
-        if (token.NguoiDung.TrangThai == TrangThaiNguoiDung.VoHieuHoa)
+        if (token.TaiKhoan.TrangThai == TrangThaiNguoiDung.VoHieuHoa)
             throw new AppException(MaLoi.TaiKhoanBiVoHieuHoa);
 
         var tenant = await db.Tenants
@@ -73,12 +73,13 @@ public class LamMoiTokenHandler(
         token.ThuHoiLuc = bayGio;
 
         var capMoi = tokenService.PhatHanh(new ThongTinToken(
-            tenant.Id, tenant.MaTrungTam, tenant.TenTrungTam, token.NguoiDung.Id, token.NguoiDung.Username));
+            tenant.Id, tenant.MaTrungTam, tenant.TenTrungTam,
+            token.TaiKhoan.NguoiDungId, token.TaiKhoan.Id, token.TaiKhoan.Username));
 
         db.RefreshTokens.Add(new Domain.Entities.RefreshToken
         {
             TenantId = tenant.Id,
-            NguoiDungId = token.NguoiDungId,
+            TaiKhoanId = token.TaiKhoanId,
             TokenHash = BamToken.Bam(capMoi.RefreshToken),
             HetHan = bayGio.AddDays(TokenService_HanRefreshNgay)
         });
@@ -87,7 +88,7 @@ public class LamMoiTokenHandler(
 
         return new DangNhapResult(
             capMoi.AccessToken, capMoi.RefreshToken, capMoi.HetHan,
-            token.NguoiDung.PhaiDoiMatKhau);
+            token.TaiKhoan.PhaiDoiMatKhau);
     }
 
     /// <summary>Hạn refresh token (ngày) — dài hơn access token nhiều để người dùng không phải

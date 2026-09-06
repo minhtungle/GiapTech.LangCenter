@@ -18,10 +18,13 @@ public class PhamViLopHoc(IQuyenService quyenService, ICurrentTenant tenant, ICu
 {
     public async Task<bool> ThayMoiLop(HanhDong hanhDong, CancellationToken ct)
     {
-        if (tenant.TenantId is not { } tid || currentUser.UserId is not { } uid) return false;
+        // TaiKhoanId cho việc TRA QUYỀN (quyền gán cho tài khoản), UserId cho việc LỌC DỮ
+        // LIỆU (khoá ngoại trỏ tới người). Lẫn hai thứ này sẽ trả về rỗng một cách im lặng.
+        if (tenant.TenantId is not { } tid || currentUser.TaiKhoanId is not { } tkId)
+            return false;
 
         return await quyenService.CoQuyenAsync(
-            tid, uid, ChucNang.LopHocToanTrungTam, hanhDong, ct);
+            tid, tkId, ChucNang.LopHocToanTrungTam, hanhDong, ct);
     }
 
     public async Task<IQueryable<LopHoc>> LocTheoPhamVi(

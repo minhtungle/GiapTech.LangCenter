@@ -47,22 +47,39 @@ public class TenantSeeder(AppDbContext db, IPasswordHasher hasher, ICurrentTenan
         ThemNhomQuyen(tenant.Id, NhomQuyenMacDinh.HocVien,
             "Chỉ xem và nộp bài của chính mình", NhomQuyenMacDinh.CuaHocVien);
 
-        var admin = new NguoiDung
+        // Hai bản ghi: CON NGƯỜI và TÀI KHOẢN của họ (tách từ 07/09/2026).
+        var nguoiAdmin = new NguoiDung
+        {
+            TenantId = tenant.Id,
+            HoTen = "Quản trị viên",
+            LoaiNguoiDung = LoaiNguoiDung.NhanVien,
+            TrangThaiNhanSu = TrangThaiNhanSu.DangLamViec
+        };
+        db.NguoiDungs.Add(nguoiAdmin);
+
+        db.HoSoNhanViens.Add(new HoSoNhanVien
+        {
+            TenantId = tenant.Id,
+            NguoiDungId = nguoiAdmin.Id,
+            ChucVu = "Quản trị hệ thống"
+        });
+
+        var admin = new TaiKhoan
         {
             TenantId = tenant.Id,
             Username = "admin",
-            HoTen = "Quản trị viên",
             PasswordHash = hasher.Bam(matKhauAdmin),
+            NguoiDungId = nguoiAdmin.Id,
             // Mật khẩu mặc định ai cũng biết → bắt buộc đổi trước khi vào hệ thống (FR-01).
             PhaiDoiMatKhau = true,
             TrangThai = TrangThaiNguoiDung.HoatDong
         };
-        db.NguoiDungs.Add(admin);
+        db.TaiKhoans.Add(admin);
 
         db.NguoiDungQuyens.Add(new NguoiDungQuyen
         {
             TenantId = tenant.Id,
-            NguoiDungId = admin.Id,
+            TaiKhoanId = admin.Id,
             QuyenId = quyenQuanTri.Id
         });
 

@@ -50,22 +50,27 @@ public class DangNhapHandler(
         if (tenant is null)
             throw new AppException(MaLoi.DangNhapThatBai, $"Không có tenant {maTrungTam}");
 
-        var nguoiDung = await db.NguoiDungs
+        var taiKhoan = await db.TaiKhoans
             .IgnoreQueryFilters() // chưa có tenant trong context ở bước đăng nhập
             .FirstOrDefaultAsync(
                 u => u.TenantId == tenant.Id && u.Username == request.Username, ct);
 
-        if (nguoiDung is null)
+        if (taiKhoan is null)
             throw new AppException(MaLoi.DangNhapThatBai, $"Không có user {request.Username}");
 
-        if (!hasher.KiemTra(nguoiDung.PasswordHash, request.MatKhau))
+        if (!hasher.KiemTra(taiKhoan.PasswordHash, request.MatKhau))
             throw new AppException(MaLoi.DangNhapThatBai, "Sai mật khẩu");
 
-        if (nguoiDung.TrangThai == TrangThaiNguoiDung.VoHieuHoa)
+        if (taiKhoan.TrangThai == TrangThaiNguoiDung.VoHieuHoa)
             throw new AppException(MaLoi.TaiKhoanBiVoHieuHoa);
 
+        // KHÔNG chặn theo TrangThaiNhanSu: người đã nghỉ mà tài khoản còn hiệu lực vẫn đăng
+        // nhập được (kế toán cũ vào tra sổ, giáo viên nghỉ thai sản xem lịch). Muốn chặn thì
+        // vô hiệu hoá tài khoản — đó mới là cột nói về đăng nhập.
+
         var token = tokenService.PhatHanh(new ThongTinToken(
-            tenant.Id, tenant.MaTrungTam, tenant.TenTrungTam, nguoiDung.Id, nguoiDung.Username));
+            tenant.Id, tenant.MaTrungTam, tenant.TenTrungTam,
+            taiKhoan.NguoiDungId, taiKhoan.Id, taiKhoan.Username));
 
         // Lưu HASH của refresh token, không lưu token thô — người đọc được DB sẽ không mạo
         // danh được ai (cùng lý do với password_hash).
@@ -74,7 +79,7 @@ public class DangNhapHandler(
         db.RefreshTokens.Add(new Domain.Entities.RefreshToken
         {
             TenantId = tenant.Id,
-            NguoiDungId = nguoiDung.Id,
+            TaiKhoanId = taiKhoan.Id,
             TokenHash = QuenMatKhau.BamToken.Bam(token.RefreshToken),
             HetHan = DateTimeOffset.UtcNow.AddDays(
                 LamMoiToken.LamMoiTokenHandler.TokenService_HanRefreshNgay)
@@ -83,6 +88,6 @@ public class DangNhapHandler(
         await db.SaveChangesAsync(ct);
 
         return new DangNhapResult(
-            token.AccessToken, token.RefreshToken, token.HetHan, nguoiDung.PhaiDoiMatKhau);
+            token.AccessToken, token.RefreshToken, token.HetHan, taiKhoan.PhaiDoiMatKhau);
     }
 }

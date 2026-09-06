@@ -9,7 +9,7 @@ ký là 1 tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`
 | # | Module | Nội dung | Mã FR |
 |---|---|---|---|
 | 1 | [Đăng nhập](./nghiep-vu/dang-nhap.md) | Xác thực theo trung tâm, quên mật khẩu, refresh token có xoay vòng | FR-01 → FR-02 |
-| 2 | [Quản trị hệ thống](./nghiep-vu/quan-tri-he-thong.md) | Tài khoản, hồ sơ, phân quyền động theo chức năng/thao tác, thiết lập chung | FR-03 → FR-06 |
+| 2 | [Quản trị hệ thống](./nghiep-vu/quan-tri-he-thong.md) | **Người dùng** (hồ sơ con người + hồ sơ riêng theo vai trò) tách khỏi **tài khoản** (đăng nhập); phân quyền động theo chức năng/thao tác; thiết lập chung | FR-03 → FR-06 |
 | 3 | [Lớp học](./nghiep-vu/lop-hoc.md) | Vòng đời lớp (nháp → sắp khai giảng → đang học → kết thúc), phân công giáo viên/trợ giảng, ghi danh học viên với học phí riêng từng người | FR-07 → FR-08 |
 | 4 | [Buổi học & Điểm danh](./nghiep-vu/buoi-hoc-diem-danh.md) | Sinh lịch tự động theo thứ trong tuần, điểm danh **2 nguồn** (học viên tự khai + giáo viên chốt) | FR-09 → FR-10 |
 | 5 | [Học liệu](./nghiep-vu/hoc-lieu.md) · [Học phí](./nghiep-vu/hoc-phi.md) | Bài tập (nộp nhiều lần, giữ lịch sử), tài liệu, tệp đính kèm; sổ thu và công nợ | FR-11 → FR-14 |
@@ -30,12 +30,16 @@ Vai trò là **nhóm quyền có sẵn**, không phải enum cứng trong code.
 1. **Cách ly tenant** là quy tắc số một — [multi-tenant.md](./backend/multi-tenant.md).
 2. **Phân quyền đọc động từ DB**, không dùng role cố định —
    [phan-quyen-dong.md](./backend/phan-quyen-dong.md).
-3. **Phạm vi bên trong tenant là tầng riêng.** `[RequirePermission]` chỉ gác cửa endpoint;
+3. **Người ≠ tài khoản.** `NGUOI_DUNG` giữ con người và sống lâu hơn `TAI_KHOAN`. Hai cột
+   trạng thái riêng: `trang_thai_nhan_su` (còn làm không) và `trang_thai` của tài khoản (còn
+   đăng nhập được không). Tra quyền dùng **id tài khoản**; khoá ngoại nghiệp vụ dùng **id
+   người** — lẫn hai thứ này sẽ trả rỗng một cách im lặng.
+4. **Phạm vi bên trong tenant là tầng riêng.** `[RequirePermission]` chỉ gác cửa endpoint;
    Query Filter chỉ lọc tenant. "Chỉ lớp mình dạy" và "chỉ sổ học phí của mình" là **hai tầng
    khác nhau** (`IPhamViLopHoc`, `IPhamViHocPhi`) — gộp chúng là mở sổ thu cho mọi giáo viên.
-4. **Mọi thời điểm là `DateTimeOffset` UTC**; giờ địa phương suy từ `TENANT.mui_gio` khi hiển
+5. **Mọi thời điểm là `DateTimeOffset` UTC**; giờ địa phương suy từ `TENANT.mui_gio` khi hiển
    thị. Không lưu cột "ngày" tách rời — nó sẽ lệch khi trung tâm đổi múi giờ.
-5. **API trả mã lỗi**, frontend dịch qua `react-i18next` —
+6. **API trả mã lỗi**, frontend dịch qua `react-i18next` —
    [cqrs-mediatr.md](./backend/cqrs-mediatr.md#trả-lỗi).
 
 ## Tiến độ

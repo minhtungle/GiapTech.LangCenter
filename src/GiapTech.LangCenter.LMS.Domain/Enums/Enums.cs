@@ -1,10 +1,29 @@
 namespace GiapTech.LangCenter.LMS.Domain.Enums;
 
 /// <summary>Trạng thái tài khoản đăng nhập.</summary>
+/// <summary>
+/// Trạng thái TÀI KHOẢN — còn đăng nhập được không.
+///
+/// Đừng nhầm với <see cref="TrangThaiNhanSu"/>: vô hiệu hoá tài khoản của một giáo viên đã
+/// nghỉ KHÔNG có nghĩa họ biến mất khỏi lịch sử lớp học.
+/// </summary>
 public enum TrangThaiNguoiDung
 {
     HoatDong = 0,
     VoHieuHoa = 1
+}
+
+/// <summary>
+/// Trạng thái NHÂN SỰ — người này còn thuộc trung tâm không.
+///
+/// Tách khỏi <see cref="TrangThaiNguoiDung"/> vì hai câu hỏi khác nhau. Trước 07/09/2026 chỉ
+/// có một cột gánh cả hai, nên vô hiệu hoá tài khoản giáo viên đã nghỉ thì không phân công
+/// được họ vào lớp cũ nữa.
+/// </summary>
+public enum TrangThaiNhanSu
+{
+    DangLamViec = 0,
+    DaNghi = 1
 }
 
 /// <summary>

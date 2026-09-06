@@ -10,8 +10,8 @@ namespace GiapTech.LangCenter.LMS.Domain.Entities;
 /// </summary>
 public class RefreshToken : TenantEntity
 {
-    public Guid NguoiDungId { get; set; }
-    public NguoiDung NguoiDung { get; set; } = null!;
+    public Guid TaiKhoanId { get; set; }
+    public TaiKhoan TaiKhoan { get; set; } = null!;
 
     /// <summary>SHA-256 của token thô. Token thô chỉ tồn tại trong response trả về client.</summary>
     public string TokenHash { get; set; } = null!;
@@ -30,8 +30,8 @@ public class RefreshToken : TenantEntity
 /// </summary>
 public class TokenDatLaiMatKhau : TenantEntity
 {
-    public Guid NguoiDungId { get; set; }
-    public NguoiDung NguoiDung { get; set; } = null!;
+    public Guid TaiKhoanId { get; set; }
+    public TaiKhoan TaiKhoan { get; set; } = null!;
 
     public string TokenHash { get; set; } = null!;
     public DateTimeOffset HetHan { get; set; }
