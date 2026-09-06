@@ -10,6 +10,7 @@ import {
 import { Modal } from '@/components/ui/Modal'
 import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import { PhanTrang } from '@/components/ui/PhanTrang'
+import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 
 type PhuongThuc = 'TienMat' | 'ChuyenKhoan' | 'Khac'
@@ -66,12 +67,13 @@ function ngayChoInput(iso: string) {
  * Học viên vào màn này thấy đúng sổ của mình — API lọc theo phạm vi, frontend không cần
  * biết vai trò để giấu bớt.
  */
-export default function HocPhi() {
+export default function HocPhi({ lopHocId }: { lopHocId?: string } = {}) {
   const { t } = useTranslation()
   const qc = useQueryClient()
 
   const [tab, setTab] = useState<'cong-no' | 'so-thu'>('cong-no')
-  const [lopLoc, setLopLoc] = useState<string | null>(null)
+  // Nhúng trong view chi tiết lớp thì lớp đã cố định — không cho đổi, và ẩn ô lọc lớp.
+  const [lopLoc, setLopLoc] = useState<string | null>(lopHocId ?? null)
   const [chiConNo, setChiConNo] = useState(true)
 
   const [trang, setTrang] = useState(1)
@@ -201,7 +203,7 @@ export default function HocPhi() {
         <Button
           onClick={() => {
             setDangSua(null)
-            setLopChon(lopLoc)
+            setLopChon(lopHocId ?? lopLoc)
             setHocVienChon(null)
             setPhuongThuc('TienMat')
             setMoForm(true)
@@ -215,19 +217,21 @@ export default function HocPhi() {
       <Card>
         <CardContent className="space-y-4 pt-4">
           <div className="flex flex-wrap items-end gap-3">
-            <div className="min-w-[16rem] flex-1">
-              <Label htmlFor="loc-lop">{t('hocPhi.lop')}</Label>
-              <SelectTimKiem
-                id="loc-lop"
-                luaChon={luaChonLop}
-                giaTri={lopLoc}
-                onDoi={(v) => {
-                  setLopLoc(v)
-                  setTrang(1)
-                }}
-                placeholder={t('hocPhi.tatCaLop')}
-              />
-            </div>
+            {!lopHocId && (
+              <div className="min-w-[16rem] flex-1">
+                <Label htmlFor="loc-lop">{t('hocPhi.lop')}</Label>
+                <SelectTimKiem
+                  id="loc-lop"
+                  luaChon={luaChonLop}
+                  giaTri={lopLoc}
+                  onDoi={(v) => {
+                    setLopLoc(v)
+                    setTrang(1)
+                  }}
+                  placeholder={t('hocPhi.tatCaLop')}
+                />
+              </div>
+            )}
 
             {tab === 'cong-no' && (
               <label className="flex h-9 items-center gap-2 text-sm">
@@ -317,28 +321,29 @@ export default function HocPhi() {
                       <Td className="text-muted-foreground">{k.soPhieu ?? '—'}</Td>
                       <Td className="text-muted-foreground">{k.tenNguoiThu ?? '—'}</Td>
                       <Td>
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            aria-label={t('chung.sua')}
-                            onClick={() => {
-                              setDangSua(k)
-                              setPhuongThuc(k.phuongThuc)
-                              setMaLoi(null)
-                              setMoForm(true)
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            aria-label={t('chung.xoa')}
-                            onClick={() => setXoaCho(k)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                        <div className="flex justify-end">
+                          <MenuThaoTac
+                            nhanMo={t('chung.thaoTac')}
+                            muc={[
+                              {
+                                nhan: t('chung.sua'),
+                                icon: Pencil,
+                                onChon: () => {
+                                  setDangSua(k)
+                                  setPhuongThuc(k.phuongThuc)
+                                  setMaLoi(null)
+                                  setMoForm(true)
+                                },
+                              },
+                              {
+                                nhan: t('chung.xoa'),
+                                icon: Trash2,
+                                nguyHiem: true,
+                                ngatNhom: true,
+                                onChon: () => setXoaCho(k),
+                              },
+                            ]}
+                          />
                         </div>
                       </Td>
                     </tr>

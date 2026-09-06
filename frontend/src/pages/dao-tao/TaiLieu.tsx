@@ -34,7 +34,7 @@ interface LopNgan {
 }
 
 /** FR-13 — tài liệu giảng dạy. */
-export default function TaiLieu() {
+export default function TaiLieu({ lopHocId }: { lopHocId?: string } = {}) {
   const { t } = useTranslation()
   const qc = useQueryClient()
 
@@ -49,10 +49,10 @@ export default function TaiLieu() {
   const [xoaCho, setXoaCho] = useState<TaiLieuDto | null>(null)
 
   const { data: kq = trangRong<TaiLieuDto>(), isLoading } = useQuery({
-    queryKey: ['tai-lieu', timKiem, trang, soDong],
+    queryKey: ['tai-lieu', lopHocId ?? null, timKiem, trang, soDong],
     queryFn: async () =>
       (await api.get<KetQuaTrang<TaiLieuDto>>('/tai-lieu', {
-        params: { timKiem: timKiem || undefined, trang, soDong },
+        params: { timKiem: timKiem || undefined, lopHocId, trang, soDong },
       })).data,
   })
 

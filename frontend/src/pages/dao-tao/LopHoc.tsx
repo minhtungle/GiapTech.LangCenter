@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CalendarDays, ClipboardList, Pencil, Plus, Trash2, Users, X } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { CalendarDays, ClipboardList, Eye, Pencil, Plus, Trash2, Users, X } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang, type ThamSoTrang } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
@@ -10,65 +11,17 @@ import {
 import { Modal } from '@/components/ui/Modal'
 import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import { PhanTrang } from '@/components/ui/PhanTrang'
+import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
-import { LichVaDiemDanh } from './LichVaDiemDanh'
-import { BaiTapCuaLop } from './BaiTapCuaLop'
-
-type HinhThucHoc = 'ChuaChon' | 'Online' | 'Offline' | 'KetHop'
-type TrangThaiLopHoc = 'Nhap' | 'SapKhaiGiang' | 'DangHoc' | 'DaKetThuc' | 'DaHuy'
-
-const CAC_HINH_THUC: HinhThucHoc[] = ['Online', 'Offline', 'KetHop']
-
-interface LopHocDto {
-  id: string
-  ten: string
-  giaoVienChinhId: string
-  tenGiaoVienChinh: string
-  hinhThuc: HinhThucHoc
-  phongHoc: string | null
-  linkHoc: string | null
-  hocPhi: number | null
-  sucChuaToiDa: number | null
-  ngayKhaiGiang: string | null
-  ngayKetThuc: string | null
-  trangThai: TrangThaiLopHoc
-  ghiChu: string | null
-  troGiangIds: string[]
-  tenTroGiangs: string[]
-  soHocVien: number
-}
-
-interface NguoiDungNgan {
-  id: string
-  hoTen: string
-  email: string | null
-  loaiNguoiDung: string
-}
-
-interface HocVienTrongLop {
-  id: string
-  hocVienId: string
-  hoTen: string
-  email: string | null
-  soDienThoai: string | null
-  ngayVaoLop: string
-  trangThai: string
-  hocPhiApDung: number
-}
-
-const tienVN = (n: number | null) =>
-  n === null ? '—' : n.toLocaleString('vi-VN') + '₫'
-
-const ngayVN = (s: string | null) =>
-  s ? new Date(s).toLocaleDateString('vi-VN') : '—'
-
-/** Màu badge theo trạng thái — nháp mờ, đang học nổi, đã huỷ đỏ. */
-const mauTrangThai = (tt: TrangThaiLopHoc) =>
-  tt === 'DangHoc' ? 'win' : tt === 'DaHuy' ? 'lose' : tt === 'Nhap' ? 'draw' : 'accent'
+import {
+  CAC_HINH_THUC, tienVN, ngayVN, mauTrangThai,
+  type HinhThucHoc, type LopHocDto, type NguoiDungNgan,
+} from './lopHocTypes'
 
 /** FR-07 — quản lý lớp học. */
 export default function LopHoc() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const qc = useQueryClient()
 
   const [trang, setTrang] = useState(1)
@@ -86,9 +39,6 @@ export default function LopHoc() {
 
   const [xoaCho, setXoaCho] = useState<LopHocDto | null>(null)
   const [huyCho, setHuyCho] = useState<LopHocDto | null>(null)
-  const [lopXemHocVien, setLopXemHocVien] = useState<LopHocDto | null>(null)
-  const [lopXemLich, setLopXemLich] = useState<LopHocDto | null>(null)
-  const [lopXemBaiTap, setLopXemBaiTap] = useState<LopHocDto | null>(null)
 
   const thamSo: ThamSoTrang = { trang, soDong }
 
@@ -303,7 +253,16 @@ export default function LopHoc() {
                 <tbody>
                   {data.map((l) => (
                     <tr key={l.id} className="hover:bg-muted/40">
-                      <Td className="font-medium">{l.ten}</Td>
+                      <Td className="font-medium">
+                        {/* Bấm thẳng tên lớp là thao tác tự nhiên nhất — menu chỉ để dành
+                            cho những việc không đoán được. */}
+                        <Link
+                          to={`/lop-hoc/${l.id}`}
+                          className="hover:text-primary hover:underline"
+                        >
+                          {l.ten}
+                        </Link>
+                      </Td>
                       <Td className="text-muted-foreground">{l.tenGiaoVienChinh}</Td>
                       <Td className="text-muted-foreground">
                         {t(`hinhThucHoc.${l.hinhThuc}`)}
@@ -320,58 +279,52 @@ export default function LopHoc() {
                         </Badge>
                       </Td>
                       <Td>
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            title={t('buoiHoc.lich')}
-                            onClick={() => setLopXemLich(l)}
-                          >
-                            <CalendarDays className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            title={t('hocLieu.baiTap')}
-                            onClick={() => setLopXemBaiTap(l)}
-                          >
-                            <ClipboardList className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            title={t('lopHoc.hocVien')}
-                            onClick={() => setLopXemHocVien(l)}
-                          >
-                            <Users className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            title={t('chung.sua')}
-                            onClick={() => moSua(l)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          {l.trangThai === 'Nhap' ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title={t('chung.xoa')}
-                              onClick={() => setXoaCho(l)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          ) : l.trangThai !== 'DaHuy' ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title={t('lopHoc.huyLop')}
-                              onClick={() => setHuyCho(l)}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          ) : null}
+                        <div className="flex justify-end">
+                          <MenuThaoTac
+                            nhanMo={t('chung.thaoTac')}
+                            muc={[
+                              {
+                                nhan: t('lopHoc.xemChiTiet'),
+                                icon: Eye,
+                                onChon: () => navigate(`/lop-hoc/${l.id}`),
+                              },
+                              {
+                                nhan: t('lopHoc.hocVien'),
+                                icon: Users,
+                                onChon: () => navigate(`/lop-hoc/${l.id}?tab=hoc-vien`),
+                              },
+                              {
+                                nhan: t('buoiHoc.lich'),
+                                icon: CalendarDays,
+                                onChon: () => navigate(`/lop-hoc/${l.id}?tab=lich`),
+                              },
+                              {
+                                nhan: t('hocLieu.baiTap'),
+                                icon: ClipboardList,
+                                onChon: () => navigate(`/lop-hoc/${l.id}?tab=bai-tap`),
+                              },
+                              {
+                                nhan: t('chung.sua'),
+                                icon: Pencil,
+                                ngatNhom: true,
+                                onChon: () => moSua(l),
+                              },
+                              {
+                                nhan: t('chung.xoa'),
+                                icon: Trash2,
+                                nguyHiem: true,
+                                an: l.trangThai !== 'Nhap',
+                                onChon: () => setXoaCho(l),
+                              },
+                              {
+                                nhan: t('lopHoc.huyLop'),
+                                icon: X,
+                                nguyHiem: true,
+                                an: l.trangThai === 'Nhap' || l.trangThai === 'DaHuy',
+                                onChon: () => setHuyCho(l),
+                              },
+                            ]}
+                          />
                         </div>
                       </Td>
                     </tr>
@@ -526,30 +479,6 @@ export default function LopHoc() {
         </form>
       </Modal>
 
-      {lopXemLich && (
-        <LichVaDiemDanh
-          lopHocId={lopXemLich.id}
-          tenLop={lopXemLich.ten}
-          onDong={() => setLopXemLich(null)}
-        />
-      )}
-
-      {lopXemBaiTap && (
-        <BaiTapCuaLop
-          lopHocId={lopXemBaiTap.id}
-          tenLop={lopXemBaiTap.ten}
-          onDong={() => setLopXemBaiTap(null)}
-        />
-      )}
-
-      {lopXemHocVien && (
-        <HocVienCuaLop
-          lop={lopXemHocVien}
-          nguoiDungs={nguoiDungs ?? []}
-          onDong={() => setLopXemHocVien(null)}
-        />
-      )}
-
       <HopXacNhan
         mo={xoaCho !== null}
         tieuDe={t('chung.xacNhanXoa')}
@@ -566,126 +495,5 @@ export default function LopHoc() {
         onDongY={() => huyCho && huy.mutate(huyCho.id)}
       />
     </div>
-  )
-}
-
-/** Bước 3 của wizard, cũng dùng lại làm màn quản lý học viên của lớp. */
-function HocVienCuaLop({
-  lop,
-  nguoiDungs,
-  onDong,
-}: {
-  lop: LopHocDto
-  nguoiDungs: NguoiDungNgan[]
-  onDong: () => void
-}) {
-  const { t } = useTranslation()
-  const qc = useQueryClient()
-  const [chon, setChon] = useState<string[]>([])
-  const [maLoi, setMaLoi] = useState<string | null>(null)
-
-  const { data: hocViens = [] } = useQuery({
-    queryKey: ['lop-hoc', lop.id, 'hoc-vien'],
-    queryFn: async () =>
-      (await api.get<HocVienTrongLop[]>(`/lop-hoc/${lop.id}/hoc-vien`)).data,
-  })
-
-  const lamMoi = () => {
-    void qc.invalidateQueries({ queryKey: ['lop-hoc', lop.id, 'hoc-vien'] })
-    void qc.invalidateQueries({ queryKey: ['lop-hoc'] })
-  }
-
-  const them = useMutation({
-    mutationFn: () => api.post(`/lop-hoc/${lop.id}/hoc-vien`, { hocVienIds: chon }),
-    onSuccess: () => {
-      setChon([])
-      setMaLoi(null)
-      lamMoi()
-    },
-    onError: (e) => setMaLoi(layMaLoi(e)),
-  })
-
-  const go = useMutation({
-    mutationFn: (hocVienId: string) =>
-      api.delete(`/lop-hoc/${lop.id}/hoc-vien/${hocVienId}`),
-    onSuccess: lamMoi,
-    onError: (e) => setMaLoi(layMaLoi(e)),
-  })
-
-  const daTrongLop = new Set(hocViens.map((h) => h.hocVienId))
-  const luaChon = nguoiDungs
-    .filter((u) => u.loaiNguoiDung === 'HocVien' && !daTrongLop.has(u.id))
-    .map((u) => ({ giaTri: u.id, nhan: u.hoTen, phu: u.email ?? undefined }))
-
-  return (
-    <Modal mo onDong={onDong} tieuDe={`${t('lopHoc.hocVien')} — ${lop.ten}`}>
-      <div className="grid gap-4">
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="flex min-w-64 flex-1 flex-col gap-1.5">
-            <Label htmlFor="themHocVien">{t('lopHoc.themHocVien')}</Label>
-            <SelectTimKiemNhieu
-              id="themHocVien"
-              luaChon={luaChon}
-              giaTri={chon}
-              onDoi={setChon}
-              placeholder={t('lopHoc.timHocVien')}
-              placeholderTimKiem={t('lopHoc.timHocVien')}
-            />
-          </div>
-          <Button disabled={chon.length === 0 || them.isPending} onClick={() => them.mutate()}>
-            {t('chung.them')}
-          </Button>
-        </div>
-
-        <p className="text-xs text-muted-foreground">
-          {lop.sucChuaToiDa === null
-            ? t('lopHoc.daChon', { soLuong: hocViens.length })
-            : t('lopHoc.sucChuaConLai', {
-                daChon: hocViens.length,
-                toiDa: lop.sucChuaToiDa,
-              })}
-        </p>
-
-        {maLoi && (
-          <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>
-        )}
-
-        {hocViens.length === 0 ? (
-          <TrangTrong thongDiep={t('chung.khongCoDuLieu')} />
-        ) : (
-          <Table>
-            <thead>
-              <tr>
-                <Th>{t('taiKhoan.hoTen')}</Th>
-                <Th>{t('taiKhoan.email')}</Th>
-                <Th>{t('lopHoc.ngayVaoLop')}</Th>
-                <Th>{t('lopHoc.hocPhiApDung')}</Th>
-                <Th className="w-16" />
-              </tr>
-            </thead>
-            <tbody>
-              {hocViens.map((h) => (
-                <tr key={h.id} className="hover:bg-muted/40">
-                  <Td className="font-medium">{h.hoTen}</Td>
-                  <Td className="text-muted-foreground">{h.email ?? '—'}</Td>
-                  <Td className="text-muted-foreground">{ngayVN(h.ngayVaoLop)}</Td>
-                  <Td className="text-muted-foreground">{tienVN(h.hocPhiApDung)}</Td>
-                  <Td>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      title={t('lopHoc.goHocVien')}
-                      onClick={() => go.mutate(h.hocVienId)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </Td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        )}
-      </div>
-    </Modal>
   )
 }

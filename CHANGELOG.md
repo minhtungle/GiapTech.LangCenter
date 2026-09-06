@@ -8,6 +8,21 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — Menu thao tác và view chi tiết lớp học (07/09/2026)
+
+- **`MenuThaoTac`** — nút thao tác trong bảng gom vào một menu có chữ, thay cho dải icon trần.
+  Áp cho Lớp học (6 nút → menu), Tài khoản, Người dùng, Học phí. Menu định vị `fixed` vì
+  `Table` bọc trong `overflow-x-auto` sẽ cắt mất menu `absolute` ở dòng cuối.
+- **View chi tiết lớp học tại `/lop-hoc/:id`** với 6 tab: Tổng quan (mới), Học viên, Lịch &
+  điểm danh, Bài tập, Học phí, Tài liệu. Tab lưu ở query `?tab=` nên gửi link được và F5 không
+  mất chỗ. Trước đây mỗi thứ là một modal riêng.
+- **`KhungNoiDung`** — cho phép một component vừa mở dạng modal vừa nhúng làm tab, không phải
+  chép nội dung sang file thứ hai.
+- Màn Tài liệu và Học phí nhận prop `lopHocId` để lọc theo lớp. API đã hỗ trợ sẵn, không sửa
+  backend dòng nào.
+- Tên lớp trong bảng danh sách nay là liên kết tới trang chi tiết.
+
+
 ### Changed — Tách người dùng khỏi tài khoản (07/09/2026)
 
 - **`NGUOI_DUNG` nay là bảng "con người", `TAI_KHOAN` là bảng đăng nhập.** Trước đó một cột

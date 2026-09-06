@@ -21,6 +21,23 @@
   [FR-03](../nghiep-vu/quan-tri-he-thong.md#quy-trình-chuẩn-tạo-tài-khoản-wizard-tuần-tự): hồ sơ cầu thủ
   → nhóm quyền → tài khoản.
 - **Empty-state** luôn có nút hành động + hướng dẫn ngắn, không để màn hình trắng.
+- **Nút thao tác trong bảng → gom vào menu `MenuThaoTac`**, không bày icon trần ra hàng ngang.
+  Bảng lớp học từng có 6 nút mỗi dòng, chiếm gần nửa bề ngang và biến cột thao tác thành một
+  dải icon phải rê chuột từng cái để đoán. Menu giữ cột hẹp và **có chữ**.
+  - Nhóm phá huỷ (xoá, huỷ, gỡ) đặt cuối, `nguyHiem: true`, có `ngatNhom` tách khỏi nhóm trên
+    — để không bấm nhầm khi menu vừa mở ra dưới con trỏ.
+  - Menu định vị `fixed` chứ không `absolute`: `Table` bọc trong `overflow-x-auto` nên menu
+    `absolute` bị khung cuộn **cắt mất ở dòng cuối** — đúng chỗ hay bấm nhất.
+- **Thao tác chính của một dòng phải bấm thẳng được**, không giấu trong menu: tên lớp là liên
+  kết tới trang chi tiết. Menu chỉ dành cho việc không đoán được.
+- **Bản ghi có nhiều mặt → trang riêng có tab**, không phải nhiều modal. Lớp học có 6 tab
+  (tổng quan, học viên, lịch, bài tập, học phí, tài liệu); trước đây mỗi thứ một modal nên xem
+  sang mặt khác của cùng một lớp phải đóng modal, tìm lại dòng, mở modal khác.
+  - **Tab lưu ở query `?tab=`**, không ở state: gửi link cho đồng nghiệp thì họ mở đúng tab,
+    F5 không mất chỗ, nút Back hoạt động đúng mong đợi.
+  - Đổi tab dùng `replace: true` — 6 lần bấm tab không được sinh 6 mục lịch sử.
+  - Component đang mở dạng modal muốn tái dùng làm tab thì bọc `KhungNoiDung` với prop `nhung`,
+    **không chép nội dung sang file mới** — hai bản sao sẽ trôi khỏi nhau.
 - **Thêm/cập nhật không cần chuyển view → dùng modal**, không chèn form vào giữa danh sách:
   chèn form đẩy bảng xuống, người dùng mất ngữ cảnh dòng đang thao tác. Modal dùng thẻ
   `<dialog>` của trình duyệt để có sẵn focus trap và Esc.

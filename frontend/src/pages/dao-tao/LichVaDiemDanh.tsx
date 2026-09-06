@@ -7,6 +7,7 @@ import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong,
 } from '@/components/ui'
 import { Modal } from '@/components/ui/Modal'
+import { KhungNoiDung } from '@/components/ui/KhungNoiDung'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 
 type TrangThaiDiemDanh = 'CoMat' | 'Vang' | 'DiMuon' | 'VangCoPhep'
@@ -53,10 +54,13 @@ export function LichVaDiemDanh({
   lopHocId,
   tenLop,
   onDong,
+  nhung,
 }: {
   lopHocId: string
   tenLop: string
   onDong: () => void
+  /** true = đang là tab trong view chi tiết lớp, không bọc Modal. */
+  nhung?: boolean
 }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -81,7 +85,7 @@ export function LichVaDiemDanh({
   })
 
   return (
-    <Modal mo onDong={onDong} tieuDe={`${t('buoiHoc.lich')} — ${tenLop}`}>
+    <KhungNoiDung nhung={nhung} onDong={onDong} tieuDe={`${t('buoiHoc.lich')} — ${tenLop}`}>
       <div className="grid gap-4">
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
@@ -197,7 +201,7 @@ export function LichVaDiemDanh({
           onXong={lamMoi}
         />
       )}
-    </Modal>
+    </KhungNoiDung>
   )
 }
 

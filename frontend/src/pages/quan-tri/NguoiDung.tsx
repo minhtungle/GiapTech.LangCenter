@@ -8,6 +8,7 @@ import {
 } from '@/components/ui'
 import { Modal, ModalChan } from '@/components/ui/Modal'
 import { PhanTrang } from '@/components/ui/PhanTrang'
+import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 
 export type LoaiNguoiDung = 'NhanVien' | 'GiaoVien' | 'TroGiang' | 'HocVien'
@@ -304,23 +305,20 @@ export default function NguoiDung() {
                     </Badge>
                   </Td>
                   <Td>
-                    <div className="flex justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        aria-label={t('chung.sua')}
-                        onClick={() => moSua(u)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        aria-label={t('chung.xoa')}
-                        onClick={() => xoa.mutate(u.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                    <div className="flex justify-end">
+                      <MenuThaoTac
+                        nhanMo={t('chung.thaoTac')}
+                        muc={[
+                          { nhan: t('chung.sua'), icon: Pencil, onChon: () => moSua(u) },
+                          {
+                            nhan: t('chung.xoa'),
+                            icon: Trash2,
+                            nguyHiem: true,
+                            ngatNhom: true,
+                            onChon: () => xoa.mutate(u.id),
+                          },
+                        ]}
+                      />
                     </div>
                   </Td>
                 </tr>

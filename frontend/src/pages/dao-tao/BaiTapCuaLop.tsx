@@ -7,6 +7,7 @@ import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Textarea, Th, TrangTrong,
 } from '@/components/ui'
 import { Modal } from '@/components/ui/Modal'
+import { KhungNoiDung } from '@/components/ui/KhungNoiDung'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { ChonTep, type TepDto } from '@/components/ui/ChonTep'
 
@@ -51,10 +52,13 @@ export function BaiTapCuaLop({
   lopHocId,
   tenLop,
   onDong,
+  nhung,
 }: {
   lopHocId: string
   tenLop: string
   onDong: () => void
+  /** true = đang là tab trong view chi tiết lớp, không bọc Modal. */
+  nhung?: boolean
 }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -122,7 +126,7 @@ export function BaiTapCuaLop({
   }
 
   return (
-    <Modal mo onDong={onDong} tieuDe={`${t('hocLieu.baiTap')} — ${tenLop}`}>
+    <KhungNoiDung nhung={nhung} onDong={onDong} tieuDe={`${t('hocLieu.baiTap')} — ${tenLop}`}>
       <div className="grid gap-4">
         <div className="flex justify-end">
           <Button size="sm" onClick={() => { setDangSua(null); setMoForm(true) }}>
@@ -264,7 +268,7 @@ export function BaiTapCuaLop({
       )}
 
       {xemNop && <DanhSachBaiNop baiTap={xemNop} onDong={() => setXemNop(null)} />}
-    </Modal>
+    </KhungNoiDung>
   )
 }
 
