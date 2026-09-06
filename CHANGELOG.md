@@ -21,6 +21,15 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 - Màn Tài liệu và Học phí nhận prop `lopHocId` để lọc theo lớp. API đã hỗ trợ sẵn, không sửa
   backend dòng nào.
 - Tên lớp trong bảng danh sách nay là liên kết tới trang chi tiết.
+- **Sửa thông tin lớp ngay trong tab Tổng quan**, không phải mở modal. `FormLopHoc` tách thành
+  component dùng chung cho cả modal ở danh sách lẫn form tại chỗ — form có 12 trường và ba quy
+  ước null tinh tế, chép sang file thứ hai là mời gọi lỗi mất dữ liệu.
+
+### Fixed
+
+- **Nhãn tab hiện ra chuỗi khoá i18n** (`lopHoc.tab_tong-quan` thay vì "Tổng quan"): mã tab
+  dùng gạch ngang cho URL còn khoá i18n dùng gạch dưới, nên ghép động ra khoá không tồn tại.
+  Nay nhãn gắn thẳng vào định nghĩa tab.
 
 
 ### Changed — Tách người dùng khỏi tài khoản (07/09/2026)

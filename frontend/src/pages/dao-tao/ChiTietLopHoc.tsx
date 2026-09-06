@@ -1,12 +1,14 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
-import { api } from '@/lib/api'
+import { ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { api, layMaLoi } from '@/lib/api'
 import { Badge, Card, CardContent, TrangTrong } from '@/components/ui'
 import { LichVaDiemDanh } from './LichVaDiemDanh'
 import { BaiTapCuaLop } from './BaiTapCuaLop'
 import { HocVienCuaLop } from './HocVienCuaLop'
+import { FormLopHoc, type DuLieuLopHoc } from './FormLopHoc'
 import TaiLieu from './TaiLieu'
 import HocPhi from './HocPhi'
 import {
@@ -15,8 +17,24 @@ import {
 } from './lopHocTypes'
 import type { KetQuaTrang } from '@/lib/api'
 
-const CAC_TAB = ['tong-quan', 'hoc-vien', 'lich', 'bai-tap', 'hoc-phi', 'tai-lieu'] as const
-type Tab = (typeof CAC_TAB)[number]
+/**
+ * Mã tab (nằm trong URL) đi kèm khoá i18n của nó.
+ *
+ * Không ghép chuỗi kiểu `t(`lopHoc.tab_${x}`)`: mã tab dùng gạch NGANG cho URL đẹp còn khoá
+ * i18n dùng camelCase, nên ghép động sinh ra `tab_tong-quan` — không khớp khoá nào và
+ * i18next trả về nguyên chuỗi khoá cho người dùng nhìn thấy. Lỗi này đã xảy ra thật.
+ * Khai tường minh thì TypeScript bắt được ngay khi thêm tab mới.
+ */
+const CAC_TAB = [
+  { ma: 'tong-quan', khoa: 'lopHoc.tabTongQuan' },
+  { ma: 'hoc-vien', khoa: 'lopHoc.tabHocVien' },
+  { ma: 'lich', khoa: 'lopHoc.tabLich' },
+  { ma: 'bai-tap', khoa: 'lopHoc.tabBaiTap' },
+  { ma: 'hoc-phi', khoa: 'lopHoc.tabHocPhi' },
+  { ma: 'tai-lieu', khoa: 'lopHoc.tabTaiLieu' },
+] as const
+
+type Tab = (typeof CAC_TAB)[number]['ma']
 
 /**
  * FR-07 — view chi tiết một lớp học.
@@ -34,7 +52,8 @@ export default function ChiTietLopHoc() {
   const [sp, setSp] = useSearchParams()
 
   const tabQuery = sp.get('tab') as Tab | null
-  const tab: Tab = tabQuery && CAC_TAB.includes(tabQuery) ? tabQuery : 'tong-quan'
+  const tab: Tab =
+    tabQuery && CAC_TAB.some((x) => x.ma === tabQuery) ? tabQuery : 'tong-quan'
 
   const doiTab = (x: Tab) => {
     // `replace` để 6 lần bấm tab không sinh 6 mục lịch sử — Back phải quay về danh sách lớp.
@@ -78,22 +97,22 @@ export default function ChiTietLopHoc() {
       <div className="flex flex-wrap gap-1 rounded-lg border border-border p-1">
         {CAC_TAB.map((x) => (
           <button
-            key={x}
+            key={x.ma}
             type="button"
-            onClick={() => doiTab(x)}
+            onClick={() => doiTab(x.ma)}
             className={
               'rounded-md px-3 py-1.5 text-sm font-medium transition-colors ' +
-              (tab === x
+              (tab === x.ma
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:bg-muted')
             }
           >
-            {t(`lopHoc.tab_${x}`)}
+            {t(x.khoa)}
           </button>
         ))}
       </div>
 
-      {tab === 'tong-quan' && <TongQuanLop lop={lop} />}
+      {tab === 'tong-quan' && <TongQuanLop lop={lop} nguoiDungs={nguoiDungs ?? []} />}
 
       {tab === 'hoc-vien' && (
         <HocVienCuaLop
@@ -119,9 +138,39 @@ export default function ChiTietLopHoc() {
   )
 }
 
-/** Tab Tổng quan: thông tin lớp + bốn số liệu hay phải tra nhất. */
-function TongQuanLop({ lop }: { lop: LopHocDto }) {
+/**
+ * Tab Tổng quan: bốn số liệu hay phải tra nhất + form sửa thông tin lớp ngay tại chỗ.
+ *
+ * Sửa tại chỗ chứ không mở modal: người dùng đã ở trang của đúng lớp này rồi, bắt họ mở thêm
+ * một lớp giao diện nữa chỉ để đổi một ô là thừa. Modal ở màn danh sách vẫn giữ vì ở đó chưa
+ * chọn lớp nào.
+ */
+function TongQuanLop({
+  lop,
+  nguoiDungs,
+}: {
+  lop: LopHocDto
+  nguoiDungs: NguoiDungNgan[]
+}) {
   const { t } = useTranslation()
+  const qc = useQueryClient()
+  const [maLoi, setMaLoi] = useState<string | null>(null)
+  const [daLuu, setDaLuu] = useState(false)
+
+  const capNhat = useMutation({
+    mutationFn: (du: DuLieuLopHoc) => api.put(`/lop-hoc/${lop.id}`, { ...du, id: lop.id }),
+    onSuccess: () => {
+      // Làm mới cả chi tiết lẫn danh sách: tên lớp vừa đổi phải hiện đúng ở cả hai chỗ.
+      void qc.invalidateQueries({ queryKey: ['lop-hoc'] })
+      setMaLoi(null)
+      setDaLuu(true)
+      window.setTimeout(() => setDaLuu(false), 2500)
+    },
+    onError: (e) => {
+      setMaLoi(layMaLoi(e))
+      setDaLuu(false)
+    },
+  })
 
   const { data: buoiHocs = [] } = useQuery({
     queryKey: ['lop-hoc', lop.id, 'buoi-hoc'],
@@ -186,13 +235,39 @@ function TongQuanLop({ lop }: { lop: LopHocDto }) {
               nhan={t('lopHoc.thoiGian')}
               giaTri={`${ngayVN(lop.ngayKhaiGiang)} → ${ngayVN(lop.ngayKetThuc)}`}
             />
-            {lop.ghiChu && (
-              <div className="sm:col-span-2">
-                <dt className="text-sm text-muted-foreground">{t('lopHoc.ghiChu')}</dt>
-                <dd className="whitespace-pre-wrap text-sm">{lop.ghiChu}</dd>
-              </div>
-            )}
+            <Dong nhan={t('lopHoc.ghiChu')} giaTri={lop.ghiChu ?? '—'} />
           </dl>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="space-y-3 pt-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold">{t('lopHoc.suaThongTin')}</h3>
+            {daLuu && (
+              <span className="flex items-center gap-1 text-sm text-status-win">
+                <CheckCircle2 className="h-4 w-4" />
+                {t('chung.daLuu')}
+              </span>
+            )}
+          </div>
+
+          <FormLopHoc
+            // Key đổi khi dữ liệu server đổi, để form nạp lại giá trị mới sau khi lưu —
+            // các ô dùng `defaultValue` nên không tự cập nhật. Ghép từ chính các trường form
+            // ghi đè: sửa xong query làm mới, key đổi, form remount với dữ liệu mới.
+            key={[
+              lop.id, lop.ten, lop.giaoVienChinhId, lop.hinhThuc,
+              lop.phongHoc, lop.linkHoc, lop.hocPhi, lop.sucChuaToiDa, lop.ghiChu,
+              lop.troGiangIds.join(','),
+            ].join('|')}
+            lop={lop}
+            nguoiDungs={nguoiDungs}
+            dangLuu={capNhat.isPending}
+            maLoi={maLoi}
+            nhanLuu={t('lopHoc.luuThongTin')}
+            onLuu={(du) => capNhat.mutate(du)}
+          />
         </CardContent>
       </Card>
     </div>

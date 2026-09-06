@@ -5,17 +5,17 @@ import { Link, useNavigate } from 'react-router-dom'
 import { CalendarDays, ClipboardList, Eye, Pencil, Plus, Trash2, Users, X } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang, type ThamSoTrang } from '@/lib/api'
 import {
-  Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
-  TrangTrong,
+  Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Th, TrangTrong,
 } from '@/components/ui'
 import { Modal } from '@/components/ui/Modal'
 import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import { PhanTrang } from '@/components/ui/PhanTrang'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
-import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
+import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
+import { FormLopHoc, type DuLieuLopHoc } from './FormLopHoc'
 import {
-  CAC_HINH_THUC, tienVN, ngayVN, mauTrangThai,
-  type HinhThucHoc, type LopHocDto, type NguoiDungNgan,
+  tienVN, ngayVN, mauTrangThai,
+  type LopHocDto, type NguoiDungNgan,
 } from './lopHocTypes'
 
 /** FR-07 — quản lý lớp học. */
@@ -31,9 +31,6 @@ export default function LopHoc() {
 
   const [moForm, setMoForm] = useState(false)
   const [dangSua, setDangSua] = useState<LopHocDto | null>(null)
-  const [giaoVienChon, setGiaoVienChon] = useState<string | null>(null)
-  const [troGiangChon, setTroGiangChon] = useState<string[]>([])
-  const [hinhThuc, setHinhThuc] = useState<HinhThucHoc>('Offline')
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
 
@@ -65,12 +62,11 @@ export default function LopHoc() {
       })).data.duLieu,
   })
 
+  // Không đặt lại state của form ở đây: FormLopHoc tự khởi tạo từ prop `lop` và được reset
+  // bằng `key`. Giữ hai bản state song song là cách chắc chắn để chúng lệch nhau.
   const dong = () => {
     setMoForm(false)
     setDangSua(null)
-    setGiaoVienChon(null)
-    setTroGiangChon([])
-    setHinhThuc('Offline')
     setMaLoi(null)
   }
 
@@ -80,13 +76,13 @@ export default function LopHoc() {
   }
 
   const tao = useMutation({
-    mutationFn: (form: Record<string, unknown>) => api.post('/lop-hoc', form),
+    mutationFn: (form: DuLieuLopHoc) => api.post('/lop-hoc', form),
     onSuccess: sauKhiLuu,
     onError: (e) => setMaLoi(layMaLoi(e)),
   })
 
   const capNhat = useMutation({
-    mutationFn: (form: Record<string, unknown>) =>
+    mutationFn: (form: DuLieuLopHoc) =>
       api.put(`/lop-hoc/${dangSua!.id}`, { ...form, id: dangSua!.id }),
     onSuccess: sauKhiLuu,
     onError: (e) => setMaLoi(layMaLoi(e)),
@@ -124,64 +120,15 @@ export default function LopHoc() {
 
   const moThem = () => {
     setDangSua(null)
-    setGiaoVienChon(null)
-    setTroGiangChon([])
-    setHinhThuc('Offline')
     setMaLoi(null)
     setMoForm(true)
   }
 
   const moSua = (l: LopHocDto) => {
     setDangSua(l)
-    setGiaoVienChon(l.giaoVienChinhId)
-    setTroGiangChon(l.troGiangIds)
-    setHinhThuc(l.hinhThuc)
     setMaLoi(null)
     setMoForm(true)
   }
-
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const fd = new FormData(e.currentTarget)
-
-    // Mọi trường lệnh cập nhật ghi đè đều đọc TỪ FORM. Gửi cứng null sẽ xoá dữ liệu người
-    // dùng chưa từng đụng tới — đúng lỗi đã xảy ra hai lần trong dự án này.
-    const hocPhiTho = (fd.get('hocPhi') as string) || ''
-    const sucChuaTho = (fd.get('sucChuaToiDa') as string) || ''
-
-    const form = {
-      ten: String(fd.get('ten')),
-      giaoVienChinhId: giaoVienChon,
-      hinhThuc,
-      troGiangIds: troGiangChon,
-      // Chuỗi rỗng = chủ động xoá ô; backend hiểu '' là xoá, null là giữ nguyên.
-      phongHoc: (fd.get('phongHoc') as string) ?? '',
-      linkHoc: (fd.get('linkHoc') as string) ?? '',
-      ghiChu: (fd.get('ghiChu') as string) ?? '',
-      hocPhi: hocPhiTho === '' ? null : Number(hocPhiTho),
-      sucChuaToiDa: sucChuaTho === '' ? null : Number(sucChuaTho),
-      // Ô sức chứa để trống khi SỬA nghĩa là "bỏ giới hạn" — null không diễn đạt được điều
-      // đó vì null đã mang nghĩa "không gửi".
-      boGioiHanSucChua: Boolean(dangSua) && sucChuaTho === '',
-    }
-
-    if (!giaoVienChon) {
-      setMaLoi('NHAN_SU_KHONG_HOP_LE')
-      return
-    }
-
-    if (dangSua) capNhat.mutate(form)
-    else tao.mutate(form)
-  }
-
-  const giaoVienLuaChon = (nguoiDungs ?? [])
-    .filter((u) => u.loaiNguoiDung === 'GiaoVien')
-    .map((u) => ({ giaTri: u.id, nhan: u.hoTen, phu: u.email ?? undefined }))
-
-  const troGiangLuaChon = (nguoiDungs ?? [])
-    .filter((u) => u.loaiNguoiDung === 'TroGiang' || u.loaiNguoiDung === 'GiaoVien')
-    .filter((u) => u.id !== giaoVienChon)
-    .map((u) => ({ giaTri: u.id, nhan: u.hoTen, phu: u.email ?? undefined }))
 
   const data = kq.duLieu
   const dangLuu = tao.isPending || capNhat.isPending
@@ -375,108 +322,15 @@ export default function LopHoc() {
         onDong={dong}
         tieuDe={dangSua ? `${t('chung.sua')}: ${dangSua.ten}` : t('lopHoc.themMoi')}
       >
-        <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
-            <Label htmlFor="ten">{t('lopHoc.ten')}</Label>
-            <Input id="ten" name="ten" defaultValue={dangSua?.ten ?? ''} required autoFocus />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="giaoVienChinhId">{t('lopHoc.giaoVienChinh')}</Label>
-            <SelectTimKiem
-              id="giaoVienChinhId"
-              luaChon={giaoVienLuaChon}
-              giaTri={giaoVienChon}
-              onDoi={setGiaoVienChon}
-              placeholder={t('lopHoc.chonGiaoVien')}
-              placeholderTimKiem={t('lopHoc.timGiaoVien')}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="hinhThuc">{t('lopHoc.hinhThuc')}</Label>
-            <SelectTimKiem
-              id="hinhThuc"
-              choPhepXoa={false}
-              luaChon={CAC_HINH_THUC.map((h) => ({
-                giaTri: h,
-                nhan: t(`hinhThucHoc.${h}`),
-              }))}
-              giaTri={hinhThuc}
-              onDoi={(v) => setHinhThuc((v as HinhThucHoc) ?? 'Offline')}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
-            <Label htmlFor="troGiangIds">{t('lopHoc.troGiang')}</Label>
-            <SelectTimKiemNhieu
-              id="troGiangIds"
-              luaChon={troGiangLuaChon}
-              giaTri={troGiangChon}
-              onDoi={setTroGiangChon}
-              placeholder={t('lopHoc.chonTroGiang')}
-              placeholderTimKiem={t('lopHoc.timTroGiang')}
-            />
-          </div>
-
-          {hinhThuc !== 'Online' && (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="phongHoc">{t('lopHoc.phongHoc')}</Label>
-              <Input id="phongHoc" name="phongHoc" defaultValue={dangSua?.phongHoc ?? ''} />
-            </div>
-          )}
-
-          {hinhThuc !== 'Offline' && (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="linkHoc">{t('lopHoc.linkHoc')}</Label>
-              <Input id="linkHoc" name="linkHoc" defaultValue={dangSua?.linkHoc ?? ''} />
-            </div>
-          )}
-
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="hocPhi">{t('lopHoc.hocPhi')}</Label>
-            <Input
-              id="hocPhi"
-              name="hocPhi"
-              type="number"
-              min={0}
-              step={1000}
-              defaultValue={dangSua?.hocPhi ?? ''}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="sucChuaToiDa">{t('lopHoc.sucChuaToiDa')}</Label>
-            <Input
-              id="sucChuaToiDa"
-              name="sucChuaToiDa"
-              type="number"
-              min={1}
-              defaultValue={dangSua?.sucChuaToiDa ?? ''}
-              placeholder={t('lopHoc.khongGioiHan')}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
-            <Label htmlFor="ghiChu">{t('lopHoc.ghiChu')}</Label>
-            <Textarea id="ghiChu" name="ghiChu" defaultValue={dangSua?.ghiChu ?? ''} />
-          </div>
-
-          {maLoi && (
-            <div className="sm:col-span-2">
-              <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>
-            </div>
-          )}
-
-          <div className="flex justify-end gap-2 sm:col-span-2">
-            <Button type="button" variant="outline" onClick={dong}>
-              {t('chung.huy')}
-            </Button>
-            <Button type="submit" disabled={dangLuu}>
-              {t('chung.luu')}
-            </Button>
-          </div>
-        </form>
+        <FormLopHoc
+          key={dangSua?.id ?? 'moi'}
+          lop={dangSua}
+          nguoiDungs={nguoiDungs ?? []}
+          dangLuu={dangLuu}
+          maLoi={maLoi}
+          onLuu={(du) => (dangSua ? capNhat.mutate(du) : tao.mutate(du))}
+          onHuy={dong}
+        />
       </Modal>
 
       <HopXacNhan

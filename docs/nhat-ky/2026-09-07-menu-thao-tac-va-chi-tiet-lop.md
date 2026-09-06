@@ -80,6 +80,36 @@ chỉ dành cho việc không đoán được.
   kiểm ở phiên trước (sĩ số 3/3, buổi 1/4, đã thu 3.600.000 ₫, còn nợ 14.400.000 ₫); tab Tài
   liệu lọc đúng theo lớp (1 tài liệu, không phải toàn bộ).
 
+## Bổ sung cùng ngày
+
+### Nhãn tab hiện ra chuỗi khoá i18n
+
+Người dùng thấy `lopHoc.tab_tong-quan` thay vì "Tổng quan". Nguyên nhân: mã tab dùng gạch
+**ngang** cho URL đẹp (`tong-quan`) còn khoá i18n tôi đặt gạch **dưới** (`tab_tong_quan`), nên
+`t(`lopHoc.tab_${x}`)` ghép ra khoá không tồn tại — và i18next trả về nguyên chuỗi khoá cho
+người dùng nhìn thấy. Bốn trong sáu tab hỏng.
+
+Sửa bằng cách gắn nhãn thẳng vào định nghĩa tab (`{ ma, khoa }`) thay vì ghép chuỗi. Ghép động
+chỉ an toàn khi khoá **trùng khít** giá trị enum — như `t(`trangThaiLopHoc.${tt}`)`; đã rà lại
+toàn bộ các chỗ còn lại trong `src/`, tất cả đều thuộc dạng an toàn đó.
+
+### Sửa thông tin lớp ngay trong tab Tổng quan
+
+Người dùng đã ở trang của đúng lớp đó rồi, bắt mở thêm modal chỉ để đổi một ô là thừa. Modal ở
+màn danh sách vẫn giữ vì ở đó chưa chọn lớp nào.
+
+Tách `FormLopHoc` thành component dùng chung thay vì chép: form có 12 trường, logic ẩn/hiện
+phòng học vs link học, và **ba quy ước null tinh tế** (`null` = không gửi, `''` = chủ động xoá,
+`boGioiHanSucChua` = bỏ giới hạn). Hai bản sao sẽ trôi khỏi nhau và một bên âm thầm xoá dữ
+liệu — đúng lỗi quy tắc #1 đã xảy ra hai lần trong dự án này. `LopHoc.tsx` gọn từ 691 → 353
+dòng.
+
+Form dùng `defaultValue` nên không tự cập nhật sau khi lưu; `key` ghép từ chính các trường form
+ghi đè để remount với dữ liệu mới.
+
+**Kiểm chạy thật**: đổi phòng học P.201 → P.305, các trường khác (học phí, sức chứa, ghi chú,
+trợ giảng) còn nguyên; đã trả lại nguyên trạng.
+
 ## Còn nợ
 
 - **N2 vẫn còn**: menu hiện đủ mục cho mọi người, kể cả người không có quyền — bấm vào mới nhận
