@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
+import { useQuyen } from '@/lib/quyen'
 import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
   TrangTrong,
@@ -70,6 +71,7 @@ function ngayChoInput(iso: string) {
 export default function HocPhi({ lopHocId }: { lopHocId?: string } = {}) {
   const { t } = useTranslation()
   const qc = useQueryClient()
+  const { coQuyen } = useQuyen()
 
   const [tab, setTab] = useState<'cong-no' | 'so-thu'>('cong-no')
   // Nhúng trong view chi tiết lớp thì lớp đã cố định — không cho đổi, và ẩn ô lọc lớp.
@@ -195,6 +197,11 @@ export default function HocPhi({ lopHocId }: { lopHocId?: string } = {}) {
 
   const luaChonLop = (lops ?? []).map((l) => ({ giaTri: l.id, nhan: l.ten }))
 
+  // Học viên vào đây để tra công nợ của mình — họ KHÔNG thu tiền, không sửa, không xoá.
+  const duocThu = coQuyen('HocPhi', 'Them')
+  const duocSua = coQuyen('HocPhi', 'Sua')
+  const duocXoa = coQuyen('HocPhi', 'Xoa')
+
   // Tổng của cả lớp — chỉ có nghĩa khi đang xem một lớp cụ thể. Người không được xem sổ toàn
   // lớp nhận danh sách rỗng nên tổng bằng 0 và khối này tự ẩn.
   const congNoCuaLop = lopHocId ? congNo : []
@@ -229,6 +236,7 @@ export default function HocPhi({ lopHocId }: { lopHocId?: string } = {}) {
           ))}
         </div>
 
+        {duocThu && (
         <Button
           onClick={() => {
             setDangSua(null)
@@ -241,6 +249,7 @@ export default function HocPhi({ lopHocId }: { lopHocId?: string } = {}) {
           <Plus className="h-4 w-4" />
           {t('hocPhi.thuTien')}
         </Button>
+        )}
       </div>
 
       <Card>
@@ -357,6 +366,7 @@ export default function HocPhi({ lopHocId }: { lopHocId?: string } = {}) {
                               {
                                 nhan: t('chung.sua'),
                                 icon: Pencil,
+                                an: !duocSua,
                                 onChon: () => {
                                   setDangSua(k)
                                   setPhuongThuc(k.phuongThuc)
@@ -369,6 +379,7 @@ export default function HocPhi({ lopHocId }: { lopHocId?: string } = {}) {
                                 icon: Trash2,
                                 nguyHiem: true,
                                 ngatNhom: true,
+                                an: !duocXoa,
                                 onChon: () => setXoaCho(k),
                               },
                             ]}

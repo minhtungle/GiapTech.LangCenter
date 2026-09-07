@@ -6,6 +6,8 @@ import { api, layMaLoi } from '@/lib/api'
 import { Button, CanhBaoLoi, Label, Table, Td, Th, TrangTrong } from '@/components/ui'
 import { KhungNoiDung } from '@/components/ui/KhungNoiDung'
 import { SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
+import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
+import { useQuyen } from '@/lib/quyen'
 import {
   tienVN, ngayVN,
   type LopHocDto, type NguoiDungNgan, type HocVienTrongLop,
@@ -27,6 +29,9 @@ export function HocVienCuaLop({
 }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
+  const { coQuyen } = useQuyen()
+  // Ghi danh và gỡ học viên suy từ quyền SỬA LỚP, không phải một quyền riêng.
+  const duocSuaLop = coQuyen('LopHoc', 'Sua')
   const [chon, setChon] = useState<string[]>([])
   const [maLoi, setMaLoi] = useState<string | null>(null)
 
@@ -83,9 +88,11 @@ export function HocVienCuaLop({
               placeholderTimKiem={t('lopHoc.timHocVien')}
             />
           </div>
-          <Button disabled={chon.length === 0 || them.isPending} onClick={() => them.mutate()}>
-            {t('chung.them')}
-          </Button>
+          {duocSuaLop && (
+            <Button disabled={chon.length === 0 || them.isPending} onClick={() => them.mutate()}>
+              {t('chung.them')}
+            </Button>
+          )}
         </div>
 
         <p className="text-xs text-muted-foreground">
@@ -124,14 +131,20 @@ export function HocVienCuaLop({
                     <Td className="text-muted-foreground">{tienVN(h.hocPhiApDung)}</Td>
                   )}
                   <Td>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      title={t('lopHoc.goHocVien')}
-                      onClick={() => go.mutate(h.hocVienId)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex justify-end">
+                      <MenuThaoTac
+                        nhanMo={t('chung.thaoTac')}
+                        muc={[
+                          {
+                            nhan: t('lopHoc.goHocVien'),
+                            icon: Trash2,
+                            nguyHiem: true,
+                            an: !duocSuaLop,
+                            onChon: () => go.mutate(h.hocVienId),
+                          },
+                        ]}
+                      />
+                    </div>
                   </Td>
                 </tr>
               ))}

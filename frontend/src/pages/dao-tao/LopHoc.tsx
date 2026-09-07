@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { CalendarDays, ClipboardList, Eye, Pencil, Plus, Trash2, Users, X } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang, type ThamSoTrang } from '@/lib/api'
+import { useQuyen } from '@/lib/quyen'
 import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Th, TrangTrong,
 } from '@/components/ui'
@@ -22,6 +23,7 @@ import {
 export default function LopHoc() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { coQuyen } = useQuyen()
   const qc = useQueryClient()
 
   const [trang, setTrang] = useState(1)
@@ -166,10 +168,12 @@ export default function LopHoc() {
           />
         </div>
 
-        <Button onClick={moThem} className="ml-auto">
-          <Plus className="mr-1.5 h-4 w-4" />
-          {t('lopHoc.themMoi')}
-        </Button>
+        {coQuyen('LopHoc', 'Them') && (
+          <Button onClick={moThem} className="ml-auto">
+            <Plus className="mr-1.5 h-4 w-4" />
+            {t('lopHoc.themMoi')}
+          </Button>
+        )}
       </div>
 
       {maLoiBang && (
@@ -252,20 +256,24 @@ export default function LopHoc() {
                                 nhan: t('chung.sua'),
                                 icon: Pencil,
                                 ngatNhom: true,
+                                an: !coQuyen('LopHoc', 'Sua'),
                                 onChon: () => moSua(l),
                               },
                               {
                                 nhan: t('chung.xoa'),
                                 icon: Trash2,
                                 nguyHiem: true,
-                                an: l.trangThai !== 'Nhap',
+                                an: l.trangThai !== 'Nhap' || !coQuyen('LopHoc', 'Xoa'),
                                 onChon: () => setXoaCho(l),
                               },
                               {
                                 nhan: t('lopHoc.huyLop'),
                                 icon: X,
                                 nguyHiem: true,
-                                an: l.trangThai === 'Nhap' || l.trangThai === 'DaHuy',
+                                an:
+                                  l.trangThai === 'Nhap' ||
+                                  l.trangThai === 'DaHuy' ||
+                                  !coQuyen('LopHoc', 'Sua'),
                                 onChon: () => setHuyCho(l),
                               },
                             ]}

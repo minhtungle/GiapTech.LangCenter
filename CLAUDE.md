@@ -21,13 +21,13 @@ là một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`
 Tách ra từ một ứng dụng quản lý CLB đá bóng (04/09/2026), giữ toàn bộ tầng hệ thống. Nghiệp vụ
 LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 
-**14/15 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 234 test backend xanh.
+**14/15 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 239 test backend xanh.
 
 | Đã chạy đầu-cuối | Chưa có |
 |---|---|
 | Đăng nhập · quên mật khẩu · buộc đổi mật khẩu lần đầu | **FR-15 Thống kê / Dashboard** |
 | Người dùng (hồ sơ 3 vai trò) tách khỏi tài khoản · nhóm quyền · thiết lập | **Bài kiểm tra** — có schema, chưa có API/UI |
-| Lớp học: vòng đời, phân công, ghi danh, học phí riêng từng người | Ẩn nút theo quyền ở frontend (nợ N2) |
+| Lớp học: vòng đời, phân công, ghi danh, học phí riêng từng người | Đăng ký trung tâm an toàn production (nợ N3) |
 | Buổi học: sinh lịch tự động; điểm danh hai nguồn | Nhắc nợ / thông báo qua email |
 | Bài tập, bài nộp nhiều lần, tài liệu, tệp đính kèm | Import Excel học viên |
 | Học phí: sổ thu + công nợ tính động | Danh mục ngày nghỉ khi sinh lịch |
@@ -224,7 +224,7 @@ Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 ```bash
 # --- Backend ---
 dotnet build          # 0 warning — TreatWarningsAsErrors đang bật
-dotnet test           # 234 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
+dotnet test           # 239 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
                       #           quản trị, lớp học, điểm danh, học liệu, học phí
 
 # Chạy API cần 2 biến bắt buộc (thiếu là 500 lúc đăng nhập / tải ảnh, không phải lúc khởi động):

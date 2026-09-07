@@ -6,6 +6,7 @@ import {
   PanelLeftClose, PanelLeft, Menu, X,
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
+import { useQuyen } from '@/lib/quyen'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
@@ -39,6 +40,8 @@ export default function Layout() {
     localStorage.setItem(KHOA_THU_GON, thuGon ? '1' : '0')
   }, [thuGon])
 
+  const { coQuyen, dangTai: dangTaiQuyen } = useQuyen()
+
   // Đóng ngăn kéo sau khi điều hướng — trên mobile nó phủ toàn màn hình.
   useEffect(() => setMoMobile(false), [location.pathname])
 
@@ -48,29 +51,48 @@ export default function Layout() {
     icon: typeof Home
     /** true = chỉ khớp đúng đường dẫn này, không khớp route con. */
     cuoi?: boolean
+    /** Chức năng cần có quyền `Xem` để thấy mục này. Bỏ trống = ai cũng thấy. */
+    can?: string
   }
 
-  const nhomMenu: { tieuDe?: string; muc: MucMenu[] }[] = [
+  const nhomGoc: { tieuDe?: string; muc: MucMenu[] }[] = [
     {
       muc: [{ to: '/', nhan: t('menu.tongQuan'), icon: Home, cuoi: true }],
     },
     {
       tieuDe: t('menu.daoTao'),
       muc: [
-        { to: '/lop-hoc', nhan: t('menu.lopHoc'), icon: GraduationCap },
-        { to: '/tai-lieu', nhan: t('menu.taiLieu'), icon: BookOpen },
-        { to: '/hoc-phi', nhan: t('menu.hocPhi'), icon: Wallet },
+        { to: '/lop-hoc', nhan: t('menu.lopHoc'), icon: GraduationCap, can: 'LopHoc' },
+        { to: '/tai-lieu', nhan: t('menu.taiLieu'), icon: BookOpen, can: 'TaiLieu' },
+        { to: '/hoc-phi', nhan: t('menu.hocPhi'), icon: Wallet, can: 'HocPhi' },
       ],
     },
     {
       tieuDe: t('menu.quanTri'),
       muc: [
-        { to: '/quan-tri/tai-khoan', nhan: t('menu.taiKhoan'), icon: Users },
-        { to: '/quan-tri/phan-quyen', nhan: t('menu.phanQuyen'), icon: ShieldCheck },
-        { to: '/quan-tri/thiet-lap', nhan: t('menu.thietLap'), icon: Settings },
+        { to: '/quan-tri/tai-khoan', nhan: t('menu.taiKhoan'), icon: Users, can: 'TaiKhoan' },
+        {
+          to: '/quan-tri/phan-quyen', nhan: t('menu.phanQuyen'), icon: ShieldCheck,
+          can: 'PhanQuyen',
+        },
+        {
+          to: '/quan-tri/thiet-lap', nhan: t('menu.thietLap'), icon: Settings,
+          can: 'ThietLapChung',
+        },
       ],
     },
   ]
+
+  // Ẩn mục không có quyền, rồi bỏ luôn nhóm trống — để lại tiêu đề "Quản trị hệ thống" không
+  // có mục nào bên dưới trông như giao diện hỏng.
+  //
+  // Trong lúc CHƯA biết quyền thì hiện đủ: nếu ẩn trước rồi hiện sau, menu sẽ nhấp nháy mỗi
+  // lần tải trang. Bấm nhầm lúc đó cùng lắm nhận thông báo không có quyền.
+  const nhomMenu = dangTaiQuyen
+    ? nhomGoc
+    : nhomGoc
+        .map((n) => ({ ...n, muc: n.muc.filter((m) => !m.can || coQuyen(m.can)) }))
+        .filter((n) => n.muc.length > 0)
 
   const tenTrang = nhomMenu
     .flatMap((n) => n.muc)

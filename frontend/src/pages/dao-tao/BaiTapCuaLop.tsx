@@ -8,6 +8,8 @@ import {
 } from '@/components/ui'
 import { Modal } from '@/components/ui/Modal'
 import { KhungNoiDung } from '@/components/ui/KhungNoiDung'
+import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
+import { useQuyen } from '@/lib/quyen'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { ChonTep, type TepDto } from '@/components/ui/ChonTep'
 
@@ -62,6 +64,7 @@ export function BaiTapCuaLop({
 }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
+  const { coQuyen } = useQuyen()
   const [moForm, setMoForm] = useState(false)
   const [dangSua, setDangSua] = useState<BaiTapDto | null>(null)
   const [buoiChon, setBuoiChon] = useState<string | null>(null)
@@ -129,10 +132,12 @@ export function BaiTapCuaLop({
     <KhungNoiDung nhung={nhung} onDong={onDong} tieuDe={`${t('hocLieu.baiTap')} — ${tenLop}`}>
       <div className="grid gap-4">
         <div className="flex justify-end">
+          {coQuyen('BaiTap', 'Them') && (
           <Button size="sm" onClick={() => { setDangSua(null); setMoForm(true) }}>
             <Plus className="mr-1.5 h-4 w-4" />
             {t('hocLieu.themBaiTap')}
           </Button>
+          )}
         </div>
 
         {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
@@ -165,25 +170,31 @@ export function BaiTapCuaLop({
                     </Td>
                     <Td className="text-muted-foreground">{bt.teps.length}</Td>
                     <Td>
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost" size="sm" title={t('hocLieu.xemBaiNop')}
-                          onClick={() => setXemNop(bt)}
-                        >
-                          <ClipboardList className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost" size="sm" title={t('chung.sua')}
-                          onClick={() => { setDangSua(bt); setMoForm(true) }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost" size="sm" title={t('chung.xoa')}
-                          onClick={() => xoa.mutate(bt.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      <div className="flex justify-end">
+                        <MenuThaoTac
+                          nhanMo={t('chung.thaoTac')}
+                          muc={[
+                            {
+                              nhan: t('hocLieu.xemBaiNop'),
+                              icon: ClipboardList,
+                              onChon: () => setXemNop(bt),
+                            },
+                            {
+                              nhan: t('chung.sua'),
+                              icon: Pencil,
+                              an: !coQuyen('BaiTap', 'Sua'),
+                              onChon: () => { setDangSua(bt); setMoForm(true) },
+                            },
+                            {
+                              nhan: t('chung.xoa'),
+                              icon: Trash2,
+                              nguyHiem: true,
+                              ngatNhom: true,
+                              an: !coQuyen('BaiTap', 'Xoa'),
+                              onChon: () => xoa.mutate(bt.id),
+                            },
+                          ]}
+                        />
                       </div>
                     </Td>
                   </tr>

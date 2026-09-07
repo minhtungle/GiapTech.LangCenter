@@ -78,7 +78,6 @@ VPS → domain + HTTPS → backup. Xem
 | # | Việc | Mức |
 |---|---|---|
 | N1 | **Bài kiểm tra**: schema xong, chưa có API và UI | Cao |
-| N2 | Frontend **không ẩn nút/menu theo quyền** — giáo viên vẫn thấy menu "Học phí" rồi mới nhận thông báo không có quyền. Cần một hook đọc quyền dùng chung, không vá lẻ | Cao |
 | N3 | `/dang-ky-trung-tam` chưa an toàn production (đang chặn bằng `IsDevelopment()`) | Cao |
 | N4 | Kiểm trùng lịch giáo viên có API nhưng **chưa nối vào UI** | Trung bình |
 | N5 | Job dọn tệp mồ côi trong MinIO (Cascade xoá hàng DB nhưng không xoá object) | Trung bình |
@@ -91,7 +90,7 @@ VPS → domain + HTTPS → backup. Xem
 
 ## Kiểm chứng hiện tại
 
-- **234 test backend xanh** (54 unit + 180 integration), build 0 warning.
+- **239 test backend xanh** (54 unit + 185 integration), build 0 warning.
 - Frontend `tsc -b` + `vite build` sạch, `oxlint` không lỗi.
 - **PostgreSQL + MinIO thật**: 20 bảng, migration áp sạch, luồng đầu-cuối chạy tay đủ từ tạo
   trung tâm tới thu học phí.

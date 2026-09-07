@@ -8,6 +8,24 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — Ẩn menu và nút theo quyền (07/09/2026, đóng nợ N2)
+
+- **`GET /toi/quyen`** trả toàn bộ quyền hiệu lực của phiên hiện tại. Không gác
+  `[RequirePermission]` (ai cũng phải biết quyền của mình) nhưng không nhận tham số id nên
+  không dò được quyền người khác. Dùng lại `QuyenService` sẵn có, chung cache.
+- **Hook `useQuyen()`** — `coQuyen(chucNang, hanhDong)` và `xemTienCaLop()`. Áp cho menu
+  sidebar, tab trong chi tiết lớp, và nút Thêm/Sửa/Xoá ở 6 màn. Giáo viên không còn thấy menu
+  "Học phí"; học viên vẫn thấy (để tra công nợ của mình) nhưng không thấy số của cả lớp.
+- Ẩn ở frontend là **tiện lợi, không phải bảo vệ** — mọi endpoint vẫn tự gác quyền của nó.
+
+### Fixed
+
+- `BaiTapCuaLop` và `TaiLieu` còn dùng nút icon rời (sót ở lượt gom `MenuThaoTac` trước) — nay
+  đã gom vào menu.
+- `PhanQuyen` dùng `confirm()` của trình duyệt để xác nhận xoá, trái nguyên tắc UI/UX (không
+  style được, không dịch được). Thay bằng `HopXacNhan`.
+
+
 ### Fixed — Rò rỉ học phí qua DTO module lớp học (07/09/2026)
 
 - **Giáo viên và trợ giảng đọc được học phí**, và **học viên đọc được học phí của bạn cùng

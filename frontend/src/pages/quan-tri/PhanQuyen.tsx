@@ -7,6 +7,9 @@ import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th,
 } from '@/components/ui'
 import { Modal, ModalChan } from '@/components/ui/Modal'
+import { HopXacNhan } from '@/components/ui/HopXacNhan'
+import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
+import { useQuyen } from '@/lib/quyen'
 
 interface ChucNangDto {
   tenChucNang: string
@@ -28,12 +31,14 @@ interface DanhMucDto {
 export default function PhanQuyen() {
   const { t } = useTranslation()
   const qc = useQueryClient()
+  const { coQuyen } = useQuyen()
   const [dangSua, setDangSua] = useState<QuyenDto | null>(null)
   const [moForm, setMoForm] = useState(false)
   const [tenQuyen, setTenQuyen] = useState('')
   const [oDaChon, setODaChon] = useState<Set<string>>(new Set())
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
+  const [xoaCho, setXoaCho] = useState<QuyenDto | null>(null)
 
   const { data: danhMuc } = useQuery({
     queryKey: ['quyen-danh-muc'],
@@ -94,10 +99,12 @@ export default function PhanQuyen() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
+        {coQuyen('PhanQuyen', 'Them') && (
         <Button onClick={() => moFormVoi(null)}>
           <Plus className="h-4 w-4" />
           {t('quyen.themMoi')}
         </Button>
+        )}
       </div>
 
       {maLoiBang && <CanhBaoLoi>{t(`loi.${maLoiBang}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
@@ -205,20 +212,29 @@ export default function PhanQuyen() {
                 </Td>
                 <Td className="text-muted-foreground">{q.chucNangs.length}</Td>
                 <Td>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => moFormVoi(q)}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setMaLoiBang(null)
-                        if (confirm(t('chung.xacNhanXoa'))) xoa.mutate(q.id)
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                    </Button>
+                  <div className="flex justify-end">
+                    <MenuThaoTac
+                      nhanMo={t('chung.thaoTac')}
+                      muc={[
+                        {
+                          nhan: t('chung.sua'),
+                          icon: Pencil,
+                          an: !coQuyen('PhanQuyen', 'Sua'),
+                          onChon: () => moFormVoi(q),
+                        },
+                        {
+                          nhan: t('chung.xoa'),
+                          icon: Trash2,
+                          nguyHiem: true,
+                          ngatNhom: true,
+                          an: !coQuyen('PhanQuyen', 'Xoa'),
+                          onChon: () => {
+                            setMaLoiBang(null)
+                            setXoaCho(q)
+                          },
+                        },
+                      ]}
+                    />
                   </div>
                 </Td>
               </tr>
@@ -226,6 +242,18 @@ export default function PhanQuyen() {
           </tbody>
         </Table>
       )}
+
+      <HopXacNhan
+        mo={xoaCho !== null}
+        tieuDe={t('chung.xacNhanXoa')}
+        thongDiep={xoaCho ? `${t('chung.xoa')} "${xoaCho.tenQuyen}"?` : ''}
+        nhanDongY={t('chung.xoa')}
+        onHuy={() => setXoaCho(null)}
+        onDongY={() => {
+          if (xoaCho) xoa.mutate(xoaCho.id)
+          setXoaCho(null)
+        }}
+      />
     </div>
   )
 }

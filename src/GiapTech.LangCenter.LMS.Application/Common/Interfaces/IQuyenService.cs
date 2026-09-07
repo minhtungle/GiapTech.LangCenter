@@ -11,6 +11,15 @@ public interface IQuyenService
         CancellationToken ct = default);
 
     /// <summary>
+    /// Toàn bộ quyền hiệu lực của một tài khoản, dạng `("TenChucNang", HanhDong)`.
+    ///
+    /// Frontend cần cả tập một lần để ẩn menu và nút — hỏi từng cái một sẽ là hàng chục lượt
+    /// gọi mỗi lần tải trang. Đọc từ cùng cache với <see cref="CoQuyenAsync"/>.
+    /// </summary>
+    Task<IReadOnlyCollection<(string ChucNang, HanhDong HanhDong)>> LayTatCaQuyenAsync(
+        Guid tenantId, Guid taiKhoanId, CancellationToken ct = default);
+
+    /// <summary>
     /// Xoá cache quyền của một người dùng. BẮT BUỘC gọi khi sửa nhóm quyền, gán/gỡ quyền,
     /// hoặc vô hiệu hoá tài khoản — quyền đã thu hồi mà cache còn sống là lỗ hổng bảo mật,
     /// không phải chuyện dữ liệu cũ.

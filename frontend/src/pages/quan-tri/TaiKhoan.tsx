@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Plus, KeyRound, Trash2, Pencil } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
+import { useQuyen } from '@/lib/quyen'
 import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong,
 } from '@/components/ui'
@@ -37,6 +38,7 @@ interface QuyenNgan {
 export default function TaiKhoan() {
   const { t } = useTranslation()
   const qc = useQueryClient()
+  const { coQuyen } = useQuyen()
 
   const [trang, setTrang] = useState(1)
   const [soDong, setSoDong] = useState(20)
@@ -153,20 +155,22 @@ export default function TaiKhoan() {
           />
         </div>
 
-        <Button
-          onClick={() => {
-            setDangSua(null)
-            setNguoiChon(null)
-            setQuyenChon([])
-            setTrangThai('HoatDong')
-            setBuocDoiMk(true)
-            setMaLoi(null)
-            setMoForm(true)
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          {t('chung.them')}
-        </Button>
+        {coQuyen('TaiKhoan', 'Them') && (
+          <Button
+            onClick={() => {
+              setDangSua(null)
+              setNguoiChon(null)
+              setQuyenChon([])
+              setTrangThai('HoatDong')
+              setBuocDoiMk(true)
+              setMaLoi(null)
+              setMoForm(true)
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            {t('chung.them')}
+          </Button>
+        )}
       </div>
 
       {maLoiBang && <CanhBaoLoi>{t(`loi.${maLoiBang}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
@@ -227,6 +231,7 @@ export default function TaiKhoan() {
                           {
                             nhan: t('chung.sua'),
                             icon: Pencil,
+                            an: !coQuyen('TaiKhoan', 'Sua'),
                             onChon: () => {
                               setDangSua(u)
                               setNguoiChon(u.nguoiDungId)
@@ -239,6 +244,7 @@ export default function TaiKhoan() {
                           {
                             nhan: t('taiKhoan.datLaiMatKhau'),
                             icon: KeyRound,
+                            an: !coQuyen('DoiMatKhauNguoiKhac', 'Sua'),
                             onChon: () => {
                               setDatLaiCho(u)
                               setMaLoi(null)
@@ -249,6 +255,7 @@ export default function TaiKhoan() {
                             icon: Trash2,
                             nguyHiem: true,
                             ngatNhom: true,
+                            an: !coQuyen('TaiKhoan', 'Xoa'),
                             onChon: () => xoa.mutate(u.id),
                           },
                         ]}

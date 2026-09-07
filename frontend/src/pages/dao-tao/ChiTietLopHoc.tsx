@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2 } from 'lucide-react'
 import { api, layMaLoi } from '@/lib/api'
+import { useQuyen } from '@/lib/quyen'
 import { Badge, Card, CardContent, TrangTrong } from '@/components/ui'
 import { LichVaDiemDanh } from './LichVaDiemDanh'
 import { BaiTapCuaLop } from './BaiTapCuaLop'
@@ -26,12 +27,12 @@ import type { KetQuaTrang } from '@/lib/api'
  * Khai tường minh thì TypeScript bắt được ngay khi thêm tab mới.
  */
 const CAC_TAB = [
-  { ma: 'tong-quan', khoa: 'lopHoc.tabTongQuan' },
-  { ma: 'hoc-vien', khoa: 'lopHoc.tabHocVien' },
-  { ma: 'lich', khoa: 'lopHoc.tabLich' },
-  { ma: 'bai-tap', khoa: 'lopHoc.tabBaiTap' },
-  { ma: 'hoc-phi', khoa: 'lopHoc.tabHocPhi' },
-  { ma: 'tai-lieu', khoa: 'lopHoc.tabTaiLieu' },
+  { ma: 'tong-quan', khoa: 'lopHoc.tabTongQuan', can: undefined },
+  { ma: 'hoc-vien', khoa: 'lopHoc.tabHocVien', can: undefined },
+  { ma: 'lich', khoa: 'lopHoc.tabLich', can: 'BuoiHoc' },
+  { ma: 'bai-tap', khoa: 'lopHoc.tabBaiTap', can: 'BaiTap' },
+  { ma: 'hoc-phi', khoa: 'lopHoc.tabHocPhi', can: 'HocPhi' },
+  { ma: 'tai-lieu', khoa: 'lopHoc.tabTaiLieu', can: 'TaiLieu' },
 ] as const
 
 type Tab = (typeof CAC_TAB)[number]['ma']
@@ -51,9 +52,17 @@ export default function ChiTietLopHoc() {
   const navigate = useNavigate()
   const [sp, setSp] = useSearchParams()
 
+  const { coQuyen, dangTai: dangTaiQuyen } = useQuyen()
+
+  // Trong lúc chưa biết quyền thì hiện đủ tab — ẩn rồi hiện lại sẽ nhấp nháy mỗi lần tải.
+  const tabHienThi = dangTaiQuyen
+    ? CAC_TAB
+    : CAC_TAB.filter((x) => !x.can || coQuyen(x.can))
+
   const tabQuery = sp.get('tab') as Tab | null
+  // Gõ thẳng `?tab=hoc-phi` khi không có quyền thì rơi về Tổng quan, không phải tab trắng.
   const tab: Tab =
-    tabQuery && CAC_TAB.some((x) => x.ma === tabQuery) ? tabQuery : 'tong-quan'
+    tabQuery && tabHienThi.some((x) => x.ma === tabQuery) ? tabQuery : 'tong-quan'
 
   const doiTab = (x: Tab) => {
     // `replace` để 6 lần bấm tab không sinh 6 mục lịch sử — Back phải quay về danh sách lớp.
@@ -95,7 +104,7 @@ export default function ChiTietLopHoc() {
       </div>
 
       <div className="flex flex-wrap gap-1 rounded-lg border border-border p-1">
-        {CAC_TAB.map((x) => (
+        {tabHienThi.map((x) => (
           <button
             key={x.ma}
             type="button"

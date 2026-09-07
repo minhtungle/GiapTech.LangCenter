@@ -10,6 +10,8 @@ import {
 import { Modal } from '@/components/ui/Modal'
 import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import { PhanTrang } from '@/components/ui/PhanTrang'
+import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
+import { useQuyen } from '@/lib/quyen'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 import { ChonTep, type TepDto } from '@/components/ui/ChonTep'
 
@@ -37,6 +39,7 @@ interface LopNgan {
 export default function TaiLieu({ lopHocId }: { lopHocId?: string } = {}) {
   const { t } = useTranslation()
   const qc = useQueryClient()
+  const { coQuyen } = useQuyen()
 
   const [trang, setTrang] = useState(1)
   const [soDong, setSoDong] = useState(20)
@@ -138,10 +141,12 @@ export default function TaiLieu({ lopHocId }: { lopHocId?: string } = {}) {
             placeholder={t('hocLieu.tieuDe')}
           />
         </div>
+        {coQuyen('TaiLieu', 'Them') && (
         <Button className="ml-auto" onClick={() => { setDangSua(null); setMoForm(true) }}>
           <Plus className="mr-1.5 h-4 w-4" />
           {t('hocLieu.themTaiLieu')}
         </Button>
+        )}
       </div>
 
       {maLoi && !moForm && (
@@ -184,22 +189,29 @@ export default function TaiLieu({ lopHocId }: { lopHocId?: string } = {}) {
                       <Td className="text-muted-foreground">{tl.teps.length}</Td>
                       <Td className="text-muted-foreground">{tl.nguoiTaiLen ?? '—'}</Td>
                       <Td>
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost" size="sm" title={t('chung.sua')}
-                            onClick={() => {
-                              setDangSua(tl); setLopChon(tl.lopHocIds); setLoai(tl.loai)
-                              setMoForm(true)
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost" size="sm" title={t('chung.xoa')}
-                            onClick={() => setXoaCho(tl)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                        <div className="flex justify-end">
+                          <MenuThaoTac
+                            nhanMo={t('chung.thaoTac')}
+                            muc={[
+                              {
+                                nhan: t('chung.sua'),
+                                icon: Pencil,
+                                an: !coQuyen('TaiLieu', 'Sua'),
+                                onChon: () => {
+                                  setDangSua(tl); setLopChon(tl.lopHocIds); setLoai(tl.loai)
+                                  setMoForm(true)
+                                },
+                              },
+                              {
+                                nhan: t('chung.xoa'),
+                                icon: Trash2,
+                                nguyHiem: true,
+                                ngatNhom: true,
+                                an: !coQuyen('TaiLieu', 'Xoa'),
+                                onChon: () => setXoaCho(tl),
+                              },
+                            ]}
+                          />
                         </div>
                       </Td>
                     </tr>

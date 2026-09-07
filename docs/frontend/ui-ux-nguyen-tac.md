@@ -21,6 +21,16 @@
   [FR-03](../nghiep-vu/quan-tri-he-thong.md#quy-trình-chuẩn-tạo-tài-khoản-wizard-tuần-tự): hồ sơ cầu thủ
   → nhóm quyền → tài khoản.
 - **Empty-state** luôn có nút hành động + hướng dẫn ngắn, không để màn hình trắng.
+- **Ẩn menu và nút theo quyền bằng `useQuyen()`** (`frontend/src/lib/quyen.ts`), đọc từ
+  `GET /toi/quyen`.
+  - `coQuyen('HocPhi', 'Them')` cho nút; `an: !coQuyen(...)` cho mục trong `MenuThaoTac`.
+  - **Đây là tiện lợi, KHÔNG phải bảo vệ.** Mọi endpoint vẫn tự gác quyền của nó, và dữ liệu
+    nhạy cảm phải được backend che TRƯỚC khi rời máy chủ — ẩn ở client chỉ để người dùng khỏi
+    bấm vào rồi mới biết mình không được phép.
+  - Trong lúc **chưa biết quyền** (`dangTai`) thì hiện đủ: ẩn trước rồi hiện lại làm menu nhấp
+    nháy mỗi lần tải trang. Bấm nhầm lúc đó cùng lắm nhận 403.
+  - Ẩn hết mục trong một nhóm menu thì **bỏ luôn nhóm** — tiêu đề không có mục nào bên dưới
+    trông như giao diện hỏng.
 - **Nút thao tác trong bảng → gom vào menu `MenuThaoTac`**, không bày icon trần ra hàng ngang.
   Bảng lớp học từng có 6 nút mỗi dòng, chiếm gần nửa bề ngang và biến cột thao tác thành một
   dải icon phải rê chuột từng cái để đoán. Menu giữ cột hẹp và **có chữ**.

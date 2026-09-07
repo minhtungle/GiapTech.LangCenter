@@ -41,6 +41,7 @@ Lỗi đã bắt được, thứ tưởng đúng mà sai, giới hạn chưa g�
 
 | Ngày | Nội dung chính |
 |---|---|
+| [2026-09-07 (quyền UI)](./2026-09-07-an-menu-theo-quyen.md) | **Ẩn menu/nút theo quyền** — endpoint `/toi/quyen` + hook `useQuyen`, đóng nợ N2 |
 | [2026-09-07 (bảo mật)](./2026-09-07-ro-ri-hoc-phi.md) | **Rò rỉ học phí** qua DTO module lớp học — giáo viên thấy mức miễn giảm, học viên thấy học phí bạn cùng lớp |
 | [2026-09-07 (UI)](./2026-09-07-menu-thao-tac-va-chi-tiet-lop.md) | **Menu thao tác trong bảng** + **view chi tiết lớp học 6 tab** tại `/lop-hoc/:id` |
 | [2026-09-07](./2026-09-07-tach-nguoi-dung-tai-khoan.md) | **Tách người dùng khỏi tài khoản** — 3 bảng hồ sơ vai trò; migration viết tay giữ mật khẩu; vá cổng quyền và lọc vai trò |

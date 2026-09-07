@@ -28,6 +28,10 @@ public class QuyenService(AppDbContext db, IMemoryCache cache) : IQuyenService
         return quyens.Contains((chucNang, hanhDong));
     }
 
+    public async Task<IReadOnlyCollection<(string ChucNang, HanhDong HanhDong)>>
+        LayTatCaQuyenAsync(Guid tenantId, Guid taiKhoanId, CancellationToken ct = default)
+        => await LayQuyenHieuLucAsync(tenantId, taiKhoanId, ct);
+
     private async Task<HashSet<(string, HanhDong)>> LayQuyenHieuLucAsync(
         Guid tenantId, Guid taiKhoanId, CancellationToken ct)
     {
