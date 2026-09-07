@@ -38,7 +38,28 @@ public record BuoiHocDto(
     ///
     /// Đây là **thông tin để dựng UI**, không phải lớp bảo vệ: handler vẫn tự kiểm.
     /// </summary>
-    bool ToiLaHocVien);
+    bool ToiLaHocVien,
+    /// <summary>
+    /// Trợ giảng của buổi — thực chất là trợ giảng của LỚP.
+    ///
+    /// Không có bảng `BUOI_HOC_TRO_GIANG`: phân công trợ giảng theo từng buổi chưa phải yêu
+    /// cầu, và thêm bảng thì mọi buổi phải backfill khi lớp thêm trợ giảng (đúng cái bẫy đã
+    /// tránh với danh sách học viên theo buổi). Nếu sau này cần trợ giảng riêng từng buổi thì
+    /// làm như `GiaoVienId`: cột/bảng override, rỗng = theo lớp.
+    /// </summary>
+    List<string> TenTroGiangs,
+    /// <summary>
+    /// Phòng học / link **có hiệu lực**: của buổi nếu buổi ghi riêng, không thì của lớp.
+    ///
+    /// `PhongHoc`/`LinkHoc` ở trên là cột override thô (`null` = theo lớp), cùng quy ước với
+    /// `GiaoVienId`. Nhưng UI mà hiện thẳng cột thô thì buổi sinh theo lịch — vốn luôn để
+    /// `null` — hiện dấu gạch, người dùng đọc ra "không có phòng" thay vì "P.101 theo lớp".
+    /// Tính ở đây chứ không ở frontend để mọi màn hình hiểu giống nhau.
+    /// </summary>
+    string? PhongHocHieuLuc,
+    string? LinkHocHieuLuc,
+    /// <summary>true = buổi này ghi phòng/link riêng, khác lớp — UI gắn nhãn như `GiaoVienRieng`.</summary>
+    bool DiaDiemRieng);
 
 /// <summary>Một xung đột lịch của giáo viên — trả DỮ LIỆU, frontend tự dựng câu (quy tắc #3).</summary>
 public record XungDotLich(
@@ -78,7 +99,11 @@ public class LayBuoiHocCuaLopHandler(
                 b.DiemDanhs.Count,
                 b.LopHoc.HocViens.Count(hv => hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc),
                 b.LopHoc.HocViens.Any(hv => hv.HocVienId == toi
-                                            && hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc)))
+                                            && hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc),
+                b.LopHoc.TroGiangs.Select(tg => tg.TroGiang.HoTen).ToList(),
+                b.PhongHoc ?? b.LopHoc.PhongHoc,
+                b.LinkHoc ?? b.LopHoc.LinkHoc,
+                b.PhongHoc != null || b.LinkHoc != null))
             .ToListAsync(ct);
     }
 
@@ -169,7 +194,11 @@ public class LayLichTheoKhoangHandler(
                 b.DiemDanhs.Count,
                 b.LopHoc.HocViens.Count(hv => hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc),
                 b.LopHoc.HocViens.Any(hv => hv.HocVienId == toi
-                                            && hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc)))
+                                            && hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc),
+                b.LopHoc.TroGiangs.Select(tg => tg.TroGiang.HoTen).ToList(),
+                b.PhongHoc ?? b.LopHoc.PhongHoc,
+                b.LinkHoc ?? b.LopHoc.LinkHoc,
+                b.PhongHoc != null || b.LinkHoc != null))
             .ToListAsync(ct);
     }
 }

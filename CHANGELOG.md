@@ -26,6 +26,20 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 - `BangDiemDanh` tách khỏi `LichVaDiemDanh.tsx` thành file riêng, bọc `KhungNoiDung` để dùng
   được cả dạng modal lẫn dạng tab. Thêm **cột nhận xét của giáo viên**.
 
+### Fixed — Tab Thông tin buổi: thiếu trợ giảng, hiện khoá i18n thô (07/09/2026)
+
+- Nhãn hiện ra chuỗi `buoiHoc.linkHoc` vì khối `buoiHoc` trong `i18n.ts` **chưa có** ba khoá
+  `phongHoc`, `linkHoc`, `ghiChu` (quy tắc #3). Thêm đủ.
+- **Thiếu hẳn dòng Trợ giảng.** `BuoiHocDto` thêm `TenTroGiangs` — lấy từ `LOP_HOC_TRO_GIANG`
+  vì **không có** bảng phân công trợ giảng theo buổi; UI ghi rõ "trợ giảng của lớp".
+- Phòng học/link của buổi sinh theo lịch luôn là `null` (quy ước "null = theo lớp", cùng kiểu
+  `GiaoVienId`), nên UI hiện dấu gạch — đọc thành "không có phòng" thay vì "P.101 theo lớp".
+  DTO thêm `PhongHocHieuLuc`/`LinkHocHieuLuc`/`DiaDiemRieng`, tính ở backend để mọi màn hình
+  hiểu giống nhau.
+- **Thêm `scripts/check-i18n-keys.py` vào CI.** Thiếu bản dịch không làm `npm run build`,
+  oxlint hay test API đỏ — chỉ người dùng thấy chuỗi khoá trên màn hình. Đây là lần thứ hai
+  trong ngày, nên đưa vào máy kiểm thay vì dặn nhau nhớ.
+
 ### Fixed — Giáo viên bị "bạn không thuộc lớp này" khi viết nhận xét buổi (07/09/2026)
 
 - Tab Nhận xét hiện form gửi cho **mọi** vai trò, nhưng `NHAN_XET_BUOI_HOC` là kênh riêng của

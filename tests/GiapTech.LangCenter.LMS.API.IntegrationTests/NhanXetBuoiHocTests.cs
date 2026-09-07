@@ -323,7 +323,8 @@ public class NhanXetBuoiHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
                      "id", "lopHocId", "tenLopHoc", "thuTu", "batDau", "ketThuc",
                      "giaoVienId", "tenGiaoVien", "giaoVienRieng", "trangThai", "laHocBu",
                      "phongHoc", "linkHoc", "ghiChu", "soDaDiemDanh", "soHocVien",
-                     "toiLaHocVien"
+                     "toiLaHocVien", "tenTroGiangs", "phongHocHieuLuc", "linkHocHieuLuc",
+                     "diaDiemRieng"
                  })
             Assert.True(d.TryGetProperty(truong, out _), $"DTO thiếu trường '{truong}'");
     }

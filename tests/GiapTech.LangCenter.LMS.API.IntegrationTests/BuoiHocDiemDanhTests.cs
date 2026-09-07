@@ -84,6 +84,77 @@ public class BuoiHocDiemDanhTests(ApiFactory factory) : IClassFixture<ApiFactory
         return (lop, buoi, hv);
     }
 
+    // ---------- Thông tin hiển thị của buổi ----------
+
+    /// <summary>
+    /// Buổi sinh theo lịch để `phong_hoc`/`link_hoc` = null (quy ước "null = theo lớp", cùng
+    /// kiểu với `GiaoVienId`). DTO phải trả **giá trị có hiệu lực** để UI không hiện dấu gạch
+    /// — người dùng đọc dấu gạch thành "không có phòng" thay vì "phòng của lớp".
+    ///
+    /// Người dùng báo 07/09/2026: tab Thông tin buổi thiếu trợ giảng và hiện sai nhãn.
+    /// </summary>
+    [Fact]
+    public async Task Buoi_thua_huong_phong_hoc_va_tro_giang_cua_lop()
+    {
+        var c = await Client();
+        var gv = await TaoNguoiDung(c, "gv-thua-huong", "GiaoVien");
+        var tg = await TaoNguoiDung(c, "tg-thua-huong", "TroGiang");
+
+        var taoLop = await c.PostAsJsonAsync("/api/v1/lop-hoc", new
+        {
+            Ten = "Lớp thừa hưởng", GiaoVienChinhId = gv, HinhThuc = "Offline",
+            PhongHoc = "P.101", LinkHoc = "https://meet.example/lop",
+            HocPhi = 1000m, TroGiangIds = new[] { tg }
+        });
+        var lop = await taoLop.Content.ReadFromJsonAsync<Guid>();
+
+        var sinh = await c.PostAsJsonAsync($"/api/v1/lop-hoc/{lop}/sinh-lich", new
+        {
+            NgayKhaiGiang = new DateOnly(2026, 10, 6),
+            ThuTrongTuan = new[] { DayOfWeek.Tuesday },
+            GioBatDau = new TimeOnly(18, 0), GioKetThuc = new TimeOnly(20, 0), SoBuoi = 2
+        });
+        sinh.EnsureSuccessStatusCode();
+        var buoi = (await sinh.Content.ReadFromJsonAsync<List<JsonElement>>())![0]
+            .GetProperty("id").GetGuid();
+
+        var d = await c.GetFromJsonAsync<JsonElement>($"/api/v1/buoi-hoc/{buoi}");
+
+        // Cột thô vẫn null — đó là override, không phải giá trị hiển thị.
+        Assert.Equal(JsonValueKind.Null, d.GetProperty("phongHoc").ValueKind);
+
+        Assert.Equal("P.101", d.GetProperty("phongHocHieuLuc").GetString());
+        Assert.Equal("https://meet.example/lop", d.GetProperty("linkHocHieuLuc").GetString());
+        Assert.False(d.GetProperty("diaDiemRieng").GetBoolean());
+        Assert.Equal(
+            ["Người tg-thua-huong"],
+            d.GetProperty("tenTroGiangs").EnumerateArray().Select(x => x.GetString()));
+    }
+
+    /// <summary>Chiều ngược: buổi ghi phòng riêng thì thắng phòng của lớp, và có cờ để UI gắn nhãn.</summary>
+    [Fact]
+    public async Task Phong_hoc_rieng_cua_buoi_thang_phong_cua_lop()
+    {
+        var c = await Client();
+        var (_, buoi, _) = await DungLopCoLich(c, "phong-rieng");
+
+        // `BatDau`/`KetThuc` KHÔNG nullable trong lệnh cập nhật nên phải gửi lại giờ hiện tại
+        // — bỏ đi thì nhận default(DateTimeOffset) và validator chặn 400.
+        var cu = await c.GetFromJsonAsync<JsonElement>($"/api/v1/buoi-hoc/{buoi}");
+
+        (await c.PutAsJsonAsync($"/api/v1/buoi-hoc/{buoi}", new
+        {
+            Id = buoi,
+            BatDau = cu.GetProperty("batDau").GetDateTimeOffset(),
+            KetThuc = cu.GetProperty("ketThuc").GetDateTimeOffset(),
+            PhongHoc = "P.999"
+        })).EnsureSuccessStatusCode();
+
+        var d = await c.GetFromJsonAsync<JsonElement>($"/api/v1/buoi-hoc/{buoi}");
+        Assert.Equal("P.999", d.GetProperty("phongHocHieuLuc").GetString());
+        Assert.True(d.GetProperty("diaDiemRieng").GetBoolean());
+    }
+
     // ---------- Sinh lịch ----------
 
     [Fact]

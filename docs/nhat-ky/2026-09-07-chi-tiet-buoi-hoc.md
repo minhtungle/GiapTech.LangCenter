@@ -69,6 +69,30 @@ Sửa: `BuoiHocDto` thêm cờ `toiLaHocVien` (tính trong cùng phép chiếu, 
 thay vì chỉ **ẩn** form, giáo viên thấy câu giải thích chỉ đúng chỗ ghi nhận xét của họ — ẩn
 không thôi thì họ đi tìm mà không biết tìm ở đâu.
 
+## Lỗi thứ ba: nhãn hiện `buoiHoc.linkHoc`, và thiếu trợ giảng
+
+Người dùng báo tiếp. Hai lỗi trong cùng một tab.
+
+**Nhãn thô**: khối `buoiHoc` trong `i18n.ts` thiếu `phongHoc`, `linkHoc`, `ghiChu`. Điều đáng
+ghi lại là tôi **đã kiểm** ba khoá này trước khi commit — bằng `grep -c "phongHoc:"` trên cả
+file. Grep bắt được chúng ở namespace **khác** (`lopHoc`), trả về số dương, tôi kết luận là có.
+So khoá phải so **theo namespace**, không theo tên trần.
+
+Nên tôi viết `scripts/check-i18n-keys.py` và cắm vào CI. Đây là lần thứ hai trong ngày cùng một
+dạng lỗi (sáng: ghép khoá động ở tab lớp học), và cả hai lần không có gì đỏ: TypeScript không
+biết `t()` nhận khoá gì, build xanh, oxlint xanh, test API xanh — chỉ người dùng thấy. Đã thử
+xoá khoá để chắc script đỏ và chỉ đúng file + khoá.
+
+**Thiếu trợ giảng**: `BuoiHocDto` không có. Không có bảng `BUOI_HOC_TRO_GIANG` — phân công trợ
+giảng theo từng buổi chưa phải yêu cầu, và thêm bảng thì mọi buổi phải backfill khi lớp thêm
+trợ giảng (đúng cái bẫy đã tránh với danh sách học viên theo buổi). Nên lấy trợ giảng của LỚP
+và **nói rõ trên UI** là "trợ giảng của lớp".
+
+**Việc phát sinh khi kiểm**: buổi sinh theo lịch có `phong_hoc = null` — đúng quy ước "null =
+theo lớp", nhưng UI hiện dấu gạch nên đọc thành "không có phòng" thay vì "P.101 theo lớp". Thêm
+`PhongHocHieuLuc`/`LinkHocHieuLuc` tính ở **backend**: để frontend tự `??` thì màn khác quên là
+lệch nhau. Cờ `DiaDiemRieng` để UI gắn nhãn, cùng khuôn `GiaoVienRieng` đã có.
+
 ## Chuyển buổi giữ nguyên tab
 
 `?tab=` không đổi khi `id` đổi. Người điểm danh lần lượt 20 buổi không phải bấm lại tab Điểm
@@ -89,7 +113,7 @@ danh 20 lần. Đổi **tab** dùng `replace: true` (6 lần bấm tab không si
 
 ## Kiểm chứng
 
-- `dotnet build` 0 warning · **277 test xanh** (54 unit + 223 integration), trong đó 13 test mới.
+- `dotnet build` 0 warning · **279 test xanh** (54 unit + 225 integration), trong đó 15 test mới.
 - Kiểm tay trên PostgreSQL thật: quy tắc #1 trên cột `nhan_xet` (gửi thiếu trường → giữ nguyên;
   gửi chuỗi rỗng → xoá), ranh giới đọc theo 4 vai trò, gửi lại = sửa, cách ly tenant hai chiều,
   buổi đã chốt vẫn nhận xét được, và bug xoá-buổi ở trên.

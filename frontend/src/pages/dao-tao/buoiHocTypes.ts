@@ -34,6 +34,17 @@ export interface BuoiHocDto {
    * thấy form, nhập xong mới nhận lỗi — đúng lỗi người dùng gặp 07/09/2026.
    */
   toiLaHocVien: boolean
+  /** Trợ giảng của lớp — chưa có phân công trợ giảng riêng từng buổi. */
+  tenTroGiangs: string[]
+  /**
+   * Phòng học / link CÓ HIỆU LỰC: của buổi nếu ghi riêng, không thì của lớp.
+   *
+   * Hiện các trường này, đừng hiện `phongHoc`/`linkHoc` thô — buổi sinh theo lịch luôn để
+   * null nên sẽ ra dấu gạch, đọc thành "không có phòng" thay vì "theo lớp".
+   */
+  phongHocHieuLuc: string | null
+  linkHocHieuLuc: string | null
+  diaDiemRieng: boolean
 }
 
 /**

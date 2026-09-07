@@ -206,18 +206,51 @@ function ThongTinBuoi({ buoi }: { buoi: BuoiHocDto }) {
             </>
           }
         />
-        <Dong nhan={t('buoiHoc.phongHoc')} giaTri={buoi.phongHoc ?? '—'} />
+        <Dong
+          nhan={t('buoiHoc.troGiang')}
+          giaTri={
+            buoi.tenTroGiangs.length > 0 ? (
+              <>
+                {buoi.tenTroGiangs.join(', ')}
+                {/* Nói rõ trợ giảng lấy theo LỚP, để người dùng không tưởng buổi này được
+                    phân công riêng — hiện chưa có bảng phân công theo buổi. */}
+                <span className="ml-2 text-xs text-muted-foreground">
+                  {t('buoiHoc.troGiangTheoLop')}
+                </span>
+              </>
+            ) : (
+              <span className="text-muted-foreground">{t('buoiHoc.khongCoTroGiang')}</span>
+            )
+          }
+        />
+        <Dong
+          nhan={t('buoiHoc.phongHoc')}
+          giaTri={
+            buoi.phongHocHieuLuc ? (
+              <>
+                {buoi.phongHocHieuLuc}
+                {!buoi.diaDiemRieng && (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    {t('buoiHoc.theoLop')}
+                  </span>
+                )}
+              </>
+            ) : (
+              '—'
+            )
+          }
+        />
         <Dong
           nhan={t('buoiHoc.linkHoc')}
           giaTri={
-            buoi.linkHoc ? (
+            buoi.linkHocHieuLuc ? (
               <a
-                href={buoi.linkHoc}
+                href={buoi.linkHocHieuLuc}
                 target="_blank"
                 rel="noreferrer noopener"
                 className="inline-flex items-center gap-1 text-primary hover:underline"
               >
-                {buoi.linkHoc}
+                {buoi.linkHocHieuLuc}
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
             ) : (
