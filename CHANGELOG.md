@@ -26,6 +26,17 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 - `BangDiemDanh` tách khỏi `LichVaDiemDanh.tsx` thành file riêng, bọc `KhungNoiDung` để dùng
   được cả dạng modal lẫn dạng tab. Thêm **cột nhận xét của giáo viên**.
 
+### Fixed — Giáo viên bị "bạn không thuộc lớp này" khi viết nhận xét buổi (07/09/2026)
+
+- Tab Nhận xét hiện form gửi cho **mọi** vai trò, nhưng `NHAN_XET_BUOI_HOC` là kênh riêng của
+  học viên (giáo viên gửi vào đó sẽ làm lệch thống kê hài lòng) nên backend chặn bằng
+  `KHONG_THUOC_LOP_NAY`. Giáo viên của lớp nhập xong mới nhận lỗi — vô lý với người đang dạy.
+- `BuoiHocDto` thêm cờ **`toiLaHocVien`**; UI chỉ hiện form cho học viên của lớp, còn giáo viên
+  / trợ giảng / quản trị thấy câu giải thích **chỉ đúng chỗ ghi nhận xét của họ** (tab Điểm
+  danh, mỗi học viên một ô) thay vì chỉ ẩn form đi.
+- Backend **không đổi hành vi** — vẫn chặn như trước. Lỗi nằm ở UI mời người dùng làm việc
+  chắc chắn thất bại.
+
 ### Fixed — Xoá buổi đã có nhận xét trả 500 thay vì mã lỗi (07/09/2026)
 
 - `NHAN_XET_BUOI_HOC → BUOI_HOC` là Restrict, nhưng `XoaBuoiHocHandler` chỉ kiểm `DIEM_DANH`

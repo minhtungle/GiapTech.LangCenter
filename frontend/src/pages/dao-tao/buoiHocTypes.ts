@@ -26,6 +26,14 @@ export interface BuoiHocDto {
   ghiChu: string | null
   soDaDiemDanh: number
   soHocVien: number
+  /**
+   * true = người đang xem là học viên đang học của lớp.
+   *
+   * Quyết định có hiện form gửi nhận xét về buổi hay không: `NHAN_XET_BUOI_HOC` là kênh của
+   * học viên, backend chặn người khác bằng `KHONG_THUOC_LOP_NAY`. Thiếu cờ này thì giáo viên
+   * thấy form, nhập xong mới nhận lỗi — đúng lỗi người dùng gặp 07/09/2026.
+   */
+  toiLaHocVien: boolean
 }
 
 /**

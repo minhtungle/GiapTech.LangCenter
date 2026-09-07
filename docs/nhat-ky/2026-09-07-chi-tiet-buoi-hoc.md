@@ -53,6 +53,22 @@ Restrict mà không đọc lại danh sách kiểm của handler xoá là bẫy 
 Không test nào đỏ trước đó, vì chưa có test nào xoá một buổi **có nhận xét**. Lại đúng khuôn
 đã gặp cả tuần: test xanh không chứng minh gì về đường đi mà test không đi qua.
 
+## Lỗi thứ hai: giáo viên bị "bạn không thuộc lớp này"
+
+Người dùng báo ngay sau khi nhận bản trên. Backend **đúng** và tôi giữ nguyên: kênh
+`NHAN_XET_BUOI_HOC` là của học viên, cho giáo viên gửi vào đó thì thống kê hài lòng thành vô
+nghĩa. Sai là ở **UI của tôi** — hiện form cho mọi vai trò, nên giáo viên nhập xong mới biết
+mình không được phép.
+
+Đáng ghi lại vì đây là một dạng lỗi khác với các lỗi tuần này: không phải rò rỉ, không phải mất
+dữ liệu, mà là **mời người dùng làm một việc chắc chắn thất bại**. Test API xanh hết — chúng
+kiểm "giáo viên gửi thì bị chặn", đúng như thiết kế. Không test nào hỏi "vậy sao UI lại cho họ
+thấy form".
+
+Sửa: `BuoiHocDto` thêm cờ `toiLaHocVien` (tính trong cùng phép chiếu, không thêm truy vấn). Và
+thay vì chỉ **ẩn** form, giáo viên thấy câu giải thích chỉ đúng chỗ ghi nhận xét của họ — ẩn
+không thôi thì họ đi tìm mà không biết tìm ở đâu.
+
 ## Chuyển buổi giữ nguyên tab
 
 `?tab=` không đổi khi `id` đổi. Người điểm danh lần lượt 20 buổi không phải bấm lại tab Điểm
@@ -73,7 +89,7 @@ danh 20 lần. Đổi **tab** dùng `replace: true` (6 lần bấm tab không si
 
 ## Kiểm chứng
 
-- `dotnet build` 0 warning · **276 test xanh** (54 unit + 222 integration), trong đó 12 test mới.
+- `dotnet build` 0 warning · **277 test xanh** (54 unit + 223 integration), trong đó 13 test mới.
 - Kiểm tay trên PostgreSQL thật: quy tắc #1 trên cột `nhan_xet` (gửi thiếu trường → giữ nguyên;
   gửi chuỗi rỗng → xoá), ranh giới đọc theo 4 vai trò, gửi lại = sửa, cách ly tenant hai chiều,
   buổi đã chốt vẫn nhận xét được, và bug xoá-buổi ở trên.

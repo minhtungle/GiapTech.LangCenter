@@ -35,7 +35,14 @@ const MUC = [1, 2, 3, 4, 5]
  * Ai thấy nhận xét của ai do BACKEND quyết (`LayNhanXetBuoiHocQuery` lọc theo quyền), không
  * do component này ẩn hiện — ẩn ở frontend thì gọi API trực tiếp vẫn đọc được.
  */
-export function NhanXetBuoiHoc({ buoiHocId }: { buoiHocId: string }) {
+export function NhanXetBuoiHoc({
+  buoiHocId,
+  toiLaHocVien,
+}: {
+  buoiHocId: string
+  /** Chỉ học viên đang học của lớp gửi được nhận xét về buổi — xem `BuoiHocDto.toiLaHocVien`. */
+  toiLaHocVien: boolean
+}) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const { hoi, hop } = useXacNhan()
@@ -92,6 +99,17 @@ export function NhanXetBuoiHoc({ buoiHocId }: { buoiHocId: string }) {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
+      {!toiLaHocVien ? (
+        /* Giáo viên / trợ giảng / quản trị: KHÔNG hiện form. Trước đây hiện cho mọi người nên
+           giáo viên nhập xong mới nhận `KHONG_THUOC_LOP_NAY` — vô lý với người dạy chính lớp.
+           Nói luôn chỗ ghi nhận xét của họ thay vì chỉ ẩn đi. */
+        <Card>
+          <CardContent className="grid gap-2 pt-6">
+            <h3 className="font-semibold">{t('nhanXetBuoi.nhanXetGiaoVien')}</h3>
+            <p className="text-sm text-muted-foreground">{t('nhanXetBuoi.giaiThichChoGv')}</p>
+          </CardContent>
+        </Card>
+      ) : (
       <Card>
         <CardContent className="grid gap-3 pt-6">
           <div className="flex items-center justify-between">
@@ -168,6 +186,7 @@ export function NhanXetBuoiHoc({ buoiHocId }: { buoiHocId: string }) {
           </div>
         </CardContent>
       </Card>
+      )}
 
       <div className="grid gap-4">
         <Card>

@@ -326,6 +326,10 @@ const vi = {
     nhanXetGiaoVien: 'Giáo viên nhận xét học viên',
     chuaCoNhanXetGv: 'Giáo viên chưa nhận xét học viên nào trong buổi này',
     ghiONhanXetGv: 'Nhận xét của giáo viên được ghi ở tab Điểm danh, theo từng học viên.',
+    giaiThichChoGv:
+      'Mục nhận xét ở đây là kênh riêng của học viên góp ý về buổi học, nên chỉ học viên '
+      + 'đang học của lớp gửi được. Để nhận xét về từng học viên, mở tab Điểm danh — mỗi học '
+      + 'viên có một ô nhận xét riêng.',
   },
   buoiHoc: {
     hoiSinhLich: 'Sinh lịch với tần suất đã chọn?',

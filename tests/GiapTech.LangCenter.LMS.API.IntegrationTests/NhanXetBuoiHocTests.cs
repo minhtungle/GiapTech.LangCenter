@@ -183,6 +183,46 @@ public class NhanXetBuoiHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     /// <summary>
+    /// Cờ `toiLaHocVien` trên `BuoiHocDto` — frontend dùng nó để CHỈ hiện form gửi nhận xét
+    /// cho học viên của lớp.
+    ///
+    /// Lỗi người dùng báo 07/09/2026: giáo viên của lớp mở tab Nhận xét, thấy form, nhập xong
+    /// bấm Gửi thì nhận "bạn không thuộc lớp này" — vô lý với người đang dạy chính lớp đó.
+    /// Backend đúng (kênh này là của học viên), nhưng UI mời họ làm việc chắc chắn thất bại.
+    /// </summary>
+    [Fact]
+    public async Task Co_toi_la_hoc_vien_dung_theo_tung_vai_tro()
+    {
+        var admin = await Client();
+        var (buoi, _, _, _) = await DungLop(admin, "co-la-hoc-vien");
+
+        var cHv = await Client("hv1-co-la-hoc-vien", "matkhau123");
+        var cGv = await Client("gv-co-la-hoc-vien", "matkhau123");
+
+        Assert.True((await cHv.GetFromJsonAsync<JsonElement>($"/api/v1/buoi-hoc/{buoi}"))
+            .GetProperty("toiLaHocVien").GetBoolean());
+
+        // Giáo viên chính của lớp: THẤY buổi, nhưng KHÔNG phải học viên → không hiện form.
+        Assert.False((await cGv.GetFromJsonAsync<JsonElement>($"/api/v1/buoi-hoc/{buoi}"))
+            .GetProperty("toiLaHocVien").GetBoolean());
+
+        Assert.False((await admin.GetFromJsonAsync<JsonElement>($"/api/v1/buoi-hoc/{buoi}"))
+            .GetProperty("toiLaHocVien").GetBoolean());
+
+        // Cờ phải nhất quán ở CẢ danh sách buổi của lớp, không chỉ ở endpoint một buổi:
+        // view chi tiết đọc từ endpoint một buổi, còn nút trước/sau đọc từ danh sách.
+        var lopHocId = (await admin.GetFromJsonAsync<JsonElement>($"/api/v1/buoi-hoc/{buoi}"))
+            .GetProperty("lopHocId").GetGuid();
+        var dsHv = await cHv.GetFromJsonAsync<List<JsonElement>>(
+            $"/api/v1/lop-hoc/{lopHocId}/buoi-hoc");
+        Assert.All(dsHv!, b => Assert.True(b.GetProperty("toiLaHocVien").GetBoolean()));
+
+        var dsGv = await cGv.GetFromJsonAsync<List<JsonElement>>(
+            $"/api/v1/lop-hoc/{lopHocId}/buoi-hoc");
+        Assert.All(dsGv!, b => Assert.False(b.GetProperty("toiLaHocVien").GetBoolean()));
+    }
+
+    /// <summary>
     /// `MucHaiLong` nullable — không ép cho điểm mới gửi được nhận xét. Học viên vắng buổi
     /// vẫn góp ý được mà không phải đánh giá một buổi họ không dự.
     /// </summary>
@@ -282,7 +322,8 @@ public class NhanXetBuoiHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
                  {
                      "id", "lopHocId", "tenLopHoc", "thuTu", "batDau", "ketThuc",
                      "giaoVienId", "tenGiaoVien", "giaoVienRieng", "trangThai", "laHocBu",
-                     "phongHoc", "linkHoc", "ghiChu", "soDaDiemDanh", "soHocVien"
+                     "phongHoc", "linkHoc", "ghiChu", "soDaDiemDanh", "soHocVien",
+                     "toiLaHocVien"
                  })
             Assert.True(d.TryGetProperty(truong, out _), $"DTO thiếu trường '{truong}'");
     }

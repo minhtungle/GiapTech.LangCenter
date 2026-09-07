@@ -160,7 +160,9 @@ export default function ChiTietBuoiHoc() {
         />
       )}
 
-      {tab === 'nhan-xet' && <NhanXetBuoiHoc buoiHocId={buoi.id} />}
+      {tab === 'nhan-xet' && (
+        <NhanXetBuoiHoc buoiHocId={buoi.id} toiLaHocVien={buoi.toiLaHocVien} />
+      )}
 
       {tab === 'bai-tap' && (
         <BaiTapCuaLop

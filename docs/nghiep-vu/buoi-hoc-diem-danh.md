@@ -199,6 +199,9 @@ Nhận xét của học viên thì **phải** là bảng riêng, vì hai thứ k
 - DTO trả cờ **`cuaToi`** để UI biết bản nào nạp vào form sửa. Đừng suy từ *"danh sách có một
   phần tử"*: giáo viên đọc được mọi nhận xét, lớp chỉ một học viên đã gửi thì suy kiểu đó sẽ nạp
   nhận xét của **học viên** vào form của **giáo viên**, bấm Gửi là ghi đè nhầm chủ.
+- **UI chỉ hiện form gửi nhận xét cho học viên của lớp** — `BuoiHocDto.toiLaHocVien`. Giáo viên
+  thấy câu giải thích kèm đường dẫn tới chỗ ghi nhận xét của họ (tab Điểm danh) thay vì một form
+  bấm Gửi là lỗi. Cờ này là **thông tin dựng UI**, không phải lớp bảo vệ — handler vẫn tự kiểm.
 - **Buổi đã chốt vẫn nhận xét được** — học viên thường góp ý *sau* khi buổi kết thúc.
 - **Xoá buổi đã có nhận xét bị chặn** (`BUOI_HOC_DA_CO_NHAN_XET`) — FK là Restrict, thiếu kiểm ở
   handler thì API trả 500 thay vì nói rõ "hãy huỷ buổi thay vì xoá". Đã gặp thật 07/09/2026.

@@ -27,7 +27,18 @@ public record BuoiHocDto(
     string? LinkHoc,
     string? GhiChu,
     int SoDaDiemDanh,
-    int SoHocVien);
+    int SoHocVien,
+    /// <summary>
+    /// true = người đang xem là học viên ĐANG HỌC của lớp này.
+    ///
+    /// Frontend cần cờ này để biết có hiện form gửi nhận xét về buổi hay không: bảng
+    /// `NHAN_XET_BUOI_HOC` là kênh của học viên, giáo viên gửi vào đó sẽ làm lệch thống kê
+    /// hài lòng nên bị chặn ở handler. Không có cờ thì giáo viên vẫn thấy form, nhập xong mới
+    /// nhận `KHONG_THUOC_LOP_NAY` — đúng lỗi người dùng gặp 07/09/2026.
+    ///
+    /// Đây là **thông tin để dựng UI**, không phải lớp bảo vệ: handler vẫn tự kiểm.
+    /// </summary>
+    bool ToiLaHocVien);
 
 /// <summary>Một xung đột lịch của giáo viên — trả DỮ LIỆU, frontend tự dựng câu (quy tắc #3).</summary>
 public record XungDotLich(
@@ -42,13 +53,18 @@ public record XungDotLich(
 
 public record LayBuoiHocCuaLopQuery(Guid LopHocId) : IRequest<List<BuoiHocDto>>;
 
-public class LayBuoiHocCuaLopHandler(IAppDbContext db, IPhamViLopHoc phamVi)
+public class LayBuoiHocCuaLopHandler(
+    IAppDbContext db, IPhamViLopHoc phamVi, ICurrentUser currentUser)
     : IRequestHandler<LayBuoiHocCuaLopQuery, List<BuoiHocDto>>
 {
     public async Task<List<BuoiHocDto>> Handle(
         LayBuoiHocCuaLopQuery request, CancellationToken ct)
     {
         await BaoDamThayLop(db, phamVi, request.LopHocId, HanhDong.Xem, ct);
+
+        // Khoá ngoại nghiệp vụ dùng UserId (con người), không phải TaiKhoanId — lẫn hai thứ
+        // này trả rỗng một cách im lặng, không có lỗi biên dịch.
+        var toi = currentUser.UserId;
 
         return await db.BuoiHocs
             .Where(b => b.LopHocId == request.LopHocId)
@@ -60,7 +76,9 @@ public class LayBuoiHocCuaLopHandler(IAppDbContext db, IPhamViLopHoc phamVi)
                 b.GiaoVienId != null,
                 b.TrangThai, b.LaHocBu, b.PhongHoc, b.LinkHoc, b.GhiChu,
                 b.DiemDanhs.Count,
-                b.LopHoc.HocViens.Count(hv => hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc)))
+                b.LopHoc.HocViens.Count(hv => hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc),
+                b.LopHoc.HocViens.Any(hv => hv.HocVienId == toi
+                                            && hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc)))
             .ToListAsync(ct);
     }
 
@@ -105,7 +123,8 @@ public class LayBuoiHocCuaLopHandler(IAppDbContext db, IPhamViLopHoc phamVi)
 /// </summary>
 public record LayBuoiHocQuery(Guid Id) : IRequest<BuoiHocDto>;
 
-public class LayBuoiHocHandler(IAppDbContext db, IPhamViLopHoc phamVi)
+public class LayBuoiHocHandler(
+    IAppDbContext db, IPhamViLopHoc phamVi, ICurrentUser currentUser)
     : IRequestHandler<LayBuoiHocQuery, BuoiHocDto>
 {
     public async Task<BuoiHocDto> Handle(LayBuoiHocQuery request, CancellationToken ct)
@@ -117,7 +136,7 @@ public class LayBuoiHocHandler(IAppDbContext db, IPhamViLopHoc phamVi)
 
         // Lấy lại qua danh sách của lớp để dùng chung một phép chiếu duy nhất — viết phép
         // chiếu thứ ba là mời gọi ba bản trôi khỏi nhau khi thêm trường.
-        var ds = await new LayBuoiHocCuaLopHandler(db, phamVi)
+        var ds = await new LayBuoiHocCuaLopHandler(db, phamVi, currentUser)
             .Handle(new LayBuoiHocCuaLopQuery(buoi.LopHocId), ct);
 
         return ds.Single(x => x.Id == request.Id);
@@ -127,13 +146,15 @@ public class LayBuoiHocHandler(IAppDbContext db, IPhamViLopHoc phamVi)
 public record LayLichTheoKhoangQuery(DateTimeOffset Tu, DateTimeOffset Den)
     : IRequest<List<BuoiHocDto>>;
 
-public class LayLichTheoKhoangHandler(IAppDbContext db, IPhamViLopHoc phamVi)
+public class LayLichTheoKhoangHandler(
+    IAppDbContext db, IPhamViLopHoc phamVi, ICurrentUser currentUser)
     : IRequestHandler<LayLichTheoKhoangQuery, List<BuoiHocDto>>
 {
     public async Task<List<BuoiHocDto>> Handle(
         LayLichTheoKhoangQuery request, CancellationToken ct)
     {
         var lopDuocPhep = await phamVi.LocTheoPhamVi(db.LopHocs.AsQueryable(), HanhDong.Xem, ct);
+        var toi = currentUser.UserId;
 
         return await db.BuoiHocs
             .Where(b => lopDuocPhep.Select(l => l.Id).Contains(b.LopHocId))
@@ -146,7 +167,9 @@ public class LayLichTheoKhoangHandler(IAppDbContext db, IPhamViLopHoc phamVi)
                 b.GiaoVienId != null,
                 b.TrangThai, b.LaHocBu, b.PhongHoc, b.LinkHoc, b.GhiChu,
                 b.DiemDanhs.Count,
-                b.LopHoc.HocViens.Count(hv => hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc)))
+                b.LopHoc.HocViens.Count(hv => hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc),
+                b.LopHoc.HocViens.Any(hv => hv.HocVienId == toi
+                                            && hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc)))
             .ToListAsync(ct);
     }
 }
@@ -178,7 +201,8 @@ public class SinhLichChoLopValidator : AbstractValidator<SinhLichChoLopCommand>
     }
 }
 
-public class SinhLichChoLopHandler(IAppDbContext db, IPhamViLopHoc phamVi, IMuiGioTrungTam muiGio)
+public class SinhLichChoLopHandler(
+    IAppDbContext db, IPhamViLopHoc phamVi, IMuiGioTrungTam muiGio, ICurrentUser currentUser)
     : IRequestHandler<SinhLichChoLopCommand, List<BuoiHocDto>>
 {
     public async Task<List<BuoiHocDto>> Handle(
@@ -254,7 +278,7 @@ public class SinhLichChoLopHandler(IAppDbContext db, IPhamViLopHoc phamVi, IMuiG
 
         await db.SaveChangesAsync(ct);
 
-        return await new LayBuoiHocCuaLopHandler(db, phamVi)
+        return await new LayBuoiHocCuaLopHandler(db, phamVi, currentUser)
             .Handle(new LayBuoiHocCuaLopQuery(lop.Id), ct);
     }
 }
@@ -300,7 +324,8 @@ public class SinhThemBuoiValidator : AbstractValidator<SinhThemBuoiCommand>
     }
 }
 
-public class SinhThemBuoiHandler(IAppDbContext db, IPhamViLopHoc phamVi, IMuiGioTrungTam muiGio)
+public class SinhThemBuoiHandler(
+    IAppDbContext db, IPhamViLopHoc phamVi, IMuiGioTrungTam muiGio, ICurrentUser currentUser)
     : IRequestHandler<SinhThemBuoiCommand, List<BuoiHocDto>>
 {
     public async Task<List<BuoiHocDto>> Handle(SinhThemBuoiCommand request, CancellationToken ct)
@@ -367,7 +392,7 @@ public class SinhThemBuoiHandler(IAppDbContext db, IPhamViLopHoc phamVi, IMuiGio
 
         await db.SaveChangesAsync(ct);
 
-        return await new LayBuoiHocCuaLopHandler(db, phamVi)
+        return await new LayBuoiHocCuaLopHandler(db, phamVi, currentUser)
             .Handle(new LayBuoiHocCuaLopQuery(lop.Id), ct);
     }
 }
