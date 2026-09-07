@@ -36,33 +36,27 @@ Lỗi đã bắt được, thứ tưởng đúng mà sai, giới hạn chưa g�
 
 ## Mục lục
 
-> Các ngày 16–21/08 thuộc **dự án tiền thân** (quản lý CLB đá bóng, `GiapTech.SoccerRoom`).
+> **Gỡ 08/09/2026:** sáu nhật ký ngày 16–21/08 mô tả nghiệp vụ của **dự án tiền thân**
+> (`GiapTech.SoccerRoom` — sàn đối thủ, quỹ CLB, đăng ký đá trận qua link). Chúng không còn liên
+> quan tới dự án này và gây hiểu nhầm khi đọc; nội dung đầy đủ còn trong git history.
 >
-> **Cố ý giữ nguyên từ ngữ cũ ở các entry đó** — nhật ký là bản ghi *theo ngày*, viết lại thành
-> "trung tâm" sẽ tạo ra một quá khứ không có thật. Phần lớn bài học là về **tầng hệ thống** và
-> vẫn còn đúng nguyên: sự cố quy tắc #1 ngày 16/08 (form thiếu ô địa chỉ nên âm thầm xoá dữ liệu
-> — nay canh bởi `CapNhatKhongMatDuLieuTests`) và rate limit ngày 21/08.
->
-> Mọi tài liệu **không phải nhật ký** đã được viết lại theo dự án hiện tại (08/09/2026).
+> Những bài học **vẫn còn hiệu lực** đã gộp vào
+> [bài học từ dự án tiền thân](./2026-08-bai-hoc-du-an-tien-than.md) — code hiện tại còn dẫn
+> chiếu tới chúng (quy tắc #1, hạn mức phải kiểm được bằng con số, chốt còn người quản trị cuối).
 
 | Ngày | Nội dung chính |
 |---|---|
+| [2026-09-08](./2026-09-08-ba-he-thong.md) | **Ba hệ thống con HRM · CRM · LMS** — bộ chuyển, sidebar lọc theo hệ thống, tab phân quyền; nhóm chức năng dùng chung |
 | [2026-09-07 (nhật ký)](./2026-09-07-xac-nhan-va-nhat-ky.md) | **Xác nhận mọi thao tác** + **nhật ký hệ thống** (FR-16) — vá 2 lỗi: ChangeTracker rỗng, mật khẩu lộ |
 | [2026-09-07 (lịch)](./2026-09-07-lich-calendar.md) | **View calendar** bằng FullCalendar 6 + `GET /toi/cau-hinh` cho múi giờ trung tâm |
 | [2026-09-07 (buổi học)](./2026-09-07-bo-sung-buoi-hoc.md) | **Bổ sung buổi** vào lịch đã có + **khoá buổi đã chốt** — vá 2 lỗ hổng sửa/huỷ buổi đã chốt |
 | [2026-09-07 (quyền UI)](./2026-09-07-an-menu-theo-quyen.md) | **Ẩn menu/nút theo quyền** — endpoint `/toi/quyen` + hook `useQuyen`, đóng nợ N2 |
 | [2026-09-07 (bảo mật)](./2026-09-07-ro-ri-hoc-phi.md) | **Rò rỉ học phí** qua DTO module lớp học — giáo viên thấy mức miễn giảm, học viên thấy học phí bạn cùng lớp |
-| [2026-09-08](./2026-09-08-ba-he-thong.md) | **Ba hệ thống con HRM · CRM · LMS** — bộ chuyển, sidebar lọc theo hệ thống, tab phân quyền; nhóm chức năng dùng chung |
 | [2026-09-07 (buổi)](./2026-09-07-chi-tiet-buoi-hoc.md) | **View chi tiết buổi học 5 tab** tại `/buoi-hoc/:id` + **nhận xét hai chiều**; xoá buổi có nhận xét từng trả 500 |
 | [2026-09-07 (UI)](./2026-09-07-menu-thao-tac-va-chi-tiet-lop.md) | **Menu thao tác trong bảng** + **view chi tiết lớp học 6 tab** tại `/lop-hoc/:id` |
 | [2026-09-07](./2026-09-07-tach-nguoi-dung-tai-khoan.md) | **Tách người dùng khỏi tài khoản** — 3 bảng hồ sơ vai trò; migration viết tay giữ mật khẩu; vá cổng quyền và lọc vai trò |
+| [2026-09-06](./2026-09-06.md) | **LMS giai đoạn 0** — vá base (HoTen, ILuuTruTep), 16 chức năng (nay 20), 4 nhóm quyền |
 | [2026-09-05 (gd4)](./2026-09-05-gd4-hoc-phi.md) | **LMS giai đoạn 4** — học phí: công nợ tính động, phạm vi tiền tách khỏi phạm vi lớp; dọn dứt điểm `docs/` |
 | [2026-09-05 (gd1–3)](./2026-09-05-gd1-3-nghiep-vu-cot-loi.md) | **LMS giai đoạn 1–3** — lớp học, sinh lịch + điểm danh hai nguồn, học liệu & tệp đính kèm |
-| [2026-09-06](./2026-09-06.md) | **LMS giai đoạn 0** — vá base (HoTen, ILuuTruTep), 16 chức năng, 4 nhóm quyền |
 | [2026-09-05](./2026-09-05.md) | **Tách base cho dự án LMS** — bỏ nghiệp vụ bóng đá, đổi tên, 4 lỗi tìm ra |
-| [2026-08-21](./2026-08-21.md) | Rate limit (nợ N3) + FR-19 đăng ký đá trận qua link/QR |
-| [2026-08-20](./2026-08-20.md) | Hoàn tác khoản đã thu |
-| [2026-08-19](./2026-08-19.md) | Thông tin chuyển khoản quỹ |
-| [2026-08-18](./2026-08-18.md) | Sàn đối thủ: mở đúng thứ hôm qua vừa chặn |
-| [2026-08-17](./2026-08-17.md) | Chọn đối thủ: tạo tại chỗ + tra mã CLB khác |
-| [2026-08-16](./2026-08-16.md) | Khởi tạo dự án → xác thực + cụm quản trị chạy thật trên PostgreSQL |
+| [16–21/08](./2026-08-bai-hoc-du-an-tien-than.md) | **Bài học từ dự án tiền thân** — quy tắc #1, rate limit, chốt còn người quản trị |

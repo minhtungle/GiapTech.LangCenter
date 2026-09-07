@@ -56,4 +56,4 @@ export const ngayVN = (s: string | null) =>
 
 /** Màu badge theo trạng thái — nháp mờ, đang học nổi, đã huỷ đỏ. */
 export const mauTrangThai = (tt: TrangThaiLopHoc) =>
-  tt === 'DangHoc' ? 'win' : tt === 'DaHuy' ? 'lose' : tt === 'Nhap' ? 'draw' : 'accent'
+  tt === 'DangHoc' ? 'ok' : tt === 'DaHuy' ? 'loi' : tt === 'Nhap' ? 'cho' : 'accent'

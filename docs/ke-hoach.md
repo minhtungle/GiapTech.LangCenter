@@ -8,7 +8,7 @@
 Nghiệp vụ  ██████████████░░  14/15 FR chạy đầu-cuối (còn FR-15 Thống kê)
 Ba hệ thống ████████░░░░░░░░  HRM · CRM · LMS: phân quyền + điều hướng xong, nghiệp vụ HRM/CRM chưa
 Hạ tầng    ████████████░░░░  CI/CD sẵn sàng, chờ VPS thật
-Còn lại    ██████░░░░░░░░░░  Dashboard + nghiệp vụ HRM/CRM + 13 nợ kỹ thuật
+Còn lại    ██████░░░░░░░░░░  Dashboard + nghiệp vụ HRM/CRM + 12 nợ kỹ thuật
 ```
 
 ## Trạng thái mã FR
@@ -105,7 +105,6 @@ VPS → domain + HTTPS → backup. Xem
 | N5 | Job dọn tệp mồ côi trong MinIO (Cascade xoá hàng DB nhưng không xoá object) | Trung bình |
 | N6 | Danh mục ngày nghỉ hệ thống (sinh lịch hiện không né ngày lễ) | Trung bình |
 | N7 | Import Excel danh sách học viên | Trung bình |
-| N8 | Design token còn "xanh sân cỏ + cam nhấn"; biến `--status-win/lose/draw` nên đổi tên trung tính | Thấp |
 | N9 | Lịch sử chỉnh sửa khoản thu (ai sửa gì lúc nào) | Thấp |
 | N10 | Nhắc nợ học phí / thông báo lịch học qua email (`IEmailSender` đã có, chưa nối) | Thấp |
 | N11 | Endpoint dọn tenant test + `globalTeardown` cho E2E | Thấp |

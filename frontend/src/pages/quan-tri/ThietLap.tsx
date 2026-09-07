@@ -248,7 +248,7 @@ export default function ThietLap() {
             <Button type="submit" disabled={luu.isPending}>
               {t('chung.luu')}
             </Button>
-            {daLuu && <span className="text-sm text-status-win">{t('chung.daLuu')}</span>}
+            {daLuu && <span className="text-sm text-status-ok">{t('chung.daLuu')}</span>}
           </div>
         </form>
       </CardContent>

@@ -163,13 +163,9 @@ Phần lớn vô hại (từ ngữ), nhưng ba loại thật sự gây hại:
 | Tên định danh sai | claim `ten_doi`, hàm `capNhatTenDoi()` | Đọc tài liệu rồi grep không ra gì |
 | Nguyên tắc đã bị thay | "Không hỏi khi không mất gì" | Trái quyết định 07/09 (hỏi mọi thao tác ghi) — người mới làm theo tài liệu sẽ làm ngược |
 
-**Không sửa ADR** (quy tắc #7): ADR-0001/0004/0005 ghi quyết định trong bối cảnh "quản lý CLB
-bóng đá, quy mô 1 CLB" — đó là **bản ghi lịch sử**, sửa đè thành "trung tâm ngoại ngữ" là làm
-sai lệch hồ sơ quyết định. Cùng lý do giữ nhật ký 16–21/08.
-
-`--status-win/lose/draw` cũng không đổi tên (nợ N8 — là code, không phải tài liệu), nhưng nay
-tài liệu **ghi rõ nghĩa hiện tại** kèm cảnh báo tên là di sản: xong·đạt·đủ / hỏng·quá hạn /
-đang chờ.
+Lúc này tôi **chưa sửa ADR** (viện quy tắc #7: bản ghi lịch sử) và **chưa đổi tên token**
+`--status-win/lose/draw` (viện "là code, không phải tài liệu"). Chủ sản phẩm bác cả hai — xem
+hai mục cuối file.
 
 ## Số liệu lệch
 
@@ -233,3 +229,41 @@ ADR-0005 đã xoá để `check-doc-links.py` không đỏ.
 Tên token `--status-win/lose/draw` **vẫn là di sản bóng đá trong CODE** (nợ N8). Tài liệu nay ghi
 rõ nghĩa hiện tại kèm cảnh báo, nhưng người đọc code sẽ vẫn thấy `variant="win"` cho "học phí đã
 đủ". Đổi tên là việc của code, không phải tài liệu — nói nếu ông muốn tôi làm.
+
+---
+
+## "Sửa nốt đi, đừng bỏ sót phần nào"
+
+Hai thứ tôi để lại ở lượt trước, chủ sản phẩm yêu cầu làm hết.
+
+### Đổi tên token trạng thái (nợ N8 — xong)
+
+`win` / `lose` / `draw` → **`ok` / `loi` / `cho`**. Đổi ở 16 file: biến CSS trong `index.css`,
+ánh xạ Tailwind, `Badge variant`, và mọi chỗ dùng.
+
+Vì sao đây không phải việc trang trí: người đọc code thấy `variant="win"` cho *"học phí đã đủ"*
+và `'lose'` cho *"tài khoản bị vô hiệu hoá"* — nghĩa đọc lên **trái hẳn** nghĩa thật, mà một tên
+sai nghĩa thì mỗi lần dùng lại là một lần đoán. Ba tên mới nói đúng ba trạng thái: xong · hỏng ·
+đang chờ.
+
+Kiểm chứng không chỉ bằng `npm run build` (đổi tên biến CSS mà quên một chỗ thì build **vẫn
+xanh**, chỉ màu biến mất): tôi grep bundle CSS thật trong `dist/` để chắc ba biến `--status-ok/
+loi/cho` và sáu class `text-/bg-status-*` đều sinh ra, và **không còn** tên cũ nào.
+
+Cũng sửa lý do màu chủ đạo: `--primary` từng ghi *"gợi sân cỏ"* → nay *"trung tính, đủ tương phản
+với chữ trắng (WCAG AA)"*. Giá trị hex **không đổi** — đổi màu là redesign, không ai yêu cầu.
+
+### Gỡ sáu nhật ký của dự án tiền thân
+
+1.014 dòng mô tả sàn đối thủ, quỹ CLB, đăng ký đá trận qua link. Lượt trước tôi giữ với lý do
+"bản ghi theo ngày". Nhưng lý do đó chỉ đúng nếu bản ghi còn được ai đọc — mà ở đây nó **cạnh
+tranh chú ý** với nhật ký thật của dự án, và ba mã nợ **N3/N4/N9** trong đó **đánh số khác** bảng
+nợ hiện tại, ai đối chiếu là hiểu sai.
+
+Nên: trích những bài học **code hiện tại còn dẫn chiếu tới** vào một file duy nhất
+[`2026-08-bai-hoc-du-an-tien-than.md`](./2026-08-bai-hoc-du-an-tien-than.md) — quy tắc #1 và sự
+cố mất địa chỉ 16/08, hạn mức phải kiểm được bằng **con số** chứ không chỉ tên policy, chốt còn
+người quản trị cuối. Rồi xoá sáu file; nội dung đầy đủ còn trong git history.
+
+Kèm theo phát hiện nhỏ: bảng mục lục nhật ký **không đúng thứ tự** (entry 08/09 nằm giữa danh
+sách, 09/06 nằm dưới 09/05). Đã sắp lại mới-nhất-trước.

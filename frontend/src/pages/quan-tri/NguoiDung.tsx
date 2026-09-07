@@ -327,7 +327,7 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
                       <span className="flex items-center gap-2">
                         <span className="text-muted-foreground">{u.username}</span>
                         {u.trangThaiTaiKhoan === 'VoHieuHoa' && (
-                          <Badge variant="lose">{t('taiKhoan.VoHieuHoa')}</Badge>
+                          <Badge variant="loi">{t('taiKhoan.VoHieuHoa')}</Badge>
                         )}
                       </span>
                     ) : (
@@ -335,7 +335,7 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
                     )}
                   </Td>
                   <Td>
-                    <Badge variant={u.trangThaiNhanSu === 'DangLamViec' ? 'win' : 'muted'}>
+                    <Badge variant={u.trangThaiNhanSu === 'DangLamViec' ? 'ok' : 'muted'}>
                       {t(`nguoiDung.${u.trangThaiNhanSu}`)}
                     </Badge>
                   </Td>

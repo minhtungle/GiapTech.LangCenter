@@ -5,11 +5,11 @@
 >
 > | Token | Giá trị | Vai trò |
 > |---|---|---|
-> | `--primary` | `152 45% 28%` — xanh lá đậm | Gợi sân cỏ, đủ tương phản với chữ trắng |
+> | `--primary` | `152 45% 28%` — xanh lá đậm | Trung tính, đủ tương phản với chữ trắng (WCAG AA) |
 > | `--accent` | `28 85% 52%` — cam ấm | Nhấn thứ cấp, dùng tiết chế |
-> | `--status-win` | `152 55% 34%` | Xong · đạt · đủ |
-> | `--status-lose` | `0 72% 45%` | Thua · quá hạn |
-> | `--status-draw` | `38 92% 45%` | Hòa · đang chờ |
+> | `--status-ok` | `152 55% 34%` | Xong · đạt · đủ |
+> | `--status-loi` | `0 72% 45%` | Hỏng · quá hạn |
+> | `--status-cho` | `38 92% 45%` | Đang chờ · cần chú ý |
 >
 > Có bản dark mode đầy đủ. Trang style-guide trực quan vẫn **chưa dựng**.
 
@@ -38,12 +38,13 @@ shadcn-admin.
 
 | Token | Ý nghĩa | Ghi chú |
 |---|---|---|
-| `--status-win` | Xong · đạt · đủ (lớp đang học, buổi đã chốt, học phí đã đủ) | Xanh |
-| `--status-lose` | Hỏng · quá hạn (lớp đã huỷ, nộp muộn, học phí quá hạn) | Đỏ — dùng chung `--destructive` của shadcn |
-| `--status-draw` | Đang chờ · cần chú ý (lớp nháp, còn nợ, buộc đổi mật khẩu) | Vàng |
+| `--status-ok` | Xong · đạt · đủ (lớp đang học, buổi đã chốt, học phí đã đủ, thao tác thành công) | Xanh |
+| `--status-loi` | Hỏng · quá hạn · bị từ chối (lớp đã huỷ, nộp muộn, học phí quá hạn) | Đỏ — dùng chung `--destructive` của shadcn |
+| `--status-cho` | Đang chờ · cần chú ý (lớp nháp, còn nợ, buộc đổi mật khẩu) | Vàng |
 
-Tên `win`/`lose`/`draw` là **di sản từ dự án bóng đá** — đọc theo nghĩa ở cột giữa, không phải
-kết quả trận đấu. Đổi tên là nợ **N8**.
+Ba tên này **đổi từ `win`/`lose`/`draw` ngày 08/09/2026** (nợ N8 — đã xong): tên cũ là di sản
+của dự án tiền thân và đọc lên gây hiểu sai, vì nghiệp vụ LMS không có "thắng/thua/hoà" nào.
+`Badge` dùng cùng ba tên: `variant="ok" | "loi" | "cho"`.
 
 Ba token này là **quy ước xuyên suốt** — xem
 [ui-ux-nguyen-tac.md](./ui-ux-nguyen-tac.md#5-quy-ước-màu-trạng-thái).

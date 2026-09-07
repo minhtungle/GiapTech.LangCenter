@@ -14,7 +14,7 @@
     --card: 0 0% 100%;
     --card-foreground: 222 20% 12%;
 
-    /* Màu chủ đạo: xanh lá đậm — gợi sân cỏ, đủ tương phản với chữ trắng */
+    /* Màu chủ đạo: xanh lá đậm — trung tính, đủ tương phản với chữ trắng (WCAG AA) */
     --primary: 152 45% 28%;
     --primary-foreground: 0 0% 100%;
 
@@ -39,9 +39,9 @@
       Màu trạng thái — nghĩa CỐ ĐỊNH ở mọi module, không dùng để trang trí:
       thắng/đã đóng đủ · thua/quá hạn · hòa/đang chờ
     */
-    --status-win: 152 55% 34%;
-    --status-lose: 0 72% 45%;
-    --status-draw: 38 92% 45%;
+    --status-ok: 152 55% 34%;
+    --status-loi: 0 72% 45%;
+    --status-cho: 38 92% 45%;
 
     --radius: 0.5rem;
   }
@@ -72,9 +72,9 @@
     --input: 217 18% 24%;
     --ring: 152 45% 45%;
 
-    --status-win: 152 50% 48%;
-    --status-lose: 0 62% 55%;
-    --status-draw: 38 88% 55%;
+    --status-ok: 152 50% 48%;
+    --status-loi: 0 62% 55%;
+    --status-cho: 38 88% 55%;
   }
 }
 

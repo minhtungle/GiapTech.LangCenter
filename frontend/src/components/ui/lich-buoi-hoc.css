@@ -47,7 +47,7 @@
 }
 
 .lich-buoi-hoc .buoi-xong {
-  background: hsl(var(--status-win));
+  background: hsl(var(--status-ok));
   color: #fff;
 }
 

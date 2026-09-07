@@ -233,7 +233,7 @@ function TongQuanLop({
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold">{t('lopHoc.suaThongTin')}</h3>
             {daLuu && (
-              <span className="flex items-center gap-1 text-sm text-status-win">
+              <span className="flex items-center gap-1 text-sm text-status-ok">
                 <CheckCircle2 className="h-4 w-4" />
                 {t('chung.daLuu')}
               </span>

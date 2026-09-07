@@ -46,7 +46,7 @@ interface TruongDoi {
 }
 
 const mauHanhDong = (hd: HanhDongNhatKy) =>
-  hd === 'Xoa' ? 'lose' : hd === 'Them' ? 'win' : hd === 'XacThuc' ? 'accent' : 'draw'
+  hd === 'Xoa' ? 'loi' : hd === 'Them' ? 'ok' : hd === 'XacThuc' ? 'accent' : 'cho'
 
 /**
  * FR-16 — nhật ký thao tác hệ thống.
@@ -235,9 +235,9 @@ export default function NhatKy() {
                       </Td>
                       <Td>
                         {n.thanhCong ? (
-                          <Badge variant="win">{t('nhatKy.thanhCong')}</Badge>
+                          <Badge variant="ok">{t('nhatKy.thanhCong')}</Badge>
                         ) : (
-                          <Badge variant="lose" title={n.maLoi ?? undefined}>
+                          <Badge variant="loi" title={n.maLoi ?? undefined}>
                             {n.maLoi ?? t('nhatKy.thatBai')}
                           </Badge>
                         )}
@@ -265,7 +265,7 @@ export default function NhatKy() {
                                             {c.truoc ?? '(trống)'}
                                           </span>
                                           {' → '}
-                                          <span className="text-[hsl(var(--status-win))]">
+                                          <span className="text-[hsl(var(--status-ok))]">
                                             {c.sau ?? '(trống)'}
                                           </span>
                                         </>

@@ -225,11 +225,11 @@ export default function TaiKhoan() {
                   </Td>
                   <Td>
                     <div className="flex flex-wrap gap-1">
-                      <Badge variant={u.trangThai === 'HoatDong' ? 'win' : 'lose'}>
+                      <Badge variant={u.trangThai === 'HoatDong' ? 'ok' : 'loi'}>
                         {t(`taiKhoan.${u.trangThai}`)}
                       </Badge>
                       {u.phaiDoiMatKhau && (
-                        <Badge variant="draw">{t('taiKhoan.phaiDoiMatKhau')}</Badge>
+                        <Badge variant="cho">{t('taiKhoan.phaiDoiMatKhau')}</Badge>
                       )}
                     </div>
                   </Td>

@@ -150,7 +150,7 @@ export function NhanXetBuoiHoc({
                     className={
                       'h-5 w-5 ' +
                       (muc !== null && m <= muc
-                        ? 'fill-status-win text-status-win'
+                        ? 'fill-status-ok text-status-ok'
                         : 'text-muted-foreground')
                     }
                   />
@@ -164,7 +164,7 @@ export function NhanXetBuoiHoc({
 
           <div className="flex items-center justify-end gap-2">
             {daGui && (
-              <span className="mr-auto flex items-center gap-1 text-sm text-status-win">
+              <span className="mr-auto flex items-center gap-1 text-sm text-status-ok">
                 <CheckCircle2 className="h-4 w-4" />
                 {t('nhanXetBuoi.daGui')}
               </span>
@@ -204,7 +204,7 @@ export function NhanXetBuoiHoc({
                       <span className="text-sm font-medium">{n.hoTen}</span>
                       {n.mucHaiLong !== null && (
                         <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
-                          <Star className="h-3 w-3 fill-status-win text-status-win" />
+                          <Star className="h-3 w-3 fill-status-ok text-status-ok" />
                           {n.mucHaiLong}/5
                         </span>
                       )}

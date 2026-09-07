@@ -91,7 +91,7 @@ export default function ChiTietBuoiHoc() {
           {buoi.tenLopHoc} — {t('buoiHoc.thuTuNgan')}
           {buoi.thuTu}
         </h2>
-        <Badge variant={buoi.trangThai === 'DaHuy' ? 'lose' : daKhoa(buoi) ? 'win' : 'draw'}>
+        <Badge variant={buoi.trangThai === 'DaHuy' ? 'loi' : daKhoa(buoi) ? 'ok' : 'cho'}>
           {t(`trangThaiBuoiHoc.${buoi.trangThai}`)}
         </Badge>
         {buoi.laHocBu && <Badge variant="accent">{t('buoiHoc.hocBu')}</Badge>}

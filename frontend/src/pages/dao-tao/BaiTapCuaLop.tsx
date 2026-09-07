@@ -398,7 +398,7 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
                     <Td className="font-medium">
                       {n.hoTen}
                       {n.lanNop > 1 && (
-                        <Badge variant="draw" className="ml-2">
+                        <Badge variant="cho" className="ml-2">
                           {t('hocLieu.lanNop')} {n.lanNop}
                         </Badge>
                       )}
@@ -406,7 +406,7 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
                     <Td className="text-muted-foreground">
                       {ngayGio(n.thoiDiemNop)}
                       {n.trangThai === 'NopMuon' && (
-                        <Badge variant="lose" className="ml-2">
+                        <Badge variant="loi" className="ml-2">
                           {t('trangThaiBaiNop.NopMuon')}
                         </Badge>
                       )}
@@ -437,7 +437,7 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
                     </Td>
                     <Td>
                       {n.trangThai === 'DaCham' && (
-                        <Badge variant="win">{t('trangThaiBaiNop.DaCham')}</Badge>
+                        <Badge variant="ok">{t('trangThaiBaiNop.DaCham')}</Badge>
                       )}
                     </Td>
                   </tr>
@@ -450,7 +450,7 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
         {ds.length > 0 && (
           <div className="flex items-center justify-end gap-2">
             {daLuu && (
-              <span className="mr-auto flex items-center gap-1 text-sm text-status-win">
+              <span className="mr-auto flex items-center gap-1 text-sm text-status-ok">
                 <CheckCircle2 className="h-4 w-4" />
                 {t('chung.daLuu')}
               </span>

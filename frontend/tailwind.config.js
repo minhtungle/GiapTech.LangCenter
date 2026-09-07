@@ -37,9 +37,9 @@ export default {
         // Màu trạng thái cố định — quy ước xuyên suốt mọi module.
         // Xem docs/frontend/ui-ux-nguyen-tac.md mục 4.
         status: {
-          win: 'hsl(var(--status-win))',
-          lose: 'hsl(var(--status-lose))',
-          draw: 'hsl(var(--status-draw))',
+          ok: 'hsl(var(--status-ok))',
+          loi: 'hsl(var(--status-loi))',
+          cho: 'hsl(var(--status-cho))',
         },
       },
       borderRadius: {

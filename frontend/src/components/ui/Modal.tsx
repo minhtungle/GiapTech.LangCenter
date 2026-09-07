@@ -67,7 +67,7 @@ export function Modal({
         rong === 'sm' && 'max-w-sm',
         rong === 'md' && 'max-w-xl',
         rong === 'lg' && 'max-w-3xl',
-        // xl cho bảng chiến thuật: sân + bảng điều khiển side by side cần bề ngang thật,
+        // xl cho bảng nhiều cột (điểm danh, chấm điểm, ma trận phân quyền) cần bề ngang thật,
         // nhét vào 3xl thì sân bé tới mức không kéo nổi áo.
         rong === 'xl' && 'max-w-6xl',
       )}

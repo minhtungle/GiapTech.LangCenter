@@ -95,7 +95,7 @@ export default function DangKyTrungTam() {
                   </code>
                   <Button variant="outline" size="sm" onClick={chepMa} title={t('dangKy.saoChep')}>
                     {daChep ? (
-                      <Check className="h-4 w-4 text-status-win" />
+                      <Check className="h-4 w-4 text-status-ok" />
                     ) : (
                       <Copy className="h-4 w-4" />
                     )}

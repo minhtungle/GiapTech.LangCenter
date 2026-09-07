@@ -104,15 +104,14 @@ làm mới kế tiếp.
 
 Dùng **thống nhất** ở mọi module, không đổi nghĩa theo ngữ cảnh:
 
-| Màu | Token | Ý nghĩa trong LMS |
+| Màu | Token / `Badge variant` | Ý nghĩa trong LMS |
 |---|---|---|
-| 🟢 Xanh | `win` | **Xong · đạt · đủ**: lớp đang học, buổi đã chốt, bài đã chấm, học phí đã đủ, thao tác thành công |
-| 🔴 Đỏ | `lose` | **Hỏng · quá hạn · bị từ chối**: lớp đã huỷ, nộp muộn, học phí quá hạn, vắng khác lời khai |
-| 🟡 Vàng | `draw` | **Đang chờ · cần chú ý**: lớp nháp, còn nợ học phí, buộc đổi mật khẩu, giáo viên riêng |
+| 🟢 Xanh | `ok` | **Xong · đạt · đủ**: lớp đang học, buổi đã chốt, bài đã chấm, học phí đã đủ, thao tác thành công |
+| 🔴 Đỏ | `loi` | **Hỏng · quá hạn · bị từ chối**: lớp đã huỷ, nộp muộn, học phí quá hạn, vắng khác lời khai |
+| 🟡 Vàng | `cho` | **Đang chờ · cần chú ý**: lớp nháp, còn nợ học phí, buộc đổi mật khẩu, giáo viên riêng |
 
-⚠️ Tên token còn là `win`/`lose`/`draw` — **di sản từ dự án bóng đá**, nghĩa hiện tại là ba cột
-bên trên chứ không phải kết quả trận đấu. Đổi tên là nợ **N8** trong
-[`ke-hoach.md`](../ke-hoach.md); tới lúc đó đọc tên token phải hiểu theo bảng này.
+Đổi tên từ `win`/`lose`/`draw` ngày 08/09/2026 (nợ N8 — đã xong): tên cũ là di sản của dự án
+tiền thân, và "thắng/thua/hoà" không có nghĩa gì trong nghiệp vụ đào tạo.
 
 Áp dụng thống nhất ở lịch học (FullCalendar), mọi bảng danh sách, và nhật ký hệ thống.
 

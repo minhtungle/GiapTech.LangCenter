@@ -37,7 +37,7 @@ set -a; . ./.env; set +a
 [ -n "${JWT_SECRET:-}" ] || loi "Thiếu JWT_SECRET trong .env"
 [ "${#JWT_SECRET}" -ge 32 ] || loi "JWT_SECRET phải ít nhất 32 ký tự (hiện ${#JWT_SECRET})"
 
-# Cảnh báo nếu chạy Development trên VPS: endpoint seed và đăng ký CLB ẩn danh sẽ mở.
+# Cảnh báo nếu chạy Development trên VPS: endpoint seed sẽ mở (đăng ký trung tâm luôn mở).
 if [ "${ASPNETCORE_ENVIRONMENT:-Production}" != "Production" ]; then
   printf '\033[1;33m⚠ ASPNETCORE_ENVIRONMENT=%s — endpoint seed/xoá dữ liệu đang MỞ.\033[0m\n' \
     "$ASPNETCORE_ENVIRONMENT"

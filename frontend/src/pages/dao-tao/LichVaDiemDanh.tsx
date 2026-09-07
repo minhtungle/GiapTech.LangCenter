@@ -217,7 +217,7 @@ export function LichVaDiemDanh({
                     <Td className="text-muted-foreground">
                       {b.tenGiaoVien}
                       {b.giaoVienRieng && (
-                        <Badge variant="draw" className="ml-2">
+                        <Badge variant="cho" className="ml-2">
                           {t('buoiHoc.giaoVienRieng')}
                         </Badge>
                       )}
@@ -229,10 +229,10 @@ export function LichVaDiemDanh({
                       <Badge
                         variant={
                           b.trangThai === 'DaHoanThanh'
-                            ? 'win'
+                            ? 'ok'
                             : b.trangThai === 'DaHuy'
-                              ? 'lose'
-                              : 'draw'
+                              ? 'loi'
+                              : 'cho'
                         }
                       >
                         {t(`trangThaiBuoiHoc.${b.trangThai}`)}

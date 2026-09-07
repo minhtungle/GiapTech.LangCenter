@@ -8,6 +8,31 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — Đổi tên token trạng thái: `win/lose/draw` → `ok/loi/cho` (08/09/2026)
+
+Đóng nợ **N8**. Tên cũ là di sản của dự án tiền thân và **đọc lên trái hẳn nghĩa thật**:
+`variant="win"` cho "học phí đã đủ", `'lose'` cho "tài khoản bị vô hiệu hoá" — không có
+"thắng/thua" nào trong nghiệp vụ đào tạo.
+
+- Biến CSS `--status-ok` · `--status-loi` · `--status-cho`; ánh xạ Tailwind và `Badge variant`
+  dùng cùng ba tên. Đổi ở 16 file.
+- Nghĩa ghi thẳng vào JSDoc của `Badge`: xong·đạt·đủ / hỏng·quá hạn·bị từ chối / đang chờ·cần chú ý.
+- `--primary` bỏ lý do "gợi sân cỏ" → "trung tính, đủ tương phản với chữ trắng (WCAG AA)".
+  **Giá trị hex không đổi** — đổi màu là redesign, không ai yêu cầu.
+- Kiểm chứng: `npm run build` **không đủ** (đổi tên biến CSS mà quên một chỗ thì build vẫn xanh,
+  chỉ màu biến mất). Đã grep bundle CSS trong `dist/` để chắc 3 biến + 6 class sinh ra và không
+  còn tên cũ, rồi chạy một test Playwright tạm đọc `getComputedStyle` trên app đang chạy.
+
+### Removed — Sáu nhật ký của dự án tiền thân (08/09/2026)
+
+- Gỡ `2026-08-16` → `2026-08-21` (1.014 dòng): sàn đối thủ, quỹ CLB, đăng ký đá trận qua link.
+  Chúng cạnh tranh chú ý với nhật ký thật của dự án, và ba mã nợ **N3/N4/N9** trong đó **đánh số
+  khác** bảng nợ hiện tại — ai đối chiếu là hiểu sai. Nội dung còn trong git history.
+- Trích bài học **code hiện tại còn dẫn chiếu tới** vào
+  `docs/nhat-ky/2026-08-bai-hoc-du-an-tien-than.md`: sự cố mất địa chỉ 16/08 (nguồn của quy tắc
+  #1), hạn mức phải kiểm được bằng **con số** chứ không chỉ tên policy, chốt còn người quản trị cuối.
+- Sửa **thứ tự bảng mục lục nhật ký** — entry 08/09 nằm giữa danh sách, 09/06 nằm dưới 09/05.
+
 ### Removed — ADR-0005 (lời mời thách đấu qua link) (08/09/2026)
 
 - Nghiệp vụ này **không còn dòng code nào** trong repo (gỡ 05/09 cùng nghiệp vụ bóng đá), nên ADR

@@ -161,7 +161,7 @@ export function BangDiemDanh({
                           <>
                             {t(`trangThaiDiemDanh.${d.trangThaiTuKhai}`)}
                             {d.giaoVienSuaKhacTuKhai && (
-                              <Badge variant="lose" className="ml-2">
+                              <Badge variant="loi" className="ml-2">
                                 {t('diemDanh.khacTuKhai')}
                               </Badge>
                             )}
@@ -219,7 +219,7 @@ export function BangDiemDanh({
 
         <div className="flex items-center justify-end gap-2">
           {daLuu && (
-            <span className="mr-auto flex items-center gap-1 text-sm text-status-win">
+            <span className="mr-auto flex items-center gap-1 text-sm text-status-ok">
               <CheckCircle2 className="h-4 w-4" />
               {t('diemDanh.daLuu')}
             </span>

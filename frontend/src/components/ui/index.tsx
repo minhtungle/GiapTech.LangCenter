@@ -52,7 +52,7 @@ export const Input = React.forwardRef<
 Input.displayName = 'Input'
 
 /**
- * Ô nhập nhiều dòng cho **mọi trường có thể dài**: nhận xét, ghi chú, mô tả, ghi chú chiến thuật.
+ * Ô nhập nhiều dòng cho **mọi trường có thể dài**: nhận xét buổi học, ghi chú, mô tả bài tập.
  *
  * `<input>` một dòng cắt nội dung khỏi tầm nhìn ngay khi vượt bề rộng ô — người dùng gõ một
  * đoạn nhận xét rồi không đọc lại được đoạn đầu, phải rê con trỏ mới thấy. Trường dài dùng
@@ -186,7 +186,17 @@ export function Badge({
   variant = 'muted',
   ...props
 }: React.HTMLAttributes<HTMLSpanElement> & {
-  variant?: 'muted' | 'win' | 'lose' | 'draw' | 'accent'
+  /**
+   * Màu trạng thái — **nghĩa cố định, không dùng để trang trí**:
+   *
+   * - `ok` — xong · đạt · đủ (lớp đang học, buổi đã chốt, học phí đã đủ, thao tác thành công)
+   * - `loi` — hỏng · quá hạn · bị từ chối (lớp đã huỷ, nộp muộn, học phí quá hạn)
+   * - `cho` — đang chờ · cần chú ý (lớp nháp, còn nợ, buộc đổi mật khẩu)
+   *
+   * Ba tên này đổi từ `win`/`lose`/`draw` (08/09/2026, nợ N8) — di sản của dự án tiền thân,
+   * đọc lên gây hiểu sai vì không có "thắng/thua" nào trong nghiệp vụ LMS.
+   */
+  variant?: 'muted' | 'ok' | 'loi' | 'cho' | 'accent'
 }) {
   return (
     <span
@@ -194,9 +204,9 @@ export function Badge({
         'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
         variant === 'muted' && 'bg-muted text-muted-foreground',
         // Màu trạng thái: nghĩa cố định, không dùng để trang trí.
-        variant === 'win' && 'bg-status-win/15 text-status-win',
-        variant === 'lose' && 'bg-status-lose/15 text-status-lose',
-        variant === 'draw' && 'bg-status-draw/15 text-status-draw',
+        variant === 'ok' && 'bg-status-ok/15 text-status-ok',
+        variant === 'loi' && 'bg-status-loi/15 text-status-loi',
+        variant === 'cho' && 'bg-status-cho/15 text-status-cho',
         variant === 'accent' && 'bg-accent/15 text-accent',
         className,
       )}

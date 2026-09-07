@@ -319,11 +319,11 @@ export default function HocPhi({ lopHocId }: { lopHocId?: string } = {}) {
                       </Td>
                       <Td>
                         {r.conNo <= 0 ? (
-                          <Badge variant="win">{t('hocPhi.daDuUpper')}</Badge>
+                          <Badge variant="ok">{t('hocPhi.daDuUpper')}</Badge>
                         ) : r.quaHan ? (
-                          <Badge variant="lose">{t('hocPhi.quaHan')}</Badge>
+                          <Badge variant="loi">{t('hocPhi.quaHan')}</Badge>
                         ) : (
-                          <Badge variant="draw">{t('hocPhi.conNoNhan')}</Badge>
+                          <Badge variant="cho">{t('hocPhi.conNoNhan')}</Badge>
                         )}
                       </Td>
                     </tr>
