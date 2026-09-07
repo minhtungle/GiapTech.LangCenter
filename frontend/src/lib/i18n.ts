@@ -10,6 +10,10 @@ const vi = {
   chung: {
     xacNhanLuu: 'Xác nhận lưu',
     xemChiTiet: 'Xem chi tiết',
+    dangPhatTrien: 'Module đang được phát triển',
+    dangPhatTrienGoiY:
+      'Phần phân quyền và điều hướng của module đã hoạt động — bạn có thể cấp quyền cho nhóm '
+      + 'ngay từ bây giờ. Nghiệp vụ chi tiết sẽ bổ sung sau.',
     xacNhanThem: 'Xác nhận thêm mới',
     // Lời văn phải nói CỤ THỂ đổi gì — "Bạn có chắc không?" khiến người dùng bấm theo phản xạ.
     hoiLuu: 'Lưu thay đổi cho "{{ten}}"? Thông tin hiện tại sẽ bị ghi đè.',
@@ -83,6 +87,11 @@ const vi = {
   menu: {
     tongQuan: 'Tổng quan',
     daoTao: 'Đào tạo',
+    nhanSu: 'Nhân sự',
+    khachHang: 'Khách hàng',
+    nhanVienKinhDoanh: 'Nhân viên kinh doanh',
+    giaoVienNhanSu: 'Giáo viên',
+    doanhThu: 'Doanh thu',
     lopHoc: 'Lớp học',
     taiLieu: 'Tài liệu',
     hocPhi: 'Học phí',
@@ -550,6 +559,30 @@ const vi = {
     ThietLapChung: 'Thiết lập chung',
     Anh: 'Ảnh (logo, ảnh bìa, QR)',
     DoiMatKhauNguoiKhac: 'Đổi mật khẩu người khác',
+    NhanVienKinhDoanh: 'Nhân viên kinh doanh',
+    GiaoVienNhanSu: 'Giáo viên (nhân sự)',
+    DoanhThu: 'Doanh thu',
+  },
+  heThong: {
+    Hrm: 'HRM — Nhân sự',
+    Crm: 'CRM — Khách hàng',
+    Lms: 'LMS — Đào tạo',
+    DungChung: 'Dùng chung cả ba hệ thống',
+    chuyenHeThong: 'Chuyển hệ thống',
+    dungChungGoiY:
+      'Các chức năng quản trị này dùng chung cho cả ba hệ thống, nên hiện ở mọi tab.',
+  },
+  hrm: {
+    moTaNvkd:
+      'Hồ sơ nhân viên kinh doanh: chỉ tiêu, khách hàng phụ trách, hoa hồng.',
+    moTaGiaoVien:
+      'Giáo viên dưới góc nhìn nhân sự: hợp đồng, lương, chấm công. Vẫn là cùng một người '
+      + 'với giáo viên bên LMS, chỉ khác thông tin theo dõi.',
+  },
+  crm: {
+    moTaDoanhThu:
+      'Doanh thu tổng hợp theo kỳ, theo lớp, theo nhân viên. Khác sổ học phí bên LMS: sổ học '
+      + 'phí là từng khoản thu của một lớp, doanh thu là số tổng hợp.',
   },
   thietLap: {
     hoiLuu: 'Lưu thiết lập trung tâm? Thông tin hiện tại sẽ bị ghi đè.',

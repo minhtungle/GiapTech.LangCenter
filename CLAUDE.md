@@ -10,9 +10,13 @@
 
 ## 1. Dự án này là gì
 
-**Hệ thống quản lý trung tâm ngoại ngữ (LMS)**, mô hình **multi-tenant** — mỗi trung tâm đăng ký
-là một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`. Đăng nhập bằng bộ ba
-**{mã trung tâm, tên đăng nhập, mật khẩu}**.
+**Hệ thống quản lý trung tâm ngoại ngữ**, mô hình **multi-tenant**, gồm **ba hệ thống con**
+chia theo nhóm quyền — **HRM** (nhân sự) · **CRM** (khách hàng) · **LMS** (đào tạo). Đây là cách
+nhóm chức năng phân quyền để lọc sidebar, **không phải ba ứng dụng**: một API, một database,
+một lần đăng nhập. → [phan-quyen-dong.md](./docs/backend/phan-quyen-dong.md#ba-hệ-thống-con-hrm--crm--lms)
+
+Mỗi trung tâm đăng ký là một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`.
+Đăng nhập bằng bộ ba **{mã trung tâm, tên đăng nhập, mật khẩu}**.
 
 **Tên chuẩn:** `GiapTech.LangCenter.LMS` (namespace, solution, image `ghcr.io/giaptech/langcenter-lms-api`).
 
@@ -21,12 +25,13 @@ là một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`
 Tách ra từ một ứng dụng quản lý CLB đá bóng (04/09/2026), giữ toàn bộ tầng hệ thống. Nghiệp vụ
 LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 
-**14/15 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 279 test backend xanh.
+**14/15 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 297 test backend xanh.
 
 | Đã chạy đầu-cuối | Chưa có |
 |---|---|
 | Đăng nhập · quên mật khẩu · buộc đổi mật khẩu lần đầu | **FR-15 Thống kê / Dashboard** |
 | Người dùng (hồ sơ 3 vai trò) tách khỏi tài khoản · nhóm quyền · thiết lập | **Bài kiểm tra** — có schema, chưa có API/UI |
+| **Ba hệ thống con** HRM/CRM/LMS: bộ chuyển, sidebar lọc, tab phân quyền | **Nghiệp vụ HRM/CRM** — mới có khung trống |
 | Lớp học: vòng đời, phân công, ghi danh, học phí riêng từng người | Đăng ký trung tâm an toàn production (nợ N3) |
 | Buổi học: sinh lịch tự động; điểm danh hai nguồn | Nhắc nợ / thông báo qua email |
 | Bài tập, bài nộp nhiều lần, tài liệu, tệp đính kèm | Import Excel học viên |
@@ -226,7 +231,7 @@ Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 ```bash
 # --- Backend ---
 dotnet build          # 0 warning — TreatWarningsAsErrors đang bật
-dotnet test           # 279 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
+dotnet test           # 297 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
                       #           quản trị, lớp học, điểm danh, học liệu, học phí
 
 # Chạy API cần 2 biến bắt buộc (thiếu là 500 lúc đăng nhập / tải ảnh, không phải lúc khởi động):

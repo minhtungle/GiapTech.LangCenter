@@ -23,9 +23,17 @@ interface QuyenDto {
   soTaiKhoan: number
   chucNangs: ChucNangDto[]
 }
+interface NhomHeThongDto {
+  ma: string
+  chucNangs: string[]
+  /** true = nhóm quản trị dùng chung cả ba hệ thống — hiện ở MỌI tab. */
+  dungChung: boolean
+}
 interface DanhMucDto {
   chucNangs: string[]
   hanhDongs: string[]
+  /** Chức năng đã nhóm theo hệ thống, do BACKEND nhóm (xem `ChucNang.HeThongCua`). */
+  heThongs: NhomHeThongDto[]
 }
 
 /** FR-05 — nhóm quyền với ma trận chức năng × thao tác. */
@@ -42,6 +50,15 @@ export default function PhanQuyen() {
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
   const [xoaCho, setXoaCho] = useState<QuyenDto | null>(null)
 
+  /**
+   * Tab hệ thống đang xem trong ma trận phân quyền.
+   *
+   * **Chỉ lọc DÒNG hiển thị.** `oDaChon` vẫn giữ ô đã tích của cả ba hệ thống — nếu tab nào
+   * cũng có state riêng thì chuyển tab rồi bấm Lưu sẽ âm thầm xoá quyền của hệ thống khác,
+   * đúng loại lỗi mất dữ liệu mà quy tắc #1 cấm.
+   */
+  const [tabHeThong, setTabHeThong] = useState<string | null>(null)
+
   const { data: danhMuc } = useQuery({
     queryKey: ['quyen-danh-muc'],
     queryFn: async () => (await api.get<DanhMucDto>('/quyen/danh-muc')).data,
@@ -54,6 +71,21 @@ export default function PhanQuyen() {
 
   const khoaO = (cn: string, hd: string) => `${cn}:${hd}`
 
+  // Tab mặc định = hệ thống đầu tiên (không tính nhóm dùng chung, nó hiện ở mọi tab).
+  const cacTab = (danhMuc?.heThongs ?? []).filter((x) => !x.dungChung)
+  const nhomDungChung = (danhMuc?.heThongs ?? []).find((x) => x.dungChung)
+  const tab = tabHeThong ?? cacTab[0]?.ma ?? null
+
+  /** Chức năng hiện trong tab: của hệ thống đang chọn + nhóm dùng chung. */
+  const chucNangTrongTab = [
+    ...(cacTab.find((x) => x.ma === tab)?.chucNangs ?? []),
+    ...(nhomDungChung?.chucNangs ?? []),
+  ]
+
+  /** Số ô đã tích của một hệ thống — để gắn số lên tab, thấy ngay tab nào đang có quyền. */
+  const demTheoHeThong = (chucNangs: string[]) =>
+    [...oDaChon].filter((k) => chucNangs.includes(k.split(':')[0])).length
+
   const moFormVoi = (q: QuyenDto | null) => {
     setDangSua(q)
     setTenQuyen(q?.tenQuyen ?? '')
@@ -62,6 +94,9 @@ export default function PhanQuyen() {
         q?.chucNangs.flatMap((c) => c.hanhDongs.map((h) => khoaO(c.tenChucNang, h))) ?? [],
       ),
     )
+    // Về tab đầu mỗi lần mở form: mở nhóm quyền khác mà còn ở tab HRM của lần trước thì
+    // người dùng tưởng nhóm này không có quyền LMS nào.
+    setTabHeThong(null)
     setMoForm(true)
     setMaLoi(null)
   }
@@ -134,6 +169,44 @@ export default function PhanQuyen() {
             {/* Ma trận chức năng × thao tác — ưu tiên desktop (nguyên tắc UI/UX mục 3) */}
             <div>
               <Label>{t('quyen.maTran')}</Label>
+
+              {/*
+                Tab theo hệ thống. Chuyển tab KHÔNG mất ô đã tích ở tab khác — `oDaChon` là
+                một tập duy nhất cho cả ba hệ thống, tab chỉ lọc dòng hiển thị.
+              */}
+              {cacTab.length > 1 && (
+                <div className="mt-2 flex flex-wrap gap-1 rounded-lg border border-border p-1">
+                  {cacTab.map((x) => {
+                    const dem = demTheoHeThong(x.chucNangs)
+                    return (
+                      <button
+                        key={x.ma}
+                        type="button"
+                        onClick={() => setTabHeThong(x.ma)}
+                        className={
+                          'rounded-md px-3 py-1.5 text-sm font-medium transition-colors ' +
+                          (tab === x.ma
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:bg-muted')
+                        }
+                      >
+                        {t(`heThong.${x.ma}`, x.ma)}
+                        {dem > 0 && (
+                          <span
+                            className={
+                              'ml-1.5 text-xs ' +
+                              (tab === x.ma ? 'opacity-80' : 'text-muted-foreground')
+                            }
+                          >
+                            {dem}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
               <div className="mt-2">
                 <Table>
                   <thead>
@@ -147,9 +220,21 @@ export default function PhanQuyen() {
                     </tr>
                   </thead>
                   <tbody>
-                    {danhMuc.chucNangs.map((cn) => (
+                    {chucNangTrongTab.map((cn) => (
                       <tr key={cn} className="hover:bg-muted/40">
-                        <Td className="font-medium">{t(`chucNang.${cn}`, cn)}</Td>
+                        <Td className="font-medium">
+                          {t(`chucNang.${cn}`, cn)}
+                          {/* Đánh dấu chức năng dùng chung: người phân quyền cần biết tích ô
+                              này là cấp cho cả ba hệ thống, không chỉ tab đang xem. */}
+                          {nhomDungChung?.chucNangs.includes(cn) && (
+                            <span
+                              className="ml-2 text-xs font-normal text-muted-foreground"
+                              title={t('heThong.dungChungGoiY')}
+                            >
+                              {t('heThong.DungChung')}
+                            </span>
+                          )}
+                        </Td>
                         {danhMuc.hanhDongs.map((hd) => {
                           const khoa = khoaO(cn, hd)
                           return (

@@ -8,6 +8,32 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — Ba hệ thống con HRM · CRM · LMS (08/09/2026)
+
+Chia hệ thống lớn thành ba hệ thống nhỏ theo nhóm quyền. **Không tách service**: vẫn một API,
+một database, một lần đăng nhập — "hệ thống" là cách NHÓM chức năng phân quyền để lọc sidebar.
+
+- `HeThong` enum (Hrm · Crm · Lms) + `ChucNang.HeThongCua()` là **nguồn sự thật duy nhất** cho
+  việc nhóm. Không lưu xuống DB: hệ thống của một chức năng là thuộc tính của mã nguồn.
+- **Ba chức năng mới**: `NhanVienKinhDoanh`, `GiaoVienNhanSu` (HRM), `DoanhThu` (CRM). Nhóm
+  "Quản trị viên" tự có chúng — seeder lặp `ChucNang.TatCa`, và `BoKhuyetQuyenQuanTri` cấp bù
+  cho tenant đã tồn tại lúc khởi động.
+- **Nhóm dùng chung** (`TaiKhoan`, `PhanQuyen`, `ThietLapChung`, `Anh`,
+  `DoiMatKhauNguoiKhac`, `NhatKyHeThong`) không thuộc hệ thống nào — hiện ở sidebar và ở mọi
+  tab phân quyền. Ép vào một hệ thống thì người quản trị nhân sự phải sang LMS mới sửa được
+  tài khoản.
+- `GET /toi/he-thong` — hệ thống người dùng vào được. **Bỏ qua nhóm dùng chung**: tính cả thì
+  người chỉ quản trị tài khoản "vào được" cả ba mà ba lối vào giống hệt nhau.
+- `GET /quyen/danh-muc` trả thêm `heThongs` — màn phân quyền dựng **tab HRM · CRM · LMS**.
+  Chuyển tab **không mất** ô đã tích ở tab khác (một tập `oDaChon` duy nhất); tab có số đếm ô
+  đã tích để thấy ngay hệ thống nào đang được cấp quyền.
+- **Bộ chuyển hệ thống** ngay trên nút Đăng xuất, chỉ hiện khi vào được từ 2 hệ thống trở lên.
+  Sidebar lọc theo hệ thống đang chọn — không gộp quyền của hệ thống khác.
+- Lựa chọn hệ thống lưu `localStorage`, nhưng **chỉ dùng khi còn quyền**: admin thu quyền HRM
+  thì lần vào sau người đó rơi về hệ thống khác, không kẹt ở sidebar trống.
+- Ba module mới hiện là **khung trống** (`DangPhatTrien`) — phân quyền và điều hướng chạy thật,
+  nghiệp vụ bổ sung sau.
+
 ### Added — View chi tiết buổi học + nhận xét hai chiều (07/09/2026)
 
 - **Route mới `/buoi-hoc/:id`** — 5 tab: Thông tin buổi · Điểm danh · Nhận xét · Bài tập ·

@@ -10,6 +10,9 @@ import TongQuan from '@/pages/TongQuan'
 import LopHoc from '@/pages/dao-tao/LopHoc'
 import ChiTietLopHoc from '@/pages/dao-tao/ChiTietLopHoc'
 import ChiTietBuoiHoc from '@/pages/dao-tao/ChiTietBuoiHoc'
+import NhanVienKinhDoanh from '@/pages/hrm/NhanVienKinhDoanh'
+import GiaoVienNhanSu from '@/pages/hrm/GiaoVienNhanSu'
+import DoanhThu from '@/pages/crm/DoanhThu'
 import TaiLieu from '@/pages/dao-tao/TaiLieu'
 import HocPhi from '@/pages/dao-tao/HocPhi'
 import NguoiDungVaTaiKhoan from '@/pages/quan-tri/NguoiDungVaTaiKhoan'
@@ -60,6 +63,11 @@ export default function App() {
               }
             >
               <Route path="/" element={<TongQuan />} />
+              {/* HRM · CRM — hiện là khung trống, xem components/ui/DangPhatTrien.tsx */}
+              <Route path="/hrm/nhan-vien-kinh-doanh" element={<NhanVienKinhDoanh />} />
+              <Route path="/hrm/giao-vien" element={<GiaoVienNhanSu />} />
+              <Route path="/crm/doanh-thu" element={<DoanhThu />} />
+
               <Route path="/lop-hoc" element={<LopHoc />} />
               <Route path="/lop-hoc/:id" element={<ChiTietLopHoc />} />
               <Route path="/buoi-hoc/:id" element={<ChiTietBuoiHoc />} />

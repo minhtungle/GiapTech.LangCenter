@@ -3,10 +3,12 @@ import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   Users, ShieldCheck, Settings, LogOut, Home, GraduationCap, BookOpen, Wallet,
-  PanelLeftClose, PanelLeft, Menu, X, ScrollText,
+  PanelLeftClose, PanelLeft, Menu, X, ScrollText, Briefcase, UserCog, TrendingUp,
+  LayoutGrid, Check,
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useQuyen } from '@/lib/quyen'
+import { useHeThong, type MaHeThong } from '@/lib/heThong'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
@@ -41,6 +43,8 @@ export default function Layout() {
   }, [thuGon])
 
   const { coQuyen, dangTai: dangTaiQuyen } = useQuyen()
+  const heThong = useHeThong()
+  const [moChonHeThong, setMoChonHeThong] = useState(false)
 
   // Đóng ngăn kéo sau khi điều hướng — trên mobile nó phủ toàn màn hình.
   useEffect(() => setMoMobile(false), [location.pathname])
@@ -55,18 +59,58 @@ export default function Layout() {
     can?: string
   }
 
-  const nhomGoc: { tieuDe?: string; muc: MucMenu[] }[] = [
+  interface NhomMenu {
+    tieuDe?: string
+    muc: MucMenu[]
+    /**
+     * Nhóm thuộc hệ thống nào. Bỏ trống = hiện ở MỌI hệ thống (Tổng quan, cụm quản trị) —
+     * khớp với `ChucNang.DungChung` ở backend: quyền quản trị dùng chung cả ba hệ thống, ép
+     * nó vào một hệ thống thì người quản trị nhân sự phải sang LMS mới sửa được tài khoản.
+     */
+    heThong?: MaHeThong
+  }
+
+  const nhomGoc: NhomMenu[] = [
     {
       muc: [{ to: '/', nhan: t('menu.tongQuan'), icon: Home, cuoi: true }],
     },
+
+    // ---------- HRM ----------
+    {
+      tieuDe: t('menu.nhanSu'),
+      heThong: 'Hrm',
+      muc: [
+        {
+          to: '/hrm/nhan-vien-kinh-doanh', nhan: t('menu.nhanVienKinhDoanh'),
+          icon: Briefcase, can: 'NhanVienKinhDoanh',
+        },
+        {
+          to: '/hrm/giao-vien', nhan: t('menu.giaoVienNhanSu'),
+          icon: UserCog, can: 'GiaoVienNhanSu',
+        },
+      ],
+    },
+
+    // ---------- CRM ----------
+    {
+      tieuDe: t('menu.khachHang'),
+      heThong: 'Crm',
+      muc: [
+        { to: '/crm/doanh-thu', nhan: t('menu.doanhThu'), icon: TrendingUp, can: 'DoanhThu' },
+      ],
+    },
+
+    // ---------- LMS ----------
     {
       tieuDe: t('menu.daoTao'),
+      heThong: 'Lms',
       muc: [
         { to: '/lop-hoc', nhan: t('menu.lopHoc'), icon: GraduationCap, can: 'LopHoc' },
         { to: '/tai-lieu', nhan: t('menu.taiLieu'), icon: BookOpen, can: 'TaiLieu' },
         { to: '/hoc-phi', nhan: t('menu.hocPhi'), icon: Wallet, can: 'HocPhi' },
       ],
     },
+
     {
       tieuDe: t('menu.quanTri'),
       muc: [
@@ -92,9 +136,15 @@ export default function Layout() {
   //
   // Trong lúc CHƯA biết quyền thì hiện đủ: nếu ẩn trước rồi hiện sau, menu sẽ nhấp nháy mỗi
   // lần tải trang. Bấm nhầm lúc đó cùng lắm nhận thông báo không có quyền.
+  // Lọc HAI tầng: hệ thống đang chọn, rồi quyền. Nhóm không khai `heThong` (Tổng quan, Quản
+  // trị) đi qua tầng một — chúng dùng chung cho cả ba hệ thống.
+  const theoHeThong = nhomGoc.filter(
+    (n) => !n.heThong || !heThong.hienTai || n.heThong === heThong.hienTai,
+  )
+
   const nhomMenu = dangTaiQuyen
-    ? nhomGoc
-    : nhomGoc
+    ? theoHeThong
+    : theoHeThong
         .map((n) => ({ ...n, muc: n.muc.filter((m) => !m.can || coQuyen(m.can)) }))
         .filter((n) => n.muc.length > 0)
 
@@ -170,6 +220,68 @@ export default function Layout() {
       </nav>
 
       <div className="shrink-0 border-t border-border p-2">
+        {/*
+          Bộ chuyển hệ thống — đặt ngay trên Đăng xuất theo yêu cầu.
+
+          Chỉ hiện khi vào được từ 2 hệ thống trở lên (`coTheChuyen`): học viên và giáo viên
+          chỉ có LMS, một nút với đúng một lựa chọn là nhiễu chứ không phải tiện.
+        */}
+        {heThong.coTheChuyen && heThong.hienTai && (
+          <div className="relative mb-1">
+            <Button
+              variant="outline"
+              size="sm"
+              title={thuGon ? t(`heThong.${heThong.hienTai}`) : undefined}
+              className={cn('w-full', thuGon ? 'justify-center px-0' : 'justify-between')}
+              onClick={() => setMoChonHeThong((v) => !v)}
+              aria-expanded={moChonHeThong}
+              aria-label={t('heThong.chuyenHeThong')}
+            >
+              <span className="flex min-w-0 items-center gap-2">
+                <LayoutGrid className="h-4 w-4 shrink-0" />
+                {!thuGon && (
+                  <span className="truncate">{t(`heThong.${heThong.hienTai}`)}</span>
+                )}
+              </span>
+              {!thuGon && <span className="text-xs text-muted-foreground">▾</span>}
+            </Button>
+
+            {moChonHeThong && (
+              <>
+                {/* Lớp phủ để bấm ra ngoài là đóng — không cần nghe click toàn tài liệu. */}
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setMoChonHeThong(false)}
+                  aria-hidden
+                />
+                <div className="absolute bottom-full left-0 z-50 mb-1 w-full min-w-44 overflow-hidden rounded-md border border-border bg-background shadow-lg">
+                  {heThong.duocPhep.map((ma) => (
+                    <button
+                      key={ma}
+                      type="button"
+                      onClick={() => {
+                        heThong.doi(ma)
+                        setMoChonHeThong(false)
+                      }}
+                      className={cn(
+                        'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-muted',
+                        ma === heThong.hienTai && 'font-medium text-primary',
+                      )}
+                    >
+                      {ma === heThong.hienTai ? (
+                        <Check className="h-3.5 w-3.5 shrink-0" />
+                      ) : (
+                        <span className="w-3.5 shrink-0" />
+                      )}
+                      <span className="truncate">{t(`heThong.${ma}`)}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {!thuGon && (
           <div className="px-3 py-1.5 text-xs text-muted-foreground">{phien?.username}</div>
         )}

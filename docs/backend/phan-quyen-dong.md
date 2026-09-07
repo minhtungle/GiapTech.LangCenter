@@ -49,25 +49,31 @@ không bao giờ khớp, và lỗi chỉ lộ ra lúc chạy.
 `ten_chuc_nang` là **danh mục đóng** — định nghĩa bằng hằng số trong code (không để người dùng tự nhập
 chuỗi tùy ý), tương ứng các module nghiệp vụ:
 
-| `ten_chuc_nang` | Module | FR |
-|---|---|---|
-| `TaiKhoan` | [Quản trị](../nghiep-vu/quan-tri-he-thong.md) | FR-03 |
-| `PhanQuyen` | [Quản trị](../nghiep-vu/quan-tri-he-thong.md) | FR-05 |
-| `ThietLapChung` | [Quản trị](../nghiep-vu/quan-tri-he-thong.md) | FR-06 |
-| `Anh` | Ảnh dùng chung (logo, ảnh bìa, QR, ảnh đại diện) | — |
-| `DoiMatKhauNguoiKhac` | [Quản trị](../nghiep-vu/quan-tri-he-thong.md) | FR-03 |
-| `LopHoc` | Lớp học | *(đang làm)* |
-| `BuoiHoc` | Buổi học | *(đang làm)* |
-| `DiemDanh` | Điểm danh | *(đang làm)* |
-| `BaiTap` | Bài tập giao trong buổi | *(đang làm)* |
-| `BaiNopBaiTap` | Bài học viên nộp | *(đang làm)* |
-| `BaiKiemTra` | Bài kiểm tra | *(đang làm)* |
-| `BaiLamKiemTra` | Bài làm của học viên | *(đang làm)* |
-| `TaiLieu` | Tài liệu giảng dạy | *(đang làm)* |
-| `HocPhi` | Học phí | *(đang làm)* |
-| `ThongKe` | Thống kê / dashboard | *(đang làm)* |
-| `LopHocToanTrungTam` | **Phạm vi**, không phải module — xem dưới | — |
-| `NhatKyHeThong` | Xem nhật ký thao tác hệ thống (FR-16). Chỉ `Xem` có nghĩa — nhật ký chỉ ghi thêm |
+Từ 08/09/2026, mỗi chức năng thuộc **một trong ba hệ thống** (HRM · CRM · LMS) hoặc nhóm
+**dùng chung** — xem mục [Ba hệ thống con](#ba-hệ-thống-con-hrm--crm--lms) bên dưới.
+
+| `ten_chuc_nang` | Hệ thống | Module | FR |
+|---|---|---|---|
+| `NhanVienKinhDoanh` | HRM | Hồ sơ nhân viên kinh doanh: chỉ tiêu, khách hàng, hoa hồng | *(khung)* |
+| `GiaoVienNhanSu` | HRM | Giáo viên góc nhìn nhân sự: hợp đồng, lương, chấm công | *(khung)* |
+| `DoanhThu` | CRM | Doanh thu tổng hợp theo kỳ/lớp/nhân viên | *(khung)* |
+| `TaiKhoan` | Dùng chung | [Quản trị](../nghiep-vu/quan-tri-he-thong.md) | FR-03 |
+| `PhanQuyen` | Dùng chung | [Quản trị](../nghiep-vu/quan-tri-he-thong.md) | FR-05 |
+| `ThietLapChung` | Dùng chung | [Quản trị](../nghiep-vu/quan-tri-he-thong.md) | FR-06 |
+| `Anh` | Dùng chung | Ảnh dùng chung (logo, ảnh bìa, QR, ảnh đại diện) | — |
+| `DoiMatKhauNguoiKhac` | Dùng chung | [Quản trị](../nghiep-vu/quan-tri-he-thong.md) | FR-03 |
+| `LopHoc` | LMS | Lớp học | *(đang làm)* |
+| `BuoiHoc` | LMS | Buổi học | *(đang làm)* |
+| `DiemDanh` | LMS | Điểm danh | *(đang làm)* |
+| `BaiTap` | LMS | Bài tập giao trong buổi | *(đang làm)* |
+| `BaiNopBaiTap` | LMS | Bài học viên nộp | *(đang làm)* |
+| `BaiKiemTra` | LMS | Bài kiểm tra | *(đang làm)* |
+| `BaiLamKiemTra` | LMS | Bài làm của học viên | *(đang làm)* |
+| `TaiLieu` | LMS | Tài liệu giảng dạy | *(đang làm)* |
+| `HocPhi` | LMS | Học phí | *(đang làm)* |
+| `ThongKe` | LMS | Thống kê / dashboard | *(đang làm)* |
+| `LopHocToanTrungTam` | LMS | **Phạm vi**, không phải module — xem dưới | — |
+| `NhatKyHeThong` | Dùng chung | Xem nhật ký thao tác hệ thống (FR-16). Chỉ `Xem` có nghĩa — nhật ký chỉ ghi thêm |
 
 ### Vì sao tách nhỏ tới mức này
 
@@ -76,6 +82,41 @@ Tiêu chí gộp/tách: **so cột-theo-cột trong ma trận phân quyền; kh�
 - `BaiTap` vs `BaiKiemTra`: trợ giảng **toàn quyền** với bài tập nhưng **chỉ xem** bài kiểm tra.
   Gộp lại thì không diễn đạt nổi khác biệt đó.
 - `BaiTap` vs `BaiNopBaiTap`: học viên **tạo** bài nộp nhưng **không tạo** bài tập.
+
+## Ba hệ thống con: HRM · CRM · LMS
+
+Từ 08/09/2026, danh mục chức năng được **nhóm** thành ba hệ thống. Đây là cách nhóm để lọc
+sidebar, **không phải ba ứng dụng**: vẫn một API, một database, một lần đăng nhập.
+
+| Hệ thống | Chức năng |
+|---|---|
+| **HRM** | `NhanVienKinhDoanh`, `GiaoVienNhanSu` |
+| **CRM** | `DoanhThu` |
+| **LMS** | `LopHoc`, `BuoiHoc`, `DiemDanh`, `BaiTap`, `BaiNopBaiTap`, `BaiKiemTra`, `BaiLamKiemTra`, `TaiLieu`, `HocPhi`, `ThongKe`, `LopHocToanTrungTam` |
+| **Dùng chung** | `TaiKhoan`, `PhanQuyen`, `ThietLapChung`, `Anh`, `DoiMatKhauNguoiKhac`, `NhatKyHeThong` |
+
+Nguồn sự thật duy nhất: `ChucNang.HeThongCua()` trong `Domain/Common/ChucNang.cs`. **Không lưu
+xuống DB** — hệ thống của một chức năng là thuộc tính của mã nguồn (`LopHoc` thuộc LMS là bất
+biến), lưu xuống DB thì mỗi tenant nhóm một kiểu và sidebar hết xác định.
+
+### Vì sao có nhóm "dùng chung"
+
+`TaiKhoan`, `PhanQuyen`… **không thuộc hệ thống nào**. Ép chúng vào một hệ thống sẽ sai theo cả
+hai hướng: người quản trị nhân sự cần sửa tài khoản nhưng không cần vào LMS, còn nhật ký thì ghi
+thao tác của cả ba hệ thống. Nhóm này hiện ở sidebar và ở **mọi tab** của màn phân quyền.
+
+### Quyền dùng chung KHÔNG mở lối vào hệ thống
+
+`GET /toi/he-thong` trả hệ thống mà người dùng có ít nhất một quyền — **bỏ qua** nhóm dùng
+chung. Nếu tính cả thì người chỉ quản trị tài khoản sẽ "vào được" cả ba hệ thống, mà cả ba đều
+chỉ hiện đúng cụm Quản trị — ba lối vào giống hệt nhau, bộ chuyển thành vô nghĩa.
+Canh bởi `BaHeThongTests.Chuc_nang_dung_chung_khong_mo_loi_vao_he_thong`.
+
+### Thêm chức năng mới
+
+Phải khai hệ thống của nó trong `TheoHeThong` **hoặc** thêm vào `DungChung`. Quên thì
+`NhomHeThongTests.Moi_chuc_nang_phai_duoc_khai_he_thong_hoac_dung_chung` đỏ ngay kèm tên hằng —
+bỏ qua thì chức năng đó hiện ở sidebar của **mọi** hệ thống.
 
 ### `LopHocToanTrungTam` — cách nhận ra "người quản trị" mà không hard-code vai trò
 

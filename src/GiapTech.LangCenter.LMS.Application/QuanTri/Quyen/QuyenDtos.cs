@@ -15,7 +15,26 @@ public record QuyenDto(Guid Id, string TenQuyen, string? MoTa, int SoTaiKhoan,
 public record ChucNangDto(string TenChucNang, List<HanhDong> HanhDongs);
 
 /// <summary>Danh mục chức năng cho frontend dựng ma trận phân quyền.</summary>
-public record DanhMucChucNangDto(IReadOnlyList<string> ChucNangs, IReadOnlyList<string> HanhDongs);
+public record DanhMucChucNangDto(
+    IReadOnlyList<string> ChucNangs,
+    IReadOnlyList<string> HanhDongs,
+    /// <summary>
+    /// Chức năng nhóm theo hệ thống, để màn phân quyền dựng tab HRM · CRM · LMS.
+    ///
+    /// Trả **nhóm sẵn từ backend** chứ không để frontend tự khai lại bản đồ: hai bản đồ ở hai
+    /// nơi sẽ trôi khỏi nhau, và thêm module mới thì phải sửa hai chỗ mới thấy nó xuất hiện.
+    /// </summary>
+    IReadOnlyList<NhomHeThongDto> HeThongs);
+
+/// <summary>Một hệ thống con và các chức năng của nó.</summary>
+public record NhomHeThongDto(
+    string Ma,
+    IReadOnlyList<string> ChucNangs,
+    /// <summary>
+    /// true = nhóm chức năng quản trị dùng chung cho cả ba hệ thống (`TaiKhoan`, `PhanQuyen`…).
+    /// UI hiện nhóm này ở MỌI tab để người phân quyền không phải nhớ nó nằm ở tab nào.
+    /// </summary>
+    bool DungChung = false);
 
 // ---------- Queries ----------
 
@@ -26,7 +45,12 @@ public class LayDanhMucChucNangHandler : IRequestHandler<LayDanhMucChucNangQuery
     public Task<DanhMucChucNangDto> Handle(LayDanhMucChucNangQuery request, CancellationToken ct)
         => Task.FromResult(new DanhMucChucNangDto(
             ChucNang.TatCa,
-            Enum.GetNames<HanhDong>()));
+            Enum.GetNames<HanhDong>(),
+            [
+                ..Enum.GetValues<HeThong>()
+                    .Select(ht => new NhomHeThongDto(ht.ToString(), ChucNang.ChucNangCua(ht))),
+                new NhomHeThongDto("DungChung", ChucNang.DungChung, DungChung: true)
+            ]));
 }
 
 public record LayDanhSachQuyenQuery : IRequest<List<QuyenDto>>;

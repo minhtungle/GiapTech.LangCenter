@@ -37,6 +37,38 @@ public static class ChucNang
     /// </summary>
     public const string DoiMatKhauNguoiKhac = nameof(DoiMatKhauNguoiKhac);
 
+    // ---------- Nhân sự (HRM) ----------
+
+    /// <summary>
+    /// Hồ sơ nhân viên kinh doanh — chỉ tiêu, khách hàng phụ trách, hoa hồng.
+    /// </summary>
+    public const string NhanVienKinhDoanh = nameof(NhanVienKinhDoanh);
+
+    /// <summary>
+    /// Giáo viên dưới góc nhìn NHÂN SỰ — hợp đồng, lương, chấm công.
+    ///
+    /// Vẫn là chính con người trong `NGUOI_DUNG` + `HO_SO_GIAO_VIEN` mà LMS dùng để phân công
+    /// lớp, **không** phải bảng nhân sự thứ hai: hai nguồn sự thật cho cùng một người thì đổi
+    /// tên một bên là bên kia sai (đúng lỗi đã gặp với tài khoản/người dùng).
+    ///
+    /// Tách khỏi <see cref="TaiKhoan"/> vì hai việc khác nhau: `TaiKhoan` là ai đăng nhập
+    /// được, `GiaoVienNhanSu` là điều kiện làm việc của một người. Trưởng phòng nhân sự cần
+    /// cái sau mà không cần cái trước.
+    /// </summary>
+    public const string GiaoVienNhanSu = nameof(GiaoVienNhanSu);
+
+    // ---------- Khách hàng (CRM) ----------
+
+    /// <summary>
+    /// Doanh thu — tổng hợp theo kỳ, theo lớp, theo nhân viên.
+    ///
+    /// Tách khỏi <see cref="HocPhi"/>: `HocPhi` là **sổ thu từng khoản** của một lớp (ai đóng
+    /// bao nhiêu, còn nợ bao nhiêu), `DoanhThu` là **số tổng hợp** để ban giám đốc xem. Người
+    /// xem doanh thu toàn trung tâm không nhất thiết được xem công nợ từng học viên, và ngược
+    /// lại — kế toán lớp không cần thấy doanh thu toàn công ty.
+    /// </summary>
+    public const string DoanhThu = nameof(DoanhThu);
+
     // ---------- Nghiệp vụ đào tạo ----------
 
     public const string LopHoc = nameof(LopHoc);
@@ -90,7 +122,61 @@ public static class ChucNang
     public static readonly IReadOnlyList<string> TatCa =
     [
         TaiKhoan, PhanQuyen, ThietLapChung, Anh, DoiMatKhauNguoiKhac,
+        NhanVienKinhDoanh, GiaoVienNhanSu, DoanhThu,
         LopHoc, BuoiHoc, DiemDanh, BaiTap, BaiNopBaiTap, BaiKiemTra, BaiLamKiemTra,
         TaiLieu, HocPhi, ThongKe, LopHocToanTrungTam, NhatKyHeThong
     ];
+
+    /// <summary>
+    /// Chức năng nào thuộc hệ thống nào — nguồn sự thật DUY NHẤT cho việc nhóm.
+    ///
+    /// Chỉ liệt kê chức năng thuộc ĐÚNG MỘT hệ thống. Nhóm quản trị hệ thống (`TaiKhoan`,
+    /// `PhanQuyen`, `ThietLapChung`, `Anh`, `DoiMatKhauNguoiKhac`, `NhatKyHeThong`) **cố ý
+    /// không có ở đây**: chúng dùng chung cho cả ba hệ thống, xem <see cref="DungChung"/>.
+    ///
+    /// Ép chúng vào một hệ thống nào đó sẽ sai theo cả hai hướng: người quản trị nhân sự cần
+    /// sửa tài khoản nhưng không cần vào LMS, còn nhật ký thì ghi thao tác của cả ba.
+    /// </summary>
+    private static readonly Dictionary<string, HeThong> TheoHeThong = new()
+    {
+        [NhanVienKinhDoanh] = HeThong.Hrm,
+        [GiaoVienNhanSu] = HeThong.Hrm,
+
+        [DoanhThu] = HeThong.Crm,
+
+        [LopHoc] = HeThong.Lms,
+        [BuoiHoc] = HeThong.Lms,
+        [DiemDanh] = HeThong.Lms,
+        [BaiTap] = HeThong.Lms,
+        [BaiNopBaiTap] = HeThong.Lms,
+        [BaiKiemTra] = HeThong.Lms,
+        [BaiLamKiemTra] = HeThong.Lms,
+        [TaiLieu] = HeThong.Lms,
+        [HocPhi] = HeThong.Lms,
+        [ThongKe] = HeThong.Lms,
+        [LopHocToanTrungTam] = HeThong.Lms
+    };
+
+    /// <summary>
+    /// Chức năng quản trị dùng chung cho cả ba hệ thống — hiện ở sidebar của hệ thống nào cũng
+    /// được, miễn người dùng có quyền.
+    /// </summary>
+    public static readonly IReadOnlyList<string> DungChung =
+    [
+        TaiKhoan, PhanQuyen, ThietLapChung, Anh, DoiMatKhauNguoiKhac, NhatKyHeThong
+    ];
+
+    /// <summary>
+    /// Hệ thống của một chức năng; `null` = dùng chung cho cả ba.
+    ///
+    /// Trả `null` thay vì ném lỗi cho chức năng không có trong bảng: thêm hằng mới mà quên khai
+    /// hệ thống thì nó thành "dùng chung" — hiện ở mọi sidebar, tức là **thấy quá nhiều**, dễ
+    /// phát hiện. Ném lỗi sẽ làm sập màn phân quyền của mọi tenant. Có test canh việc khai đủ.
+    /// </summary>
+    public static HeThong? HeThongCua(string chucNang) =>
+        TheoHeThong.TryGetValue(chucNang, out var ht) ? ht : null;
+
+    /// <summary>Các chức năng của một hệ thống, KHÔNG gồm nhóm dùng chung.</summary>
+    public static IReadOnlyList<string> ChucNangCua(HeThong heThong) =>
+        TatCa.Where(cn => HeThongCua(cn) == heThong).ToList();
 }
