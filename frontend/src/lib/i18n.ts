@@ -390,6 +390,9 @@ const vi = {
     Sunday: 'CN',
   },
   hocLieu: {
+    luuDiem: 'Lưu điểm',
+    daSuaChuaLuu: 'Đã sửa {{soLuong}} bài, chưa lưu',
+    hoiLuuDiem: 'Lưu điểm và nhận xét cho {{soLuong}} bài nộp?',
     hoiXoaBaiTap: 'Xoá bài tập "{{ten}}"? Bài nộp của học viên cũng mất theo.',
     baiTap: 'Bài tập',
     taiLieu: 'Tài liệu',

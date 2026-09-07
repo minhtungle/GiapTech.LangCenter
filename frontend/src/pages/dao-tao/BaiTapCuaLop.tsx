@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ClipboardList, Pencil, Plus, Trash2 } from 'lucide-react'
+import { CheckCircle2, ClipboardList, Pencil, Plus, Trash2 } from 'lucide-react'
 import { api, layMaLoi } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Textarea, Th, TrangTrong,
@@ -301,21 +301,64 @@ export function BaiTapCuaLop({
 }
 
 /** Danh sách bài nộp — chỉ lần nộp mới nhất của mỗi học viên, kèm ô chấm điểm. */
+/**
+ * Bảng chấm điểm bài nộp.
+ *
+ * **Nhập cả bảng rồi bấm Lưu một lần**, không lưu theo từng ô.
+ *
+ * Bản trước gọi API ngay ở `onBlur` mỗi ô điểm. Khi hệ thống bắt đầu hỏi xác nhận trước mọi
+ * thao tác ghi (07/09/2026), điều đó thành ra hỏi mỗi lần rời một ô — chấm lớp 20 học viên là
+ * 20 hộp thoại. Gom lại thành một lần lưu vừa hợp với việc chấm cả lớp, vừa chỉ hỏi một lần,
+ * và cho người chấm sửa lại trước khi ghi.
+ *
+ * Phụ phẩm: có chỗ cho ô **nhận xét** — trước đây `nhanXet` chỉ được gửi lại giá trị cũ nên
+ * giáo viên không có đường nhập.
+ */
 function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => void }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
+  const { hoi, hop } = useXacNhan()
   const [maLoi, setMaLoi] = useState<string | null>(null)
+  const [daLuu, setDaLuu] = useState(false)
+
+  /** Chỉ chứa dòng người chấm ĐÃ SỬA — dòng không đụng tới thì không gửi lên. */
+  const [sua, setSua] = useState<Record<string, { diem: string; nhanXet: string }>>({})
 
   const { data: ds = [] } = useQuery({
     queryKey: ['bai-tap', baiTap.id, 'bai-nop'],
     queryFn: async () => (await api.get<BaiNopDto[]>(`/bai-tap/${baiTap.id}/bai-nop`)).data,
   })
 
+  const giaTri = (n: BaiNopDto) =>
+    sua[n.id] ?? { diem: n.diem?.toString() ?? '', nhanXet: n.nhanXet ?? '' }
+
+  const doi = (n: BaiNopDto, phan: Partial<{ diem: string; nhanXet: string }>) =>
+    setSua((cu) => ({ ...cu, [n.id]: { ...giaTri(n), ...phan } }))
+
+  const soDaSua = Object.keys(sua).length
+
   const cham = useMutation({
-    mutationFn: (p: { id: string; diem: number | null; nhanXet: string | null }) =>
-      api.post(`/bai-nop/${p.id}/cham`, { diem: p.diem, nhanXet: p.nhanXet }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['bai-tap', baiTap.id, 'bai-nop'] }),
-    onError: (e) => setMaLoi(layMaLoi(e)),
+    mutationFn: async () => {
+      // Gửi tuần tự chứ không Promise.all: mỗi lượt là một bản ghi nhật ký và một lần
+      // SaveChanges; bắn 20 request song song chỉ để tiết kiệm vài trăm ms là đánh đổi sai.
+      for (const [id, v] of Object.entries(sua)) {
+        await api.post(`/bai-nop/${id}/cham`, {
+          diem: v.diem === '' ? null : Number(v.diem),
+          nhanXet: v.nhanXet === '' ? null : v.nhanXet,
+        })
+      }
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['bai-tap', baiTap.id, 'bai-nop'] })
+      setSua({})
+      setMaLoi(null)
+      setDaLuu(true)
+      window.setTimeout(() => setDaLuu(false), 2500)
+    },
+    onError: (e) => {
+      setMaLoi(layMaLoi(e))
+      setDaLuu(false)
+    },
   })
 
   return (
@@ -334,6 +377,7 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
                   <Th>{t('hocLieu.thoiDiemNop')}</Th>
                   <Th>{t('hocLieu.tep')}</Th>
                   <Th className="w-24">{t('hocLieu.diem')}</Th>
+                  <Th>{t('hocLieu.nhanXet')}</Th>
                   <Th className="w-20" />
                 </tr>
               </thead>
@@ -362,16 +406,22 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
                       />
                     </Td>
                     <Td>
+                      {/* `value` + `onChange` (không `defaultValue`): giá trị phải nằm trong
+                          state để nút Lưu biết những gì đã sửa. */}
                       <Input
-                        type="number" min={0} step="0.5" defaultValue={n.diem ?? ''}
+                        type="number" min={0} step="0.5"
                         className="h-8"
-                        onBlur={(e) =>
-                          cham.mutate({
-                            id: n.id,
-                            diem: e.target.value === '' ? null : Number(e.target.value),
-                            nhanXet: n.nhanXet,
-                          })
-                        }
+                        aria-label={`${t('hocLieu.diem')} — ${n.hoTen}`}
+                        value={giaTri(n).diem}
+                        onChange={(e) => doi(n, { diem: e.target.value })}
+                      />
+                    </Td>
+                    <Td>
+                      <Input
+                        className="h-8"
+                        aria-label={`${t('hocLieu.nhanXet')} — ${n.hoTen}`}
+                        value={giaTri(n).nhanXet}
+                        onChange={(e) => doi(n, { nhanXet: e.target.value })}
                       />
                     </Td>
                     <Td>
@@ -385,7 +435,37 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
             </Table>
           </div>
         )}
+
+        {ds.length > 0 && (
+          <div className="flex items-center justify-end gap-2">
+            {daLuu && (
+              <span className="mr-auto flex items-center gap-1 text-sm text-status-win">
+                <CheckCircle2 className="h-4 w-4" />
+                {t('chung.daLuu')}
+              </span>
+            )}
+            {soDaSua > 0 && (
+              <span className="mr-auto text-sm text-muted-foreground">
+                {t('hocLieu.daSuaChuaLuu', { soLuong: soDaSua })}
+              </span>
+            )}
+            <Button
+              disabled={soDaSua === 0 || cham.isPending}
+              onClick={() =>
+                hoi({
+                  tieuDe: t('hocLieu.luuDiem'),
+                  thongDiep: t('hocLieu.hoiLuuDiem', { soLuong: soDaSua }),
+                  onDongY: () => cham.mutate(),
+                })
+              }
+            >
+              {t('hocLieu.luuDiem')}
+            </Button>
+          </div>
+        )}
       </div>
+
+      {hop}
     </Modal>
   )
 }

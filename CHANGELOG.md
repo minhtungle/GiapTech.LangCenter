@@ -8,6 +8,16 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — Bảng chấm điểm lưu một lần cho cả bảng (07/09/2026)
+
+- Nhập điểm và nhận xét cho mọi bài nộp rồi bấm **Lưu điểm** một lần, thay vì gọi API ở
+  `onBlur` từng ô. Việc hỏi xác nhận trước mọi thao tác ghi làm cách cũ thành hỏi mỗi lần rời
+  một ô — chấm lớp 20 học viên là 20 hộp thoại.
+- Chỉ gửi dòng đã sửa, gửi tuần tự (mỗi lượt là một bản ghi nhật ký và một lần `SaveChanges`).
+- **Thêm ô nhận xét** — trước đây `nhanXet` chỉ được gửi lại giá trị cũ nên giáo viên không có
+  đường nhập.
+
+
 ### Added — Nhật ký hệ thống (FR-16, 07/09/2026)
 
 - **Bảng `NHAT_KY_HE_THONG`** ghi lịch sử thao tác mọi module: ai · lúc nào · lệnh gì · tham số

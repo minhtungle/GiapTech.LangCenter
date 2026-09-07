@@ -100,5 +100,6 @@ riêng cho lệnh đặt lại mật khẩu.
   dụ 12 tháng) trước khi chạy production lâu dài.
 - Không ghi được thao tác **không đi qua MediatR**: `TenantSeeder` (tạo trung tâm mới) và
   `BoKhuyetQuyenQuanTri` (chạy lúc khởi động).
-- Chấm điểm bài nộp dùng `onBlur` nên nay hỏi xác nhận mỗi lần rời ô — khó dùng khi chấm cả
-  lớp. Nên đổi sang nút "Lưu điểm" cho cả bảng.
+- ~~Chấm điểm bài nộp dùng `onBlur` nên nay hỏi xác nhận mỗi lần rời ô~~ — **đã sửa cùng
+  ngày**: bảng chấm nay nhập cả bảng rồi bấm "Lưu điểm" một lần, và có thêm ô nhận xét (trước
+  đây `nhanXet` không có đường nhập).

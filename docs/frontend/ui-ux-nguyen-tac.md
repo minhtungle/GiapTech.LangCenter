@@ -21,6 +21,12 @@
   [FR-03](../nghiep-vu/quan-tri-he-thong.md#quy-trình-chuẩn-tạo-tài-khoản-wizard-tuần-tự): hồ sơ cầu thủ
   → nhóm quyền → tài khoản.
 - **Empty-state** luôn có nút hành động + hướng dẫn ngắn, không để màn hình trắng.
+- **Bảng nhập nhiều dòng → một nút Lưu cho cả bảng**, không lưu theo từng ô.
+  - Lưu theo ô (`onBlur`) cộng với việc hỏi xác nhận trước mọi thao tác ghi sẽ thành hỏi mỗi
+    lần rời một ô — chấm lớp 20 học viên là 20 hộp thoại. Đã xảy ra với bảng chấm điểm.
+  - Chỉ gửi **dòng đã sửa**, và gửi **tuần tự**: mỗi lượt là một bản ghi nhật ký và một lần
+    `SaveChanges`.
+  - Nút hiện số dòng đã sửa chưa lưu, và tắt khi không có gì để lưu.
 - **Giờ và ngày hiển thị theo MÚI GIỜ TRUNG TÂM**, không phải múi giờ máy người xem. Lấy từ
   `GET /toi/cau-hinh` qua hook `useMuiGio()`.
   - Buổi 18:00 giờ Việt Nam mở trên máy đặt UTC+9 sẽ hiện 20:00; với **lịch** thì lệch giờ

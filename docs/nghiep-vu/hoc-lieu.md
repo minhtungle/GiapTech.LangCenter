@@ -42,8 +42,25 @@ mà id nằm ngay trong danh sách bài nộp. Trả **404**, không phải 403:
 
 Giao trong một buổi học cụ thể. Có tiêu đề, mô tả, hạn nộp (tuỳ chọn), tệp đính kèm.
 
-### Quy tắc
 
+### Chấm điểm: nhập cả bảng rồi lưu một lần
+
+Bảng chấm cho nhập điểm và nhận xét cho **mọi bài nộp**, rồi bấm **Lưu điểm** một lần. Nút chỉ
+bật khi có thay đổi, và hiện số bài đã sửa chưa lưu.
+
+Bản trước gọi API ngay ở `onBlur` mỗi ô điểm. Khi hệ thống bắt đầu hỏi xác nhận trước mọi thao
+tác ghi (07/09/2026), điều đó thành ra hỏi mỗi lần rời một ô — chấm lớp 20 học viên là 20 hộp
+thoại. Gom lại vừa hợp với việc chấm cả lớp, chỉ hỏi một lần, và cho người chấm sửa lại trước
+khi ghi.
+
+Chỉ gửi lên **những dòng đã sửa**; dòng không đụng tới thì không gọi API. Gửi **tuần tự** chứ
+không song song: mỗi lượt là một bản ghi nhật ký và một lần `SaveChanges`, bắn 20 request cùng
+lúc chỉ để tiết kiệm vài trăm mili-giây là đánh đổi sai.
+
+Phụ phẩm: nay có ô **nhận xét**. Trước đây `nhanXet` chỉ được gửi lại giá trị cũ nên giáo viên
+không có đường nhập nó.
+
+### Quy tắc
 - **Xoá bài tập đã có học viên nộp bị chặn** (`BAI_TAP_DA_CO_BAI_NOP`) — bài nộp là kết quả
   học tập của họ (quy tắc #1).
 - Xoá bài tập xoá luôn tệp đính kèm **cả trong kho lẫn DB** — không thì tệp mồ côi ở lại
