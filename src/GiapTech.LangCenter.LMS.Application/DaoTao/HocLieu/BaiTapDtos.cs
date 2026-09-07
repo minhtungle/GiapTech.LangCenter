@@ -35,7 +35,10 @@ public record BaiNopDto(
 
 // ---------- Queries ----------
 
-public record LayBaiTapCuaLopQuery(Guid LopHocId) : IRequest<List<BaiTapDto>>;
+public record LayBaiTapCuaLopQuery(
+    Guid LopHocId,
+    /// <summary>Lọc về một buổi — cho view chi tiết buổi học. null = cả lớp.</summary>
+    Guid? BuoiHocId = null) : IRequest<List<BaiTapDto>>;
 
 public class LayBaiTapCuaLopHandler(IAppDbContext db, IPhamViLopHoc phamVi)
     : IRequestHandler<LayBaiTapCuaLopQuery, List<BaiTapDto>>
@@ -45,8 +48,13 @@ public class LayBaiTapCuaLopHandler(IAppDbContext db, IPhamViLopHoc phamVi)
         await LayBuoiHocCuaLopHandler
             .BaoDamThayLop(db, phamVi, request.LopHocId, HanhDong.Xem, ct);
 
-        return await db.BaiTaps
-            .Where(bt => bt.BuoiHoc.LopHocId == request.LopHocId)
+        var q = db.BaiTaps.Where(bt => bt.BuoiHoc.LopHocId == request.LopHocId);
+
+        // Lọc ở SERVER chứ không để client tự filter: lớp 40 buổi × mỗi buổi vài bài thì tải
+        // cả danh sách về chỉ để hiện một buổi là phí, và đếm bài nộp chạy cho mọi dòng.
+        if (request.BuoiHocId is { } bh) q = q.Where(bt => bt.BuoiHocId == bh);
+
+        return await q
             .OrderBy(bt => bt.BuoiHoc.ThuTu).ThenBy(bt => bt.NgayTao)
             .Select(bt => new BaiTapDto(
                 bt.Id, bt.BuoiHocId, bt.BuoiHoc.ThuTu, bt.TieuDe, bt.MoTa, bt.HanNop,

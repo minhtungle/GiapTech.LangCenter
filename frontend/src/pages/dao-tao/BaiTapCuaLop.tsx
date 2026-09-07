@@ -56,12 +56,21 @@ export function BaiTapCuaLop({
   tenLop,
   onDong,
   nhung,
+  buoiHocId,
 }: {
   lopHocId: string
   tenLop: string
   onDong: () => void
   /** true = đang là tab trong view chi tiết lớp, không bọc Modal. */
   nhung?: boolean
+  /**
+   * Chỉ lấy bài tập của một buổi (tab Bài tập trong view chi tiết buổi học).
+   *
+   * Lọc ở SERVER qua `?buoiHocId=` chứ không `.filter()` trên mảng đã tải: lớp học dài có
+   * hàng trăm bài tập, và lọc phía client thì `queryKey` giống nhau nên hai view dùng chung
+   * cache — mở view buổi rồi về view lớp sẽ thấy danh sách bị cắt.
+   */
+  buoiHocId?: string
 }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -74,9 +83,9 @@ export function BaiTapCuaLop({
   const [xemNop, setXemNop] = useState<BaiTapDto | null>(null)
 
   const { data: baiTaps = [], isLoading } = useQuery({
-    queryKey: ['bai-tap', lopHocId],
+    queryKey: ['bai-tap', lopHocId, buoiHocId ?? null],
     queryFn: async () =>
-      (await api.get<BaiTapDto[]>('/bai-tap', { params: { lopHocId } })).data,
+      (await api.get<BaiTapDto[]>('/bai-tap', { params: { lopHocId, buoiHocId } })).data,
   })
 
   const { data: buois = [] } = useQuery({
@@ -84,6 +93,8 @@ export function BaiTapCuaLop({
     queryFn: async () => (await api.get<BuoiNgan[]>(`/lop-hoc/${lopHocId}/buoi-hoc`)).data,
   })
 
+  // Không truyền `buoiHocId` vào khoá khi vô hiệu hoá: tạo bài tập cho buổi X cũng phải làm
+  // mới danh sách của cả lớp, nếu không về view lớp sẽ không thấy bài vừa tạo.
   const lamMoi = () => void qc.invalidateQueries({ queryKey: ['bai-tap', lopHocId] })
 
   const dong = () => {

@@ -1,9 +1,10 @@
-import { lazy, Suspense, useMemo, useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import {
-  CalendarDays, CalendarPlus, CalendarRange, CheckCircle2, ClipboardCheck, List,
-  RotateCcw, Trash2, X,
+  CalendarDays, CalendarPlus, CalendarRange, ClipboardCheck, Eye, List, RotateCcw,
+  Trash2, X,
 } from 'lucide-react'
 import { api, layMaLoi } from '@/lib/api'
 import {
@@ -15,39 +16,14 @@ import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { useXacNhan } from '@/lib/xacNhan'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
-
-type TrangThaiDiemDanh = 'CoMat' | 'Vang' | 'DiMuon' | 'VangCoPhep'
-const CAC_TRANG_THAI: TrangThaiDiemDanh[] = ['CoMat', 'Vang', 'DiMuon', 'VangCoPhep']
+import { BangDiemDanh } from './BangDiemDanh'
+import { type BuoiHocDto, gioVN } from './buoiHocTypes'
 
 const THU: { ma: number; khoa: string }[] = [
   { ma: 1, khoa: 'Monday' }, { ma: 2, khoa: 'Tuesday' }, { ma: 3, khoa: 'Wednesday' },
   { ma: 4, khoa: 'Thursday' }, { ma: 5, khoa: 'Friday' }, { ma: 6, khoa: 'Saturday' },
   { ma: 0, khoa: 'Sunday' },
 ]
-
-interface BuoiHocDto {
-  id: string
-  thuTu: number
-  batDau: string
-  ketThuc: string
-  tenGiaoVien: string
-  giaoVienRieng: boolean
-  trangThai: 'DaLenLich' | 'DaHoanThanh' | 'DaHuy'
-  laHocBu: boolean
-  soDaDiemDanh: number
-  soHocVien: number
-}
-
-interface DiemDanhDto {
-  hocVienId: string
-  hoTen: string
-  trangThaiTuKhai: TrangThaiDiemDanh | null
-  trangThaiChinhThuc: TrangThaiDiemDanh
-  nguonGhiNhan: string
-  lyDoVang: string | null
-  giaoVienSuaKhacTuKhai: boolean
-  daGhiNhan: boolean
-}
 
 /**
  * Lịch tải theo yêu cầu: FullCalendar nặng ~200 kB và chỉ dùng khi người dùng chủ động bật
@@ -56,12 +32,6 @@ interface DiemDanhDto {
 const LichBuoiHoc = lazy(() =>
   import('@/components/ui/LichBuoiHoc').then((m) => ({ default: m.LichBuoiHoc })),
 )
-
-const gioVN = (s: string) =>
-  new Date(s).toLocaleString('vi-VN', {
-    weekday: 'short', day: '2-digit', month: '2-digit',
-    hour: '2-digit', minute: '2-digit',
-  })
 
 /** Tab Lịch học + Điểm danh của một lớp (bước 2 wizard, và dùng lại khi vận hành lớp). */
 export function LichVaDiemDanh({
@@ -77,6 +47,7 @@ export function LichVaDiemDanh({
   nhung?: boolean
 }) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const [maLoi, setMaLoi] = useState<string | null>(null)
   // Mặc định BẢNG: nó là chỗ điểm danh và xem số liệu từng buổi. Lịch để nhìn tổng quát.
@@ -208,11 +179,10 @@ export function LichVaDiemDanh({
           >
             <LichBuoiHoc
               buoi={buoiHocs}
-              // Bấm buổi trên lịch mở ngay bảng điểm danh — việc hay làm nhất với một buổi.
-              onChonBuoi={(id) => {
-                const b = buoiHocs.find((x) => x.id === id)
-                if (b) setBuoiDiemDanh(b)
-              }}
+              // Bấm buổi → view chi tiết, không mở thẳng modal điểm danh nữa: view chi tiết
+              // có cả điểm danh lẫn nhận xét / bài tập, và chuyển được sang buổi khác.
+              // Điểm danh nhanh vẫn còn ở menu thao tác của bảng.
+              onChonBuoi={(id) => navigate(`/buoi-hoc/${id}`)}
             />
           </Suspense>
         ) : (
@@ -230,7 +200,11 @@ export function LichVaDiemDanh({
               </thead>
               <tbody>
                 {buoiHocs.map((b) => (
-                  <tr key={b.id} className="hover:bg-muted/40">
+                  <tr
+                    key={b.id}
+                    className="cursor-pointer hover:bg-muted/40"
+                    onClick={() => navigate(`/buoi-hoc/${b.id}`)}
+                  >
                     <Td className="font-medium">{b.thuTu}</Td>
                     <Td className="text-muted-foreground">
                       {gioVN(b.batDau)}
@@ -264,11 +238,17 @@ export function LichVaDiemDanh({
                         {t(`trangThaiBuoiHoc.${b.trangThai}`)}
                       </Badge>
                     </Td>
-                    <Td>
+                    {/* Chặn nổi bọt: bấm menu thao tác không được đồng thời mở view chi tiết. */}
+                    <Td onClick={(e) => e.stopPropagation()}>
                       <div className="flex justify-end">
                         <MenuThaoTac
                           nhanMo={t('chung.thaoTac')}
                           muc={[
+                            {
+                              nhan: t('chung.xemChiTiet'),
+                              icon: Eye,
+                              onChon: () => navigate(`/buoi-hoc/${b.id}`),
+                            },
                             {
                               nhan: t('buoiHoc.diemDanh'),
                               icon: ClipboardCheck,
@@ -620,187 +600,3 @@ function FormSinhLich({
 }
 
 /** Bảng điểm danh một buổi — hai nguồn: học viên tự khai và giáo viên xác nhận. */
-function BangDiemDanh({
-  buoi,
-  onDong,
-  onXong,
-}: {
-  buoi: BuoiHocDto
-  onDong: () => void
-  onXong: () => void
-}) {
-  const { t } = useTranslation()
-  const { hoi, hop } = useXacNhan()
-  const qc = useQueryClient()
-  const [sua, setSua] = useState<Record<string, { tt: TrangThaiDiemDanh; lyDo: string }>>({})
-  const [maLoi, setMaLoi] = useState<string | null>(null)
-  const [daLuu, setDaLuu] = useState(false)
-
-  const { data: ds = [] } = useQuery({
-    queryKey: ['buoi-hoc', buoi.id, 'diem-danh'],
-    queryFn: async () => (await api.get<DiemDanhDto[]>(`/buoi-hoc/${buoi.id}/diem-danh`)).data,
-  })
-
-  const hienTai = useMemo(() => {
-    const m: Record<string, { tt: TrangThaiDiemDanh; lyDo: string }> = {}
-    for (const d of ds) {
-      m[d.hocVienId] = sua[d.hocVienId] ?? {
-        tt: d.trangThaiChinhThuc,
-        lyDo: d.lyDoVang ?? '',
-      }
-    }
-    return m
-  }, [ds, sua])
-
-  const lamMoi = () => {
-    void qc.invalidateQueries({ queryKey: ['buoi-hoc', buoi.id, 'diem-danh'] })
-    onXong()
-  }
-
-  const luu = useMutation({
-    mutationFn: () =>
-      api.post(`/buoi-hoc/${buoi.id}/diem-danh`, {
-        danhSach: Object.entries(hienTai).map(([hocVienId, v]) => ({
-          hocVienId,
-          trangThai: v.tt,
-          lyDoVang: v.lyDo || null,
-        })),
-      }),
-    onSuccess: () => {
-      setSua({})
-      setMaLoi(null)
-      setDaLuu(true)
-      setTimeout(() => setDaLuu(false), 2500)
-      lamMoi()
-    },
-    onError: (e) => setMaLoi(layMaLoi(e)),
-  })
-
-  const chot = useMutation({
-    mutationFn: () => api.post(`/buoi-hoc/${buoi.id}/chot`),
-    onSuccess: lamMoi,
-    onError: (e) => setMaLoi(layMaLoi(e)),
-  })
-
-  const doi = (id: string, phan: Partial<{ tt: TrangThaiDiemDanh; lyDo: string }>) =>
-    setSua((cu) => ({
-      ...cu,
-      [id]: { ...(hienTai[id] ?? { tt: 'Vang' as const, lyDo: '' }), ...phan },
-    }))
-
-  return (
-    <Modal
-      mo
-      onDong={onDong}
-      tieuDe={`${t('diemDanh.tieuDe')} — ${t('buoiHoc.thuTu')} ${buoi.thuTu} · ${gioVN(buoi.batDau)}`}
-    >
-      <div className="grid gap-4">
-        {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
-
-        {ds.length === 0 ? (
-          <TrangTrong thongDiep={t('chung.khongCoDuLieu')} />
-        ) : (
-          <div className="max-h-[24rem] overflow-y-auto">
-            <Table>
-              <thead>
-                <tr>
-                  <Th>{t('diemDanh.hocVien')}</Th>
-                  <Th>{t('diemDanh.tuKhai')}</Th>
-                  <Th className="w-44">{t('diemDanh.chinhThuc')}</Th>
-                  <Th>{t('diemDanh.lyDoVang')}</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {ds.map((d) => {
-                  const v = hienTai[d.hocVienId]
-                  const canLyDo = v?.tt === 'Vang' || v?.tt === 'VangCoPhep'
-                  return (
-                    <tr key={d.hocVienId} className="hover:bg-muted/40">
-                      <Td className="font-medium">{d.hoTen}</Td>
-                      <Td className="text-muted-foreground">
-                        {d.trangThaiTuKhai ? (
-                          <>
-                            {t(`trangThaiDiemDanh.${d.trangThaiTuKhai}`)}
-                            {d.giaoVienSuaKhacTuKhai && (
-                              <Badge variant="lose" className="ml-2">
-                                {t('diemDanh.khacTuKhai')}
-                              </Badge>
-                            )}
-                          </>
-                        ) : (
-                          '—'
-                        )}
-                      </Td>
-                      <Td>
-                        <select
-                          value={v?.tt ?? 'Vang'}
-                          onChange={(e) =>
-                            doi(d.hocVienId, { tt: e.target.value as TrangThaiDiemDanh })
-                          }
-                          className="h-8 w-full rounded-md border border-input bg-background px-2 text-sm"
-                        >
-                          {CAC_TRANG_THAI.map((tt) => (
-                            <option key={tt} value={tt}>
-                              {t(`trangThaiDiemDanh.${tt}`)}
-                            </option>
-                          ))}
-                        </select>
-                      </Td>
-                      <Td>
-                        <Input
-                          value={v?.lyDo ?? ''}
-                          onChange={(e) => doi(d.hocVienId, { lyDo: e.target.value })}
-                          disabled={!canLyDo}
-                          placeholder={canLyDo ? t('diemDanh.lyDoVang') : ''}
-                          className="h-8"
-                        />
-                      </Td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </Table>
-          </div>
-        )}
-
-        <p className="text-xs text-muted-foreground">{t('buoiHoc.chotBuoiGoiY')}</p>
-
-        <div className="flex items-center justify-end gap-2">
-          {daLuu && (
-            <span className="mr-auto flex items-center gap-1 text-sm text-status-win">
-              <CheckCircle2 className="h-4 w-4" />
-              {t('diemDanh.daLuu')}
-            </span>
-          )}
-          <Button
-            variant="outline"
-            disabled={chot.isPending}
-            onClick={() =>
-              hoi({
-                tieuDe: t('buoiHoc.chotBuoi'),
-                thongDiep: t('buoiHoc.hoiChotBuoi'),
-                nguyHiem: true,
-                onDongY: () => chot.mutate(),
-              })
-            }
-          >
-            {t('buoiHoc.chotBuoi')}
-          </Button>
-          <Button
-            disabled={luu.isPending || ds.length === 0}
-            onClick={() =>
-              hoi({
-                tieuDe: t('chung.xacNhanLuu'),
-                thongDiep: t('diemDanh.hoiLuu', { soLuong: ds.length }),
-                onDongY: () => luu.mutate(),
-              })
-            }
-          >
-            {t('diemDanh.luu')}
-          </Button>
-        </div>
-      </div>
-      {hop}
-    </Modal>
-  )
-}

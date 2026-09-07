@@ -18,8 +18,10 @@ public class BaiTapController(ISender sender) : ControllerBase
     [HttpGet]
     [RequirePermission(ChucNang.BaiTap, HanhDong.Xem)]
     public async Task<ActionResult<List<BaiTapDto>>> TheoLop(
-        [FromQuery] Guid lopHocId, CancellationToken ct)
-        => Ok(await sender.Send(new LayBaiTapCuaLopQuery(lopHocId), ct));
+        [FromQuery] Guid lopHocId,
+        [FromQuery] Guid? buoiHocId,
+        CancellationToken ct)
+        => Ok(await sender.Send(new LayBaiTapCuaLopQuery(lopHocId, buoiHocId), ct));
 
     [HttpPost]
     [RequirePermission(ChucNang.BaiTap, HanhDong.Them)]

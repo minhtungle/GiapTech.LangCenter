@@ -22,6 +22,8 @@ public record DiemDanhDto(
     TrangThaiDiemDanh TrangThaiChinhThuc,
     NguonDiemDanh NguonGhiNhan,
     string? LyDoVang,
+    /// <summary>Nhận xét của giáo viên về học viên này trong buổi này.</summary>
+    string? NhanXet,
     /// <summary>true = giáo viên đã ghi đè khác với lời khai của học viên.</summary>
     bool GiaoVienSuaKhacTuKhai,
     /// <summary>false = chưa có bản ghi điểm danh, đang hiện giá trị mặc định.</summary>
@@ -66,13 +68,13 @@ public class LayBangDiemDanhHandler(IAppDbContext db, IPhamViLopHoc phamVi)
             {
                 return new DiemDanhDto(
                     hv.HocVienId, hv.HoTen, null, null,
-                    TrangThaiDiemDanh.Vang, NguonDiemDanh.GiaoVien, null, false, false);
+                    TrangThaiDiemDanh.Vang, NguonDiemDanh.GiaoVien, null, null, false, false);
             }
 
             return new DiemDanhDto(
                 hv.HocVienId, hv.HoTen,
                 d.TrangThaiTuKhai, d.ThoiDiemTuCheckIn,
-                d.TrangThaiChinhThuc, d.NguonGhiNhan, d.LyDoVang,
+                d.TrangThaiChinhThuc, d.NguonGhiNhan, d.LyDoVang, d.NhanXet,
                 d.TrangThaiTuKhai is { } tk && tk != d.TrangThaiChinhThuc,
                 true);
         }).ToList();
@@ -81,7 +83,15 @@ public class LayBangDiemDanhHandler(IAppDbContext db, IPhamViLopHoc phamVi)
 
 // ---------- Commands ----------
 
-public record GhiDiemDanhItem(Guid HocVienId, TrangThaiDiemDanh TrangThai, string? LyDoVang);
+public record GhiDiemDanhItem(
+    Guid HocVienId,
+    TrangThaiDiemDanh TrangThai,
+    string? LyDoVang,
+    /// <summary>
+    /// null = client không gửi → GIỮ NGUYÊN nhận xét đang có. Chuỗi rỗng = chủ động xoá.
+    /// Cùng quy ước với mọi trường tuỳ chọn khác trong dự án (quy tắc #1).
+    /// </summary>
+    string? NhanXet = null);
 
 /// <summary>
 /// Giáo viên chốt điểm danh cho cả buổi. Giá trị ở đây LUÔN ghi đè lời khai của học viên —
@@ -140,6 +150,9 @@ public class GhiDiemDanhHandler(IAppDbContext db, IPhamViLopHoc phamVi, ICurrent
                 // chiếu khi có tranh chấp "em có điểm danh mà sao bị tính vắng".
                 d.TrangThaiChinhThuc = item.TrangThai;
                 d.LyDoVang = lyDo;
+                // null = không gửi → giữ nguyên. Chuỗi rỗng = chủ động xoá (quy tắc #1).
+                if (item.NhanXet is { } nx)
+                    d.NhanXet = string.IsNullOrWhiteSpace(nx) ? null : nx.Trim();
                 d.NguonGhiNhan = NguonDiemDanh.GiaoVien;
                 d.NguoiXacNhanId = currentUser.UserId;
                 d.ThoiDiemXacNhan = bayGio;
@@ -152,6 +165,7 @@ public class GhiDiemDanhHandler(IAppDbContext db, IPhamViLopHoc phamVi, ICurrent
                     HocVienId = item.HocVienId,
                     TrangThaiChinhThuc = item.TrangThai,
                     LyDoVang = lyDo,
+                    NhanXet = string.IsNullOrWhiteSpace(item.NhanXet) ? null : item.NhanXet.Trim(),
                     NguonGhiNhan = NguonDiemDanh.GiaoVien,
                     NguoiXacNhanId = currentUser.UserId,
                     ThoiDiemXacNhan = bayGio

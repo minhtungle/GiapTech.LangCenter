@@ -9,6 +9,7 @@ import { initReactI18next } from 'react-i18next'
 const vi = {
   chung: {
     xacNhanLuu: 'Xác nhận lưu',
+    xemChiTiet: 'Xem chi tiết',
     xacNhanThem: 'Xác nhận thêm mới',
     // Lời văn phải nói CỤ THỂ đổi gì — "Bạn có chắc không?" khiến người dùng bấm theo phản xạ.
     hoiLuu: 'Lưu thay đổi cho "{{ten}}"? Thông tin hiện tại sẽ bị ghi đè.',
@@ -294,6 +295,38 @@ const vi = {
     kieuBang: 'Bảng',
     kieuLich: 'Lịch',
   },
+  chiTietBuoi: {
+    tabThongTin: 'Thông tin buổi',
+    tabDiemDanh: 'Điểm danh',
+    tabNhanXet: 'Nhận xét',
+    tabBaiTap: 'Bài tập',
+    tabTaiLieu: 'Tài liệu',
+    quayLaiLich: 'Về lịch học',
+    buoiTruoc: 'Buổi trước',
+    buoiSau: 'Buổi sau',
+    chonBuoi: 'Chọn buổi khác',
+    khongTimThayBuoi: 'Không tìm thấy buổi học',
+    taiLieuTheoLop:
+      'Tài liệu được gắn với cả lớp, không gắn riêng từng buổi — đây là tài liệu chung của lớp.',
+  },
+  nhanXetBuoi: {
+    tieuDe: 'Nhận xét của học viên về buổi học',
+    cuaToi: 'Nhận xét của tôi',
+    noiDung: 'Nội dung',
+    noiDungGoiY: 'Buổi học hôm nay thế nào? Điều gì cần cải thiện?',
+    mucHaiLong: 'Mức hài lòng',
+    khongChon: 'Không đánh giá',
+    gui: 'Gửi nhận xét',
+    capNhat: 'Cập nhật nhận xét',
+    hoiGui: 'Gửi nhận xét về buổi học này?',
+    hoiCapNhat: 'Cập nhật nhận xét đã gửi? Nội dung cũ sẽ bị ghi đè.',
+    daGui: 'Đã gửi nhận xét',
+    chuaCo: 'Chưa có nhận xét nào cho buổi này',
+    nhanXetHocVien: 'Học viên nhận xét',
+    nhanXetGiaoVien: 'Giáo viên nhận xét học viên',
+    chuaCoNhanXetGv: 'Giáo viên chưa nhận xét học viên nào trong buổi này',
+    ghiONhanXetGv: 'Nhận xét của giáo viên được ghi ở tab Điểm danh, theo từng học viên.',
+  },
   buoiHoc: {
     hoiSinhLich: 'Sinh lịch với tần suất đã chọn?',
     hoiSinhThem: 'Thêm buổi vào lịch hiện tại? Không buổi nào bị xoá.',
@@ -361,6 +394,9 @@ const vi = {
     khacTuKhai: 'Khác lời khai',
     luu: 'Lưu điểm danh',
     daLuu: 'Đã lưu điểm danh',
+    nhanXetGv: 'Nhận xét của giáo viên',
+    nhanXetGoiY: 'Phát âm, mức tham gia, bài về nhà…',
+    buoiDaChot: 'Buổi đã chốt — vẫn sửa được điểm danh và nhận xét, nhưng không sửa được giờ buổi.',
   },
   trangThaiDiemDanh: {
     CoMat: 'Có mặt',
@@ -603,6 +639,8 @@ const vi = {
       + 'chứng chuyên cần.',
     BUOI_HOC_DA_CO_DIEM_DANH:
       'Buổi này đã có điểm danh. Huỷ buổi thay vì xoá để giữ lại dữ liệu.',
+    BUOI_HOC_DA_CO_NHAN_XET:
+      'Buổi này đã có nhận xét của học viên. Huỷ buổi thay vì xoá để giữ lại phản hồi.',
     BUOI_HOC_TRUNG_GIO:
       'Có buổi trùng giờ với lịch hiện tại. Chọn ngày bắt đầu sau buổi cuối cùng.',
     NGUOI_DUNG_KHONG_HOP_LE: 'Người dùng không hợp lệ',

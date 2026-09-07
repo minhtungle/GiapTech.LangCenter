@@ -1,6 +1,6 @@
 # ERD — Mô hình dữ liệu
 
-**25 bảng**, PostgreSQL. Nội dung dưới đây khớp với schema thật (kiểm bằng
+**26 bảng**, PostgreSQL. Nội dung dưới đây khớp với schema thật (kiểm bằng
 `information_schema` sau khi áp toàn bộ migration), không phải bản thiết kế trên giấy.
 
 ## Nguyên tắc bắt buộc
@@ -54,6 +54,7 @@ erDiagram
     NGUOI_DUNG ||--o{ LOP_HOC : "dạy chính"
 
     BUOI_HOC ||--o{ DIEM_DANH : "điểm danh"
+    BUOI_HOC ||--o{ NHAN_XET_BUOI_HOC : "học viên nhận xét"
     BUOI_HOC ||--o{ BAI_TAP : "giao bài"
     BAI_TAP ||--o{ BAI_NOP : "nộp nhiều lần"
     BAI_KIEM_TRA ||--o{ BAI_LAM : "bài làm"
@@ -67,6 +68,7 @@ erDiagram
 
     NGUOI_DUNG ||--o{ LOP_HOC_HOC_VIEN : "là học viên"
     NGUOI_DUNG ||--o{ DIEM_DANH : "được điểm danh"
+    NGUOI_DUNG ||--o{ NHAN_XET_BUOI_HOC : "viết nhận xét"
     NGUOI_DUNG ||--o{ KHOAN_THU_HOC_PHI : "nộp học phí"
 ```
 
@@ -110,12 +112,13 @@ không phân công được họ vào lớp cũ nữa.
 | `LOP_HOC_HOC_VIEN` | `ngay_vao_lop`, `ngay_roi_lop`, `trang_thai`, **`hoc_phi_ap_dung`** — snapshot lúc ghi danh, cho phép miễn giảm từng người |
 | `LOP_HOC_TRO_GIANG` | Bảng **riêng**, không gộp với học viên bằng cột `vai_tro`: gộp thì nửa số cột luôn NULL và mọi query học viên phải nhớ `WHERE vai_tro = 1` |
 
-### Nhóm buổi học & điểm danh (2 bảng)
+### Nhóm buổi học & điểm danh (3 bảng)
 
 | Bảng | Cột đáng chú ý |
 |---|---|
 | `BUOI_HOC` | `bat_dau`, `ket_thuc` là `timestamptz` — **không có cột `ngay_hoc`**: cột ngày tách rời sẽ lệch khi trung tâm đổi múi giờ. `giao_vien_id` nullable = dùng giáo viên của lớp. `la_hoc_bu` |
-| `DIEM_DANH` | **Hai cột trạng thái**: `trang_thai_tu_khai` (nullable — học viên tự khai; null ≠ Vắng) và `trang_thai_chinh_thuc` (NOT NULL — **nguồn sự thật duy nhất cho mọi báo cáo**). Gộp một cột là mất vĩnh viễn thông tin học viên đã khai gì trước khi giáo viên ghi đè |
+| `DIEM_DANH` | **Hai cột trạng thái**: `trang_thai_tu_khai` (nullable — học viên tự khai; null ≠ Vắng) và `trang_thai_chinh_thuc` (NOT NULL — **nguồn sự thật duy nhất cho mọi báo cáo**). Gộp một cột là mất vĩnh viễn thông tin học viên đã khai gì trước khi giáo viên ghi đè. **`nhan_xet`** — nhận xét của giáo viên về học viên NÀY trong buổi NÀY (khác `ly_do_vang`: lý do nói vì sao không có mặt, nhận xét nói về việc học) |
+| `NHAN_XET_BUOI_HOC` | Học viên nhận xét về **buổi** (chiều ngược của `DIEM_DANH.nhan_xet`). `muc_hai_long` 1–5 **nullable** — không ép cho điểm mới gửi được góp ý. Bảng riêng chứ không thêm cột vào `DIEM_DANH` vì **quyền khác nhau** (học viên ghi ở đây nhưng không được đụng `DIEM_DANH`) và **vòng đời khác nhau** (học viên vắng vẫn nhận xét được) |
 
 ### Nhóm học liệu (6 bảng)
 
@@ -147,6 +150,7 @@ không phân công được họ vào lớp cũ nữa.
 | `UNIQUE(lop_hoc_id, tro_giang_id)` | `LOP_HOC_TRO_GIANG` | Phân công một lần |
 | `UNIQUE(lop_hoc_id, thu_tu)` | `BUOI_HOC` | Số thứ tự buổi không trùng trong lớp |
 | `UNIQUE(buoi_hoc_id, hoc_vien_id)` | `DIEM_DANH` | Mỗi học viên một dòng điểm danh/buổi — chặn ở **tầng DB**, không chỉ ở UI |
+| `UNIQUE(buoi_hoc_id, hoc_vien_id)` | `NHAN_XET_BUOI_HOC` | Mỗi học viên một nhận xét/buổi. Gửi lần hai là **sửa**, không tạo bản mới |
 | `UNIQUE(bai_tap_id, hoc_vien_id, lan_nop)` | `BAI_NOP` | Nộp nhiều lần nhưng không trùng số lần |
 | `UNIQUE(bai_kiem_tra_id, hoc_vien_id)` | `BAI_LAM` | Bài kiểm tra làm một lần (khác bài tập) |
 | `UNIQUE(tai_lieu_id, lop_hoc_id)` | `TAI_LIEU_LOP_HOC` | Gán một lần |
@@ -162,6 +166,8 @@ Các UNIQUE trên bảng con **không kèm `tenant_id`**: cột đầu đã là 
 | `LOP_HOC → NGUOI_DUNG` (giáo viên chính) | Restrict | Xoá giáo viên đang dạy phải bị chặn, buộc bàn giao lớp trước |
 | `BUOI_HOC → LOP_HOC` | Restrict | Cascade sẽ cuốn sạch lịch sử chuyên cần khi xoá lớp |
 | `DIEM_DANH → BUOI_HOC` | Restrict | Điểm danh là bằng chứng |
+| `NHAN_XET_BUOI_HOC → BUOI_HOC` | Restrict | Nhận xét là ý kiến đã phát biểu — xoá buổi không được cuốn nó đi. Buổi có nhận xét thì **huỷ**, không xoá |
+| `NHAN_XET_BUOI_HOC → NGUOI_DUNG` | Restrict | Cùng lý do; đồng thời chặn xoá học viên còn để lại phản hồi |
 | `KHOAN_THU_HOC_PHI → NGUOI_DUNG` / `→ LOP_HOC` | Restrict | Dữ liệu tiền không được biến mất theo tài khoản hay theo lớp |
 | `DIEM_DANH → NGUOI_DUNG` (người xác nhận) | SetNull | Chỉ là dấu vết; Restrict sẽ khoá cứng mọi tài khoản giáo viên vĩnh viễn |
 | `KHOAN_THU_HOC_PHI → NGUOI_DUNG` (người thu) | SetNull | Cùng lý do |
@@ -179,7 +185,7 @@ nháp chưa có buổi học.
 
 Mọi bảng chi tiết (`QUYEN_CHUC_NANG`, `NGUOIDUNG_QUYEN`, `HO_SO_GIAO_VIEN`,
 `HO_SO_HOC_VIEN`, `HO_SO_NHAN_VIEN`, `LOP_HOC_HOC_VIEN`,
-`LOP_HOC_TRO_GIANG`, `BUOI_HOC`, `DIEM_DANH`, `BAI_TAP`, `BAI_NOP`, `BAI_LAM`,
+`LOP_HOC_TRO_GIANG`, `BUOI_HOC`, `DIEM_DANH`, `NHAN_XET_BUOI_HOC`, `BAI_TAP`, `BAI_NOP`, `BAI_LAM`,
 `TAI_LIEU_LOP_HOC`, `TEP_DINH_KEM`, `KHOAN_THU_HOC_PHI`) **mang cột `tenant_id` riêng** thay vì
 chỉ kế thừa phạm vi qua bảng cha.
 

@@ -36,6 +36,7 @@ public class DiemDanhConfig : IEntityTypeConfiguration<DiemDanh>
 {
     public void Configure(EntityTypeBuilder<DiemDanh> b)
     {
+        b.Property(x => x.NhanXet).HasMaxLength(2000);
         b.ToTable("DIEM_DANH");
         b.Property(x => x.LyDoVang).HasMaxLength(500);
 
@@ -55,5 +56,27 @@ public class DiemDanhConfig : IEntityTypeConfiguration<DiemDanh>
         // mọi tài khoản giáo viên vĩnh viễn — nghỉ việc cũng không xoá được tài khoản.
         b.HasOne(x => x.NguoiXacNhan).WithMany()
             .HasForeignKey(x => x.NguoiXacNhanId).OnDelete(DeleteBehavior.SetNull);
+    }
+}
+
+public class NhanXetBuoiHocConfig : IEntityTypeConfiguration<NhanXetBuoiHoc>
+{
+    public void Configure(EntityTypeBuilder<NhanXetBuoiHoc> b)
+    {
+        b.ToTable("NHAN_XET_BUOI_HOC");
+
+        b.Property(x => x.NoiDung).HasMaxLength(2000).IsRequired();
+
+        // Mỗi học viên một nhận xét cho mỗi buổi. Gửi lần hai là SỬA, không tạo thêm dòng —
+        // nhiều nhận xét cho cùng một buổi thì không biết cái nào là ý kiến cuối.
+        b.HasIndex(x => new { x.BuoiHocId, x.HocVienId }).IsUnique();
+        b.HasIndex(x => x.TenantId);
+
+        // Restrict: nhận xét là ý kiến đã phát biểu, xoá buổi không được cuốn nó đi.
+        b.HasOne(x => x.BuoiHoc).WithMany()
+            .HasForeignKey(x => x.BuoiHocId).OnDelete(DeleteBehavior.Restrict);
+
+        b.HasOne(x => x.HocVien).WithMany()
+            .HasForeignKey(x => x.HocVienId).OnDelete(DeleteBehavior.Restrict);
     }
 }

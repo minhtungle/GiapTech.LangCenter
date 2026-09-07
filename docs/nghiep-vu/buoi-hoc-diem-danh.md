@@ -165,6 +165,44 @@ không có dữ liệu quá khứ. Chi phí giữ: một cột `integer` nullabl
   lớp vắng", hai thứ khác hẳn nhau.
 - `UNIQUE(buoi_hoc_id, hoc_vien_id)` ở tầng DB (quy tắc #8).
 
+## FR-09b — Nhận xét quanh buổi học
+
+Hai chiều, **hai cơ chế lưu khác nhau** — đừng gộp:
+
+| Chiều | Lưu ở | Ai ghi |
+|---|---|---|
+| Giáo viên nhận xét **từng học viên** trong buổi | `DIEM_DANH.nhan_xet` | Người chốt điểm danh |
+| Học viên nhận xét về **buổi** | `NHAN_XET_BUOI_HOC` | Học viên đang học của lớp |
+
+Nhận xét của giáo viên đặt vào `DIEM_DANH` chứ không tạo bảng riêng: bảng đó đã có
+`UNIQUE(buoi_hoc_id, hoc_vien_id)`, tức **đúng độ mịn cần thiết** — một dòng cho mỗi cặp
+(buổi, học viên). Khác `ly_do_vang`: lý do nói *vì sao không có mặt*, nhận xét nói *về việc học*.
+
+Nhận xét của học viên thì **phải** là bảng riêng, vì hai thứ khác nhau ở gốc:
+
+- **Quyền khác nhau** — học viên ghi được ở đây nhưng không được đụng `DIEM_DANH` (đó là bằng
+  chứng chuyên cần).
+- **Vòng đời khác nhau** — học viên **vắng** vẫn nhận xét được về buổi họ không dự.
+
+### Quy tắc
+
+- **Học viên chỉ đọc nhận xét CỦA MÌNH.** Cho đọc của bạn cùng lớp thì nhận xét thành diễn đàn
+  công khai và không ai nói thật nữa. Lọc ở **handler**, không ở frontend — ẩn ở frontend thì
+  gọi API trực tiếp vẫn đọc được.
+- **Đọc được tất cả** = có `DiemDanh.Sua` (giáo viên của lớp) **hoặc** `LopHocToanTrungTam.Xem`
+  (quản trị). Cố ý **không** thêm chức năng phân quyền thứ 18: ai chốt điểm danh của buổi thì
+  đương nhiên đọc được phản hồi về buổi đó, và thêm hằng mới lại làm admin của trung tâm cũ bị
+  403 cho tới khi chạy bổ khuyết quyền.
+- Lệnh gửi nhận xét **không nhận id học viên** — lấy từ token, cùng cách với tự điểm danh.
+- **Gửi lần hai là SỬA**, không tạo bản mới (`UNIQUE(buoi_hoc_id, hoc_vien_id)`).
+- `muc_hai_long` 1–5 **nullable** — không ép cho điểm mới gửi được góp ý.
+- DTO trả cờ **`cuaToi`** để UI biết bản nào nạp vào form sửa. Đừng suy từ *"danh sách có một
+  phần tử"*: giáo viên đọc được mọi nhận xét, lớp chỉ một học viên đã gửi thì suy kiểu đó sẽ nạp
+  nhận xét của **học viên** vào form của **giáo viên**, bấm Gửi là ghi đè nhầm chủ.
+- **Buổi đã chốt vẫn nhận xét được** — học viên thường góp ý *sau* khi buổi kết thúc.
+- **Xoá buổi đã có nhận xét bị chặn** (`BUOI_HOC_DA_CO_NHAN_XET`) — FK là Restrict, thiếu kiểm ở
+  handler thì API trả 500 thay vì nói rõ "hãy huỷ buổi thay vì xoá". Đã gặp thật 07/09/2026.
+
 ## Mã lỗi
 
 | Mã | Khi nào |
@@ -183,6 +221,7 @@ không có dữ liệu quá khứ. Chi phí giữ: một cột `integer` nullabl
 | `KHONG_THUOC_LOP_NAY` | Tự điểm danh ở lớp mình không học |
 | `HOC_VIEN_KHONG_THUOC_LOP` | Điểm danh cho người ngoài lớp |
 | `THIEU_LY_DO_VANG` | Vắng mà không ghi lý do |
+| `BUOI_HOC_DA_CO_NHAN_XET` | Xoá buổi đã có nhận xét của học viên — huỷ thay vì xoá |
 
 ## Chưa làm
 

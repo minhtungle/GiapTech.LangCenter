@@ -31,6 +31,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant
 
     public DbSet<BuoiHoc> BuoiHocs => Set<BuoiHoc>();
     public DbSet<DiemDanh> DiemDanhs => Set<DiemDanh>();
+    public DbSet<NhanXetBuoiHoc> NhanXetBuoiHocs => Set<NhanXetBuoiHoc>();
 
     public DbSet<TepDinhKem> TepDinhKems => Set<TepDinhKem>();
     public DbSet<BaiTap> BaiTaps => Set<BaiTap>();

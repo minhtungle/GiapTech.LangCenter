@@ -22,6 +22,41 @@ public class BuoiHocController(ISender sender) : ControllerBase
         [FromQuery] DateTimeOffset tu, [FromQuery] DateTimeOffset den, CancellationToken ct)
         => Ok(await sender.Send(new LayLichTheoKhoangQuery(tu, den), ct));
 
+    /// <summary>Chi tiết một buổi — cho view chi tiết buổi học.</summary>
+    [HttpGet("{id:guid}")]
+    [RequirePermission(ChucNang.BuoiHoc, HanhDong.Xem)]
+    public async Task<ActionResult<BuoiHocDto>> ChiTiet(Guid id, CancellationToken ct)
+        => Ok(await sender.Send(new LayBuoiHocQuery(id), ct));
+
+    // ---------- Nhận xét của học viên về buổi ----------
+
+    /// <summary>
+    /// Nhận xét học viên gửi về buổi này. Học viên chỉ thấy nhận xét CỦA MÌNH — lọc trong
+    /// handler, xem `LayNhanXetBuoiHocHandler`.
+    /// </summary>
+    [HttpGet("{id:guid}/nhan-xet")]
+    [RequirePermission(ChucNang.BuoiHoc, HanhDong.Xem)]
+    public async Task<ActionResult<List<Application.DaoTao.NhanXet.NhanXetBuoiHocDto>>> NhanXet(
+        Guid id, CancellationToken ct)
+        => Ok(await sender.Send(
+            new Application.DaoTao.NhanXet.LayNhanXetBuoiHocQuery(id), ct));
+
+    /// <summary>
+    /// Học viên gửi nhận xét. KHÔNG nhận id học viên — lấy từ token, cùng cách với tự điểm
+    /// danh. Gửi lần thứ hai là sửa nhận xét cũ.
+    ///
+    /// Gác bằng `DiemDanh.Them` — quyền mà nhóm Học viên có (để tự điểm danh), còn giáo viên
+    /// thì bị chặn ở handler vì họ không phải học viên đang học của lớp.
+    /// </summary>
+    [HttpPost("{id:guid}/nhan-xet")]
+    [RequirePermission(ChucNang.DiemDanh, HanhDong.Them)]
+    public async Task<ActionResult<Guid>> GuiNhanXet(
+        Guid id, [FromBody] GuiNhanXetBody body, CancellationToken ct)
+        => Ok(await sender.Send(new Application.DaoTao.NhanXet.GuiNhanXetBuoiHocCommand(
+            id, body.NoiDung, body.MucHaiLong), ct));
+
+    public record GuiNhanXetBody(string NoiDung, int? MucHaiLong = null);
+
     [HttpPut("{id:guid}")]
     [RequirePermission(ChucNang.BuoiHoc, HanhDong.Sua)]
     public async Task<IActionResult> CapNhat(

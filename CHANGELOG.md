@@ -8,6 +8,32 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — View chi tiết buổi học + nhận xét hai chiều (07/09/2026)
+
+- **Route mới `/buoi-hoc/:id`** — 5 tab: Thông tin buổi · Điểm danh · Nhận xét · Bài tập ·
+  Tài liệu. Bấm một buổi ở bảng lịch hoặc trên lịch dạng calendar đều vào đây.
+- **Chuyển buổi không cần về lịch**: nút trước/sau để chấm lần lượt cả khoá, danh sách thả
+  xuống để nhảy tới một buổi cụ thể. **Giữ nguyên tab đang xem** khi đổi buổi — điểm danh 20
+  buổi không phải bấm lại tab 20 lần.
+- **Nhận xét hai chiều** (`GET`/`POST /buoi-hoc/{id}/nhan-xet` + bảng `NHAN_XET_BUOI_HOC`):
+  - Giáo viên nhận xét **từng học viên** trong buổi → cột `DIEM_DANH.nhan_xet`, nhập ở tab
+    Điểm danh (bảng đã có đúng một dòng cho mỗi học viên).
+  - Học viên nhận xét **về buổi** → bảng riêng, kèm `muc_hai_long` 1–5 tuỳ chọn.
+  - **Học viên chỉ đọc nhận xét của mình**; giáo viên của lớp và quản trị đọc tất cả. Lọc ở
+    handler, không ở frontend.
+- `GET /bai-tap` nhận thêm `?buoiHocId=` — tab Bài tập lọc ở **server**, không `.filter()` trên
+  mảng đã tải (lọc phía client thì hai view dùng chung cache và danh sách của lớp bị cắt).
+- `BangDiemDanh` tách khỏi `LichVaDiemDanh.tsx` thành file riêng, bọc `KhungNoiDung` để dùng
+  được cả dạng modal lẫn dạng tab. Thêm **cột nhận xét của giáo viên**.
+
+### Fixed — Xoá buổi đã có nhận xét trả 500 thay vì mã lỗi (07/09/2026)
+
+- `NHAN_XET_BUOI_HOC → BUOI_HOC` là Restrict, nhưng `XoaBuoiHocHandler` chỉ kiểm `DIEM_DANH`
+  nên FK nổ ở tầng DB → API trả `500 LOI_HE_THONG`. Người dùng không hiểu vì sao và cũng không
+  biết việc cần làm là **huỷ** buổi chứ không phải xoá.
+- Nay trả `400 BUOI_HOC_DA_CO_NHAN_XET` (đã có bản dịch). Phát hiện khi kiểm tay trên
+  PostgreSQL thật — không test nào đỏ vì chưa có test nào xoá buổi có nhận xét.
+
 ### Changed — Gộp "Thêm buổi" và "Sinh thêm buổi" thành một (07/09/2026)
 
 - Hai lệnh làm cùng một việc ở hai mức số lượng, và hai nút cạnh nhau với tên gần giống nhau

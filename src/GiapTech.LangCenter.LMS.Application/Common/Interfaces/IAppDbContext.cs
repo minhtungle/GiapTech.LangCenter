@@ -32,6 +32,7 @@ public interface IAppDbContext
 
     DbSet<BuoiHoc> BuoiHocs { get; }
     DbSet<DiemDanh> DiemDanhs { get; }
+    DbSet<NhanXetBuoiHoc> NhanXetBuoiHocs { get; }
 
     DbSet<TepDinhKem> TepDinhKems { get; }
     DbSet<BaiTap> BaiTaps { get; }

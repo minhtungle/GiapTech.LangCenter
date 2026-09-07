@@ -99,6 +99,31 @@ public class LayBuoiHocCuaLopHandler(IAppDbContext db, IPhamViLopHoc phamVi)
 /// Lọc theo KHOẢNG thời gian tuyệt đối chứ không theo cột ngày riêng: cột ngày là dữ liệu thừa
 /// và sẽ sai âm thầm nếu trung tâm đổi múi giờ.
 /// </summary>
+/// <summary>
+/// Chi tiết MỘT buổi. Cần cho view chi tiết buổi học — trước đó frontend phải lấy cả danh
+/// sách buổi của lớp rồi tự tìm, nghĩa là URL phải mang thêm `lopHocId`.
+/// </summary>
+public record LayBuoiHocQuery(Guid Id) : IRequest<BuoiHocDto>;
+
+public class LayBuoiHocHandler(IAppDbContext db, IPhamViLopHoc phamVi)
+    : IRequestHandler<LayBuoiHocQuery, BuoiHocDto>
+{
+    public async Task<BuoiHocDto> Handle(LayBuoiHocQuery request, CancellationToken ct)
+    {
+        // Kiểm phạm vi qua chính lớp: không thấy lớp thì không thấy buổi của nó. Đây cũng là
+        // chỗ chặn IDOR — gõ thẳng id buổi của lớp khác vào URL sẽ nhận 404.
+        var buoi = await LayBuoiHocCuaLopHandler
+            .TimBuoiTrongPhamVi(db, phamVi, request.Id, HanhDong.Xem, ct);
+
+        // Lấy lại qua danh sách của lớp để dùng chung một phép chiếu duy nhất — viết phép
+        // chiếu thứ ba là mời gọi ba bản trôi khỏi nhau khi thêm trường.
+        var ds = await new LayBuoiHocCuaLopHandler(db, phamVi)
+            .Handle(new LayBuoiHocCuaLopQuery(buoi.LopHocId), ct);
+
+        return ds.Single(x => x.Id == request.Id);
+    }
+}
+
 public record LayLichTheoKhoangQuery(DateTimeOffset Tu, DateTimeOffset Den)
     : IRequest<List<BuoiHocDto>>;
 
@@ -367,6 +392,12 @@ public class XoaBuoiHocHandler(IAppDbContext db, IPhamViLopHoc phamVi)
         // là Restrict nên nếu lọt qua đây sẽ nổ ở tầng DB với thông báo khó hiểu.
         if (await db.DiemDanhs.AnyAsync(d => d.BuoiHocId == buoi.Id, ct))
             throw new AppException("BUOI_HOC_DA_CO_DIEM_DANH");
+
+        // Nhận xét của học viên cũng là Restrict, cùng lý do và cùng cái bẫy: thiếu dòng này
+        // thì xoá buổi có nhận xét trả về 500 LOI_HE_THONG, người dùng không hiểu vì sao và
+        // cũng không biết là nên HUỶ buổi thay vì xoá. Đã gặp thật khi kiểm tay 07/09/2026.
+        if (await db.NhanXetBuoiHocs.AnyAsync(n => n.BuoiHocId == buoi.Id, ct))
+            throw new AppException("BUOI_HOC_DA_CO_NHAN_XET");
 
         // KHÔNG đánh số lại các buổi sau: học viên và giáo viên đã quen "buổi 12", đổi số hàng
         // loạt làm mọi ghi chú ngoài hệ thống sai theo. Khoảng trống trong dãy số chấp nhận được.

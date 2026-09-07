@@ -9,6 +9,7 @@ import DangKyTrungTam from '@/pages/DangKyTrungTam'
 import TongQuan from '@/pages/TongQuan'
 import LopHoc from '@/pages/dao-tao/LopHoc'
 import ChiTietLopHoc from '@/pages/dao-tao/ChiTietLopHoc'
+import ChiTietBuoiHoc from '@/pages/dao-tao/ChiTietBuoiHoc'
 import TaiLieu from '@/pages/dao-tao/TaiLieu'
 import HocPhi from '@/pages/dao-tao/HocPhi'
 import NguoiDungVaTaiKhoan from '@/pages/quan-tri/NguoiDungVaTaiKhoan'
@@ -61,6 +62,7 @@ export default function App() {
               <Route path="/" element={<TongQuan />} />
               <Route path="/lop-hoc" element={<LopHoc />} />
               <Route path="/lop-hoc/:id" element={<ChiTietLopHoc />} />
+              <Route path="/buoi-hoc/:id" element={<ChiTietBuoiHoc />} />
               <Route path="/tai-lieu" element={<TaiLieu />} />
               <Route path="/hoc-phi" element={<HocPhi />} />
               <Route path="/quan-tri/tai-khoan" element={<NguoiDungVaTaiKhoan />} />

@@ -97,6 +97,17 @@ public class DiemDanh : TenantEntity
     /// <summary>Bắt buộc khi vắng (có phép hay không) — báo cáo vắng không lý do là báo cáo vô dụng.</summary>
     public string? LyDoVang { get; set; }
 
+    /// <summary>
+    /// Nhận xét của giáo viên về học viên NÀY trong buổi NÀY — phát âm, mức tham gia, bài về nhà.
+    ///
+    /// Đặt ở đây chứ không tạo bảng riêng: `DIEM_DANH` đã có `UNIQUE(BuoiHocId, HocVienId)`,
+    /// tức đúng độ mịn cần thiết. Bảng riêng chỉ đáng khi cần nhiều nhận xét cho cùng một
+    /// (buổi, học viên) hoặc cần lịch sử sửa — hiện chưa có nhu cầu đó.
+    ///
+    /// Khác `LyDoVang`: lý do vắng nói vì sao không có mặt, nhận xét nói về việc học.
+    /// </summary>
+    public string? NhanXet { get; set; }
+
     public Guid? NguoiXacNhanId { get; set; }
     public NguoiDung? NguoiXacNhan { get; set; }
 
