@@ -99,6 +99,10 @@ const vi = {
     chonHocVien: 'Chọn học viên',
     hocPhi: 'Học phí',
     daThu: 'Đã thu',
+    tongPhaiThu: 'Tổng phải thu',
+    tienDoThu: 'Tiến độ thu',
+    khongCoQuyenXem:
+      'Bạn không có quyền xem thông tin học phí. Chỉ quản trị viên theo dõi được học phí của cả lớp; học viên xem được công nợ của chính mình.',
     conNo: 'Còn nợ',
     conNoNhan: 'Còn nợ',
     daDuUpper: 'Đã đủ',

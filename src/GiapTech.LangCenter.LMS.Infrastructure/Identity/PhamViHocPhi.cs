@@ -36,6 +36,9 @@ public class PhamViHocPhi(IQuyenService quyenService, ICurrentTenant tenant, ICu
         return nguon.Where(_ => false);
     }
 
+    public Task<bool> DuocXemTienCuaLop(CancellationToken ct)
+        => ThayToanBoSo(HanhDong.Xem, ct);
+
     public Task<bool> DuocGhiSo(CancellationToken ct) => ThayToanBoSo(HanhDong.Them, ct);
 
     public async Task<IQueryable<LopHocHocVien>> LocHocVienTrongLop(

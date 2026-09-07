@@ -63,6 +63,11 @@ export function HocVienCuaLop({
     .filter((u) => u.loaiNguoiDung === 'HocVien' && !daTrongLop.has(u.id))
     .map((u) => ({ giaTri: u.id, nhan: u.hoTen, phu: u.email ?? undefined }))
 
+  // Backend trả null cho người không được xem tiền, nên chỉ cần hỏi dữ liệu chứ không cần
+  // biết vai trò. Ẩn hẳn cột thay vì hiện cột toàn dấu "—" — cột rỗng chỉ tổ khiến người
+  // dùng tưởng dữ liệu bị mất.
+  const hienCotTien = hocViens.some((h) => h.hocPhiApDung !== null)
+
   return (
     <KhungNoiDung nhung={nhung} onDong={onDong} tieuDe={`${t('lopHoc.hocVien')} — ${lop.ten}`}>
       <div className="grid gap-4">
@@ -105,7 +110,7 @@ export function HocVienCuaLop({
                 <Th>{t('taiKhoan.hoTen')}</Th>
                 <Th>{t('taiKhoan.email')}</Th>
                 <Th>{t('lopHoc.ngayVaoLop')}</Th>
-                <Th>{t('lopHoc.hocPhiApDung')}</Th>
+                {hienCotTien && <Th>{t('lopHoc.hocPhiApDung')}</Th>}
                 <Th className="w-16" />
               </tr>
             </thead>
@@ -115,7 +120,9 @@ export function HocVienCuaLop({
                   <Td className="font-medium">{h.hoTen}</Td>
                   <Td className="text-muted-foreground">{h.email ?? '—'}</Td>
                   <Td className="text-muted-foreground">{ngayVN(h.ngayVaoLop)}</Td>
-                  <Td className="text-muted-foreground">{tienVN(h.hocPhiApDung)}</Td>
+                  {hienCotTien && (
+                    <Td className="text-muted-foreground">{tienVN(h.hocPhiApDung)}</Td>
+                  )}
                   <Td>
                     <Button
                       variant="ghost"

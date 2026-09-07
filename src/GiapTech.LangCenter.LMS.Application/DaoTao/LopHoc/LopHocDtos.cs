@@ -23,6 +23,11 @@ public record LopHocDto(
     HinhThucHoc HinhThuc,
     string? PhongHoc,
     string? LinkHoc,
+    /// <summary>
+    /// **null với người không có quyền xem tiền** (giáo viên, trợ giảng, học viên) — không
+    /// phân biệt được với "lớp chưa nhập học phí", và đó là chủ ý: phía nhận không cần biết.
+    /// Xem <c>IPhamViHocPhi.DuocXemTienCuaLop</c>.
+    /// </summary>
     decimal? HocPhi,
     int? SucChuaToiDa,
     DateTimeOffset? NgayKhaiGiang,
@@ -40,7 +45,8 @@ public record LayDanhSachLopHocQuery(
     TrangThaiLopHoc? TrangThai = null,
     ThamSoTrang? Trang = null) : IRequest<KetQuaTrang<LopHocDto>>;
 
-public class LayDanhSachLopHocHandler(IAppDbContext db, IPhamViLopHoc phamVi)
+public class LayDanhSachLopHocHandler(
+    IAppDbContext db, IPhamViLopHoc phamVi, IPhamViHocPhi phamViTien)
     : IRequestHandler<LayDanhSachLopHocQuery, KetQuaTrang<LopHocDto>>
 {
     public async Task<KetQuaTrang<LopHocDto>> Handle(
@@ -61,13 +67,18 @@ public class LayDanhSachLopHocHandler(IAppDbContext db, IPhamViLopHoc phamVi)
 
         var tong = await q.CountAsync(ct);
 
+        // Che cột tiền chứ không lọc hàng: giáo viên vẫn thấy lớp mình dạy, chỉ không thấy
+        // học phí. Tính TRƯỚC vòng chiếu để không hỏi quyền lặp lại theo từng dòng.
+        var xemTien = await phamViTien.DuocXemTienCuaLop(ct);
+
         var duLieu = await q
             .OrderByDescending(l => l.NgayKhaiGiang ?? l.NgayTao)
             .Skip(trang.BoQua)
             .Take(trang.SoDongHopLe)
             .Select(l => new LopHocDto(
                 l.Id, l.Ten, l.GiaoVienChinhId, l.GiaoVienChinh.HoTen,
-                l.HinhThuc, l.PhongHoc, l.LinkHoc, l.HocPhi, l.SucChuaToiDa,
+                l.HinhThuc, l.PhongHoc, l.LinkHoc,
+                xemTien ? l.HocPhi : null, l.SucChuaToiDa,
                 l.NgayKhaiGiang, l.NgayKetThuc, l.TrangThai, l.GhiChu,
                 l.TroGiangs.Select(tg => tg.TroGiangId).ToList(),
                 l.TroGiangs.Select(tg => tg.TroGiang.HoTen).ToList(),
@@ -80,7 +91,8 @@ public class LayDanhSachLopHocHandler(IAppDbContext db, IPhamViLopHoc phamVi)
 
 public record LayLopHocQuery(Guid Id) : IRequest<LopHocDto>;
 
-public class LayLopHocHandler(IAppDbContext db, IPhamViLopHoc phamVi)
+public class LayLopHocHandler(
+    IAppDbContext db, IPhamViLopHoc phamVi, IPhamViHocPhi phamViTien)
     : IRequestHandler<LayLopHocQuery, LopHocDto>
 {
     public async Task<LopHocDto> Handle(LayLopHocQuery request, CancellationToken ct)
@@ -89,11 +101,14 @@ public class LayLopHocHandler(IAppDbContext db, IPhamViLopHoc phamVi)
         // không lọc thì gõ thẳng id vào URL là đọc được lớp người khác (IDOR).
         var q = await phamVi.LocTheoPhamVi(db.LopHocs.AsQueryable(), HanhDong.Xem, ct);
 
+        var xemTien = await phamViTien.DuocXemTienCuaLop(ct);
+
         return await q
                    .Where(l => l.Id == request.Id)
                    .Select(l => new LopHocDto(
                        l.Id, l.Ten, l.GiaoVienChinhId, l.GiaoVienChinh.HoTen,
-                       l.HinhThuc, l.PhongHoc, l.LinkHoc, l.HocPhi, l.SucChuaToiDa,
+                       l.HinhThuc, l.PhongHoc, l.LinkHoc,
+                       xemTien ? l.HocPhi : null, l.SucChuaToiDa,
                        l.NgayKhaiGiang, l.NgayKetThuc, l.TrangThai, l.GhiChu,
                        l.TroGiangs.Select(tg => tg.TroGiangId).ToList(),
                        l.TroGiangs.Select(tg => tg.TroGiang.HoTen).ToList(),

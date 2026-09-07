@@ -21,7 +21,7 @@ là một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`
 Tách ra từ một ứng dụng quản lý CLB đá bóng (04/09/2026), giữ toàn bộ tầng hệ thống. Nghiệp vụ
 LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 
-**14/15 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 227 test backend xanh.
+**14/15 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 234 test backend xanh.
 
 | Đã chạy đầu-cuối | Chưa có |
 |---|---|
@@ -200,6 +200,12 @@ Tầng hệ thống hiện có, đặt ở đâu:
   | Global Query Filter | Cách ly **tenant** |
   | `IPhamViLopHoc` / `IPhamViHocPhi` | Phạm vi **bên trong** tenant: "lớp mình dạy", "sổ của mình" |
 
+  Ba tầng này lọc **hàng nào** được thấy, **không** lọc **cột nào**. Nên **trường nhạy cảm
+  không được đi nhờ DTO của module khác**: `LopHocDto.HocPhi` gác bằng `LopHoc.Xem` — quyền mà
+  giáo viên và học viên đều có — nên tiền lọt ra dù `IPhamViHocPhi` hoàn toàn đúng (07/09/2026).
+  Nếu buộc phải để trường tiền trong DTO module khác, gọi `DuocXemTienCuaLop()` trả null; canh
+  bởi `RoRiHocPhiTests`.
+
 - **Người ≠ tài khoản** (tách 07/09/2026). `NGUOI_DUNG` là con người và sống lâu hơn
   `TAI_KHOAN`; mỗi vai trò có bảng hồ sơ riêng (`HO_SO_GIAO_VIEN/HOC_VIEN/NHAN_VIEN`).
   Hai cột trạng thái **đừng nhầm**: `trang_thai_nhan_su` (còn làm không — chặn phân công lớp
@@ -218,7 +224,7 @@ Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 ```bash
 # --- Backend ---
 dotnet build          # 0 warning — TreatWarningsAsErrors đang bật
-dotnet test           # 227 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
+dotnet test           # 234 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
                       #           quản trị, lớp học, điểm danh, học liệu, học phí
 
 # Chạy API cần 2 biến bắt buộc (thiếu là 500 lúc đăng nhập / tải ảnh, không phải lúc khởi động):

@@ -16,14 +16,22 @@ public record HocVienTrongLopDto(
     string? SoDienThoai,
     DateTimeOffset NgayVaoLop,
     TrangThaiHocVienTrongLop TrangThai,
-    decimal HocPhiApDung,
+    /// <summary>
+    /// Mức học phí riêng của người này — **dữ liệu nhạy cảm nhất trong DTO này** vì nó tiết lộ
+    /// ai được miễn giảm và giảm bao nhiêu.
+    ///
+    /// null khi người gọi không được xem: giáo viên và trợ giảng thấy null ở mọi dòng, học
+    /// viên chỉ thấy số của chính mình. Xem <c>IPhamViHocPhi.DuocXemTienCuaLop</c>.
+    /// </summary>
+    decimal? HocPhiApDung,
     string? GhiChu);
 
 // ---------- Queries ----------
 
 public record LayHocVienTrongLopQuery(Guid LopHocId) : IRequest<List<HocVienTrongLopDto>>;
 
-public class LayHocVienTrongLopHandler(IAppDbContext db, IPhamViLopHoc phamVi)
+public class LayHocVienTrongLopHandler(
+    IAppDbContext db, IPhamViLopHoc phamVi, IPhamViHocPhi phamViTien, ICurrentUser currentUser)
     : IRequestHandler<LayHocVienTrongLopQuery, List<HocVienTrongLopDto>>
 {
     public async Task<List<HocVienTrongLopDto>> Handle(
@@ -32,13 +40,20 @@ public class LayHocVienTrongLopHandler(IAppDbContext db, IPhamViLopHoc phamVi)
         // Kiểm phạm vi qua chính lớp: không thấy lớp thì không thấy danh sách học viên của nó.
         await BaoDamThayLop(db, phamVi, request.LopHocId, HanhDong.Xem, ct);
 
+        // Ba mức, hẹp dần. Đây là chỗ từng rò rỉ nặng nhất: giáo viên đọc được mức miễn giảm
+        // của từng học viên, và học viên đọc được học phí của bạn cùng lớp — cả hai đi vòng
+        // qua cổng HocPhi vì endpoint này gác bằng `LopHoc.Xem`.
+        var xemTien = await phamViTien.DuocXemTienCuaLop(ct);
+        var toi = currentUser.UserId;
+
         return await db.LopHocHocViens
             .Where(hv => hv.LopHocId == request.LopHocId)
             .OrderBy(hv => hv.HocVien.HoTen)
             .Select(hv => new HocVienTrongLopDto(
                 hv.Id, hv.HocVienId, hv.HocVien.HoTen, hv.HocVien.Email,
                 hv.HocVien.SoDienThoai, hv.NgayVaoLop, hv.TrangThai,
-                hv.HocPhiApDung, hv.GhiChu))
+                xemTien || hv.HocVienId == toi ? hv.HocPhiApDung : null,
+                hv.GhiChu))
             .ToListAsync(ct);
     }
 

@@ -9,12 +9,25 @@ Ghi nhận tiền học viên đã nộp và theo dõi ai còn nợ.
 
 ## FR-14 — Thu học phí & công nợ
 
-### Hai câu hỏi, hai màn
+### Mọi thứ về tiền nằm trong MỘT tab
 
-| Màn | Trả lời câu hỏi | Nguồn |
+Trong view chi tiết lớp, **tab Học phí là nơi duy nhất hiện số tiền**. Tab Tổng quan không có
+ô "đã thu"/"còn nợ", bảng danh sách lớp không có cột học phí, tab Học viên chỉ hiện cột mức áp
+dụng khi người xem được phép.
+
+Lý do không rải ra: số tiền ở nhiều chỗ thì mỗi chỗ là một đường rò rỉ phải nhớ vá, và người
+dùng phải đi lùng ba tab để ghép được bức tranh tài chính của lớp.
+
+Đầu tab là ba con số của cả lớp — **tổng phải thu · đã thu · còn nợ** — kèm thanh tiến độ.
+Dưới đó là hai bảng:
+
+| Bảng | Trả lời câu hỏi | Nguồn |
 |---|---|---|
 | **Công nợ** | Ai còn nợ bao nhiêu? | Tính động, không lưu |
 | **Sổ thu** | Đã thu những khoản nào? | Bảng `KHOAN_THU_HOC_PHI` |
+
+Học phí **mức chuẩn của lớp** chỉ nhập lúc tạo lớp; sau đó nó thuộc về tab Học phí, không nằm
+trong form thông tin lớp.
 
 ### Công nợ tính động, không lưu cột
 
@@ -75,6 +88,39 @@ Dùng chung một tầng lọc là vô tình mở sổ thu cho toàn bộ giáo 
 - **Đường ghi đi qua đúng cổng với đường sửa** (`DuocGhiSo`, cùng điều kiện với
   `LocKhoanThuDuocSua`). Nếu ghi lỏng hơn sửa thì có người tạo được khoản thu mà không ai —
   kể cả chính họ — gỡ lại được.
+
+### Số tiền không được đi nhờ DTO của module khác
+
+Tầng phạm vi chỉ bảo vệ **module học phí**. Nếu một trường tiền nằm trong DTO của module
+khác, nó đi ra qua cổng của module đó và `[RequirePermission(HocPhi, ...)]` vô nghĩa.
+
+Đã xảy ra thật (phát hiện 07/09/2026):
+
+| DTO | Endpoint | Gác bằng | Hậu quả |
+|---|---|---|---|
+| `LopHocDto.HocPhi` | `GET /lop-hoc`, `GET /lop-hoc/{id}` | `LopHoc.Xem` | Giáo viên, trợ giảng, học viên đều đọc được học phí lớp |
+| `HocVienTrongLopDto.HocPhiApDung` | `GET /lop-hoc/{id}/hoc-vien` | `LopHoc.Xem` | Giáo viên biết ai được miễn giảm và giảm bao nhiêu; **học viên đọc được học phí của bạn cùng lớp** |
+
+Cả ba vai trò đều có `LopHoc.Xem` — đó là cửa. Ma trận quyền vẫn đúng, tầng phạm vi vẫn đúng;
+lỗi là ở chỗ **trường tiền nằm sai nhà**.
+
+Vá bằng `IPhamViHocPhi.DuocXemTienCuaLop()`: hai handler trả `null` cho người không đủ quyền.
+Đây là **che cột**, khác với `LocTheoPhamVi` vốn chỉ **lọc hàng**.
+
+`HocVienTrongLopDto.HocPhiApDung` có thêm một mức: học viên thấy số của **chính mình**
+(`xemTien || hv.HocVienId == toi`) — họ cần biết mình phải đóng bao nhiêu.
+
+Canh bởi `RoRiHocPhiTests` (7 test). **Thêm trường tiền vào DTO không thuộc module học phí →
+thêm một test ở đó.**
+
+### Bẫy phân quyền: cặp `HocPhi` + `LopHocToanTrungTam`
+
+`ThayToanBoSo` cần **cả hai** quyền. Nghĩa là cấp `LopHocToanTrungTam.Xem` cho nhóm Giáo viên
+— nghe rất vô hại, "cho giáo viên xem lịch mọi lớp" — sẽ **mở toàn bộ sổ thu** cho họ nếu nhóm
+đó cũng có `HocPhi.Xem`.
+
+Nhóm mặc định an toàn (giáo viên không có `HocPhi`), nhưng admin sửa được ma trận ở màn Phân
+quyền. Cặp quyền này có tác dụng phụ tài chính, cần biết trước khi cấp.
 
 ### Xoá dữ liệu
 

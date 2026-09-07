@@ -44,7 +44,8 @@ export interface HocVienTrongLop {
   soDienThoai: string | null
   ngayVaoLop: string
   trangThai: string
-  hocPhiApDung: number
+  /** null = người đang xem không được phép biết mức này (xem IPhamViHocPhi). */
+  hocPhiApDung: number | null
 }
 
 export const tienVN = (n: number | null) =>

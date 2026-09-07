@@ -12,7 +12,7 @@ import { FormLopHoc, type DuLieuLopHoc } from './FormLopHoc'
 import TaiLieu from './TaiLieu'
 import HocPhi from './HocPhi'
 import {
-  tienVN, ngayVN, mauTrangThai,
+  ngayVN, mauTrangThai,
   type LopHocDto, type NguoiDungNgan,
 } from './lopHocTypes'
 import type { KetQuaTrang } from '@/lib/api'
@@ -178,25 +178,11 @@ function TongQuanLop({
       (await api.get<{ trangThai: string }[]>(`/lop-hoc/${lop.id}/buoi-hoc`)).data,
   })
 
-  const { data: congNo = [] } = useQuery({
-    queryKey: ['cong-no', lop.id, false],
-    queryFn: async () =>
-      (await api.get<{ hocPhiApDung: number; daThu: number; conNo: number }[]>(
-        '/hoc-phi/cong-no',
-        { params: { lopHocId: lop.id, chiConNo: false } },
-      )).data,
-    // Học viên xem lớp của mình sẽ nhận 403 ở đây — không phải lỗi, chỉ là họ không xem sổ
-    // toàn lớp được. `retry: false` để không thử lại ba lần một cách vô ích.
-    retry: false,
-  })
-
   const daHoc = buoiHocs.filter((b) => b.trangThai === 'DaHoanThanh').length
-  const phaiThu = congNo.reduce((s, x) => s + x.hocPhiApDung, 0)
-  const daThu = congNo.reduce((s, x) => s + x.daThu, 0)
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2">
         <ThongSo
           nhan={t('lopHoc.siSo')}
           giaTri={
@@ -208,12 +194,6 @@ function TongQuanLop({
         <ThongSo
           nhan={t('lopHoc.buoiDaHoc')}
           giaTri={buoiHocs.length === 0 ? '—' : `${daHoc}/${buoiHocs.length}`}
-        />
-        <ThongSo nhan={t('hocPhi.daThu')} giaTri={tienVN(daThu)} />
-        <ThongSo
-          nhan={t('hocPhi.conNo')}
-          giaTri={tienVN(phaiThu - daThu)}
-          canhBao={phaiThu - daThu > 0}
         />
       </div>
 
@@ -230,7 +210,6 @@ function TongQuanLop({
               nhan={lop.hinhThuc === 'Online' ? t('lopHoc.linkHoc') : t('lopHoc.phongHoc')}
               giaTri={(lop.hinhThuc === 'Online' ? lop.linkHoc : lop.phongHoc) ?? '—'}
             />
-            <Dong nhan={t('lopHoc.hocPhi')} giaTri={tienVN(lop.hocPhi)} />
             <Dong
               nhan={t('lopHoc.thoiGian')}
               giaTri={`${ngayVN(lop.ngayKhaiGiang)} → ${ngayVN(lop.ngayKetThuc)}`}

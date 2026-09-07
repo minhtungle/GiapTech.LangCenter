@@ -94,14 +94,30 @@ export default function HocPhi({ lopHocId }: { lopHocId?: string } = {}) {
         .data.duLieu,
   })
 
-  const { data: congNo = [], isLoading: dangTaiNo } = useQuery({
+  const {
+    data: congNo = [],
+    isLoading: dangTaiNo,
+    error: loiNo,
+  } = useQuery({
     queryKey: ['cong-no', lopLoc, chiConNo],
     queryFn: async () =>
       (await api.get<CongNoDto[]>('/hoc-phi/cong-no', {
         params: { lopHocId: lopLoc || undefined, chiConNo },
       })).data,
     enabled: tab === 'cong-no',
+    // 403 là câu trả lời hợp lệ ("bạn không được xem sổ"), không phải sự cố mạng — thử lại
+    // ba lần chỉ làm chậm thông báo.
+    retry: false,
   })
+
+  /**
+   * Giáo viên và trợ giảng không có quyền `HocPhi` nên nhận 403 ở đây.
+   *
+   * Hiện thông báo rõ ràng thay vì bảng trống: bảng trống khiến người dùng tưởng lớp chưa ai
+   * đóng tiền, rồi đi hỏi kế toán.
+   */
+  const khongCoQuyen =
+    (loiNo as { response?: { status?: number } } | null)?.response?.status === 403
 
   const { data: kq = trangRong<KhoanThuDto>(), isLoading: dangTaiThu } = useQuery({
     queryKey: ['khoan-thu', lopLoc, trang, soDong],
@@ -179,8 +195,21 @@ export default function HocPhi({ lopHocId }: { lopHocId?: string } = {}) {
 
   const luaChonLop = (lops ?? []).map((l) => ({ giaTri: l.id, nhan: l.ten }))
 
+  // Tổng của cả lớp — chỉ có nghĩa khi đang xem một lớp cụ thể. Người không được xem sổ toàn
+  // lớp nhận danh sách rỗng nên tổng bằng 0 và khối này tự ẩn.
+  const congNoCuaLop = lopHocId ? congNo : []
+  const tongPhaiThu = congNoCuaLop.reduce((s, x) => s + x.hocPhiApDung, 0)
+  const tongDaThu = congNoCuaLop.reduce((s, x) => s + x.daThu, 0)
+  const hienTongQuan = lopHocId !== undefined && congNoCuaLop.length > 0
+
+  if (khongCoQuyen) {
+    return <TrangTrong thongDiep={t('hocPhi.khongCoQuyenXem')} />
+  }
+
   return (
     <div className="space-y-4">
+      {hienTongQuan && <TongQuanTien phaiThu={tongPhaiThu} daThu={tongDaThu} />}
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-1 rounded-lg border border-border p-1">
           {(['cong-no', 'so-thu'] as const).map((x) => (
@@ -509,6 +538,68 @@ export default function HocPhi({ lopHocId }: { lopHocId?: string } = {}) {
         onDongY={() => xoaCho && xoa.mutate(xoaCho.id)}
         onHuy={() => setXoaCho(null)}
       />
+    </div>
+  )
+}
+
+/**
+ * Ba con số đầu tab Học phí: phải thu / đã thu / còn nợ của cả lớp.
+ *
+ * Trước đây "Đã thu" và "Còn nợ" nằm ở tab Tổng quan — nghĩa là số tiền rải ra hai chỗ, và
+ * tab Tổng quan phải gọi API học phí chỉ để hiện hai ô mà phần lớn người dùng không được xem.
+ * Nay mọi thứ về tiền gom về đúng một tab.
+ */
+function TongQuanTien({ phaiThu, daThu }: { phaiThu: number; daThu: number }) {
+  const { t } = useTranslation()
+  const conNo = phaiThu - daThu
+  const tiLe = phaiThu > 0 ? Math.round((daThu / phaiThu) * 100) : 0
+
+  return (
+    <Card>
+      <CardContent className="space-y-3 pt-4">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <O nhan={t('hocPhi.tongPhaiThu')} giaTri={dinhDangTien(phaiThu)} />
+          <O nhan={t('hocPhi.daThu')} giaTri={dinhDangTien(daThu)} />
+          <O nhan={t('hocPhi.conNo')} giaTri={dinhDangTien(conNo)} canhBao={conNo > 0} />
+        </div>
+
+        {/* Thanh tiến độ: "đã thu 45%" dễ nắm hơn ba con số rời rạc. */}
+        <div>
+          <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+            <span>{t('hocPhi.tienDoThu')}</span>
+            <span className="tabular-nums">{tiLe}%</span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${Math.min(100, tiLe)}%` }}
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function O({
+  nhan,
+  giaTri,
+  canhBao,
+}: {
+  nhan: string
+  giaTri: string
+  canhBao?: boolean
+}) {
+  return (
+    <div>
+      <p className="text-xs text-muted-foreground">{nhan}</p>
+      <p
+        className={
+          'mt-0.5 text-lg font-semibold tabular-nums ' + (canhBao ? 'text-destructive' : '')
+        }
+      >
+        {giaTri}
+      </p>
     </div>
   )
 }

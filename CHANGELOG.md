@@ -8,6 +8,26 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Fixed — Rò rỉ học phí qua DTO module lớp học (07/09/2026)
+
+- **Giáo viên và trợ giảng đọc được học phí**, và **học viên đọc được học phí của bạn cùng
+  lớp**. Số tiền nằm trong `LopHocDto.HocPhi` và `HocVienTrongLopDto.HocPhiApDung` — hai DTO
+  gác bằng `LopHoc.Xem`, quyền mà cả ba vai trò đều có, nên hoàn toàn vòng qua cổng học phí.
+  Ma trận quyền và tầng `IPhamViHocPhi` đều đúng; lỗi là trường tiền nằm sai module.
+- Vá bằng `IPhamViHocPhi.DuocXemTienCuaLop()` — **che cột** (trả `null`), khác với
+  `LocTheoPhamVi` vốn chỉ **lọc hàng**. Học viên vẫn thấy mức áp dụng của chính mình; giáo
+  viên vẫn thấy đủ danh sách học viên để điểm danh.
+- `RoRiHocPhiTests` — 7 test canh, gồm cả chiều ngược (admin phải vẫn thấy đủ).
+
+### Changed — Gom thông tin học phí về một tab
+
+- Tab Học phí thêm tổng phải thu / đã thu / còn nợ + thanh tiến độ ở đầu trang.
+- Tab Tổng quan bỏ hai ô tiền và dòng học phí; bảng danh sách lớp bỏ cột Học phí; form thông
+  tin lớp bỏ ô học phí khi sửa (giữ khi tạo, vì lúc đó chưa có tab Học phí).
+- Tab Học viên ẩn cột mức áp dụng khi người xem không được phép.
+- Vào tab Học phí không có quyền thì hiện thông báo rõ ràng thay vì bảng trống.
+
+
 ### Added — Menu thao tác và view chi tiết lớp học (07/09/2026)
 
 - **`MenuThaoTac`** — nút thao tác trong bảng gom vào một menu có chữ, thay cho dải icon trần.

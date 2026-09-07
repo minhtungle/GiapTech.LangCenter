@@ -16,7 +16,7 @@ export interface DuLieuLopHoc {
   phongHoc: string
   linkHoc: string
   ghiChu: string
-  hocPhi: number | null
+  hocPhi?: number | null
   sucChuaToiDa: number | null
   boGioiHanSucChua: boolean
 }
@@ -33,6 +33,7 @@ export interface DuLieuLopHoc {
 export function FormLopHoc({
   lop,
   nguoiDungs,
+  hienHocPhi,
   dangLuu,
   maLoi,
   nhanLuu,
@@ -41,6 +42,12 @@ export function FormLopHoc({
 }: {
   /** null = đang tạo mới. */
   lop: LopHocDto | null
+  /**
+   * Hiện ô học phí. Chỉ bật khi TẠO lớp — lúc đó chưa có tab Học phí để nhập mức chuẩn.
+   * Khi SỬA thì học phí thuộc về tab Học phí, không nằm trong thông tin lớp (dữ liệu nhạy
+   * cảm gom một chỗ).
+   */
+  hienHocPhi?: boolean
   nguoiDungs: NguoiDungNgan[]
   dangLuu: boolean
   maLoi: string | null
@@ -81,8 +88,15 @@ export function FormLopHoc({
 
     // Mọi trường lệnh cập nhật ghi đè đều đọc TỪ FORM. Gửi cứng null sẽ xoá dữ liệu người
     // dùng chưa từng đụng tới — đúng lỗi đã xảy ra hai lần trong dự án này.
-    const hocPhiTho = (fd.get('hocPhi') as string) || ''
     const sucChuaTho = (fd.get('sucChuaToiDa') as string) || ''
+
+    // Ô học phí bị ẩn → KHÔNG gửi trường này. Backend hiểu null là "giữ nguyên", nên mức học
+    // phí hiện tại không bị xoá dù form không có ô đó (quy tắc #1).
+    const hocPhi = hienHocPhi
+      ? ((fd.get('hocPhi') as string) || '') === ''
+        ? null
+        : Number(fd.get('hocPhi'))
+      : undefined
 
     onLuu({
       ten: String(fd.get('ten')),
@@ -93,7 +107,7 @@ export function FormLopHoc({
       phongHoc: (fd.get('phongHoc') as string) ?? '',
       linkHoc: (fd.get('linkHoc') as string) ?? '',
       ghiChu: (fd.get('ghiChu') as string) ?? '',
-      hocPhi: hocPhiTho === '' ? null : Number(hocPhiTho),
+      ...(hocPhi === undefined ? {} : { hocPhi }),
       sucChuaToiDa: sucChuaTho === '' ? null : Number(sucChuaTho),
       // Ô sức chứa để trống khi SỬA nghĩa là "bỏ giới hạn" — null không diễn đạt được điều
       // đó vì null đã mang nghĩa "không gửi".
@@ -159,17 +173,19 @@ export function FormLopHoc({
         </div>
       )}
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="hocPhi">{t('lopHoc.hocPhi')}</Label>
-        <Input
-          id="hocPhi"
-          name="hocPhi"
-          type="number"
-          min={0}
-          step={1000}
-          defaultValue={lop?.hocPhi ?? ''}
-        />
-      </div>
+      {hienHocPhi && (
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="hocPhi">{t('lopHoc.hocPhi')}</Label>
+          <Input
+            id="hocPhi"
+            name="hocPhi"
+            type="number"
+            min={0}
+            step={1000}
+            defaultValue={lop?.hocPhi ?? ''}
+          />
+        </div>
+      )}
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="sucChuaToiDa">{t('lopHoc.sucChuaToiDa')}</Label>

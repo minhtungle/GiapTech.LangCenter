@@ -14,7 +14,7 @@ import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { FormLopHoc, type DuLieuLopHoc } from './FormLopHoc'
 import {
-  tienVN, ngayVN, mauTrangThai,
+  ngayVN, mauTrangThai,
   type LopHocDto, type NguoiDungNgan,
 } from './lopHocTypes'
 
@@ -191,7 +191,6 @@ export default function LopHoc() {
                     <Th>{t('lopHoc.giaoVienChinh')}</Th>
                     <Th>{t('lopHoc.hinhThuc')}</Th>
                     <Th>{t('lopHoc.soHocVien')}</Th>
-                    <Th>{t('lopHoc.hocPhi')}</Th>
                     <Th>{t('lopHoc.ngayKhaiGiang')}</Th>
                     <Th>{t('lopHoc.trangThai')}</Th>
                     <Th className="w-40" />
@@ -218,7 +217,6 @@ export default function LopHoc() {
                         {l.soHocVien}
                         {l.sucChuaToiDa !== null && ` / ${l.sucChuaToiDa}`}
                       </Td>
-                      <Td className="text-muted-foreground">{tienVN(l.hocPhi)}</Td>
                       <Td className="text-muted-foreground">{ngayVN(l.ngayKhaiGiang)}</Td>
                       <Td>
                         <Badge variant={mauTrangThai(l.trangThai)}>
@@ -326,6 +324,8 @@ export default function LopHoc() {
           key={dangSua?.id ?? 'moi'}
           lop={dangSua}
           nguoiDungs={nguoiDungs ?? []}
+          // Chỉ lúc TẠO mới cần ô học phí: lớp chưa tồn tại nên chưa có tab Học phí để nhập.
+          hienHocPhi={!dangSua}
           dangLuu={dangLuu}
           maLoi={maLoi}
           onLuu={(du) => (dangSua ? capNhat.mutate(du) : tao.mutate(du))}
