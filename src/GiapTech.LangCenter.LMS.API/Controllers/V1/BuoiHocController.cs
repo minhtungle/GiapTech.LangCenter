@@ -32,6 +32,18 @@ public class BuoiHocController(ISender sender) : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Xoá hẳn một buổi lên nhầm. Khác `huy` — huỷ giữ bản ghi để lịch sử còn nguyên.
+    /// Chặn với buổi đã chốt hoặc đã có điểm danh.
+    /// </summary>
+    [HttpDelete("{id:guid}")]
+    [RequirePermission(ChucNang.BuoiHoc, HanhDong.Xoa)]
+    public async Task<IActionResult> Xoa(Guid id, CancellationToken ct)
+    {
+        await sender.Send(new XoaBuoiHocCommand(id), ct);
+        return NoContent();
+    }
+
     [HttpPost("{id:guid}/huy")]
     [RequirePermission(ChucNang.BuoiHoc, HanhDong.Sua)]
     public async Task<IActionResult> Huy(Guid id, CancellationToken ct)

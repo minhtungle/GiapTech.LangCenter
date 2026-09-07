@@ -47,6 +47,20 @@ public class BuoiHoc : TenantEntity
 
     public ICollection<DiemDanh> DiemDanhs { get; set; } = [];
 
+    /// <summary>
+    /// Buổi đã KHOÁ — không sửa giờ, không huỷ, không xoá, không bị lịch sinh mới ghi đè.
+    ///
+    /// Khoá khi quản trị **chốt buổi** (`TrangThai = DaHoanThanh`): lúc đó điểm danh đã ghi
+    /// xong và trở thành bằng chứng chuyên cần. Đổi giờ một buổi đã chốt sẽ làm bản ghi điểm
+    /// danh nói về một thời điểm không còn tồn tại.
+    ///
+    /// Buổi `DaHuy` KHÔNG khoá: huỷ rồi thì lên lịch lại là chuyện bình thường.
+    ///
+    /// Một chỗ duy nhất quyết định điều này — mọi handler hỏi qua đây thay vì tự so
+    /// `TrangThai`, để thêm trạng thái khoá mới sau này không phải đi sửa sáu nơi.
+    /// </summary>
+    public bool DaKhoa => TrangThai == TrangThaiBuoiHoc.DaHoanThanh;
+
     /// <summary>Giáo viên hiệu lực — buổi override thì lấy của buổi, không thì của lớp.</summary>
     public Guid GiaoVienHieuLuc => GiaoVienId ?? LopHoc.GiaoVienChinhId;
 }

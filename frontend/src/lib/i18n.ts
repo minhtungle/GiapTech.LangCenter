@@ -244,6 +244,26 @@ const vi = {
     DaNghi: 'Đã nghỉ',
   },
   buoiHoc: {
+    themBuoi: 'Thêm buổi',
+    sinhThemBuoi: 'Sinh thêm buổi',
+    xoaBuoi: 'Xoá buổi',
+    ngayHoc: 'Ngày học',
+    laHocBu: 'Là buổi học bù',
+    macDinhTheoLop: 'Để trống = theo lớp',
+    tuNgay: 'Sinh từ ngày',
+    daChot: '{{soLuong}} buổi đã chốt',
+    goiYSinhThem:
+      'Sinh thêm buổi nối tiếp lịch hiện tại. Không buổi nào bị xoá; buổi mới đánh số tiếp.',
+    canhBaoSinhLai:
+      'Sinh lại sẽ XOÁ các buổi chưa học và tạo lịch mới. Buổi đã chốt được giữ nguyên.',
+    xacNhanSinhLai:
+      'Xoá {{soLuong}} buổi chưa học và sinh lịch mới? {{daChot}} buổi đã chốt vẫn được giữ. '
+      + 'Muốn thêm buổi mà không mất lịch cũ thì dùng "Thêm buổi" hoặc "Sinh thêm buổi".',
+    xacNhanHuyBuoi:
+      'Huỷ buổi {{thuTu}} ({{gio}})? Bản ghi vẫn được giữ để lịch sử còn nguyên.',
+    xacNhanXoaBuoi:
+      'Xoá hẳn buổi {{thuTu}} ({{gio}})? Không khôi phục được. Nếu buổi đã diễn ra thì nên '
+      + 'huỷ thay vì xoá.',
     tieuDe: 'Buổi học',
     lich: 'Lịch học',
     thuTu: 'Buổi',
@@ -507,6 +527,13 @@ const vi = {
     MAT_KHAU_MOI_TRUNG_CU: 'Mật khẩu mới phải khác mật khẩu hiện tại',
     USERNAME_KY_TU_KHONG_HOP_LE: 'Tên đăng nhập chỉ gồm chữ, số và . _ -',
     ID_KHONG_KHOP: 'Dữ liệu không khớp',
+    BUOI_HOC_DA_KHOA:
+      'Buổi này đã chốt nên không sửa, huỷ hay xoá được. Điểm danh của buổi đã chốt là bằng '
+      + 'chứng chuyên cần.',
+    BUOI_HOC_DA_CO_DIEM_DANH:
+      'Buổi này đã có điểm danh. Huỷ buổi thay vì xoá để giữ lại dữ liệu.',
+    BUOI_HOC_TRUNG_GIO:
+      'Có buổi trùng giờ với lịch hiện tại. Chọn ngày bắt đầu sau buổi cuối cùng.',
     NGUOI_DUNG_KHONG_HOP_LE: 'Người dùng không hợp lệ',
     NGUOI_DUNG_DA_CO_TAI_KHOAN:
       'Người này đã có tài khoản. Mỗi người chỉ được một tài khoản đăng nhập.',

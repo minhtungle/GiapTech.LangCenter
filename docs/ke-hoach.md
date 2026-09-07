@@ -87,10 +87,11 @@ VPS → domain + HTTPS → backup. Xem
 | N9 | Lịch sử chỉnh sửa khoản thu (ai sửa gì lúc nào) | Thấp |
 | N10 | Nhắc nợ học phí / thông báo lịch học qua email (`IEmailSender` đã có, chưa nối) | Thấp |
 | N11 | Endpoint dọn tenant test + `globalTeardown` cho E2E | Thấp |
+| N12 | `Token_bi_sua_chu_ky_thi_bi_tu_choi` **chớp nháy** — đỏ một lần khi chạy toàn bộ (12 giây), xanh khi chạy riêng | Trung bình |
 
 ## Kiểm chứng hiện tại
 
-- **239 test backend xanh** (54 unit + 185 integration), build 0 warning.
+- **250 test backend xanh** (54 unit + 196 integration), build 0 warning.
 - Frontend `tsc -b` + `vite build` sạch, `oxlint` không lỗi.
 - **PostgreSQL + MinIO thật**: 20 bảng, migration áp sạch, luồng đầu-cuối chạy tay đủ từ tạo
   trung tâm tới thu học phí.

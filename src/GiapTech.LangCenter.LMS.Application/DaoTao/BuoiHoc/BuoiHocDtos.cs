@@ -164,18 +164,22 @@ public class SinhLichChoLopHandler(IAppDbContext db, IPhamViLopHoc phamVi, IMuiG
 
         var buoiCu = await db.BuoiHocs
             .Where(b => b.LopHocId == lop.Id)
+            .OrderBy(b => b.ThuTu)
             .ToListAsync(ct);
 
-        // Sinh lại lịch sẽ xoá buổi cũ. Buổi đã điểm danh mang bằng chứng chuyên cần —
-        // chặn ở đây, buộc người dùng sửa từng buổi thay vì sinh lại cả lịch.
-        if (buoiCu.Count > 0)
+        // Buổi ĐÃ KHOÁ (đã chốt) không bao giờ bị lịch mới ghi đè — điểm danh của nó là bằng
+        // chứng chuyên cần. Buổi chưa học thì xoá và sinh lại được.
+        var buoiKhoa = buoiCu.Where(b => b.DaKhoa).ToList();
+        var buoiXoaDuoc = buoiCu.Where(b => !b.DaKhoa).ToList();
+
+        // Buổi chưa chốt nhưng đã có người điểm danh: vẫn còn dữ liệu thật, không xoá lặng lẽ.
+        if (buoiXoaDuoc.Count > 0)
         {
-            var idCu = buoiCu.Select(b => b.Id).ToList();
-            var daCoDiemDanh = await db.DiemDanhs.AnyAsync(d => idCu.Contains(d.BuoiHocId), ct);
+            var idXoa = buoiXoaDuoc.Select(b => b.Id).ToList();
+            if (await db.DiemDanhs.AnyAsync(d => idXoa.Contains(d.BuoiHocId), ct))
+                throw new AppException("LICH_DA_CO_DIEM_DANH");
 
-            if (daCoDiemDanh) throw new AppException("LICH_DA_CO_DIEM_DANH");
-
-            db.BuoiHocs.RemoveRange(buoiCu);
+            db.BuoiHocs.RemoveRange(buoiXoaDuoc);
         }
 
         var tz = await muiGio.LayMuiGio(ct);
@@ -198,26 +202,266 @@ public class SinhLichChoLopHandler(IAppDbContext db, IPhamViLopHoc phamVi, IMuiG
             throw new AppException(ex.Ma);
         }
 
+        // Đánh số TIẾP sau buổi khoá, không bắt đầu lại từ 1: UNIQUE(LopHocId, ThuTu) sẽ nổ,
+        // và quan trọng hơn là hai buổi cùng số thứ tự thì học viên không biết đâu là buổi nào.
+        var soLonNhat = buoiKhoa.Count == 0 ? 0 : buoiKhoa.Max(b => b.ThuTu);
+
         foreach (var b in duKien)
         {
             db.BuoiHocs.Add(new Domain.Entities.BuoiHoc
             {
                 LopHocId = lop.Id,
-                ThuTu = b.ThuTu,
+                ThuTu = soLonNhat + b.ThuTu,
                 BatDau = b.BatDau,
                 KetThuc = b.KetThuc
             });
         }
 
-        // Ngày khai giảng và kết thúc của LỚP suy từ lịch vừa sinh, không cho sửa tay —
-        // sửa tay thì chúng lệch với buổi học ngay lập tức.
-        lop.NgayKhaiGiang = duKien[0].BatDau;
-        lop.NgayKetThuc = duKien[^1].KetThuc;
+        // Ngày khai giảng và kết thúc của LỚP suy từ lịch, không cho sửa tay — sửa tay thì
+        // chúng lệch với buổi học ngay lập tức. Tính trên CẢ buổi khoá lẫn buổi vừa sinh.
+        var moiMoc = buoiKhoa
+            .Select(b => (b.BatDau, b.KetThuc))
+            .Concat(duKien.Select(b => (b.BatDau, b.KetThuc)))
+            .ToList();
+
+        lop.NgayKhaiGiang = moiMoc.Min(x => x.BatDau);
+        lop.NgayKetThuc = moiMoc.Max(x => x.KetThuc);
 
         await db.SaveChangesAsync(ct);
 
         return await new LayBuoiHocCuaLopHandler(db, phamVi)
             .Handle(new LayBuoiHocCuaLopQuery(lop.Id), ct);
+    }
+}
+
+/// <summary>
+/// Thêm MỘT buổi lẻ vào lớp — dạy bù, ôn tập trước thi, buổi phát sinh.
+///
+/// Khác `SinhLichChoLopCommand`: lệnh kia thay cả lịch, lệnh này chỉ nối thêm và **không đụng
+/// buổi nào đang có**.
+/// </summary>
+public record ThemBuoiHocCommand(
+    Guid LopHocId,
+    DateOnly Ngay,
+    TimeOnly GioBatDau,
+    TimeOnly GioKetThuc,
+    bool LaHocBu = false,
+    Guid? GiaoVienId = null,
+    string? PhongHoc = null,
+    string? LinkHoc = null,
+    string? GhiChu = null) : IRequest<BuoiHocDto>;
+
+public class ThemBuoiHocValidator : AbstractValidator<ThemBuoiHocCommand>
+{
+    public ThemBuoiHocValidator()
+    {
+        RuleFor(x => x.LopHocId).NotEmpty();
+        RuleFor(x => x.GioKetThuc).GreaterThan(x => x.GioBatDau)
+            .WithErrorCode("GIO_KET_THUC_KHONG_HOP_LE");
+    }
+}
+
+public class ThemBuoiHocHandler(IAppDbContext db, IPhamViLopHoc phamVi, IMuiGioTrungTam muiGio)
+    : IRequestHandler<ThemBuoiHocCommand, BuoiHocDto>
+{
+    public async Task<BuoiHocDto> Handle(ThemBuoiHocCommand request, CancellationToken ct)
+    {
+        var lop = await LayBuoiHocCuaLopHandler
+            .BaoDamThayLop(db, phamVi, request.LopHocId, HanhDong.Sua, ct);
+
+        if (request.GiaoVienId is { } gv)
+            await BuoiHocChung.BaoDamGiaoVienHopLe(db, gv, ct);
+
+        var tz = await muiGio.LayMuiGio(ct);
+
+        DateTimeOffset batDau, ketThuc;
+        try
+        {
+            // Dùng lại hàm sinh lịch với đúng MỘT ngày: nó đã lo chuyện đổi giờ địa phương
+            // sang tuyệt đối và bắt giờ không tồn tại do DST. Viết tay lại là chép logic tinh
+            // tế sang chỗ thứ hai.
+            var mot = SinhLichBuoiHoc.Sinh(
+                request.Ngay, new HashSet<DayOfWeek> { request.Ngay.DayOfWeek },
+                request.GioBatDau, request.GioKetThuc,
+                new DieuKienDung(1, null), new HashSet<DateOnly>(), tz);
+
+            batDau = mot[0].BatDau;
+            ketThuc = mot[0].KetThuc;
+        }
+        catch (LichKhongHopLeException ex)
+        {
+            throw new AppException(ex.Ma);
+        }
+
+        // Chặn trùng giờ, giống `SinhThemBuoi`. Không có chốt này thì bấm nút hai lần là có
+        // hai buổi y hệt nhau — đã xảy ra khi kiểm tay.
+        var daCo = await db.BuoiHocs
+            .Where(b => b.LopHocId == lop.Id)
+            .Select(b => new { b.ThuTu, b.BatDau, b.KetThuc })
+            .ToListAsync(ct);
+
+        if (daCo.Any(c => c.BatDau < ketThuc && c.KetThuc > batDau))
+            throw new AppException("BUOI_HOC_TRUNG_GIO");
+
+        var soLonNhat = daCo.Count == 0 ? 0 : daCo.Max(b => b.ThuTu);
+
+        var buoi = new Domain.Entities.BuoiHoc
+        {
+            LopHocId = lop.Id,
+            ThuTu = soLonNhat + 1,
+            BatDau = batDau,
+            KetThuc = ketThuc,
+            GiaoVienId = request.GiaoVienId,
+            LaHocBu = request.LaHocBu,
+            PhongHoc = BuoiHocChung.Gon(request.PhongHoc),
+            LinkHoc = BuoiHocChung.Gon(request.LinkHoc),
+            GhiChu = BuoiHocChung.Gon(request.GhiChu)
+        };
+        db.BuoiHocs.Add(buoi);
+
+        // Buổi mới có thể nằm ngoài khoảng hiện tại của lớp (dạy bù sau ngày kết thúc).
+        if (lop.NgayKhaiGiang is null || batDau < lop.NgayKhaiGiang) lop.NgayKhaiGiang = batDau;
+        if (lop.NgayKetThuc is null || ketThuc > lop.NgayKetThuc) lop.NgayKetThuc = ketThuc;
+
+        await db.SaveChangesAsync(ct);
+
+        var ds = await new LayBuoiHocCuaLopHandler(db, phamVi)
+            .Handle(new LayBuoiHocCuaLopQuery(lop.Id), ct);
+
+        return ds.Single(x => x.Id == buoi.Id);
+    }
+}
+
+/// <summary>
+/// Sinh THÊM nhiều buổi theo tần suất, nối tiếp lịch đang có.
+///
+/// Khác `SinhLichChoLopCommand` ở đúng một điểm quan trọng: **không xoá buổi nào**. Dùng khi
+/// lớp kéo dài thêm, không phải khi nhập sai tần suất lúc đầu.
+/// </summary>
+public record SinhThemBuoiCommand(
+    Guid LopHocId,
+    DateOnly TuNgay,
+    List<DayOfWeek> ThuTrongTuan,
+    TimeOnly GioBatDau,
+    TimeOnly GioKetThuc,
+    int? SoBuoi,
+    DateOnly? DenNgay,
+    List<DateOnly>? NgayLoaiTru = null) : IRequest<List<BuoiHocDto>>;
+
+public class SinhThemBuoiValidator : AbstractValidator<SinhThemBuoiCommand>
+{
+    public SinhThemBuoiValidator()
+    {
+        RuleFor(x => x.LopHocId).NotEmpty();
+        RuleFor(x => x.ThuTrongTuan).NotEmpty().WithErrorCode("TAN_SUAT_TRONG");
+    }
+}
+
+public class SinhThemBuoiHandler(IAppDbContext db, IPhamViLopHoc phamVi, IMuiGioTrungTam muiGio)
+    : IRequestHandler<SinhThemBuoiCommand, List<BuoiHocDto>>
+{
+    public async Task<List<BuoiHocDto>> Handle(SinhThemBuoiCommand request, CancellationToken ct)
+    {
+        var lop = await LayBuoiHocCuaLopHandler
+            .BaoDamThayLop(db, phamVi, request.LopHocId, HanhDong.Sua, ct);
+
+        var tz = await muiGio.LayMuiGio(ct);
+
+        List<BuoiHocDuKien> duKien;
+        try
+        {
+            duKien = SinhLichBuoiHoc.Sinh(
+                request.TuNgay,
+                request.ThuTrongTuan.ToHashSet(),
+                request.GioBatDau,
+                request.GioKetThuc,
+                new DieuKienDung(request.SoBuoi, request.DenNgay),
+                (request.NgayLoaiTru ?? []).ToHashSet(),
+                tz);
+        }
+        catch (LichKhongHopLeException ex)
+        {
+            throw new AppException(ex.Ma);
+        }
+
+        var daCo = await db.BuoiHocs
+            .Where(b => b.LopHocId == lop.Id)
+            .Select(b => new { b.ThuTu, b.BatDau, b.KetThuc })
+            .ToListAsync(ct);
+
+        // Chặn trùng giờ với buổi đang có. Không im lặng bỏ qua: người dùng chọn sai ngày bắt
+        // đầu sẽ tưởng đã thêm 8 buổi trong khi chỉ thêm được 3.
+        var trung = duKien.Any(m => daCo.Any(c => c.BatDau < m.KetThuc && c.KetThuc > m.BatDau));
+        if (trung) throw new AppException("BUOI_HOC_TRUNG_GIO");
+
+        var soLonNhat = daCo.Count == 0 ? 0 : daCo.Max(b => b.ThuTu);
+
+        foreach (var b in duKien)
+        {
+            db.BuoiHocs.Add(new Domain.Entities.BuoiHoc
+            {
+                LopHocId = lop.Id,
+                ThuTu = soLonNhat + b.ThuTu,
+                BatDau = b.BatDau,
+                KetThuc = b.KetThuc
+            });
+        }
+
+        if (lop.NgayKhaiGiang is null || duKien[0].BatDau < lop.NgayKhaiGiang)
+            lop.NgayKhaiGiang = duKien[0].BatDau;
+        if (lop.NgayKetThuc is null || duKien[^1].KetThuc > lop.NgayKetThuc)
+            lop.NgayKetThuc = duKien[^1].KetThuc;
+
+        await db.SaveChangesAsync(ct);
+
+        return await new LayBuoiHocCuaLopHandler(db, phamVi)
+            .Handle(new LayBuoiHocCuaLopQuery(lop.Id), ct);
+    }
+}
+
+/// <summary>
+/// Xoá hẳn một buổi. Khác `HuyBuoiHocCommand` — huỷ giữ bản ghi để lịch sử còn nguyên, xoá là
+/// gỡ bỏ buổi lên nhầm.
+/// </summary>
+public record XoaBuoiHocCommand(Guid Id) : IRequest;
+
+public class XoaBuoiHocHandler(IAppDbContext db, IPhamViLopHoc phamVi)
+    : IRequestHandler<XoaBuoiHocCommand>
+{
+    public async Task Handle(XoaBuoiHocCommand request, CancellationToken ct)
+    {
+        var buoi = await LayBuoiHocCuaLopHandler
+            .TimBuoiTrongPhamVi(db, phamVi, request.Id, HanhDong.Sua, ct);
+
+        if (buoi.DaKhoa) throw new AppException("BUOI_HOC_DA_KHOA");
+
+        // Chưa chốt nhưng đã có người điểm danh — dữ liệu thật, không xoá lặng lẽ. `DIEM_DANH`
+        // là Restrict nên nếu lọt qua đây sẽ nổ ở tầng DB với thông báo khó hiểu.
+        if (await db.DiemDanhs.AnyAsync(d => d.BuoiHocId == buoi.Id, ct))
+            throw new AppException("BUOI_HOC_DA_CO_DIEM_DANH");
+
+        // KHÔNG đánh số lại các buổi sau: học viên và giáo viên đã quen "buổi 12", đổi số hàng
+        // loạt làm mọi ghi chú ngoài hệ thống sai theo. Khoảng trống trong dãy số chấp nhận được.
+        db.BuoiHocs.Remove(buoi);
+        await db.SaveChangesAsync(ct);
+    }
+}
+
+/// <summary>Tiện ích dùng chung giữa các handler buổi học.</summary>
+internal static class BuoiHocChung
+{
+    public static string? Gon(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+
+    /// <summary>Người dạy phải đang làm việc VÀ đúng vai trò giảng dạy.</summary>
+    public static async Task BaoDamGiaoVienHopLe(IAppDbContext db, Guid id, CancellationToken ct)
+    {
+        var hopLe = await db.NguoiDungs.AnyAsync(
+            u => u.Id == id
+                 && u.TrangThaiNhanSu == TrangThaiNhanSu.DangLamViec
+                 && (u.LoaiNguoiDung == LoaiNguoiDung.GiaoVien
+                     || u.LoaiNguoiDung == LoaiNguoiDung.TroGiang), ct);
+
+        if (!hopLe) throw new AppException("NHAN_SU_KHONG_HOP_LE");
     }
 }
 
@@ -304,15 +548,12 @@ public class CapNhatBuoiHocHandler(IAppDbContext db, IPhamViLopHoc phamVi)
         var buoi = await LayBuoiHocCuaLopHandler
             .TimBuoiTrongPhamVi(db, phamVi, request.Id, HanhDong.Sua, ct);
 
+        // Buổi đã chốt là bằng chứng chuyên cần: đổi giờ nó sẽ làm bản ghi điểm danh nói về
+        // một thời điểm không còn tồn tại.
+        if (buoi.DaKhoa) throw new AppException("BUOI_HOC_DA_KHOA");
+
         if (request.GiaoVienId is { } gv)
-        {
-            var hopLe = await db.NguoiDungs.AnyAsync(
-                u => u.Id == gv
-                     && u.TrangThaiNhanSu == TrangThaiNhanSu.DangLamViec
-                     && (u.LoaiNguoiDung == LoaiNguoiDung.GiaoVien
-                         || u.LoaiNguoiDung == LoaiNguoiDung.TroGiang), ct);
-            if (!hopLe) throw new AppException("NHAN_SU_KHONG_HOP_LE");
-        }
+            await BuoiHocChung.BaoDamGiaoVienHopLe(db, gv, ct);
 
         buoi.BatDau = request.BatDau;
         buoi.KetThuc = request.KetThuc;
@@ -340,6 +581,10 @@ public class HuyBuoiHocHandler(IAppDbContext db, IPhamViLopHoc phamVi)
     {
         var buoi = await LayBuoiHocCuaLopHandler
             .TimBuoiTrongPhamVi(db, phamVi, request.Id, HanhDong.Sua, ct);
+
+        // Buổi đã học xong và chốt thì không huỷ được — huỷ nó là nói rằng buổi ấy chưa từng
+        // diễn ra, trong khi điểm danh đã ghi.
+        if (buoi.DaKhoa) throw new AppException("BUOI_HOC_DA_KHOA");
 
         buoi.TrangThai = TrangThaiBuoiHoc.DaHuy;
         await db.SaveChangesAsync(ct);

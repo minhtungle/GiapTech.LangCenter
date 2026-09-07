@@ -8,6 +8,26 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — Bổ sung buổi học (07/09/2026)
+
+- **Thêm buổi lẻ** (`POST /lop-hoc/{id}/buoi-hoc`) — dạy bù, ôn tập. Có cờ "học bù".
+- **Sinh thêm buổi** (`POST /lop-hoc/{id}/sinh-them-buoi`) — nối tiếp lịch đang có, **không
+  xoá buổi nào**. Trước đây chỉ có `sinh-lich` vốn xoá sạch rồi sinh lại.
+- **Xoá buổi** (`DELETE /buoi-hoc/{id}`) — khác `huy` vốn giữ bản ghi. Chặn nếu đã có điểm danh.
+- Cả hai đường bổ sung đều chặn trùng giờ (`BUOI_HOC_TRUNG_GIO`), đánh số tiếp theo `MAX(ThuTu)`.
+- Giao diện: ba nút riêng với ba hộp xác nhận riêng; nút "Sinh lại" viền đỏ vì là nút duy nhất
+  xoá dữ liệu.
+
+### Fixed — Buổi đã chốt bị sửa và huỷ được
+
+- `CapNhatBuoiHoc` và `HuyBuoiHoc` **không kiểm trạng thái**, nên sửa được giờ và huỷ được cả
+  buổi ĐÃ CHỐT — làm bản ghi điểm danh nói về một thời điểm không còn tồn tại.
+- Thêm `BuoiHoc.DaKhoa` ở Domain (một chỗ duy nhất), bốn handler hỏi qua nó: sửa, huỷ, xoá,
+  sinh lịch. `sinh-lich` nay **giữ nguyên buổi đã chốt** thay vì xoá sạch hoặc từ chối.
+- `ThemBuoiHoc` ban đầu quên chặn trùng giờ (trong khi `SinhThemBuoi` có) — bấm nút hai lần ra
+  hai buổi y hệt. Phát hiện khi kiểm tay, đã vá.
+
+
 ### Added — Ẩn menu và nút theo quyền (07/09/2026, đóng nợ N2)
 
 - **`GET /toi/quyen`** trả toàn bộ quyền hiệu lực của phiên hiện tại. Không gác

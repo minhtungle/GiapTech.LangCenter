@@ -1,13 +1,17 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CalendarDays, CheckCircle2, ClipboardCheck, X } from 'lucide-react'
+import {
+  CalendarDays, CalendarPlus, CheckCircle2, ClipboardCheck, Plus, RotateCcw, Trash2, X,
+} from 'lucide-react'
 import { api, layMaLoi } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong,
 } from '@/components/ui'
 import { Modal } from '@/components/ui/Modal'
 import { KhungNoiDung } from '@/components/ui/KhungNoiDung'
+import { HopXacNhan } from '@/components/ui/HopXacNhan'
+import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 
 type TrangThaiDiemDanh = 'CoMat' | 'Vang' | 'DiMuon' | 'VangCoPhep'
@@ -66,6 +70,11 @@ export function LichVaDiemDanh({
   const qc = useQueryClient()
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [moSinhLich, setMoSinhLich] = useState(false)
+  const [moThemBuoi, setMoThemBuoi] = useState(false)
+  const [moSinhThem, setMoSinhThem] = useState(false)
+  const [xacNhanSinhLai, setXacNhanSinhLai] = useState(false)
+  const [huyCho, setHuyCho] = useState<BuoiHocDto | null>(null)
+  const [xoaCho, setXoaCho] = useState<BuoiHocDto | null>(null)
   const [buoiDiemDanh, setBuoiDiemDanh] = useState<BuoiHocDto | null>(null)
 
   const { data: buoiHocs = [], isLoading } = useQuery({
@@ -80,21 +89,69 @@ export function LichVaDiemDanh({
 
   const huyBuoi = useMutation({
     mutationFn: (id: string) => api.post(`/buoi-hoc/${id}/huy`),
-    onSuccess: lamMoi,
-    onError: (e) => setMaLoi(layMaLoi(e)),
+    onSuccess: () => {
+      lamMoi()
+      setHuyCho(null)
+    },
+    onError: (e) => {
+      setMaLoi(layMaLoi(e))
+      setHuyCho(null)
+    },
   })
+
+  const xoaBuoi = useMutation({
+    mutationFn: (id: string) => api.delete(`/buoi-hoc/${id}`),
+    onSuccess: () => {
+      lamMoi()
+      setXoaCho(null)
+    },
+    onError: (e) => {
+      setMaLoi(layMaLoi(e))
+      setXoaCho(null)
+    },
+  })
+
+  const soDaChot = buoiHocs.filter((b) => b.trangThai === 'DaHoanThanh').length
 
   return (
     <KhungNoiDung nhung={nhung} onDong={onDong} tieuDe={`${t('buoiHoc.lich')} — ${tenLop}`}>
       <div className="grid gap-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-muted-foreground">
             {buoiHocs.length > 0 && t('buoiHoc.daSinh', { soLuong: buoiHocs.length })}
+            {soDaChot > 0 && ` · ${t('buoiHoc.daChot', { soLuong: soDaChot })}`}
           </p>
-          <Button size="sm" variant="outline" onClick={() => setMoSinhLich(true)}>
-            <CalendarDays className="mr-1.5 h-4 w-4" />
-            {buoiHocs.length > 0 ? t('buoiHoc.sinhLaiLich') : t('buoiHoc.sinhLich')}
-          </Button>
+
+          {/* Ba nút, ba việc khác nhau — trước đây chỉ có một nút vừa sinh vừa xoá.
+              "Sinh lại" để cuối và viền đỏ vì nó là nút duy nhất xoá dữ liệu. */}
+          <div className="flex flex-wrap gap-2">
+            {buoiHocs.length === 0 ? (
+              <Button size="sm" onClick={() => setMoSinhLich(true)}>
+                <CalendarDays className="mr-1.5 h-4 w-4" />
+                {t('buoiHoc.sinhLich')}
+              </Button>
+            ) : (
+              <>
+                <Button size="sm" onClick={() => setMoThemBuoi(true)}>
+                  <Plus className="mr-1.5 h-4 w-4" />
+                  {t('buoiHoc.themBuoi')}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setMoSinhThem(true)}>
+                  <CalendarPlus className="mr-1.5 h-4 w-4" />
+                  {t('buoiHoc.sinhThemBuoi')}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-destructive/40 text-destructive hover:bg-destructive/10"
+                  onClick={() => setXacNhanSinhLai(true)}
+                >
+                  <RotateCcw className="mr-1.5 h-4 w-4" />
+                  {t('buoiHoc.sinhLaiLich')}
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
         {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
@@ -153,25 +210,34 @@ export function LichVaDiemDanh({
                       </Badge>
                     </Td>
                     <Td>
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          title={t('buoiHoc.diemDanh')}
-                          onClick={() => setBuoiDiemDanh(b)}
-                        >
-                          <ClipboardCheck className="h-4 w-4" />
-                        </Button>
-                        {b.trangThai !== 'DaHuy' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            title={t('buoiHoc.huyBuoi')}
-                            onClick={() => huyBuoi.mutate(b.id)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        )}
+                      <div className="flex justify-end">
+                        <MenuThaoTac
+                          nhanMo={t('chung.thaoTac')}
+                          muc={[
+                            {
+                              nhan: t('buoiHoc.diemDanh'),
+                              icon: ClipboardCheck,
+                              onChon: () => setBuoiDiemDanh(b),
+                            },
+                            {
+                              nhan: t('buoiHoc.huyBuoi'),
+                              icon: X,
+                              nguyHiem: true,
+                              ngatNhom: true,
+                              // Buổi đã chốt là bằng chứng chuyên cần; buổi đã huỷ thì huỷ nữa
+                              // cũng vô nghĩa. Backend chặn cả hai, đây chỉ là ẩn cho gọn.
+                              an: b.trangThai !== 'DaLenLich',
+                              onChon: () => setHuyCho(b),
+                            },
+                            {
+                              nhan: t('chung.xoa'),
+                              icon: Trash2,
+                              nguyHiem: true,
+                              an: b.trangThai === 'DaHoanThanh',
+                              onChon: () => setXoaCho(b),
+                            },
+                          ]}
+                        />
                       </div>
                     </Td>
                   </tr>
@@ -194,6 +260,73 @@ export function LichVaDiemDanh({
         />
       )}
 
+      {moSinhThem && (
+        <FormSinhLich
+          noiTiep
+          lopHocId={lopHocId}
+          daCoLich={buoiHocs.length > 0}
+          onXong={() => {
+            setMoSinhThem(false)
+            lamMoi()
+          }}
+          onDong={() => setMoSinhThem(false)}
+        />
+      )}
+
+      {moThemBuoi && (
+        <FormThemBuoi
+          lopHocId={lopHocId}
+          onXong={() => {
+            setMoThemBuoi(false)
+            lamMoi()
+          }}
+          onDong={() => setMoThemBuoi(false)}
+        />
+      )}
+
+      {/* Ba hộp xác nhận RIÊNG, mỗi cái nói đúng hậu quả của nó — hộp chung chung
+          "Bạn chắc chắn?" không giúp người dùng phân biệt xoá 1 buổi với xoá cả lịch. */}
+      <HopXacNhan
+        mo={xacNhanSinhLai}
+        tieuDe={t('buoiHoc.sinhLaiLich')}
+        thongDiep={t('buoiHoc.xacNhanSinhLai', {
+          soLuong: buoiHocs.length - soDaChot,
+          daChot: soDaChot,
+        })}
+        nhanDongY={t('buoiHoc.sinhLaiLich')}
+        onHuy={() => setXacNhanSinhLai(false)}
+        onDongY={() => {
+          setXacNhanSinhLai(false)
+          setMoSinhLich(true)
+        }}
+      />
+
+      <HopXacNhan
+        mo={huyCho !== null}
+        tieuDe={t('buoiHoc.huyBuoi')}
+        thongDiep={
+          huyCho
+            ? t('buoiHoc.xacNhanHuyBuoi', { thuTu: huyCho.thuTu, gio: gioVN(huyCho.batDau) })
+            : ''
+        }
+        nhanDongY={t('buoiHoc.huyBuoi')}
+        onHuy={() => setHuyCho(null)}
+        onDongY={() => huyCho && huyBuoi.mutate(huyCho.id)}
+      />
+
+      <HopXacNhan
+        mo={xoaCho !== null}
+        tieuDe={t('buoiHoc.xoaBuoi')}
+        thongDiep={
+          xoaCho
+            ? t('buoiHoc.xacNhanXoaBuoi', { thuTu: xoaCho.thuTu, gio: gioVN(xoaCho.batDau) })
+            : ''
+        }
+        nhanDongY={t('chung.xoa')}
+        onHuy={() => setXoaCho(null)}
+        onDongY={() => xoaCho && xoaBuoi.mutate(xoaCho.id)}
+      />
+
       {buoiDiemDanh && (
         <BangDiemDanh
           buoi={buoiDiemDanh}
@@ -206,14 +339,25 @@ export function LichVaDiemDanh({
 }
 
 /** Bước 2 wizard: khai tần suất, hệ thống sinh danh sách buổi. */
+/**
+ * Form sinh lịch — dùng cho CẢ hai việc:
+ * - `theTheLich` (mặc định): thay cả lịch, xoá buổi chưa học.
+ * - `noiTiep`: sinh thêm nối tiếp, **không xoá gì**.
+ *
+ * Cùng một form vì đầu vào giống hệt (tần suất, giờ, điều kiện dừng); chỉ khác endpoint và
+ * lời cảnh báo. Viết hai form gần giống nhau là mời gọi chúng lệch nhau về sau.
+ */
 function FormSinhLich({
   lopHocId,
   daCoLich,
+  noiTiep,
   onXong,
   onDong,
 }: {
   lopHocId: string
   daCoLich: boolean
+  /** true = gọi `sinh-them-buoi` thay vì `sinh-lich`. */
+  noiTiep?: boolean
   onXong: () => void
   onDong: () => void
 }) {
@@ -224,7 +368,10 @@ function FormSinhLich({
 
   const sinh = useMutation({
     mutationFn: (body: Record<string, unknown>) =>
-      api.post(`/lop-hoc/${lopHocId}/sinh-lich`, body),
+      api.post(
+        noiTiep ? `/lop-hoc/${lopHocId}/sinh-them-buoi` : `/lop-hoc/${lopHocId}/sinh-lich`,
+        body,
+      ),
     onSuccess: onXong,
     onError: (e) => setMaLoi(layMaLoi(e)),
   })
@@ -246,8 +393,11 @@ function FormSinhLich({
       .map((d) => d.trim())
       .filter(Boolean)
 
+    // Endpoint nối tiếp nhận `tuNgay`, endpoint thay lịch nhận `ngayKhaiGiang`.
+    const ngay = String(fd.get('ngayKhaiGiang'))
+
     sinh.mutate({
-      ngayKhaiGiang: String(fd.get('ngayKhaiGiang')),
+      ...(noiTiep ? { tuNgay: ngay } : { ngayKhaiGiang: ngay }),
       // Backend dùng DayOfWeek: CN=0, T2=1… trùng với mã đang lưu.
       thuTrongTuan: thuChon,
       gioBatDau: String(fd.get('gioBatDau')) + ':00',
@@ -259,16 +409,28 @@ function FormSinhLich({
   }
 
   return (
-    <Modal mo onDong={onDong} tieuDe={t('buoiHoc.sinhLich')}>
+    <Modal
+      mo
+      onDong={onDong}
+      tieuDe={noiTiep ? t('buoiHoc.sinhThemBuoi') : t('buoiHoc.sinhLich')}
+    >
       <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
-        {daCoLich && (
+        {daCoLich && !noiTiep && (
           <div className="sm:col-span-2">
-            <CanhBaoLoi>{t('loi.LICH_DA_CO_DIEM_DANH')}</CanhBaoLoi>
+            <CanhBaoLoi>{t('buoiHoc.canhBaoSinhLai')}</CanhBaoLoi>
           </div>
         )}
 
+        {noiTiep && (
+          <p className="text-sm text-muted-foreground sm:col-span-2">
+            {t('buoiHoc.goiYSinhThem')}
+          </p>
+        )}
+
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="ngayKhaiGiang">{t('lopHoc.ngayKhaiGiang')}</Label>
+          <Label htmlFor="ngayKhaiGiang">
+            {noiTiep ? t('buoiHoc.tuNgay') : t('lopHoc.ngayKhaiGiang')}
+          </Label>
           <Input id="ngayKhaiGiang" name="ngayKhaiGiang" type="date" required />
         </div>
 
@@ -520,6 +682,98 @@ function BangDiemDanh({
           </Button>
         </div>
       </div>
+    </Modal>
+  )
+}
+
+/** Thêm một buổi lẻ — dạy bù, ôn tập. Không đụng buổi nào đang có. */
+function FormThemBuoi({
+  lopHocId,
+  onXong,
+  onDong,
+}: {
+  lopHocId: string
+  onXong: () => void
+  onDong: () => void
+}) {
+  const { t } = useTranslation()
+  const [laHocBu, setLaHocBu] = useState(true)
+  const [maLoi, setMaLoi] = useState<string | null>(null)
+
+  const them = useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      api.post(`/lop-hoc/${lopHocId}/buoi-hoc`, body),
+    onSuccess: onXong,
+    onError: (e) => setMaLoi(layMaLoi(e)),
+  })
+
+  return (
+    <Modal mo onDong={onDong} tieuDe={t('buoiHoc.themBuoi')} rong="md">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          const fd = new FormData(e.currentTarget)
+          them.mutate({
+            ngay: String(fd.get('ngay')),
+            gioBatDau: String(fd.get('gioBatDau')) + ':00',
+            gioKetThuc: String(fd.get('gioKetThuc')) + ':00',
+            laHocBu,
+            phongHoc: (fd.get('phongHoc') as string) || null,
+            ghiChu: (fd.get('ghiChu') as string) || null,
+          })
+        }}
+        className="grid gap-4 sm:grid-cols-2"
+      >
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <Label htmlFor="ngay">{t('buoiHoc.ngayHoc')}</Label>
+          <Input id="ngay" name="ngay" type="date" required />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="gioBatDau">{t('buoiHoc.gioBatDau')}</Label>
+          <Input id="gioBatDau" name="gioBatDau" type="time" defaultValue="18:00" required />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="gioKetThuc">{t('buoiHoc.gioKetThuc')}</Label>
+          <Input id="gioKetThuc" name="gioKetThuc" type="time" defaultValue="20:00" required />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="phongHoc">{t('lopHoc.phongHoc')}</Label>
+          <Input id="phongHoc" name="phongHoc" placeholder={t('buoiHoc.macDinhTheoLop')} />
+        </div>
+
+        <label className="flex items-center gap-2 self-end pb-2 text-sm">
+          <input
+            type="checkbox"
+            checked={laHocBu}
+            onChange={(e) => setLaHocBu(e.target.checked)}
+            className="h-4 w-4 rounded border-input"
+          />
+          {t('buoiHoc.laHocBu')}
+        </label>
+
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <Label htmlFor="ghiChu">{t('lopHoc.ghiChu')}</Label>
+          <Input id="ghiChu" name="ghiChu" />
+        </div>
+
+        {maLoi && (
+          <div className="sm:col-span-2">
+            <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2 sm:col-span-2">
+          <Button type="button" variant="outline" onClick={onDong}>
+            {t('chung.huy')}
+          </Button>
+          <Button type="submit" disabled={them.isPending}>
+            {t('chung.them')}
+          </Button>
+        </div>
+      </form>
     </Modal>
   )
 }

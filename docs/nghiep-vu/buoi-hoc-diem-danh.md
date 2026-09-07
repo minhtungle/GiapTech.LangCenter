@@ -36,8 +36,59 @@ thầm nếu trung tâm đổi múi giờ — chỉ buổi sát ranh giới ngà
 `TimeZoneInfo.FindSystemTimeZoneById` ném — và **chỉ ném trên production**, máy dev luôn chạy.
 `IMuiGioTrungTam` bọc lại với fallback về UTC + log Error để không sập cả module.
 
-### Quy tắc
 
+### Buổi ĐÃ KHOÁ — không sửa, không huỷ, không xoá
+
+Chốt buổi (`TrangThai = DaHoanThanh`) là **khoá** nó. Từ lúc đó điểm danh trở thành bằng chứng
+chuyên cần, nên:
+
+| Thao tác | Buổi chưa chốt | Buổi đã chốt |
+|---|---|---|
+| Sửa giờ / giáo viên / phòng | ✅ | ❌ `BUOI_HOC_DA_KHOA` |
+| Huỷ buổi | ✅ | ❌ |
+| Xoá hẳn | ✅ nếu chưa có điểm danh | ❌ |
+| Bị lịch sinh mới ghi đè | ✅ | ❌ giữ nguyên |
+
+Đổi giờ một buổi đã chốt sẽ làm bản ghi điểm danh nói về một thời điểm không còn tồn tại. Huỷ
+nó là nói rằng buổi ấy chưa từng diễn ra, trong khi cả lớp đã được ghi có mặt hay vắng.
+
+Buổi `DaHuy` **không** khoá: huỷ rồi thì lên lịch lại là chuyện bình thường.
+
+Một chỗ duy nhất quyết định điều này — `BuoiHoc.DaKhoa` ở Domain. Mọi handler hỏi qua đó thay
+vì tự so `TrangThai`, để thêm trạng thái khoá mới sau này không phải sửa sáu nơi.
+
+### Ba cách đưa buổi vào lịch
+
+| Cách | Endpoint | Xoá buổi cũ? | Dùng khi |
+|---|---|---|---|
+| **Sinh lịch** | `POST /lop-hoc/{id}/sinh-lich` | **Có** — buổi chưa học | Nhập sai tần suất lúc đầu, muốn làm lại |
+| **Sinh thêm buổi** | `POST /lop-hoc/{id}/sinh-them-buoi` | Không | Lớp kéo dài thêm một tháng |
+| **Thêm buổi lẻ** | `POST /lop-hoc/{id}/buoi-hoc` | Không | Dạy bù, ôn tập trước thi |
+
+Trước 07/09/2026 chỉ có cách thứ nhất, nên không có đường bổ sung buổi mà không mất lịch cũ.
+
+**Sinh lịch giữ nguyên buổi đã chốt** và đánh số buổi mới TIẾP theo `MAX(ThuTu)` — không bắt
+đầu lại từ 1, vì `UNIQUE(LopHocId, ThuTu)` sẽ nổ và vì hai buổi cùng số thứ tự thì học viên
+không biết đâu là buổi nào.
+
+Cả hai cách bổ sung đều **chặn trùng giờ** với buổi đang có (`BUOI_HOC_TRUNG_GIO`). Không im
+lặng bỏ qua buổi trùng: người dùng chọn nhầm ngày sẽ tưởng đã thêm 8 buổi trong khi chỉ thêm
+được 3.
+
+**Xoá buổi không đánh số lại các buổi sau.** Học viên và giáo viên đã quen "buổi 12"; đổi số
+hàng loạt làm mọi ghi chú ngoài hệ thống sai theo. Khoảng trống trong dãy số chấp nhận được.
+
+### Huỷ khác xoá
+
+| | Giữ bản ghi | Dùng khi |
+|---|---|---|
+| **Huỷ** (`POST /buoi-hoc/{id}/huy`) | Có, `TrangThai = DaHuy` | Buổi đã lên lịch nhưng không diễn ra — nghỉ lễ, giáo viên ốm |
+| **Xoá** (`DELETE /buoi-hoc/{id}`) | Không | Lên nhầm buổi, chưa ai điểm danh |
+
+Xoá bị chặn nếu buổi đã có điểm danh (`BUOI_HOC_DA_CO_DIEM_DANH`) — chặn sớm với mã lỗi rõ
+ràng thay vì để khoá ngoại `Restrict` nổ ở tầng DB.
+
+### Quy tắc
 - `UNIQUE(lop_hoc_id, thu_tu)` ở tầng DB. Xoá/thêm buổi thì **đánh số lại liên tục** 1..n.
 - Buổi có thể **override giáo viên** (`giao_vien_id` null = dùng giáo viên chính của lớp),
   phòng học, link. Kiểm trùng lịch chạy trên **giáo viên hiệu lực**, không phải giáo viên lớp.
