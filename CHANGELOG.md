@@ -8,6 +8,39 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Security — `/dang-ky-trung-tam` thiếu giới hạn tần suất (08/09/2026)
+
+- Endpoint ẩn danh **GHI** dữ liệu (tạo tenant + tài khoản admin) mà **không có
+  `[EnableRateLimiting]`** — một script sinh tenant rác không giới hạn. `AuthController` đã có
+  hạn mức từ 21/08, endpoint đăng ký bị bỏ sót.
+- Nguyên nhân gốc là **tài liệu sai**: nợ N3 ghi "đang chặn bằng `IsDevelopment()`", và danh
+  sách miễn trừ trong `GioiHanTanSuatTests` chép lại đúng tiền đề đó ("chỉ bật ở Development").
+  Nhưng controller nói rõ **MỞ Ở MỌI MÔI TRƯỜNG**. Test canh endpoint ẩn danh thiếu rate limit
+  đã có sẵn — nó xanh vì endpoint này nằm trong danh sách miễn trừ dựa trên tiền đề sai.
+- Nay có `[EnableRateLimiting(XacThuc)]` (10 req/phút mỗi IP) và **đã gỡ khỏi miễn trừ**, nên
+  test sẽ đỏ nếu ai bỏ nó đi. Rate limit ở reverse proxy vẫn bắt buộc — nợ N3 viết lại cho đúng.
+
+### Docs — Dọn di sản dự án bóng đá và đồng bộ số liệu (08/09/2026)
+
+- **Sửa mô tả sai gây hiểu nhầm khi triển khai**: `/dang-ky-clb` → `/dang-ky-trung-tam`, "tạo
+  CLB đầu tiên" → "tạo trung tâm đầu tiên", bỏ tham chiếu FR-18 (lời mời thách đấu — không tồn
+  tại trong LMS).
+- **Sửa tên sai trong tài liệu frontend**: claim JWT `ten_doi` → `ten_trung_tam`, hàm
+  `capNhatTenDoi()` → `capNhatTenTrungTam()` (tên thật trong `auth.tsx`).
+- **Ghi rõ nghĩa hiện tại của `--status-win/lose/draw`**: xong·đạt·đủ / hỏng·quá hạn / đang chờ
+  — kèm cảnh báo tên token là di sản bóng đá (nợ N8), đọc theo bảng chứ không theo kết quả trận.
+- **Cập nhật nguyên tắc xác nhận thao tác** theo quyết định 07/09: hỏi trước **mọi** thao tác
+  ghi (trước đó tài liệu ghi "không hỏi khi không mất gì"), kèm quy tắc một xác nhận cho một
+  đơn vị công việc — bài học từ bảng chấm điểm 20 hộp thoại.
+- **Đồng bộ số liệu**: 16 → **20 chức năng**, 7 → **25/26 bảng** có `tenant_id`, 8 → **13 nợ**,
+  cập nhật cuối 05/09 → 08/09.
+- **Bổ sung ba hệ thống con** vào `TONG-QUAN-KIEN-TRUC.md`, `docs/nghiep-vu/README.md`,
+  `tong-thuat.md`, `ke-hoach.md` (giai đoạn 5b) — trước đó chỉ có trong `phan-quyen-dong.md`.
+- **Thêm 5 thuật ngữ dễ nhầm** vào `THUAT-NGU.md`: hệ thống con, chức năng dùng chung, Nhân sự
+  vs Học viên, `trang_thai_nhan_su` vs `TAI_KHOAN.trang_thai`, `UserId` vs `TaiKhoanId`.
+- **Không sửa ADR** (quy tắc #7): ADR-0001/0004/0005 ghi quyết định trong bối cảnh dự án bóng đá
+  — đó là bản ghi lịch sử, sửa đè là làm sai lệch hồ sơ.
+
 ### Changed — Tách màn hồ sơ con người: Nhân sự (HRM) và Học viên (LMS) (08/09/2026)
 
 - Màn "Người dùng" cũ quản cả 4 vai trò, nay tách đôi theo hệ thống:

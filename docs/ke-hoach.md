@@ -1,13 +1,14 @@
 # Kế hoạch & tiến độ
 
-> Cập nhật cuối: **2026-09-05**. Nhật ký chi tiết theo ngày: [nhat-ky/](./nhat-ky/README.md).
+> Cập nhật cuối: **2026-09-08**. Nhật ký chi tiết theo ngày: [nhat-ky/](./nhat-ky/README.md).
 
 ## Tiến độ tổng
 
 ```
 Nghiệp vụ  ██████████████░░  14/15 FR chạy đầu-cuối (còn FR-15 Thống kê)
+Ba hệ thống ████████░░░░░░░░  HRM · CRM · LMS: phân quyền + điều hướng xong, nghiệp vụ HRM/CRM chưa
 Hạ tầng    ████████████░░░░  CI/CD sẵn sàng, chờ VPS thật
-Còn lại    ████████░░░░░░░░  Dashboard + 8 nợ kỹ thuật
+Còn lại    ██████░░░░░░░░░░  Dashboard + nghiệp vụ HRM/CRM + 13 nợ kỹ thuật
 ```
 
 ## Trạng thái mã FR
@@ -16,14 +17,14 @@ Còn lại    ████████░░░░░░░░  Dashboard + 8 n�
 |---|---|:---:|:---:|---|
 | FR-01 | Đăng nhập | ✅ | ✅ | Bộ ba {mã trung tâm, username, mật khẩu}; refresh token xoay vòng |
 | FR-02 | Quên mật khẩu | ✅ | ✅ | Chưa cấu hình SMTP thật — email ghi log |
-| FR-03 | Tài khoản người dùng | ✅ | ✅ | CRUD đủ, kể cả vô hiệu hoá. Có `HoTen`, `NgaySinh`, ảnh đại diện |
-| FR-04 | Hồ sơ người dùng | ✅ | ✅ | Gộp vào màn tài khoản |
-| FR-05 | Phân quyền truy cập | ✅ | ✅ | Ma trận 16 chức năng × thao tác, 4 nhóm dựng sẵn |
+| FR-03 | Người dùng (hồ sơ con người) | ✅ | ✅ | Tách khỏi tài khoản (07/09). Ba bảng hồ sơ theo vai trò. Từ 08/09 chia hai màn: **Nhân sự** (HRM) và **Học viên** (LMS) |
+| FR-04 | Tài khoản đăng nhập | ✅ | ✅ | Màn riêng ở cụm Quản trị dùng chung; gán được cho cả bốn vai trò |
+| FR-05 | Phân quyền truy cập | ✅ | ✅ | Ma trận **20 chức năng** × 4 thao tác, 4 nhóm dựng sẵn. Từ 08/09 có **tab theo hệ thống** HRM/CRM/LMS |
 | FR-06 | Thiết lập chung | ✅ | ✅ | Gồm múi giờ và ngưỡng cảnh báo nợ học phí |
 | FR-07 | Lớp học | ✅ | ✅ | Vòng đời nháp → sắp khai giảng → đang học → kết thúc; tên nháp không chiếm chỗ |
 | FR-08 | Học viên trong lớp | ✅ | ✅ | Học phí riêng từng người (snapshot lúc ghi danh) |
-| FR-09 | Buổi học & sinh lịch | ✅ | ✅ | Sinh theo thứ trong tuần, tối đa 500 buổi / 10 năm |
-| FR-10 | Điểm danh | ✅ | ✅ | Hai nguồn: học viên tự khai + giáo viên chốt |
+| FR-09 | Buổi học & sinh lịch | ✅ | ✅ | Sinh theo thứ trong tuần, tối đa 500 buổi / 10 năm. Có **lịch dạng calendar** (FullCalendar) và **view chi tiết buổi 5 tab** |
+| FR-10 | Điểm danh | ✅ | ✅ | Hai nguồn: học viên tự khai + giáo viên chốt. Kèm **nhận xét hai chiều**: GV nhận xét từng học viên, học viên nhận xét buổi học |
 | FR-11 | Bài tập | ✅ | ✅ | Đính kèm nhiều tệp |
 | FR-12 | Bài nộp | ✅ | ✅ | Nộp nhiều lần, giữ lịch sử; chấm điểm qua endpoint riêng |
 | FR-13 | Tài liệu | ✅ | ✅ | Gán lớp, hoặc để trống = chung toàn trung tâm |
@@ -67,6 +68,26 @@ Không migration. 3 dashboard. Báo cáo điểm danh **luôn dùng `trang_thai_
 nợ dùng `TENANT.so_ngay_canh_bao_no_hoc_phi`. Nếu chậm: tối ưu index trước, materialized view
 sau — không denormalize sớm.
 
+### Giai đoạn 5b — Ba hệ thống con HRM · CRM · LMS · 🟡 khung xong, nghiệp vụ chưa
+
+Chia chức năng phân quyền thành ba hệ thống + nhóm dùng chung (08/09). **Không tách service** —
+một API, một DB, một lần đăng nhập; mỗi hệ thống hiện chỉ 1–2 module và dữ liệu dùng chung
+(`NGUOI_DUNG`, `TENANT`, nhóm quyền) sẽ phải đồng bộ giữa ba DB nếu tách.
+
+Đã chạy: bộ chuyển hệ thống, sidebar lọc theo hệ thống, tab phân quyền, hồ sơ con người tách
+đôi (Nhân sự → HRM · Học viên → LMS).
+
+**Chưa có nghiệp vụ** cho 3 module mới — cần chốt trước khi làm:
+
+| Module | Cần chốt |
+|---|---|
+| Nhân viên kinh doanh (HRM) | Theo dõi gì: chỉ tiêu, hoa hồng, khách hàng phụ trách? |
+| Giáo viên — góc nhìn nhân sự (HRM) | Thêm trường gì so với `HO_SO_GIAO_VIEN`: hợp đồng, lương, chấm công? |
+| Doanh thu (CRM) | Tính từ đâu: tổng `KHOAN_THU_HOC_PHI`, hay có nguồn thu khác? |
+
+Đã chốt: giáo viên ở HRM và ở LMS là **cùng một con người** (`NGUOI_DUNG` + `HO_SO_GIAO_VIEN`),
+khác quyền và khác màn hình. Không tạo bảng nhân sự thứ hai.
+
 ### Giai đoạn 6 — Triển khai
 
 VPS → domain + HTTPS → backup. Xem
@@ -79,7 +100,7 @@ VPS → domain + HTTPS → backup. Xem
 | # | Việc | Mức |
 |---|---|---|
 | N1 | **Bài kiểm tra**: schema xong, chưa có API và UI | Cao |
-| N3 | `/dang-ky-trung-tam` chưa an toàn production (đang chặn bằng `IsDevelopment()`) | Cao |
+| N3 | `/dang-ky-trung-tam` **mở ở mọi môi trường** — ai cũng tự tạo trung tâm. Đã có hạn mức 10 req/phút mỗi IP ở tầng ứng dụng (08/09), nhưng **rate limit ở reverse proxy vẫn bắt buộc** trước khi mở ra Internet; chưa có captcha / xác thực email | Cao |
 | N4 | Kiểm trùng lịch giáo viên có API nhưng **chưa nối vào UI** | Trung bình |
 | N5 | Job dọn tệp mồ côi trong MinIO (Cascade xoá hàng DB nhưng không xoá object) | Trung bình |
 | N6 | Danh mục ngày nghỉ hệ thống (sinh lịch hiện không né ngày lễ) | Trung bình |

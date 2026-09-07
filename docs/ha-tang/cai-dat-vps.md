@@ -174,14 +174,16 @@ Nếu image GHCR ở chế độ private, đăng nhập trên VPS một lần:
 echo "<github-personal-access-token>" | docker login ghcr.io -u <username> --password-stdin
 ```
 
-### Tạo CLB đầu tiên
+### Tạo trung tâm đầu tiên
 
-**Cập nhật 20/08** (nợ N4 đã đóng): `/dang-ky-clb` mở ở **cả Production** — luồng lời mời qua
-link (FR-18) cần nó, vì đội được mời phải tự tạo được CLB. Chỉ cần vào `https://<domain>/dang-ky`
-và điền tên đội.
+`POST /api/v1/dang-ky-trung-tam` là endpoint **ẩn danh, mở ở mọi môi trường** — vào
+`https://<domain>/dang-ky` và điền tên trung tâm. Hệ thống sinh mã trung tâm 7 ký tự kèm tài
+khoản `admin` / `123456`, **bắt buộc đổi mật khẩu ở lần đăng nhập đầu**.
 
-Không thành đường sinh CLB rác hàng loạt vì có rate limit (nợ N3, xong 21/08): 10 request/phút
-mỗi IP cho endpoint xác thực và đăng ký.
+⚠️ **Trước khi mở ra Internet**: endpoint này có hạn mức 10 request/phút mỗi IP ở tầng ứng dụng
+(thêm 08/09/2026), nhưng đó chỉ là lớp trong. Rate limit ở **reverse proxy vẫn bắt buộc** —
+thiếu nó thì một script sinh tenant rác không giới hạn. Chưa có captcha hay xác thực email.
+Xem nợ **N3** trong [`ke-hoach.md`](../ke-hoach.md).
 
 ### Quay lại bản trước khi deploy lỗi
 

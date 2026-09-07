@@ -126,3 +126,54 @@ thêm trường gì so với `HO_SO_GIAO_VIEN` đang có (hợp đồng, lương
 
 Đã chốt: giáo viên ở HRM và ở LMS là **cùng một con người** — vẫn `NGUOI_DUNG` +
 `HO_SO_GIAO_VIEN`, chỉ khác quyền và khác màn hình. Không tạo bảng nhân sự thứ hai.
+
+---
+
+## Soát lại tài liệu: tìm ra một lỗ hổng bảo mật
+
+Yêu cầu "cập nhật tài liệu". Tôi soát các file **lâu nhất chưa sửa** thay vì đọc lại những file
+vừa viết — drift nằm ở chỗ không ai chạm tới.
+
+Việc đáng kể nhất không phải là dọn chữ: **`/dang-ky-trung-tam` là endpoint ẩn danh GHI dữ liệu
+mà không có `[EnableRateLimiting]`**. `AuthController` đã gắn hạn mức từ 21/08; endpoint đăng ký
+bị bỏ sót.
+
+Đáng ghi lại là **cách nó trốn được**:
+
+1. Nợ N3 ghi *"đang chặn bằng `IsDevelopment()`"* — nhưng controller nói rõ **MỞ Ở MỌI MÔI
+   TRƯỜNG**, và `IsDevelopment()` trong `Program.cs` chỉ dùng cho Swagger.
+2. Dự án **đã có** test quét mọi endpoint `[AllowAnonymous]` thiếu rate limit — test tốt, đúng
+   loại tôi vẫn khen. Nó xanh vì `DangKy` nằm trong danh sách miễn trừ, **kèm lý do chép lại
+   đúng tiền đề sai của N3**: "chỉ bật ở Development, đã có chặn riêng".
+
+Tức là: tài liệu sai → người viết test tin tài liệu → miễn trừ có lý do nghe hợp lý → lỗ hổng
+được canh giữ bởi chính cái test lẽ ra phải bắt nó. Danh sách miễn trừ là chỗ nguy hiểm nhất
+trong một test kiểu quét-toàn-bộ, và **lý do miễn trừ cần được kiểm chứng như code**.
+
+Đã gắn hạn mức, gỡ khỏi miễn trừ, viết lại N3 theo sự thật, và thử bỏ lại thuộc tính để chắc
+test đỏ đúng chỗ.
+
+## Di sản bóng đá còn sót ở 10 file
+
+Phần lớn vô hại (từ ngữ), nhưng ba loại thật sự gây hại:
+
+| Loại | Ví dụ | Hại gì |
+|---|---|---|
+| Endpoint/luồng không tồn tại | `/dang-ky-clb`, "luồng lời mời qua link (FR-18) cần nó" | Người triển khai gọi endpoint 404, hoặc tin vào một tính năng không có |
+| Tên định danh sai | claim `ten_doi`, hàm `capNhatTenDoi()` | Đọc tài liệu rồi grep không ra gì |
+| Nguyên tắc đã bị thay | "Không hỏi khi không mất gì" | Trái quyết định 07/09 (hỏi mọi thao tác ghi) — người mới làm theo tài liệu sẽ làm ngược |
+
+**Không sửa ADR** (quy tắc #7): ADR-0001/0004/0005 ghi quyết định trong bối cảnh "quản lý CLB
+bóng đá, quy mô 1 CLB" — đó là **bản ghi lịch sử**, sửa đè thành "trung tâm ngoại ngữ" là làm
+sai lệch hồ sơ quyết định. Cùng lý do giữ nhật ký 16–21/08.
+
+`--status-win/lose/draw` cũng không đổi tên (nợ N8 — là code, không phải tài liệu), nhưng nay
+tài liệu **ghi rõ nghĩa hiện tại** kèm cảnh báo tên là di sản: xong·đạt·đủ / hỏng·quá hạn /
+đang chờ.
+
+## Số liệu lệch
+
+16 → 20 chức năng · 7 → 25/26 bảng có `tenant_id` · 8 → 13 nợ · cập nhật cuối 05/09 → 08/09.
+Mỗi con số đều **đếm lại từ code hoặc DB thật**, không chép từ trí nhớ. Ba hệ thống con trước đó
+chỉ có trong `phan-quyen-dong.md` — nay có ở tổng quan kiến trúc, README nghiệp vụ, tổng thuật
+và kế hoạch.

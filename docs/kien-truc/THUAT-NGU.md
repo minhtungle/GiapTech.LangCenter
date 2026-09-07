@@ -11,5 +11,10 @@
 | Học phí áp dụng | `LOP_HOC_HOC_VIEN.hoc_phi_ap_dung` — snapshot lúc ghi danh | **Không** phải `LOP_HOC.hoc_phi`. Sửa học phí lớp không đổi hồi tố công nợ người đã đóng |
 | Công nợ | Tính động `hoc_phi_ap_dung − SUM(so_tien)` | **Không có cột nào lưu nó.** Đừng thêm — xem [FR-14](../nghiep-vu/hoc-phi.md) |
 | Bài tập vs Bài kiểm tra | Bài tập gắn **buổi học**, nộp nhiều lần; Bài kiểm tra gắn **lớp**, làm một lần | Hai bảng riêng và hai chức năng quyền riêng, vì ma trận quyền phân biệt chúng |
+| Hệ thống con (HRM · CRM · LMS) | Cách **nhóm chức năng phân quyền** để lọc sidebar — `ChucNang.HeThongCua()` | **Không phải ba ứng dụng**: một API, một database, một lần đăng nhập. Không lưu trong DB — là thuộc tính của mã nguồn |
+| Chức năng dùng chung | `TaiKhoan`, `PhanQuyen`, `ThietLapChung`, `Anh`, `DoiMatKhauNguoiKhac`, `NhatKyHeThong` | **Không thuộc hệ thống nào** và **không mở lối vào** hệ thống nào — người chỉ có chúng thì `/toi/he-thong` trả về rỗng |
+| Nhân sự vs Học viên | Hai màn hồ sơ con người: nhân viên/giáo viên/trợ giảng ở **HRM**, học viên ở **LMS** | Vẫn **một bảng `NGUOI_DUNG`** — khác góc nhìn và khác quyền, không phải hai thực thể. Học viên là *khách*, không phải nhân sự |
+| `trang_thai_nhan_su` vs `TAI_KHOAN.trang_thai` | Còn làm việc không (chặn phân công lớp mới) **vs** còn đăng nhập được không | Hai cột khác nhau hoàn toàn. Vô hiệu hoá tài khoản **không** đụng dữ liệu người dùng |
+| `ICurrentUser.UserId` vs `.TaiKhoanId` | Khoá ngoại nghiệp vụ dùng `UserId` (con người); tra quyền dùng `TaiKhoanId` | Lẫn hai thứ này **trả rỗng một cách im lặng**, không có lỗi biên dịch. Đã gây 3 lỗi thật (07/09) |
 | FR-xx | Mã chức năng (Functional Requirement) | Dùng tham chiếu chéo giữa tài liệu, commit, test, code review |
 | v1/v2 (API) | Phiên bản hợp đồng API theo URL segment | Không nhầm với version ứng dụng (semver trong `CHANGELOG.md`) |

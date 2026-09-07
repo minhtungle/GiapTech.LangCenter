@@ -18,8 +18,8 @@
   [FR-07](../nghiep-vu/lop-hoc.md). **Cho phép lưu nháp giữa chừng** — người dùng không bị
   mất dữ liệu khi rời tab, và lớp nháp không chiếm tên.
 - **Tạo tài khoản** = wizard tuần tự đúng quy trình
-  [FR-03](../nghiep-vu/quan-tri-he-thong.md#quy-trình-chuẩn-tạo-tài-khoản-wizard-tuần-tự): hồ sơ cầu thủ
-  → nhóm quyền → tài khoản.
+  [FR-03](../nghiep-vu/quan-tri-he-thong.md#quy-trình-chuẩn-tạo-tài-khoản-wizard-tuần-tự): hồ sơ
+  con người → nhóm quyền → tài khoản.
 - **Empty-state** luôn có nút hành động + hướng dẫn ngắn, không để màn hình trắng.
 - **Bảng nhập nhiều dòng → một nút Lưu cho cả bảng**, không lưu theo từng ô.
   - Lưu theo ô (`onBlur`) cộng với việc hỏi xác nhận trước mọi thao tác ghi sẽ thành hỏi mỗi
@@ -83,33 +83,38 @@
 - **Toast** nhất quán vị trí/thời gian. **Không dùng `alert()`** hay modal chặn luồng cho thông báo
   thông thường.
 
-## 3. Danh tính CLB trên giao diện
+## 3. Danh tính trung tâm trên giao diện
 
-Sau khi đăng nhập, mọi chỗ hiển thị CLB dùng **tên đội** làm dòng chính, **mã đội** làm dòng phụ
-nhỏ bên dưới. Người dùng nhận ra CLB của mình qua tên; mã 7 ký tự chỉ cần khi đăng nhập hoặc đọc
-cho người khác.
+Sau khi đăng nhập, mọi chỗ hiển thị trung tâm dùng **tên trung tâm** làm dòng chính, **mã trung
+tâm** làm dòng phụ nhỏ bên dưới. Người dùng nhận ra trung tâm của mình qua tên; mã 7 ký tự chỉ
+cần khi đăng nhập hoặc đọc cho người khác.
 
-Tên đội nằm trong claim `ten_doi` của JWT để sidebar hiển thị được ngay khi tải trang. Đổi tên ở
-FR-06 phải gọi `capNhatTenDoi()` — token đang cầm vẫn mang tên cũ tới lần làm mới kế tiếp.
+Tên trung tâm nằm trong claim `ten_trung_tam` của JWT để sidebar hiển thị được ngay khi tải
+trang. Đổi tên ở FR-06 phải gọi `capNhatTenTrungTam()` — token đang cầm vẫn mang tên cũ tới lần
+làm mới kế tiếp.
 
 ## 4. Thiết bị mục tiêu
 
 | Nhóm thao tác | Ưu tiên | Lý do |
 |---|---|---|
-| Vẽ sơ đồ chiến thuật (FR-10 tab b), ma trận phân quyền (FR-05) | **Desktop** | Thao tác kéo-thả, bảng nhiều chiều |
-| Xem lịch, vote MVP, xem tiến độ quỹ (Player) | **Responsive tốt** | Sẽ tái dùng cho mobile app qua cùng API |
+| Ma trận phân quyền (FR-05), bảng điểm danh, bảng chấm điểm | **Desktop** | Bảng nhiều chiều, nhập liệu hàng loạt |
+| Xem lịch học, điểm danh, nộp bài, tra công nợ (giáo viên · học viên) | **Responsive tốt** | Nhóm dùng nhiều nhất, và sẽ tái dùng cho mobile app qua cùng API |
 
 ## 5. Quy ước màu trạng thái
 
 Dùng **thống nhất** ở mọi module, không đổi nghĩa theo ngữ cảnh:
 
-| Màu | Ý nghĩa |
-|---|---|
-| 🟢 Xanh | Thắng · Đã đóng đủ quỹ |
-| 🔴 Đỏ | Thua · Quá hạn đóng quỹ |
-| 🟡 Vàng | Hòa · Đang chờ |
+| Màu | Token | Ý nghĩa trong LMS |
+|---|---|---|
+| 🟢 Xanh | `win` | **Xong · đạt · đủ**: lớp đang học, buổi đã chốt, bài đã chấm, học phí đã đủ, thao tác thành công |
+| 🔴 Đỏ | `lose` | **Hỏng · quá hạn · bị từ chối**: lớp đã huỷ, nộp muộn, học phí quá hạn, vắng khác lời khai |
+| 🟡 Vàng | `draw` | **Đang chờ · cần chú ý**: lớp nháp, còn nợ học phí, buộc đổi mật khẩu, giáo viên riêng |
 
-Áp dụng cả ở Calendar (FR-08), Datatable (FR-08), biểu đồ (FR-13) và danh sách quỹ (FR-15).
+⚠️ Tên token còn là `win`/`lose`/`draw` — **di sản từ dự án bóng đá**, nghĩa hiện tại là ba cột
+bên trên chứ không phải kết quả trận đấu. Đổi tên là nợ **N8** trong
+[`ke-hoach.md`](../ke-hoach.md); tới lúc đó đọc tên token phải hiểu theo bảng này.
+
+Áp dụng thống nhất ở lịch học (FullCalendar), mọi bảng danh sách, và nhật ký hệ thống.
 
 ## 6. Đa ngôn ngữ
 
@@ -119,22 +124,25 @@ xem [cqrs-mediatr.md](../backend/cqrs-mediatr.md#trả-lỗi). Không hard-code 
 ## Ô nhập văn bản dài
 
 Mọi trường **có thể dài** dùng `<Textarea>`, không dùng `<Input>`: nhận xét, ghi chú, mô tả,
-ghi chú chiến thuật. `<input>` một dòng cắt nội dung khỏi tầm nhìn ngay khi vượt bề rộng ô —
+nhận xét buổi học. `<input>` một dòng cắt nội dung khỏi tầm nhìn ngay khi vượt bề rộng ô —
 người dùng gõ một đoạn nhận xét rồi không đọc lại được đoạn đầu, phải rê con trỏ mới thấy.
 
-Trường ngắn (tên, số áo, URL, ngày) vẫn dùng `Input`.
+Trường ngắn (tên, phòng học, URL, ngày) vẫn dùng `Input`.
 
-## Xác nhận thao tác phá huỷ
+## Xác nhận thao tác ghi
 
-Thao tác **ghi đè hoặc xoá hàng loạt không hoàn tác được** phải hỏi qua `<HopXacNhan>`:
-xoá hết sơ đồ, áp sơ đồ dựng sẵn đè lên đội hình đang có, chép hiệp, áp mẫu đội hình.
+**Cập nhật 07/09/2026 — chủ sản phẩm chọn hỏi xác nhận trước MỌI thao tác thêm/sửa/xoá, kể cả
+bấm Lưu trong form.** Trước đó chỉ hỏi khi thao tác phá huỷ. Dùng `useXacNhan()` (xem
+`frontend/src/lib/xacNhan.tsx`), không dùng `confirm()` của trình duyệt.
 
 Ba quy tắc:
 
-1. **Nói rõ mất gì, kèm số lượng** — "Sẽ bỏ 7 cầu thủ Đối thủ khỏi sân ở Hiệp 2", không phải
-   "Bạn có chắc không?".
-2. **Không hỏi khi không mất gì** — áp sơ đồ vào sân trống thì chạy thẳng. Hỏi mọi thứ sẽ
-   khiến người dùng bấm Đồng ý theo phản xạ và hộp thoại mất hết tác dụng.
+1. **Nói rõ mất gì, kèm số lượng** — "Xoá 12 buổi chưa học và sinh lịch mới? 3 buổi đã chốt vẫn
+   được giữ", không phải "Bạn có chắc không?".
+2. **Một xác nhận cho một ĐƠN VỊ CÔNG VIỆC, không phải cho mỗi ô.** Bảng nhập nhiều dòng gom
+   thành một nút Lưu rồi hỏi một lần — hỏi từng ô thì chấm điểm lớp 20 học viên là 20 hộp thoại,
+   người dùng bấm Đồng ý theo phản xạ và hộp thoại mất hết tác dụng. Đã xảy ra thật với bảng
+   chấm điểm (07/09/2026).
 3. **Focus mặc định vào nút Huỷ** — gõ Enter theo quán tính phải rơi vào hành động an toàn.
 
 Không dùng `confirm()` của trình duyệt: nó không nói được cụ thể mất gì và không dịch được

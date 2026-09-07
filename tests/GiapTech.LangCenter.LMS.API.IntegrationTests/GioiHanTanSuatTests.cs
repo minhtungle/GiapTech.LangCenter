@@ -83,7 +83,11 @@ public class GioiHanTanSuatTests(GioiHanTanSuatTests.ApiFactoryCoGioiHan factory
             // Cờ tính năng: dữ liệu tĩnh, không tham số, không truy vấn DB.
             "TinhNang",
             // Chỉ bật ở Development, đã có chặn riêng.
-            "Seed", "DonTenantTest", "DangKy",
+            "Seed", "DonTenantTest",
+            // `DangKy` (/dang-ky-trung-tam) ĐÃ BỊ GỠ khỏi danh sách này 08/09/2026: lý do miễn
+            // trừ cũ ghi "chỉ bật ở Development" nhưng controller nói rõ **MỞ Ở MỌI MÔI
+            // TRƯỜNG** — miễn trừ dựa trên tiền đề sai, và nợ N3 chép lại đúng tiền đề đó.
+            // Nay endpoint có [EnableRateLimiting(XacThuc)] như các endpoint ẩn danh khác.
             // Làm mới token: có cơ chế phát hiện tái sử dụng riêng, chặt hơn rate limit.
             "LamMoiToken",
         };

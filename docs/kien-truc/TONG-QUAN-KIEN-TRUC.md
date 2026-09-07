@@ -39,10 +39,11 @@ Luật phụ thuộc giữa các lớp: [../backend/clean-architecture.md](../ba
 | Phân quyền động theo chức năng/thao tác | ✅ Đã chốt | Custom `IAuthorizationHandler` đọc `QUYEN_CHUC_NANG` |
 | Đa ngôn ngữ | ✅ Đã chốt | Backend `.resx` theo culture; Frontend `react-i18next` |
 | Tên namespace/solution | ✅ Đã chốt | `GiapTech.LangCenter.LMS.*` |
+| **Ba hệ thống con HRM · CRM · LMS** | ✅ Đã chốt (08/09/2026) | **Nhóm chức năng phân quyền, KHÔNG tách service** — một API, một DB, một lần đăng nhập. [phan-quyen-dong.md](../backend/phan-quyen-dong.md#ba-hệ-thống-con-hrm--crm--lms) |
 | Giá trị design token (màu cụ thể) | 🕓 Chưa chốt | Chốt cùng lúc dựng style-guide — [design-tokens.md](../frontend/design-tokens.md) |
-| `tenant_id` ở bảng con | ✅ Đã chốt | Denormalize xuống cả 7 bảng con — [ERD](../database/erd.md#denormalize-tenant_id-xuống-bảng-con) |
+| `tenant_id` ở bảng con | ✅ Đã chốt | Denormalize xuống **25/26 bảng** (mọi bảng trừ `TENANT`) — [ERD](../database/erd.md#denormalize-tenant_id-xuống-bảng-con) |
 | Mobile app | 🕓 Chưa triển khai | Dùng lại API hiện có, ưu tiên React Native khi cần |
-| Real-time (SignalR) | 🕓 Chưa triển khai | Cân nhắc khi cần cập nhật vote MVP trực tiếp |
+| Real-time (SignalR) | 🕓 Chưa triển khai | Cân nhắc khi cần cập nhật điểm danh trực tiếp cho nhiều người xem cùng lúc |
 
 ## Sơ đồ triển khai
 

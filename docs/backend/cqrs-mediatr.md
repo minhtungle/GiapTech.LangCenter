@@ -53,7 +53,7 @@ Chạy theo thứ tự cho mọi request:
 FluentValidation, một `AbstractValidator<T>` cho mỗi Command/Query có input cần kiểm tra.
 
 Validator **chỉ kiểm tra dữ liệu đầu vào** (bắt buộc, độ dài, khoảng giá trị). Quy tắc nghiệp vụ cần
-truy cập DB (ví dụ "cầu thủ này đã vote trận này chưa") kiểm tra trong **handler**, và vẫn phải có ràng
+truy cập DB (ví dụ "học viên này đã ghi danh lớp này chưa") kiểm tra trong **handler**, và vẫn phải có ràng
 buộc tương ứng ở **tầng DB** — xem [ràng buộc ERD](../database/erd.md#ràng-buộc-nghiệp-vụ-quan-trọng).
 
 ## Trả lỗi

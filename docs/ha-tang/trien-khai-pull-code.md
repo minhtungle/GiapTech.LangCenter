@@ -104,7 +104,7 @@ thấy schema mới, và có thể chạy migration ngược.
 
 ## Mang dữ liệu mẫu từ local lên VPS
 
-Chủ sản phẩm chọn mang 7 CLB mẫu lên để test trên VPS trước.
+Chủ sản phẩm chọn mang 7 trung tâm mẫu lên để test trên VPS trước.
 
 ```bash
 # --- Trên MÁY LOCAL ---
@@ -133,10 +133,10 @@ Ba điều cần biết:
 
 - **Tên DB và user phải khớp** giữa local và VPS, nếu không `pg_dump` restore vào sai chỗ. So
   `POSTGRES_DB` / `POSTGRES_USER` trong hai file `.env` trước khi làm.
-- **Mật khẩu đi theo dữ liệu**: 7 CLB mẫu đều dùng `matkhau123`. Đổi ngay sau khi test xong, hoặc
+- **Mật khẩu đi theo dữ liệu**: 7 trung tâm mẫu đều dùng `matkhau123`. Đổi ngay sau khi test xong, hoặc
   xoá hẳn chúng.
 - **Dữ liệu mẫu có tên giả** (`FC Cẩm Lệ`, `Hải Châu FC`…). Lẫn với dữ liệu thật sau này rất khó
-  tách — nên xoá trước khi đưa CLB thật vào:
+  tách — nên xoá trước khi đưa trung tâm thật vào:
 
 ```sql
 -- Trên VPS, sau khi test xong. XEM danh sách trước khi xoá.
@@ -144,13 +144,15 @@ SELECT ma_doi, ten_doi FROM "TENANT" ORDER BY ten_doi;
 -- Rồi xoá từng cái bằng mã đội, KHÔNG xoá theo pattern tên.
 ```
 
-## Tạo CLB đầu tiên trên VPS
+## Tạo trung tâm đầu tiên trên VPS
 
-Từ 20/08 (nợ N4 đã đóng), `/dang-ky-clb` **mở ở cả Production** — vì luồng lời mời qua link
-(FR-18) cần nó. Nên chỉ cần vào `https://<domain>/dang-ky` và điền tên đội.
+`POST /api/v1/dang-ky-trung-tam` là endpoint **ẩn danh, mở ở mọi môi trường** — vào
+`https://<domain>/dang-ky` và điền tên trung tâm. Hệ thống sinh mã 7 ký tự kèm tài khoản
+`admin` / `123456`, bắt buộc đổi mật khẩu ở lần đăng nhập đầu.
 
-Kèm theo đó: **rate limit** (nợ N3, xong 21/08) giới hạn 10 request/phút mỗi IP cho endpoint xác
-thực, nên việc mở tự do không thành đường sinh CLB rác hàng loạt.
+⚠️ Endpoint có hạn mức 10 request/phút mỗi IP ở tầng ứng dụng (thêm 08/09/2026), nhưng đó chỉ là
+lớp trong — **rate limit ở reverse proxy vẫn bắt buộc** trước khi mở ra Internet. Xem nợ **N3**
+trong [`ke-hoach.md`](../ke-hoach.md).
 
 ## Checklist lần deploy đầu
 
@@ -161,12 +163,12 @@ thực, nên việc mở tự do không thành đường sinh CLB rác hàng lo�
 - [ ] `git pull && ./scripts/trien-khai.sh` chạy hết, ba dòng kiểm cuối đều `200`.
 - [ ] `docker compose logs caddy | grep -i certificate` cho thấy đã cấp chứng chỉ.
 - [ ] Mở `https://<domain>` trên máy khác (không phải VPS) — thấy trang đăng nhập, ổ khoá xanh.
-- [ ] Tạo một CLB thử, đăng nhập, đổi mật khẩu lần đầu.
+- [ ] Tạo một trung tâm thử, đăng nhập, đổi mật khẩu lần đầu.
 - [ ] `crontab -l` có dòng `pg_dump` hằng ngày (xem [cai-dat-vps.md mục 8](./cai-dat-vps.md)).
 
 ## Còn thiếu gì
 
-- **Không có staging.** Deploy là lên thẳng production. Với CLB phong trào thì chấp nhận được, và
+- **Không có staging.** Deploy là lên thẳng production. Ở quy mô hiện tại thì chấp nhận được, và
   bước `pg_dump` tự động ở đầu script là lưới an toàn.
 - **Downtime ~10–20 giây** mỗi lần deploy (API khởi động lại). Không có rolling update vì một
   container API duy nhất.

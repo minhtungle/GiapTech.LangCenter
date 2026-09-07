@@ -7,6 +7,30 @@ Nguồn gốc: đặc tả kỹ thuật LMS Vietgenedu. Repo trước đây là 
 vụ cũ đã gỡ khỏi cả code lẫn tài liệu, chỉ còn dấu vết trong [nhật ký](../nhat-ky/README.md) và
 git history.
 
+## Ba hệ thống con (08/09/2026)
+
+Chức năng phân quyền được **nhóm** thành ba hệ thống, người dùng chọn hệ thống đang làm việc và
+sidebar chỉ hiện phần của nó. Đây là cách nhóm để lọc giao diện — **không phải ba ứng dụng**:
+một API, một database, một lần đăng nhập.
+
+| Hệ thống | Module | Trạng thái |
+|---|---|---|
+| **HRM** | Hồ sơ nhân sự (nhân viên · giáo viên · trợ giảng) | ✅ Chạy |
+| | Nhân viên kinh doanh · Giáo viên (góc nhìn nhân sự) | ⬜ Khung trống |
+| **CRM** | Doanh thu | ⬜ Khung trống |
+| **LMS** | FR-07 → FR-14 + Học viên | ✅ Chạy |
+| **Dùng chung** | FR-03 → FR-06, FR-16 (tài khoản, phân quyền, thiết lập, nhật ký) | ✅ Chạy |
+
+Hai điều dễ nhầm:
+
+- **Hồ sơ con người tách theo hệ thống**: nhân viên/giáo viên/trợ giảng ở **HRM**, học viên ở
+  **LMS**. Học viên là *khách*, không phải nhân sự — người phụ trách tuyển sinh không nên thấy
+  hợp đồng, lương của giáo viên. Vẫn **một bảng `NGUOI_DUNG`**, khác góc nhìn và khác quyền.
+- **Tài khoản đăng nhập** ở nhóm dùng chung, không thuộc HRM: đó là quyền *đăng nhập* (việc của
+  quản trị), và nó gán cho cả bốn vai trò.
+
+→ Chi tiết: [phan-quyen-dong.md](../backend/phan-quyen-dong.md#ba-hệ-thống-con-hrm--crm--lms)
+
 ## Actor
 
 | Actor | Mô tả | Đặc quyền riêng |
@@ -14,7 +38,7 @@ git history.
 | **Admin** | 1 tài khoản mặc định mỗi trung tâm (`admin`) | Toàn quyền; **duy nhất** được đổi mật khẩu cho tài khoản khác; bắt buộc đổi mật khẩu ở lần đăng nhập đầu; là người duy nhất thấy toàn bộ lớp và toàn bộ sổ học phí |
 | **Giáo viên** | Dạy một hoặc nhiều lớp | Chỉ thao tác trên **lớp mình phụ trách**. Không thấy học phí |
 | **Trợ giảng** | Hỗ trợ lớp được phân công | Như giáo viên nhưng hẹp hơn ở bài kiểm tra và xoá buổi học |
-| **Học viên** | Tài khoản gắn với các lớp đã ghi danh | Xem lịch, tự điểm danh, nộp bài, tra **công nợ của chính mình** |
+| **Học viên** | Tài khoản gắn với các lớp đã ghi danh | Xem lịch, tự điểm danh, nộp bài, nhận xét buổi học, tra **công nợ của chính mình**. **Không** đọc được danh sách học viên khác |
 
 > Vai trò là **nhóm quyền có sẵn**, không phải enum cứng trong code. Phân quyền đọc động từ
 > `QUYEN_CHUC_NANG` (quy tắc #9); `LoaiNguoiDung` chỉ dùng để lọc danh sách, **không bao giờ**

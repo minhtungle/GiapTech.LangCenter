@@ -7,7 +7,7 @@
 > |---|---|---|
 > | `--primary` | `152 45% 28%` — xanh lá đậm | Gợi sân cỏ, đủ tương phản với chữ trắng |
 > | `--accent` | `28 85% 52%` — cam ấm | Nhấn thứ cấp, dùng tiết chế |
-> | `--status-win` | `152 55% 34%` | Thắng · đã đóng đủ quỹ |
+> | `--status-win` | `152 55% 34%` | Xong · đạt · đủ |
 > | `--status-lose` | `0 72% 45%` | Thua · quá hạn |
 > | `--status-draw` | `38 92% 45%` | Hòa · đang chờ |
 >
@@ -38,9 +38,12 @@ shadcn-admin.
 
 | Token | Ý nghĩa | Ghi chú |
 |---|---|---|
-| `--status-win` | Thắng · Đã đóng đủ quỹ | Xanh |
-| `--status-lose` | Thua · Quá hạn đóng quỹ | Đỏ — dùng chung `--destructive` của shadcn |
-| `--status-draw` | Hòa · Đang chờ | Vàng |
+| `--status-win` | Xong · đạt · đủ (lớp đang học, buổi đã chốt, học phí đã đủ) | Xanh |
+| `--status-lose` | Hỏng · quá hạn (lớp đã huỷ, nộp muộn, học phí quá hạn) | Đỏ — dùng chung `--destructive` của shadcn |
+| `--status-draw` | Đang chờ · cần chú ý (lớp nháp, còn nợ, buộc đổi mật khẩu) | Vàng |
+
+Tên `win`/`lose`/`draw` là **di sản từ dự án bóng đá** — đọc theo nghĩa ở cột giữa, không phải
+kết quả trận đấu. Đổi tên là nợ **N8**.
 
 Ba token này là **quy ước xuyên suốt** — xem
 [ui-ux-nguyen-tac.md](./ui-ux-nguyen-tac.md#5-quy-ước-màu-trạng-thái).
@@ -48,8 +51,8 @@ Ba token này là **quy ước xuyên suốt** — xem
 ## Quy tắc sử dụng
 
 1. **Không dùng màu hex trực tiếp** trong component. Luôn qua token / class Tailwind ánh xạ token.
-2. Màu trạng thái **không** dùng cho mục đích trang trí — người dùng đọc màu để hiểu kết quả trận đấu và
-   tình trạng quỹ.
+2. Màu trạng thái **không** dùng cho mục đích trang trí — người dùng đọc màu để hiểu trạng thái
+   lớp học, buổi học, bài nộp và công nợ học phí.
 3. Không chỉ dùng màu để truyền tải thông tin — kèm nhãn chữ hoặc icon (người dùng mù màu, in đen trắng).
 
 ## Typography & khoảng cách

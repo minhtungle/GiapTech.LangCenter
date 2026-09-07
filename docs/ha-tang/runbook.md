@@ -119,7 +119,7 @@ khi site chạy HTTPS); có chạm rate limit Let's Encrypt do restart Caddy qu�
    [những chỗ Global Query Filter không bảo vệ](../backend/multi-tenant.md#những-chỗ-global-query-filter-không-bảo-vệ).
 3. Vá lỗi + **bổ sung integration test cách ly tenant** cho endpoint đó (thiếu test là lý do lỗi lọt
    lưới ngay từ đầu).
-4. Đánh giá phạm vi ảnh hưởng và thông báo cho các CLB liên quan.
+4. Đánh giá phạm vi ảnh hưởng và thông báo cho các trung tâm liên quan.
 
 ## Liên hệ & báo cáo bảo mật
 

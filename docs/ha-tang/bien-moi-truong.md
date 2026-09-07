@@ -25,7 +25,7 @@ nhân để quản trị: dùng SSH tunnel.
 | `MINIO_BUCKET` | Bucket chứa ảnh, mặc định `langcenter-lms-anh` — tạo tự động lần tải đầu |
 
 Console MinIO (cổng 9001) không public — truy cập qua SSH tunnel khi cần quản trị. Client upload file
-(ảnh đại diện cầu thủ, logo, ảnh bìa) qua **presigned URL**, không đi qua backend.
+(ảnh đại diện người dùng, logo, ảnh bìa, mã QR) qua **presigned URL**, không đi qua backend.
 
 ## JWT
 
@@ -35,7 +35,7 @@ Console MinIO (cổng 9001) không public — truy cập qua SSH tunnel khi cầ
 | `JWT_ISSUER` | Định danh bên phát hành. Mặc định `langcenter-lms-api` |
 | `JWT_EXPIRY_MINUTES` | Thời hạn access token (phút). Giữ ngắn, dùng refresh token để gia hạn |
 
-## SMTP (email — quên mật khẩu, nhắc đóng quỹ)
+## SMTP (email — quên mật khẩu, nhắc học phí)
 
 | Biến | Mô tả |
 |---|---|
@@ -55,7 +55,7 @@ phí qua email ([FR-14](../nghiep-vu/hoc-phi.md#chưa-làm)) chưa nối.
 | `SMS_API_KEY` | API key |
 | `SMS_SECRET_KEY` | Secret key |
 
-Dùng cho nhắc nhở đóng quỹ (FR-16).
+Dùng cho nhắc nợ học phí và thông báo lịch học — **chưa nối** (nợ N10).
 
 ## Sentry (error tracking, tùy chọn)
 
