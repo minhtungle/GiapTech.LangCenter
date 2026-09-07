@@ -8,6 +8,16 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — Gộp "Thêm buổi" và "Sinh thêm buổi" thành một (07/09/2026)
+
+- Hai lệnh làm cùng một việc ở hai mức số lượng, và hai nút cạnh nhau với tên gần giống nhau
+  gây nhầm. Nay chỉ còn `POST /lop-hoc/{id}/sinh-them-buoi`; **thêm một buổi = để `SoBuoi = 1`**.
+- Form mặc định **1 buổi** khi thêm (ca hay dùng nhất), vẫn 24 buổi khi sinh lịch mới.
+- Các trường của buổi lẻ chuyển sang lệnh còn lại: `LaHocBu`, `GiaoVienId`, `PhongHoc`,
+  `LinkHoc`, `GhiChu`. Bỏ chúng sẽ mất hẳn khả năng ghi buổi dạy bù.
+- `POST /lop-hoc/{id}/buoi-hoc` **đã gỡ** (nay trả 405).
+
+
 ### Changed — Bảng chấm điểm lưu một lần cho cả bảng (07/09/2026)
 
 - Nhập điểm và nhận xét cho mọi bài nộp rồi bấm **Lưu điểm** một lần, thay vì gọi API ở

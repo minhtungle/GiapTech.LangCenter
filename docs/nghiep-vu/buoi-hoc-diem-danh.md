@@ -57,15 +57,23 @@ Buổi `DaHuy` **không** khoá: huỷ rồi thì lên lịch lại là chuyện
 Một chỗ duy nhất quyết định điều này — `BuoiHoc.DaKhoa` ở Domain. Mọi handler hỏi qua đó thay
 vì tự so `TrangThai`, để thêm trạng thái khoá mới sau này không phải sửa sáu nơi.
 
-### Ba cách đưa buổi vào lịch
+### Hai cách đưa buổi vào lịch
 
 | Cách | Endpoint | Xoá buổi cũ? | Dùng khi |
 |---|---|---|---|
 | **Sinh lịch** | `POST /lop-hoc/{id}/sinh-lich` | **Có** — buổi chưa học | Nhập sai tần suất lúc đầu, muốn làm lại |
-| **Sinh thêm buổi** | `POST /lop-hoc/{id}/sinh-them-buoi` | Không | Lớp kéo dài thêm một tháng |
-| **Thêm buổi lẻ** | `POST /lop-hoc/{id}/buoi-hoc` | Không | Dạy bù, ôn tập trước thi |
+| **Thêm buổi** | `POST /lop-hoc/{id}/sinh-them-buoi` | Không | Lớp kéo dài thêm, hoặc dạy bù một buổi |
 
 Trước 07/09/2026 chỉ có cách thứ nhất, nên không có đường bổ sung buổi mà không mất lịch cũ.
+
+**Thêm một buổi = để `SoBuoi = 1`** và tích đúng thứ của ngày đó. Từng có lệnh
+`ThemBuoiHocCommand` riêng cho buổi lẻ, nhưng hai lệnh làm cùng một việc ở hai mức số lượng và
+hai nút cạnh nhau với tên gần giống nhau ("Thêm buổi" / "Sinh thêm buổi") gây nhầm — đã gộp.
+
+Khi gộp, các trường của buổi lẻ chuyển sang lệnh còn lại: `LaHocBu`, `GiaoVienId`, `PhongHoc`,
+`LinkHoc`, `GhiChu`. Bỏ chúng đi sẽ **mất hẳn khả năng ghi buổi dạy bù** và biến cột
+`la_hoc_bu` thành cột chết. Các trường này chỉ hiện ở giao diện khi thêm buổi, không hiện khi
+sinh lịch chính khoá — cả một lịch không thể là "học bù".
 
 **Sinh lịch giữ nguyên buổi đã chốt** và đánh số buổi mới TIẾP theo `MAX(ThuTu)` — không bắt
 đầu lại từ 1, vì `UNIQUE(LopHocId, ThuTu)` sẽ nổ và vì hai buổi cùng số thứ tự thì học viên

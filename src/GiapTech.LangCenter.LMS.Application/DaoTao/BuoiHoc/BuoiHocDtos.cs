@@ -235,108 +235,15 @@ public class SinhLichChoLopHandler(IAppDbContext db, IPhamViLopHoc phamVi, IMuiG
 }
 
 /// <summary>
-/// Thêm MỘT buổi lẻ vào lớp — dạy bù, ôn tập trước thi, buổi phát sinh.
-///
-/// Khác `SinhLichChoLopCommand`: lệnh kia thay cả lịch, lệnh này chỉ nối thêm và **không đụng
-/// buổi nào đang có**.
-/// </summary>
-public record ThemBuoiHocCommand(
-    Guid LopHocId,
-    DateOnly Ngay,
-    TimeOnly GioBatDau,
-    TimeOnly GioKetThuc,
-    bool LaHocBu = false,
-    Guid? GiaoVienId = null,
-    string? PhongHoc = null,
-    string? LinkHoc = null,
-    string? GhiChu = null) : IRequest<BuoiHocDto>;
-
-public class ThemBuoiHocValidator : AbstractValidator<ThemBuoiHocCommand>
-{
-    public ThemBuoiHocValidator()
-    {
-        RuleFor(x => x.LopHocId).NotEmpty();
-        RuleFor(x => x.GioKetThuc).GreaterThan(x => x.GioBatDau)
-            .WithErrorCode("GIO_KET_THUC_KHONG_HOP_LE");
-    }
-}
-
-public class ThemBuoiHocHandler(IAppDbContext db, IPhamViLopHoc phamVi, IMuiGioTrungTam muiGio)
-    : IRequestHandler<ThemBuoiHocCommand, BuoiHocDto>
-{
-    public async Task<BuoiHocDto> Handle(ThemBuoiHocCommand request, CancellationToken ct)
-    {
-        var lop = await LayBuoiHocCuaLopHandler
-            .BaoDamThayLop(db, phamVi, request.LopHocId, HanhDong.Sua, ct);
-
-        if (request.GiaoVienId is { } gv)
-            await BuoiHocChung.BaoDamGiaoVienHopLe(db, gv, ct);
-
-        var tz = await muiGio.LayMuiGio(ct);
-
-        DateTimeOffset batDau, ketThuc;
-        try
-        {
-            // Dùng lại hàm sinh lịch với đúng MỘT ngày: nó đã lo chuyện đổi giờ địa phương
-            // sang tuyệt đối và bắt giờ không tồn tại do DST. Viết tay lại là chép logic tinh
-            // tế sang chỗ thứ hai.
-            var mot = SinhLichBuoiHoc.Sinh(
-                request.Ngay, new HashSet<DayOfWeek> { request.Ngay.DayOfWeek },
-                request.GioBatDau, request.GioKetThuc,
-                new DieuKienDung(1, null), new HashSet<DateOnly>(), tz);
-
-            batDau = mot[0].BatDau;
-            ketThuc = mot[0].KetThuc;
-        }
-        catch (LichKhongHopLeException ex)
-        {
-            throw new AppException(ex.Ma);
-        }
-
-        // Chặn trùng giờ, giống `SinhThemBuoi`. Không có chốt này thì bấm nút hai lần là có
-        // hai buổi y hệt nhau — đã xảy ra khi kiểm tay.
-        var daCo = await db.BuoiHocs
-            .Where(b => b.LopHocId == lop.Id)
-            .Select(b => new { b.ThuTu, b.BatDau, b.KetThuc })
-            .ToListAsync(ct);
-
-        if (daCo.Any(c => c.BatDau < ketThuc && c.KetThuc > batDau))
-            throw new AppException("BUOI_HOC_TRUNG_GIO");
-
-        var soLonNhat = daCo.Count == 0 ? 0 : daCo.Max(b => b.ThuTu);
-
-        var buoi = new Domain.Entities.BuoiHoc
-        {
-            LopHocId = lop.Id,
-            ThuTu = soLonNhat + 1,
-            BatDau = batDau,
-            KetThuc = ketThuc,
-            GiaoVienId = request.GiaoVienId,
-            LaHocBu = request.LaHocBu,
-            PhongHoc = BuoiHocChung.Gon(request.PhongHoc),
-            LinkHoc = BuoiHocChung.Gon(request.LinkHoc),
-            GhiChu = BuoiHocChung.Gon(request.GhiChu)
-        };
-        db.BuoiHocs.Add(buoi);
-
-        // Buổi mới có thể nằm ngoài khoảng hiện tại của lớp (dạy bù sau ngày kết thúc).
-        if (lop.NgayKhaiGiang is null || batDau < lop.NgayKhaiGiang) lop.NgayKhaiGiang = batDau;
-        if (lop.NgayKetThuc is null || ketThuc > lop.NgayKetThuc) lop.NgayKetThuc = ketThuc;
-
-        await db.SaveChangesAsync(ct);
-
-        var ds = await new LayBuoiHocCuaLopHandler(db, phamVi)
-            .Handle(new LayBuoiHocCuaLopQuery(lop.Id), ct);
-
-        return ds.Single(x => x.Id == buoi.Id);
-    }
-}
-
-/// <summary>
-/// Sinh THÊM nhiều buổi theo tần suất, nối tiếp lịch đang có.
+/// Sinh THÊM buổi vào lịch đang có — từ một buổi lẻ tới cả đợt theo tần suất.
 ///
 /// Khác `SinhLichChoLopCommand` ở đúng một điểm quan trọng: **không xoá buổi nào**. Dùng khi
-/// lớp kéo dài thêm, không phải khi nhập sai tần suất lúc đầu.
+/// lớp kéo dài thêm hoặc cần dạy bù, không phải khi nhập sai tần suất lúc đầu.
+///
+/// Từng có lệnh `ThemBuoiHocCommand` riêng cho buổi lẻ; gộp vào đây (07/09/2026) vì hai lệnh
+/// làm cùng một việc ở hai mức số lượng, và hai nút cạnh nhau với tên gần giống nhau gây nhầm.
+/// Thêm một buổi = để `SoBuoi = 1` và tích đúng thứ của ngày đó. Các trường của buổi lẻ
+/// (`LaHocBu`, `PhongHoc`, `GhiChu`…) chuyển sang lệnh này để không mất khả năng ghi buổi bù.
 /// </summary>
 public record SinhThemBuoiCommand(
     Guid LopHocId,
@@ -346,7 +253,18 @@ public record SinhThemBuoiCommand(
     TimeOnly GioKetThuc,
     int? SoBuoi,
     DateOnly? DenNgay,
-    List<DateOnly>? NgayLoaiTru = null) : IRequest<List<BuoiHocDto>>;
+    List<DateOnly>? NgayLoaiTru = null,
+    /// <summary>
+    /// Đánh dấu buổi dạy bù. Gộp vào đây khi bỏ lệnh `ThemBuoiHoc` riêng (07/09/2026) — không
+    /// có nó thì mất hẳn khả năng ghi buổi bù, và cột `la_hoc_bu` thành cột chết.
+    /// </summary>
+    bool LaHocBu = false,
+    /// <summary>Giáo viên riêng cho các buổi này. null = dùng giáo viên của lớp.</summary>
+    Guid? GiaoVienId = null,
+    /// <summary>Phòng/link riêng. null = dùng của lớp.</summary>
+    string? PhongHoc = null,
+    string? LinkHoc = null,
+    string? GhiChu = null) : IRequest<List<BuoiHocDto>>;
 
 public class SinhThemBuoiValidator : AbstractValidator<SinhThemBuoiCommand>
 {
@@ -364,6 +282,9 @@ public class SinhThemBuoiHandler(IAppDbContext db, IPhamViLopHoc phamVi, IMuiGio
     {
         var lop = await LayBuoiHocCuaLopHandler
             .BaoDamThayLop(db, phamVi, request.LopHocId, HanhDong.Sua, ct);
+
+        if (request.GiaoVienId is { } gv)
+            await BuoiHocChung.BaoDamGiaoVienHopLe(db, gv, ct);
 
         var tz = await muiGio.LayMuiGio(ct);
 
@@ -403,7 +324,14 @@ public class SinhThemBuoiHandler(IAppDbContext db, IPhamViLopHoc phamVi, IMuiGio
                 LopHocId = lop.Id,
                 ThuTu = soLonNhat + b.ThuTu,
                 BatDau = b.BatDau,
-                KetThuc = b.KetThuc
+                KetThuc = b.KetThuc,
+                // Áp cho MỌI buổi vừa sinh: người dùng chọn "học bù" là nói về cả đợt bù, chứ
+                // không phải riêng buổi đầu.
+                LaHocBu = request.LaHocBu,
+                GiaoVienId = request.GiaoVienId,
+                PhongHoc = BuoiHocChung.Gon(request.PhongHoc),
+                LinkHoc = BuoiHocChung.Gon(request.LinkHoc),
+                GhiChu = BuoiHocChung.Gon(request.GhiChu)
             });
         }
 

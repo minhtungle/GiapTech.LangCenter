@@ -80,18 +80,26 @@ public class BoSungBuoiHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
     private static async Task<List<JsonElement>> LayBuoi(HttpClient c, Guid lop)
         => (await c.GetFromJsonAsync<List<JsonElement>>($"/api/v1/lop-hoc/{lop}/buoi-hoc"))!;
 
-    // ---------- Thêm buổi lẻ ----------
+    // ---------- Thêm buổi (SoBuoi = 1) ----------
 
+    /// <summary>
+    /// Thêm MỘT buổi = `SoBuoi = 1` và tích đúng thứ của ngày đó. Từng có endpoint riêng
+    /// `POST /lop-hoc/{id}/buoi-hoc`, gộp vào đây 07/09/2026 vì hai nút tên gần giống nhau
+    /// gây nhầm — nhưng các trường của buổi lẻ (`LaHocBu`, `GhiChu`) phải còn dùng được.
+    /// </summary>
     [Fact]
     public async Task Them_buoi_le_khong_dung_toi_buoi_dang_co()
     {
         var c = await Client();
         var (lop, _, truoc) = await DungLop(c, "themle");
 
-        var res = await c.PostAsJsonAsync($"/api/v1/lop-hoc/{lop}/buoi-hoc", new
+        // 15/11/2026 là Chủ nhật.
+        var res = await c.PostAsJsonAsync($"/api/v1/lop-hoc/{lop}/sinh-them-buoi", new
         {
-            Ngay = new DateOnly(2026, 11, 15),
+            TuNgay = new DateOnly(2026, 11, 15),
+            ThuTrongTuan = new[] { DayOfWeek.Sunday },
             GioBatDau = new TimeOnly(9, 0), GioKetThuc = new TimeOnly(11, 0),
+            SoBuoi = 1,
             LaHocBu = true, GhiChu = "Dạy bù buổi nghỉ lễ"
         });
         res.EnsureSuccessStatusCode();
@@ -115,10 +123,13 @@ public class BoSungBuoiHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var truoc = await c.GetFromJsonAsync<JsonElement>($"/api/v1/lop-hoc/{lop}");
         var ketThucCu = truoc.GetProperty("ngayKetThuc").GetDateTimeOffset();
 
-        (await c.PostAsJsonAsync($"/api/v1/lop-hoc/{lop}/buoi-hoc", new
+        // 20/12/2026 là Chủ nhật.
+        (await c.PostAsJsonAsync($"/api/v1/lop-hoc/{lop}/sinh-them-buoi", new
         {
-            Ngay = new DateOnly(2026, 12, 20),
-            GioBatDau = new TimeOnly(9, 0), GioKetThuc = new TimeOnly(11, 0)
+            TuNgay = new DateOnly(2026, 12, 20),
+            ThuTrongTuan = new[] { DayOfWeek.Sunday },
+            GioBatDau = new TimeOnly(9, 0), GioKetThuc = new TimeOnly(11, 0),
+            SoBuoi = 1
         })).EnsureSuccessStatusCode();
 
         var sau = await c.GetFromJsonAsync<JsonElement>($"/api/v1/lop-hoc/{lop}");
@@ -131,10 +142,12 @@ public class BoSungBuoiHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var c = await Client();
         var (lop, _, _) = await DungLop(c, "giosai");
 
-        var res = await c.PostAsJsonAsync($"/api/v1/lop-hoc/{lop}/buoi-hoc", new
+        var res = await c.PostAsJsonAsync($"/api/v1/lop-hoc/{lop}/sinh-them-buoi", new
         {
-            Ngay = new DateOnly(2026, 11, 15),
-            GioBatDau = new TimeOnly(20, 0), GioKetThuc = new TimeOnly(18, 0)
+            TuNgay = new DateOnly(2026, 11, 15),
+            ThuTrongTuan = new[] { DayOfWeek.Sunday },
+            GioBatDau = new TimeOnly(20, 0), GioKetThuc = new TimeOnly(18, 0),
+            SoBuoi = 1
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
@@ -152,15 +165,17 @@ public class BoSungBuoiHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var than = new
         {
-            Ngay = new DateOnly(2026, 11, 20),
+            TuNgay = new DateOnly(2026, 11, 20),
+            ThuTrongTuan = new[] { DayOfWeek.Friday },
             GioBatDau = new TimeOnly(9, 0), GioKetThuc = new TimeOnly(11, 0),
+            SoBuoi = 1,
             LaHocBu = true
         };
 
-        (await c.PostAsJsonAsync($"/api/v1/lop-hoc/{lop}/buoi-hoc", than))
+        (await c.PostAsJsonAsync($"/api/v1/lop-hoc/{lop}/sinh-them-buoi", than))
             .EnsureSuccessStatusCode();
 
-        var lan2 = await c.PostAsJsonAsync($"/api/v1/lop-hoc/{lop}/buoi-hoc", than);
+        var lan2 = await c.PostAsJsonAsync($"/api/v1/lop-hoc/{lop}/sinh-them-buoi", than);
 
         Assert.Equal(HttpStatusCode.BadRequest, lan2.StatusCode);
         var body = await lan2.Content.ReadFromJsonAsync<JsonElement>();

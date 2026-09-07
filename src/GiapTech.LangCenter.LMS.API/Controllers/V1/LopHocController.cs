@@ -120,22 +120,6 @@ public class LopHocController(ISender sender) : ControllerBase
     // ---------- Học viên trong lớp (bước 3 của wizard) ----------
 
     /// <summary>
-    /// Thêm MỘT buổi lẻ — dạy bù, ôn tập. Không đụng buổi nào đang có.
-    /// </summary>
-    [HttpPost("{id:guid}/buoi-hoc")]
-    [RequirePermission(ChucNang.BuoiHoc, HanhDong.Them)]
-    public async Task<ActionResult<Application.DaoTao.BuoiHoc.BuoiHocDto>> ThemBuoiHoc(
-        Guid id, [FromBody] ThemBuoiHocBody body, CancellationToken ct)
-        => Ok(await sender.Send(new Application.DaoTao.BuoiHoc.ThemBuoiHocCommand(
-            id, body.Ngay, body.GioBatDau, body.GioKetThuc, body.LaHocBu,
-            body.GiaoVienId, body.PhongHoc, body.LinkHoc, body.GhiChu), ct));
-
-    public record ThemBuoiHocBody(
-        DateOnly Ngay, TimeOnly GioBatDau, TimeOnly GioKetThuc,
-        bool LaHocBu = false, Guid? GiaoVienId = null,
-        string? PhongHoc = null, string? LinkHoc = null, string? GhiChu = null);
-
-    /// <summary>
     /// Sinh THÊM buổi theo tần suất, nối tiếp lịch đang có — **không xoá buổi nào**.
     /// Khác `sinh-lich` vốn thay cả lịch.
     /// </summary>
@@ -145,12 +129,15 @@ public class LopHocController(ISender sender) : ControllerBase
         Guid id, [FromBody] SinhThemBuoiBody body, CancellationToken ct)
         => Ok(await sender.Send(new Application.DaoTao.BuoiHoc.SinhThemBuoiCommand(
             id, body.TuNgay, body.ThuTrongTuan, body.GioBatDau, body.GioKetThuc,
-            body.SoBuoi, body.DenNgay, body.NgayLoaiTru), ct));
+            body.SoBuoi, body.DenNgay, body.NgayLoaiTru,
+            body.LaHocBu, body.GiaoVienId, body.PhongHoc, body.LinkHoc, body.GhiChu), ct));
 
     public record SinhThemBuoiBody(
         DateOnly TuNgay, List<DayOfWeek> ThuTrongTuan,
         TimeOnly GioBatDau, TimeOnly GioKetThuc,
-        int? SoBuoi = null, DateOnly? DenNgay = null, List<DateOnly>? NgayLoaiTru = null);
+        int? SoBuoi = null, DateOnly? DenNgay = null, List<DateOnly>? NgayLoaiTru = null,
+        bool LaHocBu = false, Guid? GiaoVienId = null,
+        string? PhongHoc = null, string? LinkHoc = null, string? GhiChu = null);
 
     [HttpGet("{id:guid}/hoc-vien")]
     [RequirePermission(ChucNang.LopHoc, HanhDong.Xem)]

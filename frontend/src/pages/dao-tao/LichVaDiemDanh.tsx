@@ -2,7 +2,7 @@ import { lazy, Suspense, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  CalendarDays, CalendarPlus, CalendarRange, CheckCircle2, ClipboardCheck, List, Plus,
+  CalendarDays, CalendarPlus, CalendarRange, CheckCircle2, ClipboardCheck, List,
   RotateCcw, Trash2, X,
 } from 'lucide-react'
 import { api, layMaLoi } from '@/lib/api'
@@ -82,7 +82,6 @@ export function LichVaDiemDanh({
   // Mặc định BẢNG: nó là chỗ điểm danh và xem số liệu từng buổi. Lịch để nhìn tổng quát.
   const [kieuXem, setKieuXem] = useState<'bang' | 'lich'>('bang')
   const [moSinhLich, setMoSinhLich] = useState(false)
-  const [moThemBuoi, setMoThemBuoi] = useState(false)
   const [moSinhThem, setMoSinhThem] = useState(false)
   const [xacNhanSinhLai, setXacNhanSinhLai] = useState(false)
   const [huyCho, setHuyCho] = useState<BuoiHocDto | null>(null)
@@ -172,11 +171,10 @@ export function LichVaDiemDanh({
               </Button>
             ) : (
               <>
-                <Button size="sm" onClick={() => setMoThemBuoi(true)}>
-                  <Plus className="mr-1.5 h-4 w-4" />
-                  {t('buoiHoc.themBuoi')}
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setMoSinhThem(true)}>
+                {/* MỘT nút thêm buổi. Từng có hai nút ("Thêm buổi" cho buổi lẻ và "Sinh thêm
+                    buổi" theo tần suất) — tên gần giống nhau nên gây nhầm, gộp 07/09/2026.
+                    Thêm một buổi = để số buổi là 1. */}
+                <Button size="sm" onClick={() => setMoSinhThem(true)}>
                   <CalendarPlus className="mr-1.5 h-4 w-4" />
                   {t('buoiHoc.sinhThemBuoi')}
                 </Button>
@@ -330,17 +328,6 @@ export function LichVaDiemDanh({
         />
       )}
 
-      {moThemBuoi && (
-        <FormThemBuoi
-          lopHocId={lopHocId}
-          onXong={() => {
-            setMoThemBuoi(false)
-            lamMoi()
-          }}
-          onDong={() => setMoThemBuoi(false)}
-        />
-      )}
-
       {/* Ba hộp xác nhận RIÊNG, mỗi cái nói đúng hậu quả của nó — hộp chung chung
           "Bạn chắc chắn?" không giúp người dùng phân biệt xoá 1 buổi với xoá cả lịch. */}
       <HopXacNhan
@@ -422,6 +409,7 @@ function FormSinhLich({
   const { hoi, hop } = useXacNhan()
   const [thuChon, setThuChon] = useState<number[]>([2, 4, 6])
   const [ketThucTheo, setKetThucTheo] = useState<'soBuoi' | 'ngay'>('soBuoi')
+  const [laHocBu, setLaHocBu] = useState(false)
   const [maLoi, setMaLoi] = useState<string | null>(null)
 
   const sinh = useMutation({
@@ -472,6 +460,14 @@ function FormSinhLich({
           soBuoi: ketThucTheo === 'soBuoi' ? Number(fd.get('soBuoi')) : null,
           denNgay: ketThucTheo === 'ngay' ? String(fd.get('denNgay')) : null,
           ngayLoaiTru: loaiTruTho,
+          // Chỉ có nghĩa ở chế độ nối tiếp; sinh lịch mới thì bỏ qua.
+          ...(noiTiep
+            ? {
+                laHocBu,
+                phongHoc: (fd.get('phongHoc') as string) || null,
+                ghiChu: (fd.get('ghiChu') as string) || null,
+              }
+            : {}),
         })
       },
     })
@@ -552,7 +548,12 @@ function FormSinhLich({
         {ketThucTheo === 'soBuoi' ? (
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="soBuoi">{t('buoiHoc.theoSoBuoi')}</Label>
-            <Input id="soBuoi" name="soBuoi" type="number" min={1} max={500} defaultValue={24} />
+            {/* Nối tiếp thì mặc định 1 buổi (ca hay dùng nhất: thêm một buổi bù); sinh lịch
+                mới thì 24 buổi — một khoá điển hình. */}
+            <Input
+              id="soBuoi" name="soBuoi" type="number" min={1} max={500}
+              defaultValue={noiTiep ? 1 : 24}
+            />
           </div>
         ) : (
           <div className="flex flex-col gap-1.5">
@@ -571,6 +572,32 @@ function FormSinhLich({
             className="rounded-md border border-input bg-background px-3 py-2 text-sm"
           />
         </div>
+
+        {/* Chỉ khi NỐI TIẾP: các trường của buổi bù. Sinh lịch chính khoá thì phòng và ghi
+            chú lấy từ lớp, và cả một lịch không thể là "học bù". */}
+        {noiTiep && (
+          <>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="phongHoc">{t('lopHoc.phongHoc')}</Label>
+              <Input id="phongHoc" name="phongHoc" placeholder={t('buoiHoc.macDinhTheoLop')} />
+            </div>
+
+            <label className="flex items-center gap-2 self-end pb-2 text-sm">
+              <input
+                type="checkbox"
+                checked={laHocBu}
+                onChange={(e) => setLaHocBu(e.target.checked)}
+                className="h-4 w-4 rounded border-input"
+              />
+              {t('buoiHoc.laHocBu')}
+            </label>
+
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <Label htmlFor="ghiChu">{t('lopHoc.ghiChu')}</Label>
+              <Input id="ghiChu" name="ghiChu" />
+            </div>
+          </>
+        )}
 
         {maLoi && (
           <div className="sm:col-span-2">
@@ -773,107 +800,6 @@ function BangDiemDanh({
           </Button>
         </div>
       </div>
-      {hop}
-    </Modal>
-  )
-}
-
-/** Thêm một buổi lẻ — dạy bù, ôn tập. Không đụng buổi nào đang có. */
-function FormThemBuoi({
-  lopHocId,
-  onXong,
-  onDong,
-}: {
-  lopHocId: string
-  onXong: () => void
-  onDong: () => void
-}) {
-  const { t } = useTranslation()
-  const { hoi, hop } = useXacNhan()
-  const [laHocBu, setLaHocBu] = useState(true)
-  const [maLoi, setMaLoi] = useState<string | null>(null)
-
-  const them = useMutation({
-    mutationFn: (body: Record<string, unknown>) =>
-      api.post(`/lop-hoc/${lopHocId}/buoi-hoc`, body),
-    onSuccess: onXong,
-    onError: (e) => setMaLoi(layMaLoi(e)),
-  })
-
-  return (
-    <Modal mo onDong={onDong} tieuDe={t('buoiHoc.themBuoi')} rong="md">
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          const fd = new FormData(e.currentTarget)
-          const ngay = String(fd.get('ngay'))
-          hoi({
-            tieuDe: t('buoiHoc.themBuoi'),
-            thongDiep: t('buoiHoc.hoiThemBuoi', { ngay }),
-            onDongY: () => {
-              them.mutate({
-                ngay: String(fd.get('ngay')),
-                gioBatDau: String(fd.get('gioBatDau')) + ':00',
-                gioKetThuc: String(fd.get('gioKetThuc')) + ':00',
-                laHocBu,
-                phongHoc: (fd.get('phongHoc') as string) || null,
-                ghiChu: (fd.get('ghiChu') as string) || null,
-              })
-            },
-          })
-        }}
-        className="grid gap-4 sm:grid-cols-2"
-      >
-        <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <Label htmlFor="ngay">{t('buoiHoc.ngayHoc')}</Label>
-          <Input id="ngay" name="ngay" type="date" required />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="gioBatDau">{t('buoiHoc.gioBatDau')}</Label>
-          <Input id="gioBatDau" name="gioBatDau" type="time" defaultValue="18:00" required />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="gioKetThuc">{t('buoiHoc.gioKetThuc')}</Label>
-          <Input id="gioKetThuc" name="gioKetThuc" type="time" defaultValue="20:00" required />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="phongHoc">{t('lopHoc.phongHoc')}</Label>
-          <Input id="phongHoc" name="phongHoc" placeholder={t('buoiHoc.macDinhTheoLop')} />
-        </div>
-
-        <label className="flex items-center gap-2 self-end pb-2 text-sm">
-          <input
-            type="checkbox"
-            checked={laHocBu}
-            onChange={(e) => setLaHocBu(e.target.checked)}
-            className="h-4 w-4 rounded border-input"
-          />
-          {t('buoiHoc.laHocBu')}
-        </label>
-
-        <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <Label htmlFor="ghiChu">{t('lopHoc.ghiChu')}</Label>
-          <Input id="ghiChu" name="ghiChu" />
-        </div>
-
-        {maLoi && (
-          <div className="sm:col-span-2">
-            <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>
-          </div>
-        )}
-
-        <div className="flex justify-end gap-2 sm:col-span-2">
-          <Button type="button" variant="outline" onClick={onDong}>
-            {t('chung.huy')}
-          </Button>
-          <Button type="submit" disabled={them.isPending}>
-            {t('chung.them')}
-          </Button>
-        </div>
-      </form>
       {hop}
     </Modal>
   )

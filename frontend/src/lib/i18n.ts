@@ -296,24 +296,22 @@ const vi = {
   },
   buoiHoc: {
     hoiSinhLich: 'Sinh lịch với tần suất đã chọn?',
-    hoiSinhThem: 'Sinh thêm buổi nối tiếp lịch hiện tại? Không buổi nào bị xoá.',
+    hoiSinhThem: 'Thêm buổi vào lịch hiện tại? Không buổi nào bị xoá.',
     hoiSinhLai:
       'Sinh lại sẽ XOÁ các buổi chưa học và tạo lịch mới. Buổi đã chốt được giữ nguyên. Tiếp tục?',
     hoiChotBuoi:
       'Chốt buổi này? Người chưa điểm danh sẽ được ghi là Vắng, và sau khi chốt không sửa '
       + 'được giờ, không huỷ, không xoá buổi nữa.',
-    hoiThemBuoi: 'Thêm buổi học ngày {{ngay}}?',
     thuTuNgan: 'Buổi ',
-    themBuoi: 'Thêm buổi',
-    sinhThemBuoi: 'Sinh thêm buổi',
+    sinhThemBuoi: 'Thêm buổi',
     xoaBuoi: 'Xoá buổi',
-    ngayHoc: 'Ngày học',
     laHocBu: 'Là buổi học bù',
     macDinhTheoLop: 'Để trống = theo lớp',
     tuNgay: 'Sinh từ ngày',
     daChot: '{{soLuong}} buổi đã chốt',
     goiYSinhThem:
-      'Sinh thêm buổi nối tiếp lịch hiện tại. Không buổi nào bị xoá; buổi mới đánh số tiếp.',
+      'Thêm buổi vào lịch hiện tại — không buổi nào bị xoá, buổi mới đánh số tiếp. '
+      + 'Để số buổi là 1 nếu chỉ thêm một buổi (dạy bù, ôn tập).',
     canhBaoSinhLai:
       'Sinh lại sẽ XOÁ các buổi chưa học và tạo lịch mới. Buổi đã chốt được giữ nguyên.',
     xacNhanSinhLai:
