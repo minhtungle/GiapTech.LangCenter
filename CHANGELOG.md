@@ -8,6 +8,19 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — View lịch dạng calendar (07/09/2026)
+
+- **Lịch tháng / tuần / danh sách** cho buổi học, dựng trên **FullCalendar 6.1.21** (MIT).
+  Chọn nó thay `react-big-calendar` vì có `timeZone` sẵn và chỉ kéo theo `preact`, trong khi
+  bên kia mang cả moment, luxon, lodash và globalize. Dùng 6.1.21 vì v7 các gói view còn beta.
+- **`GET /toi/cau-hinh`** trả múi giờ trung tâm — mọi vai trò gọi được. Trước đây frontend
+  hiển thị giờ theo múi giờ **máy người xem**; với lịch thì lệch giờ làm buổi nhảy sang ô ngày
+  khác.
+- Màu trên lịch khớp badge ở bảng; buổi bù dùng viền nhấn. Trục giờ giới hạn 6h–22h.
+- Lịch **tải theo yêu cầu** (`lazy`): bundle chính 865 → 631 kB, lịch thành chunk riêng 234 kB.
+- CSS map `--fc-*` sang design token nên lịch theo đúng bảng màu và chế độ tối của dự án.
+
+
 ### Added — Bổ sung buổi học (07/09/2026)
 
 - **Thêm buổi lẻ** (`POST /lop-hoc/{id}/buoi-hoc`) — dạy bù, ôn tập. Có cờ "học bù".

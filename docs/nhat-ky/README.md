@@ -41,6 +41,7 @@ Lỗi đã bắt được, thứ tưởng đúng mà sai, giới hạn chưa g�
 
 | Ngày | Nội dung chính |
 |---|---|
+| [2026-09-07 (lịch)](./2026-09-07-lich-calendar.md) | **View calendar** bằng FullCalendar 6 + `GET /toi/cau-hinh` cho múi giờ trung tâm |
 | [2026-09-07 (buổi học)](./2026-09-07-bo-sung-buoi-hoc.md) | **Bổ sung buổi** vào lịch đã có + **khoá buổi đã chốt** — vá 2 lỗ hổng sửa/huỷ buổi đã chốt |
 | [2026-09-07 (quyền UI)](./2026-09-07-an-menu-theo-quyen.md) | **Ẩn menu/nút theo quyền** — endpoint `/toi/quyen` + hook `useQuyen`, đóng nợ N2 |
 | [2026-09-07 (bảo mật)](./2026-09-07-ro-ri-hoc-phi.md) | **Rò rỉ học phí** qua DTO module lớp học — giáo viên thấy mức miễn giảm, học viên thấy học phí bạn cùng lớp |

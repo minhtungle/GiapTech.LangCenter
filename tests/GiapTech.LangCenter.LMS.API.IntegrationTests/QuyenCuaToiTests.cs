@@ -118,6 +118,36 @@ public class QuyenCuaToiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.DoesNotContain("HocPhi:Xoa", q);
     }
 
+    /// <summary>
+    /// `/toi/cau-hinh` trả múi giờ trung tâm. MỌI vai trò phải gọi được: giáo viên và học viên
+    /// chính là người xem lịch nhiều nhất, mà `/thiet-lap` gác bằng `ThietLapChung.Xem`.
+    ///
+    /// Không có nó thì lịch vẽ theo múi giờ máy người xem — lệch giờ làm buổi nhảy sang ô ngày
+    /// khác.
+    /// </summary>
+    [Fact]
+    public async Task Moi_vai_tro_doc_duoc_mui_gio_trung_tam()
+    {
+        foreach (var c in new[]
+                 {
+                     await Client("manager", "manager123"),
+                     await TaoVaDangNhap("gvtz", "GiaoVien", "Giáo viên"),
+                     await TaoVaDangNhap("hvtz", "HocVien", "Học viên"),
+                 })
+        {
+            var ch = await c.GetFromJsonAsync<JsonElement>("/api/v1/toi/cau-hinh");
+            Assert.Equal("Asia/Ho_Chi_Minh", ch.GetProperty("muiGio").GetString());
+        }
+    }
+
+    [Fact]
+    public async Task Chua_dang_nhap_thi_khong_doc_duoc_cau_hinh()
+    {
+        var res = await factory.CreateClient().GetAsync("/api/v1/toi/cau-hinh");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
+    }
+
     /// <summary>Trả quyền của CHÍNH mình, không phải của người gọi khác — không có tham số id.</summary>
     [Fact]
     public async Task Moi_nguoi_nhan_dung_quyen_cua_minh()

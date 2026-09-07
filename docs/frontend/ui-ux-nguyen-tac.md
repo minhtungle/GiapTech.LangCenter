@@ -21,6 +21,21 @@
   [FR-03](../nghiep-vu/quan-tri-he-thong.md#quy-trình-chuẩn-tạo-tài-khoản-wizard-tuần-tự): hồ sơ cầu thủ
   → nhóm quyền → tài khoản.
 - **Empty-state** luôn có nút hành động + hướng dẫn ngắn, không để màn hình trắng.
+- **Giờ và ngày hiển thị theo MÚI GIỜ TRUNG TÂM**, không phải múi giờ máy người xem. Lấy từ
+  `GET /toi/cau-hinh` qua hook `useMuiGio()`.
+  - Buổi 18:00 giờ Việt Nam mở trên máy đặt UTC+9 sẽ hiện 20:00; với **lịch** thì lệch giờ
+    còn làm buổi **nhảy sang ô ngày khác** — sai rõ hơn nhiều so với bảng.
+  - Không lấy từ `/thiet-lap`: endpoint đó gác bằng `ThietLapChung.Xem` nên giáo viên và học
+    viên không gọi được, mà họ chính là người xem lịch nhiều nhất.
+- **Lịch dạng calendar dùng FullCalendar 6** (MIT), không tự viết: lưới tháng, trục giờ, điều
+  hướng và hàng chục ca biên về múi giờ là công việc nhiều tháng.
+  - Chọn nó thay `react-big-calendar` vì có `timeZone` sẵn, mọi gói view cùng một phiên bản
+    **ổn định** (v7 các view còn beta), và chỉ kéo theo `preact` — trong khi bên kia mang cả
+    moment, luxon, lodash và globalize.
+  - **Map `--fc-*` sang design token** trong `lich-buoi-hoc.css`, không ghi màu cứng: nếu không,
+    đổi bảng màu hoặc bật chế độ tối sẽ để lại một khối lịch màu lạ.
+  - **Tải theo yêu cầu** (`lazy` + `Suspense`): FullCalendar ~230 kB và chỉ dùng khi người
+    dùng chủ động bật chế độ Lịch. Import thẳng thì mọi màn đều phải tải nó.
 - **Ẩn menu và nút theo quyền bằng `useQuyen()`** (`frontend/src/lib/quyen.ts`), đọc từ
   `GET /toi/quyen`.
   - `coQuyen('HocPhi', 'Them')` cho nút; `an: !coQuyen(...)` cho mục trong `MenuThaoTac`.

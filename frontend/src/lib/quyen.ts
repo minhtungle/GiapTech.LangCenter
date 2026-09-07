@@ -58,3 +58,31 @@ export function useQuyen() {
       tap.has('HocPhi:Xem') && tap.has('LopHocToanTrungTam:Xem'),
   }
 }
+
+interface CauHinhDto {
+  muiGio: string
+}
+
+/**
+ * Múi giờ của trung tâm, để vẽ lịch và hiển thị giờ đúng.
+ *
+ * **Không dùng múi giờ của máy người xem**: buổi 18:00 giờ Việt Nam mở trên máy đặt UTC+9 sẽ
+ * hiện 20:00, và trên lịch thì lệch giờ còn làm buổi **nhảy sang ô ngày khác** — sai rõ hơn
+ * nhiều so với bảng. Máy cấu hình sai múi giờ là chuyện có thật và người dùng không tự biết.
+ *
+ * Trong lúc chưa tải xong, trả `undefined` để component tự quyết định (FullCalendar hiểu
+ * `undefined` là dùng múi giờ máy — chấp nhận được trong khoảnh khắc đầu).
+ */
+export function useMuiGio(): string | undefined {
+  const { daDangNhap } = useAuth()
+
+  const { data } = useQuery({
+    queryKey: ['toi-cau-hinh'],
+    queryFn: async () => (await api.get<CauHinhDto>('/toi/cau-hinh')).data,
+    enabled: daDangNhap,
+    staleTime: Infinity,
+    retry: false,
+  })
+
+  return data?.muiGio
+}

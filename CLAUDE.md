@@ -21,7 +21,7 @@ là một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`
 Tách ra từ một ứng dụng quản lý CLB đá bóng (04/09/2026), giữ toàn bộ tầng hệ thống. Nghiệp vụ
 LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 
-**14/15 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 250 test backend xanh.
+**14/15 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 253 test backend xanh.
 
 | Đã chạy đầu-cuối | Chưa có |
 |---|---|
@@ -112,6 +112,7 @@ Chi tiết và nợ kỹ thuật: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 | Auth | ASP.NET Core Identity + JWT Bearer (access + refresh token) | — |
 | Frontend | **React + TypeScript** trên nền **shadcn-admin** (Vite + Tailwind + shadcn/ui + Radix) — **không Blazor** | [0002](./docs/kien-truc/adr/0002-frontend-shadcn-admin.md) |
 | FE data/form | TanStack Query · React Hook Form + Zod | [0002](./docs/kien-truc/adr/0002-frontend-shadcn-admin.md) |
+| FE lịch | **FullCalendar 6** (MIT) — tháng/tuần/danh sách, có `timeZone`; tải theo yêu cầu | — |
 | Đa ngôn ngữ | BE `.resx` theo culture · FE `react-i18next` · API trả **mã lỗi** | — |
 | API versioning | URL segment `/api/v1/...`, `Asp.Versioning.Mvc` | [0003](./docs/kien-truc/adr/0003-api-versioning.md) |
 | Hạ tầng | 1 VPS · Docker Compose · **Nginx + certbot** (có sẵn trên VPS) · **MinIO** · Redis (tuỳ chọn) | [0004](./docs/kien-truc/adr/0004-ha-tang-tu-host-vps.md) |
@@ -224,7 +225,7 @@ Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 ```bash
 # --- Backend ---
 dotnet build          # 0 warning — TreatWarningsAsErrors đang bật
-dotnet test           # 250 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
+dotnet test           # 253 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
                       #           quản trị, lớp học, điểm danh, học liệu, học phí
 
 # Chạy API cần 2 biến bắt buộc (thiếu là 500 lúc đăng nhập / tải ảnh, không phải lúc khởi động):

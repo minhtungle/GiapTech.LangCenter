@@ -243,7 +243,18 @@ const vi = {
     ChuyenLop: 'Chuyển lớp',
     DaNghi: 'Đã nghỉ',
   },
+  lich: {
+    thang: 'Tháng',
+    tuan: 'Tuần',
+    danhSach: 'Danh sách',
+    homNay: 'Hôm nay',
+    truoc: 'Kỳ trước',
+    sau: 'Kỳ sau',
+    kieuBang: 'Bảng',
+    kieuLich: 'Lịch',
+  },
   buoiHoc: {
+    thuTuNgan: 'Buổi ',
     themBuoi: 'Thêm buổi',
     sinhThemBuoi: 'Sinh thêm buổi',
     xoaBuoi: 'Xoá buổi',

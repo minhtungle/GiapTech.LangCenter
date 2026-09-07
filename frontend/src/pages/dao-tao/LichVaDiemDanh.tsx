@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  CalendarDays, CalendarPlus, CheckCircle2, ClipboardCheck, Plus, RotateCcw, Trash2, X,
+  CalendarDays, CalendarPlus, CalendarRange, CheckCircle2, ClipboardCheck, List, Plus,
+  RotateCcw, Trash2, X,
 } from 'lucide-react'
 import { api, layMaLoi } from '@/lib/api'
 import {
@@ -47,6 +48,14 @@ interface DiemDanhDto {
   daGhiNhan: boolean
 }
 
+/**
+ * Lịch tải theo yêu cầu: FullCalendar nặng ~200 kB và chỉ dùng khi người dùng chủ động bật
+ * chế độ Lịch. Import thẳng thì mọi người mở bất kỳ màn nào cũng phải tải nó.
+ */
+const LichBuoiHoc = lazy(() =>
+  import('@/components/ui/LichBuoiHoc').then((m) => ({ default: m.LichBuoiHoc })),
+)
+
 const gioVN = (s: string) =>
   new Date(s).toLocaleString('vi-VN', {
     weekday: 'short', day: '2-digit', month: '2-digit',
@@ -69,6 +78,8 @@ export function LichVaDiemDanh({
   const { t } = useTranslation()
   const qc = useQueryClient()
   const [maLoi, setMaLoi] = useState<string | null>(null)
+  // Mặc định BẢNG: nó là chỗ điểm danh và xem số liệu từng buổi. Lịch để nhìn tổng quát.
+  const [kieuXem, setKieuXem] = useState<'bang' | 'lich'>('bang')
   const [moSinhLich, setMoSinhLich] = useState(false)
   const [moThemBuoi, setMoThemBuoi] = useState(false)
   const [moSinhThem, setMoSinhThem] = useState(false)
@@ -117,10 +128,38 @@ export function LichVaDiemDanh({
     <KhungNoiDung nhung={nhung} onDong={onDong} tieuDe={`${t('buoiHoc.lich')} — ${tenLop}`}>
       <div className="grid gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm text-muted-foreground">
-            {buoiHocs.length > 0 && t('buoiHoc.daSinh', { soLuong: buoiHocs.length })}
-            {soDaChot > 0 && ` · ${t('buoiHoc.daChot', { soLuong: soDaChot })}`}
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            {buoiHocs.length > 0 && (
+              <div className="flex gap-1 rounded-lg border border-border p-1">
+                {(['bang', 'lich'] as const).map((x) => (
+                  <button
+                    key={x}
+                    type="button"
+                    onClick={() => setKieuXem(x)}
+                    className={
+                      'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ' +
+                      'transition-colors ' +
+                      (kieuXem === x
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-muted')
+                    }
+                  >
+                    {x === 'bang' ? (
+                      <List className="h-3.5 w-3.5" />
+                    ) : (
+                      <CalendarRange className="h-3.5 w-3.5" />
+                    )}
+                    {t(x === 'bang' ? 'lich.kieuBang' : 'lich.kieuLich')}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <p className="text-sm text-muted-foreground">
+              {buoiHocs.length > 0 && t('buoiHoc.daSinh', { soLuong: buoiHocs.length })}
+              {soDaChot > 0 && ` · ${t('buoiHoc.daChot', { soLuong: soDaChot })}`}
+            </p>
+          </div>
 
           {/* Ba nút, ba việc khác nhau — trước đây chỉ có một nút vừa sinh vừa xoá.
               "Sinh lại" để cuối và viền đỏ vì nó là nút duy nhất xoá dữ liệu. */}
@@ -160,6 +199,23 @@ export function LichVaDiemDanh({
           <p className="text-sm text-muted-foreground">{t('chung.dangTai')}</p>
         ) : buoiHocs.length === 0 ? (
           <TrangTrong thongDiep={t('buoiHoc.chuaCoLich')} />
+        ) : kieuXem === 'lich' ? (
+          <Suspense
+            fallback={
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                {t('chung.dangTai')}
+              </p>
+            }
+          >
+            <LichBuoiHoc
+              buoi={buoiHocs}
+              // Bấm buổi trên lịch mở ngay bảng điểm danh — việc hay làm nhất với một buổi.
+              onChonBuoi={(id) => {
+                const b = buoiHocs.find((x) => x.id === id)
+                if (b) setBuoiDiemDanh(b)
+              }}
+            />
+          </Suspense>
         ) : (
           <div className="max-h-[26rem] overflow-y-auto">
             <Table>

@@ -78,6 +78,23 @@ lặng bỏ qua buổi trùng: người dùng chọn nhầm ngày sẽ tưởng 
 **Xoá buổi không đánh số lại các buổi sau.** Học viên và giáo viên đã quen "buổi 12"; đổi số
 hàng loạt làm mọi ghi chú ngoài hệ thống sai theo. Khoảng trống trong dãy số chấp nhận được.
 
+### Hai kiểu xem lịch
+
+| Kiểu | Dùng khi |
+|---|---|
+| **Bảng** (mặc định) | Điểm danh, xem số liệu từng buổi, thao tác |
+| **Lịch** (tháng / tuần / danh sách) | Nhìn tổng quát cả khoá, phát hiện khoảng trống và trùng giờ |
+
+Bảng là mặc định vì đó là chỗ điểm danh — việc làm thường xuyên nhất. Bấm một buổi trên lịch
+mở ngay bảng điểm danh của buổi đó.
+
+Màu trên lịch **khớp badge ở bảng** để hai chỗ không nói khác nhau: đã lên lịch (màu chủ đạo),
+đã hoàn thành (xanh), đã huỷ (mờ + gạch ngang). Buổi bù thêm viền nhấn thay vì đổi màu nền, để
+vẫn đọc được trạng thái.
+
+Trục giờ giới hạn **6h–22h**: trung tâm ngoại ngữ không dạy đêm, để trục 24 tiếng thì buổi tối
+bị nén thành một dải mỏng.
+
 ### Huỷ khác xoá
 
 | | Giữ bản ghi | Dùng khi |

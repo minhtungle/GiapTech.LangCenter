@@ -1,0 +1,70 @@
+/*
+  Hoà FullCalendar vào design token của dự án.
+
+  FullCalendar dùng biến riêng `--fc-*`; map chúng sang token trong `src/index.css` thay vì
+  ghi màu cứng — nếu không, đổi bảng màu hoặc bật chế độ tối sẽ để lại một khối lịch màu lạ.
+*/
+.lich-buoi-hoc {
+  --fc-border-color: hsl(var(--border));
+  --fc-page-bg-color: hsl(var(--background));
+  --fc-neutral-bg-color: hsl(var(--muted));
+  --fc-today-bg-color: hsl(var(--muted));
+  --fc-now-indicator-color: hsl(var(--destructive));
+  --fc-event-border-color: transparent;
+  font-size: 0.8125rem;
+}
+
+/* Chữ trong lịch theo token, không để mặc định đen tuyệt đối. */
+.lich-buoi-hoc .fc {
+  color: hsl(var(--foreground));
+}
+
+.lich-buoi-hoc .fc .fc-col-header-cell-cushion,
+.lich-buoi-hoc .fc .fc-daygrid-day-number,
+.lich-buoi-hoc .fc .fc-timegrid-slot-label-cushion,
+.lich-buoi-hoc .fc .fc-list-day-text,
+.lich-buoi-hoc .fc .fc-list-day-side-text {
+  color: hsl(var(--muted-foreground));
+  text-decoration: none;
+}
+
+/* Ngày ngoài tháng đang xem: mờ đi chứ không ẩn — người dùng vẫn cần thấy đầu/cuối tuần. */
+.lich-buoi-hoc .fc .fc-day-other .fc-daygrid-day-top {
+  opacity: 0.45;
+}
+
+.lich-buoi-hoc .fc-event {
+  border-radius: 0.25rem;
+  cursor: pointer;
+  padding: 1px 3px;
+  font-size: 0.75rem;
+}
+
+/* Ba trạng thái, cùng màu với badge ở bảng danh sách để hai chỗ không nói khác nhau. */
+.lich-buoi-hoc .buoi-lich {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.lich-buoi-hoc .buoi-xong {
+  background: hsl(var(--status-win));
+  color: #fff;
+}
+
+.lich-buoi-hoc .buoi-huy {
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  text-decoration: line-through;
+}
+
+/* Buổi bù: viền nhấn thay vì đổi màu nền, để vẫn đọc được trạng thái. */
+.lich-buoi-hoc .buoi-bu {
+  outline: 2px solid hsl(var(--accent));
+  outline-offset: -2px;
+}
+
+/* Nút "xem thêm N buổi" khi ô ngày quá chật. */
+.lich-buoi-hoc .fc .fc-daygrid-more-link {
+  color: hsl(var(--primary));
+  font-weight: 500;
+}
