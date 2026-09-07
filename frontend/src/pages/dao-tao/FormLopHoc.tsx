@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, CanhBaoLoi, Input, Label, Textarea } from '@/components/ui'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
+import { useXacNhan } from '@/lib/xacNhan'
 import {
   CAC_HINH_THUC,
   type HinhThucHoc, type LopHocDto, type NguoiDungNgan,
@@ -57,6 +58,7 @@ export function FormLopHoc({
   onHuy?: () => void
 }) {
   const { t } = useTranslation()
+  const { hoi, hop } = useXacNhan()
 
   const [giaoVienChon, setGiaoVienChon] = useState<string | null>(
     lop?.giaoVienChinhId ?? null,
@@ -98,7 +100,7 @@ export function FormLopHoc({
         : Number(fd.get('hocPhi'))
       : undefined
 
-    onLuu({
+    const du = {
       ten: String(fd.get('ten')),
       giaoVienChinhId: giaoVienChon,
       hinhThuc,
@@ -112,6 +114,15 @@ export function FormLopHoc({
       // Ô sức chứa để trống khi SỬA nghĩa là "bỏ giới hạn" — null không diễn đạt được điều
       // đó vì null đã mang nghĩa "không gửi".
       boGioiHanSucChua: Boolean(lop) && sucChuaTho === '',
+    }
+
+    // Hỏi trước khi ghi. Lời văn nói rõ tên lớp và việc ghi đè, không phải "Bạn có chắc?".
+    hoi({
+      tieuDe: lop ? t('chung.xacNhanLuu') : t('chung.xacNhanThem'),
+      thongDiep: lop
+        ? t('chung.hoiLuu', { ten: du.ten })
+        : t('chung.hoiThem', { ten: du.ten }),
+      onDongY: () => onLuu(du),
     })
   }
 
@@ -220,6 +231,8 @@ export function FormLopHoc({
           {nhanLuu ?? t('chung.luu')}
         </Button>
       </div>
+
+      {hop}
     </form>
   )
 }

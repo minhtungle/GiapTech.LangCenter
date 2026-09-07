@@ -173,3 +173,23 @@ public enum PhuongThucThanhToan
     ChuyenKhoan = 1,
     Khac = 2
 }
+
+/// <summary>
+/// Loại thao tác trong nhật ký hệ thống.
+///
+/// Không dùng lại <see cref="HanhDong"/> của hệ phân quyền: ở đó `Xem` là một hành động cần
+/// quyền, còn ở đây nhật ký **không ghi việc đọc** — ghi mọi lượt xem sẽ làm bảng phình gấp
+/// hàng chục lần mà gần như không ai tra tới.
+/// </summary>
+public enum HanhDongNhatKy
+{
+    Them = 0,
+    Sua = 1,
+    Xoa = 2,
+
+    /// <summary>Đăng nhập, đổi mật khẩu, làm mới token — không phải CRUD trên dữ liệu.</summary>
+    XacThuc = 3,
+
+    /// <summary>Thao tác không rơi vào bốn loại trên.</summary>
+    Khac = 9
+}

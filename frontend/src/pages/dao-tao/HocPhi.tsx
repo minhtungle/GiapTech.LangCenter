@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import { useQuyen } from '@/lib/quyen'
+import { useXacNhan } from '@/lib/xacNhan'
 import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
   TrangTrong,
@@ -72,6 +73,7 @@ export default function HocPhi({ lopHocId }: { lopHocId?: string } = {}) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const { coQuyen } = useQuyen()
+  const { hoi, hop } = useXacNhan()
 
   const [tab, setTab] = useState<'cong-no' | 'so-thu'>('cong-no')
   // Nhúng trong view chi tiết lớp thì lớp đã cố định — không cho đổi, và ẩn ô lọc lớp.
@@ -416,7 +418,15 @@ export default function HocPhi({ lopHocId }: { lopHocId?: string } = {}) {
         <form
           onSubmit={(e) => {
             e.preventDefault()
-            luu.mutate(new FormData(e.currentTarget))
+            const fd = new FormData(e.currentTarget)
+            const soTien = dinhDangTien(Number(fd.get('soTien')))
+            hoi({
+              tieuDe: dangSua ? t('chung.xacNhanLuu') : t('hocPhi.thuTien'),
+              thongDiep: dangSua
+                ? t('hocPhi.hoiSua', { soTien })
+                : t('hocPhi.hoiThu', { soTien }),
+              onDongY: () => luu.mutate(fd),
+            })
           }}
           className="space-y-4"
         >
@@ -533,6 +543,8 @@ export default function HocPhi({ lopHocId }: { lopHocId?: string } = {}) {
           </div>
         </form>
       </Modal>
+
+      {hop}
 
       <HopXacNhan
         mo={!!xoaCho}

@@ -127,6 +127,33 @@ public class HoSoNhanVienConfig : IEntityTypeConfiguration<HoSoNhanVien>
     }
 }
 
+public class NhatKyHeThongConfig : IEntityTypeConfiguration<NhatKyHeThong>
+{
+    public void Configure(EntityTypeBuilder<NhatKyHeThong> b)
+    {
+        b.ToTable("NHAT_KY_HE_THONG");
+
+        b.Property(x => x.TenLenh).HasMaxLength(200).IsRequired();
+        b.Property(x => x.ChucNang).HasMaxLength(100);
+        b.Property(x => x.Username).HasMaxLength(100);
+        b.Property(x => x.HoTen).HasMaxLength(200);
+        b.Property(x => x.MaLoi).HasMaxLength(100);
+        b.Property(x => x.DiaChiIp).HasMaxLength(64);
+
+        // Truy vấn chính của màn nhật ký: mới nhất trước, trong phạm vi tenant.
+        b.HasIndex(x => new { x.TenantId, x.NgayTao });
+        // Lọc theo module và theo người — hai bộ lọc hay dùng nhất.
+        b.HasIndex(x => new { x.TenantId, x.ChucNang });
+        b.HasIndex(x => new { x.TenantId, x.NguoiDungId });
+
+        // SetNull chứ không Restrict: nhật ký phải sống lâu hơn người dùng, và Restrict sẽ
+        // khoá cứng mọi tài khoản vĩnh viễn vì ai cũng có vết trong nhật ký.
+        // Tên và username đã lưu bản chụp nên mất khoá ngoại vẫn đọc được.
+        b.HasOne(x => x.NguoiDung).WithMany()
+            .HasForeignKey(x => x.NguoiDungId).OnDelete(DeleteBehavior.SetNull);
+    }
+}
+
 public class QuyenConfig : IEntityTypeConfiguration<Quyen>
 {
     public void Configure(EntityTypeBuilder<Quyen> b)

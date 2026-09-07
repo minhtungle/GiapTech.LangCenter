@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth'
 import { Button, CanhBaoLoi, Card, CardContent, Input, Label, Textarea,
 } from '@/components/ui'
 import { ChonAnh } from '@/components/ui/ChonAnh'
+import { useXacNhan } from '@/lib/xacNhan'
 
 interface ThietLapDto {
   id: string
@@ -36,6 +37,7 @@ interface ThietLapDto {
  */
 export default function ThietLap() {
   const { t } = useTranslation()
+  const { hoi, hop } = useXacNhan()
   const qc = useQueryClient()
   const { capNhatTenTrungTam } = useAuth()
   const [maLoi, setMaLoi] = useState<string | null>(null)
@@ -82,7 +84,7 @@ export default function ThietLap() {
     const fd = new FormData(e.currentTarget)
     // Mọi trường lệnh cập nhật ghi đè đều gửi lại (quy tắc #1) — kể cả logo/ảnh bìa chưa có
     // ô trên form, nếu không mỗi lần lưu sẽ xoá chúng.
-    luu.mutate({
+    const du = {
       tenTrungTam: String(fd.get('tenTrungTam')),
       tenVietTat: (fd.get('tenVietTat') as string) || null,
       moTa: (fd.get('moTa') as string) || null,
@@ -99,6 +101,12 @@ export default function ThietLap() {
       chuTaiKhoan: (fd.get('chuTaiKhoan') as string) ?? '',
       // Ảnh QR do ChonAnh tự tải lên và trả khoá — gửi lại để không bị xoá khi lưu form.
       anhQrUrl: anhQr,
+    }
+
+    hoi({
+      tieuDe: t('chung.xacNhanLuu'),
+      thongDiep: t('thietLap.hoiLuu'),
+      onDongY: () => luu.mutate(du),
     })
   }
 
@@ -244,6 +252,7 @@ export default function ThietLap() {
           </div>
         </form>
       </CardContent>
+      {hop}
     </Card>
   )
 }

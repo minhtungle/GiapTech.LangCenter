@@ -3,6 +3,7 @@ using GiapTech.LangCenter.LMS.API.Authorization;
 using GiapTech.LangCenter.LMS.Application.Common.Models;
 using GiapTech.LangCenter.LMS.Application.QuanTri.Quyen;
 using GiapTech.LangCenter.LMS.Application.QuanTri.NguoiDung;
+using GiapTech.LangCenter.LMS.Application.QuanTri.NhatKy;
 using GiapTech.LangCenter.LMS.Application.QuanTri.TaiKhoan;
 using GiapTech.LangCenter.LMS.Application.QuanTri.ThietLap;
 using GiapTech.LangCenter.LMS.Domain.Common;
@@ -117,6 +118,35 @@ public class TaiKhoanController(ISender sender) : ControllerBase
         await sender.Send(new XoaTaiKhoanCommand(id), ct);
         return NoContent();
     }
+}
+
+/// <summary>
+/// FR-16 — nhật ký thao tác hệ thống.
+///
+/// **Chỉ có endpoint đọc.** Nhật ký chỉ ghi thêm; không có `POST`/`PUT`/`DELETE` nào vì nhật
+/// ký sửa được thì không còn là nhật ký. Việc ghi do `NhatKyBehavior` tự làm ở pipeline.
+/// </summary>
+[ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/nhat-ky")]
+public class NhatKyController(ISender sender) : ControllerBase
+{
+    [HttpGet]
+    [RequirePermission(ChucNang.NhatKyHeThong, HanhDong.Xem)]
+    public async Task<ActionResult<KetQuaTrang<NhatKyDto>>> DanhSach(
+        [FromQuery] string? timKiem,
+        [FromQuery] string? chucNang,
+        [FromQuery] HanhDongNhatKy? hanhDong,
+        [FromQuery] Guid? nguoiDungId,
+        [FromQuery] bool? chiThatBai,
+        [FromQuery] DateTimeOffset? tuNgay,
+        [FromQuery] DateTimeOffset? denNgay,
+        [FromQuery] int trang = 1,
+        [FromQuery] int soDong = 30,
+        CancellationToken ct = default)
+        => Ok(await sender.Send(new LayNhatKyQuery(
+            timKiem, chucNang, hanhDong, nguoiDungId, chiThatBai,
+            tuNgay, denNgay, new ThamSoTrang(trang, soDong)), ct));
 }
 
 /// <summary>FR-05 — nhóm quyền.</summary>

@@ -8,6 +8,46 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — Nhật ký hệ thống (FR-16, 07/09/2026)
+
+- **Bảng `NHAT_KY_HE_THONG`** ghi lịch sử thao tác mọi module: ai · lúc nào · lệnh gì · tham số
+  · trường nào đổi từ giá trị gì sang gì · IP · thời gian xử lý · thành công hay mã lỗi.
+- **Ghi tự động ở pipeline MediatR** (`NhatKyBehavior`) nên 46 lệnh hiện có và mọi lệnh thêm
+  sau này đều được ghi, không phải nhớ thêm code. Chỉ ghi lệnh GHI, không ghi truy vấn đọc.
+- **Một bản ghi cho mỗi LỆNH**, không phải mỗi dòng dữ liệu: `GhiDiemDanhCommand` ghi 20–30
+  dòng một lần, log từng dòng sẽ làm bảng này lớn hơn cả `DIEM_DANH`.
+- Giá trị trước/sau lấy từ `ChanBatThayDoi` — một `SaveChangesInterceptor` chụp ChangeTracker
+  TRƯỚC khi EF ghi.
+- **Chỉ ghi thêm**: không có endpoint sửa hay xoá, có test canh. Chức năng phân quyền mới
+  `NhatKyHeThong` — chỉ nhóm quản trị có.
+- Màn Quản trị → Nhật ký hệ thống: lọc theo module / hành động / chỉ-thất-bại, mở rộng từng
+  dòng để xem trường đã đổi và tham số lệnh.
+
+### Added — Xác nhận trước mọi thao tác ghi
+
+- Hook **`useXacNhan()`** dùng chung cho 11 màn. Hỏi trước mọi thao tác thêm/sửa/xoá, kể cả bấm
+  Lưu trong form.
+- Lời văn nói **cụ thể đổi gì hoặc mất gì**, không dùng "Bạn có chắc không?" — hỏi nhiều thì
+  rủi ro lớn nhất là người dùng bấm Đồng ý theo phản xạ.
+- `HopXacNhan` thêm prop `nguyHiem`: nút đỏ và biểu tượng cảnh báo chỉ dành cho thao tác phá
+  huỷ, để màu đỏ không mất nghĩa.
+
+### Fixed
+
+- **Nhật ký ghi `chi_tiet` rỗng**: bản đầu đọc ChangeTracker SAU `SaveChanges`, lúc EF đã đặt
+  `OriginalValue = CurrentValue`. Phát hiện khi chạy thật. Sửa bằng `SaveChangesInterceptor`.
+- **Mật khẩu lộ nguyên văn trong `tham_so`**: cột đó là command THÔ nên mang mật khẩu dạng chữ,
+  và mật khẩu còn LỒNG trong khối `TaiKhoan`. Nay che đệ quy cả đối tượng lồng và mảng, thay
+  giá trị bằng `***` nhưng giữ tên trường. Phát hiện khi kiểm tay; test cũ bỏ sót vì chỉ kiểm
+  cột `chi_tiet`.
+- `ApiFactory` (test) thay hoàn toàn cấu hình DbContext nên **mất interceptor** — phải đăng ký
+  lại, nếu không mọi test về nhật ký xanh sai.
+
+### Migration
+
+`ThemNhatKyHeThong` — chỉ tạo bảng mới, không đụng dữ liệu hiện có.
+
+
 ### Added — View lịch dạng calendar (07/09/2026)
 
 - **Lịch tháng / tuần / danh sách** cho buổi học, dựng trên **FullCalendar 6.1.21** (MIT).

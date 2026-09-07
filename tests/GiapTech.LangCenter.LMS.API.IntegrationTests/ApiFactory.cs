@@ -122,8 +122,13 @@ public class ApiFactory : WebApplicationFactory<Program>
             services.AddScoped<ILuuTruAnh, TestLuuTruAnh>();
             services.AddScoped<ILuuTruTep, TestLuuTruTep>();
 
-            services.AddDbContext<AppDbContext>(o => o
+            services.AddDbContext<AppDbContext>((sp, o) => o
                 .UseInMemoryDatabase(_tenDb)
+                // PHẢI đăng ký lại interceptor: `AddDbContext` ở đây thay hoàn toàn cấu hình
+                // của Infrastructure, nên interceptor chụp thay đổi bị mất và mọi test về nhật
+                // ký sẽ thấy `chiTiet` rỗng — đúng như đã xảy ra lần đầu.
+                .AddInterceptors(sp.GetRequiredService<
+                    GiapTech.LangCenter.LMS.Infrastructure.NhatKy.ChanBatThayDoi>())
                 .ConfigureWarnings(w => w.Ignore(
                     Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning)));
         });

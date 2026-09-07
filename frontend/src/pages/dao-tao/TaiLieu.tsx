@@ -12,6 +12,7 @@ import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import { PhanTrang } from '@/components/ui/PhanTrang'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { useQuyen } from '@/lib/quyen'
+import { useXacNhan } from '@/lib/xacNhan'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 import { ChonTep, type TepDto } from '@/components/ui/ChonTep'
 
@@ -40,6 +41,7 @@ export default function TaiLieu({ lopHocId }: { lopHocId?: string } = {}) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const { coQuyen } = useQuyen()
+  const { hoi, hop } = useXacNhan()
 
   const [trang, setTrang] = useState(1)
   const [soDong, setSoDong] = useState(20)
@@ -116,8 +118,12 @@ export default function TaiLieu({ lopHocId }: { lopHocId?: string } = {}) {
       loai,
       lopHocIds: lopChon,
     }
-    if (dangSua) capNhat.mutate(body)
-    else tao.mutate(body)
+    const ten = body.tieuDe as string
+    hoi({
+      tieuDe: dangSua ? t('chung.xacNhanLuu') : t('chung.xacNhanThem'),
+      thongDiep: dangSua ? t('chung.hoiLuu', { ten }) : t('chung.hoiThem', { ten }),
+      onDongY: () => (dangSua ? capNhat.mutate(body) : tao.mutate(body)),
+    })
   }
 
   const lamMoiDangSua = async () => {
@@ -291,6 +297,8 @@ export default function TaiLieu({ lopHocId }: { lopHocId?: string } = {}) {
           </form>
         </Modal>
       )}
+
+      {hop}
 
       <HopXacNhan
         mo={xoaCho !== null}

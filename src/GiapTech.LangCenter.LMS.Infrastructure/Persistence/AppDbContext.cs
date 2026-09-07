@@ -42,6 +42,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant
 
     public DbSet<KhoanThuHocPhi> KhoanThuHocPhis => Set<KhoanThuHocPhi>();
 
+    public DbSet<NhatKyHeThong> NhatKyHeThongs => Set<NhatKyHeThong>();
+
+
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<TokenDatLaiMatKhau> TokenDatLaiMatKhaus => Set<TokenDatLaiMatKhau>();
 

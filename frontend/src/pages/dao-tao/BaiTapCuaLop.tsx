@@ -10,6 +10,7 @@ import { Modal } from '@/components/ui/Modal'
 import { KhungNoiDung } from '@/components/ui/KhungNoiDung'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { useQuyen } from '@/lib/quyen'
+import { useXacNhan } from '@/lib/xacNhan'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { ChonTep, type TepDto } from '@/components/ui/ChonTep'
 
@@ -65,6 +66,7 @@ export function BaiTapCuaLop({
   const { t } = useTranslation()
   const qc = useQueryClient()
   const { coQuyen } = useQuyen()
+  const { hoi, hop } = useXacNhan()
   const [moForm, setMoForm] = useState(false)
   const [dangSua, setDangSua] = useState<BaiTapDto | null>(null)
   const [buoiChon, setBuoiChon] = useState<string | null>(null)
@@ -121,11 +123,18 @@ export function BaiTapCuaLop({
       hanNop: han ? new Date(han).toISOString() : null,
     }
 
-    if (dangSua) capNhat.mutate(body)
-    else {
-      if (!buoiChon) { setMaLoi('DU_LIEU_KHONG_HOP_LE'); return }
-      tao.mutate({ ...body, buoiHocId: buoiChon })
-    }
+    const ten = String(body.tieuDe ?? '')
+    hoi({
+      tieuDe: dangSua ? t('chung.xacNhanLuu') : t('chung.xacNhanThem'),
+      thongDiep: dangSua ? t('chung.hoiLuu', { ten }) : t('chung.hoiThem', { ten }),
+      onDongY: () => {
+        if (dangSua) capNhat.mutate(body)
+        else {
+          if (!buoiChon) { setMaLoi('DU_LIEU_KHONG_HOP_LE'); return }
+          tao.mutate({ ...body, buoiHocId: buoiChon })
+        }
+      },
+    })
   }
 
   return (
@@ -191,7 +200,14 @@ export function BaiTapCuaLop({
                               nguyHiem: true,
                               ngatNhom: true,
                               an: !coQuyen('BaiTap', 'Xoa'),
-                              onChon: () => xoa.mutate(bt.id),
+                              onChon: () =>
+                                hoi({
+                                  tieuDe: t('chung.xacNhanXoa'),
+                                  thongDiep: t('hocLieu.hoiXoaBaiTap', { ten: bt.tieuDe }),
+                                  nhanDongY: t('chung.xoa'),
+                                  nguyHiem: true,
+                                  onDongY: () => xoa.mutate(bt.id),
+                                }),
                             },
                           ]}
                         />
@@ -279,6 +295,7 @@ export function BaiTapCuaLop({
       )}
 
       {xemNop && <DanhSachBaiNop baiTap={xemNop} onDong={() => setXemNop(null)} />}
+      {hop}
     </KhungNoiDung>
   )
 }

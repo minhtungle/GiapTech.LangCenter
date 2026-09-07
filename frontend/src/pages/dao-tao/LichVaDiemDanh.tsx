@@ -13,6 +13,7 @@ import { Modal } from '@/components/ui/Modal'
 import { KhungNoiDung } from '@/components/ui/KhungNoiDung'
 import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
+import { useXacNhan } from '@/lib/xacNhan'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 
 type TrangThaiDiemDanh = 'CoMat' | 'Vang' | 'DiMuon' | 'VangCoPhep'
@@ -418,6 +419,7 @@ function FormSinhLich({
   onDong: () => void
 }) {
   const { t } = useTranslation()
+  const { hoi, hop } = useXacNhan()
   const [thuChon, setThuChon] = useState<number[]>([2, 4, 6])
   const [ketThucTheo, setKetThucTheo] = useState<'soBuoi' | 'ngay'>('soBuoi')
   const [maLoi, setMaLoi] = useState<string | null>(null)
@@ -452,15 +454,26 @@ function FormSinhLich({
     // Endpoint nối tiếp nhận `tuNgay`, endpoint thay lịch nhận `ngayKhaiGiang`.
     const ngay = String(fd.get('ngayKhaiGiang'))
 
-    sinh.mutate({
-      ...(noiTiep ? { tuNgay: ngay } : { ngayKhaiGiang: ngay }),
-      // Backend dùng DayOfWeek: CN=0, T2=1… trùng với mã đang lưu.
-      thuTrongTuan: thuChon,
-      gioBatDau: String(fd.get('gioBatDau')) + ':00',
-      gioKetThuc: String(fd.get('gioKetThuc')) + ':00',
-      soBuoi: ketThucTheo === 'soBuoi' ? Number(fd.get('soBuoi')) : null,
-      denNgay: ketThucTheo === 'ngay' ? String(fd.get('denNgay')) : null,
-      ngayLoaiTru: loaiTruTho,
+    hoi({
+      tieuDe: noiTiep ? t('buoiHoc.sinhThemBuoi') : t('buoiHoc.sinhLich'),
+      thongDiep: noiTiep
+        ? t('buoiHoc.hoiSinhThem')
+        : daCoLich
+          ? t('buoiHoc.hoiSinhLai')
+          : t('buoiHoc.hoiSinhLich'),
+      nguyHiem: !noiTiep && daCoLich,
+      onDongY: () => {
+        sinh.mutate({
+          ...(noiTiep ? { tuNgay: ngay } : { ngayKhaiGiang: ngay }),
+          // Backend dùng DayOfWeek: CN=0, T2=1… trùng với mã đang lưu.
+          thuTrongTuan: thuChon,
+          gioBatDau: String(fd.get('gioBatDau')) + ':00',
+          gioKetThuc: String(fd.get('gioKetThuc')) + ':00',
+          soBuoi: ketThucTheo === 'soBuoi' ? Number(fd.get('soBuoi')) : null,
+          denNgay: ketThucTheo === 'ngay' ? String(fd.get('denNgay')) : null,
+          ngayLoaiTru: loaiTruTho,
+        })
+      },
     })
   }
 
@@ -574,6 +587,7 @@ function FormSinhLich({
           </Button>
         </div>
       </form>
+      {hop}
     </Modal>
   )
 }
@@ -589,6 +603,7 @@ function BangDiemDanh({
   onXong: () => void
 }) {
   const { t } = useTranslation()
+  const { hoi, hop } = useXacNhan()
   const qc = useQueryClient()
   const [sua, setSua] = useState<Record<string, { tt: TrangThaiDiemDanh; lyDo: string }>>({})
   const [maLoi, setMaLoi] = useState<string | null>(null)
@@ -730,14 +745,35 @@ function BangDiemDanh({
               {t('diemDanh.daLuu')}
             </span>
           )}
-          <Button variant="outline" disabled={chot.isPending} onClick={() => chot.mutate()}>
+          <Button
+            variant="outline"
+            disabled={chot.isPending}
+            onClick={() =>
+              hoi({
+                tieuDe: t('buoiHoc.chotBuoi'),
+                thongDiep: t('buoiHoc.hoiChotBuoi'),
+                nguyHiem: true,
+                onDongY: () => chot.mutate(),
+              })
+            }
+          >
             {t('buoiHoc.chotBuoi')}
           </Button>
-          <Button disabled={luu.isPending || ds.length === 0} onClick={() => luu.mutate()}>
+          <Button
+            disabled={luu.isPending || ds.length === 0}
+            onClick={() =>
+              hoi({
+                tieuDe: t('chung.xacNhanLuu'),
+                thongDiep: t('diemDanh.hoiLuu', { soLuong: ds.length }),
+                onDongY: () => luu.mutate(),
+              })
+            }
+          >
             {t('diemDanh.luu')}
           </Button>
         </div>
       </div>
+      {hop}
     </Modal>
   )
 }
@@ -753,6 +789,7 @@ function FormThemBuoi({
   onDong: () => void
 }) {
   const { t } = useTranslation()
+  const { hoi, hop } = useXacNhan()
   const [laHocBu, setLaHocBu] = useState(true)
   const [maLoi, setMaLoi] = useState<string | null>(null)
 
@@ -769,13 +806,20 @@ function FormThemBuoi({
         onSubmit={(e) => {
           e.preventDefault()
           const fd = new FormData(e.currentTarget)
-          them.mutate({
-            ngay: String(fd.get('ngay')),
-            gioBatDau: String(fd.get('gioBatDau')) + ':00',
-            gioKetThuc: String(fd.get('gioKetThuc')) + ':00',
-            laHocBu,
-            phongHoc: (fd.get('phongHoc') as string) || null,
-            ghiChu: (fd.get('ghiChu') as string) || null,
+          const ngay = String(fd.get('ngay'))
+          hoi({
+            tieuDe: t('buoiHoc.themBuoi'),
+            thongDiep: t('buoiHoc.hoiThemBuoi', { ngay }),
+            onDongY: () => {
+              them.mutate({
+                ngay: String(fd.get('ngay')),
+                gioBatDau: String(fd.get('gioBatDau')) + ':00',
+                gioKetThuc: String(fd.get('gioKetThuc')) + ':00',
+                laHocBu,
+                phongHoc: (fd.get('phongHoc') as string) || null,
+                ghiChu: (fd.get('ghiChu') as string) || null,
+              })
+            },
           })
         }}
         className="grid gap-4 sm:grid-cols-2"
@@ -830,6 +874,7 @@ function FormThemBuoi({
           </Button>
         </div>
       </form>
+      {hop}
     </Modal>
   )
 }

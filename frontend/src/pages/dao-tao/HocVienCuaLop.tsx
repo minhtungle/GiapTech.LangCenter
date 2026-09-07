@@ -8,6 +8,7 @@ import { KhungNoiDung } from '@/components/ui/KhungNoiDung'
 import { SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { useQuyen } from '@/lib/quyen'
+import { useXacNhan } from '@/lib/xacNhan'
 import {
   tienVN, ngayVN,
   type LopHocDto, type NguoiDungNgan, type HocVienTrongLop,
@@ -30,6 +31,7 @@ export function HocVienCuaLop({
   const { t } = useTranslation()
   const qc = useQueryClient()
   const { coQuyen } = useQuyen()
+  const { hoi, hop } = useXacNhan()
   // Ghi danh và gỡ học viên suy từ quyền SỬA LỚP, không phải một quyền riêng.
   const duocSuaLop = coQuyen('LopHoc', 'Sua')
   const [chon, setChon] = useState<string[]>([])
@@ -89,7 +91,16 @@ export function HocVienCuaLop({
             />
           </div>
           {duocSuaLop && (
-            <Button disabled={chon.length === 0 || them.isPending} onClick={() => them.mutate()}>
+            <Button
+              disabled={chon.length === 0 || them.isPending}
+              onClick={() =>
+                hoi({
+                  tieuDe: t('lopHoc.themHocVien'),
+                  thongDiep: t('lopHoc.hoiThemHocVien', { soLuong: chon.length }),
+                  onDongY: () => them.mutate(),
+                })
+              }
+            >
               {t('chung.them')}
             </Button>
           )}
@@ -140,7 +151,14 @@ export function HocVienCuaLop({
                             icon: Trash2,
                             nguyHiem: true,
                             an: !duocSuaLop,
-                            onChon: () => go.mutate(h.hocVienId),
+                            onChon: () =>
+                              hoi({
+                                tieuDe: t('lopHoc.goHocVien'),
+                                thongDiep: t('lopHoc.hoiGoHocVien', { ten: h.hoTen }),
+                                nhanDongY: t('lopHoc.goHocVien'),
+                                nguyHiem: true,
+                                onDongY: () => go.mutate(h.hocVienId),
+                              }),
                           },
                         ]}
                       />
@@ -152,6 +170,7 @@ export function HocVienCuaLop({
           </Table>
         )}
       </div>
+      {hop}
     </KhungNoiDung>
   )
 }

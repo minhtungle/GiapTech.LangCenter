@@ -14,6 +14,7 @@ import HocPhi from '@/pages/dao-tao/HocPhi'
 import NguoiDungVaTaiKhoan from '@/pages/quan-tri/NguoiDungVaTaiKhoan'
 import PhanQuyen from '@/pages/quan-tri/PhanQuyen'
 import ThietLap from '@/pages/quan-tri/ThietLap'
+import NhatKy from '@/pages/quan-tri/NhatKy'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -65,6 +66,7 @@ export default function App() {
               <Route path="/quan-tri/tai-khoan" element={<NguoiDungVaTaiKhoan />} />
               <Route path="/quan-tri/phan-quyen" element={<PhanQuyen />} />
               <Route path="/quan-tri/thiet-lap" element={<ThietLap />} />
+              <Route path="/quan-tri/nhat-ky" element={<NhatKy />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

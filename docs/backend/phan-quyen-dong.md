@@ -67,6 +67,7 @@ chuỗi tùy ý), tương ứng các module nghiệp vụ:
 | `HocPhi` | Học phí | *(đang làm)* |
 | `ThongKe` | Thống kê / dashboard | *(đang làm)* |
 | `LopHocToanTrungTam` | **Phạm vi**, không phải module — xem dưới | — |
+| `NhatKyHeThong` | Xem nhật ký thao tác hệ thống (FR-16). Chỉ `Xem` có nghĩa — nhật ký chỉ ghi thêm |
 
 ### Vì sao tách nhỏ tới mức này
 

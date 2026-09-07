@@ -78,10 +78,19 @@ public static class ChucNang
     /// </summary>
     public const string LopHocToanTrungTam = nameof(LopHocToanTrungTam);
 
+    /// <summary>
+    /// Xem nhật ký thao tác hệ thống (FR-16).
+    ///
+    /// Chỉ `Xem` có nghĩa thực chất: nhật ký do hệ thống tự ghi (`Them`), và **không bao giờ**
+    /// sửa hay xoá — nhật ký sửa được thì không còn là nhật ký. Seeder cấp cả 4 hành động cho
+    /// nhóm quản trị theo vòng lặp chung, nhưng không có endpoint nào cho Sua/Xoa.
+    /// </summary>
+    public const string NhatKyHeThong = nameof(NhatKyHeThong);
+
     public static readonly IReadOnlyList<string> TatCa =
     [
         TaiKhoan, PhanQuyen, ThietLapChung, Anh, DoiMatKhauNguoiKhac,
         LopHoc, BuoiHoc, DiemDanh, BaiTap, BaiNopBaiTap, BaiKiemTra, BaiLamKiemTra,
-        TaiLieu, HocPhi, ThongKe, LopHocToanTrungTam
+        TaiLieu, HocPhi, ThongKe, LopHocToanTrungTam, NhatKyHeThong
     ];
 }

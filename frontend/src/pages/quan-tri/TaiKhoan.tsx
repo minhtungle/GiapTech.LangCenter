@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Plus, KeyRound, Trash2, Pencil } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import { useQuyen } from '@/lib/quyen'
+import { useXacNhan } from '@/lib/xacNhan'
 import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong,
 } from '@/components/ui'
@@ -39,6 +40,7 @@ export default function TaiKhoan() {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const { coQuyen } = useQuyen()
+  const { hoi, hop } = useXacNhan()
 
   const [trang, setTrang] = useState(1)
   const [soDong, setSoDong] = useState(20)
@@ -256,7 +258,14 @@ export default function TaiKhoan() {
                             nguyHiem: true,
                             ngatNhom: true,
                             an: !coQuyen('TaiKhoan', 'Xoa'),
-                            onChon: () => xoa.mutate(u.id),
+                            onChon: () =>
+                              hoi({
+                                tieuDe: t('chung.xacNhanXoa'),
+                                thongDiep: t('taiKhoan.hoiXoa', { ten: u.username }),
+                                nhanDongY: t('chung.xoa'),
+                                nguyHiem: true,
+                                onDongY: () => xoa.mutate(u.id),
+                              }),
                           },
                         ]}
                       />
@@ -291,7 +300,15 @@ export default function TaiKhoan() {
           key={dangSua?.id ?? 'moi'}
           onSubmit={(e) => {
             e.preventDefault()
-            luu.mutate(new FormData(e.currentTarget))
+            const fd = new FormData(e.currentTarget)
+            const ten = dangSua ? dangSua.username : String(fd.get('username'))
+            hoi({
+              tieuDe: dangSua ? t('chung.xacNhanLuu') : t('chung.xacNhanThem'),
+              thongDiep: dangSua
+                ? t('chung.hoiLuu', { ten })
+                : t('chung.hoiThem', { ten }),
+              onDongY: () => luu.mutate(fd),
+            })
           }}
           className="space-y-4"
         >
@@ -388,7 +405,14 @@ export default function TaiKhoan() {
           onSubmit={(e) => {
             e.preventDefault()
             const fd = new FormData(e.currentTarget)
-            datLaiMk.mutate({ id: datLaiCho!.id, mk: String(fd.get('mkMoi')) })
+            const mk = String(fd.get('mkMoi'))
+            hoi({
+              tieuDe: t('taiKhoan.datLaiMatKhau'),
+              thongDiep: t('taiKhoan.hoiDatLaiMatKhau', { ten: datLaiCho!.username }),
+              nhanDongY: t('taiKhoan.datLaiMatKhau'),
+              nguyHiem: true,
+              onDongY: () => datLaiMk.mutate({ id: datLaiCho!.id, mk }),
+            })
           }}
           className="space-y-4"
         >
@@ -410,6 +434,7 @@ export default function TaiKhoan() {
           </ModalChan>
         </form>
       </Modal>
+      {hop}
     </div>
   )
 }

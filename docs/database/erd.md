@@ -1,6 +1,6 @@
 # ERD — Mô hình dữ liệu
 
-**24 bảng**, PostgreSQL. Nội dung dưới đây khớp với schema thật (kiểm bằng
+**25 bảng**, PostgreSQL. Nội dung dưới đây khớp với schema thật (kiểm bằng
 `information_schema` sau khi áp toàn bộ migration), không phải bản thiết kế trên giấy.
 
 ## Nguyên tắc bắt buộc
@@ -72,7 +72,7 @@ erDiagram
 
 ## Chi tiết bảng
 
-### Nhóm nền tảng (11 bảng)
+### Nhóm nền tảng (12 bảng)
 
 **Người và tài khoản là hai bảng riêng** (tách 07/09/2026). `NGUOI_DUNG` là bảng "con người",
 `TAI_KHOAN` là cách họ đăng nhập — xem [FR-03](../nghiep-vu/quan-tri-he-thong.md#fr-03--người-dùng-hồ-sơ-con-người).
@@ -90,6 +90,7 @@ erDiagram
 | `NGUOIDUNG_QUYEN` | Gán nhóm quyền | Nhiều–nhiều, gán cho **TÀI KHOẢN** (`tai_khoan_id`) chứ không cho người |
 | `REFRESH_TOKEN` | Phiên đăng nhập | Xoay vòng, phát hiện tái sử dụng |
 | `TOKEN_DATLAI_MATKHAU` | Quên mật khẩu | Hash, hạn 30 phút, dùng một lần |
+| `NHAT_KY_HE_THONG` | **Nhật ký thao tác** (FR-16) | Một bản ghi cho mỗi LỆNH, không phải mỗi dòng dữ liệu. Chỉ ghi thêm — không sửa, không xoá. `username`/`ho_ten` lưu **bản chụp** để đọc được cả khi tài khoản đã xoá |
 
 **Hai cột trạng thái, đừng nhầm:**
 
@@ -166,6 +167,7 @@ Các UNIQUE trên bảng con **không kèm `tenant_id`**: cột đầu đã là 
 | `KHOAN_THU_HOC_PHI → NGUOI_DUNG` (người thu) | SetNull | Cùng lý do |
 | `LOP_HOC → LOP_HOC` (nhân bản từ) | SetNull | Chỉ là dấu vết nguồn gốc; bản sao là lớp thật đang chạy |
 | `TEP_DINH_KEM → *` | Cascade | Tệp đi theo nội dung chứa nó |
+| `NHAT_KY_HE_THONG → NGUOI_DUNG` | SetNull | Nhật ký sống lâu hơn người dùng; Restrict sẽ khoá cứng mọi tài khoản vĩnh viễn vì ai cũng có vết |
 | `TAI_KHOAN → NGUOI_DUNG` | SetNull | Xoá người để lại tài khoản mồ côi chứ không xoá kèm — còn dấu vết ai từng đăng nhập |
 | `HO_SO_* → NGUOI_DUNG` | Cascade | Hồ sơ là một phần của người, vô nghĩa khi đứng riêng |
 | `NGUOIDUNG_QUYEN`, `REFRESH_TOKEN`, `TOKEN_DATLAI_MATKHAU → TAI_KHOAN` | Cascade | Quyền và phiên chết cùng tài khoản |

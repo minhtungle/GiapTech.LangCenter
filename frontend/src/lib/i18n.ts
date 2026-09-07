@@ -8,6 +8,13 @@ import { initReactI18next } from 'react-i18next'
  */
 const vi = {
   chung: {
+    xacNhanLuu: 'Xác nhận lưu',
+    xacNhanThem: 'Xác nhận thêm mới',
+    // Lời văn phải nói CỤ THỂ đổi gì — "Bạn có chắc không?" khiến người dùng bấm theo phản xạ.
+    hoiLuu: 'Lưu thay đổi cho "{{ten}}"? Thông tin hiện tại sẽ bị ghi đè.',
+    hoiThem: 'Thêm mới "{{ten}}"?',
+    hoiLuuChung: 'Lưu thay đổi?',
+    hoiThemChung: 'Thêm mới bản ghi này?',
     dangTai: 'Đang tải…',
     tatCa: 'Tất cả',
     dongY: 'Đồng ý',
@@ -83,8 +90,11 @@ const vi = {
     nguoiDung: 'Người dùng',
     phanQuyen: 'Phân quyền',
     thietLap: 'Thiết lập chung',
+    nhatKy: 'Nhật ký hệ thống',
   },
   hocPhi: {
+    hoiThu: 'Ghi nhận khoản thu {{soTien}}? Công nợ của học viên sẽ giảm tương ứng.',
+    hoiSua: 'Sửa khoản thu thành {{soTien}}? Công nợ được tính lại theo số mới.',
     tabCongNo: 'Công nợ',
     tabSoThu: 'Sổ thu',
     thuTien: 'Thu tiền',
@@ -150,8 +160,36 @@ const vi = {
       'Người này sẽ không đăng nhập được. Có thể tạo tài khoản cho họ sau ở tab Tài khoản.',
     giaiThichGanNguoi:
       'Bỏ trống nếu đây là tài khoản kỹ thuật, không thuộc về ai.',
+    hoiXoa:
+      'Xoá người dùng "{{ten}}"? Không khôi phục được. Nếu họ đã có dữ liệu thì hãy đánh dấu '
+      + '"Đã nghỉ" thay vì xoá.',
     giaiThichVoHieuHoa:
       'Vô hiệu hoá chỉ chặn đăng nhập. Hồ sơ và toàn bộ dữ liệu của người này giữ nguyên.',
+  },
+  nhatKy: {
+    timTheo: 'Tên lệnh, người thực hiện',
+    module: 'Module',
+    hanhDong: 'Hành động',
+    thoiDiem: 'Thời điểm',
+    nguoiThucHien: 'Người thực hiện',
+    thaoTac: 'Lệnh',
+    soBanGhi: 'Bản ghi',
+    ketQua: 'Kết quả',
+    thanhCong: 'Thành công',
+    thatBai: 'Thất bại',
+    chiThatBai: 'Chỉ hiện thao tác thất bại',
+    khongCoBanGhi: 'Chưa có thao tác nào được ghi nhận',
+    xemChiTiet: 'Xem chi tiết',
+    truongDaDoi: 'Trường đã đổi',
+    thamSo: 'Tham số lệnh',
+    diaChiIp: 'IP',
+  },
+  hanhDongNhatKy: {
+    Them: 'Thêm',
+    Sua: 'Sửa',
+    Xoa: 'Xoá',
+    XacThuc: 'Xác thực',
+    Khac: 'Khác',
   },
   tongQuan: {
     chuaCoNoiDung:
@@ -177,6 +215,9 @@ const vi = {
     HocVien: 'Học viên',
   },
   lopHoc: {
+    hoiThemHocVien: 'Ghi danh {{soLuong}} học viên vào lớp này?',
+    hoiGoHocVien:
+      'Gỡ "{{ten}}" khỏi lớp? Điểm danh và học phí đã ghi vẫn được giữ.',
     tieuDe: 'Lớp học',
     themMoi: 'Thêm lớp học',
     ten: 'Tên lớp',
@@ -254,6 +295,14 @@ const vi = {
     kieuLich: 'Lịch',
   },
   buoiHoc: {
+    hoiSinhLich: 'Sinh lịch với tần suất đã chọn?',
+    hoiSinhThem: 'Sinh thêm buổi nối tiếp lịch hiện tại? Không buổi nào bị xoá.',
+    hoiSinhLai:
+      'Sinh lại sẽ XOÁ các buổi chưa học và tạo lịch mới. Buổi đã chốt được giữ nguyên. Tiếp tục?',
+    hoiChotBuoi:
+      'Chốt buổi này? Người chưa điểm danh sẽ được ghi là Vắng, và sau khi chốt không sửa '
+      + 'được giờ, không huỷ, không xoá buổi nữa.',
+    hoiThemBuoi: 'Thêm buổi học ngày {{ngay}}?',
     thuTuNgan: 'Buổi ',
     themBuoi: 'Thêm buổi',
     sinhThemBuoi: 'Sinh thêm buổi',
@@ -303,6 +352,7 @@ const vi = {
     tuDiemDanh: 'Điểm danh nhanh',
   },
   diemDanh: {
+    hoiLuu: 'Lưu điểm danh cho {{soLuong}} học viên?',
     tieuDe: 'Điểm danh',
     hocVien: 'Học viên',
     tuKhai: 'Học viên tự khai',
@@ -340,6 +390,7 @@ const vi = {
     Sunday: 'CN',
   },
   hocLieu: {
+    hoiXoaBaiTap: 'Xoá bài tập "{{ten}}"? Bài nộp của học viên cũng mất theo.',
     baiTap: 'Bài tập',
     taiLieu: 'Tài liệu',
     themBaiTap: 'Giao bài tập',
@@ -408,10 +459,16 @@ const vi = {
     buocDoiMatKhau: 'Bắt buộc đổi mật khẩu ở lần đăng nhập đầu',
     phaiDoiMatKhau: 'Cần đổi mật khẩu',
     // Khoá theo TÊN ENUM để t(`taiKhoan.${trangThai}`) tra thẳng được.
+    hoiXoa:
+      'Xoá tài khoản "{{ten}}"? Hồ sơ người dùng vẫn được giữ, chỉ mất đường đăng nhập.',
+    hoiDatLaiMatKhau:
+      'Đặt lại mật khẩu cho "{{ten}}"? Họ sẽ phải đổi lại ở lần đăng nhập kế tiếp, và mật '
+      + 'khẩu cũ mất hiệu lực ngay.',
     HoatDong: 'Hoạt động',
     VoHieuHoa: 'Vô hiệu hóa',
   },
   quyen: {
+    hoiLuu: 'Lưu nhóm quyền "{{ten}}"? Quyền của mọi tài khoản trong nhóm đổi theo ngay.',
     tieuDe: 'Phân quyền truy cập',
     tenQuyen: 'Tên nhóm quyền',
     moTa: 'Mô tả',
@@ -440,12 +497,14 @@ const vi = {
     HocPhi: 'Học phí',
     ThongKe: 'Thống kê',
     LopHocToanTrungTam: 'Xem mọi lớp của trung tâm',
+    NhatKyHeThong: 'Nhật ký hệ thống',
     PhanQuyen: 'Phân quyền',
     ThietLapChung: 'Thiết lập chung',
     Anh: 'Ảnh (logo, ảnh bìa, QR)',
     DoiMatKhauNguoiKhac: 'Đổi mật khẩu người khác',
   },
   thietLap: {
+    hoiLuu: 'Lưu thiết lập trung tâm? Thông tin hiện tại sẽ bị ghi đè.',
     tieuDe: 'Thiết lập chung',
     tenTrungTam: 'Tên trung tâm',
     tenVietTat: 'Tên viết tắt',

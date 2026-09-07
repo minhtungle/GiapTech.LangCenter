@@ -41,6 +41,7 @@ Lỗi đã bắt được, thứ tưởng đúng mà sai, giới hạn chưa g�
 
 | Ngày | Nội dung chính |
 |---|---|
+| [2026-09-07 (nhật ký)](./2026-09-07-xac-nhan-va-nhat-ky.md) | **Xác nhận mọi thao tác** + **nhật ký hệ thống** (FR-16) — vá 2 lỗi: ChangeTracker rỗng, mật khẩu lộ |
 | [2026-09-07 (lịch)](./2026-09-07-lich-calendar.md) | **View calendar** bằng FullCalendar 6 + `GET /toi/cau-hinh` cho múi giờ trung tâm |
 | [2026-09-07 (buổi học)](./2026-09-07-bo-sung-buoi-hoc.md) | **Bổ sung buổi** vào lịch đã có + **khoá buổi đã chốt** — vá 2 lỗ hổng sửa/huỷ buổi đã chốt |
 | [2026-09-07 (quyền UI)](./2026-09-07-an-menu-theo-quyen.md) | **Ẩn menu/nút theo quyền** — endpoint `/toi/quyen` + hook `useQuyen`, đóng nợ N2 |

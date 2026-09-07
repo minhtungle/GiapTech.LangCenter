@@ -10,6 +10,7 @@ import { Modal, ModalChan } from '@/components/ui/Modal'
 import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { useQuyen } from '@/lib/quyen'
+import { useXacNhan } from '@/lib/xacNhan'
 
 interface ChucNangDto {
   tenChucNang: string
@@ -32,6 +33,7 @@ export default function PhanQuyen() {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const { coQuyen } = useQuyen()
+  const { hoi, hop } = useXacNhan()
   const [dangSua, setDangSua] = useState<QuyenDto | null>(null)
   const [moForm, setMoForm] = useState(false)
   const [tenQuyen, setTenQuyen] = useState('')
@@ -183,7 +185,18 @@ export default function PhanQuyen() {
               >
                 {t('chung.huy')}
               </Button>
-              <Button onClick={() => luu.mutate()} disabled={luu.isPending || !tenQuyen}>
+              <Button
+                onClick={() =>
+                  hoi({
+                    tieuDe: dangSua ? t('chung.xacNhanLuu') : t('chung.xacNhanThem'),
+                    thongDiep: dangSua
+                      ? t('quyen.hoiLuu', { ten: tenQuyen })
+                      : t('chung.hoiThem', { ten: tenQuyen }),
+                    onDongY: () => luu.mutate(),
+                  })
+                }
+                disabled={luu.isPending || !tenQuyen}
+              >
                 {luu.isPending ? t('chung.dangTai') : t('chung.luu')}
               </Button>
             </ModalChan>
@@ -254,6 +267,7 @@ export default function PhanQuyen() {
           setXoaCho(null)
         }}
       />
+      {hop}
     </div>
   )
 }

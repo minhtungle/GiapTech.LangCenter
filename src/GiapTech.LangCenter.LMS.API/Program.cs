@@ -30,6 +30,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
 builder.Services.ThemGioiHanTanSuat();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+builder.Services.AddScoped<IThongTinYeuCau, ThongTinYeuCau>();
 
 builder.Services.ThemApplication();
 builder.Services.ThemInfrastructure(builder.Configuration);

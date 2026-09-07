@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Trash2, Pencil } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import { useQuyen } from '@/lib/quyen'
+import { useXacNhan } from '@/lib/xacNhan'
 import {
   Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong,
 } from '@/components/ui'
@@ -69,6 +70,7 @@ export default function NguoiDung() {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const { coQuyen } = useQuyen()
+  const { hoi, hop } = useXacNhan()
 
   const [trang, setTrang] = useState(1)
   const [soDong, setSoDong] = useState(20)
@@ -325,7 +327,14 @@ export default function NguoiDung() {
                             nguyHiem: true,
                             ngatNhom: true,
                             an: !coQuyen('TaiKhoan', 'Xoa'),
-                            onChon: () => xoa.mutate(u.id),
+                            onChon: () =>
+                              hoi({
+                                tieuDe: t('chung.xacNhanXoa'),
+                                thongDiep: t('nguoiDung.hoiXoa', { ten: u.hoTen }),
+                                nhanDongY: t('chung.xoa'),
+                                nguyHiem: true,
+                                onDongY: () => xoa.mutate(u.id),
+                              }),
                           },
                         ]}
                       />
@@ -360,7 +369,15 @@ export default function NguoiDung() {
           key={dangSua?.id ?? 'moi'}
           onSubmit={(e) => {
             e.preventDefault()
-            luu.mutate(new FormData(e.currentTarget))
+            const fd = new FormData(e.currentTarget)
+            const ten = String(fd.get('hoTen'))
+            hoi({
+              tieuDe: dangSua ? t('chung.xacNhanLuu') : t('chung.xacNhanThem'),
+              thongDiep: dangSua
+                ? t('chung.hoiLuu', { ten })
+                : t('chung.hoiThem', { ten }),
+              onDongY: () => luu.mutate(fd),
+            })
           }}
           className="space-y-4"
         >
@@ -578,6 +595,7 @@ export default function NguoiDung() {
           </ModalChan>
         </form>
       </Modal>
+      {hop}
     </div>
   )
 }

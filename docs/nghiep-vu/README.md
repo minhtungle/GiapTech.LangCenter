@@ -39,6 +39,7 @@ git history.
 | FR-13 | Tài liệu | [Học liệu](./hoc-lieu.md) |
 | FR-14 | Học phí & công nợ | [Học phí](./hoc-phi.md) |
 | FR-15 | Thống kê / Dashboard | *(chưa làm)* |
+| FR-16 | Nhật ký hệ thống | [Nhật ký hệ thống](./nhat-ky-he-thong.md) |
 
 ## Quy tắc nghiệp vụ xuyên suốt
 

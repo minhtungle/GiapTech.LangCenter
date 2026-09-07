@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   Users, ShieldCheck, Settings, LogOut, Home, GraduationCap, BookOpen, Wallet,
-  PanelLeftClose, PanelLeft, Menu, X,
+  PanelLeftClose, PanelLeft, Menu, X, ScrollText,
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useQuyen } from '@/lib/quyen'
@@ -78,6 +78,10 @@ export default function Layout() {
         {
           to: '/quan-tri/thiet-lap', nhan: t('menu.thietLap'), icon: Settings,
           can: 'ThietLapChung',
+        },
+        {
+          to: '/quan-tri/nhat-ky', nhan: t('menu.nhatKy'), icon: ScrollText,
+          can: 'NhatKyHeThong',
         },
       ],
     },

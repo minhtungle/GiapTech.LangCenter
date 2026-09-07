@@ -43,6 +43,8 @@ public interface IAppDbContext
 
     DbSet<KhoanThuHocPhi> KhoanThuHocPhis { get; }
 
+    DbSet<NhatKyHeThong> NhatKyHeThongs { get; }
+
     DbSet<RefreshToken> RefreshTokens { get; }
     DbSet<TokenDatLaiMatKhau> TokenDatLaiMatKhaus { get; }
 

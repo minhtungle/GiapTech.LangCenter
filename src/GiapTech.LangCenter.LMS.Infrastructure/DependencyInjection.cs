@@ -1,4 +1,5 @@
 using GiapTech.LangCenter.LMS.Application.Common.Interfaces;
+using GiapTech.LangCenter.LMS.Infrastructure.NhatKy;
 using GiapTech.LangCenter.LMS.Infrastructure.Identity;
 using GiapTech.LangCenter.LMS.Infrastructure.LuuTru;
 using GiapTech.LangCenter.LMS.Infrastructure.MultiTenancy;
@@ -41,7 +42,14 @@ public static class DependencyInjection
                         maxRetryCount: 3,
                         maxRetryDelay: TimeSpan.FromSeconds(2),
                         errorCodesToAdd: null))
-                .UseSnakeCaseNamingConvention());
+                .UseSnakeCaseNamingConvention()
+                // Chụp trường đã đổi TRƯỚC khi ghi xuống DB — sau SaveChanges thì EF đã đặt
+                // OriginalValue = CurrentValue nên không còn gì để so.
+                .AddInterceptors(sp.GetRequiredService<ChanBatThayDoi>()));
+
+        // Scoped: mỗi request một bộ đếm riêng. Interceptor ghi vào, NhatKyBehavior đọc ra.
+        services.AddScoped<BoDemThayDoi>();
+        services.AddScoped<ChanBatThayDoi>();
 
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
 
@@ -49,6 +57,7 @@ public static class DependencyInjection
         services.AddScoped<IQuyenService, QuyenService>();
         services.AddScoped<IPhamViLopHoc, PhamViLopHoc>();
         services.AddScoped<IPhamViHocPhi, PhamViHocPhi>();
+        services.AddScoped<IGhiNhatKy, NhatKy.GhiNhatKy>();
         services.AddScoped<IMuiGioTrungTam, MuiGioTrungTam>();
         services.AddSingleton<IPasswordHasher, AppPasswordHasher>();
         services.AddSingleton<ITokenService, TokenService>();
