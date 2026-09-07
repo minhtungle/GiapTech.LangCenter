@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -208,6 +209,249 @@ public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Contains(ChucNang.NhanVienKinhDoanh, co);
         Assert.Contains(ChucNang.GiaoVienNhanSu, co);
         Assert.Contains(ChucNang.DoanhThu, co);
+    }
+
+    // ---------- Tách màn hồ sơ: /nhan-su (HRM) vs /hoc-vien (LMS) ----------
+
+    /// <summary>
+    /// `/nhan-su` trả đúng ba vai trò nhân sự, KHÔNG trả học viên.
+    ///
+    /// Lọc ở server: lọc trên trang đã tải thì phân trang sai (trang 20 dòng còn 3 dòng sau
+    /// khi lọc) và tổng số bản ghi hiển thị sai.
+    /// </summary>
+    [Fact]
+    public async Task Danh_sach_nhan_su_khong_gom_hoc_vien()
+    {
+        var admin = await Client();
+        await TaoNguoiDungVaiTro(admin, "ns-gv", "GiaoVien");
+        await TaoNguoiDungVaiTro(admin, "ns-tg", "TroGiang");
+        await TaoNguoiDungVaiTro(admin, "ns-nv", "NhanVien");
+        await TaoNguoiDungVaiTro(admin, "ns-hv", "HocVien");
+
+        var loai = await LoaiTrongDanhSach(admin, "/api/v1/nhan-su");
+
+        Assert.Contains("GiaoVien", loai);
+        Assert.Contains("TroGiang", loai);
+        Assert.Contains("NhanVien", loai);
+        Assert.DoesNotContain("HocVien", loai);
+    }
+
+    /// <summary>Chiều ngược: `/hoc-vien` chỉ trả học viên.</summary>
+    [Fact]
+    public async Task Danh_sach_hoc_vien_chi_gom_hoc_vien()
+    {
+        var admin = await Client();
+        await TaoNguoiDungVaiTro(admin, "hv-only-gv", "GiaoVien");
+        await TaoNguoiDungVaiTro(admin, "hv-only-hv", "HocVien");
+
+        var loai = await LoaiTrongDanhSach(admin, "/api/v1/hoc-vien");
+
+        Assert.NotEmpty(loai);
+        Assert.All(loai, l => Assert.Equal("HocVien", l));
+    }
+
+    /// <summary>
+    /// **Phạm vi màn hình thắng bộ lọc người dùng gửi lên.** Gõ thẳng
+    /// `?loaiNguoiDung=HocVien` vào `/nhan-su` vẫn không ra học viên nào.
+    ///
+    /// Hai tầng cùng bảo đảm việc này:
+    ///
+    /// 1. Controller **bỏ qua** bộ lọc nằm ngoài phạm vi (`loc` về null) — nên kết quả là cả
+    ///    danh sách nhân sự, KHÔNG phải danh sách rỗng. Bỏ qua một bộ lọc vô nghĩa dễ hiểu
+    ///    hơn là trả về bảng trắng không giải thích.
+    /// 2. Ngay cả khi tầng 1 bị bỏ, `LayDanhSachNguoiDungQuery` áp cả `TrongCacLoai` **và**
+    ///    `LoaiNguoiDung` (AND) nên giao vẫn rỗng — học viên không lọt ra được.
+    ///
+    /// Điều bất biến của cả hai tầng, và là khẳng định của test này: **`/nhan-su` không bao
+    /// giờ trả về học viên**, dù URL có gì.
+    /// </summary>
+    [Fact]
+    public async Task Bo_loc_tren_url_khong_pha_duoc_pham_vi_man_hinh()
+    {
+        var admin = await Client();
+        await TaoNguoiDungVaiTro(admin, "pha-pham-vi-hv", "HocVien");
+        await TaoNguoiDungVaiTro(admin, "pha-pham-vi-gv", "GiaoVien");
+
+        var loai = await LoaiTrongDanhSach(admin, "/api/v1/nhan-su?loaiNguoiDung=HocVien");
+        Assert.DoesNotContain("HocVien", loai);
+
+        // Không rỗng — chứng minh tham số bị BỎ QUA (tầng 1), chứ không phải giao rỗng khiến
+        // người dùng thấy bảng trắng.
+        Assert.NotEmpty(loai);
+
+        // Bộ lọc HỢP LỆ trong phạm vi thì vẫn phải hoạt động bình thường.
+        var chiGv = await LoaiTrongDanhSach(admin, "/api/v1/nhan-su?loaiNguoiDung=GiaoVien");
+        Assert.Equal(["GiaoVien"], chiGv);
+    }
+
+    /// <summary>
+    /// Không tạo được HỌC VIÊN qua endpoint nhân sự — trả mã lỗi rõ ràng, không phải 500.
+    /// </summary>
+    [Fact]
+    public async Task Khong_tao_duoc_hoc_vien_qua_endpoint_nhan_su()
+    {
+        var admin = await Client();
+
+        var res = await admin.PostAsJsonAsync("/api/v1/nhan-su", new
+        {
+            HoTen = "Học viên lách qua HRM",
+            LoaiNguoiDung = "HocVien",
+            TaiKhoan = (object?)null
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        Assert.Equal("KHONG_PHAI_NHAN_SU",
+            (await res.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("errorCode").GetString());
+    }
+
+    /// <summary>Chiều ngược: không tạo được GIÁO VIÊN qua endpoint học viên.</summary>
+    [Fact]
+    public async Task Khong_tao_duoc_giao_vien_qua_endpoint_hoc_vien()
+    {
+        var admin = await Client();
+
+        var res = await admin.PostAsJsonAsync("/api/v1/hoc-vien", new
+        {
+            HoTen = "Giáo viên lách qua LMS",
+            LoaiNguoiDung = "GiaoVien",
+            TaiKhoan = (object?)null
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        Assert.Equal("KHONG_PHAI_HOC_VIEN",
+            (await res.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("errorCode").GetString());
+    }
+
+    /// <summary>
+    /// **HỌC VIÊN không đọc được danh sách học viên.**
+    ///
+    /// Lỗi tôi mắc và sửa trong lượt kiểm tay 08/09/2026: ban đầu gác `/hoc-vien` bằng
+    /// `LopHoc` — nhưng `LopHoc.Xem` là quyền học viên CŨNG CÓ (để xem lớp mình học), nên học
+    /// viên đọc được họ tên, số điện thoại, địa chỉ, liên hệ phụ huynh của mọi học viên khác.
+    ///
+    /// Test cũ không bắt được vì chỉ dùng `admin`. Bài học: endpoint mới phải thử bằng tài
+    /// khoản **ít quyền nhất**, không phải bằng admin.
+    /// </summary>
+    [Fact]
+    public async Task Hoc_vien_khong_doc_duoc_danh_sach_hoc_vien()
+    {
+        var admin = await Client();
+        var quyenHv = await QuyenId(admin, "Học viên");
+        await TaoNguoiDung(admin, "hv-doc-ds", [quyenHv]);
+
+        var cHv = await Client("hv-doc-ds", "matkhau123");
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await cHv.GetAsync("/api/v1/hoc-vien")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await cHv.GetAsync("/api/v1/nhan-su")).StatusCode);
+
+        // Học viên vẫn phải xem được LỚP của mình — không được sửa quá tay thành chặn cả cái đó.
+        (await cHv.GetAsync("/api/v1/lop-hoc")).EnsureSuccessStatusCode();
+    }
+
+    /// <summary>
+    /// Chiều ngược của test trên: GIÁO VIÊN phải đọc được danh sách học viên — nhóm Giáo viên
+    /// có `TaiKhoan.Xem` sẵn để "xem học viên lớp mình".
+    ///
+    /// Nếu sửa lỗi trên bằng `LopHocToanTrungTam` thì test này đỏ: giáo viên cố ý KHÔNG có
+    /// chức năng đó (nó là thứ giới hạn họ trong lớp được phân công).
+    /// </summary>
+    [Fact]
+    public async Task Giao_vien_doc_duoc_danh_sach_hoc_vien()
+    {
+        var admin = await Client();
+        var quyenGv = await QuyenId(admin, "Giáo viên");
+        await TaoNguoiDung(admin, "gv-doc-ds", [quyenGv]);
+
+        var cGv = await Client("gv-doc-ds", "matkhau123");
+        (await cGv.GetAsync("/api/v1/hoc-vien")).EnsureSuccessStatusCode();
+    }
+
+    /// <summary>
+    /// Hai màn gác bằng HAI chức năng khác nhau — đây là điểm cốt lõi của việc tách.
+    ///
+    /// Người chỉ có `GiaoVienNhanSu` (trưởng phòng nhân sự) vào được `/nhan-su` nhưng **không**
+    /// vào được `/hoc-vien`; và họ KHÔNG cần quyền `TaiKhoan`, tức không thấy tài khoản đăng
+    /// nhập của ai. Nếu màn Nhân sự vẫn dùng `/nguoi-dung` (gác bằng `TaiKhoan` — chức năng
+    /// dùng chung) thì việc tách hai màn chẳng đổi được gì ở tầng API.
+    /// </summary>
+    [Fact]
+    public async Task Hai_man_ho_so_gac_bang_hai_chuc_nang_khac_nhau()
+    {
+        var admin = await Client();
+
+        var qNhanSu = await TaoNhomQuyen(admin, "Chỉ nhân sự", ChucNang.GiaoVienNhanSu);
+        await TaoNguoiDung(admin, "chi-nhan-su", [qNhanSu]);
+        var cNhanSu = await Client("chi-nhan-su", "matkhau123");
+
+        (await cNhanSu.GetAsync("/api/v1/nhan-su")).EnsureSuccessStatusCode();
+
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await cNhanSu.GetAsync("/api/v1/hoc-vien")).StatusCode);
+
+        // Không có quyền `TaiKhoan` → không đọc được danh sách kèm tài khoản đăng nhập.
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await cNhanSu.GetAsync("/api/v1/nguoi-dung")).StatusCode);
+
+        // Chiều ngược: người chỉ có `TaiKhoan` (quản trị hồ sơ/tài khoản) vào được màn Học
+        // viên nhưng KHÔNG vào được màn Nhân sự — đó mới là phần HRM.
+        var qTk = await TaoNhomQuyen(admin, "Chỉ tài khoản", ChucNang.TaiKhoan);
+        await TaoNguoiDung(admin, "chi-tai-khoan", [qTk]);
+        var cTk = await Client("chi-tai-khoan", "matkhau123");
+
+        (await cTk.GetAsync("/api/v1/hoc-vien")).EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await cTk.GetAsync("/api/v1/nhan-su")).StatusCode);
+    }
+
+    /// <summary>
+    /// Cách ly tenant tầng ĐỌC cho endpoint mới: nhân sự tenant A không lọt vào danh sách của
+    /// tenant B. Query Filter lo việc này, nhưng endpoint mới phải được canh tường minh —
+    /// `CachLyTenantTests` không biết có endpoint này.
+    /// </summary>
+    [Fact]
+    public async Task Nhan_su_khong_ro_ri_qua_tenant()
+    {
+        var admin = await Client();
+        await TaoNguoiDungVaiTro(admin, "ns-rieng-tenant-a", "GiaoVien");
+
+        var cB = factory.CreateClient();
+        var dn = await cB.PostAsJsonAsync("/api/v1/auth/dang-nhap",
+            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123" });
+        dn.EnsureSuccessStatusCode();
+        cB.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Bearer", (await dn.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("accessToken").GetString());
+
+        var dsB = await cB.GetFromJsonAsync<JsonElement>("/api/v1/nhan-su?soDong=200");
+        var tenB = dsB.GetProperty("duLieu").EnumerateArray()
+            .Select(x => x.GetProperty("hoTen").GetString()).ToList();
+
+        Assert.DoesNotContain("Người ns-rieng-tenant-a", tenB);
+    }
+
+    /// <summary>Tạo người dùng với vai trò chỉ định, qua endpoint quản trị chung.</summary>
+    private static async Task<Guid> TaoNguoiDungVaiTro(
+        HttpClient c, string username, string loai)
+    {
+        var res = await c.PostAsJsonAsync("/api/v1/nguoi-dung", new
+        {
+            HoTen = $"Người {username}",
+            LoaiNguoiDung = loai,
+            TaiKhoan = (object?)null
+        });
+        res.EnsureSuccessStatusCode();
+        return await res.Content.ReadFromJsonAsync<Guid>();
+    }
+
+    private static async Task<List<string>> LoaiTrongDanhSach(HttpClient c, string duong)
+    {
+        var sep = duong.Contains('?') ? "&" : "?";
+        var d = await c.GetFromJsonAsync<JsonElement>($"{duong}{sep}soDong=200");
+        return d.GetProperty("duLieu").EnumerateArray()
+            .Select(x => x.GetProperty("loaiNguoiDung").GetString()!)
+            .Distinct().ToList();
     }
 
     /// <summary>

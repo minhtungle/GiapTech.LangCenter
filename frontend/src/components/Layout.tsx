@@ -4,7 +4,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   Users, ShieldCheck, Settings, LogOut, Home, GraduationCap, BookOpen, Wallet,
   PanelLeftClose, PanelLeft, Menu, X, ScrollText, Briefcase, UserCog, TrendingUp,
-  LayoutGrid, Check,
+  LayoutGrid, Check, KeyRound,
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useQuyen } from '@/lib/quyen'
@@ -80,13 +80,18 @@ export default function Layout() {
       tieuDe: t('menu.nhanSu'),
       heThong: 'Hrm',
       muc: [
+        // Hồ sơ con người của BA vai trò nhân sự. Học viên ở LMS — xem pages/hrm/NhanSu.tsx.
+        {
+          to: '/hrm/nhan-su', nhan: t('menu.nhanSuNguoiDung'),
+          icon: UserCog, can: 'GiaoVienNhanSu',
+        },
         {
           to: '/hrm/nhan-vien-kinh-doanh', nhan: t('menu.nhanVienKinhDoanh'),
           icon: Briefcase, can: 'NhanVienKinhDoanh',
         },
         {
           to: '/hrm/giao-vien', nhan: t('menu.giaoVienNhanSu'),
-          icon: UserCog, can: 'GiaoVienNhanSu',
+          icon: GraduationCap, can: 'GiaoVienNhanSu',
         },
       ],
     },
@@ -105,6 +110,7 @@ export default function Layout() {
       tieuDe: t('menu.daoTao'),
       heThong: 'Lms',
       muc: [
+        { to: '/hoc-vien', nhan: t('menu.hocVien'), icon: Users, can: 'TaiKhoan' },
         { to: '/lop-hoc', nhan: t('menu.lopHoc'), icon: GraduationCap, can: 'LopHoc' },
         { to: '/tai-lieu', nhan: t('menu.taiLieu'), icon: BookOpen, can: 'TaiLieu' },
         { to: '/hoc-phi', nhan: t('menu.hocPhi'), icon: Wallet, can: 'HocPhi' },
@@ -114,7 +120,7 @@ export default function Layout() {
     {
       tieuDe: t('menu.quanTri'),
       muc: [
-        { to: '/quan-tri/tai-khoan', nhan: t('menu.taiKhoan'), icon: Users, can: 'TaiKhoan' },
+        { to: '/quan-tri/tai-khoan', nhan: t('menu.taiKhoan'), icon: KeyRound, can: 'TaiKhoan' },
         {
           to: '/quan-tri/phan-quyen', nhan: t('menu.phanQuyen'), icon: ShieldCheck,
           can: 'PhanQuyen',

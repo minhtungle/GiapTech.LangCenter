@@ -45,7 +45,20 @@ public record LayDanhSachNguoiDungQuery(
     string? TimKiem = null,
     LoaiNguoiDung? LoaiNguoiDung = null,
     TrangThaiNhanSu? TrangThaiNhanSu = null,
-    ThamSoTrang? Trang = null) : IRequest<KetQuaTrang<NguoiDungDto>>;
+    ThamSoTrang? Trang = null,
+    /// <summary>
+    /// Giới hạn theo NHIỀU vai trò cùng lúc — màn Nhân sự (HRM) cần đúng ba vai trò
+    /// {NhanVien, GiaoVien, TroGiang}, còn màn Học viên (LMS) chỉ cần {HocVien}.
+    ///
+    /// Lọc ở SERVER chứ không `.filter()` trên trang đã tải: lọc phía client thì phân trang
+    /// sai (trang 20 dòng có thể còn 3 dòng sau khi lọc) và tổng số bản ghi hiển thị sai.
+    ///
+    /// Khác <see cref="LoaiNguoiDung"/>: tham số kia là **bộ lọc người dùng chọn** trong ô
+    /// "Vai trò", tham số này là **phạm vi của màn hình** — người dùng không đổi được. Giữ
+    /// riêng hai thứ để bộ lọc trong màn Nhân sự không bao giờ lọc ra được học viên.
+    /// </summary>
+    IReadOnlyCollection<LoaiNguoiDung>? TrongCacLoai = null)
+    : IRequest<KetQuaTrang<NguoiDungDto>>;
 
 public class LayDanhSachNguoiDungHandler(IAppDbContext db)
     : IRequestHandler<LayDanhSachNguoiDungQuery, KetQuaTrang<NguoiDungDto>>
@@ -63,6 +76,9 @@ public class LayDanhSachNguoiDungHandler(IAppDbContext db)
                              || (u.Email != null && u.Email.ToLower().Contains(tu))
                              || (u.SoDienThoai != null && u.SoDienThoai.Contains(tu)));
         }
+
+        if (request.TrongCacLoai is { Count: > 0 } pham)
+            q = q.Where(u => pham.Contains(u.LoaiNguoiDung));
 
         if (request.LoaiNguoiDung is { } loai) q = q.Where(u => u.LoaiNguoiDung == loai);
         if (request.TrangThaiNhanSu is { } tt) q = q.Where(u => u.TrangThaiNhanSu == tt);

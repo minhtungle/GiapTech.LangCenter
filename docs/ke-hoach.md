@@ -89,6 +89,7 @@ VPS → domain + HTTPS → backup. Xem
 | N10 | Nhắc nợ học phí / thông báo lịch học qua email (`IEmailSender` đã có, chưa nối) | Thấp |
 | N11 | Endpoint dọn tenant test + `globalTeardown` cho E2E | Thấp |
 | N13 | **Chưa dọn nhật ký cũ** — bảng `NHAT_KY_HE_THONG` tăng vô hạn, cần chính sách lưu giữ trước khi chạy production lâu dài | Trung bình |
+| N14 | Màn Học viên (LMS) và Nhân sự (HRM) cho đọc danh sách **toàn trung tâm**, chưa giới hạn "học viên lớp mình" — cần mở rộng `IPhamViLopHoc` cho hồ sơ con người | Trung bình |
 | N12 | `Token_bi_sua_chu_ky_thi_bi_tu_choi` **chớp nháy** — đỏ một lần khi chạy toàn bộ (12 giây), xanh khi chạy riêng | Trung bình |
 
 ## Kiểm chứng hiện tại

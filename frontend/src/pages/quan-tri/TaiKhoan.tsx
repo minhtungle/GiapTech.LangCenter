@@ -70,7 +70,13 @@ export default function TaiKhoan() {
     queryFn: async () => (await api.get<QuyenNgan[]>('/quyen')).data,
   })
 
-  /** Người dùng để gán — lấy nhiều để đủ chọn; danh sách này cũng dùng ở màn Lớp học. */
+  /**
+   * Người dùng để gán tài khoản — lấy nhiều để đủ chọn; danh sách này cũng dùng ở màn Lớp học.
+   *
+   * Vẫn gọi `/nguoi-dung` (gác bằng `TaiKhoan`) chứ không `/nhan-su` hay `/hoc-vien`: gán tài
+   * khoản áp dụng cho **cả bốn vai trò**, kể cả học viên. Đây là màn quản trị dùng chung, nên
+   * nó cần thấy mọi con người — khác hai màn hồ sơ đã tách theo hệ thống (08/09/2026).
+   */
   const { data: nguoiDungs } = useQuery({
     queryKey: ['nguoi-dung-ngan'],
     queryFn: async () =>
@@ -80,8 +86,10 @@ export default function TaiKhoan() {
 
   const lamMoi = () => {
     void qc.invalidateQueries({ queryKey: ['tai-khoan'] })
-    // Cột "tài khoản" ở tab Người dùng đổi theo.
+    // Cột "tài khoản" ở hai màn hồ sơ (Nhân sự bên HRM, Học viên bên LMS) đổi theo.
     void qc.invalidateQueries({ queryKey: ['nguoi-dung'] })
+    void qc.invalidateQueries({ queryKey: ['/nhan-su'] })
+    void qc.invalidateQueries({ queryKey: ['/hoc-vien'] })
   }
 
   const dong = () => {

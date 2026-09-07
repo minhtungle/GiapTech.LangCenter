@@ -8,6 +8,34 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — Tách màn hồ sơ con người: Nhân sự (HRM) và Học viên (LMS) (08/09/2026)
+
+- Màn "Người dùng" cũ quản cả 4 vai trò, nay tách đôi theo hệ thống:
+  **HRM → Hồ sơ nhân sự** (nhân viên, giáo viên, trợ giảng) · **LMS → Học viên**.
+  Học viên là **khách, không phải nhân sự**: người phụ trách tuyển sinh cần thêm học viên
+  nhưng không nên thấy hợp đồng, lương của giáo viên.
+- **Tài khoản** (tên đăng nhập, mật khẩu, nhóm quyền) ở lại cụm Quản trị dùng chung — đó là
+  quyền ĐĂNG NHẬP, việc của quản trị, không phải của nhân sự. Nó vẫn gán được cho **cả bốn**
+  vai trò nên vẫn gọi `/nguoi-dung`.
+- Endpoint mới `/nhan-su` (gác `GiaoVienNhanSu`) và `/hoc-vien` (gác `TaiKhoan`). Lọc vai trò
+  ở **server** — lọc trên trang đã tải thì phân trang và tổng số bản ghi đều sai.
+- Chặn hai chiều: không tạo được học viên qua `/nhan-su` (`KHONG_PHAI_NHAN_SU`) và không tạo
+  được nhân sự qua `/hoc-vien` (`KHONG_PHAI_HOC_VIEN`) — UI ẩn gì thì gọi API trực tiếp vẫn
+  lách được, nên phải chặn ở handler.
+- Một component `NguoiDung` dùng cho cả hai màn qua prop `phamVi`; chép thành hai file là chép
+  ~600 dòng form ba loại hồ sơ rồi hai bản trôi khỏi nhau.
+
+### Fixed — Học viên đọc được danh sách mọi học viên (08/09/2026)
+
+- Ban đầu tôi gác `/hoc-vien` bằng `LopHoc` — nhưng **`LopHoc.Xem` là quyền học viên cũng có**
+  (để xem lớp mình học), nên học viên đọc được họ tên, số điện thoại, địa chỉ, tên và số điện
+  thoại phụ huynh của mọi học viên khác.
+- Nay gác bằng `TaiKhoan`: nhóm Giáo viên có `TaiKhoan.Xem` sẵn ("xem học viên lớp mình"), nhóm
+  Học viên không có chức năng `TaiKhoan` nào. **Không** dùng `LopHocToanTrungTam` — giáo viên cố
+  ý không có nó, gác bằng nó sẽ chặn oan chính người cần dùng màn này nhất.
+- Phát hiện khi kiểm tay bằng tài khoản `hv1` thật. Test viết cùng lượt **không bắt được vì chỉ
+  dùng admin** — nay có test bằng tài khoản học viên và tài khoản giáo viên (hai chiều).
+
 ### Added — Ba hệ thống con HRM · CRM · LMS (08/09/2026)
 
 Chia hệ thống lớn thành ba hệ thống nhỏ theo nhóm quyền. **Không tách service**: vẫn một API,

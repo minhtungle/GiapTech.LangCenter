@@ -16,7 +16,6 @@ import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem
 export type LoaiNguoiDung = 'NhanVien' | 'GiaoVien' | 'TroGiang' | 'HocVien'
 export type TrangThaiNhanSu = 'DangLamViec' | 'DaNghi'
 
-const CAC_LOAI: LoaiNguoiDung[] = ['NhanVien', 'GiaoVien', 'TroGiang', 'HocVien']
 
 interface HoSoGiaoVien {
   bangCap: string | null
@@ -61,12 +60,33 @@ const laGiaoVien = (l: LoaiNguoiDung) => l === 'GiaoVien' || l === 'TroGiang'
 const ngayChoInput = (iso: string | null) => (iso ? iso.slice(0, 10) : '')
 
 /**
+ * Phạm vi của một màn hồ sơ con người: nó quản vai trò nào, gọi endpoint nào, gác quyền nào.
+ *
+ * Một component dùng cho HAI màn (08/09/2026): Nhân sự bên HRM và Học viên bên LMS. Chép thành
+ * hai file là chép ~600 dòng form ba loại hồ sơ, và từ đó hai bản sẽ trôi khỏi nhau — sửa lỗi
+ * một bên quên bên kia.
+ */
+export interface PhamViNguoiDung {
+  /** Endpoint gốc, ví dụ `/nhan-su` hoặc `/hoc-vien`. */
+  duong: string
+  /** Vai trò màn này quản. Một phần tử thì ẩn luôn ô lọc và ô chọn vai trò. */
+  vaiTro: LoaiNguoiDung[]
+  /** Chức năng phân quyền gác màn này — `GiaoVienNhanSu` (HRM) hoặc `LopHoc` (LMS). */
+  can: string
+  /** Khoá i18n của tiêu đề, dùng cho thông báo xác nhận xoá. */
+  khoaTieuDe: string
+}
+
+/**
  * FR-03 — người dùng (hồ sơ con người).
  *
  * Tách khỏi tài khoản (07/09/2026): vô hiệu hoá tài khoản không đụng tới dữ liệu người dùng,
  * nên giáo viên đã nghỉ vẫn giữ nguyên tên trong lịch sử lớp và vẫn phân công được vào lớp cũ.
+ *
+ * Chia hai màn theo hệ thống (08/09/2026): nhân sự → HRM, học viên → LMS. Xem
+ * {@link PhamViNguoiDung}.
  */
-export default function NguoiDung() {
+export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const { coQuyen } = useQuyen()
@@ -80,7 +100,7 @@ export default function NguoiDung() {
 
   const [moForm, setMoForm] = useState(false)
   const [dangSua, setDangSua] = useState<NguoiDungDto | null>(null)
-  const [loai, setLoai] = useState<LoaiNguoiDung>('HocVien')
+  const [loai, setLoai] = useState<LoaiNguoiDung>(phamVi.vaiTro[0])
   const [nhanSu, setNhanSu] = useState<TrangThaiNhanSu>('DangLamViec')
   const [taoTaiKhoan, setTaoTaiKhoan] = useState(false)
   const [quyenChon, setQuyenChon] = useState<string[]>([])
@@ -89,9 +109,9 @@ export default function NguoiDung() {
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
 
   const { data: kq = trangRong<NguoiDungDto>(), isLoading } = useQuery({
-    queryKey: ['nguoi-dung', timKiem, locVaiTro, locNhanSu, trang, soDong],
+    queryKey: [phamVi.duong, timKiem, locVaiTro, locNhanSu, trang, soDong],
     queryFn: async () =>
-      (await api.get<KetQuaTrang<NguoiDungDto>>('/nguoi-dung', {
+      (await api.get<KetQuaTrang<NguoiDungDto>>(phamVi.duong, {
         params: {
           timKiem: timKiem || undefined,
           loaiNguoiDung: locVaiTro || undefined,
@@ -109,6 +129,9 @@ export default function NguoiDung() {
 
   /** Đổi người dùng thì danh sách chọn giáo viên/học viên ở màn Lớp học cũng phải mới. */
   const lamMoi = () => {
+    // Vô hiệu hoá cache của CẢ hai màn (`/nhan-su`, `/hoc-vien`) và của danh sách rút gọn
+    // dùng ở màn Lớp học: sửa tên một giáo viên phải thấy ngay ở ô chọn giáo viên chính.
+    void qc.invalidateQueries({ queryKey: [phamVi.duong] })
     void qc.invalidateQueries({ queryKey: ['nguoi-dung'] })
     void qc.invalidateQueries({ queryKey: ['tai-khoan'] })
     void qc.invalidateQueries({ queryKey: ['nguoi-dung-ngan'] })
@@ -160,7 +183,7 @@ export default function NguoiDung() {
 
       if (dangSua) {
         than.trangThaiNhanSu = nhanSu
-        await api.put(`/nguoi-dung/${dangSua.id}`, { ...than, id: dangSua.id })
+        await api.put(`${phamVi.duong}/${dangSua.id}`, { ...than, id: dangSua.id })
       } else {
         if (taoTaiKhoan) {
           than.taiKhoan = {
@@ -170,7 +193,7 @@ export default function NguoiDung() {
             phaiDoiMatKhau: buocDoiMk,
           }
         }
-        await api.post('/nguoi-dung', than)
+        await api.post(phamVi.duong, than)
       }
     },
     onSuccess: () => {
@@ -181,7 +204,7 @@ export default function NguoiDung() {
   })
 
   const xoa = useMutation({
-    mutationFn: async (id: string) => api.delete(`/nguoi-dung/${id}`),
+    mutationFn: async (id: string) => api.delete(`${phamVi.duong}/${id}`),
     onSuccess: lamMoi,
     onError: (e) => setMaLoiBang(layMaLoi(e)),
   })
@@ -210,19 +233,25 @@ export default function NguoiDung() {
               placeholder={t('nguoiDung.timTheo')}
             />
           </div>
-          <div className="w-44">
-            <Label htmlFor="loc-vai-tro">{t('taiKhoan.loaiNguoiDung')}</Label>
-            <SelectTimKiem
-              id="loc-vai-tro"
-              luaChon={CAC_LOAI.map((l) => ({ giaTri: l, nhan: t(`loaiNguoiDung.${l}`) }))}
-              giaTri={locVaiTro}
-              onDoi={(v) => {
-                setLocVaiTro(v)
-                setTrang(1)
-              }}
-              placeholder={t('chung.tatCa')}
-            />
-          </div>
+          {/* Màn chỉ có MỘT vai trò (Học viên) thì ô lọc này luôn ra cùng kết quả — ẩn đi. */}
+          {phamVi.vaiTro.length > 1 && (
+            <div className="w-44">
+              <Label htmlFor="loc-vai-tro">{t('taiKhoan.loaiNguoiDung')}</Label>
+              <SelectTimKiem
+                id="loc-vai-tro"
+                luaChon={phamVi.vaiTro.map((l) => ({
+                  giaTri: l,
+                  nhan: t(`loaiNguoiDung.${l}`),
+                }))}
+                giaTri={locVaiTro}
+                onDoi={(v) => {
+                  setLocVaiTro(v)
+                  setTrang(1)
+                }}
+                placeholder={t('chung.tatCa')}
+              />
+            </div>
+          )}
           <div className="w-44">
             <Label htmlFor="loc-nhan-su">{t('nguoiDung.trangThaiNhanSu')}</Label>
             <SelectTimKiem
@@ -241,11 +270,11 @@ export default function NguoiDung() {
           </div>
         </div>
 
-        {coQuyen('TaiKhoan', 'Them') && (
+        {coQuyen(phamVi.can, 'Them') && (
           <Button
             onClick={() => {
               setDangSua(null)
-              setLoai('HocVien')
+              setLoai(phamVi.vaiTro[0])
               setNhanSu('DangLamViec')
               setTaoTaiKhoan(false)
               setQuyenChon([])
@@ -318,7 +347,7 @@ export default function NguoiDung() {
                           {
                             nhan: t('chung.sua'),
                             icon: Pencil,
-                            an: !coQuyen('TaiKhoan', 'Sua'),
+                            an: !coQuyen(phamVi.can, 'Sua'),
                             onChon: () => moSua(u),
                           },
                           {
@@ -326,7 +355,7 @@ export default function NguoiDung() {
                             icon: Trash2,
                             nguyHiem: true,
                             ngatNhom: true,
-                            an: !coQuyen('TaiKhoan', 'Xoa'),
+                            an: !coQuyen(phamVi.can, 'Xoa'),
                             onChon: () =>
                               hoi({
                                 tieuDe: t('chung.xacNhanXoa'),
@@ -386,16 +415,29 @@ export default function NguoiDung() {
               <Label htmlFor="hoTen">{t('taiKhoan.hoTen')} *</Label>
               <Input id="hoTen" name="hoTen" required defaultValue={dangSua?.hoTen ?? ''} />
             </div>
-            <div>
-              <Label htmlFor="loai">{t('taiKhoan.loaiNguoiDung')} *</Label>
-              <SelectTimKiem
-                id="loai"
-                luaChon={CAC_LOAI.map((l) => ({ giaTri: l, nhan: t(`loaiNguoiDung.${l}`) }))}
-                giaTri={loai}
-                onDoi={(v) => setLoai((v as LoaiNguoiDung) ?? 'HocVien')}
-                choPhepXoa={false}
-              />
-            </div>
+            {/*
+              Chỉ chọn được vai trò TRONG phạm vi màn hình. Để cả bốn thì màn Nhân sự tạo
+              được học viên, và backend sẽ chặn bằng `KHONG_PHAI_NHAN_SU` — người dùng điền
+              xong form mới nhận lỗi, đúng kiểu lỗi "mời làm việc chắc chắn thất bại" đã gặp
+              với form nhận xét buổi học.
+
+              Phạm vi một vai trò (Học viên) thì không có gì để chọn — ẩn hẳn.
+            */}
+            {phamVi.vaiTro.length > 1 && (
+              <div>
+                <Label htmlFor="loai">{t('taiKhoan.loaiNguoiDung')} *</Label>
+                <SelectTimKiem
+                  id="loai"
+                  luaChon={phamVi.vaiTro.map((l) => ({
+                    giaTri: l,
+                    nhan: t(`loaiNguoiDung.${l}`),
+                  }))}
+                  giaTri={loai}
+                  onDoi={(v) => setLoai((v as LoaiNguoiDung) ?? phamVi.vaiTro[0])}
+                  choPhepXoa={false}
+                />
+              </div>
+            )}
             <div>
               <Label htmlFor="ngaySinh">{t('taiKhoan.ngaySinh')}</Label>
               <Input

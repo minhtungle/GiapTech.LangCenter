@@ -65,13 +65,57 @@ tenant. Nhưng `BoKhuyetQuyenQuanTri` đã có sẵn từ giai đoạn 0 và ch�
 cần khởi động lại API. Kiểm thật: admin của tenant `W686AE9` (tạo hôm qua) vào được cả ba hệ
 thống mà không phải làm gì bằng tay.
 
+## Tách màn hồ sơ con người, và một lỗ hổng tôi tự tạo ra
+
+Yêu cầu tiếp: đưa người dùng (nhân viên, giáo viên, trợ giảng) sang module riêng bên HRM.
+
+Tôi hỏi lại một câu vì danh sách chỉ có ba vai trò, mà màn cũ quản **bốn** — học viên đi đâu?
+Chốt: học viên ở lại LMS thành màn riêng. Đúng nghiệp vụ: học viên là **khách**, không phải
+nhân sự; người phụ trách tuyển sinh cần thêm học viên nhưng không nên thấy hợp đồng, lương của
+giáo viên. Màn **Tài khoản** ở lại cụm Quản trị — đó là quyền ĐĂNG NHẬP, và nó gán cho cả bốn
+vai trò.
+
+Một component `NguoiDung` dùng cho hai màn qua prop `phamVi` (endpoint, vai trò, quyền gác).
+Chép thành hai file là chép ~600 dòng form ba loại hồ sơ, rồi sửa lỗi một bên quên bên kia.
+
+### Lỗ hổng: học viên đọc được danh sách mọi học viên
+
+Tôi gác `/hoc-vien` bằng `ChucNang.LopHoc` với lý luận "ai quản lớp thì quản danh sách học
+viên". Sai: **`LopHoc.Xem` là quyền học viên cũng có** — họ cần nó để xem lớp mình học. Nên học
+viên đọc được họ tên, số điện thoại, địa chỉ, tên và số điện thoại phụ huynh của **mọi** học
+viên khác.
+
+Lộ ra khi tôi chạy bảng kiểm quyền bằng tài khoản thật và thấy `hv1` nhận **200** ở
+`/hoc-vien`. Bảy test tôi vừa viết cho hai endpoint này đều xanh — vì **chúng chỉ dùng admin**.
+Bài học lặp lại lần thứ ba trong tuần: endpoint mới phải thử bằng tài khoản **ít quyền nhất**,
+không phải bằng admin.
+
+Sửa lần đầu tôi dùng `LopHocToanTrungTam` (đúng thứ đã dùng chặn rò rỉ học phí) — nhưng đọc lại
+`NhomQuyenMacDinh` thì thấy **giáo viên cố ý KHÔNG có** chức năng đó: nó chính là thứ giới hạn
+họ trong lớp được phân công. Gác bằng nó sẽ chặn oan người cần dùng màn này nhất.
+
+Đáp án đúng là `TaiKhoan`: nhóm Giáo viên **có** `TaiKhoan.Xem` sẵn, kèm chú thích trong mã
+nguồn "xem học viên lớp mình" — tức người viết seeder đã lường đúng nhu cầu này từ trước. Nhóm
+Học viên không có chức năng `TaiKhoan` nào. Nay có test cả **hai chiều** (học viên bị chặn,
+giáo viên vào được), và tôi đã thử đặt lại gate cũ để chắc chúng đỏ.
+
+### Một test tự nó không kiểm được gì
+
+`Bo_loc_tren_url_khong_pha_duoc_pham_vi_man_hinh` ban đầu chỉ khẳng định "không chứa học viên"
+— đúng cả khi tham số bị **bỏ qua hoàn toàn** và trả về toàn bộ nhân sự. Thử phá code thì test
+vẫn xanh, nên tôi viết lại: thêm `Assert.NotEmpty` để phân biệt "bộ lọc bị bỏ qua" (hành vi
+đúng, thân thiện hơn bảng trắng) với "giao rỗng". Lần này phá code là đỏ.
+
 ## Kiểm chứng
 
-- `dotnet build` 0 warning · **297 test xanh** (61 unit + 236 integration), 18 test mới.
+- `dotnet build` 0 warning · **306 test xanh** (61 unit + 245 integration), 27 test mới.
 - `check-i18n-keys.py` xanh (554 khoá) — script viết chiều qua, lần này dùng ngay.
 - Kiểm tay: `admin` → `[Hrm, Crm, Lms]`; `co.lan`/`tg.hoa`/`hv1` → `[Lms]` (không có bộ chuyển);
   tạo `ns.mai` chỉ HRM+CRM → `[Hrm, Crm]`, thấy cụm Quản trị nhưng **không** thấy module LMS.
 - Danh mục: HRM 2 · CRM 1 · LMS 11 · Dùng chung 6 = 20 chức năng, khớp tổng.
+- Bảng kiểm quyền hai endpoint hồ sơ trên tài khoản thật: `hv1` **403** ở `/hoc-vien` (đã sửa,
+  trước là 200) nhưng vẫn 200 ở `/lop-hoc`; `co.lan`/`tg.hoa` 200 ở `/hoc-vien`, 403 ở
+  `/nhan-su`; `ns.mai` ngược lại.
 
 ## Còn lại
 

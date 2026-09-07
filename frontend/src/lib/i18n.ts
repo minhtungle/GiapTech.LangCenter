@@ -91,6 +91,8 @@ const vi = {
     khachHang: 'Khách hàng',
     nhanVienKinhDoanh: 'Nhân viên kinh doanh',
     giaoVienNhanSu: 'Giáo viên',
+    nhanSuNguoiDung: 'Hồ sơ nhân sự',
+    hocVien: 'Học viên',
     doanhThu: 'Doanh thu',
     lopHoc: 'Lớp học',
     taiLieu: 'Tài liệu',
@@ -688,6 +690,12 @@ const vi = {
     BUOI_HOC_TRUNG_GIO:
       'Có buổi trùng giờ với lịch hiện tại. Chọn ngày bắt đầu sau buổi cuối cùng.',
     NGUOI_DUNG_KHONG_HOP_LE: 'Người dùng không hợp lệ',
+    KHONG_PHAI_NHAN_SU:
+      'Màn Nhân sự chỉ quản nhân viên, giáo viên và trợ giảng. Học viên được quản ở màn Học '
+      + 'viên bên LMS.',
+    KHONG_PHAI_HOC_VIEN:
+      'Màn Học viên chỉ quản học viên. Nhân viên, giáo viên và trợ giảng được quản ở màn Nhân '
+      + 'sự bên HRM.',
     NGUOI_DUNG_DA_CO_TAI_KHOAN:
       'Người này đã có tài khoản. Mỗi người chỉ được một tài khoản đăng nhập.',
     NGUOI_DUNG_DANG_CO_DU_LIEU:
