@@ -36,8 +36,14 @@ Lỗi đã bắt được, thứ tưởng đúng mà sai, giới hạn chưa g�
 
 ## Mục lục
 
-> Các ngày 16–21/08 thuộc **dự án cũ** (quản lý CLB đá bóng). Giữ lại vì phần lớn bài học là về
-> tầng hệ thống và vẫn còn đúng — đặc biệt sự cố quy tắc #1 ngày 16/08 và rate limit ngày 21/08.
+> Các ngày 16–21/08 thuộc **dự án tiền thân** (quản lý CLB đá bóng, `GiapTech.SoccerRoom`).
+>
+> **Cố ý giữ nguyên từ ngữ cũ ở các entry đó** — nhật ký là bản ghi *theo ngày*, viết lại thành
+> "trung tâm" sẽ tạo ra một quá khứ không có thật. Phần lớn bài học là về **tầng hệ thống** và
+> vẫn còn đúng nguyên: sự cố quy tắc #1 ngày 16/08 (form thiếu ô địa chỉ nên âm thầm xoá dữ liệu
+> — nay canh bởi `CapNhatKhongMatDuLieuTests`) và rate limit ngày 21/08.
+>
+> Mọi tài liệu **không phải nhật ký** đã được viết lại theo dự án hiện tại (08/09/2026).
 
 | Ngày | Nội dung chính |
 |---|---|

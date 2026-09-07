@@ -8,6 +8,49 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Removed — ADR-0005 (lời mời thách đấu qua link) (08/09/2026)
+
+- Nghiệp vụ này **không còn dòng code nào** trong repo (gỡ 05/09 cùng nghiệp vụ bóng đá), nên ADR
+  mô tả nó chỉ gây nhiễu cho người đọc tài liệu. Nội dung còn trong git history.
+- CLAUDE.md: 5 → **4 ADR**. Tham chiếu trong CHANGELOG chuyển thành ghi chú không-liên-kết để
+  bản ghi phát hành cũ vẫn đọc được.
+
+### Changed — ADR-0001/0002/0004 viết lại theo dự án này (08/09/2026)
+
+Chủ sản phẩm yêu cầu tài liệu bám sát dự án hiện tại, **bác** lập luận "giữ ADR làm bản ghi lịch
+sử" của tôi ở lượt trước. Ba ADR còn hiệu lực nay mô tả LMS:
+
+- **ADR-0001**: bối cảnh "quản lý CLB đá bóng" → "quản lý trung tâm ngoại ngữ". Lý do kỹ thuật
+  (.NET 8, PostgreSQL, shared-schema) **không đổi** — có ghi chú nói rõ quyết định chốt 16/08 cho
+  dự án khác trên cùng nền tảng và vẫn giữ hiệu lực.
+- **ADR-0004**: **sửa quyết định thật** — reverse proxy Caddy → **Nginx + certbot**. Bản gốc chọn
+  Caddy; khi triển khai thật thì VPS đích đã có Nginx phục vụ nhiều domain, thêm Caddy sẽ tranh
+  port 80/443. Tệ hơn: ADR cũ liệt kê "Nginx + Certbot" ở mục **phương án đã loại bỏ** — đúng
+  ngược thực tế. Ghi sửa đổi tại chỗ vì đây là đổi một lựa chọn công cụ do ràng buộc môi trường,
+  không phải đổi hướng kiến trúc.
+- **ADR-0002**: bỏ ví dụ "sơ đồ chiến thuật kéo-thả".
+
+### Changed — Viết lại tài liệu triển khai và FR-06 (08/09/2026)
+
+- **`prompt-trien-khai-vps.md` viết lại toàn bộ.** Bản cũ mô tả ứng dụng là "quản lý CLB bóng đá
+  phong trào", ghi sẵn một domain không phải của dự án, và **hướng dẫn khởi động Caddy** — làm
+  theo là tranh port với Nginx đang chạy. Bản mới: bỏ domain cứng (dùng `<domain>`), cảnh báo
+  không cài Caddy, thêm bước cấu hình Nginx + certbot, luồng thử nghiệm theo nghiệp vụ LMS
+  (tạo giáo viên/học viên → lớp → lịch → điểm danh → học phí), và nhắc rate limit tầng Nginx.
+  Sửa số liệu bịa: "399 test + 57 E2E" → **306 test + 11 E2E** (đếm thật).
+- **FR-06 Thiết lập chung viết lại** theo đúng 17 cột của bảng `TENANT`. Bản cũ có cả một mục
+  **"Bộ áo đấu"** (8 màu, `mau_ao_json`, `MauAoDongBoTests`) — không tồn tại trong LMS. Bản mới
+  ghi bốn nhóm trường thật, trong đó `mui_gio` và `so_ngay_canh_bao_no_hoc_phi` là hai trường
+  vận hành hay bị coi nhẹ.
+- **`multi-tenant.md`**: bảng "5 endpoint ngoài tenant" có **3 endpoint đã bị gỡ** (`/cong-dong`,
+  `/cong-dong/loi-moi`, `/moi-qua-link/xem`). Viết lại thành **6 endpoint ẩn danh thật**, mỗi cái
+  kèm giới hạn đã kiểm chứng trong code.
+- Bỏ hai ghi chú "*FR này vẫn còn trong code nhưng từ ngữ đã đổi*" ở `dang-nhap.md` và
+  `quan-tri-he-thong.md` — dùng thẳng từ ngữ đúng thay vì bắt người đọc tự dịch.
+- Đổi từ ngữ còn sót ở `README.md` (bỏ câu "**đây là BASE, chưa có nghiệp vụ**" — sai, 14/15 FR
+  đã chạy, và câu "tài liệu trong `docs/` vẫn là của dự án cũ"), `SECURITY.md`, `CONTRIBUTING.md`,
+  `phan-quyen-dong.md`, `design-tokens.md`, `ui-ux-nguyen-tac.md`, `trien-khai-pull-code.md`.
+
 ### Security — `/dang-ky-trung-tam` thiếu giới hạn tần suất (08/09/2026)
 
 - Endpoint ẩn danh **GHI** dữ liệu (tạo tenant + tài khoản admin) mà **không có
@@ -38,8 +81,8 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
   `tong-thuat.md`, `ke-hoach.md` (giai đoạn 5b) — trước đó chỉ có trong `phan-quyen-dong.md`.
 - **Thêm 5 thuật ngữ dễ nhầm** vào `THUAT-NGU.md`: hệ thống con, chức năng dùng chung, Nhân sự
   vs Học viên, `trang_thai_nhan_su` vs `TAI_KHOAN.trang_thai`, `UserId` vs `TaiKhoanId`.
-- **Không sửa ADR** (quy tắc #7): ADR-0001/0004/0005 ghi quyết định trong bối cảnh dự án bóng đá
-  — đó là bản ghi lịch sử, sửa đè là làm sai lệch hồ sơ.
+- Lượt đầu tôi **giữ nguyên ADR** với lý do "bản ghi lịch sử" (quy tắc #7). Chủ sản phẩm **bác
+  lại**: tài liệu phải bám sát dự án này. Xem mục dưới.
 
 ### Changed — Tách màn hồ sơ con người: Nhân sự (HRM) và Học viên (LMS) (08/09/2026)
 
@@ -628,8 +671,8 @@ vụ bóng đá. Bản bóng đá đầy đủ vẫn còn ở repo cũ.
 - Sinh link + QR mời đối thủ **chưa liên kết**. Họ mở link (KHÔNG cần đăng nhập để xem), đăng
   nhập hoặc **tạo đội mới ngay tại đó**, chấp nhận → đối thủ "chỉ là cái tên" **nâng cấp thành
   CLB có ID thật**, trận vào lịch cả hai bên.
-- Xử lý **13 trường hợp** — xem FR-18 và
-  [ADR-0005](./docs/kien-truc/adr/0005-loi-moi-qua-link.md). Gồm: link bị chuyển tiếp (xác nhận
+- Xử lý **13 trường hợp** — xem FR-18 và ADR-0005 (*cả hai đã gỡ 08/09/2026 cùng nghiệp vụ này;
+  còn trong git history*). Gồm: link bị chuyển tiếp (xác nhận
   danh tính + huỷ liên kết được) · hết hạn · thu hồi · dùng token hai lần · mời chéo (gộp trận) ·
   trận đã đá xong · đối thủ trùng lặp (gộp).
 - Bảng `LOI_MOI_LINK` RIÊNG, không mở rộng `LOI_MOI_BAT_DOI`: bảng đó cần cả hai tenant, còn

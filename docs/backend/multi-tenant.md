@@ -1,6 +1,6 @@
 # Multi-tenant — Cách ly dữ liệu theo `tenant_id`
 
-> **Quy tắc bất di bất dịch #2.** Rò rỉ dữ liệu chéo giữa hai CLB là lỗi nghiêm trọng nhất mà hệ thống
+> **Quy tắc bất di bất dịch #2.** Rò rỉ dữ liệu chéo giữa hai trung tâm là lỗi nghiêm trọng nhất mà hệ thống
 > này có thể mắc phải. Mọi entity nghiệp vụ mới **bắt buộc** đi qua checklist cuối trang.
 
 Mô hình: **shared-schema** — mọi tenant dùng chung bảng, phân biệt bằng cột `tenant_id`
@@ -52,30 +52,33 @@ Integration test bắt buộc cho mỗi module: tạo dữ liệu ở tenant A, 
 | **Include/navigation từ entity chưa lọc** | Kéo theo dữ liệu tenant khác | Bắt đầu truy vấn từ entity có filter |
 | **Background job / cron** | Không có HTTP context → không có claim tenant | Truyền `tenant_id` tường minh vào job, không dựa vào `ICurrentTenant` |
 
-### Năm endpoint đọc/ghi ngoài tenant, xếp theo mức rộng
+### Endpoint ẩn danh — nơi Query Filter KHÔNG bảo vệ
 
-Càng xuống dưới càng lộ nhiều. Sửa gì ở đây cũng phải đọc lại cả bảng này:
+Query Filter lọc theo tenant của **phiên hiện tại**. Endpoint ẩn danh chưa có phiên, nên mỗi cái
+phải tự giới hạn những gì nó tiết lộ. Sửa gì ở đây cũng phải đọc lại cả bảng này:
 
-| Endpoint | Đọc gì | Giới hạn |
+| Endpoint | Đọc/ghi gì | Giới hạn |
 |---|---|---|
-| `GET /auth/ten-doi/{maDoi}` | **Chỉ tên** một CLB, khi biết **chính xác** mã 7 ký tự | **Ẩn danh** (người dùng đang ở trang đăng nhập nên chưa thể có token). Chỉ trả `tenDoi` — không `maDoi`, không `id`, không `khuVuc`. Không tìm theo tên. 404 giống nhau cho mã sai định dạng và mã không tồn tại |
-| `GET /doi-thu/tra-cuu-clb/{maDoi}` | Một CLB, khi biết **chính xác** mã 7 ký tự | Không tìm theo tên, không liệt kê, 404 giống nhau cho mọi loại không-tìm-thấy |
-| `POST /moi-qua-link/xem` | Một lời mời, khi biết token trong link | **Ẩn danh**. Token trong **body** chứ không trong URL (URL vào log, vào history, vào Referer) |
-| `GET /cong-dong/loi-moi` | Lời mời có ta là một trong hai bên | Tự lọc hai chiều; liên hệ bên kia chỉ trả **sau khi** đã chấp nhận |
-| `GET /cong-dong` | **Mọi CLB** trong hệ thống + thành tích | Không trả `id`, **không trả liên hệ**, không trả dữ liệu cầu thủ/quỹ/chi tiết trận |
+| `GET /auth/ten-trung-tam/{maTrungTam}` | **Chỉ tên** một trung tâm, khi biết **chính xác** mã 7 ký tự | Chỉ trả tên — không id, không thông tin khác. **Không tìm theo tên.** 404 giống nhau cho mã sai định dạng và mã không tồn tại. Hạn mức 30 req/phút mỗi IP |
+| `POST /auth/dang-nhap` | — | Sai mã trung tâm / sai username / sai mật khẩu đều trả **một mã lỗi duy nhất**, không tiết lộ thứ nào tồn tại. Hạn mức 10 req/phút |
+| `POST /auth/quen-mat-khau` | — | Trả **giống nhau** dù email có tồn tại hay không. Token hash, hạn 30 phút, dùng một lần. Hạn mức 10 req/phút |
+| `POST /auth/dat-lai-mat-khau` | — | Chỉ nhận token còn hiệu lực; dùng rồi là vô hiệu. Hạn mức 10 req/phút |
+| `POST /auth/lam-moi-token` | — | Refresh token **xoay vòng** và **phát hiện tái sử dụng** — chặt hơn rate limit nên được miễn hạn mức |
+| `POST /dang-ky-trung-tam` | **GHI**: tạo tenant + tài khoản admin | Chỉ nhận tên trung tâm; mã do hệ thống sinh. Hạn mức 10 req/phút mỗi IP (thêm 08/09/2026). ⚠️ **Rate limit ở reverse proxy vẫn bắt buộc** — nợ N3 |
 
-**Quyết định của chủ sản phẩm (20/08/2026):** trang đăng nhập tra tên đội theo mã, nhưng
-**không** tìm theo tên. Yêu cầu ban đầu có cả tìm theo tên và gợi ý các đội gần giống; endpoint
-này buộc phải ẩn danh, nên cho tìm theo tên đồng nghĩa với việc bất kỳ ai gõ một chữ cũng liệt kê
-được toàn hệ thống kèm mã đội. Canh bởi `TraTenDoiTests.Go_TEN_doi_vao_o_ma_thi_KHONG_tra_gi` —
-test đó **tự tạo một CLB tên dài** rồi thử mọi đoạn 7 ký tự cắt từ tên, vì tên CLB trong fixture
-chỉ 5 ký tự nên không chuỗi con nào đi qua được ràng buộc route `length(7)`.
+**Quyết định của chủ sản phẩm (20/08/2026, còn hiệu lực):** trang đăng nhập tra tên trung tâm
+theo mã, nhưng **không** tìm theo tên. Yêu cầu ban đầu có cả tìm theo tên và gợi ý tên gần giống;
+endpoint này buộc phải ẩn danh, nên cho tìm theo tên đồng nghĩa với việc bất kỳ ai gõ một chữ
+cũng liệt kê được toàn hệ thống kèm mã trung tâm.
 
-**Quyết định của chủ sản phẩm (18/08/2026):** mọi CLB tự động lên Cộng đồng, **không có cách
-tắt**, kèm thành tích thắng/hoà/thua. Nó cố ý đi ngược thiết kế của `tra-cuu-clb` (vốn dựng để
-*chặn* việc liệt kê CLB). Nếu sau này cần cho CLB tự chọn ẩn/hiện, chỗ sửa là mệnh đề `Where`
-trong `LayDanhSachCongDongHandler` — thêm cột `Tenant.HienTrenSan` và lọc theo nó. **Không** sửa ở
-tầng UI: ẩn ở UI mà API vẫn trả thì chỉ cần mở DevTools là thấy hết.
+Canh bởi `TraTenTrungTamTests.Go_TEN_vao_o_ma_thi_KHONG_tra_gi` — test đó **tự tạo một trung tâm
+tên dài** rồi thử mọi đoạn 7 ký tự cắt từ tên, vì tên trong fixture quá ngắn nên không chuỗi con
+nào đi qua được ràng buộc route `length(7)`. Kèm
+`KHONG_co_duong_nao_tim_trung_tam_theo_TEN_o_trang_dang_nhap` quét mọi endpoint ẩn danh để chặn
+việc thêm lại đường tìm theo tên.
+
+> **Đã gỡ (05/09/2026):** `GET /cong-dong`, `GET /cong-dong/loi-moi`, `POST /moi-qua-link/xem` —
+> nghiệp vụ của dự án cũ (danh bạ công khai và lời mời thách đấu), không còn trong code.
 
 ## ⚠️ Bẫy: filter không được trỏ ra object bên ngoài DbContext
 

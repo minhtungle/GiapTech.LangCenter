@@ -5,7 +5,7 @@
 
 ## Vì sao không dùng role cố định
 
-Nghiệp vụ (FR-05) cho phép Admin của **mỗi CLB tự định nghĩa nhóm quyền riêng** — tên nhóm và tập quyền
+Nghiệp vụ (FR-05) cho phép Admin của **mỗi trung tâm tự định nghĩa nhóm quyền riêng** — tên nhóm và tập quyền
 do người dùng tạo ra lúc chạy, không biết trước lúc biên dịch. Role cố định trong attribute không biểu
 diễn được điều này.
 
@@ -172,10 +172,10 @@ hóa tài khoản. Quyền bị thu hồi mà cache còn sống là lỗ hổng 
 
 Hai tầng độc lập, **cả hai đều phải đúng**:
 
-- **Tenant** trả lời "được thấy dữ liệu của CLB nào" — xem [multi-tenant.md](./multi-tenant.md).
-- **Quyền** trả lời "được làm gì với dữ liệu trong CLB đó".
+- **Tenant** trả lời "được thấy dữ liệu của trung tâm nào" — xem [multi-tenant.md](./multi-tenant.md).
+- **Quyền** trả lời "được làm gì với dữ liệu trong trung tâm đó".
 
-Bảng `QUYEN` cũng có `tenant_id` — nhóm quyền của CLB A không áp dụng cho CLB B.
+Bảng `QUYEN` cũng có `tenant_id` — nhóm quyền của trung tâm A không áp dụng cho trung tâm B.
 
 ## Admin mặc định
 

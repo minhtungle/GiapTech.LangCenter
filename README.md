@@ -1,12 +1,11 @@
 # GiapTech.LangCenter.LMS — Hệ thống Quản lý Trung tâm Ngoại ngữ
 
-> ⚠️ **Đây là BASE, chưa có nghiệp vụ.** Repo tách ra từ một ứng dụng quản lý CLB đá bóng đã
-> hoàn thiện (05/09/2026): giữ toàn bộ tầng hệ thống (multi-tenant, phân quyền động, JWT +
-> refresh token, quản trị tài khoản), bỏ hết nghiệp vụ bóng đá. Nghiệp vụ LMS sẽ thêm sau khi
-> có thiết kế.
+> **14/15 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật · 306 test backend xanh.
+> Còn lại: FR-15 Thống kê/Dashboard, và nghiệp vụ hai module HRM/CRM.
 >
-> **Tài liệu trong `docs/` vẫn là của dự án cũ** — giữ để tham khảo cách viết FR/ERD/ADR, không
-> phải nghiệp vụ hiện tại.
+> Hệ thống multi-tenant — mỗi trung tâm là một tenant độc lập — gồm **ba hệ thống con** chia theo
+> nhóm quyền: **HRM** (nhân sự) · **CRM** (khách hàng) · **LMS** (đào tạo). Đây là cách nhóm chức
+> năng để lọc giao diện, **không phải ba ứng dụng**: một API, một database, một lần đăng nhập.
 
 > README này chỉ là **mục lục điều hướng** — không lặp lại nội dung chi tiết. Đọc
 > [`CLAUDE.md`](./CLAUDE.md) trước khi chỉnh sửa code hoặc tài liệu trong repo này.

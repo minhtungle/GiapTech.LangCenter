@@ -177,3 +177,59 @@ tài liệu **ghi rõ nghĩa hiện tại** kèm cảnh báo tên là di sản: 
 Mỗi con số đều **đếm lại từ code hoặc DB thật**, không chép từ trí nhớ. Ba hệ thống con trước đó
 chỉ có trong `phan-quyen-dong.md` — nay có ở tổng quan kiến trúc, README nghiệp vụ, tổng thuật
 và kế hoạch.
+
+---
+
+## Chủ sản phẩm bác lập luận "giữ ADR làm bản ghi lịch sử"
+
+Lượt trước tôi giữ nguyên ADR-0001/0004/0005 với lý do quy tắc #7: ADR ghi quyết định trong bối
+cảnh thật, sửa đè là làm sai lệch hồ sơ. Chủ sản phẩm **bác lại**: tài liệu phải bám sát dự án
+này, cái nào của dự án cũ thì cập nhật hoặc bỏ hẳn.
+
+Ông đúng, và lý do tôi sai đáng ghi lại: tôi đã cân nhắc **tính toàn vẹn của bản ghi** mà không
+cân nhắc **cái giá của việc đọc**. ADR không phải bảo tàng — nó là thứ người mới đọc để hiểu vì
+sao hệ thống như hiện tại. Một ADR nói "quy mô 1 CLB" và liệt kê "Nginx + Certbot" ở mục *phương
+án đã loại bỏ* thì không phải bản ghi lịch sử trung thực; nó là **tài liệu chỉ dẫn sai đường**.
+
+Nghiêm trọng nhất là ADR-0004: nó nói dự án dùng **Caddy** và đã *loại bỏ* Nginx. Thực tế ngược
+hoàn toàn — `docker-compose.yml` ghi rõ dùng Nginx + certbot có sẵn trên VPS, tránh tranh port
+80/443. Ai đọc ADR rồi đi cài Caddy sẽ làm sập reverse proxy của mọi dự án khác trên máy đó.
+
+Cách xử lý phân biệt hai loại:
+
+| Loại | Xử lý |
+|---|---|
+| ADR-0005 (lời mời thách đấu) — nghiệp vụ **không còn dòng code nào** | **Xoá hẳn.** Còn trong git history |
+| ADR-0001/0002 — quyết định kỹ thuật **vẫn hiệu lực**, chỉ bối cảnh cũ | Viết lại bối cảnh, ghi rõ quyết định chốt cho dự án tiền thân và vẫn giữ hiệu lực |
+| ADR-0004 — quyết định **đã đổi thật** | Ghi khối "Sửa đổi 05/09" ở đầu, sửa nội dung, chuyển Caddy sang mục phương án đã cân nhắc kèm lý do bỏ |
+
+## `prompt-trien-khai-vps.md`: file nguy hiểm nhất
+
+128 dòng viết cho dự án cũ, và nó là file **được dán thẳng vào một agent đang chạy trên VPS**:
+
+- Mô tả ứng dụng là "quản lý CLB bóng đá phong trào"
+- Ghi sẵn một domain không thuộc dự án này
+- Hướng dẫn "kiểm DNS **trước khi khởi động Caddy**" và kiểm `docker compose ps` thấy service
+  `caddy` — làm theo là tranh port với Nginx
+- Luồng thử nghiệm: "thêm một cầu thủ, một đối thủ, một trận đấu", mở link mời ở cửa sổ ẩn danh
+- Số liệu bịa: "399 test backend + 57 E2E" (thật: 306 + 11)
+
+Viết lại toàn bộ. Đáng chú ý một quyết định nhỏ: **không ghi sẵn domain**, dùng `<domain>` và yêu
+cầu thay trước khi dán. Ghi sẵn một giá trị sai thì người triển khai làm theo mà không nghi ngờ —
+đúng lỗi bản cũ đã mắc.
+
+## Thứ tôi cố ý KHÔNG viết lại
+
+**Nhật ký ngày 16–21/08.** Đó là bản ghi *theo ngày* của dự án tiền thân; viết lại "CLB" thành
+"trung tâm" sẽ tạo ra một quá khứ không có thật. Đã ghi chú rõ ở đầu mục lục nhật ký, kèm lý do
+giữ: bài học tầng hệ thống vẫn đúng nguyên (sự cố quy tắc #1 ngày 16/08 nay được canh bởi
+`CapNhatKhongMatDuLieuTests`).
+
+Các entry CHANGELOG cũ cũng giữ — chúng ghi *đã phát hành gì vào lúc nào*. Chỉ gỡ liên kết tới
+ADR-0005 đã xoá để `check-doc-links.py` không đỏ.
+
+## Còn một chỗ nữa cần biết
+
+Tên token `--status-win/lose/draw` **vẫn là di sản bóng đá trong CODE** (nợ N8). Tài liệu nay ghi
+rõ nghĩa hiện tại kèm cảnh báo, nhưng người đọc code sẽ vẫn thấy `variant="win"` cho "học phí đã
+đủ". Đổi tên là việc của code, không phải tài liệu — nói nếu ông muốn tôi làm.

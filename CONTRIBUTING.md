@@ -21,8 +21,8 @@ Loại: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `perf`, `ci`.
 
 Ví dụ:
 ```
-feat: thêm ràng buộc unique vote MVP theo trận — tránh 1 người vote nhiều lần
-fix: sửa query filter thiếu tenant_id ở endpoint thống kê — rò rỉ dữ liệu chéo CLB
+feat: thêm ràng buộc unique điểm danh theo buổi — tránh 1 học viên có 2 dòng
+fix: sửa query filter thiếu tenant_id ở endpoint thống kê — rò rỉ dữ liệu chéo trung tâm
 docs: cập nhật ERD sau khi thêm bảng LOI_MOI_DOI_THU
 ```
 
@@ -42,7 +42,7 @@ Commit message tập trung **"vì sao"** hơn "làm gì" — diff đã tự nói
 
 - Code review có cấu trúc (không chỉ đọc lướt diff).
 - Security review bắt buộc nếu PR đụng tới: xác thực/phân quyền, dữ liệu tài chính (quỹ), dữ liệu cá
-  nhân cầu thủ, cấu hình hạ tầng (Docker/Caddy/secrets).
+  nhân người dùng, dữ liệu tài chính (học phí), cấu hình hạ tầng (Docker/Nginx/secrets).
 - Ít nhất 1 approval trước khi merge vào `main`.
 
 ## 5. Kiểm tra liên kết tài liệu
@@ -66,7 +66,7 @@ npm run e2e:ui                # chế độ xem từng bước, để gỡ lỗi
 Chạy trên **bản build thật qua Caddy** (`localhost:8080`), không phải `vite dev`: lỗi chỉ xuất
 hiện ở bản build đã xảy ra thật — `tsc --noEmit` từng báo sạch trong khi `vite build` bắt 5 lỗi.
 
-Mỗi test **tự tạo CLB riêng** qua `/dang-ky-clb` nên không tranh dữ liệu của nhau. Endpoint đó
+Mỗi test **tự tạo trung tâm riêng** qua `/dang-ky-trung-tam` nên không tranh dữ liệu của nhau. Endpoint đó
 chỉ chạy ở `Development`, nên test E2E cũng chỉ chạy được với API ở Development.
 
 ### Ba cái bẫy đã mất thời gian

@@ -14,7 +14,7 @@ làm bộ khung giao diện quản trị. Component & data layer: TanStack Table
 - **Blazor WebAssembly** — cân nhắc ban đầu vì giữ nguyên toàn bộ stack C# cho team vốn quen .NET. Loại
   bỏ vì: (1) người dùng chỉ định rõ muốn dùng shadcn-admin (bộ admin template React có sẵn, tối giản,
   mật độ thông tin cao — đúng yêu cầu UI/UX đã đặt ra); (2) hệ sinh thái component/chart cho các nhu cầu
-  đặc thù (bảng dữ liệu dày, sơ đồ chiến thuật kéo-thả) phong phú hơn ở React tại thời điểm quyết định.
+  đặc thù (bảng dữ liệu dày, lịch, biểu đồ) phong phú hơn ở React tại thời điểm quyết định.
 - **Tự dựng design system từ đầu (không dùng admin template có sẵn)** — loại bỏ vì tốn thời gian không
   cần thiết cho khu vực công cụ nội bộ, nơi tốc độ thao tác quan trọng hơn bản sắc thương hiệu riêng
   (theo nguyên tắc design system ở `docs/frontend/`).

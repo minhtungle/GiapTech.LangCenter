@@ -141,7 +141,7 @@ Ba điều cần biết:
 ```sql
 -- Trên VPS, sau khi test xong. XEM danh sách trước khi xoá.
 SELECT ma_doi, ten_doi FROM "TENANT" ORDER BY ten_doi;
--- Rồi xoá từng cái bằng mã đội, KHÔNG xoá theo pattern tên.
+-- Rồi xoá từng cái bằng mã trung tâm, KHÔNG xoá theo pattern tên.
 ```
 
 ## Tạo trung tâm đầu tiên trên VPS

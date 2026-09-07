@@ -3,12 +3,12 @@
 ## Phạm vi dữ liệu nhạy cảm
 
 - Mật khẩu tài khoản (lưu hash, không bao giờ log/hiển thị dạng plaintext).
-- Thông tin liên hệ cầu thủ (email, số điện thoại, địa chỉ).
+- Thông tin liên hệ của người dùng (email, số điện thoại, địa chỉ) và **liên hệ phụ huynh** của học viên.
 - Dữ liệu tài chính (quỹ đội, tiến độ đóng góp từng thành viên).
 
 ## Nguyên tắc chung
 
-- Cách ly dữ liệu tuyệt đối giữa các tenant (CLB) — mọi truy vấn nghiệp vụ đều lọc theo `tenant_id`.
+- Cách ly dữ liệu tuyệt đối giữa các tenant (trung tâm) — mọi truy vấn nghiệp vụ đều lọc theo `tenant_id`.
 - Mật khẩu băm bằng thuật toán chuẩn của ASP.NET Core Identity; bắt buộc đổi mật khẩu ở lần đăng nhập
   đầu tiên cho tài khoản admin mặc định.
 - JWT có thời hạn ngắn + refresh token; không lưu token trong `localStorage` phía frontend nếu tránh

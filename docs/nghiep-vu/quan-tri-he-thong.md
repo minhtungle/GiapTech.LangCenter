@@ -1,9 +1,5 @@
 # Module Quản trị hệ thống (FR-03 → FR-06)
 
-> ℹ️ FR này **vẫn còn trong code**, nhưng từ ngữ đã đổi (05/09/2026): "đội"/"CLB" →
-> "trung tâm", `MaDoi` → `MaTrungTam`, route `/dang-ky-clb` → `/dang-ky-trung-tam`. Phần hồ sơ
-> cầu thủ (FR-04) đã bỏ.
-
 ## FR-03 — Người dùng (hồ sơ con người)
 
 **`NGUOI_DUNG` là bảng "con người", không phải bảng đăng nhập.** Đây là phân biệt quan trọng
@@ -99,41 +95,42 @@ Ma trận chức năng × thao tác (checkbox), ưu tiên desktop vì thao tác 
 
 ## FR-06 — Thiết lập chung
 
-Thông tin CLB: tên đội, tên viết tắt, ngày thành lập, logo, ảnh bìa, mô tả, **bộ áo đấu**.
+Thông tin trung tâm, khớp đúng các cột của bảng `TENANT`:
 
-### Bộ áo đấu
+| Nhóm | Trường |
+|---|---|
+| Nhận diện | `ten_trung_tam`, `ten_viet_tat`, `mo_ta`, `logo_url`, `anh_bia_url` |
+| Liên hệ | `dia_chi`, `lien_he` |
+| Chuyển khoản | `so_tai_khoan`, `ten_ngan_hang`, `chu_tai_khoan`, `anh_qr_url` |
+| Vận hành | `mui_gio` (mặc định `Asia/Ho_Chi_Minh`), `so_ngay_canh_bao_no_hoc_phi` (mặc định 14) |
 
-CLB chọn **nhiều màu** từ bảng 8 màu cố định (trắng · đỏ · xanh dương · vàng · cam · tím ·
-đen · hồng) — thường 2–3 bộ: sân nhà, sân khách, áo thủ môn. Lưu JSON vào `TENANT.mau_ao_json`.
+`ma_trung_tam` **không sửa được** — nó là thứ người dùng gõ khi đăng nhập; đổi mã là làm mọi
+người trong trung tâm không vào được hệ thống.
 
-**Bảng chiến thuật (FR-10 tab b) chỉ cho chọn trong bộ này.** Không ràng buộc thì mỗi trận lại
-vẽ một màu khác, xem lại lịch sử không nhận ra đội mình mặc gì.
+### Hai trường vận hành, dễ bị coi nhẹ
 
-Ba trường hợp biên:
-
-- **Chưa khai** (null / mảng rỗng) → sơ đồ mở **toàn bộ** bảng màu. Khoá người dùng khỏi tính
-  năng chỉ vì họ chưa vào màn thiết lập là chặn nhầm chỗ.
-- **Màu đang dùng trên sơ đồ luôn có mặt** kể cả khi CLB vừa bỏ nó khỏi bộ áo — nếu không,
-  bảng chọn không có ô nào sáng và người dùng tưởng hỏng.
-- **Mã lạ bị chặn tại cổng** (`MAU_AO_KHONG_HOP_LE`), không lọc âm thầm: lọc im lặng thì người
-  dùng tưởng đã lưu được.
-
-Bảng màu tồn tại ở hai nơi — `Domain/Common/MauAo.cs` (validate) và `BANG_MAU_AO` ở frontend
-(vẽ, có mã hex + màu chữ). Không gộp được vì Domain không nên biết mã màu CSS. Hai danh sách
-**mã** phải khớp, canh bởi `MauAoDongBoTests`.
+- **`mui_gio`** quyết định buổi học rơi vào ô ngày nào trên lịch. Frontend lấy qua
+  `GET /toi/cau-hinh` (endpoint **không** gác `ThietLapChung.Xem`, vì giáo viên và học viên là
+  người xem lịch nhiều nhất mà họ không có quyền đó). Xem
+  [buổi học & điểm danh](./buoi-hoc-diem-danh.md).
+- **`so_ngay_canh_bao_no_hoc_phi`** là ngưỡng để bảng công nợ đánh dấu "quá hạn". Admin tự cấu
+  hình chứ không hard-code, vì chính sách nhắc nợ mỗi trung tâm mỗi khác.
 
 ### Quy tắc
 
 - Tenant mới chưa cấu hình → dùng **giá trị mặc định**, không chặn người dùng vào hệ thống.
-- Logo và ảnh bìa lưu trên MinIO, **API làm proxy** (`GET /api/v1/anh/{khoa}`) chứ không dùng
-  presigned URL: MinIO không expose ra Internet (quy tắc #6), và đi qua API thì mỗi lần đọc đều
-  kiểm được tenant. Xem [upload ảnh](#upload-ảnh).
-- Lệnh cập nhật gửi `mauAo = null` (client cũ) thì **giữ nguyên** bộ áo; chỉ mảng rỗng mới là
-  "người dùng chủ động bỏ hết" (quy tắc #1). Canh bởi `Sua_ten_doi_khong_lam_mat_bo_ao`.
+- Logo, ảnh bìa và ảnh QR lưu trên MinIO, **API làm proxy** (`GET /api/v1/anh/{khoa}`) chứ không
+  dùng presigned URL: MinIO không expose ra Internet (quy tắc #6), và đi qua API thì mỗi lần đọc
+  đều kiểm được tenant. Xem [upload ảnh](#upload-ảnh).
+- **`null` = không gửi → giữ nguyên** (quy tắc #1). Bảy trường thêm sau (`dia_chi`, `lien_he`,
+  bốn trường chuyển khoản) mặc định `null` để client cũ chưa biết chúng vẫn cập nhật được tên
+  trung tâm mà **không xoá mất** các trường đó. Đây đúng là lỗi 16/08 mặc áo mới — canh bởi
+  `CapNhatKhongMatDuLieuTests`.
 
 ## Upload ảnh
 
-Ảnh đại diện cầu thủ (FR-04), logo và ảnh bìa CLB (FR-06) lưu trên MinIO (ADR-0004).
+Ảnh đại diện người dùng (FR-03), logo · ảnh bìa · ảnh QR chuyển khoản của trung tâm (FR-06),
+và tệp đính kèm học liệu (FR-11 → FR-13) lưu trên MinIO (ADR-0004).
 
 **DB lưu KHOÁ, không lưu URL đầy đủ**: đổi domain hay chuyển kho lưu trữ thì mọi hàng vẫn dùng
 được, không phải migration sửa hàng loạt chuỗi.
@@ -142,7 +139,7 @@ Bảng màu tồn tại ở hai nơi — `Domain/Common/MauAo.cs` (validate) và
 
 Khoá có dạng `{tenantId}/{loai}/{guid}{ext}` — tenant nằm ngay đầu đường dẫn. Kho lưu trữ
 **không có Global Query Filter** như EF Core, nên cách ly phải tự cài đặt: tầng lưu trữ kiểm
-tiền tố tenant trước khi đọc/xoá. Không có bước này thì đoán được khoá là đọc được ảnh CLB
+tiền tố tenant trước khi đọc/xoá. Không có bước này thì đoán được khoá là đọc được ảnh trung tâm
 khác. Canh bởi `Khong_doc_duoc_anh_cua_clb_khac`, kiểm chứng bằng phản chứng.
 
 `ILuuTruAnh` đăng ký **Scoped**, không Singleton: nó phụ thuộc `ICurrentTenant` (theo request).
@@ -168,7 +165,7 @@ Bucket tạo lúc tải lên đầu tiên, không lúc khởi động: API phả
 |---|---|---|
 | FR-03 | `/api/v1/tai-khoan` (GET/POST/PUT/DELETE), `POST {id}/dat-lai-mat-khau` | Đặt lại mật khẩu dùng chức năng riêng `DoiMatKhauNguoiKhac` |
 
-**Cập nhật tài khoản (PUT)** sửa được: email, SĐT, hồ sơ cầu thủ liên kết, nhóm quyền, trạng thái.
+**Cập nhật tài khoản (PUT)** sửa được: người dùng được gán, nhóm quyền, trạng thái hoạt động.
 Cố tình **không** cho sửa:
 
 | Trường | Vì sao |
@@ -182,10 +179,10 @@ Cố tình **không** cho sửa:
 > ra với `diaChi`; `CapNhatKhongMatDuLieuTests` canh không cho tái diễn.
 
 Chặn **tự vô hiệu hóa chính mình**: đăng xuất xong không vào lại được, và nếu là admin duy nhất thì
-cả CLB mất quyền quản trị.
-| FR-04 | `/api/v1/cau-thu` (GET/POST/PUT/DELETE) | Chặn xóa khi còn dữ liệu đóng quỹ |
+cả trung tâm mất quyền quản trị.
+| FR-04 | `/api/v1/tai-khoan` (GET/POST/PUT/DELETE) | Chặn xoá người quản trị cuối cùng |
 | FR-05 | `/api/v1/quyen` (GET/POST/PUT/DELETE), `GET /danh-muc` | Chặn xóa nhóm đang được gán; tự xóa cache quyền khi sửa |
-| FR-06 | `/api/v1/thiet-lap` (GET/PUT) | `MaDoi` không cho sửa — người dùng gõ nó khi đăng nhập |
+| FR-06 | `/api/v1/thiet-lap` (GET/PUT) | `ma_trung_tam` không cho sửa — người dùng gõ nó khi đăng nhập |
 
 Đăng nhập lần đầu: tài khoản do seeder tạo mang cờ `PhaiDoiMatKhau`, bị `BuocDoiMatKhauMiddleware`
 chặn khỏi **mọi** endpoint nghiệp vụ cho tới khi gọi `POST /api/v1/auth/doi-mat-khau`. Chặn ở tầng API

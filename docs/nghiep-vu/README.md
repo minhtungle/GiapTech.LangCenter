@@ -3,7 +3,7 @@
 Phân tích nghiệp vụ chi tiết theo từng module. Mỗi chức năng có **mã FR-xx** dùng để tham chiếu
 chéo giữa tài liệu, commit, PR, test và code review.
 
-Nguồn gốc: đặc tả kỹ thuật LMS Vietgenedu. Repo trước đây là hệ quản lý CLB bóng đá; phần nghiệp
+Nguồn gốc: đặc tả kỹ thuật LMS Vietgenedu. Repo tách ra từ một dự án khác trên cùng nền tảng; phần nghiệp
 vụ cũ đã gỡ khỏi cả code lẫn tài liệu, chỉ còn dấu vết trong [nhật ký](../nhat-ky/README.md) và
 git history.
 
