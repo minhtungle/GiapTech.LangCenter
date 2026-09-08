@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Trash2 } from 'lucide-react'
+import { Trash2, UserPlus } from 'lucide-react'
 import { api, layMaLoi } from '@/lib/api'
-import { Button, CanhBaoLoi, Label, Table, Td, Th, TrangTrong } from '@/components/ui'
+import {
+  Badge, Button, CanhBaoLoi, Card, CardContent, Label, Table, Td, Th, TrangTrong,
+} from '@/components/ui'
 import { KhungNoiDung } from '@/components/ui/KhungNoiDung'
 import { SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
@@ -13,6 +15,7 @@ import {
   tienVN, ngayVN,
   type LopHocDto, type NguoiDungNgan, type HocVienTrongLop,
 } from './lopHocTypes'
+import { tien, type YeuCauXepLopDto } from '../crm/crmTypes'
 
 
 /** Bước 3 của wizard, cũng dùng lại làm màn quản lý học viên của lớp. */
@@ -46,6 +49,7 @@ export function HocVienCuaLop({
   const lamMoi = () => {
     void qc.invalidateQueries({ queryKey: ['lop-hoc', lop.id, 'hoc-vien'] })
     void qc.invalidateQueries({ queryKey: ['lop-hoc'] })
+    void qc.invalidateQueries({ queryKey: ['cho-xep-lop'] })
   }
 
   const them = useMutation({
@@ -65,6 +69,29 @@ export function HocVienCuaLop({
     onError: (e) => setMaLoi(layMaLoi(e)),
   })
 
+  /**
+   * CÁCH 2 của FR-21: chọn học viên đang chờ ngay trong lớp.
+   *
+   * Chỉ tải khi người dùng được sửa lớp — người chỉ xem không có nút duyệt nên gọi API cũng
+   * chỉ để nhận 403.
+   */
+  const { data: dsCho = [] } = useQuery({
+    queryKey: ['cho-xep-lop'],
+    queryFn: async () =>
+      (await api.get<YeuCauXepLopDto[]>('/lop-hoc/cho-xep-lop')).data,
+    enabled: duocSuaLop,
+  })
+
+  const duyet = useMutation({
+    mutationFn: (yeuCauIds: string[]) =>
+      api.post(`/lop-hoc/${lop.id}/duyet-cho-xep-lop`, { yeuCauIds }),
+    onSuccess: () => {
+      setMaLoi(null)
+      lamMoi()
+    },
+    onError: (e) => setMaLoi(layMaLoi(e)),
+  })
+
   const daTrongLop = new Set(hocViens.map((h) => h.hocVienId))
   const luaChon = nguoiDungs
     .filter((u) => u.loaiNguoiDung === 'HocVien' && !daTrongLop.has(u.id))
@@ -78,6 +105,68 @@ export function HocVienCuaLop({
   return (
     <KhungNoiDung nhung={nhung} onDong={onDong} tieuDe={`${t('lopHoc.hocVien')} — ${lop.ten}`}>
       <div className="grid gap-4">
+        {/*
+          CÁCH 2 của FR-21 — danh sách học viên đã mua khoá, chờ xếp lớp.
+          Đặt TRÊN ô thêm học viên thường: người đã trả tiền phải được xếp trước, và học phí của
+          họ lấy từ đơn CRM nên không được thêm bằng ô bên dưới (ô đó dùng học phí của lớp).
+
+          Ẩn hẳn khi không có ai chờ — một khung rỗng thường trực chỉ làm màn hình dài thêm.
+        */}
+        {duocSuaLop && dsCho.length > 0 && (
+          <Card>
+            <CardContent className="grid gap-2 pt-6">
+              <div className="flex flex-wrap items-center gap-2">
+                <h4 className="text-sm font-semibold">{t('xepLop.dangCho')}</h4>
+                <Badge variant="cho">{dsCho.length}</Badge>
+              </div>
+
+              <ul className="grid gap-1.5">
+                {dsCho.map((y) => (
+                  <li
+                    key={y.id}
+                    className="flex flex-wrap items-center gap-2 rounded-md border border-border p-2"
+                  >
+                    <span className="text-sm font-medium">{y.tenHocVien}</span>
+                    <Badge variant="muted">{y.tenKhoaHoc}</Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {t('khoaHoc.soBuoiNgan', { so: y.soBuoi })} · {ngayVN(y.thoiDiemGui)}
+                    </span>
+                    <span className="ml-auto text-sm">
+                      {/* Số tiền đơn CRM — sẽ thành học phí áp dụng, nên người xếp lớp thấy
+                          trước khi bấm. Ngoại tệ hiện luôn số VND vì sổ học phí chỉ có VND. */}
+                      {tien(y.soTien, y.donViTien)}
+                      {y.donViTien !== 'VND' && (
+                        <span className="ml-1 text-xs text-muted-foreground">
+                          = {tienVN(y.soTien * y.tyGiaVeVnd)}
+                        </span>
+                      )}
+                    </span>
+                    <Button
+                      size="sm"
+                      disabled={duyet.isPending}
+                      onClick={() =>
+                        hoi({
+                          tieuDe: t('xepLop.duyetVaoLop'),
+                          thongDiep: t('xepLop.hoiDuyet', {
+                            ten: y.tenHocVien,
+                            lop: lop.ten,
+                            hocPhi: tienVN(y.soTien * y.tyGiaVeVnd),
+                          }),
+                          nhanDongY: t('xepLop.duyet'),
+                          onDongY: () => duyet.mutate([y.id]),
+                        })
+                      }
+                    >
+                      <UserPlus className="h-4 w-4" />
+                      {t('xepLop.duyet')}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="flex flex-wrap items-end gap-2">
           <div className="flex min-w-64 flex-1 flex-col gap-1.5">
             <Label htmlFor="themHocVien">{t('lopHoc.themHocVien')}</Label>

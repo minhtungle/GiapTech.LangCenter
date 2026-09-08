@@ -167,6 +167,35 @@ export interface DangKyKemThuDto {
   /** `soTien − daThu`, tính động ở backend. ≤ 0 = đã đóng đủ. */
   conThieu: number
   cacLanThu: LanThuDto[]
+  /** FR-21 — null = chưa gửi yêu cầu xếp lớp. Chỉ có nghĩa với đơn khoá học. */
+  trangThaiXepLop: TrangThaiYeuCauXepLop | null
+  tenLopDaXep: string | null
+}
+
+/** FR-21 — trạng thái một yêu cầu xếp lớp. */
+export type TrangThaiYeuCauXepLop = 'DangCho' | 'DaXep' | 'DaHuy'
+
+/** FR-21 — một học viên đang chờ xếp lớp, dùng ở màn LMS. */
+export interface YeuCauXepLopDto {
+  id: string
+  dangKyId: string
+  hocVienId: string
+  tenHocVien: string
+  soDienThoai: string | null
+  khachHangId: string
+  khoaHocId: string
+  tenKhoaHoc: string
+  soBuoi: number
+  /** Số tiền đơn CRM — sẽ thành học phí áp dụng khi vào lớp. */
+  soTien: number
+  donViTien: DonViTien
+  tyGiaVeVnd: number
+  trangThai: TrangThaiYeuCauXepLop
+  thoiDiemGui: string
+  tenNguoiGui: string | null
+  lopHocId: string | null
+  tenLopHoc: string | null
+  ghiChu: string | null
 }
 
 export const ngayVN = (iso: string) => new Date(iso).toLocaleDateString('vi-VN')

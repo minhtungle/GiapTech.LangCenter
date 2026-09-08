@@ -166,3 +166,37 @@ public class ThuTienDangKyConfig : IEntityTypeConfiguration<ThuTienDangKy>
             .HasForeignKey(x => x.NguoiThuId).OnDelete(DeleteBehavior.SetNull);
     }
 }
+
+public class YeuCauXepLopConfig : IEntityTypeConfiguration<YeuCauXepLop>
+{
+    public void Configure(EntityTypeBuilder<YeuCauXepLop> b)
+    {
+        b.ToTable("YEU_CAU_XEP_LOP");
+
+        b.Property(x => x.GhiChu).HasMaxLength(500);
+
+        b.HasIndex(x => x.TenantId);
+        // Danh sách chờ luôn lọc theo trạng thái.
+        b.HasIndex(x => x.TrangThai);
+
+        // Một đơn hàng một yêu cầu — chặn ở tầng DB (quy tắc #8): hai lần bấm "gửi yêu cầu"
+        // song song đều thấy "chưa có" và đều ghi, danh sách chờ thành hai dòng cùng học viên.
+        b.HasIndex(x => x.DangKyId).IsUnique();
+
+        // Restrict: yêu cầu là vết bàn giao giữa hai bộ phận, xoá đơn hàng không được cuốn nó đi.
+        b.HasOne(x => x.DangKy).WithOne(x => x.YeuCauXepLop)
+            .HasForeignKey<YeuCauXepLop>(x => x.DangKyId).OnDelete(DeleteBehavior.Restrict);
+
+        b.HasOne(x => x.HocVien).WithMany()
+            .HasForeignKey(x => x.HocVienId).OnDelete(DeleteBehavior.Restrict);
+
+        // Lớp bị xoá thì yêu cầu quay về trạng thái chờ được — nên SetNull, không Restrict.
+        b.HasOne(x => x.LopHoc).WithMany()
+            .HasForeignKey(x => x.LopHocId).OnDelete(DeleteBehavior.SetNull);
+
+        b.HasOne(x => x.NguoiGui).WithMany()
+            .HasForeignKey(x => x.NguoiGuiId).OnDelete(DeleteBehavior.SetNull);
+        b.HasOne(x => x.NguoiDuyet).WithMany()
+            .HasForeignKey(x => x.NguoiDuyetId).OnDelete(DeleteBehavior.SetNull);
+    }
+}

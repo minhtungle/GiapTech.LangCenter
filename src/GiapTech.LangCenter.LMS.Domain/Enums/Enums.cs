@@ -239,3 +239,16 @@ public enum LoaiDonHang
     KhoaHoc = 0,
     SanPham = 1
 }
+
+/// <summary>Trạng thái một yêu cầu xếp lớp (FR-21).</summary>
+public enum TrangThaiYeuCauXepLop
+{
+    /// <summary>Sale đã gửi, chờ bên đào tạo xếp vào lớp.</summary>
+    DangCho = 0,
+
+    /// <summary>Đã xếp vào một lớp cụ thể.</summary>
+    DaXep = 1,
+
+    /// <summary>Huỷ yêu cầu (khách đổi ý, hoàn tiền…).</summary>
+    DaHuy = 2
+}

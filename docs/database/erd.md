@@ -1,6 +1,6 @@
 # ERD — Mô hình dữ liệu
 
-**32 bảng**, PostgreSQL. Nội dung dưới đây khớp với schema thật (kiểm bằng
+**33 bảng**, PostgreSQL. Nội dung dưới đây khớp với schema thật (kiểm bằng
 `information_schema` sau khi áp toàn bộ migration), không phải bản thiết kế trên giấy.
 
 ## Nguyên tắc bắt buộc
@@ -77,6 +77,9 @@ erDiagram
     KHOA_HOC ||--o{ DANG_KY_KHOA_HOC : "được đăng ký"
     SAN_PHAM ||--o{ DANG_KY_KHOA_HOC : "được mua"
     NGUOI_DUNG |o--o| KHACH_HANG : "cùng một người (0..1)"
+    DANG_KY_KHOA_HOC |o--o| YEU_CAU_XEP_LOP : "gửi yêu cầu xếp lớp (0..1)"
+    NGUOI_DUNG ||--o{ YEU_CAU_XEP_LOP : "chờ xếp lớp"
+    LOP_HOC |o--o{ YEU_CAU_XEP_LOP : "được xếp vào"
 ```
 
 ## Chi tiết bảng
@@ -138,7 +141,7 @@ không phân công được họ vào lớp cũ nữa.
 | `TAI_LIEU` + `TAI_LIEU_LOP_HOC` | **Không có hàng nào** trong bảng gán = tài liệu chung toàn trung tâm |
 | `TEP_DINH_KEM` | Một bảng dùng chung, **5 cột FK nullable loại trừ nhau**, ép bằng `CHECK` |
 
-### Nhóm CRM (6 bảng)
+### Nhóm CRM (7 bảng)
 
 | Bảng | Cột đáng chú ý |
 |---|---|
@@ -148,6 +151,7 @@ không phân công được họ vào lớp cũ nữa.
 | `SAN_PHAM` | Vật phẩm bán kèm: sách, học cụ. `don_vi_tinh` ("quyển", "bộ") chỉ để đọc. Bảng RIÊNG chứ không gộp `KHOA_HOC` kèm cột `loai`: gộp thì `so_buoi` luôn NULL cho sách và mọi query khoá phải nhớ `WHERE loai` |
 | `LICH_SU_CHAM_SOC` | Từng lần liên hệ: `thoi_diem`, `hinh_thuc`, `noi_dung`, `nguoi_phu_trach_id` (từ token), **`trang_thai_sau`**. Trạng thái phễu hiện tại = `trang_thai_sau` của dòng **mới nhất** — không lưu cột trên `KHACH_HANG` để hai chỗ không lệch nhau |
 | `THU_TIEN_DANG_KY` | Tiền **thật đã nhận** cho một đăng ký, khách đóng nhiều đợt. Cùng đơn vị tiền với đăng ký. Còn thiếu = cam kết − tổng thu, **tính động** |
+| `YEU_CAU_XEP_LOP` | **Cầu nối CRM → LMS** (FR-21). `dang_ky_id` UNIQUE, `hoc_vien_id` (hồ sơ tự tạo từ dữ liệu khách nếu chưa có), `trang_thai`, `nguoi_gui_id` · `nguoi_duyet_id` · `thoi_diem_gui` · `thoi_diem_xep`, `lop_hoc_id` nullable. Bảng riêng chứ không phải cột trạng thái trên đơn: giữ được **ai gửi · ai duyệt · lúc nào · vào lớp nào** |
 
 ### Nhóm học phí (1 bảng)
 
@@ -172,6 +176,7 @@ không phân công được họ vào lớp cũ nữa.
 | `UNIQUE(tenant_id, so_dien_thoai)` **partial** | `KHACH_HANG` | Chặn hai người bán nhập cùng một khách. Lọc `IS NOT NULL AND <> ''` — khách chỉ để lại Facebook thì không có số, UNIQUE thường sẽ chặn oan người thứ hai |
 | `UNIQUE(tenant_id, ten)` | `KHOA_HOC` | Hai khoá cùng tên thì người bán chọn sai |
 | `UNIQUE(tenant_id, ten)` | `SAN_PHAM` | Cùng lý do |
+| `UNIQUE(dang_ky_id)` | `YEU_CAU_XEP_LOP` | Một đơn gửi đúng một yêu cầu. Muốn xếp lại thì bán đơn mới |
 | `CHECK` đúng một mặt hàng | `DANG_KY_KHOA_HOC` | `(khoa_hoc_id NOT NULL AND san_pham_id NULL) OR (ngược lại)` — đơn không có mặt hàng, hoặc có cả hai, là dữ liệu mà mọi báo cáo phải tự đoán cách xử lý |
 | `CHECK(so_tien > 0)` | `THU_TIEN_DANG_KY` | Thu 0 đồng là dòng rác; thu âm thì dùng chức năng hoàn tiền (chưa có) |
 | `UNIQUE(bai_tap_id, hoc_vien_id, lan_nop)` | `BAI_NOP` | Nộp nhiều lần nhưng không trùng số lần |
@@ -195,6 +200,8 @@ Các UNIQUE trên bảng con **không kèm `tenant_id`**: cột đầu đã là 
 | `DANG_KY_KHOA_HOC → SAN_PHAM` | Restrict | Đơn cũ phải giữ được tên sản phẩm đã bán; không dùng nữa thì **ngừng bán** |
 | `DANG_KY_KHOA_HOC → KHACH_HANG` / `→ KHOA_HOC` | Restrict | Cùng lý do — và đơn hàng cũ phải giữ được tên khoá đã bán. Khoá không dùng nữa thì **ngừng bán**, không xoá |
 | `LICH_SU_CHAM_SOC → KHACH_HANG` | **Cascade** | Lịch sử chăm sóc thuộc HẲN về khách, không có nghĩa độc lập. Khác đăng ký (Restrict — dữ liệu tiền), nên xoá khách vẫn bị chặn nếu họ đã mua |
+| `YEU_CAU_XEP_LOP → DANG_KY_KHOA_HOC` / `→ NGUOI_DUNG (hoc_vien)` | Restrict | Yêu cầu là vết nghiệp vụ; xoá đơn/học viên phải bị chặn để không còn yêu cầu treo |
+| `YEU_CAU_XEP_LOP → LOP_HOC` / `→ NGUOI_DUNG (nguoi_gui, nguoi_duyet)` | SetNull | Chỉ là dấu vết; Restrict sẽ khoá cứng việc xoá lớp nháp và mọi tài khoản đã từng duyệt |
 | `THU_TIEN_DANG_KY → DANG_KY_KHOA_HOC` | Restrict | Dữ liệu tiền: muốn xoá đăng ký thì phải xoá các lần thu trước, một cách có ý thức |
 | `KHACH_HANG → NGUOI_DUNG` | SetNull | Chỉ là mối nối "cùng một người", không phải phụ thuộc: xoá hồ sơ học viên không được cuốn theo dữ liệu khách hàng và đơn hàng |
 | `DIEM_DANH → NGUOI_DUNG` (người xác nhận) | SetNull | Chỉ là dấu vết; Restrict sẽ khoá cứng mọi tài khoản giáo viên vĩnh viễn |
@@ -215,7 +222,7 @@ Mọi bảng chi tiết (`QUYEN_CHUC_NANG`, `NGUOIDUNG_QUYEN`, `HO_SO_GIAO_VIEN`
 `HO_SO_HOC_VIEN`, `HO_SO_NHAN_VIEN`, `LOP_HOC_HOC_VIEN`,
 `LOP_HOC_TRO_GIANG`, `BUOI_HOC`, `DIEM_DANH`, `NHAN_XET_BUOI_HOC`, `BAI_TAP`, `BAI_NOP`, `BAI_LAM`,
 `KHACH_HANG`, `KHOA_HOC`, `SAN_PHAM`, `DANG_KY_KHOA_HOC`, `LICH_SU_CHAM_SOC`,
-`THU_TIEN_DANG_KY`,
+`THU_TIEN_DANG_KY`, `YEU_CAU_XEP_LOP`,
 `TAI_LIEU_LOP_HOC`, `TEP_DINH_KEM`, `KHOAN_THU_HOC_PHI`) **mang cột `tenant_id` riêng** thay vì
 chỉ kế thừa phạm vi qua bảng cha.
 

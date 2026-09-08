@@ -50,6 +50,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant
     public DbSet<DangKyKhoaHoc> DangKyKhoaHocs => Set<DangKyKhoaHoc>();
     public DbSet<LichSuChamSoc> LichSuChamSocs => Set<LichSuChamSoc>();
     public DbSet<ThuTienDangKy> ThuTienDangKys => Set<ThuTienDangKy>();
+    public DbSet<YeuCauXepLop> YeuCauXepLops => Set<YeuCauXepLop>();
 
     public DbSet<NhatKyHeThong> NhatKyHeThongs => Set<NhatKyHeThong>();
 

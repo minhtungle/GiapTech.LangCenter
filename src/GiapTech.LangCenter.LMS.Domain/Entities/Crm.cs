@@ -230,4 +230,55 @@ public class DangKyKhoaHoc : TenantEntity
     public decimal? PhanTramTrenGiaGoc => GiaGoc == 0 ? null : SoTien / GiaGoc * 100m;
 
     public ICollection<ThuTienDangKy> CacLanThu { get; set; } = [];
+
+    /// <summary>Yêu cầu xếp lớp (0..1) — chỉ đơn mua KHOÁ HỌC mới có.</summary>
+    public YeuCauXepLop? YeuCauXepLop { get; set; }
+}
+
+/// <summary>
+/// YEU_CAU_XEP_LOP — cầu nối CRM → LMS (FR-21).
+///
+/// Sale bán một khoá học rồi **gửi yêu cầu tạo lớp**; bên đào tạo thấy học viên trong danh sách
+/// chờ và xếp vào lớp.
+///
+/// **Bảng riêng chứ không phải một cột `trang_thai_xep_lop` trên đơn hàng** (chốt 09/09/2026):
+/// bảng giữ được **vết ai gửi, ai duyệt, lúc nào** — thông tin mà một cột trạng thái làm mất.
+/// Với dữ liệu tiền và bàn giao giữa hai bộ phận, biết ai chịu trách nhiệm là điều đáng một bảng.
+///
+/// `UNIQUE(DangKyId)`: một đơn hàng chỉ có một yêu cầu. Khách mua lại cùng khoá (học lại) là một
+/// **đơn khác**, nên vẫn gửi được yêu cầu mới — chặn ở đây không cản việc đó.
+/// </summary>
+public class YeuCauXepLop : TenantEntity
+{
+    /// <summary>Đơn hàng khoá học sinh ra yêu cầu này.</summary>
+    public Guid DangKyId { get; set; }
+    public DangKyKhoaHoc DangKy { get; set; } = null!;
+
+    /// <summary>
+    /// Hồ sơ học viên sẽ được xếp lớp.
+    ///
+    /// Bắt buộc (không nullable): lúc gửi yêu cầu, nếu khách chưa có hồ sơ thì handler **tự tạo**
+    /// từ dữ liệu khách. Để nullable thì danh sách chờ có dòng không xếp được vào đâu.
+    /// </summary>
+    public Guid HocVienId { get; set; }
+    public NguoiDung HocVien { get; set; } = null!;
+
+    public TrangThaiYeuCauXepLop TrangThai { get; set; } = TrangThaiYeuCauXepLop.DangCho;
+
+    public DateTimeOffset ThoiDiemGui { get; set; }
+
+    /// <summary>SetNull: xoá hồ sơ người gửi không được cuốn theo yêu cầu.</summary>
+    public Guid? NguoiGuiId { get; set; }
+    public NguoiDung? NguoiGui { get; set; }
+
+    /// <summary>Lớp đã xếp — null khi còn `DangCho`.</summary>
+    public Guid? LopHocId { get; set; }
+    public LopHoc? LopHoc { get; set; }
+
+    public DateTimeOffset? ThoiDiemXep { get; set; }
+
+    public Guid? NguoiDuyetId { get; set; }
+    public NguoiDung? NguoiDuyet { get; set; }
+
+    public string? GhiChu { get; set; }
 }

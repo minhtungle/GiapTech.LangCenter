@@ -228,6 +228,56 @@ Chưa nối `LOP_HOC.khoa_hoc_id` trong đợt này — làm khi cần báo cáo
   phải giữ được tên khoá đã bán. Không dùng được nữa thì đánh dấu ngừng bán.
 - `so_buoi` là thông tin **niêm yết**, không ràng buộc số buổi lớp thật sinh ra.
 
+## FR-21 — Yêu cầu xếp lớp (CRM → LMS)
+
+Bán xong một khoá thì học viên chưa có lớp. FR-21 là **cầu nối** giữa hai hệ thống con: người
+bán gửi yêu cầu, bên đào tạo xếp lớp.
+
+### Luồng
+
+1. **CRM** — tab *Lịch sử mua hàng* của khách, ở dòng đơn **khoá học** có nút
+   *Gửi yêu cầu tạo lớp* (`POST /doanh-thu/{dangKyId}/yeu-cau-xep-lop`, gác bằng
+   `DoanhThu.Sua`). Đơn sản phẩm không có nút này.
+2. **LMS** — yêu cầu vào *danh sách chờ xếp lớp*, xếp theo **cũ nhất trước**.
+3. Đưa vào lớp bằng **một trong hai cách**, cùng gọi
+   `POST /lop-hoc/{lopId}/duyet-cho-xep-lop`:
+
+   | | Vào từ đâu | Dùng khi |
+   |---|---|---|
+   | **Cách 1** | Màn *Chờ xếp lớp* → bấm duyệt → chọn lớp | Người điều phối nhìn cả hàng chờ để cân lớp |
+   | **Cách 2** | Tab *Học viên* của một lớp → chọn người đang chờ | Người phụ trách một lớp muốn lấp cho đủ chỗ |
+
+### Quy tắc
+
+- **Hồ sơ học viên tự tạo từ dữ liệu khách** khi `KHACH_HANG.nguoi_dung_id` còn null: sinh
+  `NGUOI_DUNG` (`LoaiNguoiDung.HocVien`) + `HO_SO_HOC_VIEN` rỗng, rồi **nối lại vào khách**.
+  Không bắt người bán gõ lại họ tên — gõ lại là mở đường cho hai bản ghi lệch nhau. Mua khoá
+  thứ hai dùng đúng hồ sơ đó, không tạo trùng.
+- **Học phí áp dụng lấy từ đơn CRM**, không lấy `LOP_HOC.hoc_phi`. Đơn đã gồm miễn giảm đã chốt
+  với khách; lấy giá lớp thì sổ học phí LMS đòi khách thêm phần đã được giảm. Đơn ngoại tệ quy
+  về VND bằng **tỷ giá đã chụp** (`so_tien × ty_gia_ve_vnd`) vì sổ học phí chỉ có một đơn vị.
+  Canh bởi `XepLopTests.Duyet_vao_lop_lay_hoc_phi_TU_DON_CRM_khong_lay_gia_lop` và
+  `Don_ngoai_te_quy_ve_vnd_theo_ty_gia_da_chup`.
+- **Một bảng `YEU_CAU_XEP_LOP` riêng**, không phải một cột trạng thái trên đơn: giữ được *ai
+  gửi · ai duyệt · lúc nào · vào lớp nào*.
+- `UNIQUE(dang_ky_id)` (quy tắc #8) — một đơn gửi đúng một yêu cầu. Muốn xếp lại thì bán đơn
+  mới, đúng nghiệp vụ.
+- **Duyệt hai lần bị chặn** (`YEU_CAU_DA_XU_LY`): bấm lại, hoặc hai người cùng duyệt, sẽ tạo hai
+  dòng ghi danh và học viên bị tính học phí hai lần.
+- Vượt sức chứa **chặn cả lô**, không xếp một phần rồi báo lỗi.
+- **Huỷ chứ không xoá** — giữ vết đã từng có yêu cầu.
+- Ghi danh và đóng yêu cầu trong **một `SaveChanges`**: nếu không, danh sách chờ và danh sách
+  lớp sẽ nói hai chuyện khác nhau.
+
+### Chưa nối
+
+`LOP_HOC` **chưa có khoá ngoại về `KHOA_HOC`** (CRM đứng riêng, chốt 08/09/2026), nên hộp thoại
+chọn lớp **không** ưu tiên được "lớp cùng khoá" — tên khoá của đơn hiện ở cả bảng và hộp thoại
+để người điều phối tự đối chiếu. Khi nối hai bảng thì đưa lớp cùng khoá lên đầu.
+
+Số **đã thu ở CRM cũng chưa chảy sang** sổ học phí LMS: khách đóng 4 triệu ở CRM thì sổ LMS vẫn
+ghi `daThu = 0`. Hai sổ độc lập — xem *Chưa làm* bên dưới.
+
 ## Mã lỗi
 
 | Mã | Khi nào |
@@ -242,10 +292,17 @@ Chưa nối `LOP_HOC.khoa_hoc_id` trong đợt này — làm khi cần báo cáo
 | `PHAI_CHON_DUNG_MOT_MAT_HANG` | Đơn hàng không có mặt hàng, hoặc có cả khoá học lẫn sản phẩm |
 | `SAN_PHAM_TRUNG_TEN` | Tên sản phẩm đã tồn tại |
 | `SAN_PHAM_DA_CO_DON_HANG` | Xoá sản phẩm còn đơn hàng |
+| `CHI_KHOA_HOC_MOI_XEP_LOP` | Gửi yêu cầu xếp lớp cho đơn mua sản phẩm |
+| `DA_GUI_YEU_CAU_XEP_LOP` | Đơn đã gửi yêu cầu trước đó |
+| `YEU_CAU_KHONG_HOP_LE` | Yêu cầu không tồn tại (hoặc thuộc tenant khác) |
+| `YEU_CAU_DA_XU_LY` | Duyệt/huỷ một yêu cầu đã xếp lớp |
 
 ## Chưa làm
 
-- **Nối đăng ký CRM với sổ thu học phí LMS** — hiện hai sổ độc lập.
+- **Nối đăng ký CRM với sổ thu học phí LMS** — hiện hai sổ độc lập: FR-21 chuyển *số cam kết*
+  sang thành học phí áp dụng, nhưng *số đã thu* thì không, nên cùng một khoản tiền phải ghi hai
+  lần nếu muốn cả hai sổ đúng.
+- **Nối `LOP_HOC` với `KHOA_HOC`** — cần cho việc ưu tiên lớp cùng khoá ở FR-21.
 - **Nhân viên kinh doanh phụ trách khách** (cột cố định trên `KHACH_HANG`) — cần khi làm hoa
   hồng ở HRM. Nay chỉ biết *ai đã chăm sóc* qua `LICH_SU_CHAM_SOC.nguoi_phu_trach_id`.
 - Tự tra tỷ giá từ API ngoài; ngưỡng cảnh báo số tiền vô lý theo từng đơn vị.

@@ -272,4 +272,19 @@ public class DoanhThuController(ISender sender) : ControllerBase
         await sender.Send(new XoaThuTienCommand(thuId), ct);
         return NoContent();
     }
+
+    // ---------- Yêu cầu xếp lớp (FR-21) — cầu nối CRM → LMS ----------
+
+    /// <summary>
+    /// Sale bán xong một khoá thì gửi yêu cầu sang bên đào tạo xếp lớp.
+    ///
+    /// Gác bằng <see cref="ChucNang.DoanhThu"/> chứ không <see cref="ChucNang.LopHoc"/>: đây là
+    /// hành động của người BÁN trên đơn của mình, không phải hành động xếp lớp. Người bán không
+    /// cần và không nên có quyền vào module lớp học.
+    /// </summary>
+    [HttpPost("{id:guid}/yeu-cau-xep-lop")]
+    [RequirePermission(ChucNang.DoanhThu, HanhDong.Sua)]
+    public async Task<ActionResult<Guid>> GuiYeuCauXepLop(
+        Guid id, [FromBody] GuiYeuCauXepLopCommand command, CancellationToken ct)
+        => Ok(await sender.Send(command with { DangKyId = id }, ct));
 }

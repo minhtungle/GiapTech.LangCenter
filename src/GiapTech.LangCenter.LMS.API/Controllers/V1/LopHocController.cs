@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using GiapTech.LangCenter.LMS.API.Authorization;
 using GiapTech.LangCenter.LMS.Application.Common.Models;
+using GiapTech.LangCenter.LMS.Application.Crm;
 using GiapTech.LangCenter.LMS.Application.DaoTao.LopHoc;
 using GiapTech.LangCenter.LMS.Domain.Common;
 using GiapTech.LangCenter.LMS.Domain.Enums;
@@ -162,6 +163,46 @@ public class LopHocController(ISender sender) : ControllerBase
     public async Task<IActionResult> GoHocVien(Guid id, Guid hocVienId, CancellationToken ct)
     {
         await sender.Send(new GoHocVienKhoiLopCommand(id, hocVienId), ct);
+        return NoContent();
+    }
+
+    // ---------- Danh sách chờ xếp lớp (FR-21) ----------
+
+    /// <summary>
+    /// Học viên đã mua khoá nhưng chưa có lớp. Bên đào tạo mở màn này để xếp.
+    ///
+    /// Không gác bằng <see cref="ChucNang.DoanhThu"/>: DTO cố tình mang số tiền của đơn (thành
+    /// học phí khi vào lớp) nên người xếp lớp phải thấy — nhưng đó là người có quyền
+    /// <see cref="ChucNang.LopHoc"/> sửa, tức đã được xem học phí lớp.
+    /// </summary>
+    [HttpGet("cho-xep-lop")]
+    [RequirePermission(ChucNang.LopHoc, HanhDong.Sua)]
+    public async Task<ActionResult<List<YeuCauXepLopDto>>> ChoXepLop(
+        [FromQuery] TrangThaiYeuCauXepLop? trangThai,
+        [FromQuery] Guid? khoaHocId,
+        CancellationToken ct = default)
+        => Ok(await sender.Send(new LayDanhSachChoXepLopQuery(trangThai, khoaHocId), ct));
+
+    /// <summary>
+    /// Duyệt học viên đang chờ vào một lớp. Dùng cho cả hai lối vào của UI: từ danh sách chờ
+    /// chọn lớp, hoặc từ trong lớp chọn người chờ.
+    /// </summary>
+    [HttpPost("{id:guid}/duyet-cho-xep-lop")]
+    [RequirePermission(ChucNang.LopHoc, HanhDong.Sua)]
+    public async Task<IActionResult> DuyetVaoLop(
+        Guid id, [FromBody] DuyetVaoLopBody body, CancellationToken ct)
+    {
+        await sender.Send(new DuyetVaoLopCommand(body.YeuCauIds, id), ct);
+        return NoContent();
+    }
+
+    public record DuyetVaoLopBody(List<Guid> YeuCauIds);
+
+    [HttpDelete("cho-xep-lop/{yeuCauId:guid}")]
+    [RequirePermission(ChucNang.LopHoc, HanhDong.Sua)]
+    public async Task<IActionResult> HuyYeuCauXepLop(Guid yeuCauId, CancellationToken ct)
+    {
+        await sender.Send(new HuyYeuCauXepLopCommand(yeuCauId), ct);
         return NoContent();
     }
 }

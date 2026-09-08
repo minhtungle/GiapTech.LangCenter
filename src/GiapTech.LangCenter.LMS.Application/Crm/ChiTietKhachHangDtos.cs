@@ -180,7 +180,14 @@ public record DangKyKemThuDto(
     decimal DaThu,
     /// <summary>`SoTien − DaThu`, **tính động**. ≤ 0 = đã đóng đủ.</summary>
     decimal ConThieu,
-    List<LanThuDto> CacLanThu);
+    List<LanThuDto> CacLanThu,
+    /// <summary>
+    /// Trạng thái yêu cầu xếp lớp (FR-21) — null = chưa gửi, nút "Gửi yêu cầu tạo lớp" còn bấm
+    /// được. Chỉ đơn khoá học mới có nghĩa.
+    /// </summary>
+    TrangThaiYeuCauXepLop? TrangThaiXepLop,
+    /// <summary>Tên lớp đã được xếp vào, để người bán trả lời khách "đã vào lớp nào".</summary>
+    string? TenLopDaXep);
 
 public record LanThuDto(
     Guid Id,
@@ -216,7 +223,11 @@ public class LayDangKyCuaKhachHandler(IAppDbContext db)
                     .Select(t => new LanThuDto(
                         t.Id, t.SoTien, t.NgayThu, t.PhuongThuc, t.GhiChu,
                         t.NguoiThu == null ? null : t.NguoiThu.HoTen))
-                    .ToList()))
+                    .ToList(),
+                d.YeuCauXepLop == null ? null : d.YeuCauXepLop.TrangThai,
+                d.YeuCauXepLop == null || d.YeuCauXepLop.LopHoc == null
+                    ? null
+                    : d.YeuCauXepLop.LopHoc.Ten))
             .ToListAsync(ct);
 }
 
@@ -226,7 +237,14 @@ public record LuuThuTienCommand(
     decimal SoTien,
     DateTimeOffset NgayThu,
     PhuongThucThanhToan PhuongThuc = PhuongThucThanhToan.ChuyenKhoan,
-    string? GhiChu = null) : IRequest<Guid>;
+    string? GhiChu = null,
+    /// <summary>
+    /// true = ghi kèm một dòng lịch sử chăm sóc "khách đóng thêm tiền" (FR-18, 09/09/2026).
+    ///
+    /// Chỉ khi TẠO mới, không khi sửa: sửa một lần thu cũ không phải là một lần liên hệ khách.
+    /// Mặc định true vì bổ sung thanh toán luôn là một lần tiếp xúc thật.
+    /// </summary>
+    bool GhiChamSoc = true) : IRequest<Guid>;
 
 public class LuuThuTienValidator : AbstractValidator<LuuThuTienCommand>
 {
@@ -247,6 +265,9 @@ public class LuuThuTienHandler(IAppDbContext db, ICurrentUser currentUser)
     public async Task<Guid> Handle(LuuThuTienCommand request, CancellationToken ct)
     {
         var dk = await db.DangKyKhoaHocs
+                     // Include để lấy TÊN mặt hàng cho câu ghi chăm sóc tự sinh.
+                     .Include(d => d.KhoaHoc)
+                     .Include(d => d.SanPham)
                      .FirstOrDefaultAsync(d => d.Id == request.DangKyId, ct)
                  ?? throw new AppException("DANG_KY_KHONG_HOP_LE");
 
@@ -283,6 +304,31 @@ public class LuuThuTienHandler(IAppDbContext db, ICurrentUser currentUser)
         thu.PhuongThuc = request.PhuongThuc;
         thu.GhiChu = string.IsNullOrWhiteSpace(request.GhiChu) ? null : request.GhiChu.Trim();
 
+        // Bổ sung thanh toán ghi kèm một dòng chăm sóc — cùng lý do với lệnh mua hàng: người
+        // bán sau phải thấy được "khách đã đóng thêm khi nào, ai nhận".
+        //
+        // CHỈ khi tạo mới. Sửa một lần thu cũ không phải là một lần liên hệ khách, ghi thêm dòng
+        // mỗi lần sửa sẽ làm lịch sử chăm sóc phồng lên bằng thao tác kế toán.
+        if (request.Id is null && request.GhiChamSoc)
+        {
+            var tenMatHang = dk.KhoaHoc?.Ten ?? dk.SanPham?.Ten ?? "";
+            var conThieu = dk.SoTien - (daThuKhac + request.SoTien);
+
+            db.LichSuChamSocs.Add(new Domain.Entities.LichSuChamSoc
+            {
+                KhachHangId = dk.KhachHangId,
+                ThoiDiem = request.NgayThu,
+                HinhThuc = HinhThucChamSoc.Khac,
+                NoiDung = conThieu <= 0
+                    ? $"Đóng thêm {request.SoTien:N0} cho {tenMatHang} — đã đủ"
+                    : $"Đóng thêm {request.SoTien:N0} cho {tenMatHang} — còn thiếu {conThieu:N0}",
+                // Đã mua rồi thì đóng thêm không đổi vị trí trong phễu.
+                TrangThaiSau = TrangThaiKhachHang.DaMua,
+                NguoiPhuTrachId = currentUser.UserId
+            });
+        }
+
+        // MỘT SaveChanges cho cả lần thu và dòng chăm sóc: lỗi thì không có gì được ghi.
         await db.SaveChangesAsync(ct);
         return thu.Id;
     }

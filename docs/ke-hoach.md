@@ -5,10 +5,10 @@
 ## Tiến độ tổng
 
 ```
-Nghiệp vụ  ██████████████░░  18/20 FR chạy đầu-cuối (còn FR-15 Thống kê)
+Nghiệp vụ  ██████████████░░  19/21 FR chạy đầu-cuối (còn FR-15 Thống kê)
 Ba hệ thống ████████████░░░░  CRM xong nghiệp vụ; HRM còn khung trống
 Hạ tầng    ████████████░░░░  CI/CD sẵn sàng, chờ VPS thật
-Còn lại    ██████░░░░░░░░░░  Dashboard + nghiệp vụ HRM/CRM + 12 nợ kỹ thuật
+Còn lại    ██████░░░░░░░░░░  Dashboard + nghiệp vụ HRM + 15 nợ kỹ thuật
 ```
 
 ## Trạng thái mã FR
@@ -31,10 +31,11 @@ Còn lại    ██████░░░░░░░░░░  Dashboard + nghi
 | FR-14 | Học phí & công nợ | ✅ | ✅ | Sổ thu + bảng công nợ tính động. Phạm vi tách riêng khỏi phạm vi lớp |
 | FR-15 | Thống kê / Dashboard | ⬜ | ⬜ | 3 dashboard: Admin / Giáo viên / Học viên |
 | FR-16 | Nhật ký hệ thống | ✅ | ✅ | Ghi tự động ở pipeline MediatR + interceptor chụp trường đổi |
-| FR-17 | Khách hàng (CRM) | ✅ | ✅ | Bảng riêng, nối `nguoi_dung_id` khi khách vào học. **View 4 tab**: thông tin · lịch sử chăm sóc (kèm phễu bán hàng) · khoá tham gia · tiền đã đóng |
+| FR-17 | Khách hàng (CRM) | ✅ | ✅ | Bảng riêng, nối `nguoi_dung_id` khi khách vào học. **View 3 tab**: thông tin · lịch sử chăm sóc (kèm phễu bán hàng) · lịch sử mua hàng (gộp cả sổ tiền đã đóng, 09/09) |
 | FR-18 | Doanh thu (CRM) | ✅ | ✅ | Đa tiền tệ VND/USD/EUR/CAD, **tỷ giá chụp lúc đăng ký**; giá gốc snapshot, % tính động. Đăng ký = **cam kết**, sổ thu nhiều đợt riêng |
 | FR-19 | Khoá học (CRM) | ✅ | ✅ | Danh mục khoá bán ra. Khác `LOP_HOC` (lần mở cụ thể). Đã bán thì ngừng bán, không xoá |
 | FR-20 | Sản phẩm khác (CRM) | ✅ | ✅ | Sách, học cụ; có **số lượng**. Đơn hàng dùng **2 FK nullable loại trừ** + `CHECK`. Mua hàng từ tab chăm sóc ghi **cả đơn + lịch sử** trong một transaction |
+| FR-21 | Yêu cầu xếp lớp (CRM → LMS) | ✅ | ✅ | Bán khoá → gửi yêu cầu → duyệt vào lớp **2 cách** (từ hàng chờ chọn lớp · từ trong lớp chọn người chờ). **Học phí lấy từ đơn CRM**, không lấy giá lớp; hồ sơ học viên tự tạo từ dữ liệu khách |
 
 Ngoài bảng: **Bài kiểm tra** (`BAI_KIEM_TRA`, `BAI_LAM`) đã có schema và cách ly tenant, nhưng
 **chưa có API và UI** — xem nợ N1.
@@ -114,6 +115,9 @@ VPS → domain + HTTPS → backup. Xem
 | N11 | Endpoint dọn tenant test + `globalTeardown` cho E2E — **DB dev đã có 20 tenant rác** (mỗi lần chạy E2E thêm ~6) | Trung bình |
 | N13 | **Chưa dọn nhật ký cũ** — bảng `NHAT_KY_HE_THONG` tăng vô hạn, cần chính sách lưu giữ trước khi chạy production lâu dài | Trung bình |
 | N17 | Đổi tên bảng `DANG_KY_KHOA_HOC` → `DON_HANG` (nay chứa cả sản phẩm) và **tồn kho sản phẩm** — hiện bán không giới hạn | Thấp |
+| N18 | **Số đã thu ở CRM không chảy sang sổ học phí LMS** — FR-21 chuyển *số cam kết* thành học phí áp dụng, nhưng khách đóng 4tr ở CRM thì sổ LMS vẫn ghi `daThu = 0`. Cùng một khoản tiền phải ghi hai lần nếu muốn cả hai sổ đúng | **Cao** |
+| N19 | `LOP_HOC` chưa có FK về `KHOA_HOC` nên hộp thoại chọn lớp ở FR-21 **không ưu tiên được lớp cùng khoá** — nay chỉ hiện tên khoá của đơn để người điều phối tự đối chiếu | Trung bình |
+| N20 | Badge `%` trên giá gốc hiện cả ở đơn **sản phẩm** (luôn `100.0%`) — sản phẩm không có khái niệm giảm giá so với niêm yết nên con số vô nghĩa | Thấp |
 | N16 | **4 test E2E lạc hậu**: `quan-tri.spec.ts` tìm `button[title="Sửa"]` nhưng nút thao tác đã chuyển vào `MenuThaoTac` (07/09), và `dang-nhap-tra-ma.spec.ts` còn dùng từ ngữ "mã đội". Không phải lỗi mới — chưa cập nhật khi đổi UI | Trung bình |
 | N15 | **E2E phải tắt rate limit mới chạy được** (`GIOI_HAN_TAN_SUAT=false`) vì mỗi test tự tạo tenant qua endpoint có hạn mức 10 req/phút. Cách đúng hơn: fixture dùng CHUNG một tenant, hoặc endpoint tạo tenant riêng cho test | Trung bình |
 | N14 | Màn Học viên (LMS) và Nhân sự (HRM) cho đọc danh sách **toàn trung tâm**, chưa giới hạn "học viên lớp mình" — cần mở rộng `IPhamViLopHoc` cho hồ sơ con người | Trung bình |
@@ -121,7 +125,7 @@ VPS → domain + HTTPS → backup. Xem
 
 ## Kiểm chứng hiện tại
 
-- **264 test backend xanh** (54 unit + 210 integration), build 0 warning.
+- **349 test backend xanh** (61 unit + 288 integration), build 0 warning.
 - Frontend `tsc -b` + `vite build` sạch, `oxlint` không lỗi.
 - **PostgreSQL + MinIO thật**: 20 bảng, migration áp sạch, luồng đầu-cuối chạy tay đủ từ tạo
   trung tâm tới thu học phí.

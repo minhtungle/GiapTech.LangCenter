@@ -8,6 +8,43 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — FR-21 Yêu cầu xếp lớp: cầu nối CRM → LMS (09/09/2026)
+
+- Bán xong một khoá, người bán bấm **Gửi yêu cầu tạo lớp** ngay trên dòng đơn ở tab *Lịch sử mua
+  hàng*; bên đào tạo thấy học viên trong **danh sách chờ xếp lớp** (màn mới `/lop-hoc/cho-xep-lop`).
+- **Hai cách đưa vào lớp**, cùng một endpoint `POST /lop-hoc/{id}/duyet-cho-xep-lop`:
+  *Cách 1* từ màn chờ → bấm duyệt → chọn lớp (dành cho người điều phối nhìn cả hàng chờ);
+  *Cách 2* từ tab Học viên của một lớp → chọn người đang chờ (dành cho người lấp chỗ một lớp).
+- **Hồ sơ học viên tự tạo từ dữ liệu khách** khi khách chưa có: sinh `NGUOI_DUNG` +
+  `HO_SO_HOC_VIEN` rồi nối lại vào `KHACH_HANG.nguoi_dung_id`. Không bắt người bán gõ lại họ tên
+  — gõ lại là mở đường cho hai bản ghi lệch nhau. Mua khoá thứ hai dùng đúng hồ sơ đó.
+- **Học phí áp dụng lấy từ đơn CRM**, không lấy giá niêm yết của lớp: đơn đã gồm miễn giảm đã
+  chốt với khách. Đơn ngoại tệ quy về VND bằng tỷ giá đã chụp.
+- Bảng mới `YEU_CAU_XEP_LOP` (migration `ThemYeuCauXepLop`, chỉ CREATE TABLE — không đụng dữ liệu
+  hiện có) với `UNIQUE(dang_ky_id)` ở tầng DB (quy tắc #8). Bảng riêng chứ không phải cột trạng
+  thái trên đơn: giữ được ai gửi · ai duyệt · lúc nào · vào lớp nào.
+- Chốt chặn: đơn sản phẩm không xếp lớp được (`CHI_KHOA_HOC_MOI_XEP_LOP`), không gửi hai lần
+  (`DA_GUI_YEU_CAU_XEP_LOP`), **không duyệt hai lần** (`YEU_CAU_DA_XU_LY` — nếu không học viên bị
+  tính học phí hai lần), vượt sức chứa **chặn cả lô**, huỷ thì giữ vết chứ không xoá.
+- 13 test mới (`XepLopTests`) gồm cách ly tenant cả ba khẳng định; đã kiểm chứng bằng đột biến mã
+  (đổi nguồn học phí sang giá lớp → 2 test đỏ đúng chỗ).
+- **Chưa nối**: `LOP_HOC` chưa có FK về `KHOA_HOC` nên hộp thoại chọn lớp không ưu tiên được lớp
+  cùng khoá; số **đã thu** ở CRM cũng chưa chảy sang sổ học phí LMS.
+
+### Changed — Gộp tab "Lịch sử mua hàng" và "Số tiền đã đóng" (09/09/2026)
+
+- Còn **một** tab thay vì hai: hai câu hỏi đó luôn được hỏi cùng lúc ("khách mua gì" đi liền "trả
+  bao nhiêu rồi"), tách ra thì người bán phải nhớ số ở tab này để so với tab kia. Mã URL
+  `?tab=da-dong` không còn.
+- Mỗi đơn là một dòng có tình trạng thanh toán, **bấm mở ra sổ thu từng lần** của chính đơn đó —
+  ẩn mặc định vì phần lớn lúc xem người dùng chỉ cần biết "đủ hay thiếu".
+- Nút **Ghi mua hàng** chuyển từ tab *Lịch sử chăm sóc* sang tab này: mua hàng thuộc về màn nói
+  về hàng đã mua. Backend vẫn ghi kèm một dòng chăm sóc như trước.
+- Đơn chưa đóng đủ có nút **Bổ sung thanh toán** — một lần bấm sinh **một lần doanh thu mới và
+  một lần chăm sóc mới** (`LuuThuTienCommand.GhiChamSoc`, cùng một `SaveChanges`). Dòng chăm sóc
+  nói rõ còn thiếu bao nhiêu, không chỉ "đã đóng tiền". **Sửa** một lần thu cũ thì KHÔNG sinh
+  thêm chăm sóc — sửa không phải một lần liên hệ khách.
+
 ### Changed — Tab "Khoá học tham gia" → "Lịch sử mua hàng", nhóm theo loại (08/09/2026)
 
 - Đổi tên tab và mã URL (`?tab=khoa-hoc` → `?tab=mua-hang`) — tab này nay chứa cả sản phẩm nên

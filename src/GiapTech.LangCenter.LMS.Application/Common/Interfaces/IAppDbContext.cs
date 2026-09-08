@@ -51,6 +51,7 @@ public interface IAppDbContext
     DbSet<DangKyKhoaHoc> DangKyKhoaHocs { get; }
     DbSet<LichSuChamSoc> LichSuChamSocs { get; }
     DbSet<ThuTienDangKy> ThuTienDangKys { get; }
+    DbSet<YeuCauXepLop> YeuCauXepLops { get; }
 
     DbSet<NhatKyHeThong> NhatKyHeThongs { get; }
 
