@@ -31,7 +31,7 @@ import {
 const CAC_TAB = [
   { ma: 'thong-tin', khoa: 'chiTietKhach.tabThongTin', can: undefined },
   { ma: 'cham-soc', khoa: 'chiTietKhach.tabChamSoc', can: undefined },
-  { ma: 'khoa-hoc', khoa: 'chiTietKhach.tabKhoaHoc', can: 'DoanhThu' },
+  { ma: 'mua-hang', khoa: 'chiTietKhach.tabMuaHang', can: 'DoanhThu' },
   { ma: 'da-dong', khoa: 'chiTietKhach.tabDaDong', can: 'DoanhThu' },
 ] as const
 
@@ -97,7 +97,7 @@ export default function ChiTietKhachHang() {
 
       {tab === 'thong-tin' && <TabThongTin kh={kh} onXong={() => navigate(0)} />}
       {tab === 'cham-soc' && <TabChamSoc khachHangId={kh.id} />}
-      {tab === 'khoa-hoc' && <TabKhoaHoc khachHangId={kh.id} chiTien={false} />}
+      {tab === 'mua-hang' && <TabKhoaHoc khachHangId={kh.id} chiTien={false} />}
       {tab === 'da-dong' && <TabKhoaHoc khachHangId={kh.id} chiTien />}
     </div>
   )
@@ -867,12 +867,13 @@ function FormMuaHang({
   )
 }
 
-// ---------- Tab 3 & 4: Khoá học tham gia / Số tiền đã đóng ----------
+// ---------- Tab 3 & 4: Lịch sử mua hàng / Số tiền đã đóng ----------
 
 /**
  * Một nguồn dữ liệu, hai góc nhìn.
  *
- * `chiTien = false` → tab **Khoá học tham gia**: khoá nào, cam kết bao nhiêu, giảm mấy %.
+ * `chiTien = false` → tab **Lịch sử mua hàng**: nhóm theo LOẠI (khoá học · sản phẩm), mỗi nhóm
+ *                      có tổng tiền riêng; trong nhóm là từng lần mua kèm số tiền.
  * `chiTien = true`  → tab **Số tiền đã đóng**: từng lần thu và còn thiếu bao nhiêu.
  *
  * Không tách hai component: cùng gọi một endpoint, tách ra là hai bản sao sẽ trôi khỏi nhau.
@@ -927,6 +928,126 @@ function TabKhoaHoc({ khachHangId, chiTien }: { khachHangId: string; chiTien: bo
 
   if (isLoading) return <TrangTrong thongDiep={t('chung.dangTai')} />
   if (ds.length === 0) return <TrangTrong thongDiep={t('chiTietKhach.chuaDangKy')} />
+
+  /**
+   * Nhóm theo LOẠI cho tab Lịch sử mua hàng.
+   *
+   * Danh sách phẳng theo thời gian thì người xem phải tự lọc bằng mắt "khách đã mua khoá nào,
+   * mua sản phẩm gì" — mà đó chính là câu hỏi của tab này. Tab "Số tiền đã đóng" thì KHÔNG
+   * nhóm: ở đó người dùng đi theo từng đơn để ghi thu, thứ tự thời gian đúng hơn.
+   *
+   * Tổng mỗi nhóm quy về VND vì một khách có thể mua khoá giá CAD và sách giá VND — cộng thẳng
+   * hai đơn vị là con số vô nghĩa.
+   */
+  const nhom = chiTien
+    ? null
+    : (['KhoaHoc', 'SanPham'] as LoaiDonHang[])
+        .map((loai) => ({
+          loai,
+          muc: ds.filter((d) => d.loai === loai),
+        }))
+        // Bỏ nhóm rỗng: tiêu đề "Sản phẩm" không có gì bên dưới trông như giao diện hỏng.
+        .filter((n) => n.muc.length > 0)
+
+  if (nhom) {
+    return (
+      <div className="space-y-4">
+        {nhom.map((n) => (
+          <div key={n.loai} className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-semibold">{t(`loaiDonHang.${n.loai}`)}</h3>
+              <Badge variant="muted">
+                {t('chiTietKhach.soLanMua', { so: n.muc.length })}
+              </Badge>
+              <span className="ml-auto text-sm text-muted-foreground">
+                {t('chiTietKhach.tongNhom')}:{' '}
+                <strong>
+                  {tien(n.muc.reduce((tong, d) => tong + d.soTien * d.tyGiaVeVnd, 0))}
+                </strong>
+              </span>
+            </div>
+
+            <Card>
+              <CardContent className="pt-6">
+                <Table>
+                  <thead>
+                    <tr>
+                      <Th>{t('doanhThu.matHang')}</Th>
+                      <Th>{t('chiTietKhach.ngayMua')}</Th>
+                      <Th className="text-right">{t('doanhThu.giaGoc')}</Th>
+                      <Th className="text-right">{t('doanhThu.soTien')}</Th>
+                      <Th className="text-right">{t('doanhThu.phanTram')}</Th>
+                      <Th className="text-right">{t('chiTietKhach.daThu')}</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {n.muc.map((d) => (
+                      <tr key={d.id} className="hover:bg-muted/40">
+                        <Td>
+                          <div className="font-medium">{d.tenMatHang}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {d.soBuoi !== null
+                              ? t('khoaHoc.soBuoiNgan', { so: d.soBuoi })
+                              : t('doanhThu.soLuongNgan', { so: d.soLuong })}
+                            {d.ghiChu ? ` · ${d.ghiChu}` : ''}
+                          </div>
+                        </Td>
+                        <Td className="text-muted-foreground">{ngayVN(d.ngayDangKy)}</Td>
+                        <Td className="text-right text-muted-foreground">
+                          {tien(d.giaGoc, d.donViTien)}
+                        </Td>
+                        <Td className="text-right font-medium">
+                          {tien(d.soTien, d.donViTien)}
+                          {/* Đơn ngoại tệ hiện thêm số quy đổi: cột tổng nhóm là VND nên
+                              không có dòng này thì người đọc không nối được hai con số. */}
+                          {d.donViTien !== 'VND' && (
+                            <div className="text-xs text-muted-foreground">
+                              = {tien(d.soTien * d.tyGiaVeVnd)}
+                            </div>
+                          )}
+                        </Td>
+                        <Td className="text-right">
+                          <Badge variant={mauPhanTram(d.phanTramTrenGiaGoc)}>
+                            {phanTram(d.phanTramTrenGiaGoc)}
+                          </Badge>
+                        </Td>
+                        <Td className="text-right">
+                          {/* Ba trạng thái, không hai: đã đủ · đã đóng một phần · CHƯA đóng gì.
+                              Hiện "0,00 CA$" cho đơn chưa thu đồng nào thì nhìn giống một số
+                              tiền bình thường — người quản lý phải tự so với cột bên cạnh. */}
+                          {d.conThieu <= 0 ? (
+                            <Badge variant="ok">{t('chiTietKhach.daDu')}</Badge>
+                          ) : d.daThu <= 0 ? (
+                            <Badge variant="loi">{t('chiTietKhach.chuaDong')}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">
+                              {tien(d.daThu, d.donViTien)}
+                            </span>
+                          )}
+                        </Td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+        ))}
+
+        {/* Tổng CHUNG cả hai nhóm — con số người quản lý hỏi đầu tiên. */}
+        {nhom.length > 1 && (
+          <div className="flex justify-end border-t border-border pt-3 text-sm">
+            <span className="text-muted-foreground">
+              {t('chiTietKhach.tongTatCa')}:{' '}
+              <strong className="text-base">
+                {tien(ds.reduce((tong, d) => tong + d.soTien * d.tyGiaVeVnd, 0))}
+              </strong>
+            </span>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-3">

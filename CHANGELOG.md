@@ -8,6 +8,25 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — Tab "Khoá học tham gia" → "Lịch sử mua hàng", nhóm theo loại (08/09/2026)
+
+- Đổi tên tab và mã URL (`?tab=khoa-hoc` → `?tab=mua-hang`) — tab này nay chứa cả sản phẩm nên
+  tên cũ sai nghĩa.
+- **Nhóm theo LOẠI** (Khoá học · Sản phẩm), mỗi nhóm là một bảng riêng kèm **số lần mua** và
+  **tổng tiền nhóm**; có thêm **tổng chung** khi khách mua cả hai loại. Danh sách phẳng theo thời
+  gian thì người xem phải tự lọc bằng mắt "khách đã mua khoá nào, sản phẩm gì" — đúng câu hỏi
+  của tab này.
+- Mỗi dòng hiện: mặt hàng (kèm số buổi hoặc số lượng, ghi chú) · ngày mua · giá gốc · số tiền
+  thu · % giá gốc · đã thu. Đơn ngoại tệ hiện thêm số quy đổi VND để nối được với tổng nhóm.
+- Tổng nhóm quy về **VND**: một khách có thể mua khoá giá CAD và sách giá VND — cộng thẳng hai
+  đơn vị là con số vô nghĩa.
+- Nhóm rỗng bị bỏ (tiêu đề không có gì bên dưới trông như giao diện hỏng); khách chỉ mua một loại
+  thì không hiện "Tổng tất cả" trùng lặp.
+- Tab **Số tiền đã đóng** cố ý **không** nhóm: ở đó người dùng đi theo từng đơn để ghi thu, thứ
+  tự thời gian đúng hơn.
+- Cột "Đã thu" nay có **ba** trạng thái, không hai: *Đã đóng đủ* · số tiền đã đóng · **Chưa
+  đóng**. Hiện "0,00 CA$" cho đơn chưa thu đồng nào thì nhìn giống một số tiền bình thường.
+
 ### Changed — Modal không còn đóng khi bấm ra nền (08/09/2026)
 
 - Chỉ đóng bằng **nút ✕, Esc, hoặc Huỷ**. Bỏ handler `onClick` so `e.target === ref.current`.

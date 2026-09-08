@@ -56,8 +56,8 @@ Bấm một khách mở `/crm/khach-hang/:id`:
 |---|---|
 | **Thông tin chung** | Hồ sơ + sửa tại chỗ; mối nối tới hồ sơ học viên |
 | **Lịch sử chăm sóc** | Từng lần liên hệ — xem `LICH_SU_CHAM_SOC` dưới |
-| **Khoá học tham gia** | Các đăng ký của khách này (từ `DANG_KY_KHOA_HOC`) |
-| **Số tiền đã đóng** | Sổ thu theo từng đăng ký + **còn thiếu bao nhiêu** |
+| **Lịch sử mua hàng** | Mọi thứ khách đã mua, **nhóm theo loại** (khoá học · sản phẩm), mỗi nhóm có tổng tiền riêng + tổng chung |
+| **Số tiền đã đóng** | Sổ thu theo từng đơn + **còn thiếu bao nhiêu**. **Không** nhóm theo loại: ở đây người dùng đi theo từng đơn để ghi thu, thứ tự thời gian đúng hơn |
 
 ### Mua hàng ngay từ tab chăm sóc
 
