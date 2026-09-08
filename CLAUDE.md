@@ -254,6 +254,12 @@ npm run dev     # http://localhost:5173, proxy /api -> :5229
 npm run build   # tsc -b && vite build
 npx oxlint src e2e
 
+# --- E2E (Playwright) ---
+# Mỗi test tự tạo một trung tâm qua /dang-ky-trung-tam, mà endpoint đó có hạn mức 10 req/phút
+# mỗi IP (thêm 08/09/2026) → chạy cả bộ sẽ 429. PHẢI tắt hạn mức khi chạy E2E:
+GIOI_HAN_TAN_SUAT=false dotnet run --project src/GiapTech.LangCenter.LMS.API   # ở terminal khác
+E2E_BASE_URL=http://localhost:5173 npx playwright test
+
 # --- PostgreSQL + MinIO cho dev ---
 docker run -d --name lms-minio -p 59000:9000 \
   -e MINIO_ROOT_USER=devminio -e MINIO_ROOT_PASSWORD=devminio123 \

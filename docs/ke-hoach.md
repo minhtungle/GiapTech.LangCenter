@@ -110,8 +110,10 @@ VPS → domain + HTTPS → backup. Xem
 | N7 | Import Excel danh sách học viên | Trung bình |
 | N9 | Lịch sử chỉnh sửa khoản thu (ai sửa gì lúc nào) | Thấp |
 | N10 | Nhắc nợ học phí / thông báo lịch học qua email (`IEmailSender` đã có, chưa nối) | Thấp |
-| N11 | Endpoint dọn tenant test + `globalTeardown` cho E2E | Thấp |
+| N11 | Endpoint dọn tenant test + `globalTeardown` cho E2E — **DB dev đã có 20 tenant rác** (mỗi lần chạy E2E thêm ~6) | Trung bình |
 | N13 | **Chưa dọn nhật ký cũ** — bảng `NHAT_KY_HE_THONG` tăng vô hạn, cần chính sách lưu giữ trước khi chạy production lâu dài | Trung bình |
+| N16 | **4 test E2E lạc hậu**: `quan-tri.spec.ts` tìm `button[title="Sửa"]` nhưng nút thao tác đã chuyển vào `MenuThaoTac` (07/09), và `dang-nhap-tra-ma.spec.ts` còn dùng từ ngữ "mã đội". Không phải lỗi mới — chưa cập nhật khi đổi UI | Trung bình |
+| N15 | **E2E phải tắt rate limit mới chạy được** (`GIOI_HAN_TAN_SUAT=false`) vì mỗi test tự tạo tenant qua endpoint có hạn mức 10 req/phút. Cách đúng hơn: fixture dùng CHUNG một tenant, hoặc endpoint tạo tenant riêng cho test | Trung bình |
 | N14 | Màn Học viên (LMS) và Nhân sự (HRM) cho đọc danh sách **toàn trung tâm**, chưa giới hạn "học viên lớp mình" — cần mở rộng `IPhamViLopHoc` cho hồ sơ con người | Trung bình |
 | N12 | `Token_bi_sua_chu_ky_thi_bi_tu_choi` **chớp nháy** — đỏ một lần khi chạy toàn bộ (12 giây), xanh khi chạy riêng | Trung bình |
 

@@ -8,6 +8,23 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — Khung thả xuống của select định vị `fixed`, tự mở lên trên khi thiếu chỗ (08/09/2026)
+
+- `SelectTimKiem` và `SelectTimKiemNhieu` đổi từ `position: absolute` sang **`fixed` + toạ độ
+  chụp lúc mở** — cùng cách `MenuThaoTac` đã dùng để thoát `overflow-x-auto` của `Table`.
+  Khung ra khỏi mọi khung cuộn, nên không bị `Modal` (`overflow-y-auto`) cắt hay ảnh hưởng.
+- **Tự mở LÊN TRÊN** khi chỗ bên dưới không đủ — select ở cuối form là ca hay gặp nhất. Đo thật:
+  select "Hình thức thanh toán" ở đáy modal đã cuộn, bản cũ mở xuống tới 4px sát viền dialog,
+  bản mới mở lên trên và cách viền thoải mái.
+- Chiều cao khung giới hạn theo chỗ còn lại của viewport (`maxHeight` động thay cho `max-h-56`
+  cứng), nên không tràn khi cả hai phía đều hẹp.
+- Cuộn thân modal thì khung **đi theo neo** (giữ đúng khoảng cách 4px, đã đo) chứ không trôi
+  lơ lửng — `fixed` đòi phải tính lại vị trí khi cuộn.
+- Một hook `useViTriTha` dùng cho **cả hai** biến thể, không chép logic hai lần.
+
+> Chủ sản phẩm chốt: **giữ khung nổi phủ lên các ô bên dưới** (không đẩy nội dung xuống), chỉ cần
+> luôn đủ chỗ hiện. Đây là cách hầu hết thư viện làm và không làm form dài ra.
+
 ### Added — View chi tiết khách hàng 4 tab + phễu bán hàng + sổ thu nhiều đợt (08/09/2026)
 
 Hai bảng mới (31 bảng): `LICH_SU_CHAM_SOC`, `THU_TIEN_DANG_KY`.

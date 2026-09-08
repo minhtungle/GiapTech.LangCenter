@@ -9,6 +9,60 @@ export interface LuaChon {
   phu?: string
 }
 
+/** Chiều cao tối đa của khung thả xuống (ô tìm kiếm + danh sách), khớp `max-h-56` bên dưới. */
+const CAO_TOI_DA = 264
+
+/**
+ * Định vị khung thả xuống bằng `position: fixed` thay vì `absolute`.
+ *
+ * **Vì sao cần**: `Modal` có `overflow-y-auto` để form dài cuộn được. Khung `absolute` nằm
+ * TRONG luồng cuộn đó, nên mở select ở gần đáy form sẽ **kéo dài thân modal** và người dùng
+ * phải cuộn xuống mới thấy danh sách — hoặc tệ hơn, danh sách bị khung cuộn cắt mất.
+ *
+ * `fixed` + toạ độ chụp lúc mở đưa khung ra khỏi mọi khung cuộn. Cùng cách `MenuThaoTac` đã
+ * dùng để thoát `overflow-x-auto` của `Table` (07/09/2026).
+ *
+ * Đánh đổi: `fixed` không đi theo khi trang cuộn, nên **cuộn phải đóng** khung lại — nếu
+ * không nó sẽ trôi lơ lửng giữa màn hình.
+ */
+function useViTriTha(mo: boolean, neo: React.RefObject<HTMLElement | null>) {
+  const [viTri, setViTri] = React.useState<React.CSSProperties>({})
+
+  const tinh = React.useCallback(() => {
+    const r = neo.current?.getBoundingClientRect()
+    if (!r) return
+
+    // Mở LÊN TRÊN khi không đủ chỗ bên dưới — select cuối form là ca hay gặp nhất.
+    const canDuoi = window.innerHeight - r.bottom
+    const moLen = canDuoi < CAO_TOI_DA + 16 && r.top > canDuoi
+
+    setViTri({
+      position: 'fixed',
+      left: r.left,
+      width: r.width,
+      // Giới hạn theo chỗ còn lại để khung không tràn khỏi viewport khi cả hai phía đều hẹp.
+      maxHeight: Math.min(CAO_TOI_DA, (moLen ? r.top : canDuoi) - 12),
+      ...(moLen ? { bottom: window.innerHeight - r.top + 4 } : { top: r.bottom + 4 }),
+    })
+  }, [neo])
+
+  React.useEffect(() => {
+    if (!mo) return
+    tinh()
+
+    // `capture: true` để bắt cuộn của MỌI khung bên trong (thân modal), không chỉ window.
+    const dong = () => tinh()
+    window.addEventListener('scroll', dong, true)
+    window.addEventListener('resize', dong)
+    return () => {
+      window.removeEventListener('scroll', dong, true)
+      window.removeEventListener('resize', dong)
+    }
+  }, [mo, tinh])
+
+  return { viTri, tinh }
+}
+
 /**
  * Select có ô tìm kiếm (combobox) — thay cho `<select>` cơ bản.
  *
@@ -56,7 +110,9 @@ export function SelectTimKiem({
   const [tuKhoa, setTuKhoa] = React.useState('')
   const [chiSoHighlight, setChiSoHighlight] = React.useState(0)
   const boc = React.useRef<HTMLDivElement>(null)
+  const nut = React.useRef<HTMLButtonElement>(null)
   const oNhap = React.useRef<HTMLInputElement>(null)
+  const { viTri, tinh } = useViTriTha(mo, nut)
 
   const dangChon = luaChon.find((l) => l.giaTri === giaTri) ?? null
 
@@ -143,10 +199,15 @@ export function SelectTimKiem({
   return (
     <div ref={boc} className="relative">
       <button
+        ref={nut}
         id={id}
         type="button"
         disabled={disabled}
-        onClick={() => setMo((v) => !v)}
+        onClick={() => {
+          // Tính toạ độ TRƯỚC khi mở: `fixed` cần vị trí của neo ở thời điểm này.
+          tinh()
+          setMo((v) => !v)
+        }}
         className={cn(
           'flex h-9 w-full items-center justify-between gap-2 rounded-md border border-input',
           'bg-background px-3 text-sm',
@@ -179,7 +240,10 @@ export function SelectTimKiem({
       </button>
 
       {mo && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-card shadow-lg">
+        <div
+          style={viTri}
+          className="z-50 flex flex-col overflow-hidden rounded-md border border-border bg-card shadow-lg"
+        >
           <div className="border-b border-border p-1.5">
             <input
               ref={oNhap}
@@ -194,7 +258,7 @@ export function SelectTimKiem({
             />
           </div>
 
-          <ul role="listbox" className="max-h-56 overflow-y-auto p-1">
+          <ul role="listbox" className="min-h-0 flex-1 overflow-y-auto p-1">
             {daLoc.length === 0 && !hienTaoMoi ? (
               <li className="px-2 py-3 text-center text-sm text-muted-foreground">
                 {/* Khi danh sách RỖNG SẴN (chưa gõ gì) mà select này cho tạo mới, "Không tìm
@@ -286,7 +350,9 @@ export function SelectTimKiemNhieu({
   const [tuKhoa, setTuKhoa] = React.useState('')
   const [chiSoHighlight, setChiSoHighlight] = React.useState(0)
   const boc = React.useRef<HTMLDivElement>(null)
+  const nut = React.useRef<HTMLButtonElement>(null)
   const oNhap = React.useRef<HTMLInputElement>(null)
+  const { viTri, tinh } = useViTriTha(mo, nut)
 
   const daChon = luaChon.filter((l) => giaTri.includes(l.giaTri))
 
@@ -339,10 +405,15 @@ export function SelectTimKiemNhieu({
   return (
     <div ref={boc} className="relative">
       <button
+        ref={nut}
         id={id}
         type="button"
         disabled={disabled}
-        onClick={() => setMo((v) => !v)}
+        onClick={() => {
+          // Tính toạ độ TRƯỚC khi mở: `fixed` cần vị trí của neo ở thời điểm này.
+          tinh()
+          setMo((v) => !v)
+        }}
         className={cn(
           'flex min-h-9 w-full items-center justify-between gap-2 rounded-md border border-input',
           'bg-background px-2 py-1 text-sm',
@@ -382,7 +453,10 @@ export function SelectTimKiemNhieu({
       </button>
 
       {mo && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-card shadow-lg">
+        <div
+          style={viTri}
+          className="z-50 flex flex-col overflow-hidden rounded-md border border-border bg-card shadow-lg"
+        >
           <div className="border-b border-border p-1.5">
             <input
               ref={oNhap}
@@ -397,7 +471,7 @@ export function SelectTimKiemNhieu({
             />
           </div>
 
-          <ul role="listbox" aria-multiselectable className="max-h-56 overflow-y-auto p-1">
+          <ul role="listbox" aria-multiselectable className="min-h-0 flex-1 overflow-y-auto p-1">
             {daLoc.length === 0 ? (
               <li className="px-2 py-3 text-center text-sm text-muted-foreground">
                 Không tìm thấy
