@@ -227,6 +227,12 @@ public class SinhLichChoLopValidator : AbstractValidator<SinhLichChoLopCommand>
     {
         RuleFor(x => x.LopHocId).NotEmpty();
         RuleFor(x => x.ThuTrongTuan).NotEmpty().WithErrorCode("TAN_SUAT_TRONG");
+        // Ngày phải THẬT. `DateOnly` không nullable nên client gửi thiếu trường — hoặc gửi
+        // đúng dữ liệu nhưng SAI TÊN trường — sẽ nhận `default` = 01/01/0001, và handler ghi
+        // ngày đó vào `LOP_HOC.ngay_khai_giang`. PostgreSQL lưu thành `-infinity`, UI hiện
+        // "1/1/1", và không có lỗi nào ở giữa. Gặp thật 08/09/2026 khi kiểm tay.
+        RuleFor(x => x.NgayKhaiGiang).GreaterThan(new DateOnly(2000, 1, 1))
+            .WithErrorCode("NGAY_KHONG_HOP_LE");
     }
 }
 
@@ -350,6 +356,12 @@ public class SinhThemBuoiValidator : AbstractValidator<SinhThemBuoiCommand>
     {
         RuleFor(x => x.LopHocId).NotEmpty();
         RuleFor(x => x.ThuTrongTuan).NotEmpty().WithErrorCode("TAN_SUAT_TRONG");
+        // Ngày phải THẬT. `DateOnly` không nullable nên client gửi thiếu trường — hoặc gửi
+        // đúng dữ liệu nhưng SAI TÊN trường — sẽ nhận `default` = 01/01/0001, và handler ghi
+        // ngày đó vào `LOP_HOC.ngay_khai_giang`. PostgreSQL lưu thành `-infinity`, UI hiện
+        // "1/1/1", và không có lỗi nào ở giữa. Gặp thật 08/09/2026 khi kiểm tay.
+        RuleFor(x => x.TuNgay).GreaterThan(new DateOnly(2000, 1, 1))
+            .WithErrorCode("NGAY_KHONG_HOP_LE");
     }
 }
 
@@ -456,6 +468,23 @@ public class XoaBuoiHocHandler(IAppDbContext db, IPhamViLopHoc phamVi)
         // KHÔNG đánh số lại các buổi sau: học viên và giáo viên đã quen "buổi 12", đổi số hàng
         // loạt làm mọi ghi chú ngoài hệ thống sai theo. Khoảng trống trong dãy số chấp nhận được.
         db.BuoiHocs.Remove(buoi);
+
+        // Tính LẠI mốc của lớp từ các buổi CÒN LẠI. Thiếu bước này thì xoá buổi đầu (hoặc xoá
+        // hết buổi) mà lớp vẫn khai báo ngày khai giảng/kết thúc của buổi không còn tồn tại —
+        // hai nguồn sự thật lệch nhau, đúng thứ `NgayKhaiGiang` được thiết kế để tránh
+        // ("suy từ lịch, không cho sửa tay"). Gặp thật 08/09/2026 khi kiểm tay.
+        var conLai = await db.BuoiHocs
+            .Where(b => b.LopHocId == buoi.LopHocId && b.Id != buoi.Id)
+            .Select(b => new { b.BatDau, b.KetThuc })
+            .ToListAsync(ct);
+
+        var lop = await db.LopHocs.FirstAsync(l => l.Id == buoi.LopHocId, ct);
+
+        // Không còn buổi nào → về null, KHÔNG giữ giá trị cũ: lớp chưa có lịch thì đúng là
+        // chưa có ngày khai giảng.
+        lop.NgayKhaiGiang = conLai.Count == 0 ? null : conLai.Min(x => x.BatDau);
+        lop.NgayKetThuc = conLai.Count == 0 ? null : conLai.Max(x => x.KetThuc);
+
         await db.SaveChangesAsync(ct);
     }
 }

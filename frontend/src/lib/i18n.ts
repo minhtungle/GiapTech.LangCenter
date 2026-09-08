@@ -623,6 +623,7 @@ const vi = {
     LOP_HOC_KHONG_HOP_LE: 'Lớp học không hợp lệ hoặc bạn không có quyền với lớp đó',
     LOAI_DINH_KEM_KHONG_HO_TRO: 'Loại đính kèm không hỗ trợ',
     TAN_SUAT_TRONG: 'Chưa chọn thứ nào trong tuần',
+    NGAY_KHONG_HOP_LE: 'Ngày không hợp lệ. Chọn lại ngày bắt đầu sinh lịch.',
     GIO_KET_THUC_KHONG_HOP_LE: 'Giờ kết thúc phải sau giờ bắt đầu (không hỗ trợ lớp qua đêm)',
     SO_BUOI_KHONG_HOP_LE: 'Số buổi phải từ 1 đến 500',
     NGAY_KET_THUC_TRUOC_KHAI_GIANG: 'Ngày kết thúc phải sau ngày khai giảng',

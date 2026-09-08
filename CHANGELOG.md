@@ -8,6 +8,23 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Fixed — Ngày khai giảng của lớp bị ghi năm 0001, và không tính lại khi xoá buổi (08/09/2026)
+
+Hai lỗi tìm ra khi **chạy hệ thống và lái UI thật**, không lỗi nào bị test cũ bắt.
+
+- **`TuNgay` / `NgayKhaiGiang` không có validation.** `DateOnly` không nullable nên client gửi
+  thiếu trường — hoặc gửi đúng dữ liệu nhưng **sai tên trường** (`ngayKhaiGiang` cho lệnh dùng
+  `tuNgay`) — sẽ nhận `default` = 01/01/0001. Handler ghi ngày đó vào `LOP_HOC.ngay_khai_giang`,
+  PostgreSQL lưu thành **`-infinity`**, UI hiện **"1/1/1"**, và **không có lỗi nào ở giữa**.
+  Nay cả hai validator chặn bằng `NGAY_KHONG_HOP_LE` (có bản dịch).
+- **`XoaBuoiHocHandler` không tính lại mốc ngày của lớp.** Xoá buổi đầu — hoặc xoá hết buổi —
+  mà lớp vẫn khai ngày khai giảng/kết thúc của buổi **không còn tồn tại**. Trái đúng quy ước
+  "ngày của lớp suy từ lịch, không cho sửa tay". Nay tính lại từ buổi còn lại; không còn buổi
+  nào thì về `null`.
+- Vá dữ liệu dev: một lớp có `ngay_khai_giang = -infinity` được tính lại từ buổi học thật
+  (`pg_dump` trước, chạy trong transaction, chỉ đụng hàng đang hỏng).
+- 4 test mới, đã thử bỏ cả hai bản vá để chắc chúng đỏ đúng chỗ.
+
 ### Changed — Đổi tên token trạng thái: `win/lose/draw` → `ok/loi/cho` (08/09/2026)
 
 Đóng nợ **N8**. Tên cũ là di sản của dự án tiền thân và **đọc lên trái hẳn nghĩa thật**:

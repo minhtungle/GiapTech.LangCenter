@@ -84,6 +84,107 @@ public class BuoiHocDiemDanhTests(ApiFactory factory) : IClassFixture<ApiFactory
         return (lop, buoi, hv);
     }
 
+    // ---------- Mốc ngày của LỚP suy từ lịch ----------
+
+    /// <summary>
+    /// Ngày mặc định (01/01/0001) bị CHẶN, không được ghi vào `LOP_HOC.ngay_khai_giang`.
+    ///
+    /// `DateOnly` không nullable nên client gửi thiếu trường — hoặc gửi đúng dữ liệu nhưng SAI
+    /// TÊN trường — sẽ nhận `default`. Handler ghi ngày đó vào lớp, PostgreSQL lưu thành
+    /// `-infinity`, UI hiện **"1/1/1"**, và không có lỗi nào ở giữa.
+    ///
+    /// Gặp thật 08/09/2026 khi kiểm tay: gọi `sinh-them-buoi` với `ngayKhaiGiang` (tên của
+    /// lệnh KIA — lệnh này dùng `tuNgay`) → 200 OK và lớp mang ngày năm 0001.
+    /// </summary>
+    [Fact]
+    public async Task Chan_ngay_mac_dinh_khi_sinh_them_buoi()
+    {
+        var c = await Client();
+        var (lop, _, _) = await DungLopCoLich(c, "chan-ngay-mac-dinh");
+
+        // Gửi SAI tên trường: `ngayKhaiGiang` thay vì `tuNgay` → TuNgay = default.
+        var res = await c.PostAsJsonAsync($"/api/v1/lop-hoc/{lop}/sinh-them-buoi", new
+        {
+            NgayKhaiGiang = new DateOnly(2026, 11, 3),
+            ThuTrongTuan = new[] { DayOfWeek.Tuesday },
+            GioBatDau = new TimeOnly(18, 0), GioKetThuc = new TimeOnly(20, 0), SoBuoi = 1
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+
+        // Lớp KHÔNG bị nhiễm ngày năm 0001.
+        var d = await c.GetFromJsonAsync<JsonElement>($"/api/v1/lop-hoc/{lop}");
+        Assert.True(d.GetProperty("ngayKhaiGiang").GetDateTimeOffset().Year > 2000);
+    }
+
+    /// <summary>Chiều ngược: `sinh-lich` cũng chặn ngày mặc định.</summary>
+    [Fact]
+    public async Task Chan_ngay_mac_dinh_khi_sinh_lich()
+    {
+        var c = await Client();
+        var gv = await TaoNguoiDung(c, "gv-chan-ngay-sinh-lich", "GiaoVien");
+        var taoLop = await c.PostAsJsonAsync("/api/v1/lop-hoc", new
+        {
+            Ten = "Lớp chặn ngày mặc định", GiaoVienChinhId = gv, HinhThuc = "Offline",
+            HocPhi = 1000m, TroGiangIds = Array.Empty<Guid>()
+        });
+        var lop = await taoLop.Content.ReadFromJsonAsync<Guid>();
+
+        var res = await c.PostAsJsonAsync($"/api/v1/lop-hoc/{lop}/sinh-lich", new
+        {
+            ThuTrongTuan = new[] { DayOfWeek.Tuesday },   // thiếu NgayKhaiGiang
+            GioBatDau = new TimeOnly(18, 0), GioKetThuc = new TimeOnly(20, 0), SoBuoi = 2
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    /// <summary>
+    /// Xoá buổi phải TÍNH LẠI mốc của lớp từ các buổi còn lại.
+    ///
+    /// Thiếu bước này thì xoá buổi đầu mà lớp vẫn khai ngày khai giảng của buổi đã xoá — hai
+    /// nguồn sự thật lệch nhau, đúng thứ mà quy ước "ngày của lớp suy từ lịch, không sửa tay"
+    /// được dựng ra để tránh. Gặp thật 08/09/2026.
+    /// </summary>
+    [Fact]
+    public async Task Xoa_buoi_thi_tinh_lai_moc_ngay_cua_lop()
+    {
+        var c = await Client();
+        var (lop, buoi1, _) = await DungLopCoLich(c, "tinh-lai-moc");
+
+        var truoc = await c.GetFromJsonAsync<JsonElement>($"/api/v1/lop-hoc/{lop}");
+        var khaiGiangTruoc = truoc.GetProperty("ngayKhaiGiang").GetDateTimeOffset();
+
+        (await c.DeleteAsync($"/api/v1/buoi-hoc/{buoi1}")).EnsureSuccessStatusCode();
+
+        var sau = await c.GetFromJsonAsync<JsonElement>($"/api/v1/lop-hoc/{lop}");
+        var khaiGiangSau = sau.GetProperty("ngayKhaiGiang").GetDateTimeOffset();
+
+        // Buổi ĐẦU bị xoá → ngày khai giảng phải LÙI VỀ SAU (buổi thứ hai).
+        Assert.True(khaiGiangSau > khaiGiangTruoc,
+            $"ngày khai giảng không được tính lại: trước {khaiGiangTruoc}, sau {khaiGiangSau}");
+
+        // Khớp đúng buổi sớm nhất còn lại.
+        var conLai = await c.GetFromJsonAsync<List<JsonElement>>($"/api/v1/lop-hoc/{lop}/buoi-hoc");
+        Assert.Equal(conLai!.Min(b => b.GetProperty("batDau").GetDateTimeOffset()), khaiGiangSau);
+    }
+
+    /// <summary>Xoá HẾT buổi → lớp về `null`, không giữ ngày của buổi đã xoá.</summary>
+    [Fact]
+    public async Task Xoa_het_buoi_thi_moc_ngay_ve_null()
+    {
+        var c = await Client();
+        var (lop, _, _) = await DungLopCoLich(c, "xoa-het-buoi");
+
+        foreach (var b in (await c.GetFromJsonAsync<List<JsonElement>>(
+                     $"/api/v1/lop-hoc/{lop}/buoi-hoc"))!)
+            (await c.DeleteAsync($"/api/v1/buoi-hoc/{b.GetProperty("id").GetGuid()}"))
+                .EnsureSuccessStatusCode();
+
+        var d = await c.GetFromJsonAsync<JsonElement>($"/api/v1/lop-hoc/{lop}");
+        Assert.Equal(JsonValueKind.Null, d.GetProperty("ngayKhaiGiang").ValueKind);
+        Assert.Equal(JsonValueKind.Null, d.GetProperty("ngayKetThuc").ValueKind);
+    }
+
     // ---------- Thông tin hiển thị của buổi ----------
 
     /// <summary>
