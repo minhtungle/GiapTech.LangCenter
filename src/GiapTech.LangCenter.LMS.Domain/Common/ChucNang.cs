@@ -69,6 +69,22 @@ public static class ChucNang
     /// </summary>
     public const string DoanhThu = nameof(DoanhThu);
 
+    /// <summary>
+    /// Khách hàng — người quan tâm khoá học (FR-17).
+    ///
+    /// Tách khỏi <see cref="DoanhThu"/>: người trực tổng đài nhập khách mới cần quyền này mà
+    /// **không** cần thấy số tiền của mọi đơn hàng.
+    /// </summary>
+    public const string KhachHang = nameof(KhachHang);
+
+    /// <summary>
+    /// Danh mục khoá học bán ra (FR-19).
+    ///
+    /// Tách khỏi <see cref="DoanhThu"/> vì ma trận khác: người bán **xem** giá niêm yết để báo
+    /// giá, nhưng chỉ quản lý mới **sửa** được giá — gộp lại thì không diễn đạt nổi.
+    /// </summary>
+    public const string KhoaHoc = nameof(KhoaHoc);
+
     // ---------- Nghiệp vụ đào tạo ----------
 
     public const string LopHoc = nameof(LopHoc);
@@ -122,7 +138,7 @@ public static class ChucNang
     public static readonly IReadOnlyList<string> TatCa =
     [
         TaiKhoan, PhanQuyen, ThietLapChung, Anh, DoiMatKhauNguoiKhac,
-        NhanVienKinhDoanh, GiaoVienNhanSu, DoanhThu,
+        NhanVienKinhDoanh, GiaoVienNhanSu, DoanhThu, KhachHang, KhoaHoc,
         LopHoc, BuoiHoc, DiemDanh, BaiTap, BaiNopBaiTap, BaiKiemTra, BaiLamKiemTra,
         TaiLieu, HocPhi, ThongKe, LopHocToanTrungTam, NhatKyHeThong
     ];
@@ -143,6 +159,8 @@ public static class ChucNang
         [GiaoVienNhanSu] = HeThong.Hrm,
 
         [DoanhThu] = HeThong.Crm,
+        [KhachHang] = HeThong.Crm,
+        [KhoaHoc] = HeThong.Crm,
 
         [LopHoc] = HeThong.Lms,
         [BuoiHoc] = HeThong.Lms,

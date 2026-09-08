@@ -44,6 +44,11 @@ public interface IAppDbContext
 
     DbSet<KhoanThuHocPhi> KhoanThuHocPhis { get; }
 
+    // CRM (FR-17 → FR-19)
+    DbSet<KhachHang> KhachHangs { get; }
+    DbSet<KhoaHoc> KhoaHocs { get; }
+    DbSet<DangKyKhoaHoc> DangKyKhoaHocs { get; }
+
     DbSet<NhatKyHeThong> NhatKyHeThongs { get; }
 
     DbSet<RefreshToken> RefreshTokens { get; }

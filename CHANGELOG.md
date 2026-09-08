@@ -8,6 +8,47 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — Nghiệp vụ CRM: khách hàng · doanh thu · khoá học (FR-17 → FR-19) (08/09/2026)
+
+Ba màn, một dòng chảy: **Khách hàng** (quan tâm) → **Doanh thu** (mua) → **Khoá học** (danh mục
+bán). "Ai mua hàng thì chuyển qua doanh thu" = khách có đăng ký mới xuất hiện ở màn Doanh thu —
+đó là định nghĩa nghiệp vụ, không phải một nút bấm.
+
+**Ba bảng mới** (29 bảng): `KHACH_HANG`, `KHOA_HOC`, `DANG_KY_KHOA_HOC`.
+
+- **FR-17 Khách hàng** — họ tên, email, sđt, **link Facebook**, ghi chú, hình thức thanh toán.
+  Bảng **riêng**, không dùng `NGUOI_DUNG`: khách chưa chắc thành học viên, nhồi vào đó thì danh
+  sách học viên bên LMS lẫn người chưa học. Nối bằng `nguoi_dung_id` nullable khi khách thật sự
+  vào học — **không copy** họ tên sang, tránh hai nguồn sự thật.
+  `UNIQUE(tenant_id, so_dien_thoai)` **partial** (`IS NOT NULL AND <> ''`): chặn hai người bán
+  nhập cùng một khách, nhưng cho phép nhiều khách chỉ để lại Facebook.
+- **FR-18 Doanh thu** — một khách đăng ký **nhiều khoá** (kể cả cùng khoá hai lần: học lại).
+  **Ba con số tiền, không phải một**: `gia_goc` snapshot lúc đăng ký · `so_tien` thực thu ·
+  **% trên giá gốc tính động**, không lưu cột. UI xem trước % ngay khi nhập.
+- **Quy đổi tiền VND/USD/EUR/CAD** — `ty_gia_ve_vnd` **chụp lúc đăng ký**, không tra động:
+  doanh thu tháng 9 xem hôm nay và xem tuần sau phải ra **cùng một số**. Đơn vị VND thì tỷ giá
+  bị **ép về 1** ở handler — client gửi 25000 thì doanh thu phồng 25 000 lần.
+- **FR-19 Khoá học** — tên, ghi chú, giá + đơn vị, số buổi. Khác `LOP_HOC` (một **lần mở** có
+  giáo viên và lịch): gộp thì không bán được trước khi mở lớp. Khoá đã bán **không xoá được**
+  (FK Restrict) — bỏ tích "Còn bán" để ngừng bán mà giữ lịch sử đơn.
+- **Ba chức năng phân quyền riêng** (`KhachHang`, `KhoaHoc`, `DoanhThu`): người trực tổng đài
+  nhập khách mới cần quyền khách hàng mà **không** thấy số tiền của mọi đơn hàng.
+- Tổng hợp doanh thu là **endpoint riêng** (`/doanh-thu/tong-hop`), tính trên toàn bộ tập lọc —
+  cộng trên trang đang xem là số vô nghĩa mà người dùng rất dễ tin là tổng thật.
+
+Migration `ThemCrmKhachHangKhoaHocDangKy`: `Up` **chỉ CreateTable/CreateIndex**, không đụng dữ
+liệu hiện có (đã kiểm tách Up/Down; `pg_dump` trước khi áp).
+
+### Fixed — Cột hình thức thanh toán hiện khoá i18n thô (08/09/2026)
+
+- Màn Doanh thu hiện `phuongThucThanhToan.ChuyenKhoan` thay vì "Chuyển khoản". Nhãn có thật
+  nhưng nằm ở `hocPhi.pt.*` — **namespace LỒNG**, mà `check-i18n-keys.py` chỉ quét hai cấp.
+- Thêm namespace **cấp một** `phuongThucThanhToan` dùng chung; `hocPhi.pt.*` giữ nguyên để
+  không phá màn Học phí.
+- **Vá script**: nay quét cả namespace lồng (641 khoá, trước 636) và khoá ba cấp. Đã ghi rõ hạn
+  chế còn lại vào chính script: **khoá ghép động vẫn không phát hiện được** — kiểm chứng bằng
+  cách xoá `hocPhi.pt.TienMat` (dùng qua `t(\`hocPhi.pt.${x}\`)`) mà script vẫn xanh.
+
 ### Fixed — Ngày khai giảng của lớp bị ghi năm 0001, và không tính lại khi xoá buổi (08/09/2026)
 
 Hai lỗi tìm ra khi **chạy hệ thống và lái UI thật**, không lỗi nào bị test cũ bắt.

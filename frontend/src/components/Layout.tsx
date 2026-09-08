@@ -4,7 +4,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   Users, ShieldCheck, Settings, LogOut, Home, GraduationCap, BookOpen, Wallet,
   PanelLeftClose, PanelLeft, Menu, X, ScrollText, Briefcase, UserCog, TrendingUp,
-  LayoutGrid, Check, KeyRound,
+  LayoutGrid, Check, KeyRound, Contact, PackageOpen,
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useQuyen } from '@/lib/quyen'
@@ -101,7 +101,10 @@ export default function Layout() {
       tieuDe: t('menu.khachHang'),
       heThong: 'Crm',
       muc: [
+        // Thứ tự theo dòng chảy nghiệp vụ: khách quan tâm → mua → danh mục bán.
+        { to: '/crm/khach-hang', nhan: t('menu.khachHangDs'), icon: Contact, can: 'KhachHang' },
         { to: '/crm/doanh-thu', nhan: t('menu.doanhThu'), icon: TrendingUp, can: 'DoanhThu' },
+        { to: '/crm/khoa-hoc', nhan: t('menu.khoaHoc'), icon: PackageOpen, can: 'KhoaHoc' },
       ],
     },
 

@@ -10,8 +10,13 @@ nhận khoá gì, `npm run build` xanh, oxlint xanh, test API xanh — chỉ ng�
   `buoiHoc` chưa có ba khoá đó. Lần này tôi đã "kiểm" bằng `grep -c` nhưng grep bắt được chúng ở
   namespace KHÁC nên kết luận sai — bài học: phải so khoá **theo namespace**, không theo tên trần.
 
-Chỉ quét khoá TĨNH (chuỗi viết thẳng). Khoá ghép động thì script không thấy — đó chính là lý do
-quy ước của dự án là gắn khoá tường minh vào từng mục, xem `CAC_TAB` trong ChiTietLopHoc.tsx.
+Chỉ quét khoá TĨNH (chuỗi viết thẳng). **Khoá ghép động thì script KHÔNG thấy** — đã kiểm chứng
+08/09/2026: xoá `hocPhi.pt.TienMat` (dùng qua `t(`hocPhi.pt.${x}`)`) mà script vẫn xanh.
+
+Đó chính là lý do quy ước của dự án là gắn khoá tường minh vào từng mục (xem `CAC_TAB` trong
+ChiTietLopHoc.tsx), và vì sao **enum → nhãn nên đặt ở namespace CẤP MỘT** khớp đúng tên enum:
+`t(`phuongThucThanhToan.${x}`)` vẫn là khoá động, nhưng ít nhất một người đọc `i18n.ts` thấy
+ngay khối đó ứng với enum nào để kiểm tay.
 """
 import pathlib
 import re
@@ -40,9 +45,18 @@ def khoa_da_dich() -> set[str]:
 
     khoa: set[str] = set()
     ns = None
+    ns2 = None
     for dong in src[dau:sau].splitlines():
         if m := re.match(r"^  ([a-zA-Z]+): \{", dong):
             ns = m.group(1)
+            ns2 = None
+        elif (m := re.match(r"^    ([a-zA-Z_0-9]+): \{", dong)) and ns:
+            # Namespace LỒNG (vd `hocPhi.pt`): ghi nhận tiền tố hai cấp để khoá bên trong
+            # cũng được đếm. Không có nhánh này thì `t('hocPhi.pt.TienMat')` bị báo thiếu
+            # trong khi nó có thật — và ngược lại, khoá lồng thiếu thật thì script bỏ qua.
+            ns2 = f"{ns}.{m.group(1)}"
+        elif (m := re.match(r"^      ([a-zA-Z_0-9]+):", dong)) and ns2:
+            khoa.add(f"{ns2}.{m.group(1)}")
         elif (m := re.match(r"^    ([a-zA-Z_0-9]+):", dong)) and ns:
             khoa.add(f"{ns}.{m.group(1)}")
     return khoa
@@ -54,7 +68,7 @@ def main() -> int:
 
     for tep in sorted((GOC / "src").rglob("*.tsx")):
         noi_dung = tep.read_text(encoding="utf-8")
-        for m in re.finditer(r"t\(\s*'([a-zA-Z]+\.[a-zA-Z_0-9]+)'", noi_dung):
+        for m in re.finditer(r"t\(\s*'([a-zA-Z]+(?:\.[a-zA-Z_0-9]+){1,2})'", noi_dung):
             if m.group(1) not in khoa:
                 thieu.setdefault(str(tep.relative_to(GOC.parent)), set()).add(m.group(1))
 

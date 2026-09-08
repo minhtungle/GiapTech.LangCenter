@@ -10,6 +10,7 @@ const vi = {
   chung: {
     xacNhanLuu: 'Xác nhận lưu',
     xemChiTiet: 'Xem chi tiết',
+    ghiChu: 'Ghi chú',
     dangPhatTrien: 'Module đang được phát triển',
     dangPhatTrienGoiY:
       'Phần phân quyền và điều hướng của module đã hoạt động — bạn có thể cấp quyền cho nhóm '
@@ -94,6 +95,8 @@ const vi = {
     nhanSuNguoiDung: 'Hồ sơ nhân sự',
     hocVien: 'Học viên',
     doanhThu: 'Doanh thu',
+    khachHangDs: 'Khách hàng',
+    khoaHoc: 'Khoá học',
     lopHoc: 'Lớp học',
     taiLieu: 'Tài liệu',
     hocPhi: 'Học phí',
@@ -581,6 +584,97 @@ const vi = {
       'Giáo viên dưới góc nhìn nhân sự: hợp đồng, lương, chấm công. Vẫn là cùng một người '
       + 'với giáo viên bên LMS, chỉ khác thông tin theo dõi.',
   },
+  /**
+   * Hình thức thanh toán — namespace CẤP MỘT dùng chung cho CRM và mọi màn sau này.
+   *
+   * `hocPhi.pt.*` (nằm LỒNG trong `hocPhi`) giữ nguyên để không phá màn Học phí. Namespace
+   * lồng là chỗ `check-i18n-keys.py` không quét tới — nên khoá mới đặt ở cấp một.
+   */
+  phuongThucThanhToan: {
+    TienMat: 'Tiền mặt',
+    ChuyenKhoan: 'Chuyển khoản',
+    Khac: 'Khác',
+  },
+  donViTien: {
+    VND: 'VND — Việt Nam đồng',
+    USD: 'USD — Đô la Mỹ',
+    EUR: 'EUR — Euro',
+    CAD: 'CAD — Đô la Canada',
+  },
+  khachHang: {
+    them: 'Thêm khách hàng',
+    sua: 'Sửa khách hàng',
+    hoTen: 'Họ tên',
+    email: 'Email',
+    soDienThoai: 'Số điện thoại',
+    linkFacebook: 'Link Facebook',
+    lienHe: 'Liên hệ',
+    phuongThuc: 'Hình thức thanh toán',
+    phuongThucGoiY: 'Hình thức mặc định của khách này — từng đăng ký vẫn ghi riêng.',
+    tinhTrang: 'Tình trạng',
+    daMua: 'Đã mua',
+    chuaMua: 'Chưa mua',
+    soKhoa: 'Số khoá',
+    tongMua: 'Tổng đã mua',
+    hocVien: 'Hồ sơ học viên',
+    chuaVaoHoc: 'Chưa vào học',
+    noiHocVien: 'Nối với hồ sơ học viên',
+    noiHocVienGoiY:
+      'Chọn khi khách đã thật sự vào học. Hai bên là CÙNG một người nhưng lưu riêng: sửa tên ở '
+      + 'đây không đổi tên học viên, và ngược lại.',
+    timTheo: 'Tên, số điện thoại hoặc email',
+    chuaCo: 'Chưa có khách hàng nào',
+    hoiLuu: 'Lưu thông tin khách hàng? Dữ liệu hiện tại sẽ bị ghi đè.',
+    hoiXoa: 'Xoá khách hàng "{{ten}}"? Không khôi phục được.',
+  },
+  khoaHoc: {
+    them: 'Thêm khoá học',
+    sua: 'Sửa khoá học',
+    tenKhoa: 'Tên khoá học',
+    giaTien: 'Giá tiền',
+    donViTien: 'Đơn vị tiền',
+    soBuoi: 'Số buổi',
+    soBuoiNgan: '{{so}} buổi',
+    soDangKy: 'Đã bán',
+    trangThaiBan: 'Trạng thái',
+    dangBan: 'Đang bán',
+    ngungBan: 'Ngừng bán',
+    conBan: 'Còn bán khoá này',
+    ngungBanGoiY:
+      'Khoá đã có đăng ký thì KHÔNG xoá được — đơn hàng cũ phải giữ được tên khoá đã bán. '
+      + 'Bỏ tích ô trên để ngừng bán mà vẫn giữ lịch sử.',
+    chuaCo: 'Chưa có khoá học nào',
+    hoiLuu: 'Lưu khoá học? Thông tin hiện tại sẽ bị ghi đè.',
+    hoiXoa: 'Xoá khoá học "{{ten}}"? Không khôi phục được.',
+  },
+  doanhThu: {
+    them: 'Thêm đăng ký',
+    sua: 'Sửa đăng ký',
+    khachHang: 'Khách hàng',
+    khoaHoc: 'Khoá học',
+    chonKhach: 'Chọn khách hàng…',
+    chonKhoa: 'Chọn khoá học…',
+    giaGoc: 'Giá gốc',
+    soTien: 'Số tiền thu',
+    phanTram: '% giá gốc',
+    tyGia: 'Tỷ giá về VND',
+    tyGiaNgan: '×{{ty}}',
+    quyDoiVnd: 'Quy đổi VND',
+    ngayDangKy: 'Ngày đăng ký',
+    tuNgay: 'Từ ngày',
+    denNgay: 'Đến ngày',
+    tongDoanhThu: 'Tổng doanh thu (VND)',
+    soDangKy: 'Số đăng ký',
+    soKhachHang: 'Số khách hàng',
+    giaNiemYet: 'Giá niêm yết: {{gia}} · {{so}} buổi. Sửa số tiền nếu có miễn giảm.',
+    tyGiaGoiY:
+      'Tỷ giá được CHỤP LẠI lúc đăng ký, không tra động — nhờ vậy doanh thu tháng trước không '
+      + 'đổi số khi tỷ giá biến động.',
+    timTheo: 'Tên khách, tên khoá hoặc số điện thoại',
+    chuaCo: 'Chưa có đăng ký nào',
+    hoiLuu: 'Lưu đăng ký? Thông tin hiện tại sẽ bị ghi đè.',
+    hoiXoa: 'Xoá đăng ký khoá "{{khoa}}" của {{ten}}? Đây là dữ liệu doanh thu.',
+  },
   crm: {
     moTaDoanhThu:
       'Doanh thu tổng hợp theo kỳ, theo lớp, theo nhân viên. Khác sổ học phí bên LMS: sổ học '
@@ -624,6 +718,18 @@ const vi = {
     LOAI_DINH_KEM_KHONG_HO_TRO: 'Loại đính kèm không hỗ trợ',
     TAN_SUAT_TRONG: 'Chưa chọn thứ nào trong tuần',
     NGAY_KHONG_HOP_LE: 'Ngày không hợp lệ. Chọn lại ngày bắt đầu sinh lịch.',
+    KHACH_HANG_TRUNG_SO_DIEN_THOAI:
+      'Số điện thoại này đã có khách hàng khác dùng. Tìm lại theo số để sửa khách đang có.',
+    KHACH_HANG_DA_CO_DANG_KY:
+      'Khách hàng này đã có đăng ký khoá học — đây là dữ liệu doanh thu, không xoá được.',
+    KHACH_HANG_KHONG_HOP_LE: 'Khách hàng không hợp lệ',
+    KHOA_HOC_TRUNG_TEN: 'Tên khoá học đã tồn tại',
+    KHOA_HOC_DA_CO_DANG_KY:
+      'Khoá học này đã có đăng ký, không xoá được. Bỏ tích "Còn bán khoá này" để ngừng bán mà '
+      + 'vẫn giữ lịch sử đơn hàng.',
+    KHOA_HOC_KHONG_HOP_LE: 'Khoá học không hợp lệ',
+    TY_GIA_KHONG_HOP_LE: 'Tỷ giá phải lớn hơn 0',
+    SO_TIEN_KHONG_HOP_LE: 'Số tiền không hợp lệ',
     GIO_KET_THUC_KHONG_HOP_LE: 'Giờ kết thúc phải sau giờ bắt đầu (không hỗ trợ lớp qua đêm)',
     SO_BUOI_KHONG_HOP_LE: 'Số buổi phải từ 1 đến 500',
     NGAY_KET_THUC_TRUOC_KHAI_GIANG: 'Ngày kết thúc phải sau ngày khai giảng',

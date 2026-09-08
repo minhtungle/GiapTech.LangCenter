@@ -193,3 +193,17 @@ public enum HanhDongNhatKy
     /// <summary>Thao tác không rơi vào bốn loại trên.</summary>
     Khac = 9
 }
+
+/// <summary>
+/// Đơn vị tiền của khoá học và đăng ký (FR-18/FR-19).
+///
+/// Danh mục ĐÓNG — không cho nhập chuỗi tuỳ ý, nếu không sẽ có "usd", "USD ", "Đô" cùng tồn
+/// tại và không tổng hợp được. Thêm đơn vị mới: thêm hằng ở đây và bản dịch ở frontend.
+/// </summary>
+public enum DonViTien
+{
+    VND = 0,
+    USD = 1,
+    EUR = 2,
+    CAD = 3
+}

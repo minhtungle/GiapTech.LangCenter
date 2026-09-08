@@ -5,8 +5,8 @@
 ## Tiến độ tổng
 
 ```
-Nghiệp vụ  ██████████████░░  14/15 FR chạy đầu-cuối (còn FR-15 Thống kê)
-Ba hệ thống ████████░░░░░░░░  HRM · CRM · LMS: phân quyền + điều hướng xong, nghiệp vụ HRM/CRM chưa
+Nghiệp vụ  ██████████████░░  17/19 FR chạy đầu-cuối (còn FR-15 Thống kê)
+Ba hệ thống ████████████░░░░  CRM xong nghiệp vụ; HRM còn khung trống
 Hạ tầng    ████████████░░░░  CI/CD sẵn sàng, chờ VPS thật
 Còn lại    ██████░░░░░░░░░░  Dashboard + nghiệp vụ HRM/CRM + 12 nợ kỹ thuật
 ```
@@ -31,6 +31,9 @@ Còn lại    ██████░░░░░░░░░░  Dashboard + nghi
 | FR-14 | Học phí & công nợ | ✅ | ✅ | Sổ thu + bảng công nợ tính động. Phạm vi tách riêng khỏi phạm vi lớp |
 | FR-15 | Thống kê / Dashboard | ⬜ | ⬜ | 3 dashboard: Admin / Giáo viên / Học viên |
 | FR-16 | Nhật ký hệ thống | ✅ | ✅ | Ghi tự động ở pipeline MediatR + interceptor chụp trường đổi |
+| FR-17 | Khách hàng (CRM) | ✅ | ✅ | Bảng riêng, nối `nguoi_dung_id` khi khách vào học. UNIQUE số điện thoại **partial** |
+| FR-18 | Doanh thu (CRM) | ✅ | ✅ | Đa tiền tệ VND/USD/EUR/CAD, **tỷ giá chụp lúc đăng ký**; giá gốc snapshot, % tính động |
+| FR-19 | Khoá học (CRM) | ✅ | ✅ | Danh mục sản phẩm. Khác `LOP_HOC` (lần mở cụ thể). Đã bán thì ngừng bán, không xoá |
 
 Ngoài bảng: **Bài kiểm tra** (`BAI_KIEM_TRA`, `BAI_LAM`) đã có schema và cách ly tenant, nhưng
 **chưa có API và UI** — xem nợ N1.
