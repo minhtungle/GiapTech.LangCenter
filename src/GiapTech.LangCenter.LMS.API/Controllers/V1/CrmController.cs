@@ -45,6 +45,53 @@ public class KhachHangController(ISender sender) : ControllerBase
         await sender.Send(new XoaKhachHangCommand(id), ct);
         return NoContent();
     }
+
+    // ---------- View chi tiết khách hàng: 4 tab ----------
+
+    /// <summary>Tab Thông tin chung — hồ sơ + số liệu tổng hợp.</summary>
+    [HttpGet("{id:guid}")]
+    [RequirePermission(ChucNang.KhachHang, HanhDong.Xem)]
+    public async Task<ActionResult<ChiTietKhachHangDto>> ChiTiet(Guid id, CancellationToken ct)
+        => Ok(await sender.Send(new LayChiTietKhachHangQuery(id), ct));
+
+    /// <summary>Tab Lịch sử chăm sóc.</summary>
+    [HttpGet("{id:guid}/cham-soc")]
+    [RequirePermission(ChucNang.KhachHang, HanhDong.Xem)]
+    public async Task<ActionResult<List<LichSuChamSocDto>>> ChamSoc(
+        Guid id, CancellationToken ct)
+        => Ok(await sender.Send(new LayLichSuChamSocQuery(id), ct));
+
+    [HttpPost("{id:guid}/cham-soc")]
+    [RequirePermission(ChucNang.KhachHang, HanhDong.Them)]
+    public async Task<ActionResult<Guid>> ThemChamSoc(
+        Guid id, [FromBody] LuuChamSocCommand command, CancellationToken ct)
+        => Ok(await sender.Send(command with { Id = null, KhachHangId = id }, ct));
+
+    [HttpPut("cham-soc/{chamSocId:guid}")]
+    [RequirePermission(ChucNang.KhachHang, HanhDong.Sua)]
+    public async Task<ActionResult<Guid>> SuaChamSoc(
+        Guid chamSocId, [FromBody] LuuChamSocCommand command, CancellationToken ct)
+        => Ok(await sender.Send(command with { Id = chamSocId }, ct));
+
+    [HttpDelete("cham-soc/{chamSocId:guid}")]
+    [RequirePermission(ChucNang.KhachHang, HanhDong.Xoa)]
+    public async Task<IActionResult> XoaChamSoc(Guid chamSocId, CancellationToken ct)
+    {
+        await sender.Send(new XoaChamSocCommand(chamSocId), ct);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Tab Khoá học tham gia + Số tiền đã đóng — cùng một nguồn dữ liệu, hai góc nhìn.
+    ///
+    /// Gác bằng `DoanhThu` chứ không `KhachHang`: đây là **số tiền**. Người trực tổng đài xem
+    /// được hồ sơ và lịch sử chăm sóc mà không thấy khách đã trả bao nhiêu.
+    /// </summary>
+    [HttpGet("{id:guid}/dang-ky")]
+    [RequirePermission(ChucNang.DoanhThu, HanhDong.Xem)]
+    public async Task<ActionResult<List<DangKyKemThuDto>>> DangKyCuaKhach(
+        Guid id, CancellationToken ct)
+        => Ok(await sender.Send(new LayDangKyCuaKhachQuery(id), ct));
 }
 
 /// <summary>FR-19 — danh mục khoá học bán ra (CRM).</summary>
@@ -144,6 +191,31 @@ public class DoanhThuController(ISender sender) : ControllerBase
     public async Task<IActionResult> Xoa(Guid id, CancellationToken ct)
     {
         await sender.Send(new XoaDangKyCommand(id), ct);
+        return NoContent();
+    }
+
+    // ---------- Sổ thu tiền của một đăng ký ----------
+
+    /// <summary>
+    /// Ghi một lần khách đóng tiền. Đăng ký là **cam kết**; đây là tiền thật đã nhận.
+    /// </summary>
+    [HttpPost("{id:guid}/thu-tien")]
+    [RequirePermission(ChucNang.DoanhThu, HanhDong.Them)]
+    public async Task<ActionResult<Guid>> ThuTien(
+        Guid id, [FromBody] LuuThuTienCommand command, CancellationToken ct)
+        => Ok(await sender.Send(command with { Id = null, DangKyId = id }, ct));
+
+    [HttpPut("thu-tien/{thuId:guid}")]
+    [RequirePermission(ChucNang.DoanhThu, HanhDong.Sua)]
+    public async Task<ActionResult<Guid>> SuaThuTien(
+        Guid thuId, [FromBody] LuuThuTienCommand command, CancellationToken ct)
+        => Ok(await sender.Send(command with { Id = thuId }, ct));
+
+    [HttpDelete("thu-tien/{thuId:guid}")]
+    [RequirePermission(ChucNang.DoanhThu, HanhDong.Xoa)]
+    public async Task<IActionResult> XoaThuTien(Guid thuId, CancellationToken ct)
+    {
+        await sender.Send(new XoaThuTienCommand(thuId), ct);
         return NoContent();
     }
 }

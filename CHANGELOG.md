@@ -8,6 +8,41 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — View chi tiết khách hàng 4 tab + phễu bán hàng + sổ thu nhiều đợt (08/09/2026)
+
+Hai bảng mới (31 bảng): `LICH_SU_CHAM_SOC`, `THU_TIEN_DANG_KY`.
+
+- **Bấm một khách mở `/crm/khach-hang/:id`** — 4 tab: Thông tin chung (sửa tại chỗ) · Lịch sử
+  chăm sóc · Khoá học tham gia · Số tiền đã đóng.
+- **Lịch sử chăm sóc**: từng lần liên hệ (ngày · hình thức · nội dung · người phụ trách ·
+  **trạng thái sau**). Hình thức: Gọi điện · Zalo/Facebook · Email · Gặp trực tiếp · Khác.
+  `nguoi_phu_trach_id` lấy từ **token**, không nhận từ client.
+- **Phễu bán hàng**: trạng thái khách (Mới · Đang tư vấn · Đã mua · Từ chối) = `trang_thai_sau`
+  của lần chăm sóc **mới nhất**. **Không lưu cột** trên `KHACH_HANG` — hai chỗ lưu cùng một
+  thông tin thì lệch nhau ngay lần đầu ai đó sửa lịch sử mà quên cột kia.
+- **Đăng ký là CAM KẾT, không phải đã thu.** Sổ `THU_TIEN_DANG_KY` ghi tiền thật, khách đóng
+  nhiều đợt; **còn thiếu = cam kết − tổng thu, tính động**. Thu vượt cam kết bị chặn
+  (`THU_VUOT_CAM_KET`) — thường là gõ thêm một số 0.
+  **Doanh thu vẫn tính trên cam kết**: bán được bao nhiêu và đã cầm về bao nhiêu là hai câu hỏi
+  khác nhau.
+- Sửa một lần thu **trừ chính dòng đang sửa** ra khỏi tổng — không trừ thì sửa 3tr→2tr bị chặn
+  oan vì hệ thống vẫn cộng cả 3tr cũ. Có test riêng.
+- Tab tiền gác bằng `DoanhThu`: người trực tổng đài xem được hồ sơ và lịch sử chăm sóc nhưng
+  **không** thấy khách đã trả bao nhiêu.
+
+Xác nhận hành vi hai màn (đúng như đã có, không cần sửa): **Khách hàng hiện TẤT CẢ** khách kể cả
+người chưa mua; **Doanh thu chỉ hiện khách đã trả tiền**.
+
+### Fixed — Mở link CRM/LMS trực tiếp thì sidebar hiện sai hệ thống (08/09/2026)
+
+- Hệ thống đang chọn chỉ đọc từ `localStorage`, **không suy từ URL**. Mở bookmark (hoặc link
+  đồng nghiệp gửi) `/crm/khach-hang` khi đang lưu `Hrm` → trang là CRM mà **sidebar là HRM**, bộ
+  chuyển ghi "HRM — Nhân sự", và **tên trang ở header trống** vì đường dẫn không có trong menu
+  đang hiện.
+- Nay **URL thắng**: vào `/crm/...` hay `/hrm/...` (hoặc route LMS) thì hệ thống nhảy theo —
+  nhưng chỉ khi người dùng thật sự vào được hệ thống đó, tránh kẹt ở sidebar trống.
+- Phát hiện khi lái UI thật; không test nào bắt được vì đây là hành vi điều hướng ở frontend.
+
 ### Added — Nghiệp vụ CRM: khách hàng · doanh thu · khoá học (FR-17 → FR-19) (08/09/2026)
 
 Ba màn, một dòng chảy: **Khách hàng** (quan tâm) → **Doanh thu** (mua) → **Khoá học** (danh mục

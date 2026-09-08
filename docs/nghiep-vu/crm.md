@@ -8,13 +8,14 @@ Bán khoá học: gom dữ liệu khách hàng, bán khoá, tổng hợp doanh t
 ## Ba màn, một dòng chảy
 
 ```
-Khách hàng  ──(mua hàng)──▶  Doanh thu  ──(chọn từ)──▶  Khoá học
+Khách hàng  ──(trả tiền)──▶  Doanh thu  ──(chọn từ)──▶  Khoá học
  FR-17                        FR-18                     FR-19
- người quan tâm               đăng ký + tiền            danh mục sản phẩm
+ TẤT CẢ khách trong hệ thống  khách ĐÃ trả tiền         danh mục sản phẩm
 ```
 
-**Khách hàng chưa mua thì chưa có doanh thu.** Ai mua mới xuất hiện ở màn Doanh thu — đó là
-định nghĩa của "chuyển qua doanh thu", không phải một nút bấm.
+- **Màn Khách hàng hiện TẤT CẢ** — kể cả người chưa mua gì. Đây là nơi gom dữ liệu khách.
+- **Màn Doanh thu chỉ hiện khách đã trả tiền.** Không phải một nút "chuyển": khách có đăng ký
+  thì tự xuất hiện, không có thì không.
 
 ## FR-17 — Khách hàng
 
@@ -43,6 +44,34 @@ Ngược lại, tách bảng thì phải trả giá: **một người có thể 
 Không **copy** họ tên/email sang `NGUOI_DUNG` rồi để hai bên trôi khỏi nhau — đó đúng là lỗi
 hai nguồn sự thật đã gặp với tài khoản/người dùng (07/09/2026). Sửa tên ở màn Khách hàng
 **không** đổi tên học viên, và ngược lại; UI phải nói rõ điều đó khi đã nối.
+
+### View chi tiết khách hàng — 4 tab
+
+Bấm một khách mở `/crm/khach-hang/:id`:
+
+| Tab | Nội dung |
+|---|---|
+| **Thông tin chung** | Hồ sơ + sửa tại chỗ; mối nối tới hồ sơ học viên |
+| **Lịch sử chăm sóc** | Từng lần liên hệ — xem `LICH_SU_CHAM_SOC` dưới |
+| **Khoá học tham gia** | Các đăng ký của khách này (từ `DANG_KY_KHOA_HOC`) |
+| **Số tiền đã đóng** | Sổ thu theo từng đăng ký + **còn thiếu bao nhiêu** |
+
+### Lịch sử chăm sóc (`LICH_SU_CHAM_SOC`)
+
+Mỗi lần liên hệ một dòng: `thoi_diem`, `hinh_thuc` (Gọi điện · Zalo/Facebook · Email · Gặp trực
+tiếp · Khác), `noi_dung`, `nguoi_phu_trach_id`, và **`trang_thai_sau`**.
+
+`trang_thai_sau` (Mới · Đang tư vấn · Đã mua · Từ chối) làm nên **phễu bán hàng**:
+
+> **Trạng thái hiện tại của khách = `trang_thai_sau` của lần chăm sóc MỚI NHẤT.**
+>
+> Suy từ lịch sử chứ **không** thêm cột `trang_thai` vào `KHACH_HANG`: hai chỗ lưu cùng một
+> thông tin thì chúng lệch nhau ngay lần đầu ai đó sửa lịch sử mà quên cột kia. Cùng nguyên tắc
+> với công nợ học phí tính động (FR-14).
+
+Khách chưa có lần chăm sóc nào → coi là **Mới**.
+
+`nguoi_phu_trach_id` lấy từ **token**, không nhận từ client — không có tham số để ghi hộ người khác.
 
 ### Quy tắc
 
@@ -88,6 +117,23 @@ Doanh thu tổng hợp = `SUM(so_tien × ty_gia_ve_vnd)`. Đơn vị VND thì t�
 Hệ thống **không tự tra tỷ giá** (không gọi API ngoài): người bán nhập, có gợi ý giá trị dùng
 lần trước cho cùng đơn vị.
 
+### Đăng ký là CAM KẾT, không phải đã thu
+
+`so_tien` của đăng ký = số khách **cam kết trả**. Tiền thực nhận nằm ở bảng riêng
+`THU_TIEN_DANG_KY` (chốt 08/09/2026) vì khách thường đóng nhiều đợt:
+
+| | Ý nghĩa |
+|---|---|
+| `DANG_KY_KHOA_HOC.so_tien` | Cam kết — cơ sở tính doanh thu |
+| `SUM(THU_TIEN_DANG_KY.so_tien)` | **Đã thu thật** |
+| Còn thiếu | Hiệu hai số trên, **tính động, không lưu cột** |
+
+Thu tiền ghi cùng **đơn vị tiền của đăng ký** — không cho đóng EUR cho một đăng ký khai VND;
+lẫn đơn vị trong cùng một đăng ký thì phép trừ "còn thiếu" thành vô nghĩa.
+
+**Doanh thu vẫn tính trên CAM KẾT**, không trên tiền đã thu. Hai con số trả lời hai câu khác
+nhau: bán được bao nhiêu, và đã cầm về bao nhiêu. Màn Doanh thu hiện cả hai.
+
 ### Quy tắc
 
 - Khách chưa có đăng ký nào thì **không** xuất hiện ở màn Doanh thu.
@@ -129,11 +175,12 @@ Chưa nối `LOP_HOC.khoa_hoc_id` trong đợt này — làm khi cần báo cáo
 | `KHOA_HOC_DA_CO_DANG_KY` | Xoá khoá còn đăng ký |
 | `TY_GIA_KHONG_HOP_LE` | Tỷ giá ≤ 0 |
 | `SO_TIEN_KHONG_HOP_LE` | Số tiền < 0 |
+| `THU_VUOT_CAM_KET` | Tổng thu vượt số cam kết của đăng ký |
 
 ## Chưa làm
 
 - **Nối đăng ký CRM với sổ thu học phí LMS** — hiện hai sổ độc lập.
-- **Phễu bán hàng** (trạng thái khách: mới → đang tư vấn → đã mua → mất). Nay chỉ suy từ "có
-  đăng ký hay không".
-- **Nhân viên kinh doanh phụ trách khách** — cần khi làm hoa hồng (module HRM).
-- Tự tra tỷ giá từ API ngoài.
+- **Nhân viên kinh doanh phụ trách khách** (cột cố định trên `KHACH_HANG`) — cần khi làm hoa
+  hồng ở HRM. Nay chỉ biết *ai đã chăm sóc* qua `LICH_SU_CHAM_SOC.nguoi_phu_trach_id`.
+- Tự tra tỷ giá từ API ngoài; ngưỡng cảnh báo số tiền vô lý theo từng đơn vị.
+- Nhắc lịch chăm sóc (hẹn gọi lại) — cần lịch/thông báo.

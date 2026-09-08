@@ -90,3 +90,51 @@ public class DangKyKhoaHocConfig : IEntityTypeConfiguration<DangKyKhoaHoc>
             .HasForeignKey(x => x.KhoaHocId).OnDelete(DeleteBehavior.Restrict);
     }
 }
+
+public class LichSuChamSocConfig : IEntityTypeConfiguration<LichSuChamSoc>
+{
+    public void Configure(EntityTypeBuilder<LichSuChamSoc> b)
+    {
+        b.ToTable("LICH_SU_CHAM_SOC");
+
+        b.Property(x => x.NoiDung).HasMaxLength(2000).IsRequired();
+
+        b.HasIndex(x => x.TenantId);
+        // Tab Lịch sử chăm sóc luôn lọc theo khách và sắp theo thời điểm giảm dần; trạng thái
+        // hiện tại của khách cũng đọc từ dòng mới nhất theo đúng cặp cột này.
+        b.HasIndex(x => new { x.KhachHangId, x.ThoiDiem });
+
+        // Cascade: lịch sử chăm sóc thuộc HẲN về khách, không có nghĩa độc lập. Khác đăng ký
+        // (Restrict — dữ liệu tiền) nên xoá khách vẫn bị chặn nếu họ đã mua.
+        b.HasOne(x => x.KhachHang).WithMany(x => x.LichSuChamSocs)
+            .HasForeignKey(x => x.KhachHangId).OnDelete(DeleteBehavior.Cascade);
+
+        b.HasOne(x => x.NguoiPhuTrach).WithMany()
+            .HasForeignKey(x => x.NguoiPhuTrachId).OnDelete(DeleteBehavior.SetNull);
+    }
+}
+
+public class ThuTienDangKyConfig : IEntityTypeConfiguration<ThuTienDangKy>
+{
+    public void Configure(EntityTypeBuilder<ThuTienDangKy> b)
+    {
+        b.ToTable("THU_TIEN_DANG_KY", t => t.HasCheckConstraint(
+            "ck_thu_tien_dang_ky_duong", "so_tien > 0"));
+
+        // numeric tường minh cho tiền — double là cấm tuyệt đối.
+        b.Property(x => x.SoTien).HasPrecision(18, 2);
+        b.Property(x => x.GhiChu).HasMaxLength(500);
+
+        b.HasIndex(x => x.TenantId);
+        // Tính "còn thiếu" luôn cộng theo đăng ký.
+        b.HasIndex(x => x.DangKyId);
+
+        // Restrict: dữ liệu tiền không được biến mất theo đăng ký — muốn xoá đăng ký thì phải
+        // xoá các lần thu trước, một cách có ý thức.
+        b.HasOne(x => x.DangKy).WithMany(x => x.CacLanThu)
+            .HasForeignKey(x => x.DangKyId).OnDelete(DeleteBehavior.Restrict);
+
+        b.HasOne(x => x.NguoiThu).WithMany()
+            .HasForeignKey(x => x.NguoiThuId).OnDelete(DeleteBehavior.SetNull);
+    }
+}

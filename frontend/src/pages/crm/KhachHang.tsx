@@ -1,7 +1,8 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ExternalLink, Eye, Pencil, Plus, Trash2 } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
@@ -30,6 +31,7 @@ interface HocVienNgan {
  */
 export default function KhachHang() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const { coQuyen } = useQuyen()
   const { hoi, hop } = useXacNhan()
@@ -195,7 +197,11 @@ export default function KhachHang() {
                 </thead>
                 <tbody>
                   {kq.duLieu.map((k) => (
-                    <tr key={k.id} className="hover:bg-muted/40">
+                    <tr
+                      key={k.id}
+                      className="cursor-pointer hover:bg-muted/40"
+                      onClick={() => navigate(`/crm/khach-hang/${k.id}`)}
+                    >
                       <Td>
                         <div className="font-medium">{k.hoTen}</div>
                         {k.ghiChu && (
@@ -245,11 +251,17 @@ export default function KhachHang() {
                           t('khachHang.chuaVaoHoc')
                         )}
                       </Td>
-                      <Td>
+                      {/* Chặn nổi bọt: bấm menu không được đồng thời mở view chi tiết. */}
+                      <Td onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end">
                           <MenuThaoTac
                             nhanMo={t('chung.thaoTac')}
                             muc={[
+                              {
+                                nhan: t('chung.xemChiTiet'),
+                                icon: Eye,
+                                onChon: () => navigate(`/crm/khach-hang/${k.id}`),
+                              },
                               {
                                 nhan: t('chung.sua'),
                                 icon: Pencil,

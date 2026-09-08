@@ -47,6 +47,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant
     public DbSet<KhachHang> KhachHangs => Set<KhachHang>();
     public DbSet<KhoaHoc> KhoaHocs => Set<KhoaHoc>();
     public DbSet<DangKyKhoaHoc> DangKyKhoaHocs => Set<DangKyKhoaHoc>();
+    public DbSet<LichSuChamSoc> LichSuChamSocs => Set<LichSuChamSoc>();
+    public DbSet<ThuTienDangKy> ThuTienDangKys => Set<ThuTienDangKy>();
 
     public DbSet<NhatKyHeThong> NhatKyHeThongs => Set<NhatKyHeThong>();
 

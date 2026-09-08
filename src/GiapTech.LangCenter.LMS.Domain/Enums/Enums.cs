@@ -207,3 +207,28 @@ public enum DonViTien
     EUR = 2,
     CAD = 3
 }
+
+/// <summary>Hình thức liên hệ khi chăm sóc khách hàng (FR-17).</summary>
+public enum HinhThucChamSoc
+{
+    GoiDien = 0,
+    ZaloFacebook = 1,
+    Email = 2,
+    GapTrucTiep = 3,
+    Khac = 4
+}
+
+/// <summary>
+/// Trạng thái khách trong phễu bán hàng (FR-17).
+///
+/// **Không lưu thành cột trên `KHACH_HANG`.** Trạng thái hiện tại suy từ lần chăm sóc mới nhất
+/// — hai chỗ lưu cùng một thông tin thì chúng lệch nhau ngay lần đầu ai đó sửa lịch sử mà quên
+/// cột kia. Khách chưa có lần chăm sóc nào coi là <see cref="Moi"/>.
+/// </summary>
+public enum TrangThaiKhachHang
+{
+    Moi = 0,
+    DangTuVan = 1,
+    DaMua = 2,
+    TuChoi = 3
+}

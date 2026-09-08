@@ -48,6 +48,8 @@ public interface IAppDbContext
     DbSet<KhachHang> KhachHangs { get; }
     DbSet<KhoaHoc> KhoaHocs { get; }
     DbSet<DangKyKhoaHoc> DangKyKhoaHocs { get; }
+    DbSet<LichSuChamSoc> LichSuChamSocs { get; }
+    DbSet<ThuTienDangKy> ThuTienDangKys { get; }
 
     DbSet<NhatKyHeThong> NhatKyHeThongs { get; }
 

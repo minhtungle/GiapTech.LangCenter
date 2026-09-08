@@ -1,0 +1,297 @@
+using FluentValidation;
+using GiapTech.LangCenter.LMS.Application.Common.Exceptions;
+using GiapTech.LangCenter.LMS.Application.Common.Interfaces;
+using GiapTech.LangCenter.LMS.Domain.Enums;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+
+namespace GiapTech.LangCenter.LMS.Application.Crm;
+
+// ---------- Tab Thông tin chung ----------
+
+/// <summary>Hồ sơ khách kèm số liệu tổng hợp cho view chi tiết (FR-17).</summary>
+public record ChiTietKhachHangDto(
+    Guid Id,
+    string HoTen,
+    string? Email,
+    string? SoDienThoai,
+    string? LinkFacebook,
+    string? GhiChu,
+    PhuongThucThanhToan PhuongThucThanhToan,
+    Guid? NguoiDungId,
+    string? TenHocVien,
+    /// <summary>
+    /// Trạng thái trong phễu — suy từ lần chăm sóc MỚI NHẤT, không lưu cột.
+    /// Chưa có lần chăm sóc nào → `Moi`.
+    /// </summary>
+    TrangThaiKhachHang TrangThai,
+    int SoDangKy,
+    int SoLanChamSoc,
+    /// <summary>Tổng CAM KẾT, quy về VND.</summary>
+    decimal TongCamKetVnd,
+    /// <summary>Tổng ĐÃ THU thật, quy về VND. Chênh với cam kết là công nợ.</summary>
+    decimal TongDaThuVnd);
+
+public record LayChiTietKhachHangQuery(Guid Id) : IRequest<ChiTietKhachHangDto>;
+
+public class LayChiTietKhachHangHandler(IAppDbContext db)
+    : IRequestHandler<LayChiTietKhachHangQuery, ChiTietKhachHangDto>
+{
+    public async Task<ChiTietKhachHangDto> Handle(
+        LayChiTietKhachHangQuery request, CancellationToken ct)
+        => await db.KhachHangs
+               .Where(k => k.Id == request.Id)
+               .Select(k => new ChiTietKhachHangDto(
+                   k.Id, k.HoTen, k.Email, k.SoDienThoai, k.LinkFacebook, k.GhiChu,
+                   k.PhuongThucThanhToan,
+                   k.NguoiDungId,
+                   k.NguoiDung == null ? null : k.NguoiDung.HoTen,
+                   // Trạng thái = lần chăm sóc mới nhất; chưa có thì Moi.
+                   k.LichSuChamSocs
+                       .OrderByDescending(l => l.ThoiDiem)
+                       .Select(l => l.TrangThaiSau)
+                       .FirstOrDefault(),
+                   k.DangKys.Count,
+                   k.LichSuChamSocs.Count,
+                   k.DangKys.Sum(d => d.SoTien * d.TyGiaVeVnd),
+                   // Tổng đã thu: cộng từng lần thu rồi quy đổi bằng tỷ giá của ĐĂNG KÝ chứa
+                   // nó — lần thu không có tỷ giá riêng vì luôn cùng đơn vị với đăng ký.
+                   k.DangKys.Sum(d => d.CacLanThu.Sum(t => t.SoTien) * d.TyGiaVeVnd)))
+               .FirstOrDefaultAsync(ct)
+           ?? throw new KhongTimThayException($"KhachHang {request.Id}");
+}
+
+// ---------- Tab Lịch sử chăm sóc ----------
+
+public record LichSuChamSocDto(
+    Guid Id,
+    DateTimeOffset ThoiDiem,
+    HinhThucChamSoc HinhThuc,
+    string NoiDung,
+    TrangThaiKhachHang TrangThaiSau,
+    string? TenNguoiPhuTrach);
+
+public record LayLichSuChamSocQuery(Guid KhachHangId) : IRequest<List<LichSuChamSocDto>>;
+
+public class LayLichSuChamSocHandler(IAppDbContext db)
+    : IRequestHandler<LayLichSuChamSocQuery, List<LichSuChamSocDto>>
+{
+    public async Task<List<LichSuChamSocDto>> Handle(
+        LayLichSuChamSocQuery request, CancellationToken ct)
+        => await db.LichSuChamSocs
+            .Where(l => l.KhachHangId == request.KhachHangId)
+            // Mới nhất trước: người bán mở tab này để biết "lần cuối nói gì".
+            .OrderByDescending(l => l.ThoiDiem)
+            .Select(l => new LichSuChamSocDto(
+                l.Id, l.ThoiDiem, l.HinhThuc, l.NoiDung, l.TrangThaiSau,
+                l.NguoiPhuTrach == null ? null : l.NguoiPhuTrach.HoTen))
+            .ToListAsync(ct);
+}
+
+public record LuuChamSocCommand(
+    Guid? Id,
+    Guid KhachHangId,
+    DateTimeOffset ThoiDiem,
+    HinhThucChamSoc HinhThuc,
+    string NoiDung,
+    TrangThaiKhachHang TrangThaiSau) : IRequest<Guid>;
+
+public class LuuChamSocValidator : AbstractValidator<LuuChamSocCommand>
+{
+    public LuuChamSocValidator()
+    {
+        RuleFor(x => x.KhachHangId).NotEmpty();
+        RuleFor(x => x.NoiDung).NotEmpty().MaximumLength(2000);
+        // Ngày mặc định (01/01/0001) vào cột ngày là bẫy đã gặp thật 08/09/2026 với sinh lịch:
+        // PostgreSQL lưu -infinity, UI hiện "1/1/1", không lỗi nào ở giữa.
+        RuleFor(x => x.ThoiDiem)
+            .GreaterThan(new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero))
+            .WithErrorCode("NGAY_KHONG_HOP_LE");
+    }
+}
+
+public class LuuChamSocHandler(IAppDbContext db, ICurrentUser currentUser)
+    : IRequestHandler<LuuChamSocCommand, Guid>
+{
+    public async Task<Guid> Handle(LuuChamSocCommand request, CancellationToken ct)
+    {
+        var co = await db.KhachHangs.AnyAsync(k => k.Id == request.KhachHangId, ct);
+        if (!co) throw new AppException("KHACH_HANG_KHONG_HOP_LE");
+
+        Domain.Entities.LichSuChamSoc ls;
+        if (request.Id is { } id)
+        {
+            ls = await db.LichSuChamSocs.FirstOrDefaultAsync(l => l.Id == id, ct)
+                 ?? throw new KhongTimThayException($"LichSuChamSoc {id}");
+        }
+        else
+        {
+            ls = new Domain.Entities.LichSuChamSoc
+            {
+                KhachHangId = request.KhachHangId,
+                // Người phụ trách lấy từ TOKEN, không nhận từ client. Chỉ gán khi TẠO: sửa nội
+                // dung một lần chăm sóc cũ không được đổi tên người đã thực hiện nó.
+                NguoiPhuTrachId = currentUser.UserId
+            };
+            db.LichSuChamSocs.Add(ls);
+        }
+
+        ls.ThoiDiem = request.ThoiDiem;
+        ls.HinhThuc = request.HinhThuc;
+        ls.NoiDung = request.NoiDung.Trim();
+        ls.TrangThaiSau = request.TrangThaiSau;
+
+        await db.SaveChangesAsync(ct);
+        return ls.Id;
+    }
+}
+
+public record XoaChamSocCommand(Guid Id) : IRequest;
+
+public class XoaChamSocHandler(IAppDbContext db) : IRequestHandler<XoaChamSocCommand>
+{
+    public async Task Handle(XoaChamSocCommand request, CancellationToken ct)
+    {
+        var ls = await db.LichSuChamSocs.FirstOrDefaultAsync(l => l.Id == request.Id, ct)
+                 ?? throw new KhongTimThayException($"LichSuChamSoc {request.Id}");
+        db.LichSuChamSocs.Remove(ls);
+        await db.SaveChangesAsync(ct);
+    }
+}
+
+// ---------- Tab Khoá học tham gia + Số tiền đã đóng ----------
+
+/// <summary>Một đăng ký của khách kèm tình hình thu tiền.</summary>
+public record DangKyKemThuDto(
+    Guid Id,
+    Guid KhoaHocId,
+    string TenKhoaHoc,
+    int SoBuoi,
+    decimal GiaGoc,
+    /// <summary>Số khách CAM KẾT trả.</summary>
+    decimal SoTien,
+    DonViTien DonViTien,
+    decimal TyGiaVeVnd,
+    decimal? PhanTramTrenGiaGoc,
+    DateTimeOffset NgayDangKy,
+    string? GhiChu,
+    /// <summary>Tổng đã thu — cùng đơn vị tiền với đăng ký.</summary>
+    decimal DaThu,
+    /// <summary>`SoTien − DaThu`, **tính động**. ≤ 0 = đã đóng đủ.</summary>
+    decimal ConThieu,
+    List<LanThuDto> CacLanThu);
+
+public record LanThuDto(
+    Guid Id,
+    decimal SoTien,
+    DateTimeOffset NgayThu,
+    PhuongThucThanhToan PhuongThuc,
+    string? GhiChu,
+    string? TenNguoiThu);
+
+public record LayDangKyCuaKhachQuery(Guid KhachHangId) : IRequest<List<DangKyKemThuDto>>;
+
+public class LayDangKyCuaKhachHandler(IAppDbContext db)
+    : IRequestHandler<LayDangKyCuaKhachQuery, List<DangKyKemThuDto>>
+{
+    public async Task<List<DangKyKemThuDto>> Handle(
+        LayDangKyCuaKhachQuery request, CancellationToken ct)
+        => await db.DangKyKhoaHocs
+            .Where(d => d.KhachHangId == request.KhachHangId)
+            .OrderByDescending(d => d.NgayDangKy)
+            .Select(d => new DangKyKemThuDto(
+                d.Id, d.KhoaHocId, d.KhoaHoc.Ten, d.KhoaHoc.SoBuoi,
+                d.GiaGoc, d.SoTien, d.DonViTien, d.TyGiaVeVnd,
+                d.GiaGoc == 0 ? null : d.SoTien / d.GiaGoc * 100m,
+                d.NgayDangKy, d.GhiChu,
+                d.CacLanThu.Sum(t => t.SoTien),
+                d.SoTien - d.CacLanThu.Sum(t => t.SoTien),
+                d.CacLanThu
+                    .OrderByDescending(t => t.NgayThu)
+                    .Select(t => new LanThuDto(
+                        t.Id, t.SoTien, t.NgayThu, t.PhuongThuc, t.GhiChu,
+                        t.NguoiThu == null ? null : t.NguoiThu.HoTen))
+                    .ToList()))
+            .ToListAsync(ct);
+}
+
+public record LuuThuTienCommand(
+    Guid? Id,
+    Guid DangKyId,
+    decimal SoTien,
+    DateTimeOffset NgayThu,
+    PhuongThucThanhToan PhuongThuc = PhuongThucThanhToan.ChuyenKhoan,
+    string? GhiChu = null) : IRequest<Guid>;
+
+public class LuuThuTienValidator : AbstractValidator<LuuThuTienCommand>
+{
+    public LuuThuTienValidator()
+    {
+        RuleFor(x => x.DangKyId).NotEmpty();
+        RuleFor(x => x.SoTien).GreaterThan(0).WithErrorCode("SO_TIEN_KHONG_HOP_LE");
+        RuleFor(x => x.GhiChu).MaximumLength(500);
+        RuleFor(x => x.NgayThu)
+            .GreaterThan(new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero))
+            .WithErrorCode("NGAY_KHONG_HOP_LE");
+    }
+}
+
+public class LuuThuTienHandler(IAppDbContext db, ICurrentUser currentUser)
+    : IRequestHandler<LuuThuTienCommand, Guid>
+{
+    public async Task<Guid> Handle(LuuThuTienCommand request, CancellationToken ct)
+    {
+        var dk = await db.DangKyKhoaHocs
+                     .FirstOrDefaultAsync(d => d.Id == request.DangKyId, ct)
+                 ?? throw new AppException("DANG_KY_KHONG_HOP_LE");
+
+        // Đã thu của các lần KHÁC (bỏ chính dòng đang sửa) — không trừ ra thì sửa một lần thu
+        // từ 3tr xuống 2tr sẽ bị chặn oan vì hệ thống vẫn cộng cả 3tr cũ.
+        var daThuKhac = await db.ThuTienDangKys
+            .Where(t => t.DangKyId == dk.Id && t.Id != request.Id)
+            .SumAsync(t => t.SoTien, ct);
+
+        // Thu vượt cam kết thường là gõ sai số (thêm một chữ số 0). Chặn ở đây chứ không im
+        // lặng nhận: "còn thiếu" âm hiện trên UI là con số không ai giải thích được.
+        if (daThuKhac + request.SoTien > dk.SoTien)
+            throw new AppException("THU_VUOT_CAM_KET");
+
+        Domain.Entities.ThuTienDangKy thu;
+        if (request.Id is { } id)
+        {
+            thu = await db.ThuTienDangKys.FirstOrDefaultAsync(t => t.Id == id, ct)
+                  ?? throw new KhongTimThayException($"ThuTienDangKy {id}");
+        }
+        else
+        {
+            thu = new Domain.Entities.ThuTienDangKy
+            {
+                DangKyId = dk.Id,
+                // Người thu lấy từ token, chỉ gán khi tạo.
+                NguoiThuId = currentUser.UserId
+            };
+            db.ThuTienDangKys.Add(thu);
+        }
+
+        thu.SoTien = request.SoTien;
+        thu.NgayThu = request.NgayThu;
+        thu.PhuongThuc = request.PhuongThuc;
+        thu.GhiChu = string.IsNullOrWhiteSpace(request.GhiChu) ? null : request.GhiChu.Trim();
+
+        await db.SaveChangesAsync(ct);
+        return thu.Id;
+    }
+}
+
+public record XoaThuTienCommand(Guid Id) : IRequest;
+
+public class XoaThuTienHandler(IAppDbContext db) : IRequestHandler<XoaThuTienCommand>
+{
+    public async Task Handle(XoaThuTienCommand request, CancellationToken ct)
+    {
+        var thu = await db.ThuTienDangKys.FirstOrDefaultAsync(t => t.Id == request.Id, ct)
+                  ?? throw new KhongTimThayException($"ThuTienDangKy {request.Id}");
+        db.ThuTienDangKys.Remove(thu);
+        await db.SaveChangesAsync(ct);
+    }
+}

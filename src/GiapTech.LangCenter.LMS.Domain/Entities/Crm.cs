@@ -37,6 +37,63 @@ public class KhachHang : TenantEntity
     public NguoiDung? NguoiDung { get; set; }
 
     public ICollection<DangKyKhoaHoc> DangKys { get; set; } = [];
+
+    public ICollection<LichSuChamSoc> LichSuChamSocs { get; set; } = [];
+}
+
+/// <summary>
+/// LICH_SU_CHAM_SOC — từng lần liên hệ với khách (FR-17).
+///
+/// `TrangThaiSau` của dòng MỚI NHẤT chính là trạng thái hiện tại của khách trong phễu bán hàng
+/// — xem <see cref="Enums.TrangThaiKhachHang"/> về việc vì sao không lưu thành cột riêng.
+/// </summary>
+public class LichSuChamSoc : TenantEntity
+{
+    public Guid KhachHangId { get; set; }
+    public KhachHang KhachHang { get; set; } = null!;
+
+    public DateTimeOffset ThoiDiem { get; set; }
+
+    public HinhThucChamSoc HinhThuc { get; set; } = HinhThucChamSoc.GoiDien;
+
+    public string NoiDung { get; set; } = null!;
+
+    /// <summary>Trạng thái khách SAU lần liên hệ này — nguồn của phễu bán hàng.</summary>
+    public TrangThaiKhachHang TrangThaiSau { get; set; } = TrangThaiKhachHang.DangTuVan;
+
+    /// <summary>
+    /// Người thực hiện — lấy từ TOKEN, không nhận từ client (không có tham số để ghi hộ).
+    ///
+    /// SetNull: xoá hồ sơ nhân sự không được cuốn theo lịch sử chăm sóc; dòng cũ vẫn còn nội
+    /// dung, chỉ mất tên người phụ trách.
+    /// </summary>
+    public Guid? NguoiPhuTrachId { get; set; }
+    public NguoiDung? NguoiPhuTrach { get; set; }
+}
+
+/// <summary>
+/// THU_TIEN_DANG_KY — một lần khách đóng tiền cho một đăng ký (FR-18).
+///
+/// Tách khỏi `DANG_KY_KHOA_HOC` vì hai thứ khác nhau (chốt 08/09/2026):
+/// **đăng ký là CAM KẾT**, còn đây là **tiền thật đã nhận** — khách thường đóng nhiều đợt.
+/// Còn thiếu = cam kết − tổng đã thu, **tính động, không lưu cột**.
+/// </summary>
+public class ThuTienDangKy : TenantEntity
+{
+    public Guid DangKyId { get; set; }
+    public DangKyKhoaHoc DangKy { get; set; } = null!;
+
+    /// <summary>Ghi cùng ĐƠN VỊ TIỀN của đăng ký — lẫn đơn vị thì phép trừ "còn thiếu" vô nghĩa.</summary>
+    public decimal SoTien { get; set; }
+
+    public DateTimeOffset NgayThu { get; set; }
+
+    public PhuongThucThanhToan PhuongThuc { get; set; } = PhuongThucThanhToan.ChuyenKhoan;
+
+    public string? GhiChu { get; set; }
+
+    public Guid? NguoiThuId { get; set; }
+    public NguoiDung? NguoiThu { get; set; }
 }
 
 /// <summary>
@@ -120,4 +177,6 @@ public class DangKyKhoaHoc : TenantEntity
     /// `GiaGoc = 0` → `null` (không chia cho 0), UI hiện dấu gạch.
     /// </summary>
     public decimal? PhanTramTrenGiaGoc => GiaGoc == 0 ? null : SoTien / GiaGoc * 100m;
+
+    public ICollection<ThuTienDangKy> CacLanThu { get; set; } = [];
 }

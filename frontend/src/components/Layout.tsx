@@ -49,6 +49,29 @@ export default function Layout() {
   // Đóng ngăn kéo sau khi điều hướng — trên mobile nó phủ toàn màn hình.
   useEffect(() => setMoMobile(false), [location.pathname])
 
+  /**
+   * URL THẮNG lựa chọn đã lưu: mở link `/crm/...` thì hệ thống phải nhảy sang CRM.
+   *
+   * Không có bước này thì mở bookmark (hoặc link đồng nghiệp gửi) sẽ hiện sidebar của hệ thống
+   * lưu trong `localStorage` — trang là CRM mà menu là HRM, và tên trang ở header trống vì
+   * đường dẫn hiện tại không có trong menu đang hiện. Gặp thật 08/09/2026 khi lái UI.
+   */
+  useEffect(() => {
+    const theoDuong: Record<string, MaHeThong> = { '/hrm': 'Hrm', '/crm': 'Crm' }
+    const tienTo = Object.keys(theoDuong).find((x) => location.pathname.startsWith(x))
+    const suyRa = tienTo
+      ? theoDuong[tienTo]
+      // Route LMS không có tiền tố chung (`/lop-hoc`, `/hoc-vien`…) nên liệt kê tường minh.
+      : ['/lop-hoc', '/buoi-hoc', '/hoc-vien', '/tai-lieu', '/hoc-phi'].some((x) =>
+            location.pathname.startsWith(x))
+        ? 'Lms'
+        : null
+
+    // Chỉ đổi khi người dùng THẬT SỰ vào được hệ thống đó — tránh kẹt ở sidebar trống.
+    if (suyRa && suyRa !== heThong.hienTai && heThong.duocPhep.includes(suyRa))
+      heThong.doi(suyRa)
+  }, [location.pathname, heThong])
+
   interface MucMenu {
     to: string
     nhan: string

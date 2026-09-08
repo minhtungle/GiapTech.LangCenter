@@ -87,5 +87,68 @@ export const phanTram = (p: number | null) => (p === null ? '—' : `${p.toFixed
 export const mauPhanTram = (p: number | null) =>
   p === null ? 'muted' : p >= 100 ? 'ok' : p >= 70 ? 'cho' : 'loi'
 
+export type HinhThucChamSoc = 'GoiDien' | 'ZaloFacebook' | 'Email' | 'GapTrucTiep' | 'Khac'
+export const CAC_HINH_THUC: HinhThucChamSoc[] =
+  ['GoiDien', 'ZaloFacebook', 'Email', 'GapTrucTiep', 'Khac']
+
+export type TrangThaiKhachHang = 'Moi' | 'DangTuVan' | 'DaMua' | 'TuChoi'
+export const CAC_TRANG_THAI_KH: TrangThaiKhachHang[] =
+  ['Moi', 'DangTuVan', 'DaMua', 'TuChoi']
+
+/** Màu phễu: đã mua = ok, từ chối = lỗi, đang tư vấn = chờ, mới = trung tính. */
+export const mauTrangThaiKh = (tt: TrangThaiKhachHang) =>
+  tt === 'DaMua' ? 'ok' : tt === 'TuChoi' ? 'loi' : tt === 'DangTuVan' ? 'cho' : 'muted'
+
+export interface ChiTietKhachHangDto extends Omit<KhachHangDto, 'soDangKy' | 'tongMuaVnd'> {
+  /** Suy từ lần chăm sóc mới nhất — không có cột trong DB. */
+  trangThai: TrangThaiKhachHang
+  soDangKy: number
+  soLanChamSoc: number
+  /** Tổng CAM KẾT (quy VND) — khác tổng đã thu. */
+  tongCamKetVnd: number
+  tongDaThuVnd: number
+}
+
+export interface LichSuChamSocDto {
+  id: string
+  thoiDiem: string
+  hinhThuc: HinhThucChamSoc
+  noiDung: string
+  trangThaiSau: TrangThaiKhachHang
+  tenNguoiPhuTrach: string | null
+}
+
+export interface LanThuDto {
+  id: string
+  soTien: number
+  ngayThu: string
+  phuongThuc: PhuongThucThanhToan
+  ghiChu: string | null
+  tenNguoiThu: string | null
+}
+
+export interface DangKyKemThuDto {
+  id: string
+  khoaHocId: string
+  tenKhoaHoc: string
+  soBuoi: number
+  giaGoc: number
+  /** Số khách CAM KẾT trả. */
+  soTien: number
+  donViTien: DonViTien
+  tyGiaVeVnd: number
+  phanTramTrenGiaGoc: number | null
+  ngayDangKy: string
+  ghiChu: string | null
+  daThu: number
+  /** `soTien − daThu`, tính động ở backend. ≤ 0 = đã đóng đủ. */
+  conThieu: number
+  cacLanThu: LanThuDto[]
+}
+
 export const ngayVN = (iso: string) => new Date(iso).toLocaleDateString('vi-VN')
+export const gioNgayVN = (iso: string) =>
+  new Date(iso).toLocaleString('vi-VN', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  })
 export const ngayChoInput = (iso: string | null) => (iso ? iso.slice(0, 10) : '')

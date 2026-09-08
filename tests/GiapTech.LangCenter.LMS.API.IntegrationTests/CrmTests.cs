@@ -323,6 +323,224 @@ public class CrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(JsonValueKind.Null, d.GetProperty("phanTramTrenGiaGoc").ValueKind);
     }
 
+    // ---------- View chi tiết khách: 4 tab ----------
+
+    /// <summary>
+    /// **Trạng thái phễu suy từ lần chăm sóc MỚI NHẤT**, không lưu cột.
+    ///
+    /// Đây là khẳng định cốt lõi của thiết kế: thêm cột `trang_thai` vào `KHACH_HANG` thì hai
+    /// chỗ lưu cùng một thông tin và chúng lệch nhau ngay lần đầu ai đó sửa lịch sử mà quên cột.
+    /// </summary>
+    [Fact]
+    public async Task Trang_thai_khach_suy_tu_lan_cham_soc_moi_nhat()
+    {
+        var c = await Client();
+        var khach = await TaoKhach(c, "Khách theo phễu");
+
+        // Chưa chăm sóc lần nào → Mới.
+        var d0 = await c.GetFromJsonAsync<JsonElement>($"/api/v1/khach-hang/{khach}");
+        Assert.Equal("Moi", d0.GetProperty("trangThai").GetString());
+
+        (await c.PostAsJsonAsync($"/api/v1/khach-hang/{khach}/cham-soc", new
+        {
+            ThoiDiem = new DateTimeOffset(2026, 9, 5, 0, 0, 0, TimeSpan.Zero),
+            HinhThuc = "GoiDien", NoiDung = "Khách hỏi học phí",
+            TrangThaiSau = "DangTuVan"
+        })).EnsureSuccessStatusCode();
+
+        Assert.Equal("DangTuVan",
+            (await c.GetFromJsonAsync<JsonElement>($"/api/v1/khach-hang/{khach}"))
+                .GetProperty("trangThai").GetString());
+
+        // Lần MỚI HƠN thắng.
+        (await c.PostAsJsonAsync($"/api/v1/khach-hang/{khach}/cham-soc", new
+        {
+            ThoiDiem = new DateTimeOffset(2026, 9, 8, 0, 0, 0, TimeSpan.Zero),
+            HinhThuc = "GapTrucTiep", NoiDung = "Đã đóng tiền",
+            TrangThaiSau = "DaMua"
+        })).EnsureSuccessStatusCode();
+
+        Assert.Equal("DaMua",
+            (await c.GetFromJsonAsync<JsonElement>($"/api/v1/khach-hang/{khach}"))
+                .GetProperty("trangThai").GetString());
+
+        // Ghi thêm một lần CŨ HƠN — không được đổi trạng thái hiện tại.
+        (await c.PostAsJsonAsync($"/api/v1/khach-hang/{khach}/cham-soc", new
+        {
+            ThoiDiem = new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero),
+            HinhThuc = "Email", NoiDung = "Gửi bảng giá lần đầu",
+            TrangThaiSau = "Moi"
+        })).EnsureSuccessStatusCode();
+
+        var d = await c.GetFromJsonAsync<JsonElement>($"/api/v1/khach-hang/{khach}");
+        Assert.Equal("DaMua", d.GetProperty("trangThai").GetString());
+        Assert.Equal(3, d.GetProperty("soLanChamSoc").GetInt32());
+    }
+
+    /// <summary>Người phụ trách lấy từ TOKEN — không có tham số để ghi hộ người khác.</summary>
+    [Fact]
+    public async Task Nguoi_phu_trach_cham_soc_lay_tu_token()
+    {
+        var c = await Client();
+        var khach = await TaoKhach(c, "Khách kiểm người phụ trách");
+
+        (await c.PostAsJsonAsync($"/api/v1/khach-hang/{khach}/cham-soc", new
+        {
+            ThoiDiem = new DateTimeOffset(2026, 9, 8, 0, 0, 0, TimeSpan.Zero),
+            HinhThuc = "GoiDien", NoiDung = "test", TrangThaiSau = "DangTuVan",
+            // Cố tình gửi thêm — lệnh không có trường này nên phải bị bỏ qua.
+            NguoiPhuTrachId = Guid.NewGuid()
+        })).EnsureSuccessStatusCode();
+
+        var ls = (await c.GetFromJsonAsync<List<JsonElement>>(
+            $"/api/v1/khach-hang/{khach}/cham-soc"))!.Single();
+        Assert.Equal("Quản lý A", ls.GetProperty("tenNguoiPhuTrach").GetString());
+    }
+
+    /// <summary>
+    /// **Đăng ký là CAM KẾT, không phải đã thu.** Khách đóng nhiều đợt; "còn thiếu" tính động.
+    /// </summary>
+    [Fact]
+    public async Task Thu_tien_nhieu_dot_va_con_thieu_tinh_dong()
+    {
+        var c = await Client();
+        var khoa = await TaoKhoa(c, "Khoá đóng nhiều đợt", 10_000_000m);
+        var khach = await TaoKhach(c, "Khách đóng góp đợt");
+        var dk = await TaoDangKy(c, khach, khoa, 10_000_000m);
+
+        async Task<JsonElement> Xem() =>
+            (await c.GetFromJsonAsync<List<JsonElement>>(
+                $"/api/v1/khach-hang/{khach}/dang-ky"))!.Single();
+
+        // Chưa thu gì: đã thu 0, còn thiếu đủ.
+        var d = await Xem();
+        Assert.Equal(0m, d.GetProperty("daThu").GetDecimal());
+        Assert.Equal(10_000_000m, d.GetProperty("conThieu").GetDecimal());
+
+        (await c.PostAsJsonAsync($"/api/v1/doanh-thu/{dk}/thu-tien", new
+        {
+            SoTien = 4_000_000m,
+            NgayThu = new DateTimeOffset(2026, 9, 5, 0, 0, 0, TimeSpan.Zero)
+        })).EnsureSuccessStatusCode();
+        (await c.PostAsJsonAsync($"/api/v1/doanh-thu/{dk}/thu-tien", new
+        {
+            SoTien = 3_000_000m,
+            NgayThu = new DateTimeOffset(2026, 9, 20, 0, 0, 0, TimeSpan.Zero)
+        })).EnsureSuccessStatusCode();
+
+        d = await Xem();
+        Assert.Equal(7_000_000m, d.GetProperty("daThu").GetDecimal());
+        Assert.Equal(3_000_000m, d.GetProperty("conThieu").GetDecimal());
+        Assert.Equal(2, d.GetProperty("cacLanThu").EnumerateArray().Count());
+
+        // Doanh thu vẫn tính trên CAM KẾT, không trên tiền đã thu.
+        var t = await c.GetFromJsonAsync<JsonElement>(
+            $"/api/v1/doanh-thu/tong-hop?khachHangId={khach}");
+        Assert.Equal(10_000_000m, t.GetProperty("tongVnd").GetDecimal());
+    }
+
+    /// <summary>
+    /// Thu vượt cam kết bị chặn — thường là gõ thêm một số 0. "Còn thiếu" âm là con số không
+    /// ai giải thích được.
+    /// </summary>
+    [Fact]
+    public async Task Chan_thu_vuot_cam_ket()
+    {
+        var c = await Client();
+        var khoa = await TaoKhoa(c, "Khoá thu vượt", 5_000_000m);
+        var khach = await TaoKhach(c, "Khách thu vượt");
+        var dk = await TaoDangKy(c, khach, khoa, 5_000_000m);
+
+        (await c.PostAsJsonAsync($"/api/v1/doanh-thu/{dk}/thu-tien", new
+        {
+            SoTien = 3_000_000m,
+            NgayThu = new DateTimeOffset(2026, 9, 5, 0, 0, 0, TimeSpan.Zero)
+        })).EnsureSuccessStatusCode();
+
+        var res = await c.PostAsJsonAsync($"/api/v1/doanh-thu/{dk}/thu-tien", new
+        {
+            SoTien = 30_000_000m,   // gõ thêm một số 0
+            NgayThu = new DateTimeOffset(2026, 9, 6, 0, 0, 0, TimeSpan.Zero)
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        Assert.Equal("THU_VUOT_CAM_KET",
+            (await res.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("errorCode").GetString());
+    }
+
+    /// <summary>
+    /// SỬA một lần thu không bị chặn oan: phải trừ chính dòng đang sửa ra khỏi tổng đã thu.
+    ///
+    /// Không trừ thì sửa 3tr → 2tr vẫn bị `THU_VUOT_CAM_KET` vì hệ thống cộng cả 3tr cũ.
+    /// </summary>
+    [Fact]
+    public async Task Sua_lan_thu_khong_bi_chan_oan()
+    {
+        var c = await Client();
+        var khoa = await TaoKhoa(c, "Khoá sửa lần thu", 5_000_000m);
+        var khach = await TaoKhach(c, "Khách sửa lần thu");
+        var dk = await TaoDangKy(c, khach, khoa, 5_000_000m);
+
+        var res = await c.PostAsJsonAsync($"/api/v1/doanh-thu/{dk}/thu-tien", new
+        {
+            SoTien = 5_000_000m,
+            NgayThu = new DateTimeOffset(2026, 9, 5, 0, 0, 0, TimeSpan.Zero)
+        });
+        res.EnsureSuccessStatusCode();
+        var thuId = await res.Content.ReadFromJsonAsync<Guid>();
+
+        // Sửa xuống 4tr — tổng mới là 4tr, KHÔNG vượt 5tr.
+        (await c.PutAsJsonAsync($"/api/v1/doanh-thu/thu-tien/{thuId}", new
+        {
+            Id = thuId, DangKyId = dk, SoTien = 4_000_000m,
+            NgayThu = new DateTimeOffset(2026, 9, 5, 0, 0, 0, TimeSpan.Zero)
+        })).EnsureSuccessStatusCode();
+
+        var d = (await c.GetFromJsonAsync<List<JsonElement>>(
+            $"/api/v1/khach-hang/{khach}/dang-ky"))!.Single();
+        Assert.Equal(4_000_000m, d.GetProperty("daThu").GetDecimal());
+        Assert.Equal(1_000_000m, d.GetProperty("conThieu").GetDecimal());
+    }
+
+    /// <summary>
+    /// Tab tiền gác bằng `DoanhThu`: người chỉ có `KhachHang` xem được hồ sơ và lịch sử chăm
+    /// sóc nhưng **không** thấy khách đã trả bao nhiêu.
+    /// </summary>
+    [Fact]
+    public async Task Quyen_khach_hang_khong_xem_duoc_tab_tien()
+    {
+        var admin = await Client();
+        var res = await admin.PostAsJsonAsync("/api/v1/quyen", new
+        {
+            TenQuyen = "Chỉ khách hàng (tab tiền)", MoTa = "test",
+            ChucNangs = new[]
+            {
+                new { TenChucNang = ChucNang.KhachHang, HanhDongs = new[] { "Xem", "Them" } }
+            }
+        });
+        res.EnsureSuccessStatusCode();
+        var quyen = (await res.Content.ReadFromJsonAsync<Guid>()).ToString();
+
+        (await admin.PostAsJsonAsync("/api/v1/nguoi-dung", new
+        {
+            HoTen = "Trực tổng đài 2", LoaiNguoiDung = "NhanVien",
+            TaiKhoan = new
+            {
+                Username = "truc-2", MatKhau = "matkhau123",
+                QuyenIds = new[] { quyen }, PhaiDoiMatKhau = false
+            }
+        })).EnsureSuccessStatusCode();
+
+        var khach = await TaoKhach(admin, "Khách của trực tổng đài");
+        var c = await Client("truc-2", "matkhau123");
+
+        (await c.GetAsync($"/api/v1/khach-hang/{khach}")).EnsureSuccessStatusCode();
+        (await c.GetAsync($"/api/v1/khach-hang/{khach}/cham-soc")).EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await c.GetAsync($"/api/v1/khach-hang/{khach}/dang-ky")).StatusCode);
+    }
+
     // ---------- Phân quyền & cách ly tenant ----------
 
     /// <summary>
