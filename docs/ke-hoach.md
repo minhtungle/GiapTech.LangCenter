@@ -5,7 +5,7 @@
 ## Tiến độ tổng
 
 ```
-Nghiệp vụ  ██████████████░░  17/19 FR chạy đầu-cuối (còn FR-15 Thống kê)
+Nghiệp vụ  ██████████████░░  18/20 FR chạy đầu-cuối (còn FR-15 Thống kê)
 Ba hệ thống ████████████░░░░  CRM xong nghiệp vụ; HRM còn khung trống
 Hạ tầng    ████████████░░░░  CI/CD sẵn sàng, chờ VPS thật
 Còn lại    ██████░░░░░░░░░░  Dashboard + nghiệp vụ HRM/CRM + 12 nợ kỹ thuật
@@ -33,7 +33,8 @@ Còn lại    ██████░░░░░░░░░░  Dashboard + nghi
 | FR-16 | Nhật ký hệ thống | ✅ | ✅ | Ghi tự động ở pipeline MediatR + interceptor chụp trường đổi |
 | FR-17 | Khách hàng (CRM) | ✅ | ✅ | Bảng riêng, nối `nguoi_dung_id` khi khách vào học. **View 4 tab**: thông tin · lịch sử chăm sóc (kèm phễu bán hàng) · khoá tham gia · tiền đã đóng |
 | FR-18 | Doanh thu (CRM) | ✅ | ✅ | Đa tiền tệ VND/USD/EUR/CAD, **tỷ giá chụp lúc đăng ký**; giá gốc snapshot, % tính động. Đăng ký = **cam kết**, sổ thu nhiều đợt riêng |
-| FR-19 | Khoá học (CRM) | ✅ | ✅ | Danh mục sản phẩm. Khác `LOP_HOC` (lần mở cụ thể). Đã bán thì ngừng bán, không xoá |
+| FR-19 | Khoá học (CRM) | ✅ | ✅ | Danh mục khoá bán ra. Khác `LOP_HOC` (lần mở cụ thể). Đã bán thì ngừng bán, không xoá |
+| FR-20 | Sản phẩm khác (CRM) | ✅ | ✅ | Sách, học cụ; có **số lượng**. Đơn hàng dùng **2 FK nullable loại trừ** + `CHECK`. Mua hàng từ tab chăm sóc ghi **cả đơn + lịch sử** trong một transaction |
 
 Ngoài bảng: **Bài kiểm tra** (`BAI_KIEM_TRA`, `BAI_LAM`) đã có schema và cách ly tenant, nhưng
 **chưa có API và UI** — xem nợ N1.
@@ -112,6 +113,7 @@ VPS → domain + HTTPS → backup. Xem
 | N10 | Nhắc nợ học phí / thông báo lịch học qua email (`IEmailSender` đã có, chưa nối) | Thấp |
 | N11 | Endpoint dọn tenant test + `globalTeardown` cho E2E — **DB dev đã có 20 tenant rác** (mỗi lần chạy E2E thêm ~6) | Trung bình |
 | N13 | **Chưa dọn nhật ký cũ** — bảng `NHAT_KY_HE_THONG` tăng vô hạn, cần chính sách lưu giữ trước khi chạy production lâu dài | Trung bình |
+| N17 | Đổi tên bảng `DANG_KY_KHOA_HOC` → `DON_HANG` (nay chứa cả sản phẩm) và **tồn kho sản phẩm** — hiện bán không giới hạn | Thấp |
 | N16 | **4 test E2E lạc hậu**: `quan-tri.spec.ts` tìm `button[title="Sửa"]` nhưng nút thao tác đã chuyển vào `MenuThaoTac` (07/09), và `dang-nhap-tra-ma.spec.ts` còn dùng từ ngữ "mã đội". Không phải lỗi mới — chưa cập nhật khi đổi UI | Trung bình |
 | N15 | **E2E phải tắt rate limit mới chạy được** (`GIOI_HAN_TAN_SUAT=false`) vì mỗi test tự tạo tenant qua endpoint có hạn mức 10 req/phút. Cách đúng hơn: fixture dùng CHUNG một tenant, hoặc endpoint tạo tenant riêng cho test | Trung bình |
 | N14 | Màn Học viên (LMS) và Nhân sự (HRM) cho đọc danh sách **toàn trung tâm**, chưa giới hạn "học viên lớp mình" — cần mở rộng `IPhamViLopHoc` cho hồ sơ con người | Trung bình |

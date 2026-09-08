@@ -56,6 +56,23 @@ public class KhoaHocConfig : IEntityTypeConfiguration<KhoaHoc>
     }
 }
 
+public class SanPhamConfig : IEntityTypeConfiguration<SanPham>
+{
+    public void Configure(EntityTypeBuilder<SanPham> b)
+    {
+        b.ToTable("SAN_PHAM", t => t.HasCheckConstraint(
+            "ck_san_pham_gia_khong_am", "gia_tien >= 0"));
+
+        b.Property(x => x.Ten).HasMaxLength(200).IsRequired();
+        b.Property(x => x.GhiChu).HasMaxLength(1000);
+        b.Property(x => x.DonViTinh).HasMaxLength(50);
+        b.Property(x => x.GiaTien).HasPrecision(18, 2);
+
+        b.HasIndex(x => x.TenantId);
+        b.HasIndex(x => new { x.TenantId, x.Ten }).IsUnique();
+    }
+}
+
 public class DangKyKhoaHocConfig : IEntityTypeConfiguration<DangKyKhoaHoc>
 {
     public void Configure(EntityTypeBuilder<DangKyKhoaHoc> b)
@@ -66,6 +83,15 @@ public class DangKyKhoaHocConfig : IEntityTypeConfiguration<DangKyKhoaHoc>
             t.HasCheckConstraint("ck_dang_ky_gia_goc_khong_am", "gia_goc >= 0");
             // Tỷ giá 0 làm doanh thu quy đổi thành 0 một cách âm thầm; số âm thì vô nghĩa.
             t.HasCheckConstraint("ck_dang_ky_ty_gia_duong", "ty_gia_ve_vnd > 0");
+            t.HasCheckConstraint("ck_dang_ky_so_luong_duong", "so_luong > 0");
+
+            // ĐÚNG MỘT trong hai khoá ngoại có giá trị. Ràng buộc ở tầng DB chứ không chỉ
+            // validate ở handler: một dòng có cả hai (hoặc không có cái nào) là dữ liệu vô
+            // nghĩa mà mọi báo cáo phải tự đoán cách xử lý. Cùng khuôn `TEP_DINH_KEM`.
+            t.HasCheckConstraint(
+                "ck_dang_ky_dung_mot_loai",
+                "(khoa_hoc_id IS NOT NULL AND san_pham_id IS NULL) OR "
+                + "(khoa_hoc_id IS NULL AND san_pham_id IS NOT NULL)");
         });
 
         b.Property(x => x.GiaGoc).HasPrecision(18, 2);
@@ -88,6 +114,8 @@ public class DangKyKhoaHocConfig : IEntityTypeConfiguration<DangKyKhoaHoc>
             .HasForeignKey(x => x.KhachHangId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne(x => x.KhoaHoc).WithMany(x => x.DangKys)
             .HasForeignKey(x => x.KhoaHocId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.SanPham).WithMany(x => x.DonHangs)
+            .HasForeignKey(x => x.SanPhamId).OnDelete(DeleteBehavior.Restrict);
     }
 }
 

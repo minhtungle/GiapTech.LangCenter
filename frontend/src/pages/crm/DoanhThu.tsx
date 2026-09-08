@@ -296,7 +296,7 @@ export default function DoanhThu() {
                 <thead>
                   <tr>
                     <Th>{t('doanhThu.khachHang')}</Th>
-                    <Th>{t('doanhThu.khoaHoc')}</Th>
+                    <Th>{t('doanhThu.matHang')}</Th>
                     <Th className="text-right">{t('doanhThu.giaGoc')}</Th>
                     <Th className="text-right">{t('doanhThu.soTien')}</Th>
                     <Th className="text-right">{t('doanhThu.phanTram')}</Th>
@@ -327,9 +327,18 @@ export default function DoanhThu() {
                         </div>
                       </Td>
                       <Td>
-                        <div>{d.tenKhoaHoc}</div>
+                        <div className="flex items-center gap-1.5">
+                          <span>{d.tenMatHang}</span>
+                          {/* Nhãn loại: bảng trộn khoá học và sản phẩm nên phải phân biệt được
+                              ngay, không bắt người đọc suy từ cột "số buổi" có trống hay không. */}
+                          <Badge variant={d.loai === 'KhoaHoc' ? 'accent' : 'muted'}>
+                            {t(`loaiDonHang.${d.loai}`)}
+                          </Badge>
+                        </div>
                         <div className="text-xs text-muted-foreground">
-                          {t('khoaHoc.soBuoiNgan', { so: d.soBuoi })}
+                          {d.soBuoi !== null
+                            ? t('khoaHoc.soBuoiNgan', { so: d.soBuoi })
+                            : t('doanhThu.soLuongNgan', { so: d.soLuong })}
                         </div>
                       </Td>
                       <Td className="text-right text-muted-foreground">
@@ -375,7 +384,7 @@ export default function DoanhThu() {
                                     tieuDe: t('chung.xacNhanXoa'),
                                     thongDiep: t('doanhThu.hoiXoa', {
                                       ten: d.tenKhachHang,
-                                      khoa: d.tenKhoaHoc,
+                                      khoa: d.tenMatHang,
                                     }),
                                     nhanDongY: t('chung.xoa'),
                                     nguyHiem: true,

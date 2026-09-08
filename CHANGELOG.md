@@ -8,6 +8,40 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — Hai hình thức mua hàng: khoá học và sản phẩm (FR-20) (08/09/2026)
+
+Bảng mới `SAN_PHAM` (32 bảng): sách, học cụ, đồng phục — tên, giá + đơn vị tiền, **đơn vị tính**
+("quyển", "bộ"), có **số lượng** khi bán.
+
+- **Bảng riêng, không gộp `KHOA_HOC` kèm cột `loai`**: gộp thì `so_buoi` luôn NULL cho sách,
+  `don_vi_tinh` luôn NULL cho khoá, và mọi query khoá học phải nhớ `WHERE loai = ...` — quên một
+  lần là sách lọt vào danh sách khoá.
+- **Đơn hàng dùng hai FK nullable loại trừ nhau** (`khoa_hoc_id` / `san_pham_id`) + `CHECK` ở
+  tầng DB: đúng một cột khác NULL. Cùng khuôn `TEP_DINH_KEM`. Không dùng hai bảng đơn hàng riêng
+  vì doanh thu sẽ phải `UNION` ở mọi báo cáo.
+- `so_luong`: khoá học **luôn 1** (ép ở handler, không tin client); sản phẩm mua 3 quyển là 1
+  dòng. `gia_goc`/`so_tien` là **tổng của cả dòng**, không phải đơn giá.
+- Doanh thu lọc thêm theo **loại đơn** và theo sản phẩm; cột "Khoá học" đổi thành "Mặt hàng" kèm
+  nhãn phân biệt Khoá học / Sản phẩm.
+
+### Added — Mua hàng ngay từ tab chăm sóc (08/09/2026)
+
+Tab Lịch sử chăm sóc có **hai nút**: *Ghi lần chăm sóc* và *Ghi mua hàng*.
+
+- `POST /khach-hang/{id}/mua-hang` ghi **cả ba** trong **một `SaveChanges`**: đơn hàng · lần thu
+  (nếu tích "đã nhận đủ tiền") · dòng lịch sử chăm sóc. Không để frontend gọi hai API — API thứ
+  hai lỗi sẽ để lại **đơn hàng không có dấu vết chăm sóc**, người bán sau không biết ai chốt đơn.
+- Trạng thái phễu **tự thành Đã mua**; nội dung để trống thì tự ghi `Mua <mặt hàng> × <số lượng>`.
+- **Không gộp dòng doanh thu của cùng một khách** — mỗi lần mua là một sự kiện riêng, có ngày và
+  mức giá riêng. Đã kiểm: một khách mua 3 lần → 3 dòng doanh thu + 3 dòng chăm sóc.
+- Gác bằng `DoanhThu` (không `KhachHang`): người trực tổng đài thấy nút *Ghi lần chăm sóc* mà
+  không thấy nút *Ghi mua hàng*.
+
+Migration `ThemSanPhamVaDonHangHaiLoai` — **sửa tay `defaultValue` của `so_luong` từ 0 → 1**:
+EF sinh 0, mà `CHECK (so_luong > 0)` sẽ **làm migration thất bại** trên mọi dòng đang có. Kiểm
+bằng cách áp lên DB thật có 3 đơn hàng; `AlterColumn` là **nới** (`khoa_hoc_id` NOT NULL →
+nullable), không làm mất dữ liệu.
+
 ### Changed — Khung thả xuống của select định vị `fixed`, tự mở lên trên khi thiếu chỗ (08/09/2026)
 
 - `SelectTimKiem` và `SelectTimKiemNhieu` đổi từ `position: absolute` sang **`fixed` + toạ độ

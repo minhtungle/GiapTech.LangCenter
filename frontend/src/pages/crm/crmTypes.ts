@@ -21,6 +21,22 @@ export interface KhachHangDto {
   tongMuaVnd: number
 }
 
+export type LoaiDonHang = 'KhoaHoc' | 'SanPham'
+
+export interface SanPhamDto {
+  id: string
+  ten: string
+  ghiChu: string | null
+  giaTien: number
+  donViTien: DonViTien
+  /** "quyển", "bộ"… chỉ để đọc, không tính toán. */
+  donViTinh: string | null
+  dangBan: boolean
+  /** > 0 = không xoá được, chỉ ngừng bán. */
+  soDonHang: number
+  tongSoLuongBan: number
+}
+
 export interface KhoaHocDto {
   id: string
   ten: string
@@ -39,9 +55,15 @@ export interface DangKyDto {
   tenKhachHang: string
   soDienThoai: string | null
   linkFacebook: string | null
-  khoaHocId: string
-  tenKhoaHoc: string
-  soBuoi: number
+  khoaHocId: string | null
+  /** Loại đơn: mua khoá học hay mua sản phẩm. */
+  loai: LoaiDonHang
+  /** Tên thứ đã mua — khoá học hoặc sản phẩm, tuỳ `loai`. */
+  tenMatHang: string
+  /** Số buổi — chỉ khoá học, null với sản phẩm. */
+  soBuoi: number | null
+  /** Số lượng: khoá học luôn 1, sản phẩm có thể nhiều. */
+  soLuong: number
   giaGoc: number
   soTien: number
   donViTien: DonViTien
@@ -129,9 +151,10 @@ export interface LanThuDto {
 
 export interface DangKyKemThuDto {
   id: string
-  khoaHocId: string
-  tenKhoaHoc: string
-  soBuoi: number
+  loai: LoaiDonHang
+  tenMatHang: string
+  soBuoi: number | null
+  soLuong: number
   giaGoc: number
   /** Số khách CAM KẾT trả. */
   soTien: number

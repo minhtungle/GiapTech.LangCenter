@@ -46,6 +46,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant
     // CRM (FR-17 → FR-19)
     public DbSet<KhachHang> KhachHangs => Set<KhachHang>();
     public DbSet<KhoaHoc> KhoaHocs => Set<KhoaHoc>();
+    public DbSet<SanPham> SanPhams => Set<SanPham>();
     public DbSet<DangKyKhoaHoc> DangKyKhoaHocs => Set<DangKyKhoaHoc>();
     public DbSet<LichSuChamSoc> LichSuChamSocs => Set<LichSuChamSoc>();
     public DbSet<ThuTienDangKy> ThuTienDangKys => Set<ThuTienDangKy>();

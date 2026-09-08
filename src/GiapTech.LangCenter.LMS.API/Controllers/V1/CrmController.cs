@@ -82,6 +82,18 @@ public class KhachHangController(ISender sender) : ControllerBase
     }
 
     /// <summary>
+    /// Khách MUA HÀNG từ màn chăm sóc — ghi đơn hàng **và** một dòng lịch sử chăm sóc trong
+    /// CÙNG một transaction (xem `MuaHangHandler`).
+    ///
+    /// Gác bằng `DoanhThu` chứ không `KhachHang`: đây là ghi dữ liệu tiền.
+    /// </summary>
+    [HttpPost("{id:guid}/mua-hang")]
+    [RequirePermission(ChucNang.DoanhThu, HanhDong.Them)]
+    public async Task<ActionResult<Guid>> MuaHang(
+        Guid id, [FromBody] MuaHangCommand command, CancellationToken ct)
+        => Ok(await sender.Send(command with { KhachHangId = id }, ct));
+
+    /// <summary>
     /// Tab Khoá học tham gia + Số tiền đã đóng — cùng một nguồn dữ liệu, hai góc nhìn.
     ///
     /// Gác bằng `DoanhThu` chứ không `KhachHang`: đây là **số tiền**. Người trực tổng đài xem
@@ -132,6 +144,44 @@ public class KhoaHocController(ISender sender) : ControllerBase
     }
 }
 
+/// <summary>FR-20 — danh mục sản phẩm bán kèm: sách, học cụ (CRM).</summary>
+[ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/san-pham")]
+public class SanPhamController(ISender sender) : ControllerBase
+{
+    [HttpGet]
+    [RequirePermission(ChucNang.SanPham, HanhDong.Xem)]
+    public async Task<ActionResult<KetQuaTrang<SanPhamDto>>> DanhSach(
+        [FromQuery] string? timKiem,
+        [FromQuery] bool? dangBan,
+        [FromQuery] int trang = 1,
+        [FromQuery] int soDong = 20,
+        CancellationToken ct = default)
+        => Ok(await sender.Send(new LayDanhSachSanPhamQuery(
+            timKiem, dangBan, new ThamSoTrang(trang, soDong)), ct));
+
+    [HttpPost]
+    [RequirePermission(ChucNang.SanPham, HanhDong.Them)]
+    public async Task<ActionResult<Guid>> Tao(
+        [FromBody] LuuSanPhamCommand command, CancellationToken ct)
+        => Ok(await sender.Send(command with { Id = null }, ct));
+
+    [HttpPut("{id:guid}")]
+    [RequirePermission(ChucNang.SanPham, HanhDong.Sua)]
+    public async Task<ActionResult<Guid>> CapNhat(
+        Guid id, [FromBody] LuuSanPhamCommand command, CancellationToken ct)
+        => Ok(await sender.Send(command with { Id = id }, ct));
+
+    [HttpDelete("{id:guid}")]
+    [RequirePermission(ChucNang.SanPham, HanhDong.Xoa)]
+    public async Task<IActionResult> Xoa(Guid id, CancellationToken ct)
+    {
+        await sender.Send(new XoaSanPhamCommand(id), ct);
+        return NoContent();
+    }
+}
+
 /// <summary>
 /// FR-18 — doanh thu: đăng ký khoá học (CRM).
 ///
@@ -151,12 +201,14 @@ public class DoanhThuController(ISender sender) : ControllerBase
         [FromQuery] Guid? khoaHocId,
         [FromQuery] DateTimeOffset? tuNgay,
         [FromQuery] DateTimeOffset? denNgay,
+        [FromQuery] Guid? sanPhamId,
+        [FromQuery] LoaiDonHang? loai,
         [FromQuery] int trang = 1,
         [FromQuery] int soDong = 20,
         CancellationToken ct = default)
         => Ok(await sender.Send(new LayDoanhThuQuery(
             timKiem, khachHangId, khoaHocId, tuNgay, denNgay,
-            new ThamSoTrang(trang, soDong)), ct));
+            new ThamSoTrang(trang, soDong), sanPhamId, loai), ct));
 
     /// <summary>
     /// Tổng hợp trên TOÀN BỘ tập đã lọc, không chỉ trang đang xem — endpoint riêng vì cộng
@@ -170,9 +222,11 @@ public class DoanhThuController(ISender sender) : ControllerBase
         [FromQuery] Guid? khoaHocId,
         [FromQuery] DateTimeOffset? tuNgay,
         [FromQuery] DateTimeOffset? denNgay,
+        [FromQuery] Guid? sanPhamId,
+        [FromQuery] LoaiDonHang? loai,
         CancellationToken ct = default)
         => Ok(await sender.Send(new LayTongHopDoanhThuQuery(
-            timKiem, khachHangId, khoaHocId, tuNgay, denNgay), ct));
+            timKiem, khachHangId, khoaHocId, tuNgay, denNgay, sanPhamId, loai), ct));
 
     [HttpPost]
     [RequirePermission(ChucNang.DoanhThu, HanhDong.Them)]

@@ -15,9 +15,14 @@ public record DangKyDto(
     string TenKhachHang,
     string? SoDienThoai,
     string? LinkFacebook,
-    Guid KhoaHocId,
-    string TenKhoaHoc,
-    int SoBuoi,
+    /// <summary>Loại đơn: mua khoá học hay mua sản phẩm.</summary>
+    LoaiDonHang Loai,
+    /// <summary>Tên thứ đã mua — khoá học hoặc sản phẩm, tuỳ `Loai`.</summary>
+    string TenMatHang,
+    /// <summary>Số buổi (chỉ khoá học) — null với sản phẩm.</summary>
+    int? SoBuoi,
+    /// <summary>Số lượng: khoá học luôn 1, sản phẩm có thể nhiều.</summary>
+    int SoLuong,
     decimal GiaGoc,
     decimal SoTien,
     DonViTien DonViTien,
@@ -49,7 +54,10 @@ public record LayDoanhThuQuery(
     Guid? KhoaHocId = null,
     DateTimeOffset? TuNgay = null,
     DateTimeOffset? DenNgay = null,
-    ThamSoTrang? Trang = null) : IRequest<KetQuaTrang<DangKyDto>>;
+    ThamSoTrang? Trang = null,
+    Guid? SanPhamId = null,
+    /// <summary>null = cả hai loại; dùng để xem riêng doanh thu khoá học hoặc bán sản phẩm.</summary>
+    LoaiDonHang? Loai = null) : IRequest<KetQuaTrang<DangKyDto>>;
 
 public class LayDoanhThuHandler(IAppDbContext db)
     : IRequestHandler<LayDoanhThuQuery, KetQuaTrang<DangKyDto>>
@@ -70,7 +78,12 @@ public class LayDoanhThuHandler(IAppDbContext db)
                 d.Id,
                 d.KhachHangId, d.KhachHang.HoTen, d.KhachHang.SoDienThoai,
                 d.KhachHang.LinkFacebook,
-                d.KhoaHocId, d.KhoaHoc.Ten, d.KhoaHoc.SoBuoi,
+                d.KhoaHocId != null ? LoaiDonHang.KhoaHoc : LoaiDonHang.SanPham,
+                // Tên lấy từ bên nào có giá trị. `??` chứ không `!`: đơn cũ đã có `CHECK` bảo
+                // đảm đúng một bên khác null, nhưng để chuỗi rỗng vẫn an toàn hơn là nổ.
+                d.KhoaHoc != null ? d.KhoaHoc.Ten : (d.SanPham != null ? d.SanPham.Ten : ""),
+                d.KhoaHoc != null ? d.KhoaHoc.SoBuoi : (int?)null,
+                d.SoLuong,
                 d.GiaGoc, d.SoTien, d.DonViTien, d.TyGiaVeVnd,
                 d.SoTien * d.TyGiaVeVnd,
                 d.GiaGoc == 0 ? null : d.SoTien / d.GiaGoc * 100m,
@@ -92,7 +105,9 @@ public record LayTongHopDoanhThuQuery(
     Guid? KhachHangId = null,
     Guid? KhoaHocId = null,
     DateTimeOffset? TuNgay = null,
-    DateTimeOffset? DenNgay = null) : IRequest<TongHopDoanhThuDto>;
+    DateTimeOffset? DenNgay = null,
+    Guid? SanPhamId = null,
+    LoaiDonHang? Loai = null) : IRequest<TongHopDoanhThuDto>;
 
 public class LayTongHopDoanhThuHandler(IAppDbContext db)
     : IRequestHandler<LayTongHopDoanhThuQuery, TongHopDoanhThuDto>
@@ -102,7 +117,7 @@ public class LayTongHopDoanhThuHandler(IAppDbContext db)
     {
         var q = DoanhThuChung.Loc(db, new LayDoanhThuQuery(
             request.TimKiem, request.KhachHangId, request.KhoaHocId,
-            request.TuNgay, request.DenNgay));
+            request.TuNgay, request.DenNgay, null, request.SanPhamId, request.Loai));
 
         var theoDonVi = await q
             .GroupBy(d => d.DonViTien)
@@ -131,14 +146,22 @@ internal static class DoanhThuChung
         if (!string.IsNullOrWhiteSpace(r.TimKiem))
         {
             var tu = r.TimKiem.Trim().ToLower();
+            // Tìm cả tên KHOÁ và tên SẢN PHẨM: gõ "sách" phải ra đơn bán sách.
             q = q.Where(d => d.KhachHang.HoTen.ToLower().Contains(tu)
-                             || d.KhoaHoc.Ten.ToLower().Contains(tu)
+                             || (d.KhoaHoc != null && d.KhoaHoc.Ten.ToLower().Contains(tu))
+                             || (d.SanPham != null && d.SanPham.Ten.ToLower().Contains(tu))
                              || (d.KhachHang.SoDienThoai != null
                                  && d.KhachHang.SoDienThoai.Contains(tu)));
         }
 
         if (r.KhachHangId is { } kh) q = q.Where(d => d.KhachHangId == kh);
         if (r.KhoaHocId is { } khoa) q = q.Where(d => d.KhoaHocId == khoa);
+        if (r.SanPhamId is { } sp) q = q.Where(d => d.SanPhamId == sp);
+        // Lọc theo LOẠI đơn: xem riêng doanh thu khoá học hay doanh thu bán sản phẩm.
+        if (r.Loai is { } loai)
+            q = loai == LoaiDonHang.KhoaHoc
+                ? q.Where(d => d.KhoaHocId != null)
+                : q.Where(d => d.SanPhamId != null);
         if (r.TuNgay is { } tuN) q = q.Where(d => d.NgayDangKy >= tuN);
         // `<=` chứ không `<`: người dùng chọn "đến 30/09" là có ý bao gồm ngày 30.
         if (r.DenNgay is { } denN) q = q.Where(d => d.NgayDangKy <= denN);
@@ -152,20 +175,32 @@ internal static class DoanhThuChung
 public record LuuDangKyCommand(
     Guid? Id,
     Guid KhachHangId,
-    Guid KhoaHocId,
+    /// <summary>Mua khoá học — để null nếu mua sản phẩm. ĐÚNG MỘT trong hai phải có giá trị.</summary>
+    Guid? KhoaHocId,
     decimal SoTien,
     DonViTien DonViTien,
     decimal TyGiaVeVnd,
     DateTimeOffset NgayDangKy,
     PhuongThucThanhToan PhuongThuc = PhuongThucThanhToan.ChuyenKhoan,
-    string? GhiChu = null) : IRequest<Guid>;
+    string? GhiChu = null,
+    /// <summary>Mua sản phẩm — để null nếu mua khoá học.</summary>
+    Guid? SanPhamId = null,
+    /// <summary>Số lượng; khoá học luôn 1.</summary>
+    int SoLuong = 1) : IRequest<Guid>;
 
 public class LuuDangKyValidator : AbstractValidator<LuuDangKyCommand>
 {
     public LuuDangKyValidator()
     {
         RuleFor(x => x.KhachHangId).NotEmpty();
-        RuleFor(x => x.KhoaHocId).NotEmpty();
+        RuleFor(x => x.SoLuong).GreaterThan(0);
+
+        // ĐÚNG MỘT loại mặt hàng. Không có cái nào = đơn rỗng; có cả hai = báo cáo không biết
+        // tính vào đâu. `CHECK` ở tầng DB là chốt cuối, đây là chỗ trả mã lỗi đọc được.
+        RuleFor(x => x)
+            .Must(x => (x.KhoaHocId is null) != (x.SanPhamId is null))
+            .WithErrorCode("PHAI_CHON_DUNG_MOT_MAT_HANG")
+            .OverridePropertyName(nameof(LuuDangKyCommand.KhoaHocId));
         RuleFor(x => x.SoTien).GreaterThanOrEqualTo(0).WithErrorCode("SO_TIEN_KHONG_HOP_LE");
         // Tỷ giá 0 làm doanh thu quy đổi thành 0 một cách âm thầm — tệ hơn báo lỗi.
         RuleFor(x => x.TyGiaVeVnd).GreaterThan(0).WithErrorCode("TY_GIA_KHONG_HOP_LE");
@@ -186,8 +221,23 @@ public class LuuDangKyHandler(IAppDbContext db) : IRequestHandler<LuuDangKyComma
         // tenant khác sẽ lọt qua filter thành "không tìm thấy" và nổ ở FK nếu không kiểm.
         var khach = await db.KhachHangs.FirstOrDefaultAsync(k => k.Id == request.KhachHangId, ct)
                     ?? throw new AppException("KHACH_HANG_KHONG_HOP_LE");
-        var khoa = await db.KhoaHocs.FirstOrDefaultAsync(k => k.Id == request.KhoaHocId, ct)
-                   ?? throw new AppException("KHOA_HOC_KHONG_HOP_LE");
+
+        // Giá niêm yết + đơn vị tiền lấy từ mặt hàng tương ứng.
+        decimal giaNiemYet;
+        if (request.KhoaHocId is { } khoaId)
+        {
+            var khoa = await db.KhoaHocs.FirstOrDefaultAsync(k => k.Id == khoaId, ct)
+                       ?? throw new AppException("KHOA_HOC_KHONG_HOP_LE");
+            giaNiemYet = khoa.GiaTien;
+        }
+        else
+        {
+            var sp = await db.SanPhams.FirstOrDefaultAsync(x => x.Id == request.SanPhamId, ct)
+                     ?? throw new AppException("SAN_PHAM_KHONG_HOP_LE");
+            // Giá gốc của cả DÒNG = đơn giá × số lượng, để mọi phép cộng doanh thu không phải
+            // nhân thêm, và người bán sửa được tổng khi giảm giá theo lô.
+            giaNiemYet = sp.GiaTien * request.SoLuong;
+        }
 
         Domain.Entities.DangKyKhoaHoc dk;
         if (request.Id is { } id)
@@ -200,14 +250,16 @@ public class LuuDangKyHandler(IAppDbContext db) : IRequestHandler<LuuDangKyComma
             dk = new Domain.Entities.DangKyKhoaHoc
             {
                 // CHỤP giá niêm yết, chỉ khi TẠO MỚI. Sửa đơn cũ không được lấy giá hôm nay —
-                // trung tâm tăng giá khoá thì % giảm giá của đơn tháng trước sẽ sai.
-                GiaGoc = khoa.GiaTien
+                // trung tâm tăng giá thì % giảm giá của đơn tháng trước sẽ sai.
+                GiaGoc = giaNiemYet
             };
             db.DangKyKhoaHocs.Add(dk);
         }
 
         dk.KhachHangId = khach.Id;
-        dk.KhoaHocId = khoa.Id;
+        dk.KhoaHocId = request.KhoaHocId;
+        dk.SanPhamId = request.SanPhamId;
+        dk.SoLuong = request.KhoaHocId is not null ? 1 : request.SoLuong;
         dk.SoTien = request.SoTien;
         dk.DonViTien = request.DonViTien;
         // VND thì tỷ giá luôn là 1 — không để người dùng nhập sai thành 25000 rồi doanh thu

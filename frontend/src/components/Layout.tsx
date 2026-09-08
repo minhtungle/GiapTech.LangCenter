@@ -4,7 +4,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   Users, ShieldCheck, Settings, LogOut, Home, GraduationCap, BookOpen, Wallet,
   PanelLeftClose, PanelLeft, Menu, X, ScrollText, Briefcase, UserCog, TrendingUp,
-  LayoutGrid, Check, KeyRound, Contact, PackageOpen,
+  LayoutGrid, Check, KeyRound, Contact, PackageOpen, BookMarked,
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useQuyen } from '@/lib/quyen'
@@ -128,6 +128,7 @@ export default function Layout() {
         { to: '/crm/khach-hang', nhan: t('menu.khachHangDs'), icon: Contact, can: 'KhachHang' },
         { to: '/crm/doanh-thu', nhan: t('menu.doanhThu'), icon: TrendingUp, can: 'DoanhThu' },
         { to: '/crm/khoa-hoc', nhan: t('menu.khoaHoc'), icon: PackageOpen, can: 'KhoaHoc' },
+        { to: '/crm/san-pham', nhan: t('menu.sanPham'), icon: BookMarked, can: 'SanPham' },
       ],
     },
 

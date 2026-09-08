@@ -124,17 +124,68 @@ public class KhoaHoc : TenantEntity
 }
 
 /// <summary>
-/// DANG_KY_KHOA_HOC — một khách mua một khoá ở một mức giá (FR-18). Nguồn của doanh thu.
+/// SAN_PHAM — vật phẩm bán kèm: sách, học cụ, đồng phục… (FR-20).
 ///
-/// Một khách đăng ký nhiều khoá → nhiều dòng.
+/// Bảng RIÊNG chứ không gộp vào <see cref="KhoaHoc"/> kèm cột `loai`: gộp thì `so_buoi` luôn
+/// NULL cho sách, và mọi query khoá học phải nhớ `WHERE loai = ...` — quên một lần là sách lọt
+/// vào danh sách khoá. Cùng lý do `LOP_HOC_HOC_VIEN` và `LOP_HOC_TRO_GIANG` là hai bảng.
+/// </summary>
+public class SanPham : TenantEntity
+{
+    public string Ten { get; set; } = null!;
+
+    public string? GhiChu { get; set; }
+
+    /// <summary>Giá niêm yết cho MỘT đơn vị. Đơn hàng chụp lại giá này.</summary>
+    public decimal GiaTien { get; set; }
+
+    public DonViTien DonViTien { get; set; } = DonViTien.VND;
+
+    /// <summary>Đơn vị tính hiển thị: "quyển", "bộ", "cái"… Chỉ để đọc, không tính toán.</summary>
+    public string? DonViTinh { get; set; }
+
+    public bool DangBan { get; set; } = true;
+
+    public ICollection<DangKyKhoaHoc> DonHangs { get; set; } = [];
+}
+
+/// <summary>
+/// DANG_KY_KHOA_HOC — một **đơn hàng**: khách mua một khoá học HOẶC một sản phẩm (FR-18/FR-20).
+///
+/// Tên bảng giữ nguyên dù nay chứa cả sản phẩm: đổi tên bảng đang có dữ liệu là việc rủi ro
+/// (EF dễ sinh drop-and-recreate), mà lợi ích chỉ là cái tên đẹp hơn. Đọc `DangKyKhoaHoc` theo
+/// nghĩa "đơn hàng" — ghi vào nợ kỹ thuật để đổi tên khi nào có dịp migration lớn.
+///
+/// **Hai FK nullable loại trừ nhau** (`KhoaHocId` / `SanPhamId`), ràng buộc bằng `CHECK` ở tầng
+/// DB chứ không chỉ validate ở handler — cùng khuôn `TEP_DINH_KEM` đã dùng cho 5 loại đính kèm.
+///
+/// Một khách mua nhiều thứ → nhiều dòng. **Không gộp** dòng của cùng một khách: mỗi lần mua là
+/// một sự kiện doanh thu riêng, có ngày và mức giá riêng.
 /// </summary>
 public class DangKyKhoaHoc : TenantEntity
 {
     public Guid KhachHangId { get; set; }
     public KhachHang KhachHang { get; set; } = null!;
 
-    public Guid KhoaHocId { get; set; }
-    public KhoaHoc KhoaHoc { get; set; } = null!;
+    /// <summary>Mua KHOÁ HỌC — null nếu đơn này mua sản phẩm.</summary>
+    public Guid? KhoaHocId { get; set; }
+    public KhoaHoc? KhoaHoc { get; set; }
+
+    /// <summary>Mua SẢN PHẨM — null nếu đơn này mua khoá học.</summary>
+    public Guid? SanPhamId { get; set; }
+    public SanPham? SanPham { get; set; }
+
+    /// <summary>
+    /// Số lượng. Khoá học luôn là 1 (không ai mua 2 suất cùng khoá trong một đơn); sản phẩm thì
+    /// mua 3 quyển sách là 1 dòng `SoLuong = 3`.
+    ///
+    /// `GiaGoc` và `SoTien` là **tổng của cả dòng**, không phải đơn giá — nhờ vậy mọi phép cộng
+    /// doanh thu không phải nhân thêm, và người bán sửa được tổng khi có giảm giá theo lô.
+    /// </summary>
+    public int SoLuong { get; set; } = 1;
+
+    /// <summary>Loại đơn — suy từ FK nào có giá trị, không lưu cột để không có gì phải đồng bộ.</summary>
+    public LoaiDonHang Loai => KhoaHocId is not null ? LoaiDonHang.KhoaHoc : LoaiDonHang.SanPham;
 
     /// <summary>
     /// Giá niêm yết của khoá **lúc đăng ký** — snapshot, không đọc động từ `KHOA_HOC`.

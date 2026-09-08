@@ -85,6 +85,14 @@ public static class ChucNang
     /// </summary>
     public const string KhoaHoc = nameof(KhoaHoc);
 
+    /// <summary>
+    /// Danh mục sản phẩm bán kèm: sách, học cụ (FR-20).
+    ///
+    /// Tách khỏi <see cref="KhoaHoc"/>: người quản kho sách không nhất thiết được sửa giá khoá
+    /// học, và ngược lại.
+    /// </summary>
+    public const string SanPham = nameof(SanPham);
+
     // ---------- Nghiệp vụ đào tạo ----------
 
     public const string LopHoc = nameof(LopHoc);
@@ -138,7 +146,7 @@ public static class ChucNang
     public static readonly IReadOnlyList<string> TatCa =
     [
         TaiKhoan, PhanQuyen, ThietLapChung, Anh, DoiMatKhauNguoiKhac,
-        NhanVienKinhDoanh, GiaoVienNhanSu, DoanhThu, KhachHang, KhoaHoc,
+        NhanVienKinhDoanh, GiaoVienNhanSu, DoanhThu, KhachHang, KhoaHoc, SanPham,
         LopHoc, BuoiHoc, DiemDanh, BaiTap, BaiNopBaiTap, BaiKiemTra, BaiLamKiemTra,
         TaiLieu, HocPhi, ThongKe, LopHocToanTrungTam, NhatKyHeThong
     ];
@@ -161,6 +169,7 @@ public static class ChucNang
         [DoanhThu] = HeThong.Crm,
         [KhachHang] = HeThong.Crm,
         [KhoaHoc] = HeThong.Crm,
+        [SanPham] = HeThong.Crm,
 
         [LopHoc] = HeThong.Lms,
         [BuoiHoc] = HeThong.Lms,

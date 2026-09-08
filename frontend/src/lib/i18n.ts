@@ -97,6 +97,7 @@ const vi = {
     doanhThu: 'Doanh thu',
     khachHangDs: 'Khách hàng',
     khoaHoc: 'Khoá học',
+    sanPham: 'Sản phẩm',
     lopHoc: 'Lớp học',
     taiLieu: 'Tài liệu',
     hocPhi: 'Học phí',
@@ -651,6 +652,19 @@ const vi = {
     tongDaThu: 'Tổng đã thu',
     conThieu: 'Còn thiếu {{so}}',
     themChamSoc: 'Ghi lần chăm sóc',
+    ghiMuaHang: 'Ghi mua hàng',
+    ghiMuaHangMoTa: 'Ghi đơn hàng và tự thêm một dòng lịch sử chăm sóc',
+    loaiMuaHang: 'Khách mua gì',
+    chonMatHang: 'Chọn mặt hàng…',
+    soLuong: 'Số lượng',
+    ngayMua: 'Ngày mua',
+    noiDungMuaGoiY: 'Để trống thì hệ thống tự ghi "Mua <tên mặt hàng>"',
+    daThuDu: 'Đã nhận đủ tiền',
+    daThuDuGoiY:
+      'Tích ô này thì hệ thống ghi luôn một lần thu đủ số tiền trên. Bỏ tích nếu khách đóng '
+      + 'nhiều đợt — vào tab "Số tiền đã đóng" để ghi từng đợt.',
+    hoiMuaHang:
+      'Ghi đơn hàng này? Hệ thống sẽ thêm một dòng doanh thu và một dòng lịch sử chăm sóc.',
     suaChamSoc: 'Sửa lần chăm sóc',
     chamSocGoiY: 'Mỗi lần liên hệ khách ghi một dòng — mới nhất hiện trước.',
     chuaChamSoc: 'Chưa có lần chăm sóc nào',
@@ -678,6 +692,31 @@ const vi = {
     hoiLuuThu: 'Lưu lần thu tiền này?',
     hoiXoaThu: 'Xoá lần thu {{so}}? Đây là dữ liệu tiền.',
   },
+  loaiDonHang: {
+    KhoaHoc: 'Khoá học',
+    SanPham: 'Sản phẩm',
+  },
+  sanPham: {
+    them: 'Thêm sản phẩm',
+    sua: 'Sửa sản phẩm',
+    tenSp: 'Tên sản phẩm',
+    giaTien: 'Giá tiền',
+    donViTien: 'Đơn vị tiền',
+    donViTinh: 'Đơn vị tính',
+    donViTinhGoiY: 'quyển, bộ, cái…',
+    soDonHang: 'Số đơn',
+    tongSoLuongBan: 'Đã bán',
+    trangThaiBan: 'Trạng thái',
+    dangBan: 'Đang bán',
+    ngungBan: 'Ngừng bán',
+    conBan: 'Còn bán sản phẩm này',
+    ngungBanGoiY:
+      'Sản phẩm đã có đơn hàng thì KHÔNG xoá được — đơn cũ phải giữ được tên sản phẩm đã bán. '
+      + 'Bỏ tích ô trên để ngừng bán mà vẫn giữ lịch sử.',
+    chuaCo: 'Chưa có sản phẩm nào',
+    hoiLuu: 'Lưu sản phẩm? Thông tin hiện tại sẽ bị ghi đè.',
+    hoiXoa: 'Xoá sản phẩm "{{ten}}"? Không khôi phục được.',
+  },
   khoaHoc: {
     them: 'Thêm khoá học',
     sua: 'Sửa khoá học',
@@ -703,6 +742,7 @@ const vi = {
     sua: 'Sửa đăng ký',
     khachHang: 'Khách hàng',
     khoaHoc: 'Khoá học',
+    matHang: 'Mặt hàng',
     chonKhach: 'Chọn khách hàng…',
     chonKhoa: 'Chọn khoá học…',
     giaGoc: 'Giá gốc',
@@ -710,6 +750,7 @@ const vi = {
     phanTram: '% giá gốc',
     tyGia: 'Tỷ giá về VND',
     tyGiaNgan: '×{{ty}}',
+    soLuongNgan: 'SL {{so}}',
     quyDoiVnd: 'Quy đổi VND',
     ngayDangKy: 'Ngày đăng ký',
     tuNgay: 'Từ ngày',
@@ -779,6 +820,12 @@ const vi = {
       'Khoá học này đã có đăng ký, không xoá được. Bỏ tích "Còn bán khoá này" để ngừng bán mà '
       + 'vẫn giữ lịch sử đơn hàng.',
     KHOA_HOC_KHONG_HOP_LE: 'Khoá học không hợp lệ',
+    SAN_PHAM_KHONG_HOP_LE: 'Sản phẩm không hợp lệ',
+    SAN_PHAM_TRUNG_TEN: 'Tên sản phẩm đã tồn tại',
+    SAN_PHAM_DA_CO_DON_HANG:
+      'Sản phẩm này đã có đơn hàng, không xoá được. Bỏ tích "Còn bán sản phẩm này" để ngừng bán '
+      + 'mà vẫn giữ lịch sử đơn.',
+    PHAI_CHON_DUNG_MOT_MAT_HANG: 'Phải chọn đúng một mặt hàng: khoá học hoặc sản phẩm.',
     TY_GIA_KHONG_HOP_LE: 'Tỷ giá phải lớn hơn 0',
     THU_VUOT_CAM_KET:
       'Tổng tiền đã thu vượt số khách cam kết trả. Kiểm lại số tiền — thường là gõ thêm một số 0.',

@@ -164,9 +164,10 @@ public class XoaChamSocHandler(IAppDbContext db) : IRequestHandler<XoaChamSocCom
 /// <summary>Một đăng ký của khách kèm tình hình thu tiền.</summary>
 public record DangKyKemThuDto(
     Guid Id,
-    Guid KhoaHocId,
-    string TenKhoaHoc,
-    int SoBuoi,
+    LoaiDonHang Loai,
+    string TenMatHang,
+    int? SoBuoi,
+    int SoLuong,
     decimal GiaGoc,
     /// <summary>Số khách CAM KẾT trả.</summary>
     decimal SoTien,
@@ -200,7 +201,11 @@ public class LayDangKyCuaKhachHandler(IAppDbContext db)
             .Where(d => d.KhachHangId == request.KhachHangId)
             .OrderByDescending(d => d.NgayDangKy)
             .Select(d => new DangKyKemThuDto(
-                d.Id, d.KhoaHocId, d.KhoaHoc.Ten, d.KhoaHoc.SoBuoi,
+                d.Id,
+                d.KhoaHocId != null ? LoaiDonHang.KhoaHoc : LoaiDonHang.SanPham,
+                d.KhoaHoc != null ? d.KhoaHoc.Ten : (d.SanPham != null ? d.SanPham.Ten : ""),
+                d.KhoaHoc != null ? d.KhoaHoc.SoBuoi : (int?)null,
+                d.SoLuong,
                 d.GiaGoc, d.SoTien, d.DonViTien, d.TyGiaVeVnd,
                 d.GiaGoc == 0 ? null : d.SoTien / d.GiaGoc * 100m,
                 d.NgayDangKy, d.GhiChu,

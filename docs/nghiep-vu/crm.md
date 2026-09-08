@@ -1,4 +1,4 @@
-# Module CRM (FR-17 → FR-19)
+# Module CRM (FR-17 → FR-20)
 
 Bán khoá học: gom dữ liệu khách hàng, bán khoá, tổng hợp doanh thu.
 
@@ -8,10 +8,13 @@ Bán khoá học: gom dữ liệu khách hàng, bán khoá, tổng hợp doanh t
 ## Ba màn, một dòng chảy
 
 ```
-Khách hàng  ──(trả tiền)──▶  Doanh thu  ──(chọn từ)──▶  Khoá học
- FR-17                        FR-18                     FR-19
- TẤT CẢ khách trong hệ thống  khách ĐÃ trả tiền         danh mục sản phẩm
+                                              ┌──▶ Khoá học   FR-19
+Khách hàng  ──(mua hàng)──▶  Doanh thu  ──────┤
+ FR-17                        FR-18           └──▶ Sản phẩm   FR-20
+ TẤT CẢ khách               khách ĐÃ trả tiền      (sách, học cụ)
 ```
+
+**Hai hình thức mua hàng** (chốt 08/09/2026): tham gia khoá học, hoặc mua sản phẩm khác.
 
 - **Màn Khách hàng hiện TẤT CẢ** — kể cả người chưa mua gì. Đây là nơi gom dữ liệu khách.
 - **Màn Doanh thu chỉ hiện khách đã trả tiền.** Không phải một nút "chuyển": khách có đăng ký
@@ -55,6 +58,29 @@ Bấm một khách mở `/crm/khach-hang/:id`:
 | **Lịch sử chăm sóc** | Từng lần liên hệ — xem `LICH_SU_CHAM_SOC` dưới |
 | **Khoá học tham gia** | Các đăng ký của khách này (từ `DANG_KY_KHOA_HOC`) |
 | **Số tiền đã đóng** | Sổ thu theo từng đăng ký + **còn thiếu bao nhiêu** |
+
+### Mua hàng ngay từ tab chăm sóc
+
+Tab Lịch sử chăm sóc có **hai nút**:
+
+| Nút | Ghi gì |
+|---|---|
+| **Ghi lần chăm sóc** | Một dòng `LICH_SU_CHAM_SOC` |
+| **Ghi mua hàng** | Một dòng `DANG_KY_KHOA_HOC` (đơn hàng) **VÀ** một dòng `LICH_SU_CHAM_SOC` |
+
+Hai nút cạnh nhau chứ không phải hộp thoại "bạn muốn làm gì?": người bán biết trước mình đang
+ghi cuộc gọi hay ghi đơn hàng.
+
+**Một lệnh `POST /khach-hang/{id}/mua-hang`, một `SaveChanges`** cho cả đơn hàng, lần thu (nếu
+đã nhận đủ tiền) và dòng chăm sóc. Không để frontend gọi hai API: API thứ hai lỗi (mạng đứt,
+429) sẽ để lại **đơn hàng không có dấu vết chăm sóc** — người bán sau không biết ai chốt đơn này
+và bằng cách nào.
+
+Hệ quả kèm theo: trạng thái phễu tự thành **Đã mua**, người bán không phải nhớ chọn. Nội dung
+chăm sóc để trống thì hệ thống tự ghi `Mua <tên mặt hàng> × <số lượng>`.
+
+**Không gộp dòng doanh thu của cùng một khách** — mỗi lần mua là một sự kiện riêng, có ngày và
+mức giá riêng.
 
 ### Lịch sử chăm sóc (`LICH_SU_CHAM_SOC`)
 
@@ -140,6 +166,43 @@ nhau: bán được bao nhiêu, và đã cầm về bao nhiêu. Màn Doanh thu h
 - Sửa/xoá đăng ký ghi vào [nhật ký](./nhat-ky-he-thong.md) như mọi thao tác khác (FR-16).
 - **Chưa nối với sổ thu học phí LMS** (FR-14) — hai sổ độc lập, chưa đối chiếu. Nợ kỹ thuật.
 
+## FR-20 — Sản phẩm khác
+
+Bảng `SAN_PHAM`: tên, ghi chú, giá + đơn vị tiền, **đơn vị tính** ("quyển", "bộ", "cái").
+
+### Vì sao là bảng RIÊNG, không gộp vào `KHOA_HOC` kèm cột `loai`
+
+Gộp thì `so_buoi` **luôn NULL** cho sách, `don_vi_tinh` luôn NULL cho khoá, và mọi query khoá
+học phải nhớ `WHERE loai = ...` — quên một lần là sách lọt vào danh sách khoá học. Cùng lý do
+`LOP_HOC_HOC_VIEN` và `LOP_HOC_TRO_GIANG` là hai bảng chứ không một bảng có cột `vai_tro`.
+
+### Đơn hàng: hai khoá ngoại nullable loại trừ nhau
+
+`DANG_KY_KHOA_HOC` (tên bảng giữ nguyên — xem dưới) có `khoa_hoc_id` **và** `san_pham_id`, đều
+nullable, ràng buộc **`CHECK` ở tầng DB**: đúng một cột khác NULL. Cùng khuôn `TEP_DINH_KEM` đã
+dùng cho 5 loại đính kèm.
+
+Không dùng hai bảng đơn hàng riêng: doanh thu sẽ phải `UNION` hai bảng ở mọi báo cáo, và tổng
+hợp đa tiền tệ phải viết hai lần.
+
+> **Tên bảng `DANG_KY_KHOA_HOC` nay chứa cả sản phẩm.** Đổi tên bảng đang có dữ liệu là việc
+> rủi ro (EF dễ sinh drop-and-recreate) mà lợi ích chỉ là cái tên đẹp hơn. Đọc nó theo nghĩa
+> "đơn hàng"; ghi nợ để đổi khi có dịp migration lớn.
+
+### `so_luong`
+
+Khoá học **luôn 1** (ép ở handler, không tin client) — không ai mua 2 suất cùng khoá trong một
+đơn. Sản phẩm thì mua 3 quyển sách là 1 dòng `so_luong = 3`.
+
+`gia_goc` và `so_tien` là **tổng của cả dòng**, không phải đơn giá: nhờ vậy mọi phép cộng doanh
+thu không phải nhân thêm, và người bán sửa được tổng khi giảm giá theo lô.
+
+### Quy tắc
+
+- `UNIQUE(tenant_id, ten)` — hai sản phẩm cùng tên thì người bán chọn sai.
+- **Xoá sản phẩm đã bán bị chặn** (`SAN_PHAM_DA_CO_DON_HANG`) — FK Restrict, và đơn cũ phải giữ
+  được tên sản phẩm đã bán. Không dùng nữa thì **ngừng bán**.
+
 ## FR-19 — Khoá học
 
 Bảng `KHOA_HOC`: tên khoá, ghi chú, giá tiền + đơn vị, số buổi.
@@ -176,6 +239,9 @@ Chưa nối `LOP_HOC.khoa_hoc_id` trong đợt này — làm khi cần báo cáo
 | `TY_GIA_KHONG_HOP_LE` | Tỷ giá ≤ 0 |
 | `SO_TIEN_KHONG_HOP_LE` | Số tiền < 0 |
 | `THU_VUOT_CAM_KET` | Tổng thu vượt số cam kết của đăng ký |
+| `PHAI_CHON_DUNG_MOT_MAT_HANG` | Đơn hàng không có mặt hàng, hoặc có cả khoá học lẫn sản phẩm |
+| `SAN_PHAM_TRUNG_TEN` | Tên sản phẩm đã tồn tại |
+| `SAN_PHAM_DA_CO_DON_HANG` | Xoá sản phẩm còn đơn hàng |
 
 ## Chưa làm
 
@@ -183,4 +249,6 @@ Chưa nối `LOP_HOC.khoa_hoc_id` trong đợt này — làm khi cần báo cáo
 - **Nhân viên kinh doanh phụ trách khách** (cột cố định trên `KHACH_HANG`) — cần khi làm hoa
   hồng ở HRM. Nay chỉ biết *ai đã chăm sóc* qua `LICH_SU_CHAM_SOC.nguoi_phu_trach_id`.
 - Tự tra tỷ giá từ API ngoài; ngưỡng cảnh báo số tiền vô lý theo từng đơn vị.
+- **Tồn kho sản phẩm** — hiện bán không giới hạn số lượng.
+- Đổi tên bảng `DANG_KY_KHOA_HOC` → `DON_HANG` (nay chứa cả sản phẩm).
 - Nhắc lịch chăm sóc (hẹn gọi lại) — cần lịch/thông báo.

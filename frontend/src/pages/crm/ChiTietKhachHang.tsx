@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react'
-import { api, layMaLoi } from '@/lib/api'
+import { ArrowLeft, ExternalLink, Pencil, Plus, ShoppingCart, Trash2 } from 'lucide-react'
+import { api, layMaLoi, type KetQuaTrang } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
   TrangTrong,
@@ -14,10 +14,11 @@ import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { useQuyen } from '@/lib/quyen'
 import { useXacNhan } from '@/lib/xacNhan'
 import {
-  CAC_HINH_THUC, CAC_PHUONG_THUC, CAC_TRANG_THAI_KH, mauPhanTram, mauTrangThaiKh,
+  CAC_DON_VI, CAC_HINH_THUC, CAC_PHUONG_THUC, CAC_TRANG_THAI_KH, mauPhanTram, mauTrangThaiKh,
   ngayChoInput, ngayVN, phanTram, tien,
-  type ChiTietKhachHangDto, type DangKyKemThuDto, type HinhThucChamSoc, type LanThuDto,
-  type LichSuChamSocDto, type PhuongThucThanhToan, type TrangThaiKhachHang,
+  type ChiTietKhachHangDto, type DangKyKemThuDto, type DonViTien, type HinhThucChamSoc,
+  type KhoaHocDto, type LanThuDto, type LichSuChamSocDto, type LoaiDonHang,
+  type PhuongThucThanhToan, type SanPhamDto, type TrangThaiKhachHang,
 } from './crmTypes'
 
 /**
@@ -293,6 +294,7 @@ function TabChamSoc({ khachHangId }: { khachHangId: string }) {
   const [hinhThuc, setHinhThuc] = useState<HinhThucChamSoc>('GoiDien')
   const [trangThai, setTrangThai] = useState<TrangThaiKhachHang>('DangTuVan')
   const [maLoi, setMaLoi] = useState<string | null>(null)
+  const [moMuaHang, setMoMuaHang] = useState(false)
 
   const { data: ds = [], isLoading } = useQuery({
     queryKey: ['khach-hang', khachHangId, 'cham-soc'],
@@ -349,20 +351,37 @@ function TabChamSoc({ khachHangId }: { khachHangId: string }) {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{t('chiTietKhach.chamSocGoiY')}</p>
-        {coQuyen('KhachHang', 'Them') && (
-          <Button
-            onClick={() => {
-              setDangSua(null)
-              setHinhThuc('GoiDien')
-              setTrangThai('DangTuVan')
-              setMaLoi(null)
-              setMoForm(true)
-            }}
-          >
-            <Plus className="h-4 w-4" />
-            {t('chiTietKhach.themChamSoc')}
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {coQuyen('KhachHang', 'Them') && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDangSua(null)
+                setHinhThuc('GoiDien')
+                setTrangThai('DangTuVan')
+                setMaLoi(null)
+                setMoForm(true)
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              {t('chiTietKhach.themChamSoc')}
+            </Button>
+          )}
+
+          {/*
+            Hai nút cạnh nhau thay cho một hộp thoại "bạn muốn làm gì?": người bán biết trước
+            mình đang ghi cuộc gọi hay ghi đơn hàng, thêm một bước chọn chỉ là thêm một cú bấm.
+
+            "Ghi mua hàng" gác bằng `DoanhThu` vì nó ghi dữ liệu tiền — người trực tổng đài chỉ
+            có quyền `KhachHang` thấy nút bên trái mà không thấy nút này.
+          */}
+          {coQuyen('DoanhThu', 'Them') && (
+            <Button onClick={() => setMoMuaHang(true)}>
+              <ShoppingCart className="h-4 w-4" />
+              {t('chiTietKhach.ghiMuaHang')}
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card>
@@ -516,8 +535,335 @@ function TabChamSoc({ khachHangId }: { khachHangId: string }) {
         </form>
       </Modal>
 
+      <FormMuaHang
+        mo={moMuaHang}
+        khachHangId={khachHangId}
+        onDong={() => setMoMuaHang(false)}
+        onXong={lamMoi}
+      />
+
       {hop}
     </div>
+  )
+}
+
+/**
+ * Form ghi MUA HÀNG từ tab chăm sóc.
+ *
+ * Gọi `POST /khach-hang/{id}/mua-hang` — một lệnh ghi **cả** đơn hàng **và** dòng lịch sử chăm
+ * sóc trong cùng transaction. Không gọi hai API riêng: API thứ hai lỗi sẽ để lại đơn hàng không
+ * có dấu vết chăm sóc.
+ */
+function FormMuaHang({
+  mo,
+  khachHangId,
+  onDong,
+  onXong,
+}: {
+  mo: boolean
+  khachHangId: string
+  onDong: () => void
+  onXong: () => void
+}) {
+  const { t } = useTranslation()
+  const qc = useQueryClient()
+  const { coQuyen } = useQuyen()
+  const { hoi, hop } = useXacNhan()
+
+  const [loai, setLoai] = useState<LoaiDonHang>('KhoaHoc')
+  const [matHangId, setMatHangId] = useState<string | null>(null)
+  const [soLuong, setSoLuong] = useState('1')
+  const [soTien, setSoTien] = useState('')
+  const [donVi, setDonVi] = useState<DonViTien>('VND')
+  const [tyGia, setTyGia] = useState('1')
+  const [phuongThuc, setPhuongThuc] = useState<PhuongThucThanhToan>('ChuyenKhoan')
+  const [hinhThuc, setHinhThuc] = useState<HinhThucChamSoc>('GapTrucTiep')
+  const [daThuDu, setDaThuDu] = useState(true)
+  const [maLoi, setMaLoi] = useState<string | null>(null)
+
+  const { data: khoas = [] } = useQuery({
+    queryKey: ['khoa-hoc-ngan'],
+    queryFn: async () =>
+      (await api.get<KetQuaTrang<KhoaHocDto>>('/khoa-hoc', { params: { soDong: 200 } }))
+        .data.duLieu,
+    enabled: mo && coQuyen('KhoaHoc'),
+  })
+
+  const { data: sanPhams = [] } = useQuery({
+    queryKey: ['san-pham-ngan'],
+    queryFn: async () =>
+      (await api.get<KetQuaTrang<SanPhamDto>>('/san-pham', { params: { soDong: 200 } }))
+        .data.duLieu,
+    enabled: mo && coQuyen('SanPham'),
+  })
+
+  const dsMatHang = loai === 'KhoaHoc' ? khoas : sanPhams
+  const chon = dsMatHang.find((x) => x.id === matHangId)
+
+  /**
+   * Chọn mặt hàng → điền sẵn giá và đơn vị tiền của nó.
+   *
+   * Sản phẩm nhân theo số lượng; khoá học luôn 1 suất. Người bán sửa được số tiền sau đó
+   * (miễn giảm), nên đây chỉ là giá trị khởi đầu.
+   */
+  useEffect(() => {
+    if (!chon) return
+    const sl = loai === 'SanPham' ? Math.max(1, Number(soLuong) || 1) : 1
+    setSoTien(String(chon.giaTien * sl))
+    setDonVi(chon.donViTien)
+    setTyGia(chon.donViTien === 'VND' ? '1' : '')
+  }, [matHangId, soLuong, loai, chon])
+
+  useEffect(() => {
+    if (donVi === 'VND') setTyGia('1')
+  }, [donVi])
+
+  // Đổi loại mặt hàng thì bỏ lựa chọn cũ — id khoá học không tồn tại trong danh sách sản phẩm.
+  useEffect(() => {
+    setMatHangId(null)
+    setSoLuong('1')
+    setSoTien('')
+  }, [loai])
+
+  const giaGoc = chon ? chon.giaTien * (loai === 'SanPham' ? Number(soLuong) || 1 : 1) : 0
+  const soTienSo = Number(soTien) || 0
+  const ptXemTruoc = giaGoc === 0 ? null : (soTienSo / giaGoc) * 100
+
+  const mua = useMutation({
+    mutationFn: (fd: FormData) =>
+      api.post(`/khach-hang/${khachHangId}/mua-hang`, {
+        khoaHocId: loai === 'KhoaHoc' ? matHangId : null,
+        sanPhamId: loai === 'SanPham' ? matHangId : null,
+        soLuong: loai === 'SanPham' ? Number(soLuong) || 1 : 1,
+        soTien: soTienSo,
+        donViTien: donVi,
+        tyGiaVeVnd: donVi === 'VND' ? 1 : Number(tyGia),
+        ngayMua: `${String(fd.get('ngayMua'))}T00:00:00Z`,
+        phuongThuc,
+        hinhThucChamSoc: hinhThuc,
+        noiDungChamSoc: String(fd.get('noiDung') ?? '').trim() || null,
+        daThuDu,
+      }),
+    onSuccess: () => {
+      // Làm mới cả doanh thu và danh sách khách: đơn mới hiện ở đó ngay.
+      void qc.invalidateQueries({ queryKey: ['khach-hang'] })
+      void qc.invalidateQueries({ queryKey: ['doanh-thu'] })
+      void qc.invalidateQueries({ queryKey: ['doanh-thu-tong-hop'] })
+      void qc.invalidateQueries({ queryKey: ['khoa-hoc'] })
+      void qc.invalidateQueries({ queryKey: ['san-pham'] })
+      onXong()
+      onDong()
+      setMatHangId(null)
+      setSoTien('')
+      setMaLoi(null)
+    },
+    onError: (e) => setMaLoi(layMaLoi(e)),
+  })
+
+  return (
+    <Modal
+      mo={mo}
+      onDong={onDong}
+      chanDoiKhiXuLy={mua.isPending}
+      tieuDe={t('chiTietKhach.ghiMuaHang')}
+      moTa={t('chiTietKhach.ghiMuaHangMoTa')}
+      rong="md"
+    >
+      <form
+        className="grid gap-3"
+        onSubmit={(e) => {
+          e.preventDefault()
+          const fd = new FormData(e.currentTarget)
+          hoi({
+            tieuDe: t('chung.xacNhanLuu'),
+            thongDiep: t('chiTietKhach.hoiMuaHang'),
+            onDongY: () => mua.mutate(fd),
+          })
+        }}
+      >
+        {/* Chọn LOẠI trước: hai danh mục khác nhau hoàn toàn, gộp một ô chọn thì người bán
+            phải lọc bằng mắt giữa khoá học và sách. */}
+        <div>
+          <Label>{t('chiTietKhach.loaiMuaHang')} *</Label>
+          <div className="mt-1 flex gap-1 rounded-lg border border-border p-1">
+            {(['KhoaHoc', 'SanPham'] as LoaiDonHang[]).map((x) => (
+              <button
+                key={x}
+                type="button"
+                onClick={() => setLoai(x)}
+                className={
+                  'flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ' +
+                  (loai === x
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted')
+                }
+              >
+                {t(`loaiDonHang.${x}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="matHang">
+            {t(loai === 'KhoaHoc' ? 'doanhThu.khoaHoc' : 'sanPham.tenSp')} *
+          </Label>
+          <SelectTimKiem
+            id="matHang"
+            luaChon={dsMatHang
+              .filter((x) => x.dangBan)
+              .map((x) => ({ giaTri: x.id, nhan: `${x.ten} · ${tien(x.giaTien, x.donViTien)}` }))}
+            giaTri={matHangId}
+            onDoi={setMatHangId}
+            placeholder={t('chiTietKhach.chonMatHang')}
+          />
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          {/* Số lượng chỉ có nghĩa với sản phẩm — khoá học không ai mua 2 suất trong một đơn. */}
+          {loai === 'SanPham' && (
+            <div>
+              <Label htmlFor="soLuong">{t('chiTietKhach.soLuong')} *</Label>
+              <Input
+                id="soLuong"
+                type="number"
+                min={1}
+                required
+                value={soLuong}
+                onChange={(e) => setSoLuong(e.target.value)}
+              />
+            </div>
+          )}
+          <div>
+            <Label htmlFor="soTienMua">{t('doanhThu.soTien')} *</Label>
+            <Input
+              id="soTienMua"
+              type="number"
+              min={0}
+              step="0.01"
+              required
+              value={soTien}
+              onChange={(e) => setSoTien(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label htmlFor="donViMua">{t('khoaHoc.donViTien')} *</Label>
+            <SelectTimKiem
+              id="donViMua"
+              luaChon={CAC_DON_VI.map((d) => ({ giaTri: d, nhan: t(`donViTien.${d}`) }))}
+              giaTri={donVi}
+              onDoi={(v) => setDonVi((v as DonViTien) ?? 'VND')}
+              choPhepXoa={false}
+            />
+          </div>
+          {donVi !== 'VND' && (
+            <div>
+              <Label htmlFor="tyGiaMua">{t('doanhThu.tyGia')} *</Label>
+              <Input
+                id="tyGiaMua"
+                type="number"
+                min={0}
+                step="0.000001"
+                required
+                value={tyGia}
+                onChange={(e) => setTyGia(e.target.value)}
+              />
+            </div>
+          )}
+        </div>
+
+        {chon && (
+          <div className="flex flex-wrap items-center gap-4 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm">
+            <span className="text-muted-foreground">
+              {t('doanhThu.giaGoc')}: <strong>{tien(giaGoc, donVi)}</strong>
+            </span>
+            <span className="text-muted-foreground">
+              {t('doanhThu.phanTram')}:{' '}
+              <Badge variant={mauPhanTram(ptXemTruoc)}>{phanTram(ptXemTruoc)}</Badge>
+            </span>
+            {donVi !== 'VND' && (
+              <span className="text-muted-foreground">
+                {t('doanhThu.quyDoiVnd')}:{' '}
+                <strong>{tien(soTienSo * (Number(tyGia) || 0))}</strong>
+              </span>
+            )}
+          </div>
+        )}
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div>
+            <Label htmlFor="ngayMua">{t('chiTietKhach.ngayMua')} *</Label>
+            <Input
+              id="ngayMua"
+              name="ngayMua"
+              type="date"
+              required
+              defaultValue={new Date().toISOString().slice(0, 10)}
+            />
+          </div>
+          <div>
+            <Label htmlFor="ptMua">{t('khachHang.phuongThuc')}</Label>
+            <SelectTimKiem
+              id="ptMua"
+              luaChon={CAC_PHUONG_THUC.map((x) => ({
+                giaTri: x,
+                nhan: t(`phuongThucThanhToan.${x}`),
+              }))}
+              giaTri={phuongThuc}
+              onDoi={(v) => setPhuongThuc((v as PhuongThucThanhToan) ?? 'ChuyenKhoan')}
+              choPhepXoa={false}
+            />
+          </div>
+          <div>
+            <Label htmlFor="htMua">{t('chiTietKhach.hinhThuc')}</Label>
+            <SelectTimKiem
+              id="htMua"
+              luaChon={CAC_HINH_THUC.map((x) => ({
+                giaTri: x,
+                nhan: t(`hinhThucChamSoc.${x}`),
+              }))}
+              giaTri={hinhThuc}
+              onDoi={(v) => setHinhThuc((v as HinhThucChamSoc) ?? 'GapTrucTiep')}
+              choPhepXoa={false}
+            />
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="noiDungMua">{t('chiTietKhach.noiDung')}</Label>
+          <Textarea
+            id="noiDungMua"
+            name="noiDung"
+            rows={2}
+            placeholder={t('chiTietKhach.noiDungMuaGoiY')}
+          />
+        </div>
+
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="h-4 w-4 accent-[hsl(var(--primary))]"
+            checked={daThuDu}
+            onChange={(e) => setDaThuDu(e.target.checked)}
+          />
+          {t('chiTietKhach.daThuDu')}
+        </label>
+        <p className="text-xs text-muted-foreground">{t('chiTietKhach.daThuDuGoiY')}</p>
+
+        {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
+
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onDong}>
+            {t('chung.huy')}
+          </Button>
+          <Button type="submit" disabled={mua.isPending || !matHangId}>
+            {t('chung.luu')}
+          </Button>
+        </div>
+      </form>
+
+      {hop}
+    </Modal>
   )
 }
 
@@ -589,9 +935,17 @@ function TabKhoaHoc({ khachHangId, chiTien }: { khachHangId: string; chiTien: bo
           <CardContent className="pt-6">
             <div className="flex flex-wrap items-center gap-3">
               <div className="min-w-0">
-                <p className="font-semibold">{d.tenKhoaHoc}</p>
+                <p className="flex items-center gap-1.5 font-semibold">
+                  {d.tenMatHang}
+                  <Badge variant={d.loai === 'KhoaHoc' ? 'accent' : 'muted'}>
+                    {t(`loaiDonHang.${d.loai}`)}
+                  </Badge>
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  {t('khoaHoc.soBuoiNgan', { so: d.soBuoi })} · {ngayVN(d.ngayDangKy)}
+                  {d.soBuoi !== null
+                    ? t('khoaHoc.soBuoiNgan', { so: d.soBuoi })
+                    : t('doanhThu.soLuongNgan', { so: d.soLuong })}{' '}
+                  · {ngayVN(d.ngayDangKy)}
                 </p>
               </div>
 
@@ -724,7 +1078,7 @@ function TabKhoaHoc({ khachHangId, chiTien }: { khachHangId: string; chiTien: bo
         }}
         chanDoiKhiXuLy={luuThu.isPending}
         tieuDe={dangSuaThu ? t('chiTietKhach.suaThu') : t('chiTietKhach.ghiThu')}
-        moTa={thuCho?.tenKhoaHoc}
+        moTa={thuCho?.tenMatHang}
         rong="sm"
       >
         {thuCho && (

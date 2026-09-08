@@ -323,6 +323,205 @@ public class CrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(JsonValueKind.Null, d.GetProperty("phanTramTrenGiaGoc").ValueKind);
     }
 
+    // ---------- FR-20 Sản phẩm + mua hàng ----------
+
+    private static async Task<Guid> TaoSanPham(
+        HttpClient c, string ten, decimal gia, string donVi = "VND")
+    {
+        var res = await c.PostAsJsonAsync("/api/v1/san-pham", new
+        {
+            Ten = ten, GhiChu = "test", GiaTien = gia, DonViTien = donVi, DonViTinh = "quyển"
+        });
+        res.EnsureSuccessStatusCode();
+        return await res.Content.ReadFromJsonAsync<Guid>();
+    }
+
+    /// <summary>
+    /// **Mua hàng từ màn chăm sóc ghi CẢ HAI**: đơn hàng (vào doanh thu) và một dòng lịch sử
+    /// chăm sóc — trong cùng một transaction.
+    ///
+    /// Để frontend gọi hai API thì API thứ hai lỗi sẽ để lại đơn hàng **không có dấu vết chăm
+    /// sóc**: người bán sau không biết ai chốt đơn và bằng cách nào.
+    /// </summary>
+    [Fact]
+    public async Task Mua_hang_ghi_ca_don_hang_va_lich_su_cham_soc()
+    {
+        var c = await Client();
+        var khach = await TaoKhach(c, "Khách mua từ chăm sóc");
+        var sach = await TaoSanPham(c, "Sách IELTS Cambridge", 250_000m);
+
+        (await c.PostAsJsonAsync($"/api/v1/khach-hang/{khach}/mua-hang", new
+        {
+            SanPhamId = sach, SoLuong = 3, SoTien = 750_000m,
+            DonViTien = "VND", TyGiaVeVnd = 1m,
+            NgayMua = new DateTimeOffset(2026, 9, 8, 0, 0, 0, TimeSpan.Zero),
+            PhuongThuc = "TienMat", HinhThucChamSoc = "GapTrucTiep",
+            NoiDungChamSoc = (string?)null, DaThuDu = true
+        })).EnsureSuccessStatusCode();
+
+        // 1. Đơn hàng vào doanh thu.
+        var dt = (await c.GetFromJsonAsync<JsonElement>($"/api/v1/doanh-thu?khachHangId={khach}"))
+            .GetProperty("duLieu").EnumerateArray().Single();
+        Assert.Equal("SanPham", dt.GetProperty("loai").GetString());
+        Assert.Equal("Sách IELTS Cambridge", dt.GetProperty("tenMatHang").GetString());
+        Assert.Equal(3, dt.GetProperty("soLuong").GetInt32());
+        Assert.Equal(750_000m, dt.GetProperty("giaGoc").GetDecimal());   // 250k × 3
+        Assert.Equal(JsonValueKind.Null, dt.GetProperty("soBuoi").ValueKind);
+
+        // 2. Lịch sử chăm sóc — nội dung TỰ SINH phải nói đủ, không chỉ "đã mua hàng".
+        var ls = (await c.GetFromJsonAsync<List<JsonElement>>(
+            $"/api/v1/khach-hang/{khach}/cham-soc"))!.Single();
+        Assert.Contains("Sách IELTS Cambridge", ls.GetProperty("noiDung").GetString()!);
+        Assert.Contains("3", ls.GetProperty("noiDung").GetString()!);
+        Assert.Equal("DaMua", ls.GetProperty("trangThaiSau").GetString());
+
+        // 3. Trạng thái phễu tự thành ĐÃ MUA, người bán không phải nhớ chọn.
+        Assert.Equal("DaMua",
+            (await c.GetFromJsonAsync<JsonElement>($"/api/v1/khach-hang/{khach}"))
+                .GetProperty("trangThai").GetString());
+
+        // 4. `DaThuDu = true` → đã ghi luôn một lần thu đủ.
+        var dk = (await c.GetFromJsonAsync<List<JsonElement>>(
+            $"/api/v1/khach-hang/{khach}/dang-ky"))!.Single();
+        Assert.Equal(750_000m, dk.GetProperty("daThu").GetDecimal());
+        Assert.Equal(0m, dk.GetProperty("conThieu").GetDecimal());
+    }
+
+    /// <summary>
+    /// **KHÔNG gộp dòng doanh thu của cùng một khách** — chốt của chủ sản phẩm. Mỗi lần mua là
+    /// một sự kiện riêng, có ngày và mức giá riêng.
+    /// </summary>
+    [Fact]
+    public async Task Mua_nhieu_lan_thi_moi_lan_mot_dong_khong_gop()
+    {
+        var c = await Client();
+        var khach = await TaoKhach(c, "Khách mua nhiều lần");
+        var khoa = await TaoKhoa(c, "Khoá mua kèm sách", 5_000_000m);
+        var sach = await TaoSanPham(c, "Sách mua kèm", 200_000m);
+
+        async Task Mua(object than) =>
+            (await c.PostAsJsonAsync($"/api/v1/khach-hang/{khach}/mua-hang", than))
+                .EnsureSuccessStatusCode();
+
+        await Mua(new
+        {
+            KhoaHocId = khoa, SoLuong = 1, SoTien = 5_000_000m, DonViTien = "VND",
+            TyGiaVeVnd = 1m, NgayMua = new DateTimeOffset(2026, 9, 5, 0, 0, 0, TimeSpan.Zero),
+            PhuongThuc = "ChuyenKhoan", HinhThucChamSoc = "GoiDien",
+            NoiDungChamSoc = "Chốt khoá học", DaThuDu = false
+        });
+        await Mua(new
+        {
+            SanPhamId = sach, SoLuong = 2, SoTien = 400_000m, DonViTien = "VND",
+            TyGiaVeVnd = 1m, NgayMua = new DateTimeOffset(2026, 9, 8, 0, 0, 0, TimeSpan.Zero),
+            PhuongThuc = "TienMat", HinhThucChamSoc = "GapTrucTiep",
+            NoiDungChamSoc = (string?)null, DaThuDu = true
+        });
+        await Mua(new
+        {
+            SanPhamId = sach, SoLuong = 1, SoTien = 200_000m, DonViTien = "VND",
+            TyGiaVeVnd = 1m, NgayMua = new DateTimeOffset(2026, 9, 9, 0, 0, 0, TimeSpan.Zero),
+            PhuongThuc = "TienMat", HinhThucChamSoc = "ZaloFacebook",
+            NoiDungChamSoc = (string?)null, DaThuDu = true
+        });
+
+        // BA dòng doanh thu riêng, không gộp thành một.
+        var ds = (await c.GetFromJsonAsync<JsonElement>($"/api/v1/doanh-thu?khachHangId={khach}"))
+            .GetProperty("duLieu").EnumerateArray().ToList();
+        Assert.Equal(3, ds.Count);
+
+        // Và ba dòng lịch sử chăm sóc tương ứng.
+        Assert.Equal(3, (await c.GetFromJsonAsync<List<JsonElement>>(
+            $"/api/v1/khach-hang/{khach}/cham-soc"))!.Count);
+
+        var t = await c.GetFromJsonAsync<JsonElement>(
+            $"/api/v1/doanh-thu/tong-hop?khachHangId={khach}");
+        Assert.Equal(5_600_000m, t.GetProperty("tongVnd").GetDecimal());
+        Assert.Equal(3, t.GetProperty("soDangKy").GetInt32());
+        Assert.Equal(1, t.GetProperty("soKhachHang").GetInt32());
+    }
+
+    /// <summary>
+    /// Đơn phải có **ĐÚNG MỘT** loại mặt hàng. Không có cái nào = đơn rỗng; có cả hai = báo cáo
+    /// không biết tính vào đâu. `CHECK` ở tầng DB là chốt cuối.
+    /// </summary>
+    [Theory]
+    [InlineData(false, false)]   // không chọn gì
+    [InlineData(true, true)]     // chọn cả hai
+    public async Task Chan_don_hang_khong_dung_mot_mat_hang(bool coKhoa, bool coSanPham)
+    {
+        var c = await Client();
+        var khach = await TaoKhach(c, $"Khách sai mặt hàng {coKhoa}-{coSanPham}");
+        var khoa = coKhoa ? await TaoKhoa(c, $"Khoá sai {coSanPham}", 1_000_000m) : (Guid?)null;
+        var sp = coSanPham ? await TaoSanPham(c, $"SP sai {coKhoa}", 100_000m) : (Guid?)null;
+
+        var res = await c.PostAsJsonAsync($"/api/v1/khach-hang/{khach}/mua-hang", new
+        {
+            KhoaHocId = khoa, SanPhamId = sp, SoLuong = 1, SoTien = 100_000m,
+            DonViTien = "VND", TyGiaVeVnd = 1m,
+            NgayMua = new DateTimeOffset(2026, 9, 8, 0, 0, 0, TimeSpan.Zero),
+            PhuongThuc = "TienMat", HinhThucChamSoc = "GoiDien",
+            NoiDungChamSoc = (string?)null, DaThuDu = true
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+
+        // Và KHÔNG để lại dòng chăm sóc mồ côi — cả lệnh phải hỏng cùng nhau.
+        Assert.Empty((await c.GetFromJsonAsync<List<JsonElement>>(
+            $"/api/v1/khach-hang/{khach}/cham-soc"))!);
+    }
+
+    /// <summary>Lọc doanh thu theo LOẠI: xem riêng khoá học hay bán sản phẩm.</summary>
+    [Fact]
+    public async Task Loc_doanh_thu_theo_loai_don_hang()
+    {
+        var c = await Client();
+        var khach = await TaoKhach(c, "Khách lọc theo loại");
+        var khoa = await TaoKhoa(c, "Khoá lọc loại", 3_000_000m);
+        var sach = await TaoSanPham(c, "Sách lọc loại", 150_000m);
+        await TaoDangKy(c, khach, khoa, 3_000_000m);
+        (await c.PostAsJsonAsync($"/api/v1/khach-hang/{khach}/mua-hang", new
+        {
+            SanPhamId = sach, SoLuong = 1, SoTien = 150_000m, DonViTien = "VND",
+            TyGiaVeVnd = 1m, NgayMua = new DateTimeOffset(2026, 9, 8, 0, 0, 0, TimeSpan.Zero),
+            PhuongThuc = "TienMat", HinhThucChamSoc = "GoiDien",
+            NoiDungChamSoc = (string?)null, DaThuDu = true
+        })).EnsureSuccessStatusCode();
+
+        async Task<List<string?>> Loai(string? loai)
+            => (await c.GetFromJsonAsync<JsonElement>(
+                    $"/api/v1/doanh-thu?khachHangId={khach}"
+                    + (loai is null ? "" : $"&loai={loai}")))
+                .GetProperty("duLieu").EnumerateArray()
+                .Select(x => x.GetProperty("loai").GetString()).ToList();
+
+        Assert.Equal(2, (await Loai(null)).Count);
+        Assert.Equal(["KhoaHoc"], await Loai("KhoaHoc"));
+        Assert.Equal(["SanPham"], await Loai("SanPham"));
+    }
+
+    /// <summary>Xoá sản phẩm đã bán bị chặn bằng mã lỗi rõ ràng, không phải 500.</summary>
+    [Fact]
+    public async Task Khong_xoa_duoc_san_pham_da_ban()
+    {
+        var c = await Client();
+        var khach = await TaoKhach(c, "Khách giữ sản phẩm");
+        var sach = await TaoSanPham(c, "Sách đã bán", 100_000m);
+        (await c.PostAsJsonAsync($"/api/v1/khach-hang/{khach}/mua-hang", new
+        {
+            SanPhamId = sach, SoLuong = 1, SoTien = 100_000m, DonViTien = "VND",
+            TyGiaVeVnd = 1m, NgayMua = new DateTimeOffset(2026, 9, 8, 0, 0, 0, TimeSpan.Zero),
+            PhuongThuc = "TienMat", HinhThucChamSoc = "GoiDien",
+            NoiDungChamSoc = (string?)null, DaThuDu = true
+        })).EnsureSuccessStatusCode();
+
+        var res = await c.DeleteAsync($"/api/v1/san-pham/{sach}");
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        Assert.Equal("SAN_PHAM_DA_CO_DON_HANG",
+            (await res.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("errorCode").GetString());
+    }
+
     // ---------- View chi tiết khách: 4 tab ----------
 
     /// <summary>

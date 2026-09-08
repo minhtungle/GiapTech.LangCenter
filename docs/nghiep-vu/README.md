@@ -17,7 +17,7 @@ một API, một database, một lần đăng nhập.
 |---|---|---|
 | **HRM** | Hồ sơ nhân sự (nhân viên · giáo viên · trợ giảng) | ✅ Chạy |
 | | Nhân viên kinh doanh · Giáo viên (góc nhìn nhân sự) | ⬜ Khung trống |
-| **CRM** | Khách hàng · Doanh thu · Khoá học (FR-17 → FR-19) | ✅ Chạy |
+| **CRM** | Khách hàng · Doanh thu · Khoá học · Sản phẩm (FR-17 → FR-20) | ✅ Chạy |
 | **LMS** | FR-07 → FR-14 + Học viên | ✅ Chạy |
 | **Dùng chung** | FR-03 → FR-06, FR-16 (tài khoản, phân quyền, thiết lập, nhật ký) | ✅ Chạy |
 
@@ -66,7 +66,8 @@ Hai điều dễ nhầm:
 | FR-16 | Nhật ký hệ thống | [Nhật ký hệ thống](./nhat-ky-he-thong.md) |
 | FR-17 | Khách hàng (CRM) | [CRM](./crm.md) |
 | FR-18 | Doanh thu — đăng ký khoá học (CRM) | [CRM](./crm.md) |
-| FR-19 | Khoá học — danh mục sản phẩm (CRM) | [CRM](./crm.md) |
+| FR-19 | Khoá học — danh mục khoá bán ra (CRM) | [CRM](./crm.md) |
+| FR-20 | Sản phẩm khác — sách, học cụ (CRM) | [CRM](./crm.md) |
 
 ## Quy tắc nghiệp vụ xuyên suốt
 

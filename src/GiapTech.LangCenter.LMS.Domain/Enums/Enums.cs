@@ -232,3 +232,10 @@ public enum TrangThaiKhachHang
     DaMua = 2,
     TuChoi = 3
 }
+
+/// <summary>Loại đơn hàng (FR-18/FR-20) — suy từ khoá ngoại nào có giá trị, không lưu cột.</summary>
+public enum LoaiDonHang
+{
+    KhoaHoc = 0,
+    SanPham = 1
+}
