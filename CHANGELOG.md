@@ -8,6 +8,16 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — Modal không còn đóng khi bấm ra nền (08/09/2026)
+
+- Chỉ đóng bằng **nút ✕, Esc, hoặc Huỷ**. Bỏ handler `onClick` so `e.target === ref.current`.
+- Vì sao: form trong dự án này thường dài (đăng ký khoá học, hồ sơ nhân sự, mua hàng), và người
+  dùng hay bấm ra ngoài để bỏ focus một ô hoặc đóng khung select đang mở — đóng theo cú bấm đó
+  là **mất toàn bộ dữ liệu đang nhập mà không cảnh báo gì**.
+- Đo thật bằng Playwright: bản cũ bấm nền → modal đóng, mất dữ liệu; bản mới → **vẫn mở, dữ liệu
+  còn nguyên**, còn Esc / ✕ / Huỷ đều đóng đúng.
+- `chanDoiKhiXuLy` (chặn đóng khi đang lưu) vẫn giữ nguyên tác dụng với ✕ và Esc.
+
 ### Added — Hai hình thức mua hàng: khoá học và sản phẩm (FR-20) (08/09/2026)
 
 Bảng mới `SAN_PHAM` (32 bảng): sách, học cụ, đồng phục — tên, giá + đơn vị tiền, **đơn vị tính**

@@ -54,11 +54,16 @@ export function Modal({
   return (
     <dialog
       ref={ref}
-      // Bấm ra nền để đóng: so target với chính dialog vì click bên trong nội dung
-      // không nổi bọt lên đây.
-      onClick={(e) => {
-        if (e.target === ref.current && !chanDoiKhiXuLy) onDong()
-      }}
+      /*
+        KHÔNG đóng khi bấm ra nền (bỏ 08/09/2026 theo yêu cầu chủ sản phẩm).
+        Chỉ đóng bằng nút ✕ hoặc Esc.
+
+        Vì sao: form ở đây thường dài (đăng ký khoá học, hồ sơ nhân sự, mua hàng) và người dùng
+        hay bấm ra ngoài để bỏ focus một ô hoặc đóng khung select đang mở — mất toàn bộ dữ liệu
+        đang nhập mà không có cảnh báo nào. Rủi ro đó lớn hơn tiện lợi của một cú bấm.
+
+        `chanDoiKhiXuLy` vẫn giữ nguyên tác dụng với ✕ và Esc.
+      */
       className={cn(
         'w-[calc(100vw-2rem)] rounded-lg border border-border bg-card p-0 text-card-foreground shadow-lg',
         'backdrop:bg-black/40 backdrop:backdrop-blur-[1px]',

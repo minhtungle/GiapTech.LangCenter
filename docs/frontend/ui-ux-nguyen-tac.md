@@ -72,12 +72,19 @@
 - **Thêm/cập nhật không cần chuyển view → dùng modal**, không chèn form vào giữa danh sách:
   chèn form đẩy bảng xuống, người dùng mất ngữ cảnh dòng đang thao tác. Modal dùng thẻ
   `<dialog>` của trình duyệt để có sẵn focus trap và Esc.
+- **Modal KHÔNG đóng khi bấm ra nền** (chốt 08/09/2026) — chỉ đóng bằng nút ✕, Esc, hoặc Huỷ.
+  Form trong dự án này thường dài, và người dùng hay bấm ra ngoài để bỏ focus một ô hoặc đóng
+  khung select đang mở: đóng theo cú bấm đó là **mất toàn bộ dữ liệu đang nhập, không cảnh báo**.
+  Rủi ro đó lớn hơn tiện lợi của một cú bấm.
 - **Select có nhiều lựa chọn → dùng `SelectTimKiem`** (chọn một) hoặc **`SelectTimKiemNhieu`**
   (chọn nhiều, hiển thị chip), không dùng `<select>` cơ bản. Tìm kiếm **bỏ dấu tiếng Việt**:
   gõ "nguyen" ra "Nguyễn".
-- **Modal chứa dropdown: không đặt `overflow-y-auto` ở thân modal** — nó tạo scroll container
-  làm dropdown `position: absolute` bị cắt, người dùng phải cuộn mới thấy hết. Giới hạn chiều
-  cao ở chính thẻ `<dialog>` và cho dialog cuộn.
+- **Khung thả xuống của select dùng `position: fixed`**, không `absolute` (đổi 08/09/2026):
+  `absolute` nằm trong luồng cuộn của modal nên bị khung cuộn ảnh hưởng, và không tự tránh được
+  viền dưới. `fixed` + toạ độ chụp lúc mở đưa khung ra khỏi mọi khung cuộn, kèm **tự mở lên trên
+  khi chỗ dưới không đủ**. Đánh đổi: phải tính lại vị trí khi cuộn — xem `useViTriTha` trong
+  `SelectTimKiem.tsx`. Cùng cách `MenuThaoTac` thoát `overflow-x-auto` của `Table`.
+- Giới hạn chiều cao ở chính thẻ `<dialog>` và cho dialog cuộn, **không** ở thân modal.
 - **Không dùng `prompt()` / `alert()` của trình duyệt** cho nhập liệu — không style được, không
   dịch được, và trông như lỗi trang web.
 - **Toast** nhất quán vị trí/thời gian. **Không dùng `alert()`** hay modal chặn luồng cho thông báo
