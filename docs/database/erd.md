@@ -135,7 +135,7 @@ không phân công được họ vào lớp cũ nữa.
 | `DIEM_DANH` | **Hai cột trạng thái**: `trang_thai_tu_khai` (nullable — học viên tự khai; null ≠ Vắng) và `trang_thai_chinh_thuc` (NOT NULL — **nguồn sự thật duy nhất cho mọi báo cáo**). Gộp một cột là mất vĩnh viễn thông tin học viên đã khai gì trước khi giáo viên ghi đè. **`nhan_xet`** — nhận xét của giáo viên về học viên NÀY trong buổi NÀY (khác `ly_do_vang`: lý do nói vì sao không có mặt, nhận xét nói về việc học) |
 | `NHAN_XET_BUOI_HOC` | Học viên nhận xét về **buổi** (chiều ngược của `DIEM_DANH.nhan_xet`). `muc_hai_long` 1–5 **nullable** — không ép cho điểm mới gửi được góp ý. Bảng riêng chứ không thêm cột vào `DIEM_DANH` vì **quyền khác nhau** (học viên ghi ở đây nhưng không được đụng `DIEM_DANH`) và **vòng đời khác nhau** (học viên vắng vẫn nhận xét được) |
 
-### Nhóm học liệu (6 bảng)
+### Nhóm học liệu (7 bảng)
 
 | Bảng | Cột đáng chú ý |
 |---|---|
@@ -143,7 +143,8 @@ không phân công được họ vào lớp cũ nữa.
 | `BAI_NOP` | **`lan_nop`** — nộp nhiều lần, giữ lịch sử; bài mới nhất là `MAX(lan_nop)` |
 | `BAI_KIEM_TRA` | Gắn vào `lop_hoc_id`. `loai` giữ sẵn `TracNghiemOnline` cho tương lai, hiện chỉ nộp file |
 | `BAI_LAM` | `han_nop_rieng` nullable = gia hạn riêng; hạn hiệu lực = `han_nop_rieng ?? bai_kiem_tra.dong_luc` |
-| `TAI_LIEU` + `TAI_LIEU_LOP_HOC` | **Không có hàng nào** trong bảng gán = tài liệu chung toàn trung tâm |
+| `TAI_LIEU` | Tài liệu giảng dạy của trung tâm; tệp thật nằm ở `TEP_DINH_KEM` |
+| `TAI_LIEU_LOP_HOC` | Bảng gán tài liệu ↔ lớp. **Không có hàng nào** = tài liệu chung toàn trung tâm — ở đây "rỗng" và "chung" là **cùng một nghĩa** nên không cần cột cờ (khác `BUOI_HOC.da_tuy_chinh_hoc_vien`) |
 | `TEP_DINH_KEM` | Một bảng dùng chung, **5 cột FK nullable loại trừ nhau**, ép bằng `CHECK` |
 
 ### Nhóm CRM (7 bảng)

@@ -56,24 +56,31 @@ Từ 08/09/2026, mỗi chức năng thuộc **một trong ba hệ thống** (HRM
 |---|---|---|---|
 | `NhanVienKinhDoanh` | HRM | Hồ sơ nhân viên kinh doanh: chỉ tiêu, khách hàng, hoa hồng | *(khung)* |
 | `GiaoVienNhanSu` | HRM | Giáo viên góc nhìn nhân sự: hợp đồng, lương, chấm công | *(khung)* |
-| `DoanhThu` | CRM | Doanh thu tổng hợp theo kỳ/lớp/nhân viên | *(khung)* |
+| `PhongBan` | HRM | [Cơ cấu tổ chức](../nghiep-vu/hrm.md#fr-22--cơ-cấu-tổ-chức): cây phòng ban, người quản lý, xếp nhân sự | FR-22 |
+| `KhachHang` | CRM | [Khách hàng](../nghiep-vu/crm.md#fr-17--khách-hàng) — tất cả khách, kể cả chưa mua | FR-17 |
+| `DoanhThu` | CRM | [Doanh thu](../nghiep-vu/crm.md) — đơn hàng, sổ thu, yêu cầu xếp lớp | FR-18, FR-21 |
+| `KhoaHoc` | CRM | [Khoá học](../nghiep-vu/crm.md) — danh mục khoá bán ra | FR-19 |
+| `SanPham` | CRM | [Sản phẩm](../nghiep-vu/crm.md) — sách, học cụ | FR-20 |
 | `TaiKhoan` | Dùng chung | [Quản trị](../nghiep-vu/quan-tri-he-thong.md) | FR-03 |
 | `PhanQuyen` | Dùng chung | [Quản trị](../nghiep-vu/quan-tri-he-thong.md) | FR-05 |
 | `ThietLapChung` | Dùng chung | [Quản trị](../nghiep-vu/quan-tri-he-thong.md) | FR-06 |
 | `Anh` | Dùng chung | Ảnh dùng chung (logo, ảnh bìa, QR, ảnh đại diện) | — |
 | `DoiMatKhauNguoiKhac` | Dùng chung | [Quản trị](../nghiep-vu/quan-tri-he-thong.md) | FR-03 |
-| `LopHoc` | LMS | Lớp học | *(đang làm)* |
-| `BuoiHoc` | LMS | Buổi học | *(đang làm)* |
-| `DiemDanh` | LMS | Điểm danh | *(đang làm)* |
-| `BaiTap` | LMS | Bài tập giao trong buổi | *(đang làm)* |
-| `BaiNopBaiTap` | LMS | Bài học viên nộp | *(đang làm)* |
-| `BaiKiemTra` | LMS | Bài kiểm tra | *(đang làm)* |
-| `BaiLamKiemTra` | LMS | Bài làm của học viên | *(đang làm)* |
-| `TaiLieu` | LMS | Tài liệu giảng dạy | *(đang làm)* |
-| `HocPhi` | LMS | Học phí | *(đang làm)* |
-| `ThongKe` | LMS | Thống kê / dashboard | *(đang làm)* |
+| `LopHoc` | LMS | [Lớp học](../nghiep-vu/lop-hoc.md) | FR-07, FR-08 |
+| `BuoiHoc` | LMS | [Buổi học](../nghiep-vu/buoi-hoc-diem-danh.md) | FR-09 |
+| `DiemDanh` | LMS | [Điểm danh](../nghiep-vu/buoi-hoc-diem-danh.md) | FR-10 |
+| `BaiTap` | LMS | [Bài tập](../nghiep-vu/hoc-lieu.md) giao trong buổi | FR-11 |
+| `BaiNopBaiTap` | LMS | [Bài học viên nộp](../nghiep-vu/hoc-lieu.md) | FR-12 |
+| `BaiKiemTra` | LMS | Bài kiểm tra | *(có schema, chưa API/UI)* |
+| `BaiLamKiemTra` | LMS | Bài làm của học viên | *(có schema, chưa API/UI)* |
+| `TaiLieu` | LMS | [Tài liệu giảng dạy](../nghiep-vu/hoc-lieu.md) | FR-13 |
+| `HocPhi` | LMS | [Học phí](../nghiep-vu/hoc-phi.md) | FR-14 |
+| `ThongKe` | LMS | Thống kê / dashboard | *(chưa làm)* |
 | `LopHocToanTrungTam` | LMS | **Phạm vi**, không phải module — xem dưới | — |
-| `NhatKyHeThong` | Dùng chung | Xem nhật ký thao tác hệ thống (FR-16). Chỉ `Xem` có nghĩa — nhật ký chỉ ghi thêm |
+| `NhatKyHeThong` | Dùng chung | [Nhật ký thao tác](../nghiep-vu/nhat-ky-he-thong.md). Chỉ `Xem` có nghĩa — nhật ký chỉ ghi thêm | FR-16 |
+
+**24 chức năng** — danh sách này phải khớp `ChucNang.TatCa`; canh bởi
+`NhomHeThongTests.Moi_chuc_nang_phai_duoc_khai_he_thong_hoac_dung_chung`.
 
 ### Vì sao tách nhỏ tới mức này
 
@@ -90,8 +97,8 @@ sidebar, **không phải ba ứng dụng**: vẫn một API, một database, m�
 
 | Hệ thống | Chức năng |
 |---|---|
-| **HRM** | `NhanVienKinhDoanh`, `GiaoVienNhanSu` |
-| **CRM** | `DoanhThu` |
+| **HRM** | `NhanVienKinhDoanh`, `GiaoVienNhanSu`, `PhongBan` |
+| **CRM** | `KhachHang`, `DoanhThu`, `KhoaHoc`, `SanPham` |
 | **LMS** | `LopHoc`, `BuoiHoc`, `DiemDanh`, `BaiTap`, `BaiNopBaiTap`, `BaiKiemTra`, `BaiLamKiemTra`, `TaiLieu`, `HocPhi`, `ThongKe`, `LopHocToanTrungTam` |
 | **Dùng chung** | `TaiKhoan`, `PhanQuyen`, `ThietLapChung`, `Anh`, `DoiMatKhauNguoiKhac`, `NhatKyHeThong` |
 

@@ -5,7 +5,7 @@ PostgreSQL, multi-tenant **shared-schema** (mọi bảng nghiệp vụ có cột
 
 | Nội dung | Tài liệu |
 |---|---|
-| ERD đầy đủ 16 bảng + ràng buộc nghiệp vụ | [erd.md](./erd.md) |
+| ERD đầy đủ **34 bảng** + ràng buộc + hành vi xoá | [erd.md](./erd.md) |
 | Quy ước đặt tên, migration EF Core, seed data | [quy-uoc-migration.md](./quy-uoc-migration.md) |
 | Cách áp dụng Global Query Filter theo tenant | [../backend/multi-tenant.md](../backend/multi-tenant.md) |
 

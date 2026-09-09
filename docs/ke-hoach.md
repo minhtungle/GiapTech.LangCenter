@@ -6,9 +6,9 @@
 
 ```
 Nghiệp vụ  █████████████░░░  20/24 FR chạy đầu-cuối (FR-15 Thống kê, FR-23/24 HRM)
-Ba hệ thống ████████████░░░░  CRM xong nghiệp vụ; HRM còn khung trống
+Ba hệ thống ██████████████░░  LMS + CRM xong; HRM có cơ cấu tổ chức (FR-22)
 Hạ tầng    ████████████░░░░  CI/CD sẵn sàng, chờ VPS thật
-Còn lại    ██████░░░░░░░░░░  Dashboard + nghiệp vụ HRM + 15 nợ kỹ thuật
+Còn lại    ███████░░░░░░░░░  Dashboard + FR-23/24 HRM + 23 nợ kỹ thuật
 ```
 
 ## Trạng thái mã FR
@@ -19,7 +19,7 @@ Còn lại    ██████░░░░░░░░░░  Dashboard + nghi
 | FR-02 | Quên mật khẩu | ✅ | ✅ | Chưa cấu hình SMTP thật — email ghi log |
 | FR-03 | Người dùng (hồ sơ con người) | ✅ | ✅ | Tách khỏi tài khoản (07/09). Ba bảng hồ sơ theo vai trò. Từ 08/09 chia hai màn: **Nhân sự** (HRM) và **Học viên** (LMS) |
 | FR-04 | Tài khoản đăng nhập | ✅ | ✅ | Màn riêng ở cụm Quản trị dùng chung; gán được cho cả bốn vai trò |
-| FR-05 | Phân quyền truy cập | ✅ | ✅ | Ma trận **20 chức năng** × 4 thao tác, 4 nhóm dựng sẵn. Từ 08/09 có **tab theo hệ thống** HRM/CRM/LMS |
+| FR-05 | Phân quyền truy cập | ✅ | ✅ | Ma trận **24 chức năng** × 4 thao tác, 4 nhóm dựng sẵn. Từ 08/09 có **tab theo hệ thống** HRM/CRM/LMS |
 | FR-06 | Thiết lập chung | ✅ | ✅ | Gồm múi giờ và ngưỡng cảnh báo nợ học phí |
 | FR-07 | Lớp học | ✅ | ✅ | Vòng đời nháp → sắp khai giảng → đang học → kết thúc; tên nháp không chiếm chỗ |
 | FR-08 | Học viên trong lớp | ✅ | ✅ | Học phí riêng từng người (snapshot lúc ghi danh) |
@@ -115,12 +115,16 @@ VPS → domain + HTTPS → backup. Xem
 | N7 | Import Excel danh sách học viên | Trung bình |
 | N9 | Lịch sử chỉnh sửa khoản thu (ai sửa gì lúc nào) | Thấp |
 | N10 | Nhắc nợ học phí / thông báo lịch học qua email (`IEmailSender` đã có, chưa nối) | Thấp |
-| N11 | Endpoint dọn tenant test + `globalTeardown` cho E2E — **DB dev đã có 20 tenant rác** (mỗi lần chạy E2E thêm ~6) | Trung bình |
+| N11 | Endpoint dọn tenant test + `globalTeardown` cho E2E — **DB dev đã có 39/42 tenant rác** (đếm 09/09/2026; mỗi lần chạy E2E thêm ~6). Đang làm chậm mọi truy vấn `TENANT` và làm số liệu tài liệu khó đối chiếu | **Cao** |
 | N13 | **Chưa dọn nhật ký cũ** — bảng `NHAT_KY_HE_THONG` tăng vô hạn, cần chính sách lưu giữ trước khi chạy production lâu dài | Trung bình |
 | N17 | Đổi tên bảng `DANG_KY_KHOA_HOC` → `DON_HANG` (nay chứa cả sản phẩm) và **tồn kho sản phẩm** — hiện bán không giới hạn | Thấp |
 | N18 | **Số đã thu ở CRM không chảy sang sổ học phí LMS** — FR-21 chuyển *số cam kết* thành học phí áp dụng, nhưng khách đóng 4tr ở CRM thì sổ LMS vẫn ghi `daThu = 0`. Cùng một khoản tiền phải ghi hai lần nếu muốn cả hai sổ đúng | **Cao** |
 | N19 | `LOP_HOC` chưa có FK về `KHOA_HOC` nên hộp thoại chọn lớp ở FR-21 **không ưu tiên được lớp cùng khoá** — nay chỉ hiện tên khoá của đơn để người điều phối tự đối chiếu | Trung bình |
 | N20 | Badge `%` trên giá gốc hiện cả ở đơn **sản phẩm** (luôn `100.0%`) — sản phẩm không có khái niệm giảm giá so với niêm yết nên con số vô nghĩa | Thấp |
+| N21 | **Chưa canh: mỗi `Command` phải có `Validator`** — quên validator thì dữ liệu rác vào DB mà không lỗi nào. Thêm một test canh theo khuôn `MoiEndpointPhaiDuocGacTests` | Trung bình |
+| N22 | `RanhGioiHeThongConTests` chỉ quét `Application/`; tầng `API/Controllers` vẫn gọi chéo hệ thống tự do (đúng vì controller là chỗ ghép, nhưng nếu muốn siết thì cần danh sách khai tương tự) | Thấp |
+| N23 | **Role PostgreSQL và bucket MinIO cũ còn nằm đó** sau khi đổi tên 09/09 (`langcenter_lms`, `langcenter-lms-anh`) — giữ làm dự phòng, dọn tay sau khi chắc chắn | Thấp |
+| N24 | **Kéo-thả đổi cha trong cây cơ cấu** chưa làm (`@headless-tree` có `dragAndDropFeature`, chưa bật) — nay đổi cha bằng cách sửa phòng ban | Thấp |
 | N16 | **4 test E2E lạc hậu**: `quan-tri.spec.ts` tìm `button[title="Sửa"]` nhưng nút thao tác đã chuyển vào `MenuThaoTac` (07/09), và `dang-nhap-tra-ma.spec.ts` còn dùng từ ngữ "mã đội". Không phải lỗi mới — chưa cập nhật khi đổi UI | Trung bình |
 | N15 | **E2E phải tắt rate limit mới chạy được** (`GIOI_HAN_TAN_SUAT=false`) vì mỗi test tự tạo tenant qua endpoint có hạn mức 10 req/phút. Cách đúng hơn: fixture dùng CHUNG một tenant, hoặc endpoint tạo tenant riêng cho test | Trung bình |
 | N14 | Màn Học viên (LMS) và Nhân sự (HRM) cho đọc danh sách **toàn trung tâm**, chưa giới hạn "học viên lớp mình" — cần mở rộng `IPhamViLopHoc` cho hồ sơ con người | Trung bình |
@@ -130,5 +134,5 @@ VPS → domain + HTTPS → backup. Xem
 
 - **387 test backend xanh** (65 unit + 322 integration), build 0 warning.
 - Frontend `tsc -b` + `vite build` sạch, `oxlint` không lỗi.
-- **PostgreSQL + MinIO thật**: 20 bảng, migration áp sạch, luồng đầu-cuối chạy tay đủ từ tạo
+- **PostgreSQL + MinIO thật**: 34 bảng, 17 migration áp sạch, luồng đầu-cuối chạy tay đủ từ tạo
   trung tâm tới thu học phí.

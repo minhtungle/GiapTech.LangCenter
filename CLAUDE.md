@@ -31,7 +31,7 @@ LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 |---|---|
 | Đăng nhập · quên mật khẩu · buộc đổi mật khẩu lần đầu | **FR-15 Thống kê / Dashboard** |
 | Người dùng (hồ sơ 3 vai trò) tách khỏi tài khoản · nhóm quyền · thiết lập | **Bài kiểm tra** — có schema, chưa có API/UI |
-| **Ba hệ thống con** HRM/CRM/LMS: bộ chuyển, sidebar lọc, tab phân quyền | **Nghiệp vụ HRM** — mới có khung trống |
+| **Ba hệ thống con** HRM/CRM/LMS: bộ chuyển, sidebar lọc, tab phân quyền | **FR-23/24 HRM** — hồ sơ mở rộng, danh mục chức vụ |
 | **CRM** (FR-17 → FR-20): khách hàng + view 3 tab · doanh thu đa tiền tệ · **khoá học + sản phẩm** | Số **đã thu** ở CRM chưa chảy sang sổ học phí LMS |
 | **FR-21 xếp lớp**: bán khoá → gửi yêu cầu → duyệt vào lớp (2 cách), học phí lấy từ đơn CRM | `LOP_HOC` chưa nối `KHOA_HOC` (chưa ưu tiên lớp cùng khoá) |
 | Hồ sơ con người tách theo hệ thống: Nhân sự (HRM) · Học viên (LMS) | |

@@ -16,7 +16,8 @@ một API, một database, một lần đăng nhập.
 | Hệ thống | Module | Trạng thái |
 |---|---|---|
 | **HRM** | Hồ sơ nhân sự (nhân viên · giáo viên · trợ giảng) | ✅ Chạy |
-| | Cơ cấu tổ chức · hồ sơ mở rộng · chức vụ (FR-22 → FR-24) | 🟡 Đang làm |
+| | **Cơ cấu tổ chức** (FR-22) — cây phòng ban, người quản lý | ✅ Chạy |
+| | Hồ sơ nhân sự mở rộng · danh mục chức vụ (FR-23 → FR-24) | ⬜ Chưa làm |
 | | Nhân viên kinh doanh · Giáo viên (góc nhìn nhân sự) | ⬜ Khung trống |
 | **CRM** | Khách hàng · Doanh thu · Khoá học · Sản phẩm (FR-17 → FR-20) | ✅ Chạy |
 | **CRM → LMS** | Yêu cầu xếp lớp (FR-21) | ✅ Chạy |

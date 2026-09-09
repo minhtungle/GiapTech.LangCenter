@@ -8,6 +8,31 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — Cập nhật tài liệu theo số liệu ĐO THẬT (09/09/2026)
+
+Không sửa số theo trí nhớ — đếm lại từ code và DB rồi mới sửa. Tìm ra **11 chỗ lệch**:
+
+| Chỗ | Ghi sai | Thật |
+|---|---|---|
+| `README.md` | 14/15 mã FR · 306 test | 20/24 · 387 |
+| `README.md` | "Nghiệp vụ **của dự án cũ**", "DB còn 7 bảng hệ thống" | 24 FR thật · ERD 34 bảng |
+| `docs/tong-thuat.md` | Chỉ 5 nhóm chức năng (dừng ở FR-14) | **8 nhóm** — thêm CRM (FR-17→21) và HRM (FR-22→24) |
+| `docs/tong-thuat.md` | "HRM và CRM chỉ có hồ sơ nhân sự chạy thật" | LMS + CRM đủ nghiệp vụ; HRM có FR-22 |
+| `docs/backend/phan-quyen-dong.md` | Bảng chức năng thiếu **6 mục** (`KhachHang`, `KhoaHoc`, `SanPham`, `PhongBan`…) và ghi "*(đang làm)*" cho việc đã xong | **24/24 khớp `ChucNang.TatCa`** — đã đối chiếu bằng script |
+| `docs/kien-truc/TONG-QUAN-KIEN-TRUC.md` | Denormalize 25/26 bảng | 33/34 |
+| `docs/database/README.md` | ERD 16 bảng | 34 |
+| `docs/database/erd.md` | Nhóm học liệu 6 bảng, thiếu `TAI_LIEU_LOP_HOC` | 7 bảng — **tổng các nhóm nay = 34, khớp DB** |
+| `docs/ha-tang/prompt-trien-khai-vps.md` | 26 bảng · 306 test + 11 E2E | 34 · 387 + 13 |
+| `docs/ke-hoach.md` + `docs/tong-thuat.md` | Ma trận 20 chức năng | 24 |
+| `docs/ke-hoach.md` | "PostgreSQL thật: 20 bảng" | 34 bảng, 17 migration |
+
+Nợ kỹ thuật: **N11 sửa từ "20 tenant rác" → 39/42** (đếm 09/09, nâng lên mức Cao vì làm chậm mọi
+truy vấn `TENANT`). Thêm 4 nợ mới phát hiện hôm nay: **N21** chưa canh `Command` phải có
+`Validator` · **N22** `RanhGioiHeThongConTests` chưa quét tầng `API/Controllers` · **N23** role
+PostgreSQL và bucket MinIO cũ còn nằm đó sau khi đổi tên · **N24** chưa bật kéo-thả trong cây cơ cấu.
+
+Cũng gỡ 3 khẳng định "HRM còn khung trống" — FR-22 đã chạy.
+
 ### Added — Ba test canh kiến trúc, ép quy tắc thay vì chỉ ghi tài liệu (09/09/2026)
 
 Trả lời yêu cầu *"mã nguồn phải tuân theo một bộ kiến trúc để có sự chặt chẽ"*: **không** đổi

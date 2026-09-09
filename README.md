@@ -1,11 +1,13 @@
 # GiapTech.LangCenter — Hệ thống Quản lý Trung tâm Ngoại ngữ
 
-> **14/15 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật · 306 test backend xanh.
-> Còn lại: FR-15 Thống kê/Dashboard, và nghiệp vụ hai module HRM/CRM.
+> **20/24 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật · 387 test backend xanh.
+> Còn lại: FR-15 Thống kê/Dashboard, FR-23/24 (hồ sơ nhân sự mở rộng · danh mục chức vụ), và
+> Bài kiểm tra (có schema, chưa có API/UI).
 >
 > Hệ thống multi-tenant — mỗi trung tâm là một tenant độc lập — gồm **ba hệ thống con** chia theo
 > nhóm quyền: **HRM** (nhân sự) · **CRM** (khách hàng) · **LMS** (đào tạo). Đây là cách nhóm chức
-> năng để lọc giao diện, **không phải ba ứng dụng**: một API, một database, một lần đăng nhập.
+> năng để lọc giao diện, **không phải ba ứng dụng**: một API, một database, một lần đăng nhập —
+> chốt ở [ADR-0005](./docs/kien-truc/adr/0005-mot-source-va-doi-ten-langcenter.md).
 
 > README này chỉ là **mục lục điều hướng** — không lặp lại nội dung chi tiết. Đọc
 > [`CLAUDE.md`](./CLAUDE.md) trước khi chỉnh sửa code hoặc tài liệu trong repo này.
@@ -27,8 +29,8 @@
 | Chủ đề | Thư mục | Nội dung chính |
 |---|---|---|
 | Kiến trúc & công nghệ | [`docs/kien-truc/`](./docs/kien-truc/TONG-QUAN-KIEN-TRUC.md) | Bản đồ công nghệ, [ADR](./docs/kien-truc/adr/), [thuật ngữ](./docs/kien-truc/THUAT-NGU.md) |
-| Nghiệp vụ **của dự án cũ** (tham khảo) | [`docs/nghiep-vu/`](./docs/nghiep-vu/README.md) | 16 mã FR — chỉ [đăng nhập](./docs/nghiep-vu/dang-nhap.md) và [quản trị](./docs/nghiep-vu/quan-tri-he-thong.md) còn đúng với code hiện tại |
-| Dữ liệu | [`docs/database/`](./docs/database/README.md) | [ERD](./docs/database/erd.md) (của dự án cũ; DB hiện tại còn 7 bảng hệ thống), [quy ước migration](./docs/database/quy-uoc-migration.md) |
+| Nghiệp vụ | [`docs/nghiep-vu/`](./docs/nghiep-vu/README.md) | **24 mã FR** theo module: [LMS](./docs/nghiep-vu/lop-hoc.md) · [CRM](./docs/nghiep-vu/crm.md) · [HRM](./docs/nghiep-vu/hrm.md) · [quản trị](./docs/nghiep-vu/quan-tri-he-thong.md) |
+| Dữ liệu | [`docs/database/`](./docs/database/README.md) | [ERD 34 bảng](./docs/database/erd.md) + ràng buộc + hành vi xoá, [quy ước migration](./docs/database/quy-uoc-migration.md) |
 | Backend | [`docs/backend/`](./docs/backend/README.md) | [Clean Architecture](./docs/backend/clean-architecture.md) · [CQRS](./docs/backend/cqrs-mediatr.md) · [multi-tenant](./docs/backend/multi-tenant.md) · [phân quyền động](./docs/backend/phan-quyen-dong.md) |
 | Frontend | [`docs/frontend/`](./docs/frontend/README.md) | [Nguyên tắc UI/UX](./docs/frontend/ui-ux-nguyen-tac.md), [design token](./docs/frontend/design-tokens.md) |
 | Hạ tầng & vận hành | [`docs/ha-tang/`](./docs/ha-tang/README.md) | [Cài đặt VPS](./docs/ha-tang/cai-dat-vps.md) · [biến môi trường](./docs/ha-tang/bien-moi-truong.md) · [runbook](./docs/ha-tang/runbook.md) |
@@ -43,6 +45,7 @@
 | Frontend | React + TypeScript trên nền shadcn-admin (Vite + Tailwind + shadcn/ui) | [ADR-0002](./docs/kien-truc/adr/0002-frontend-shadcn-admin.md) |
 | API versioning | URL segment `/api/v1/...`, Asp.Versioning.Mvc | [ADR-0003](./docs/kien-truc/adr/0003-api-versioning.md) |
 | Triển khai | 1 VPS, Docker Compose, Nginx + certbot, MinIO object storage | [ADR-0004](./docs/kien-truc/adr/0004-ha-tang-tu-host-vps.md) |
+| **Một source** cho cả ba hệ thống con (không tách HRM/CRM/LMS) | [ADR-0005](./docs/kien-truc/adr/0005-mot-source-va-doi-ten-langcenter.md) |
 
 ## Stack tóm tắt
 

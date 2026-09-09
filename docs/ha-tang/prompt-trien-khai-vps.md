@@ -122,7 +122,7 @@ Nhớ truyền `X-Forwarded-Proto` để API biết request gốc là HTTPS.
   thì chứng chỉ có vấn đề, hãy nói cho tôi)
 - `curl -s https://<domain>/api/v1/tinh-nang` — trả JSON
 - Mở `https://<domain>` — thấy trang đăng nhập
-- `docker compose exec postgres psql -U <user> -d <db> -c '\dt'` — **26 bảng**, migration đã áp
+- `docker compose exec postgres psql -U <user> -d <db> -c '\dt'` — **34 bảng**, migration đã áp
 
 ### 7. Tạo trung tâm đầu tiên và thử luồng thật
 
@@ -162,7 +162,7 @@ một lần và kiểm file sinh ra có nội dung.
 
 ## Bối cảnh có thể hữu ích
 
-- Ứng dụng có **306 test backend + 11 test E2E** xanh ở local, chạy đầu-cuối trên PostgreSQL và
+- Ứng dụng có **387 test backend + 13 test E2E** xanh ở local, chạy đầu-cuối trên PostgreSQL và
   MinIO thật.
 - Kiến trúc: Clean Architecture 4 lớp, CQRS + MediatR, multi-tenant qua EF Core Global Query Filter.
 - **Mọi service trừ reverse proxy không expose port ra Internet** (quy tắc #6). MinIO cũng vậy —
