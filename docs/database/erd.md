@@ -1,6 +1,7 @@
 # ERD — Mô hình dữ liệu
 
-**34 bảng**, PostgreSQL. Nội dung dưới đây khớp với schema thật (kiểm bằng
+**34 bảng**, PostgreSQL. Mọi cột chuỗi có `HasMaxLength` (canh bởi
+`MoiEntityPhaiCoConfigTests`); ngoại lệ duy nhất là hai cột JSON của `NHAT_KY_HE_THONG`. Nội dung dưới đây khớp với schema thật (kiểm bằng
 `information_schema` sau khi áp toàn bộ migration), không phải bản thiết kế trên giấy.
 
 ## Nguyên tắc bắt buộc

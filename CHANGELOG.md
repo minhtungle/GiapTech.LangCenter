@@ -8,6 +8,40 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — Ba test canh kiến trúc, ép quy tắc thay vì chỉ ghi tài liệu (09/09/2026)
+
+Trả lời yêu cầu *"mã nguồn phải tuân theo một bộ kiến trúc để có sự chặt chẽ"*: **không** đổi
+sang ABP (trùng lặp multi-tenant/phân quyền đã tự làm, và ABP giả định username duy nhất toàn cục
+— trái multi-tenant của dự án). Thay vào đó **ép** bộ kiến trúc đang có bằng test, nâng từ 3 lên
+**6 test canh**.
+
+- **`MoiEndpointPhaiDuocGacTests`** — mọi endpoint phải có `[RequirePermission]` hoặc
+  `[AllowAnonymous]` hoặc khai lý do. Đếm tay trước đó: 122 endpoint, 115 gác, 6 ẩn danh,
+  **4 không có gì** — cả bốn đều đúng (`/toi/*` chỉ trả dữ liệu của chính người gọi) nhưng
+  **không có gì ép**. Chốt luôn số endpoint ẩn danh (6) vì đó là bề mặt tấn công lớn nhất.
+- **`RanhGioiHeThongConTests`** — HRM · CRM · LMS không gọi chéo nhau ngoài cầu nối đã khai. Hiện
+  đúng **một** cầu nối: FR-21 (`YeuCauXepLopDtos.cs → DaoTao`). Giữ đường lui rẻ theo ADR-0005.
+- **`MoiEntityPhaiCoConfigTests`** — mọi entity có `IEntityTypeConfiguration` (kiểm qua tên bảng
+  `SNAKE_CASE`) và mọi cột chuỗi có `HasMaxLength`.
+
+Cả ba theo khuôn của `CachLyTenantTests`: **danh sách ngoại lệ có khai lý do** + **test chiều
+ngược** để danh sách không lạc hậu. Đã kiểm bằng đột biến mã: bỏ gác một endpoint → đỏ đúng tên;
+cho HRM `using` sang LMS → đỏ đúng file.
+
+### Fixed — 9 cột chuỗi không giới hạn độ dài (09/09/2026)
+
+Test mới phát hiện: 9 cột là `text` vô hạn trong DB thật. Không test nào bắt được trước đó vì
+build xanh, migration sinh bình thường, **chỉ schema là sai**.
+
+- Đặt giới hạn cho **7 cột**: URL ảnh (`NGUOI_DUNG.anh_dai_dien_url`, `TENANT.logo_url`,
+  `anh_bia_url`, `anh_qr_url`) 500 · `NGUOI_DUNG.dia_chi` 500 · `QUYEN.mo_ta` 500 ·
+  `TAI_KHOAN.password_hash` 200 (hash Identity v3 dài 84).
+- **Miễn 2 cột** `NHAT_KY_HE_THONG.chi_tiet`/`tham_so` — chứa JSON độ dài không đoán trước, cắt
+  bớt là mất bằng chứng mà nhật ký không có đường phục hồi.
+- Migration `GioiHanDoDaiCotChuoi` làm **hẹp cột** (quy tắc #1) — đã đo trước: dữ liệu dài nhất
+  84 ký tự, xa dưới mọi giới hạn. Đối chiếu sau khi áp: 41 tenant · 57 tài khoản · 166 quyền ·
+  64 người dùng — **không đổi**; đăng nhập bằng hash cũ và tạo trung tâm mới (ghi hash mới) đều OK.
+
 ### Changed — Đổi tên toàn bộ về `GiapTech.LangCenter` (bỏ hậu tố `.LMS`) (09/09/2026)
 
 Dự án nay gồm cả CRM (FR-17 → FR-21) và HRM (FR-22 → FR-24), nên tên "LMS" gây nhầm là chỉ có

@@ -25,7 +25,7 @@ Mỗi trung tâm đăng ký là một tenant độc lập, dữ liệu cách ly 
 Tách ra từ một ứng dụng quản lý CLB đá bóng (04/09/2026), giữ toàn bộ tầng hệ thống. Nghiệp vụ
 LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 
-**20/24 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 380 test backend xanh.
+**20/24 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 387 test backend xanh.
 
 | Đã chạy đầu-cuối | Chưa có |
 |---|---|
@@ -234,7 +234,7 @@ Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 ```bash
 # --- Backend ---
 dotnet build          # 0 warning — TreatWarningsAsErrors đang bật
-dotnet test           # 380 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
+dotnet test           # 387 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
                       #           quản trị, lớp học, điểm danh, học liệu, học phí
 
 # Chạy API cần 2 biến bắt buộc (thiếu là 500 lúc đăng nhập / tải ảnh, không phải lúc khởi động):
@@ -294,10 +294,16 @@ khỏi chỗ các migration hiện tại đang nằm.
 > `TreatWarningsAsErrors=true` trong `Directory.Build.props` — cảnh báo làm build đỏ. Sửa cảnh báo,
 > đừng tắt cờ.
 
-### Ba test canh kiến trúc, đáng biết trước khi sửa code
+### Sáu test canh kiến trúc, đáng biết trước khi sửa code
 
 | Test | Canh gì |
 |---|---|
 | `KienTruc/LuatPhuThuocTests.cs` | Quy tắc #10: `Domain` lỡ tham chiếu EF Core / ASP.NET Core / MediatR, hoặc `Application` tham chiếu ngược lên `Infrastructure`/`API` → đỏ ngay kèm hướng dẫn sửa. |
 | `MultiTenancy/CachLyTenantTests.cs` | Quy tắc #2, **cả hai chiều**: mọi `ITenantEntity` có Query Filter, VÀ mọi entity không bị lọc phải nằm trong danh sách ngoại lệ có khai lý do. |
 | `DongThoiTests.cs` | Quy tắc #8: ràng buộc "chỉ một" là UNIQUE ở tầng DB. Có cả test chiều ngược: `UNIQUE(username)` toàn cục sẽ chặn hai trung tâm cùng có tài khoản `admin`. |
+| `KienTruc/MoiEndpointPhaiDuocGacTests.cs` | Quy tắc #9: mọi endpoint phải có `[RequirePermission]` **hoặc** `[AllowAnonymous]` **hoặc** khai lý do. Chốt luôn số endpoint ẩn danh (6) để thêm cái mới phải có ý thức. |
+| `KienTruc/RanhGioiHeThongConTests.cs` | ADR-0005: HRM · CRM · LMS không gọi chéo nhau ngoài cầu nối đã khai (nay đúng một: FR-21). Giữ đường lui rẻ nếu sau này cần tách. |
+| `KienTruc/MoiEntityPhaiCoConfigTests.cs` | Quy tắc #10: mọi entity có `IEntityTypeConfiguration` (kiểm qua tên bảng `SNAKE_CASE`), và mọi cột chuỗi có `HasMaxLength` — thiếu thì EF âm thầm cho `text` vô hạn và Cascade mặc định. |
+
+Cả sáu đều theo cùng khuôn: **danh sách ngoại lệ có khai lý do** + **test chiều ngược** để danh
+sách không lạc hậu. Ai vi phạm sẽ phải dừng lại viết ra lý do, hoặc nhận ra mình quên.

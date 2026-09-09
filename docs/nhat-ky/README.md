@@ -49,6 +49,7 @@ Lỗi đã bắt được, thứ tưởng đúng mà sai, giới hạn chưa g�
 | [2026-09-08 (CRM)](./2026-09-08-crm.md) | **Nghiệp vụ CRM** (FR-17 → FR-19) — khách hàng · doanh thu đa tiền tệ · khoá học; vá script i18n quét namespace lồng |
 | [2026-09-09 (Xếp lớp)](./2026-09-09-xep-lop.md) | **FR-21 yêu cầu xếp lớp** — cầu nối CRM → LMS, học phí lấy từ đơn CRM; gộp tab mua hàng; script Python ngắt `Layout.tsx` còn 7 dòng |
 | [2026-09-09 (HRM)](./2026-09-09-hrm-co-cau.md) | **FR-22 cơ cấu tổ chức** — cây phòng ban, chống chu trình, mọi vai trò nhân sự xếp được vào phòng; 4 chỗ tự sửa sau khi rà lại; quên migration làm hỏng môi trường dev |
+| [2026-09-09 (Kiến trúc)](./2026-09-09-kien-truc-ep-bang-test.md) | **Không đổi sang ABP** — ép bộ kiến trúc đang có bằng test (3 → 6 test canh); phát hiện 9 cột `text` vô hạn; ADR-0005 |
 | [2026-09-08](./2026-09-08-ba-he-thong.md) | **Ba hệ thống con HRM · CRM · LMS** — bộ chuyển, sidebar lọc theo hệ thống, tab phân quyền; nhóm chức năng dùng chung |
 | [2026-09-07 (nhật ký)](./2026-09-07-xac-nhan-va-nhat-ky.md) | **Xác nhận mọi thao tác** + **nhật ký hệ thống** (FR-16) — vá 2 lỗi: ChangeTracker rỗng, mật khẩu lộ |
 | [2026-09-07 (lịch)](./2026-09-07-lich-calendar.md) | **View calendar** bằng FullCalendar 6 + `GET /toi/cau-hinh` cho múi giờ trung tâm |

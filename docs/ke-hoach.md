@@ -128,7 +128,7 @@ VPS → domain + HTTPS → backup. Xem
 
 ## Kiểm chứng hiện tại
 
-- **380 test backend xanh** (61 unit + 319 integration), build 0 warning.
+- **387 test backend xanh** (65 unit + 322 integration), build 0 warning.
 - Frontend `tsc -b` + `vite build` sạch, `oxlint` không lỗi.
 - **PostgreSQL + MinIO thật**: 20 bảng, migration áp sạch, luồng đầu-cuối chạy tay đủ từ tạo
   trung tâm tới thu học phí.
