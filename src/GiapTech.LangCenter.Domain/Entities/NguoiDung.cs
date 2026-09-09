@@ -64,6 +64,17 @@ public class NguoiDung : TenantEntity
     public Guid? PhongBanId { get; set; }
     public PhongBan? PhongBan { get; set; }
 
+    /// <summary>
+    /// Chức vụ (FR-24) — null = chưa gán. **Khác `LoaiNguoiDung`**: đây là chức danh
+    /// ("Ban quản lý", "Trưởng phòng"), còn `LoaiNguoiDung` là loại nghiệp vụ.
+    ///
+    /// Đặt ở `NGUOI_DUNG` cùng lý do với `PhongBanId`: chức vụ không thuộc riêng vai trò nào —
+    /// giáo viên cũng làm trưởng bộ môn. Thay cột chuỗi `HO_SO_NHAN_VIEN.chuc_vu` (chỉ tồn tại
+    /// cho vai trò `NhanVien`).
+    /// </summary>
+    public Guid? ChucVuId { get; set; }
+    public ChucVu? ChucVu { get; set; }
+
     public Tenant Tenant { get; set; } = null!;
 
     /// <summary>Tài khoản đăng nhập của người này — null nếu họ không cần đăng nhập.</summary>

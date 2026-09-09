@@ -8,6 +8,61 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — FR-24 Danh mục chức vụ, gồm "Ban quản lý" (10/09/2026)
+
+- Bảng `CHUC_VU` do admin tự quản (tên · mô tả · thứ tự · còn dùng), màn `/hrm/chuc-vu`. Seeder
+  dựng sẵn 5 chức vụ cho tenant mới: **Ban quản lý**, Quản trị hệ thống, Trưởng phòng, Nhân viên
+  kinh doanh, Kế toán.
+- **KHÔNG thêm "ban quản lý" vào `LoaiNguoiDung`** — enum đó load-bearing ở 6+ chỗ LMS/CRM (ai
+  gán được vào lớp, ai ghi danh được, hồ sơ con nào áp dụng), và "ban quản lý" là **chức danh**
+  chứ không phải loại nghiệp vụ. Một người có cả hai: `GiaoVien` + "Ban quản lý" — đã kiểm trên
+  API thật.
+- Áp cho **mọi vai trò nhân sự** (cột `chuc_vu_id` trên `NGUOI_DUNG`, cùng lý do với
+  `phong_ban_id`). Học viên không có chức vụ.
+- **Ngừng dùng thay vì xoá**: xoá chức vụ đang có người giữ bị chặn; bỏ tích `dang_dung` thì nó
+  biến khỏi form chọn nhưng giữ nguyên ở hồ sơ đã gán (cùng cơ chế `dang_ban` của `KHOA_HOC`).
+- Cờ **`DoiChucVu`** trên lệnh cập nhật, cùng lý do với `DoiPhongBan` (quy tắc #1 — `Guid?` chỉ
+  có một giá trị trống).
+- **Chức vụ không cấp quyền gì**; màn Chức vụ nói rõ ngay đầu trang.
+
+### Added — View chi tiết hồ sơ nhân sự (10/09/2026)
+
+Bấm một dòng ở màn Hồ sơ nhân sự mở `/hrm/nhan-su/{id}` — chỉ đọc, sửa qua modal ở màn danh sách
+(cùng quy ước với chi tiết khách hàng và lớp học).
+
+`GET /nhan-su/{id}` **dùng lại** `LayDanhSachNguoiDungQuery` với phạm vi ba vai trò nhân sự thay
+vì viết query riêng: nhờ đó gõ id **học viên** vào URL nhận 404, không phải hồ sơ học viên — thứ
+một query riêng rất dễ để lọt.
+
+### Removed — Hai màn "Nhân viên kinh doanh" và "Giáo viên (nhân sự)" (10/09/2026)
+
+Cả hai chỉ là khung trống; hồ sơ của ba vai trò đã nằm ở màn Hồ sơ nhân sự. Kéo theo hai đổi tên
+trong danh mục phân quyền:
+
+| Cũ | Mới | Vì sao |
+|---|---|---|
+| `GiaoVienNhanSu` | `NhanSu` | Nó **luôn** gác cả ba vai trò nhân sự — tên cũ gây hiểu sai |
+| `NhanVienKinhDoanh` | `ChucVu` | Không còn màn nào dùng; quyền đã cấp chuyển sang danh mục chức vụ |
+
+⚠️ Migration `ThemChucVuVaDoiTenChucNang` đổi cả **dữ liệu** trong `QUYEN_CHUC_NANG`, không chỉ
+code. Ba điểm đáng biết:
+
+1. **Chuyển dữ liệu TRƯỚC khi xoá cột.** Cột `HO_SO_NHAN_VIEN.chuc_vu` có 40 hàng dữ liệu thật;
+   EF sinh `DropColumn` ngay đầu `Up()` — để nguyên là mất sạch. Đã chuyển xuống sau khối SQL
+   bằng tay: sinh danh mục từ chính các giá trị đang có (theo từng tenant) → nối người vào danh
+   mục → mới xoá cột.
+2. **Bỏ trùng trước khi đổi tên.** 42/43 nhóm quyền có **cả hai** chức năng cũ, nên đổi tên trực
+   tiếp sẽ đụng `UNIQUE(quyen_id, ten_chuc_nang, hanh_dong)`. Xoá 170 hàng `NhanVienKinhDoanh`
+   trùng — đã kiểm không nhóm nào mất quyền nhân sự.
+3. Nhóm "Quản trị viên" nhận lại `ChucVu` qua **bổ khuyết quyền idempotent lúc khởi động** — đã
+   kiểm: 168 hàng (42 tenant × 4 thao tác).
+
+Đối chiếu sau migration: 40 chức vụ sinh ra · 40 người có `chuc_vu_id` · 170 `NhanSu` · 65 người
+dùng — **không mất hàng nào**.
+
+16 test mới (`ChucVuTests` 13 + `DongThoiTests` 1 + 2 test `CapNhatKhongMatDuLieuTests` cập nhật
+theo shape mới). Đã kiểm bằng đột biến: bỏ ghi `ChucVuId` → test rule #1 đỏ đúng chỗ.
+
 ### Changed — Cập nhật tài liệu theo số liệu ĐO THẬT (09/09/2026)
 
 Không sửa số theo trí nhớ — đếm lại từ code và DB rồi mới sửa. Tìm ra **11 chỗ lệch**:

@@ -111,15 +111,10 @@ export default function Layout() {
         },
         {
           to: '/hrm/nhan-su', nhan: t('menu.nhanSuNguoiDung'),
-          icon: UserCog, can: 'GiaoVienNhanSu',
+          icon: UserCog, can: 'NhanSu',
         },
         {
-          to: '/hrm/nhan-vien-kinh-doanh', nhan: t('menu.nhanVienKinhDoanh'),
-          icon: Briefcase, can: 'NhanVienKinhDoanh',
-        },
-        {
-          to: '/hrm/giao-vien', nhan: t('menu.giaoVienNhanSu'),
-          icon: GraduationCap, can: 'GiaoVienNhanSu',
+          to: '/hrm/chuc-vu', nhan: t('menu.chucVu'), icon: Briefcase, can: 'NhanSu',
         },
       ],
     },

@@ -68,7 +68,12 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
                  {
                      "hoTen", "email", "soDienThoai", "diaChi", "ngaySinh",
                      "loaiNguoiDung", "trangThaiNhanSu",
-                     "hoSoGiaoVien", "hoSoHocVien", "hoSoNhanVien"
+                     "hoSoGiaoVien", "hoSoHocVien",
+                     // FR-22/FR-24: `hoSoNhanVien` bỏ 09/09/2026 (không còn trường nào — chức
+                     // vụ và phòng ban chuyển lên `NGUOI_DUNG`). Hai cột mới này phải có trong
+                     // DTO, nếu không form sửa không điền lại được và người dùng mất chức
+                     // vụ/phòng ban mỗi lần lưu.
+                     "chucVuId", "phongBanId"
                  })
         {
             Assert.True(
@@ -154,20 +159,25 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
         tao.EnsureSuccessStatusCode();
         var id = await tao.Content.ReadFromJsonAsync<Guid>();
 
-        // Chuyển sang làm nhân viên văn phòng.
+        // Chuyển sang làm nhân viên văn phòng, kèm chức vụ mới (FR-24).
+        var cvRes = await client.PostAsJsonAsync("/api/v1/chuc-vu",
+            new { Ten = $"Tư vấn viên {Guid.NewGuid():N}" });
+        cvRes.EnsureSuccessStatusCode();
+        var chucVuId = await cvRes.Content.ReadFromJsonAsync<Guid>();
+
         (await client.PutAsJsonAsync($"/api/v1/nguoi-dung/{id}", new
         {
             Id = id, HoTen = "Test doi-vai-tro",
             LoaiNguoiDung = "NhanVien",
             TrangThaiNhanSu = "DangLamViec",
-            HoSoNhanVien = new { ChucVu = "Tư vấn viên", PhongBan = "Tuyển sinh" }
+            ChucVuId = chucVuId, DoiChucVu = true
         })).EnsureSuccessStatusCode();
 
         var ds = await DocTrang(await client.GetAsync("/api/v1/nguoi-dung"));
         var u = ds!.Single(x => x.GetProperty("hoTen").GetString() == "Test doi-vai-tro");
 
         Assert.Equal("NhanVien", u.GetProperty("loaiNguoiDung").GetString());
-        Assert.Equal("Tư vấn viên", u.GetProperty("hoSoNhanVien").GetProperty("chucVu").GetString());
+        Assert.Equal(chucVuId, u.GetProperty("chucVuId").GetGuid());
 
         // Hồ sơ giáo viên cũ phải CÒN.
         Assert.Equal(

@@ -45,7 +45,8 @@ public class HoSoNhanVien : TenantEntity
     public Guid NguoiDungId { get; set; }
     public NguoiDung NguoiDung { get; set; } = null!;
 
-    public string? ChucVu { get; set; }
+    // `ChucVu` (chuỗi) bỏ 09/09/2026 — thay bằng `NGUOI_DUNG.chuc_vu_id` → `CHUC_VU` (FR-24),
+    // dùng chung cho mọi vai trò nhân sự. Migration sinh danh mục từ chính các giá trị đang có.
 
     // `PhongBan` (chuỗi tự do) bỏ 09/09/2026 — thay bằng `NGUOI_DUNG.phong_ban_id` → `PHONG_BAN`
     // (FR-22). Chuỗi thì "Phòng Đào tạo" và "phòng đào tạo" là hai phòng khác nhau, và không cây

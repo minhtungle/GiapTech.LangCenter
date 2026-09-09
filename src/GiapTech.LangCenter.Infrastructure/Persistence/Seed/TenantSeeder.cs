@@ -47,12 +47,26 @@ public class TenantSeeder(AppDbContext db, IPasswordHasher hasher, ICurrentTenan
         ThemNhomQuyen(tenant.Id, NhomQuyenMacDinh.HocVien,
             "Chỉ xem và nộp bài của chính mình", NhomQuyenMacDinh.CuaHocVien);
 
+        // Danh mục chức vụ dựng sẵn (FR-24) — trung tâm nào cũng có mấy chức danh này, để admin
+        // không phải tự gõ từ đầu. "Ban quản lý" là yêu cầu của chủ sản phẩm 09/09/2026.
+        var chucVus = new[]
+        {
+            new ChucVu { TenantId = tenant.Id, Ten = "Ban quản lý", ThuTu = 1 },
+            new ChucVu { TenantId = tenant.Id, Ten = "Quản trị hệ thống", ThuTu = 2 },
+            new ChucVu { TenantId = tenant.Id, Ten = "Trưởng phòng", ThuTu = 3 },
+            new ChucVu { TenantId = tenant.Id, Ten = "Nhân viên kinh doanh", ThuTu = 4 },
+            new ChucVu { TenantId = tenant.Id, Ten = "Kế toán", ThuTu = 5 },
+        };
+        db.ChucVus.AddRange(chucVus);
+
         // Hai bản ghi: CON NGƯỜI và TÀI KHOẢN của họ (tách từ 07/09/2026).
         var nguoiAdmin = new NguoiDung
         {
             TenantId = tenant.Id,
             HoTen = "Quản trị viên",
             LoaiNguoiDung = LoaiNguoiDung.NhanVien,
+            // Admin mặc định là "Quản trị hệ thống" — chức vụ, KHÔNG phải quyền (quy tắc #9).
+            ChucVuId = chucVus[1].Id,
             TrangThaiNhanSu = TrangThaiNhanSu.DangLamViec
         };
         db.NguoiDungs.Add(nguoiAdmin);
@@ -60,8 +74,7 @@ public class TenantSeeder(AppDbContext db, IPasswordHasher hasher, ICurrentTenan
         db.HoSoNhanViens.Add(new HoSoNhanVien
         {
             TenantId = tenant.Id,
-            NguoiDungId = nguoiAdmin.Id,
-            ChucVu = "Quản trị hệ thống"
+            NguoiDungId = nguoiAdmin.Id
         });
 
         var admin = new TaiKhoan

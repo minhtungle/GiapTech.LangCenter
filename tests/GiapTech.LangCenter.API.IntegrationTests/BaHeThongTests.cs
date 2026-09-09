@@ -100,7 +100,7 @@ public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
     {
         var admin = await Client();
         var q = await TaoNhomQuyen(admin, "HRM và CRM",
-            ChucNang.NhanVienKinhDoanh, ChucNang.DoanhThu);
+            ChucNang.NhanSu, ChucNang.DoanhThu);
         await TaoNguoiDung(admin, "hrm-crm", [q]);
 
         var c = await Client("hrm-crm", "matkhau123");
@@ -180,9 +180,11 @@ public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
     /// được cho chúng, và mục sidebar tương ứng không bao giờ hiện.
     /// </summary>
     [Theory]
-    [InlineData(ChucNang.NhanVienKinhDoanh)]
-    [InlineData(ChucNang.GiaoVienNhanSu)]
+    [InlineData(ChucNang.NhanSu)]
+    [InlineData(ChucNang.ChucVu)]
+    [InlineData(ChucNang.PhongBan)]
     [InlineData(ChucNang.DoanhThu)]
+    [InlineData(ChucNang.KhachHang)]
     public async Task Chuc_nang_moi_co_trong_danh_muc(string chucNang)
     {
         var admin = await Client();
@@ -206,8 +208,9 @@ public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var co = quanTri.GetProperty("chucNangs").EnumerateArray()
             .Select(x => x.GetProperty("tenChucNang").GetString()!).ToHashSet();
 
-        Assert.Contains(ChucNang.NhanVienKinhDoanh, co);
-        Assert.Contains(ChucNang.GiaoVienNhanSu, co);
+        Assert.Contains(ChucNang.NhanSu, co);
+        Assert.Contains(ChucNang.ChucVu, co);
+        Assert.Contains(ChucNang.PhongBan, co);
         Assert.Contains(ChucNang.DoanhThu, co);
     }
 
@@ -371,7 +374,7 @@ public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
     /// <summary>
     /// Hai màn gác bằng HAI chức năng khác nhau — đây là điểm cốt lõi của việc tách.
     ///
-    /// Người chỉ có `GiaoVienNhanSu` (trưởng phòng nhân sự) vào được `/nhan-su` nhưng **không**
+    /// Người chỉ có `NhanSu` (trưởng phòng nhân sự) vào được `/nhan-su` nhưng **không**
     /// vào được `/hoc-vien`; và họ KHÔNG cần quyền `TaiKhoan`, tức không thấy tài khoản đăng
     /// nhập của ai. Nếu màn Nhân sự vẫn dùng `/nguoi-dung` (gác bằng `TaiKhoan` — chức năng
     /// dùng chung) thì việc tách hai màn chẳng đổi được gì ở tầng API.
@@ -381,7 +384,7 @@ public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
     {
         var admin = await Client();
 
-        var qNhanSu = await TaoNhomQuyen(admin, "Chỉ nhân sự", ChucNang.GiaoVienNhanSu);
+        var qNhanSu = await TaoNhomQuyen(admin, "Chỉ nhân sự", ChucNang.NhanSu);
         await TaoNguoiDung(admin, "chi-nhan-su", [qNhanSu]);
         var cNhanSu = await Client("chi-nhan-su", "matkhau123");
 
@@ -462,7 +465,7 @@ public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
     public async Task He_thong_cua_toi_khong_ro_ri_qua_tenant()
     {
         var admin = await Client();
-        var q = await TaoNhomQuyen(admin, "Chỉ HRM cách ly", ChucNang.NhanVienKinhDoanh);
+        var q = await TaoNhomQuyen(admin, "Chỉ HRM cách ly", ChucNang.ChucVu);
         await TaoNguoiDung(admin, "chi-hrm-cach-ly", [q]);
 
         var cA = await Client("chi-hrm-cach-ly", "matkhau123");

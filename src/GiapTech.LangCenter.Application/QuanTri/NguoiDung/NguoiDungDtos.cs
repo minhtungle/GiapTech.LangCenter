@@ -18,11 +18,6 @@ public record HoSoHocVienDto(
     string? TruongLop, string? TenPhuHuynh, string? SoDienThoaiPhuHuynh);
 
 /// <summary>Hồ sơ đặc thù nhân sự vận hành.</summary>
-/// <summary>
-/// Hồ sơ vận hành. `PhongBan` (chuỗi) bỏ 09/09/2026 — phòng ban nay là `NGUOI_DUNG.PhongBanId`
-/// trỏ tới bảng `PHONG_BAN` (FR-22), dùng chung cho mọi vai trò nhân sự.
-/// </summary>
-public record HoSoNhanVienDto(string? ChucVu);
 
 /// <summary>
 /// FR-03 — hồ sơ CON NGƯỜI.
@@ -37,14 +32,16 @@ public record NguoiDungDto(
     LoaiNguoiDung LoaiNguoiDung, TrangThaiNhanSu TrangThaiNhanSu,
     HoSoGiaoVienDto? HoSoGiaoVien,
     HoSoHocVienDto? HoSoHocVien,
-    HoSoNhanVienDto? HoSoNhanVien,
     /// <summary>Username của tài khoản gắn với người này — null nếu họ chưa có tài khoản.</summary>
     string? Username,
     /// <summary>null = chưa có tài khoản. Phân biệt với "có tài khoản đang bị vô hiệu hoá".</summary>
     TrangThaiNguoiDung? TrangThaiTaiKhoan,
     /// <summary>Phòng ban đang thuộc (FR-22) — null = chưa xếp vào cơ cấu.</summary>
     Guid? PhongBanId,
-    string? TenPhongBan);
+    string? TenPhongBan,
+    /// <summary>Chức vụ (FR-24) — null = chưa gán.</summary>
+    Guid? ChucVuId,
+    string? TenChucVu);
 
 // ---------- Queries ----------
 
@@ -64,7 +61,14 @@ public record LayDanhSachNguoiDungQuery(
     /// "Vai trò", tham số này là **phạm vi của màn hình** — người dùng không đổi được. Giữ
     /// riêng hai thứ để bộ lọc trong màn Nhân sự không bao giờ lọc ra được học viên.
     /// </summary>
-    IReadOnlyCollection<LoaiNguoiDung>? TrongCacLoai = null)
+    IReadOnlyCollection<LoaiNguoiDung>? TrongCacLoai = null,
+    /// <summary>
+    /// Lấy đúng MỘT người theo id — dùng cho view chi tiết.
+    ///
+    /// Đi qua cùng query thay vì viết query riêng để `TrongCacLoai` (phạm vi màn hình) vẫn được
+    /// ép: gõ id học viên vào `/nhan-su/{id}` sẽ ra rỗng, không phải hồ sơ học viên.
+    /// </summary>
+    Guid? Id = null)
     : IRequest<KetQuaTrang<NguoiDungDto>>;
 
 public class LayDanhSachNguoiDungHandler(IAppDbContext db)
@@ -86,6 +90,10 @@ public class LayDanhSachNguoiDungHandler(IAppDbContext db)
 
         if (request.TrongCacLoai is { Count: > 0 } pham)
             q = q.Where(u => pham.Contains(u.LoaiNguoiDung));
+
+        // Lọc theo id SAU phạm vi vai trò — thứ tự này là điểm chính: id của học viên đã bị
+        // `TrongCacLoai` loại trước khi tới đây.
+        if (request.Id is { } id) q = q.Where(u => u.Id == id);
 
         if (request.LoaiNguoiDung is { } loai) q = q.Where(u => u.LoaiNguoiDung == loai);
         if (request.TrangThaiNhanSu is { } tt) q = q.Where(u => u.TrangThaiNhanSu == tt);
@@ -112,13 +120,12 @@ public class LayDanhSachNguoiDungHandler(IAppDbContext db)
                     : new HoSoHocVienDto(
                         u.HoSoHocVien.TruongLop, u.HoSoHocVien.TenPhuHuynh,
                         u.HoSoHocVien.SoDienThoaiPhuHuynh),
-                u.HoSoNhanVien == null
-                    ? null
-                    : new HoSoNhanVienDto(u.HoSoNhanVien.ChucVu),
                 u.TaiKhoan == null ? null : u.TaiKhoan.Username,
                 u.TaiKhoan == null ? null : (TrangThaiNguoiDung?)u.TaiKhoan.TrangThai,
                 u.PhongBanId,
-                u.PhongBan == null ? null : u.PhongBan.Ten))
+                u.PhongBan == null ? null : u.PhongBan.Ten,
+                u.ChucVuId,
+                u.ChucVu == null ? null : u.ChucVu.Ten))
             .ToListAsync(ct);
 
         return new KetQuaTrang<NguoiDungDto>(duLieu, tong, trang.TrangHopLe, trang.SoDongHopLe);
@@ -140,7 +147,6 @@ public record TaoNguoiDungCommand(
     DateTimeOffset? NgaySinh, LoaiNguoiDung LoaiNguoiDung,
     HoSoGiaoVienDto? HoSoGiaoVien = null,
     HoSoHocVienDto? HoSoHocVien = null,
-    HoSoNhanVienDto? HoSoNhanVien = null,
     /// <summary>
     /// Phòng ban khi tạo — **cách 1** của FR-22 (cách 2 là vào cây cơ cấu thêm người).
     ///
@@ -148,6 +154,8 @@ public record TaoNguoiDungCommand(
     /// viên vận hành — chốt 09/09/2026: giáo viên cũng là nhân viên.
     /// </summary>
     Guid? PhongBanId = null,
+    /// <summary>Chức vụ khi tạo (FR-24) — "Ban quản lý", "Trưởng phòng"… null = chưa gán.</summary>
+    Guid? ChucVuId = null,
     /// <summary>
     /// Tạo luôn tài khoản trong cùng một giao dịch. Hai lượt gọi riêng sẽ để lại người dùng
     /// không tài khoản nếu lượt thứ hai hỏng — việc thường gặp nhất không nên là việc dễ làm dở.
@@ -182,6 +190,10 @@ public class TaoNguoiDungHandler(IAppDbContext db, IPasswordHasher hasher)
         // `XepNhanSuVaoPhongBanHandler` — chặn một phía sẽ để lọt.
         await KiemTraPhongBan(db, request.PhongBanId, request.LoaiNguoiDung, ct);
 
+        if (request.ChucVuId is { } cvId
+            && !await db.ChucVus.AnyAsync(c => c.Id == cvId, ct))
+            throw new AppException("CHUC_VU_KHONG_HOP_LE");
+
         var nd = new Domain.Entities.NguoiDung
         {
             HoTen = request.HoTen.Trim(),
@@ -191,12 +203,13 @@ public class TaoNguoiDungHandler(IAppDbContext db, IPasswordHasher hasher)
             NgaySinh = request.NgaySinh,
             LoaiNguoiDung = request.LoaiNguoiDung,
             PhongBanId = request.PhongBanId,
+            ChucVuId = request.ChucVuId,
             TrangThaiNhanSu = TrangThaiNhanSu.DangLamViec
         };
         db.NguoiDungs.Add(nd);
 
         GhiHoSo(db, nd, request.LoaiNguoiDung,
-            request.HoSoGiaoVien, request.HoSoHocVien, request.HoSoNhanVien, taoMoiNeuThieu: true);
+            request.HoSoGiaoVien, request.HoSoHocVien, taoMoiNeuThieu: true);
 
         if (request.TaiKhoan is { } tk)
         {
@@ -263,7 +276,7 @@ public class TaoNguoiDungHandler(IAppDbContext db, IPasswordHasher hasher)
     /// </summary>
     internal static void GhiHoSo(
         IAppDbContext db, Domain.Entities.NguoiDung nd, LoaiNguoiDung loai,
-        HoSoGiaoVienDto? gv, HoSoHocVienDto? hv, HoSoNhanVienDto? nv, bool taoMoiNeuThieu)
+        HoSoGiaoVienDto? gv, HoSoHocVienDto? hv, bool taoMoiNeuThieu)
     {
         var laGiaoVien = loai is LoaiNguoiDung.GiaoVien or LoaiNguoiDung.TroGiang;
 
@@ -301,19 +314,14 @@ public class TaoNguoiDungHandler(IAppDbContext db, IPasswordHasher hasher)
             }
         }
 
-        if (nv is not null || (taoMoiNeuThieu && loai == LoaiNguoiDung.NhanVien))
+        // HO_SO_NHAN_VIEN nay KHÔNG còn trường nào (cột `chuc_vu` chuyển thành
+        // `NGUOI_DUNG.chuc_vu_id` → `CHUC_VU`, FR-24). Vẫn tạo hàng cho vai trò NhanVien để
+        // FR-23 (CCCD, số tài khoản, MXH) có chỗ ghi mà không phải backfill sau.
+        if (taoMoiNeuThieu && loai == LoaiNguoiDung.NhanVien && nd.HoSoNhanVien is null)
         {
-            var ho = nd.HoSoNhanVien;
-            if (ho is null)
-            {
-                ho = new Domain.Entities.HoSoNhanVien { NguoiDungId = nd.Id, NguoiDung = nd };
-                db.HoSoNhanViens.Add(ho);
-                nd.HoSoNhanVien = ho;
-            }
-            if (nv is not null)
-            {
-                ho.ChucVu = Gon(nv.ChucVu);
-            }
+            var ho = new Domain.Entities.HoSoNhanVien { NguoiDungId = nd.Id, NguoiDung = nd };
+            db.HoSoNhanViens.Add(ho);
+            nd.HoSoNhanVien = ho;
         }
     }
 
@@ -326,7 +334,6 @@ public record CapNhatNguoiDungCommand(
     DateTimeOffset? NgaySinh, LoaiNguoiDung LoaiNguoiDung, TrangThaiNhanSu TrangThaiNhanSu,
     HoSoGiaoVienDto? HoSoGiaoVien = null,
     HoSoHocVienDto? HoSoHocVien = null,
-    HoSoNhanVienDto? HoSoNhanVien = null,
     /// <summary>
     /// Phòng ban mới. `Guid?` không phân biệt được "không gửi" với "gỡ khỏi phòng ban", nên
     /// **phải đi cùng** <see cref="DoiPhongBan"/> — xem ghi chú ở cờ đó (quy tắc #1).
@@ -342,6 +349,13 @@ public record CapNhatNguoiDungCommand(
     /// `AnhDaiDienUrl`, `Guid?` thì không.
     /// </summary>
     bool DoiPhongBan = false,
+    /// <summary>Chức vụ mới — phải đi cùng <see cref="DoiChucVu"/>, cùng lý do như phòng ban.</summary>
+    Guid? ChucVuId = null,
+    /// <summary>
+    /// true = thật sự muốn đổi chức vụ (kể cả null = bỏ chức vụ). false = giữ nguyên.
+    /// Cùng lý do với <see cref="DoiPhongBan"/>: `Guid?` chỉ có một giá trị trống (quy tắc #1).
+    /// </summary>
+    bool DoiChucVu = false,
     /// <summary>null = client không gửi → giữ ảnh đang có (quy tắc #1).</summary>
     string? AnhDaiDienUrl = null) : IRequest;
 
@@ -379,6 +393,14 @@ public class CapNhatNguoiDungHandler(IAppDbContext db)
         // Chỉ đổi khi client NÓI RÕ là muốn đổi. Không có cờ này thì mọi form không có ô phòng
         // ban sẽ âm thầm gỡ người ra khỏi cơ cấu mỗi lần lưu (quy tắc #1) — `Guid?` chỉ có một
         // giá trị trống nên không tự phân biệt được "không gửi" với "gỡ ra".
+        if (request.DoiChucVu)
+        {
+            if (request.ChucVuId is { } cvId
+                && !await db.ChucVus.AnyAsync(c => c.Id == cvId, ct))
+                throw new AppException("CHUC_VU_KHONG_HOP_LE");
+            nd.ChucVuId = request.ChucVuId;
+        }
+
         if (request.DoiPhongBan)
         {
             await TaoNguoiDungHandler.KiemTraPhongBan(
@@ -398,7 +420,7 @@ public class CapNhatNguoiDungHandler(IAppDbContext db)
             nd.AnhDaiDienUrl = string.IsNullOrWhiteSpace(anh) ? null : anh;
 
         TaoNguoiDungHandler.GhiHoSo(db, nd, request.LoaiNguoiDung,
-            request.HoSoGiaoVien, request.HoSoHocVien, request.HoSoNhanVien,
+            request.HoSoGiaoVien, request.HoSoHocVien,
             taoMoiNeuThieu: true);
 
         await db.SaveChangesAsync(ct);

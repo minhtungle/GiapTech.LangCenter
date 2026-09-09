@@ -25,15 +25,15 @@ Mỗi trung tâm đăng ký là một tenant độc lập, dữ liệu cách ly 
 Tách ra từ một ứng dụng quản lý CLB đá bóng (04/09/2026), giữ toàn bộ tầng hệ thống. Nghiệp vụ
 LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 
-**20/24 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 387 test backend xanh.
+**22/24 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 403 test backend xanh.
 
 | Đã chạy đầu-cuối | Chưa có |
 |---|---|
 | Đăng nhập · quên mật khẩu · buộc đổi mật khẩu lần đầu | **FR-15 Thống kê / Dashboard** |
 | Người dùng (hồ sơ 3 vai trò) tách khỏi tài khoản · nhóm quyền · thiết lập | **Bài kiểm tra** — có schema, chưa có API/UI |
-| **Ba hệ thống con** HRM/CRM/LMS: bộ chuyển, sidebar lọc, tab phân quyền | **FR-23/24 HRM** — hồ sơ mở rộng, danh mục chức vụ |
+| **Ba hệ thống con** HRM/CRM/LMS: bộ chuyển, sidebar lọc, tab phân quyền | **FR-23 HRM** — CCCD, số tài khoản, liên kết MXH, tệp đính kèm |
 | **CRM** (FR-17 → FR-20): khách hàng + view 3 tab · doanh thu đa tiền tệ · **khoá học + sản phẩm** | Số **đã thu** ở CRM chưa chảy sang sổ học phí LMS |
-| **FR-21 xếp lớp**: bán khoá → gửi yêu cầu → duyệt vào lớp (2 cách), học phí lấy từ đơn CRM | `LOP_HOC` chưa nối `KHOA_HOC` (chưa ưu tiên lớp cùng khoá) |
+| **HRM**: cơ cấu tổ chức (FR-22) · **danh mục chức vụ** (FR-24) · view chi tiết hồ sơ | `LOP_HOC` chưa nối `KHOA_HOC` (chưa ưu tiên lớp cùng khoá) |
 | Hồ sơ con người tách theo hệ thống: Nhân sự (HRM) · Học viên (LMS) | |
 | Lớp học: vòng đời, phân công, ghi danh, học phí riêng từng người | Đăng ký trung tâm an toàn production (nợ N3) |
 | Buổi học: sinh lịch tự động; điểm danh hai nguồn | Nhắc nợ / thông báo qua email |
@@ -93,7 +93,7 @@ Chi tiết và nợ kỹ thuật: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 | **Tiến độ, lộ trình, nợ kỹ thuật** | [`docs/ke-hoach.md`](./docs/ke-hoach.md) |
 | Tổng quan nghiệp vụ, đọc 1 mạch | [`docs/tong-thuat.md`](./docs/tong-thuat.md) |
 | **24 mã FR** theo module | [`docs/nghiep-vu/`](./docs/nghiep-vu/README.md) |
-| **ERD 34 bảng** + ràng buộc + hành vi xoá | [`docs/database/erd.md`](./docs/database/erd.md) |
+| **ERD 35 bảng** + ràng buộc + hành vi xoá | [`docs/database/erd.md`](./docs/database/erd.md) |
 | **Nhật ký theo ngày** (bối cảnh git log không có) | [`docs/nhat-ky/`](./docs/nhat-ky/README.md) |
 | Clean Architecture, luật phụ thuộc | [`docs/backend/clean-architecture.md`](./docs/backend/clean-architecture.md) |
 | Quy ước đặt tên, migration EF Core | [`docs/database/quy-uoc-migration.md`](./docs/database/quy-uoc-migration.md) |
@@ -234,7 +234,7 @@ Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 ```bash
 # --- Backend ---
 dotnet build          # 0 warning — TreatWarningsAsErrors đang bật
-dotnet test           # 387 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
+dotnet test           # 403 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
                       #           quản trị, lớp học, điểm danh, học liệu, học phí
 
 # Chạy API cần 2 biến bắt buộc (thiếu là 500 lúc đăng nhập / tải ảnh, không phải lúc khởi động):
@@ -270,7 +270,7 @@ docker run -d --name lms-pg -e POSTGRES_PASSWORD=devpass -e POSTGRES_USER=langce
 export ConnectionStrings__Default="Host=localhost;Port=55432;Database=langcenter;Username=langcenter;Password=devpass"
 dotnet ef database update --project src/GiapTech.LangCenter.Infrastructure \
   --startup-project src/GiapTech.LangCenter.API
-# → 34 bảng (13 hệ thống + 21 nghiệp vụ) — xem docs/database/erd.md
+# → 35 bảng (14 hệ thống + 21 nghiệp vụ) — xem docs/database/erd.md
 
 # Tạo trung tâm thử — endpoint ẩn danh, mã 7 ký tự do hệ thống sinh:
 curl -X POST localhost:5229/api/v1/dang-ky-trung-tam \

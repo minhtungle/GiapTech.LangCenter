@@ -64,6 +64,8 @@ public class DongThoiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     // --- HRM (FR-22) ---
     // Trùng tên trong CÙNG phòng ban cha thì người dùng chọn sai phòng.
     [InlineData("PhongBan", new[] { "TenantId", "PhongBanChaId", "Ten" })]
+    // Trùng tên chức vụ trong cùng trung tâm thì người dùng chọn sai (FR-24).
+    [InlineData("ChucVu", new[] { "TenantId", "Ten" })]
     public void Rang_buoc_chi_mot_phai_co_UNIQUE_o_tang_DB(string tenEntity, string[] cot)
     {
         using var scope = factory.Services.CreateScope();

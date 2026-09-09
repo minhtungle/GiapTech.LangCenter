@@ -40,27 +40,33 @@ public static class ChucNang
     // ---------- Nhân sự (HRM) ----------
 
     /// <summary>
-    /// Hồ sơ nhân viên kinh doanh — chỉ tiêu, khách hàng phụ trách, hoa hồng.
+    /// Hồ sơ nhân sự — nhân viên · giáo viên · trợ giảng (FR-03, FR-23).
+    ///
+    /// Đổi tên từ `GiaoVienNhanSu` (09/09/2026) khi bỏ hai màn riêng "Nhân viên kinh doanh" và
+    /// "Giáo viên": chức năng này **luôn** gác cả ba vai trò nhân sự, nên tên cũ gây hiểu sai là
+    /// chỉ dành cho giáo viên.
+    ///
+    /// Vẫn là chính con người trong `NGUOI_DUNG` + hồ sơ vai trò mà LMS dùng để phân công lớp,
+    /// **không** phải bảng nhân sự thứ hai: hai nguồn sự thật cho cùng một người thì đổi tên một
+    /// bên là bên kia sai.
+    ///
+    /// Tách khỏi <see cref="TaiKhoan"/> vì hai việc khác nhau: `TaiKhoan` là ai đăng nhập được,
+    /// `NhanSu` là hồ sơ con người. Trưởng phòng nhân sự cần cái sau mà không cần cái trước.
     /// </summary>
-    public const string NhanVienKinhDoanh = nameof(NhanVienKinhDoanh);
+    public const string NhanSu = nameof(NhanSu);
 
     /// <summary>
-    /// Giáo viên dưới góc nhìn NHÂN SỰ — hợp đồng, lương, chấm công.
+    /// Danh mục chức vụ (FR-24) — "Ban quản lý", "Trưởng phòng", "Kế toán"…
     ///
-    /// Vẫn là chính con người trong `NGUOI_DUNG` + `HO_SO_GIAO_VIEN` mà LMS dùng để phân công
-    /// lớp, **không** phải bảng nhân sự thứ hai: hai nguồn sự thật cho cùng một người thì đổi
-    /// tên một bên là bên kia sai (đúng lỗi đã gặp với tài khoản/người dùng).
-    ///
-    /// Tách khỏi <see cref="TaiKhoan"/> vì hai việc khác nhau: `TaiKhoan` là ai đăng nhập
-    /// được, `GiaoVienNhanSu` là điều kiện làm việc của một người. Trưởng phòng nhân sự cần
-    /// cái sau mà không cần cái trước.
+    /// Tách khỏi <see cref="NhanSu"/>: sửa **danh mục** là việc thiết lập của người quản trị,
+    /// còn gán chức vụ cho một người là việc thường ngày của người trực nhân sự.
     /// </summary>
-    public const string GiaoVienNhanSu = nameof(GiaoVienNhanSu);
+    public const string ChucVu = nameof(ChucVu);
 
     /// <summary>
     /// Cơ cấu tổ chức — cây phòng ban, người quản lý, xếp nhân sự vào phòng (FR-22).
     ///
-    /// Tách khỏi <see cref="GiaoVienNhanSu"/>: sửa cơ cấu tổ chức là việc của người quản trị
+    /// Tách khỏi <see cref="NhanSu"/>: sửa cơ cấu tổ chức là việc của người quản trị
     /// hoặc trưởng phòng nhân sự, còn xem/sửa hồ sơ một người là việc thường ngày của người
     /// trực nhân sự. Ma trận khác nhau nên không gộp.
     ///
@@ -158,7 +164,7 @@ public static class ChucNang
     public static readonly IReadOnlyList<string> TatCa =
     [
         TaiKhoan, PhanQuyen, ThietLapChung, Anh, DoiMatKhauNguoiKhac,
-        NhanVienKinhDoanh, GiaoVienNhanSu, PhongBan, DoanhThu, KhachHang, KhoaHoc, SanPham,
+        NhanSu, ChucVu, PhongBan, DoanhThu, KhachHang, KhoaHoc, SanPham,
         LopHoc, BuoiHoc, DiemDanh, BaiTap, BaiNopBaiTap, BaiKiemTra, BaiLamKiemTra,
         TaiLieu, HocPhi, ThongKe, LopHocToanTrungTam, NhatKyHeThong
     ];
@@ -175,8 +181,8 @@ public static class ChucNang
     /// </summary>
     private static readonly Dictionary<string, HeThong> TheoHeThong = new()
     {
-        [NhanVienKinhDoanh] = HeThong.Hrm,
-        [GiaoVienNhanSu] = HeThong.Hrm,
+        [NhanSu] = HeThong.Hrm,
+        [ChucVu] = HeThong.Hrm,
         [PhongBan] = HeThong.Hrm,
 
         [DoanhThu] = HeThong.Crm,

@@ -54,8 +54,8 @@ Từ 08/09/2026, mỗi chức năng thuộc **một trong ba hệ thống** (HRM
 
 | `ten_chuc_nang` | Hệ thống | Module | FR |
 |---|---|---|---|
-| `NhanVienKinhDoanh` | HRM | Hồ sơ nhân viên kinh doanh: chỉ tiêu, khách hàng, hoa hồng | *(khung)* |
-| `GiaoVienNhanSu` | HRM | Giáo viên góc nhìn nhân sự: hợp đồng, lương, chấm công | *(khung)* |
+| `NhanSu` | HRM | [Hồ sơ nhân sự](../nghiep-vu/hrm.md) — nhân viên · giáo viên · trợ giảng. Đổi tên từ `GiaoVienNhanSu` (09/09) vì nó gác cả ba vai trò | FR-03, FR-23 |
+| `ChucVu` | HRM | [Danh mục chức vụ](../nghiep-vu/hrm.md#fr-24--danh-mục-chức-vụ) — "Ban quản lý", "Trưởng phòng"… | FR-24 |
 | `PhongBan` | HRM | [Cơ cấu tổ chức](../nghiep-vu/hrm.md#fr-22--cơ-cấu-tổ-chức): cây phòng ban, người quản lý, xếp nhân sự | FR-22 |
 | `KhachHang` | CRM | [Khách hàng](../nghiep-vu/crm.md#fr-17--khách-hàng) — tất cả khách, kể cả chưa mua | FR-17 |
 | `DoanhThu` | CRM | [Doanh thu](../nghiep-vu/crm.md) — đơn hàng, sổ thu, yêu cầu xếp lớp | FR-18, FR-21 |
@@ -97,7 +97,7 @@ sidebar, **không phải ba ứng dụng**: vẫn một API, một database, m�
 
 | Hệ thống | Chức năng |
 |---|---|
-| **HRM** | `NhanVienKinhDoanh`, `GiaoVienNhanSu`, `PhongBan` |
+| **HRM** | `NhanSu`, `ChucVu`, `PhongBan` |
 | **CRM** | `KhachHang`, `DoanhThu`, `KhoaHoc`, `SanPham` |
 | **LMS** | `LopHoc`, `BuoiHoc`, `DiemDanh`, `BaiTap`, `BaiNopBaiTap`, `BaiKiemTra`, `BaiLamKiemTra`, `TaiLieu`, `HocPhi`, `ThongKe`, `LopHocToanTrungTam` |
 | **Dùng chung** | `TaiKhoan`, `PhanQuyen`, `ThietLapChung`, `Anh`, `DoiMatKhauNguoiKhac`, `NhatKyHeThong` |

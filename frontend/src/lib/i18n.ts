@@ -94,6 +94,7 @@ const vi = {
     giaoVienNhanSu: 'Giáo viên',
     nhanSuNguoiDung: 'Hồ sơ nhân sự',
     coCauToChuc: 'Cơ cấu tổ chức',
+    chucVu: 'Chức vụ',
     hocVien: 'Học viên',
     doanhThu: 'Doanh thu',
     khachHangDs: 'Khách hàng',
@@ -168,6 +169,9 @@ const vi = {
     tenPhuHuynh: 'Tên phụ huynh',
     sdtPhuHuynh: 'SĐT phụ huynh',
     chucVu: 'Chức vụ',
+    chuaGanChucVu: 'Chưa gán chức vụ',
+    ngaySinh: 'Ngày sinh',
+    diaChi: 'Địa chỉ',
     phongBan: 'Phòng ban',
     chuaXepPhongBan: 'Chưa xếp vào cơ cấu',
     taiKhoan: 'Tài khoản',
@@ -747,6 +751,27 @@ const vi = {
     DaHuy: 'Đã huỷ',
     TuChoi: 'Bị từ chối',
   },
+  chucVu: {
+    them: 'Thêm chức vụ',
+    sua: 'Sửa chức vụ',
+    ten: 'Tên chức vụ',
+    thuTu: 'Thứ tự hiển thị',
+    soNhanSu: 'Đang giữ',
+    trangThai: 'Trạng thái',
+    dangDung: 'Còn dùng',
+    ngungDung: 'Ngừng dùng',
+    conDung: 'Còn dùng chức vụ này',
+    ngungDungGoiY:
+      'Chức vụ đang có người giữ thì KHÔNG xoá được — hồ sơ cũ phải giữ được chức vụ đã ghi. '
+      + 'Bỏ tích ô trên để ngừng dùng mà vẫn giữ lịch sử.',
+    chuaCo: 'Chưa có chức vụ nào',
+    giaiThich:
+      'Chức vụ là CHỨC DANH (Ban quản lý, Trưởng phòng…), khác vai trò nghiệp vụ (Nhân viên, '
+      + 'Giáo viên, Trợ giảng, Học viên). Chức vụ KHÔNG cấp thêm quyền nào — quyền vẫn theo '
+      + 'phân quyền tài khoản.',
+    hoiLuu: 'Lưu chức vụ? Thông tin hiện tại sẽ bị ghi đè.',
+    hoiXoa: 'Xoá chức vụ "{{ten}}"? Chức vụ đang có người giữ thì không xoá được.',
+  },
   coCau: {
     themPhongGoc: 'Thêm phòng ban',
     themPhongBan: 'Thêm phòng ban',
@@ -946,6 +971,9 @@ const vi = {
     DON_DA_DUOC_XEP_LOP: 'Đơn này đã được xếp lớp, không cần gửi lại',
     CHUA_NHAP_LY_DO_TU_CHOI: 'Phải nhập lý do từ chối',
     PHONG_BAN_TRUNG_TEN: 'Đã có phòng ban cùng tên ở cấp này',
+    CHUC_VU_TRUNG_TEN: 'Đã có chức vụ cùng tên trong trung tâm',
+    CHUC_VU_CON_NGUOI_GIU: 'Chức vụ đang có người giữ — bỏ tích "Còn dùng" để ngừng dùng mà vẫn giữ lịch sử',
+    CHUC_VU_KHONG_HOP_LE: 'Chức vụ không tồn tại',
     PHONG_BAN_CON_NGUOI: 'Phòng ban còn nhân sự — chuyển họ sang phòng khác trước khi xoá',
     PHONG_BAN_CON_CAP_DUOI: 'Phòng ban còn phòng cấp dưới — xoá từ dưới lên',
     PHONG_BAN_CHU_TRINH: 'Không thể đặt phòng ban này làm cấp dưới của chính nó',

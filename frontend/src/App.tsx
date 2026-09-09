@@ -11,8 +11,6 @@ import LopHoc from '@/pages/dao-tao/LopHoc'
 import ChiTietLopHoc from '@/pages/dao-tao/ChiTietLopHoc'
 import ChoXepLop from '@/pages/dao-tao/ChoXepLop'
 import ChiTietBuoiHoc from '@/pages/dao-tao/ChiTietBuoiHoc'
-import NhanVienKinhDoanh from '@/pages/hrm/NhanVienKinhDoanh'
-import GiaoVienNhanSu from '@/pages/hrm/GiaoVienNhanSu'
 import DoanhThu from '@/pages/crm/DoanhThu'
 import KhachHang from '@/pages/crm/KhachHang'
 import ChiTietKhachHang from '@/pages/crm/ChiTietKhachHang'
@@ -23,6 +21,8 @@ import HocPhi from '@/pages/dao-tao/HocPhi'
 import TaiKhoan from '@/pages/quan-tri/TaiKhoan'
 import NhanSu from '@/pages/hrm/NhanSu'
 import CoCauToChuc from '@/pages/hrm/CoCauToChuc'
+import ChucVu from '@/pages/hrm/ChucVu'
+import ChiTietNhanSu from '@/pages/hrm/ChiTietNhanSu'
 import HocVien from '@/pages/dao-tao/HocVien'
 import PhanQuyen from '@/pages/quan-tri/PhanQuyen'
 import ThietLap from '@/pages/quan-tri/ThietLap'
@@ -74,8 +74,8 @@ export default function App() {
               {/* HRM · CRM — hiện là khung trống, xem components/ui/DangPhatTrien.tsx */}
               <Route path="/hrm/co-cau" element={<CoCauToChuc />} />
               <Route path="/hrm/nhan-su" element={<NhanSu />} />
-              <Route path="/hrm/nhan-vien-kinh-doanh" element={<NhanVienKinhDoanh />} />
-              <Route path="/hrm/giao-vien" element={<GiaoVienNhanSu />} />
+              <Route path="/hrm/nhan-su/:id" element={<ChiTietNhanSu />} />
+              <Route path="/hrm/chuc-vu" element={<ChucVu />} />
               <Route path="/crm/khach-hang" element={<KhachHang />} />
               <Route path="/crm/khach-hang/:id" element={<ChiTietKhachHang />} />
               <Route path="/crm/doanh-thu" element={<DoanhThu />} />

@@ -60,6 +60,29 @@ public class NguoiDungConfig : IEntityTypeConfiguration<NguoiDung>
         // người (`PHONG_BAN_CON_NGUOI`) — SetNull ở đây là lưới an toàn cho đường xoá khác.
         b.HasOne(x => x.PhongBan).WithMany(p => p.NhanSus)
             .HasForeignKey(x => x.PhongBanId).OnDelete(DeleteBehavior.SetNull);
+
+        b.HasIndex(x => x.ChucVuId);
+
+        // SetNull: xoá chức vụ không được cuốn người theo. Handler vẫn chặn xoá chức vụ còn
+        // người giữ — SetNull là lưới an toàn cho đường xoá khác.
+        b.HasOne(x => x.ChucVu).WithMany(c => c.NhanSus)
+            .HasForeignKey(x => x.ChucVuId).OnDelete(DeleteBehavior.SetNull);
+    }
+}
+
+/// <summary>Danh mục chức vụ do admin tự quản (FR-24).</summary>
+public class ChucVuConfig : IEntityTypeConfiguration<ChucVu>
+{
+    public void Configure(EntityTypeBuilder<ChucVu> b)
+    {
+        b.ToTable("CHUC_VU");
+        b.Property(x => x.Ten).HasMaxLength(200).IsRequired();
+        b.Property(x => x.MoTa).HasMaxLength(500);
+
+        b.HasIndex(x => x.TenantId);
+
+        // Trùng tên chức vụ trong cùng trung tâm thì người dùng chọn sai (quy tắc #8).
+        b.HasIndex(x => new { x.TenantId, x.Ten }).IsUnique();
     }
 }
 
@@ -170,7 +193,6 @@ public class HoSoNhanVienConfig : IEntityTypeConfiguration<HoSoNhanVien>
     public void Configure(EntityTypeBuilder<HoSoNhanVien> b)
     {
         b.ToTable("HO_SO_NHAN_VIEN");
-        b.Property(x => x.ChucVu).HasMaxLength(200);
 
         b.HasIndex(x => x.NguoiDungId).IsUnique();
         b.HasIndex(x => x.TenantId);

@@ -19,7 +19,7 @@ namespace GiapTech.LangCenter.API.Controllers.V1;
 /// nhân sự phải được cấp quyền `TaiKhoan`, tức là thấy luôn cả tài khoản đăng nhập của mọi
 /// người — việc tách hai màn hình sẽ chẳng đổi được gì ở tầng API, nơi duy nhất chặn thật.
 ///
-/// Endpoint này gác bằng `GiaoVienNhanSu` (HRM). Người quản lý nhân sự cần đúng quyền HRM,
+/// Endpoint này gác bằng `NhanSu` (HRM). Người quản lý nhân sự cần đúng quyền HRM,
 /// không cần quyền quản trị tài khoản.
 ///
 /// Hồ sơ con người vẫn là **một bảng `NGUOI_DUNG` duy nhất** — HRM và LMS nhìn cùng dữ liệu,
@@ -48,7 +48,7 @@ public class NhanSuController(ISender sender) : ControllerBase
     /// viên nào.
     /// </summary>
     [HttpGet]
-    [RequirePermission(ChucNang.GiaoVienNhanSu, HanhDong.Xem)]
+    [RequirePermission(ChucNang.NhanSu, HanhDong.Xem)]
     public async Task<ActionResult<KetQuaTrang<NguoiDungDto>>> DanhSach(
         [FromQuery] string? timKiem,
         [FromQuery] LoaiNguoiDung? loaiNguoiDung,
@@ -65,8 +65,26 @@ public class NhanSuController(ISender sender) : ControllerBase
             VaiTroNhanSu), ct));
     }
 
+    /// <summary>
+    /// Chi tiết một hồ sơ nhân sự — cho view riêng ở `/hrm/nhan-su/{id}` (09/09/2026).
+    ///
+    /// Dùng lại `LayDanhSachNguoiDungQuery` với `VaiTroNhanSu` thay vì viết query mới: nhờ đó
+    /// **phạm vi ba vai trò được ép ở cùng một chỗ**. Gõ id của một học viên vào URL sẽ nhận
+    /// 404, không phải hồ sơ học viên — thứ mà một query riêng rất dễ để lọt.
+    /// </summary>
+    [HttpGet("{id:guid}")]
+    [RequirePermission(ChucNang.NhanSu, HanhDong.Xem)]
+    public async Task<ActionResult<NguoiDungDto>> ChiTiet(Guid id, CancellationToken ct)
+    {
+        var kq = await sender.Send(new LayDanhSachNguoiDungQuery(
+            null, null, null, new ThamSoTrang(1, 1), VaiTroNhanSu, id), ct);
+
+        var u = kq.DuLieu.FirstOrDefault();
+        return u is null ? NotFound() : Ok(u);
+    }
+
     [HttpPost]
-    [RequirePermission(ChucNang.GiaoVienNhanSu, HanhDong.Them)]
+    [RequirePermission(ChucNang.NhanSu, HanhDong.Them)]
     public async Task<ActionResult<Guid>> Tao(
         [FromBody] TaoNguoiDungCommand command, CancellationToken ct)
     {
@@ -75,7 +93,7 @@ public class NhanSuController(ISender sender) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [RequirePermission(ChucNang.GiaoVienNhanSu, HanhDong.Sua)]
+    [RequirePermission(ChucNang.NhanSu, HanhDong.Sua)]
     public async Task<IActionResult> CapNhat(
         Guid id, [FromBody] CapNhatNguoiDungCommand command, CancellationToken ct)
     {
@@ -85,7 +103,7 @@ public class NhanSuController(ISender sender) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [RequirePermission(ChucNang.GiaoVienNhanSu, HanhDong.Xoa)]
+    [RequirePermission(ChucNang.NhanSu, HanhDong.Xoa)]
     public async Task<IActionResult> Xoa(Guid id, CancellationToken ct)
     {
         await sender.Send(new XoaNguoiDungCommand(id), ct);

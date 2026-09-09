@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { Plus, Trash2, Pencil } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import { useQuyen } from '@/lib/quyen'
@@ -43,10 +44,6 @@ interface HoSoHocVien {
   tenPhuHuynh: string | null
   soDienThoaiPhuHuynh: string | null
 }
-interface HoSoNhanVien {
-  chucVu: string | null
-}
-
 export interface NguoiDungDto {
   id: string
   hoTen: string
@@ -59,10 +56,12 @@ export interface NguoiDungDto {
   trangThaiNhanSu: TrangThaiNhanSu
   hoSoGiaoVien: HoSoGiaoVien | null
   hoSoHocVien: HoSoHocVien | null
-  hoSoNhanVien: HoSoNhanVien | null
   /** FR-22 — null = chưa xếp vào cơ cấu. */
   phongBanId: string | null
   tenPhongBan: string | null
+  /** FR-24 — null = chưa gán chức vụ. */
+  chucVuId: string | null
+  tenChucVu: string | null
   username: string | null
   trangThaiTaiKhoan: 'HoatDong' | 'VoHieuHoa' | null
 }
@@ -93,6 +92,13 @@ export interface PhamViNguoiDung {
   can: string
   /** Khoá i18n của tiêu đề, dùng cho thông báo xác nhận xoá. */
   khoaTieuDe: string
+  /**
+   * Đường dẫn view chi tiết, ví dụ `/hrm/nhan-su`. Bỏ trống = dòng không bấm được.
+   *
+   * Tách khỏi `duong` (endpoint API) vì hai thứ khác nhau: `/nhan-su` là API, `/hrm/nhan-su`
+   * là route frontend.
+   */
+  duongChiTiet?: string
 }
 
 /**
@@ -106,6 +112,7 @@ export interface PhamViNguoiDung {
  */
 export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const { coQuyen } = useQuyen()
   const { hoi, hop } = useXacNhan()
@@ -127,6 +134,8 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
   /** Phòng ban đang chọn trên form (FR-22) — null = chưa xếp vào cơ cấu. */
   const [phongBan, setPhongBan] = useState<string | null>(null)
+  /** Chức vụ đang chọn (FR-24) — null = chưa gán. */
+  const [chucVu, setChucVu] = useState<string | null>(null)
 
   const { data: kq = trangRong<NguoiDungDto>(), isLoading } = useQuery({
     queryKey: [phamVi.duong, timKiem, locVaiTro, locNhanSu, trang, soDong],
@@ -159,6 +168,16 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
   const { data: cayPhongBan = [] } = useQuery({
     queryKey: ['phong-ban'],
     queryFn: async () => (await api.get<PhongBanNode[]>('/phong-ban')).data,
+    enabled: moForm,
+  })
+
+  /** Danh mục chức vụ (FR-24) — chỉ lấy chức vụ CÒN DÙNG cho form chọn. */
+  const { data: chucVus = [] } = useQuery({
+    queryKey: ['chuc-vu', 'dang-dung'],
+    queryFn: async () =>
+      (await api.get<{ id: string; ten: string }[]>('/chuc-vu', {
+        params: { chiDangDung: true },
+      })).data,
     enabled: moForm,
   })
 
@@ -224,10 +243,8 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
                 soDienThoaiPhuHuynh: s('soDienThoaiPhuHuynh'),
               }
             : null,
-        hoSoNhanVien:
-          loai === 'NhanVien'
-            ? { chucVu: s('chucVu') }
-            : null,
+        // Học viên không có chức vụ; các vai trò nhân sự gửi chức vụ đang chọn.
+        chucVuId: loai === 'HocVien' ? null : chucVu,
         // Học viên không vào cơ cấu; các vai trò nhân sự thì gửi phòng ban đang chọn.
         phongBanId: loai === 'HocVien' ? null : phongBan,
       }
@@ -238,6 +255,7 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
         // ghi phòng ban khi client nói rõ là muốn đổi. Form này LUÔN có ô phòng ban (trừ học
         // viên) nên luôn gửi true.
         than.doiPhongBan = true
+        than.doiChucVu = true
         await api.put(`${phamVi.duong}/${dangSua.id}`, { ...than, id: dangSua.id })
       } else {
         if (taoTaiKhoan) {
@@ -268,6 +286,7 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
     setDangSua(u)
     setLoai(u.loaiNguoiDung)
     setPhongBan(u.phongBanId ?? null)
+    setChucVu(u.chucVuId ?? null)
     setNhanSu(u.trangThaiNhanSu)
     setMaLoi(null)
     setMoForm(true)
@@ -367,7 +386,16 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
             </thead>
             <tbody>
               {kq.duLieu.map((u) => (
-                <tr key={u.id}>
+                <tr
+                  key={u.id}
+                  // Bấm vào dòng mở view chi tiết (yêu cầu 09/09/2026). Chỉ ở màn có
+                  // `duongChiTiet` — màn Học viên (LMS) dùng chung component này nhưng chưa có
+                  // view riêng, nên ở đó dòng vẫn không bấm được.
+                  onClick={
+                    phamVi.duongChiTiet ? () => navigate(`${phamVi.duongChiTiet}/${u.id}`) : undefined
+                  }
+                  className={phamVi.duongChiTiet ? 'cursor-pointer hover:bg-muted/40' : undefined}
+                >
                   <Td className="font-medium">{u.hoTen}</Td>
                   <Td>{t(`loaiNguoiDung.${u.loaiNguoiDung}`)}</Td>
                   <Td className="text-muted-foreground">
@@ -375,7 +403,7 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
                       ? u.hoSoGiaoVien?.chuyenMon ?? '—'
                       : u.loaiNguoiDung === 'HocVien'
                         ? u.hoSoHocVien?.tenPhuHuynh ?? '—'
-                        : u.hoSoNhanVien?.chucVu ?? '—'}
+                        : u.tenChucVu ?? '—'}
                   </Td>
                   <Td className="text-muted-foreground">{u.email ?? '—'}</Td>
                   <Td>
@@ -396,7 +424,9 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
                     </Badge>
                   </Td>
                   <Td>
-                    <div className="flex justify-end">
+                    {/* Chặn nổi bọt: bấm "Sửa"/"Xoá" trong dòng bấm-được sẽ vừa mở modal vừa
+                        điều hướng sang view chi tiết. */}
+                    <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
                       <MenuThaoTac
                         nhanMo={t('chung.thaoTac')}
                         muc={[
@@ -601,13 +631,26 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
               </div>
             )}
 
-            {loai === 'NhanVien' && (
+            {/*
+              CHỨC VỤ (FR-24) — select từ danh mục, hiện cho MỌI vai trò nhân sự.
+
+              Trước 09/09/2026 là ô chuỗi tự do và chỉ hiện cho `NhanVien`. Đổi vì hai lý do:
+              chuỗi tự do thì "Trưởng phòng" và "trưởng phòng" là hai chức vụ khác nhau; và
+              giáo viên cũng làm trưởng bộ môn nên không có lý do giới hạn theo vai trò.
+
+              **Chức vụ KHÁC `LoaiNguoiDung`**: đây là chức danh ("Ban quản lý"), còn
+              `LoaiNguoiDung` là loại nghiệp vụ quyết định ai gán được vào lớp.
+            */}
+            {loai !== 'HocVien' && (
               <div>
                 <Label htmlFor="chucVu">{t('nguoiDung.chucVu')}</Label>
-                <Input
+                <SelectTimKiem
                   id="chucVu"
-                  name="chucVu"
-                  defaultValue={dangSua?.hoSoNhanVien?.chucVu ?? ''}
+                  luaChon={chucVus.map((c) => ({ giaTri: c.id, nhan: c.ten }))}
+                  giaTri={chucVu}
+                  onDoi={setChucVu}
+                  placeholder={t('nguoiDung.chuaGanChucVu')}
+                  placeholderTimKiem={t('nguoiDung.chucVu')}
                 />
               </div>
             )}

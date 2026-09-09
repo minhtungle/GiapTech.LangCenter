@@ -11,7 +11,7 @@ namespace GiapTech.LangCenter.API.Controllers.V1;
 /// <summary>
 /// HRM — cơ cấu tổ chức dạng cây (FR-22).
 ///
-/// Gác bằng <see cref="ChucNang.PhongBan"/>, tách khỏi `GiaoVienNhanSu`: sửa cơ cấu tổ chức là
+/// Gác bằng <see cref="ChucNang.PhongBan"/>, tách khỏi `NhanSu`: sửa cơ cấu tổ chức là
 /// việc của người quản trị hoặc trưởng phòng nhân sự, còn xem/sửa hồ sơ một người là việc
 /// thường ngày của người trực nhân sự.
 ///

@@ -12,8 +12,9 @@ import NguoiDung, { type PhamViNguoiDung } from '@/pages/quan-tri/NguoiDung'
 const PHAM_VI: PhamViNguoiDung = {
   duong: '/nhan-su',
   vaiTro: ['NhanVien', 'GiaoVien', 'TroGiang'],
-  can: 'GiaoVienNhanSu',
+  can: 'NhanSu',
   khoaTieuDe: 'menu.nhanSuNguoiDung',
+  duongChiTiet: '/hrm/nhan-su',
 }
 
 export default function NhanSu() {
