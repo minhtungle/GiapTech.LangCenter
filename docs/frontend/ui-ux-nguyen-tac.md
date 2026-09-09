@@ -135,6 +135,26 @@ người dùng gõ một đoạn nhận xét rồi không đọc lại được 
 
 Trường ngắn (tên, phòng học, URL, ngày) vẫn dùng `Input`.
 
+**Luôn dùng component `<Textarea>`, đừng viết `<textarea>` thô.** Viết thô là phải chép lại toàn
+bộ class, và trên thực tế chép thiếu: ô `ngayLoaiTru` ở màn sinh lịch mất cả focus ring, trạng
+thái disabled và trần chiều cao (sửa 09/09/2026).
+
+### Trần và sàn chiều cao (09/09/2026)
+
+`resize-y` không kèm giới hạn thì tay cầm kéo được **vô hạn**. Đo thật: ô ghi chú kéo lên 3082px
+trong modal cao 836px, nút Lưu bị đẩy xuống dưới 3667px scroll — form coi như hỏng.
+
+Component đặt sẵn:
+
+| Giới hạn | Giá trị | Vì sao |
+|---|---|---|
+| Trần | `max-h-72` (288px ≈ 12 dòng) | Quá đó thì nội dung cuộn TRONG ô, không đẩy form dài ra |
+| Sàn | `calc(rows * 1.5em + 1rem)` | Theo **chính `rows` của ô đó** — một sàn cứng dùng chung sẽ bóp ô `rows={4}` (100px) xuống còn 64px |
+
+Sàn đặt qua `style` chứ không class (Tailwind không có class động theo prop), và **phải đứng sau
+`{...props}`** kèm trải lại `props.style`: đặt trước thì caller truyền `style` ghi đè cả object
+và mất sàn — lỗi im lặng, không có cảnh báo biên dịch.
+
 ## Xác nhận thao tác ghi
 
 **Cập nhật 07/09/2026 — chủ sản phẩm chọn hỏi xác nhận trước MỌI thao tác thêm/sửa/xoá, kể cả

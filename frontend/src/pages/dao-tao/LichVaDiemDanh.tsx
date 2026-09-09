@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { api, layMaLoi } from '@/lib/api'
 import {
-  Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong,
+  Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Textarea, Th, TrangTrong,
 } from '@/components/ui'
 import { Modal } from '@/components/ui/Modal'
 import { KhungNoiDung } from '@/components/ui/KhungNoiDung'
@@ -544,12 +544,11 @@ function FormSinhLich({
 
         <div className="flex flex-col gap-1.5 sm:col-span-2">
           <Label htmlFor="ngayLoaiTru">{t('buoiHoc.ngayLoaiTru')}</Label>
-          <textarea
+          <Textarea
             id="ngayLoaiTru"
             name="ngayLoaiTru"
             rows={2}
             placeholder={t('buoiHoc.ngayLoaiTruGoiY')}
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
           />
         </div>
 

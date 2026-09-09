@@ -58,7 +58,14 @@ Input.displayName = 'Input'
  * đoạn nhận xét rồi không đọc lại được đoạn đầu, phải rê con trỏ mới thấy. Trường dài dùng
  * `<textarea>`, trường ngắn (tên, số áo, URL) vẫn dùng `Input`.
  *
- * Mặc định 3 dòng và `resize-y`: đủ cho ghi chú thường gặp, người cần dài hơn thì tự kéo.
+ * Mặc định 3 dòng và `resize-y`: đủ cho ghi chú thường gặp, người cần dài hơn thì tự kéo —
+ * nhưng **có trần**. Không giới hạn thì tay cầm resize kéo được vô hạn: đo thật 09/09/2026 cho
+ * ra ô cao 3082px trong modal cao 836px, và nút Lưu bị đẩy xuống dưới 3667px scroll. Trần
+ * `18rem` ≈ 12 dòng — quá đó thì nội dung tự cuộn TRONG ô, không đẩy form dài ra.
+ *
+ * Sàn dùng `field-sizing` không được (Safari chưa hỗ trợ), nên đặt `min-height` theo **chính
+ * `rows` của ô đó**: `rows={4}` không bị kéo bóp xuống còn 2 dòng. Một trần/sàn cứng dùng chung
+ * sẽ sai với ô khai `rows` khác mặc định — đo thật cho thấy ô `rows={4}` (98px) bị bóp còn 64px.
  */
 export const Textarea = React.forwardRef<
   HTMLTextAreaElement,
@@ -74,9 +81,17 @@ export const Textarea = React.forwardRef<
       'disabled:cursor-not-allowed disabled:opacity-50',
       // resize-y thôi: kéo ngang sẽ phá vỡ lưới cột của form.
       'resize-y',
+      // Trần cho tay cầm resize — xem doc comment ở trên.
+      'max-h-72',
       className,
     )}
     {...props}
+    // Sàn = đúng chiều cao `rows` đã khai. Tính bằng em để theo cỡ chữ: mỗi dòng ~1.5em cộng
+    // padding dọc (py-2 = 1rem). Đặt qua style vì Tailwind không có class động theo prop.
+    //
+    // Đứng SAU `{...props}` và trải lại `props.style`: đặt trước thì caller truyền `style` sẽ
+    // ghi đè cả object và mất sàn — lỗi im lặng, không có cảnh báo biên dịch.
+    style={{ minHeight: `calc(${rows} * 1.5em + 1rem)`, ...props.style }}
   />
 ))
 Textarea.displayName = 'Textarea'

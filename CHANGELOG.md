@@ -8,6 +8,20 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Fixed — Textarea kéo được vô hạn, đẩy nút Lưu ra khỏi màn hình (09/09/2026)
+
+- `resize-y` không kèm giới hạn nên tay cầm kéo được vô hạn. Đo thật: ô ghi chú kéo lên
+  **3082px** trong modal cao 836px, nút Lưu bị đẩy xuống dưới **3667px scroll**.
+- Thêm **trần** `max-h-72` (288px ≈ 12 dòng) — quá đó nội dung cuộn trong ô, không đẩy form dài
+  ra — và **sàn** theo `calc(rows * 1.5em + 1rem)`, tức đúng chiều cao `rows` của **từng ô**.
+  Một sàn cứng dùng chung sẽ bóp ô `rows={4}` (100px) xuống còn 64px.
+- Sàn đặt sau `{...props}` và trải lại `props.style`: đặt trước thì caller truyền `style` sẽ ghi
+  đè cả object và mất sàn — lỗi im lặng, không có cảnh báo biên dịch.
+- Sửa một chỗ ở `LichVaDiemDanh` viết `<textarea>` **thô** thay vì dùng component: chép class
+  bằng tay nên mất cả focus ring, trạng thái disabled và trần mới. Nay dùng `<Textarea>`.
+- Áp cho **cả 15 chỗ** dùng textarea vì sửa ở component dùng chung. Đã đo lại: `rows=2` → sàn
+  58px, `rows=3` → 79px, `rows=4` → 100px, tất cả trần 288px.
+
 ### Added — FR-21: ghi chú, người gửi, và lịch sử nhiều lần gửi yêu cầu xếp lớp (09/09/2026)
 
 - Form gửi yêu cầu nay có ô **ghi chú cho bên đào tạo** (trình độ, nguyện vọng giờ học…) — người
