@@ -16,7 +16,10 @@ public class TepDinhKemConfig : IEntityTypeConfiguration<TepDinhKem>
             + " + CASE WHEN bai_nop_id IS NOT NULL THEN 1 ELSE 0 END"
             + " + CASE WHEN bai_kiem_tra_id IS NOT NULL THEN 1 ELSE 0 END"
             + " + CASE WHEN bai_lam_id IS NOT NULL THEN 1 ELSE 0 END"
-            + " + CASE WHEN tai_lieu_id IS NOT NULL THEN 1 ELSE 0 END) = 1";
+            + " + CASE WHEN tai_lieu_id IS NOT NULL THEN 1 ELSE 0 END"
+            // Cột thứ sáu (FR-23): hồ sơ nhân sự. Thêm cột FK mới mà quên dòng này là mọi
+            // hàng dùng cột đó bị CHECK chặn — lỗi lúc chạy, không lúc biên dịch.
+            + " + CASE WHEN nguoi_dung_id IS NOT NULL THEN 1 ELSE 0 END) = 1";
 
         b.ToTable("TEP_DINH_KEM",
             t => t.HasCheckConstraint("ck_tep_dinh_kem_dung_mot_chu", dungMotChu));
@@ -41,6 +44,11 @@ public class TepDinhKemConfig : IEntityTypeConfiguration<TepDinhKem>
             .HasForeignKey(x => x.BaiLamId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.TaiLieu).WithMany(t => t.Teps)
             .HasForeignKey(x => x.TaiLieuId).OnDelete(DeleteBehavior.Cascade);
+
+        // Cascade như các chủ khác: xoá người thì tệp hồ sơ của họ chết theo. Khác
+        // `NguoiTaiLen` bên dưới (SetNull) — đó chỉ là dấu vết ai tải lên, không phải chủ tệp.
+        b.HasOne(x => x.NguoiDung).WithMany(n => n.TepDinhKems)
+            .HasForeignKey(x => x.NguoiDungId).OnDelete(DeleteBehavior.Cascade);
 
         b.HasOne(x => x.NguoiTaiLen).WithMany()
             .HasForeignKey(x => x.NguoiTaiLenId).OnDelete(DeleteBehavior.SetNull);

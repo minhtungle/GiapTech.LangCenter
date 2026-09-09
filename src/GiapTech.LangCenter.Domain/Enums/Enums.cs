@@ -263,3 +263,18 @@ public enum TrangThaiYeuCauXepLop
     /// </summary>
     TuChoi = 3
 }
+
+/// <summary>
+/// Loại liên kết mạng xã hội (FR-23).
+///
+/// Giá trị 0 là `Facebook` — mạng phổ biến nhất ở thị trường này, nên JSON thiếu trường sẽ
+/// deserialize thành lựa chọn hợp lý nhất thay vì một loại lạ.
+/// </summary>
+public enum LoaiMxh
+{
+    Facebook = 0,
+    Zalo = 1,
+    LinkedIn = 2,
+    Telegram = 3,
+    Khac = 4
+}

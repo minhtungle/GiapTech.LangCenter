@@ -75,6 +75,36 @@ public class NguoiDung : TenantEntity
     public Guid? ChucVuId { get; set; }
     public ChucVu? ChucVu { get; set; }
 
+    /// <summary>
+    /// Số CCCD/CMND — dùng cho hợp đồng lao động và khai báo thuế.
+    ///
+    /// **Không** ép UNIQUE: một người có thể đổi CCCD (12 số thay 9 số), và dữ liệu nhập tay
+    /// thường thiếu — ép duy nhất sẽ chặn việc lưu hồ sơ chỉ vì hai người cùng để trống.
+    /// Trùng CCCD là việc cần cảnh báo ở UI, không phải chặn ở DB.
+    /// </summary>
+    public string? Cccd { get; set; }
+
+    /// <summary>Số tài khoản ngân hàng — để chuyển lương.</summary>
+    public string? SoTaiKhoan { get; set; }
+
+    public string? TenNganHang { get; set; }
+
+    /// <summary>Ghi chú tự do về người này (FR-23).</summary>
+    public string? GhiChu { get; set; }
+
+    /// <summary>
+    /// Liên kết mạng xã hội — NHIỀU dòng mỗi người (Facebook, Zalo, LinkedIn…).
+    ///
+    /// Bảng riêng chứ không vài cột `facebook`/`zalo` trên `NGUOI_DUNG`: thêm một mạng nữa là
+    /// thêm một cột và một migration, còn ai chỉ dùng Zalo thì mọi cột khác NULL. Cũng không
+    /// dùng jsonb — mảng không có `tenant_id` nên nằm ngoài Global Query Filter, và không đánh
+    /// index được để tra "ai có link Facebook này".
+    /// </summary>
+    public ICollection<LienKetMxh> LienKetMxhs { get; set; } = [];
+
+    /// <summary>Tệp hồ sơ: hợp đồng, bằng cấp scan, CCCD scan (FR-23).</summary>
+    public ICollection<TepDinhKem> TepDinhKems { get; set; } = [];
+
     public Tenant Tenant { get; set; } = null!;
 
     /// <summary>Tài khoản đăng nhập của người này — null nếu họ không cần đăng nhập.</summary>

@@ -99,11 +99,51 @@ và `Badge` sẵn có, và để có sẵn điều hướng bàn phím + ARIA `t
 
 ## FR-23 — Hồ sơ nhân sự (mở rộng)
 
-Bổ sung vào `NGUOI_DUNG`: `cccd`, `so_tai_khoan`, `ten_ngan_hang`.
-Bảng mới `LIEN_KET_MXH` (nhiều dòng mỗi người): `loai`, `duong_dan`.
-Tệp đính kèm: **thêm `nguoi_dung_id` vào `TEP_DINH_KEM`** đã có, không tạo bảng mới.
+Bổ sung vào `NGUOI_DUNG`: `cccd`, `so_tai_khoan`, `ten_ngan_hang`, `ghi_chu`.
+Bảng mới `LIEN_KET_MXH` (nhiều dòng mỗi người). Tệp: **thêm `nguoi_dung_id` vào `TEP_DINH_KEM`**
+đã có, không tạo bảng mới.
 
-Chi tiết viết khi làm đợt 2.
+Hiện cho **mọi vai trò nhân sự** — CCCD và số tài khoản là thứ trung tâm cần cho hợp đồng và trả
+lương, áp cho cả giáo viên. Học viên không có các trường này.
+
+### Quy tắc
+
+- **`cccd` KHÔNG unique.** Dữ liệu nhập tay thường thiếu; ép duy nhất sẽ chặn lưu hồ sơ chỉ vì
+  hai người cùng để trống, và một người có thể đổi CCCD (12 số thay 9 số). Trùng CCCD là việc
+  **cảnh báo ở UI**, không chặn ở DB. Canh bởi `HoSoNhanSuTests.Hai_nguoi_trung_CCCD_van_luu_duoc`.
+- **`LIEN_KET_MXH` là bảng riêng**, không phải vài cột `facebook`/`zalo` trên `NGUOI_DUNG`: thêm
+  một mạng là thêm một cột + một migration, và ai chỉ dùng Zalo thì mọi cột khác NULL. Cũng
+  không dùng `jsonb` — mảng không mang `tenant_id` nên nằm ngoài Global Query Filter (quy tắc #2).
+- **KHÔNG unique theo `(nguoi_dung_id, loai)`**: một người có hai Facebook (cá nhân và công việc)
+  là chuyện thật — đó là lý do có cột `ghi_chu` để phân biệt.
+- **`duong_dan` không validate là URL**: Zalo thường là số điện thoại. UI chỉ mở tab mới khi giá
+  trị bắt đầu bằng `http(s)://`, còn lại hiện dạng chữ để không tạo link hỏng.
+- **Quy tắc #1 với `List`**: `lienKetMxhs = null` (không gửi) → **GIỮ NGUYÊN**; danh sách (kể cả
+  rỗng) → **THAY THẾ toàn bộ**. Khác `ChucVuId`/`PhongBanId` (cần cờ `DoiChucVu`/`DoiPhongBan`)
+  vì `List` có **hai** giá trị trống phân biệt được (`null` vs `[]`), còn `Guid?` chỉ có một.
+
+  > **Bẫy đã gặp 10/09/2026**: handler cập nhật thiếu `.Include(u => u.LienKetMxhs)` nên
+  > `RemoveRange(nd.LienKetMxhs)` chạy trên collection rỗng — gửi danh sách rỗng **không** xoá
+  > được liên kết cũ, và gửi danh sách mới thì **cộng thêm** thay vì thay thế. Hai test bắt được;
+  > đã kiểm bằng đột biến (bỏ `Include` → đúng 2 test đỏ).
+
+### Tệp hồ sơ
+
+- **`TEP_DINH_KEM` thêm cột FK thứ sáu** `nguoi_dung_id`. Thêm cột mới **phải sửa cả `CHECK`**
+  `ck_tep_dinh_kem_dung_mot_chu` — constraint đếm "đúng một cột khác null", nên quên là mọi tệp
+  hồ sơ bị chặn ở tầng DB (lỗi lộ lúc chạy, không lúc biên dịch). Đã thử ba chiều trên
+  PostgreSQL: chỉ `nguoi_dung_id` → vào được; không cột nào → chặn; hai cột → chặn.
+- **Handler RIÊNG, không thêm nhánh vào `TaiTepCommand`** của học liệu: lệnh kia nằm ở
+  `Application/DaoTao/HocLieu` và phụ thuộc `IPhamViLopHoc` ("lớp mình dạy") — không liên quan
+  hồ sơ nhân sự. Thêm nhánh là đặt logic HRM trong handler LMS và `RanhGioiHeThongConTests` sẽ
+  đỏ (ADR-0005). Vẫn dùng chung `ILuuTruTep` + bảng `TEP_DINH_KEM`: whitelist loại tệp và hạn
+  mức dung lượng là một, job dọn tệp mồ côi chỉ phải quét một bảng.
+- Endpoint xoá tệp HRM lọc `NguoiDungId != null` — chặn việc dùng nó để xoá tệp của bài tập hay
+  tài liệu. Canh bởi `HoSoNhanSuTests.Endpoint_HRM_khong_xoa_duoc_tep_cua_hoc_lieu`.
+- **Xoá hàng DB trước, xoá tệp sau**: kho lỗi thì còn tệp mồ côi (job dọn rác lo — nợ N5); làm
+  ngược lại mà DB lỗi thì hàng còn trỏ tới tệp đã mất và UI hiện một tệp tải về không được.
+- Tải tệp làm ở **view chi tiết**, không trong modal sửa: tệp là thao tác từng cái một, ghép vào
+  form sẽ phải giữ tệp trong bộ nhớ tới lúc bấm Lưu.
 
 ## FR-24 — Danh mục chức vụ
 

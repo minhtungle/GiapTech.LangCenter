@@ -5,10 +5,10 @@
 ## Tiến độ tổng
 
 ```
-Nghiệp vụ  ██████████████░░  22/24 FR chạy đầu-cuối (còn FR-15 Thống kê, FR-23 HRM)
-Ba hệ thống ███████████████░  LMS + CRM xong; HRM có cơ cấu + chức vụ
+Nghiệp vụ  ███████████████░  23/24 FR chạy đầu-cuối (còn FR-15 Thống kê)
+Ba hệ thống ████████████████  Cả ba hệ thống đủ nghiệp vụ
 Hạ tầng    ████████████░░░░  CI/CD sẵn sàng, chờ VPS thật
-Còn lại    ██████░░░░░░░░░░  Dashboard + FR-23 HRM + 23 nợ kỹ thuật
+Còn lại    █████░░░░░░░░░░░  Dashboard + Bài kiểm tra + 23 nợ kỹ thuật
 ```
 
 ## Trạng thái mã FR
@@ -37,7 +37,7 @@ Còn lại    ██████░░░░░░░░░░  Dashboard + FR-2
 | FR-20 | Sản phẩm khác (CRM) | ✅ | ✅ | Sách, học cụ; có **số lượng**. Đơn hàng dùng **2 FK nullable loại trừ** + `CHECK`. Mua hàng từ tab chăm sóc ghi **cả đơn + lịch sử** trong một transaction |
 | FR-21 | Yêu cầu xếp lớp (CRM → LMS) | ✅ | ✅ | Bán khoá → gửi yêu cầu (kèm **ghi chú** + người gửi) → duyệt vào lớp **2 cách**, hoặc **từ chối kèm lý do bắt buộc**. Một đơn gửi **nhiều lần**, lịch sử mua hàng hiện số lần + trạng thái từng lần. **Học phí lấy từ đơn CRM**; hồ sơ học viên tự tạo từ dữ liệu khách |
 | FR-22 | Cơ cấu tổ chức (HRM) | ✅ | ✅ | Cây `PHONG_BAN` tự tham chiếu + người quản lý, màn `/hrm/co-cau` (thư viện `@headless-tree`). **Mọi vai trò nhân sự** xếp được vào phòng (giáo viên cũng là nhân viên). Hai cách xếp; chống chu trình ở handler |
-| FR-23 | Hồ sơ nhân sự mở rộng (HRM) | ⬜ | ⬜ | CCCD, số tài khoản, liên kết MXH (nhiều), tệp đính kèm |
+| FR-23 | Hồ sơ nhân sự mở rộng (HRM) | ✅ | ✅ | CCCD (không unique), số tài khoản, **liên kết MXH nhiều dòng** (bảng riêng), tệp hồ sơ dùng `TEP_DINH_KEM` cột FK thứ sáu. Áp cho mọi vai trò nhân sự |
 | FR-24 | Danh mục chức vụ (HRM) | ✅ | ✅ | Bảng `CHUC_VU` do admin quản, seeder dựng sẵn 5 chức vụ gồm **Ban quản lý**. Áp cho **mọi vai trò nhân sự**; ngừng dùng thay vì xoá. Migration sinh danh mục từ 40 hàng dữ liệu cũ |
 
 Ngoài bảng: **Bài kiểm tra** (`BAI_KIEM_TRA`, `BAI_LAM`) đã có schema và cách ly tenant, nhưng
@@ -132,7 +132,7 @@ VPS → domain + HTTPS → backup. Xem
 
 ## Kiểm chứng hiện tại
 
-- **403 test backend xanh** (65 unit + 338 integration), build 0 warning.
+- **414 test backend xanh** (65 unit + 349 integration), build 0 warning.
 - Frontend `tsc -b` + `vite build` sạch, `oxlint` không lỗi.
-- **PostgreSQL + MinIO thật**: 35 bảng, 18 migration áp sạch, luồng đầu-cuối chạy tay đủ từ tạo
+- **PostgreSQL + MinIO thật**: 36 bảng, 19 migration áp sạch, luồng đầu-cuối chạy tay đủ từ tạo
   trung tâm tới thu học phí.

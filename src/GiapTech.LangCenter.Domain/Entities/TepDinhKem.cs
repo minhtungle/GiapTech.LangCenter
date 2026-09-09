@@ -33,6 +33,16 @@ public class TepDinhKem : TenantEntity
     public Guid? TaiLieuId { get; set; }
     public TaiLieu? TaiLieu { get; set; }
 
+    /// <summary>
+    /// Tệp thuộc HỒ SƠ NHÂN SỰ (FR-23) — hợp đồng, bằng cấp scan, CCCD scan.
+    ///
+    /// Cột thứ sáu của bộ FK loại trừ nhau. Thêm cột mới **phải sửa cả `CHECK`**: constraint
+    /// đếm "đúng một cột khác null", nên nếu không thêm vào đó thì mọi hàng dùng cột này bị
+    /// chặn ở tầng DB — lỗi lộ ra lúc chạy, không lúc biên dịch.
+    /// </summary>
+    public Guid? NguoiDungId { get; set; }
+    public NguoiDung? NguoiDung { get; set; }
+
     /// <summary>Khoá trong kho lưu trữ, dạng <c>{tenantId}/{loai}/{guid}{ext}</c>.</summary>
     public string KhoaLuuTru { get; set; } = null!;
 

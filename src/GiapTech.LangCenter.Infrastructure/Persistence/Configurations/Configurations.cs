@@ -43,6 +43,10 @@ public class NguoiDungConfig : IEntityTypeConfiguration<NguoiDung>
         b.Property(x => x.Email).HasMaxLength(256);
         b.Property(x => x.SoDienThoai).HasMaxLength(20);
         b.Property(x => x.DiaChi).HasMaxLength(500);
+        b.Property(x => x.Cccd).HasMaxLength(20);
+        b.Property(x => x.SoTaiKhoan).HasMaxLength(50);
+        b.Property(x => x.TenNganHang).HasMaxLength(100);
+        b.Property(x => x.GhiChu).HasMaxLength(1000);
         // URL ảnh là KHOÁ MinIO (`{tenantId}/{loai}/{guid}{ext}`), luôn dưới 150 ký tự — 500
         // là dư thoải mái. Không khai thì cột thành `text` không giới hạn.
         b.Property(x => x.AnhDaiDienUrl).HasMaxLength(500);
@@ -67,6 +71,28 @@ public class NguoiDungConfig : IEntityTypeConfiguration<NguoiDung>
         // người giữ — SetNull là lưới an toàn cho đường xoá khác.
         b.HasOne(x => x.ChucVu).WithMany(c => c.NhanSus)
             .HasForeignKey(x => x.ChucVuId).OnDelete(DeleteBehavior.SetNull);
+    }
+}
+
+/// <summary>Liên kết mạng xã hội của một người — nhiều dòng (FR-23).</summary>
+public class LienKetMxhConfig : IEntityTypeConfiguration<LienKetMxh>
+{
+    public void Configure(EntityTypeBuilder<LienKetMxh> b)
+    {
+        b.ToTable("LIEN_KET_MXH");
+        b.Property(x => x.DuongDan).HasMaxLength(500).IsRequired();
+        b.Property(x => x.GhiChu).HasMaxLength(200);
+
+        b.HasIndex(x => x.TenantId);
+        b.HasIndex(x => x.NguoiDungId);
+
+        // KHÔNG unique theo (nguoi_dung_id, loai): một người có thể có hai Facebook (cá nhân và
+        // công việc) — đó là lý do có cột `ghi_chu` để phân biệt.
+
+        // Cascade: xoá người thì liên kết của họ vô nghĩa, không như hồ sơ vai trò (giữ lại làm
+        // lịch sử) vì đây chỉ là kênh liên hệ.
+        b.HasOne(x => x.NguoiDung).WithMany(n => n.LienKetMxhs)
+            .HasForeignKey(x => x.NguoiDungId).OnDelete(DeleteBehavior.Cascade);
     }
 }
 

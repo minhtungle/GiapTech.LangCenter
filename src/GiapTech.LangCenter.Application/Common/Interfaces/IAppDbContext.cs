@@ -23,6 +23,7 @@ public interface IAppDbContext
     DbSet<HoSoNhanVien> HoSoNhanViens { get; }
     DbSet<PhongBan> PhongBans { get; }
     DbSet<ChucVu> ChucVus { get; }
+    DbSet<LienKetMxh> LienKetMxhs { get; }
 
     DbSet<Quyen> Quyens { get; }
     DbSet<QuyenChucNang> QuyenChucNangs { get; }

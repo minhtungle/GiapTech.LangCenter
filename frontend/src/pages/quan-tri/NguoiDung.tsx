@@ -7,7 +7,7 @@ import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import { useQuyen } from '@/lib/quyen'
 import { useXacNhan } from '@/lib/xacNhan'
 import {
-  Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Th, TrangTrong,
+  Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Textarea, Th, TrangTrong,
 } from '@/components/ui'
 import { Modal, ModalChan } from '@/components/ui/Modal'
 import { PhanTrang } from '@/components/ui/PhanTrang'
@@ -29,6 +29,11 @@ export interface PhongBanNode {
   soNhanSuCaNhanh: number
   phongBanCons: PhongBanNode[]
 }
+
+/** FR-23 — loại liên kết mạng xã hội. */
+export type LoaiMxh = 'Facebook' | 'Zalo' | 'LinkedIn' | 'Telegram' | 'Khac'
+
+export const CAC_LOAI_MXH: LoaiMxh[] = ['Facebook', 'Zalo', 'LinkedIn', 'Telegram', 'Khac']
 
 export type LoaiNguoiDung = 'NhanVien' | 'GiaoVien' | 'TroGiang' | 'HocVien'
 export type TrangThaiNhanSu = 'DangLamViec' | 'DaNghi'
@@ -62,6 +67,16 @@ export interface NguoiDungDto {
   /** FR-24 — null = chưa gán chức vụ. */
   chucVuId: string | null
   tenChucVu: string | null
+  // FR-23
+  cccd: string | null
+  soTaiKhoan: string | null
+  tenNganHang: string | null
+  ghiChu: string | null
+  lienKetMxhs: { id: string; loai: LoaiMxh; duongDan: string; ghiChu: string | null }[]
+  tepHoSos: {
+    id: string; tenGoc: string; khoaLuuTru: string; loaiNoiDung: string
+    kichThuoc: number; ngayTao: string
+  }[]
   username: string | null
   trangThaiTaiKhoan: 'HoatDong' | 'VoHieuHoa' | null
 }
@@ -136,6 +151,11 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
   const [phongBan, setPhongBan] = useState<string | null>(null)
   /** Chức vụ đang chọn (FR-24) — null = chưa gán. */
   const [chucVu, setChucVu] = useState<string | null>(null)
+  /** Liên kết MXH đang nhập (FR-23) — danh sách này THAY THẾ toàn bộ khi lưu. */
+  const [mxhs, setMxhs] = useState<{ loai: LoaiMxh; duongDan: string }[]>([])
+
+  const doiMxh = (i: number, thayDoi: Partial<{ loai: LoaiMxh; duongDan: string }>) =>
+    setMxhs((cu) => cu.map((m, k) => (k === i ? { ...m, ...thayDoi } : m)))
 
   const { data: kq = trangRong<NguoiDungDto>(), isLoading } = useQuery({
     queryKey: [phamVi.duong, timKiem, locVaiTro, locNhanSu, trang, soDong],
@@ -245,6 +265,18 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
             : null,
         // Học viên không có chức vụ; các vai trò nhân sự gửi chức vụ đang chọn.
         chucVuId: loai === 'HocVien' ? null : chucVu,
+        // FR-23 — học viên không có các trường này.
+        cccd: loai === 'HocVien' ? null : s('cccd'),
+        soTaiKhoan: loai === 'HocVien' ? null : s('soTaiKhoan'),
+        tenNganHang: loai === 'HocVien' ? null : s('tenNganHang'),
+        ghiChu: loai === 'HocVien' ? null : s('ghiChuNs'),
+        // Bỏ dòng trống trước khi gửi — backend cũng bỏ, nhưng lọc ở đây thì payload gọn hơn.
+        lienKetMxhs: loai === 'HocVien'
+          ? []
+          : mxhs.filter((m) => m.duongDan.trim()).map((m) => ({
+              loai: m.loai,
+              duongDan: m.duongDan.trim(),
+            })),
         // Học viên không vào cơ cấu; các vai trò nhân sự thì gửi phòng ban đang chọn.
         phongBanId: loai === 'HocVien' ? null : phongBan,
       }
@@ -287,6 +319,7 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
     setLoai(u.loaiNguoiDung)
     setPhongBan(u.phongBanId ?? null)
     setChucVu(u.chucVuId ?? null)
+    setMxhs(u.lienKetMxhs.map((m) => ({ loai: m.loai, duongDan: m.duongDan })))
     setNhanSu(u.trangThaiNhanSu)
     setMaLoi(null)
     setMoForm(true)
@@ -653,6 +686,93 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
                   placeholderTimKiem={t('nguoiDung.chucVu')}
                 />
               </div>
+            )}
+
+            {/*
+              FR-23 — hồ sơ mở rộng. Hiện cho MỌI vai trò nhân sự (học viên không có): CCCD và
+              số tài khoản là thứ trung tâm cần cho hợp đồng và trả lương, áp cho cả giáo viên.
+            */}
+            {loai !== 'HocVien' && (
+              <>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="cccd">{t('nguoiDung.cccd')}</Label>
+                    <Input id="cccd" name="cccd" defaultValue={dangSua?.cccd ?? ''} />
+                  </div>
+                  <div>
+                    <Label htmlFor="soTaiKhoan">{t('nguoiDung.soTaiKhoan')}</Label>
+                    <Input
+                      id="soTaiKhoan"
+                      name="soTaiKhoan"
+                      defaultValue={dangSua?.soTaiKhoan ?? ''}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="tenNganHang">{t('nguoiDung.tenNganHang')}</Label>
+                  <Input
+                    id="tenNganHang"
+                    name="tenNganHang"
+                    defaultValue={dangSua?.tenNganHang ?? ''}
+                  />
+                </div>
+
+                {/* LIÊN KẾT MXH — nhiều dòng. Danh sách này THAY THẾ toàn bộ khi lưu, nên phải
+                    nạp đủ liên kết hiện có vào state lúc mở form sửa. */}
+                <div className="grid gap-2">
+                  <Label>{t('nguoiDung.lienKetMxh')}</Label>
+                  {mxhs.map((m, i) => (
+                    <div key={i} className="flex flex-wrap items-end gap-2">
+                      <div className="w-36">
+                        <SelectTimKiem
+                          id={`mxh-loai-${i}`}
+                          luaChon={CAC_LOAI_MXH.map((l) => ({
+                            giaTri: l,
+                            nhan: t(`loaiMxh.${l}`),
+                          }))}
+                          giaTri={m.loai}
+                          onDoi={(v) => doiMxh(i, { loai: (v as LoaiMxh) ?? 'Facebook' })}
+                          choPhepXoa={false}
+                        />
+                      </div>
+                      <Input
+                        className="min-w-48 flex-1"
+                        placeholder={t('nguoiDung.duongDanMxh')}
+                        value={m.duongDan}
+                        onChange={(e) => doiMxh(i, { duongDan: e.target.value })}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setMxhs(mxhs.filter((_, k) => k !== i))}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="justify-self-start"
+                    onClick={() => setMxhs([...mxhs, { loai: 'Facebook', duongDan: '' }])}
+                  >
+                    <Plus className="h-4 w-4" />
+                    {t('nguoiDung.themMxh')}
+                  </Button>
+                </div>
+
+                <div>
+                  <Label htmlFor="ghiChuNs">{t('chung.ghiChu')}</Label>
+                  <Textarea
+                    id="ghiChuNs"
+                    name="ghiChuNs"
+                    rows={2}
+                    defaultValue={dangSua?.ghiChu ?? ''}
+                  />
+                </div>
+              </>
             )}
 
             {/*

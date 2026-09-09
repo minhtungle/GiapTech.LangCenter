@@ -22,6 +22,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant
     public DbSet<HoSoNhanVien> HoSoNhanViens => Set<HoSoNhanVien>();
     public DbSet<PhongBan> PhongBans => Set<PhongBan>();
     public DbSet<ChucVu> ChucVus => Set<ChucVu>();
+    public DbSet<LienKetMxh> LienKetMxhs => Set<LienKetMxh>();
 
     public DbSet<Quyen> Quyens => Set<Quyen>();
     public DbSet<QuyenChucNang> QuyenChucNangs => Set<QuyenChucNang>();

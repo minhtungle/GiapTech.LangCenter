@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using GiapTech.LangCenter.API.Authorization;
 using GiapTech.LangCenter.Application.Common.Models;
+using GiapTech.LangCenter.Application.NhanSu;
 using GiapTech.LangCenter.Application.QuanTri.NguoiDung;
 using GiapTech.LangCenter.Domain.Common;
 using GiapTech.LangCenter.Domain.Enums;
@@ -99,6 +100,32 @@ public class NhanSuController(ISender sender) : ControllerBase
     {
         BaoDamLaNhanSu(command.LoaiNguoiDung);
         await sender.Send(command with { Id = id }, ct);
+        return NoContent();
+    }
+
+    // ---------- Tệp hồ sơ (FR-23) ----------
+
+    /// <summary>
+    /// Tải tệp vào hồ sơ: hợp đồng, bằng cấp scan, CCCD scan.
+    ///
+    /// Gác bằng `Sua` chứ không `Them`: không tạo hồ sơ mới, chỉ bổ sung vào hồ sơ đã có.
+    /// </summary>
+    [HttpPost("{id:guid}/tep")]
+    [RequirePermission(ChucNang.NhanSu, HanhDong.Sua)]
+    [RequestSizeLimit(25 * 1024 * 1024)]
+    public async Task<ActionResult<TepHoSoDaTaiDto>> TaiTep(
+        Guid id, IFormFile tep, CancellationToken ct)
+    {
+        await using var s = tep.OpenReadStream();
+        return Ok(await sender.Send(new TaiTepHoSoCommand(
+            id, s, tep.ContentType, tep.FileName), ct));
+    }
+
+    [HttpDelete("tep/{tepId:guid}")]
+    [RequirePermission(ChucNang.NhanSu, HanhDong.Sua)]
+    public async Task<IActionResult> XoaTep(Guid tepId, CancellationToken ct)
+    {
+        await sender.Send(new XoaTepHoSoCommand(tepId), ct);
         return NoContent();
     }
 

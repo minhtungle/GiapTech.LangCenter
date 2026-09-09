@@ -1,9 +1,11 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Pencil } from 'lucide-react'
-import { api } from '@/lib/api'
-import { Badge, Button, Card, CardContent, TrangTrong } from '@/components/ui'
+import { ArrowLeft, FileText, Pencil, Trash2, Upload } from 'lucide-react'
+import { api, layMaLoi } from '@/lib/api'
+import { Badge, Button, CanhBaoLoi, Card, CardContent, TrangTrong } from '@/components/ui'
+import { useXacNhan } from '@/lib/xacNhan'
 import { useQuyen } from '@/lib/quyen'
 import type { NguoiDungDto } from '@/pages/quan-tri/NguoiDung'
 
@@ -24,11 +26,32 @@ export default function ChiTietNhanSu() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const { coQuyen } = useQuyen()
+  const qc = useQueryClient()
+  const { hoi, hop } = useXacNhan()
+  const [maLoi, setMaLoi] = useState<string | null>(null)
 
   const { data: u, isLoading, isError } = useQuery({
     queryKey: ['nhan-su', id],
     queryFn: async () => (await api.get<NguoiDungDto>(`/nhan-su/${id}`)).data,
     enabled: !!id,
+  })
+
+  const lamMoi = () => void qc.invalidateQueries({ queryKey: ['nhan-su'] })
+
+  const taiTep = useMutation({
+    mutationFn: async (tep: File) => {
+      const fd = new FormData()
+      fd.append('tep', tep)
+      await api.post(`/nhan-su/${id}/tep`, fd)
+    },
+    onSuccess: () => { lamMoi(); setMaLoi(null) },
+    onError: (e) => setMaLoi(layMaLoi(e)),
+  })
+
+  const xoaTep = useMutation({
+    mutationFn: (tepId: string) => api.delete(`/nhan-su/tep/${tepId}`),
+    onSuccess: () => { lamMoi(); setMaLoi(null) },
+    onError: (e) => setMaLoi(layMaLoi(e)),
   })
 
   if (isLoading) return <TrangTrong thongDiep={t('chung.dangTai')} />
@@ -87,9 +110,54 @@ export default function ChiTietNhanSu() {
               )
             }
           />
+          <Dong nhan={t('nguoiDung.cccd')} giaTri={u.cccd ?? '—'} />
+          <Dong
+            nhan={t('nguoiDung.soTaiKhoan')}
+            giaTri={
+              u.soTaiKhoan
+                ? `${u.soTaiKhoan}${u.tenNganHang ? ` · ${u.tenNganHang}` : ''}`
+                : '—'
+            }
+          />
           <div className="sm:col-span-2">
             <Dong nhan={t('nguoiDung.diaChi')} giaTri={u.diaChi ?? '—'} />
           </div>
+          <div className="sm:col-span-2">
+            <Dong
+              nhan={t('nguoiDung.lienKetMxh')}
+              giaTri={
+                u.lienKetMxhs.length === 0 ? (
+                  '—'
+                ) : (
+                  <span className="flex flex-wrap gap-2">
+                    {u.lienKetMxhs.map((m) => (
+                      <a
+                        key={m.id}
+                        // Zalo thường là số điện thoại, không phải URL — chỉ mở tab mới khi nó
+                        // thật sự là link, còn lại hiện dạng chữ để không tạo link hỏng.
+                        href={/^https?:\/\//.test(m.duongDan) ? m.duongDan : undefined}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className={
+                          /^https?:\/\//.test(m.duongDan)
+                            ? 'inline-flex items-center gap-1 text-primary hover:underline'
+                            : 'inline-flex items-center gap-1'
+                        }
+                      >
+                        <Badge variant="muted">{t(`loaiMxh.${m.loai}`)}</Badge>
+                        {m.duongDan}
+                      </a>
+                    ))}
+                  </span>
+                )
+              }
+            />
+          </div>
+          {u.ghiChu && (
+            <div className="sm:col-span-2">
+              <Dong nhan={t('chung.ghiChu')} giaTri={u.ghiChu} />
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -107,6 +175,80 @@ export default function ChiTietNhanSu() {
           </CardContent>
         </Card>
       )}
+
+      {/*
+        TỆP HỒ SƠ (FR-23) — hợp đồng, bằng cấp scan, CCCD scan.
+
+        Tải lên ở ĐÂY chứ không trong modal sửa: tệp là thao tác từng cái một, không thuộc luồng
+        "sửa rồi lưu" của form. Ghép vào form sẽ phải giữ tệp trong bộ nhớ tới lúc bấm Lưu.
+      */}
+      <Card>
+        <CardContent className="grid gap-3 pt-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-semibold">{t('nguoiDung.tepHoSo')}</h3>
+            <Badge variant="muted">{u.tepHoSos.length}</Badge>
+            {coQuyen('NhanSu', 'Sua') && (
+              <label className="ml-auto">
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) taiTep.mutate(f)
+                    // Reset để chọn lại CÙNG một tệp vẫn kích hoạt onChange.
+                    e.target.value = ''
+                  }}
+                />
+                <span className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-4 text-sm font-medium hover:bg-muted">
+                  <Upload className="h-4 w-4" />
+                  {t('nguoiDung.taiTep')}
+                </span>
+              </label>
+            )}
+          </div>
+
+          {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
+
+          {u.tepHoSos.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t('nguoiDung.chuaCoTep')}</p>
+          ) : (
+            <ul className="grid gap-1.5">
+              {u.tepHoSos.map((tep) => (
+                <li
+                  key={tep.id}
+                  className="flex flex-wrap items-center gap-2 rounded-md border border-border p-2 text-sm"
+                >
+                  <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 truncate font-medium">{tep.tenGoc}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {(tep.kichThuoc / 1024).toFixed(0)} KB · {ngayVN(tep.ngayTao)}
+                  </span>
+                  {coQuyen('NhanSu', 'Sua') && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="ml-auto"
+                      onClick={() =>
+                        hoi({
+                          tieuDe: t('chung.xacNhanXoa'),
+                          thongDiep: t('nguoiDung.hoiXoaTep', { ten: tep.tenGoc }),
+                          nhanDongY: t('chung.xoa'),
+                          nguyHiem: true,
+                          onDongY: () => xoaTep.mutate(tep.id),
+                        })
+                      }
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      {hop}
     </div>
   )
 }

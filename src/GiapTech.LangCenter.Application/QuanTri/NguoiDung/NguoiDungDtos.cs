@@ -41,7 +41,31 @@ public record NguoiDungDto(
     string? TenPhongBan,
     /// <summary>Chức vụ (FR-24) — null = chưa gán.</summary>
     Guid? ChucVuId,
-    string? TenChucVu);
+    string? TenChucVu,
+    // ---------- FR-23: hồ sơ mở rộng ----------
+    string? Cccd,
+    string? SoTaiKhoan,
+    string? TenNganHang,
+    string? GhiChu,
+    /// <summary>Liên kết MXH — nhiều dòng mỗi người.</summary>
+    List<LienKetMxhDto> LienKetMxhs,
+    /// <summary>Tệp hồ sơ: hợp đồng, bằng cấp scan…</summary>
+    List<TepHoSoDto> TepHoSos);
+
+/// <summary>Một liên kết mạng xã hội (FR-23).</summary>
+public record LienKetMxhDto(Guid Id, LoaiMxh Loai, string DuongDan, string? GhiChu);
+
+/// <summary>Một tệp trong hồ sơ nhân sự (FR-23).</summary>
+/// <summary>Một liên kết MXH khi ghi (không có Id — danh sách thay thế toàn bộ).</summary>
+public record LuuLienKetMxh(LoaiMxh Loai, string DuongDan, string? GhiChu = null);
+
+public record TepHoSoDto(
+    Guid Id,
+    string TenGoc,
+    string KhoaLuuTru,
+    string LoaiNoiDung,
+    long KichThuoc,
+    DateTimeOffset NgayTao);
 
 // ---------- Queries ----------
 
@@ -125,7 +149,18 @@ public class LayDanhSachNguoiDungHandler(IAppDbContext db)
                 u.PhongBanId,
                 u.PhongBan == null ? null : u.PhongBan.Ten,
                 u.ChucVuId,
-                u.ChucVu == null ? null : u.ChucVu.Ten))
+                u.ChucVu == null ? null : u.ChucVu.Ten,
+                u.Cccd, u.SoTaiKhoan, u.TenNganHang, u.GhiChu,
+                u.LienKetMxhs
+                    .OrderBy(m => m.Loai)
+                    .Select(m => new LienKetMxhDto(m.Id, m.Loai, m.DuongDan, m.GhiChu))
+                    .ToList(),
+                u.TepDinhKems
+                    // Mới nhất trước: tệp vừa tải lên là thứ người dùng đang tìm.
+                    .OrderByDescending(t => t.NgayTao)
+                    .Select(t => new TepHoSoDto(
+                        t.Id, t.TenGoc, t.KhoaLuuTru, t.LoaiNoiDung, t.KichThuoc, t.NgayTao))
+                    .ToList()))
             .ToListAsync(ct);
 
         return new KetQuaTrang<NguoiDungDto>(duLieu, tong, trang.TrangHopLe, trang.SoDongHopLe);
@@ -156,6 +191,16 @@ public record TaoNguoiDungCommand(
     Guid? PhongBanId = null,
     /// <summary>Chức vụ khi tạo (FR-24) — "Ban quản lý", "Trưởng phòng"… null = chưa gán.</summary>
     Guid? ChucVuId = null,
+    // ---------- FR-23 ----------
+    string? Cccd = null,
+    string? SoTaiKhoan = null,
+    string? TenNganHang = null,
+    string? GhiChu = null,
+    /// <summary>
+    /// Liên kết MXH. **Danh sách này THAY THẾ toàn bộ** liên kết hiện có khi cập nhật, nên form
+    /// phải gửi đủ — xem ghi chú ở `CapNhatNguoiDungCommand`.
+    /// </summary>
+    List<LuuLienKetMxh>? LienKetMxhs = null,
     /// <summary>
     /// Tạo luôn tài khoản trong cùng một giao dịch. Hai lượt gọi riêng sẽ để lại người dùng
     /// không tài khoản nếu lượt thứ hai hỏng — việc thường gặp nhất không nên là việc dễ làm dở.
@@ -204,12 +249,17 @@ public class TaoNguoiDungHandler(IAppDbContext db, IPasswordHasher hasher)
             LoaiNguoiDung = request.LoaiNguoiDung,
             PhongBanId = request.PhongBanId,
             ChucVuId = request.ChucVuId,
+            Cccd = Gon(request.Cccd),
+            SoTaiKhoan = Gon(request.SoTaiKhoan),
+            TenNganHang = Gon(request.TenNganHang),
+            GhiChu = Gon(request.GhiChu),
             TrangThaiNhanSu = TrangThaiNhanSu.DangLamViec
         };
         db.NguoiDungs.Add(nd);
 
         GhiHoSo(db, nd, request.LoaiNguoiDung,
             request.HoSoGiaoVien, request.HoSoHocVien, taoMoiNeuThieu: true);
+        GhiLienKetMxh(db, nd, request.LienKetMxhs);
 
         if (request.TaiKhoan is { } tk)
         {
@@ -262,6 +312,37 @@ public class TaoNguoiDungHandler(IAppDbContext db, IPasswordHasher hasher)
         // khác phải bị chặn, không âm thầm ghi vào.
         if (!await db.PhongBans.AnyAsync(p => p.Id == id, ct))
             throw new AppException("PHONG_BAN_KHONG_HOP_LE");
+    }
+
+    /// <summary>
+    /// Ghi lại danh sách liên kết MXH — **thay thế toàn bộ** (FR-23).
+    ///
+    /// Xoá hết rồi thêm lại thay vì so từng dòng: liên kết MXH không có id nghiệp vụ nào ổn
+    /// định (người dùng sửa link tại chỗ), và danh sách chỉ vài dòng nên chi phí không đáng.
+    /// Gọi với `null` thì KHÔNG đụng gì — đó là "client không gửi".
+    /// </summary>
+    internal static void GhiLienKetMxh(
+        IAppDbContext db, Domain.Entities.NguoiDung nd, List<LuuLienKetMxh>? ds)
+    {
+        if (ds is null) return;
+
+        if (nd.LienKetMxhs.Count > 0) db.LienKetMxhs.RemoveRange(nd.LienKetMxhs);
+
+        foreach (var m in ds)
+        {
+            var duongDan = m.DuongDan?.Trim();
+            // Bỏ dòng rỗng: form thường để sẵn một dòng trống, gửi lên sẽ thành liên kết rác.
+            if (string.IsNullOrWhiteSpace(duongDan)) continue;
+
+            db.LienKetMxhs.Add(new Domain.Entities.LienKetMxh
+            {
+                NguoiDungId = nd.Id,
+                NguoiDung = nd,
+                Loai = m.Loai,
+                DuongDan = duongDan,
+                GhiChu = Gon(m.GhiChu)
+            });
+        }
     }
 
     /// <summary>
@@ -325,7 +406,8 @@ public class TaoNguoiDungHandler(IAppDbContext db, IPasswordHasher hasher)
         }
     }
 
-    private static string? Gon(string? s)
+    /// <summary>Cắt khoảng trắng, chuỗi rỗng → null. `internal` để handler cập nhật dùng chung.</summary>
+    internal static string? Gon(string? s)
         => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 }
 
@@ -356,6 +438,21 @@ public record CapNhatNguoiDungCommand(
     /// Cùng lý do với <see cref="DoiPhongBan"/>: `Guid?` chỉ có một giá trị trống (quy tắc #1).
     /// </summary>
     bool DoiChucVu = false,
+    // ---------- FR-23 ----------
+    string? Cccd = null,
+    string? SoTaiKhoan = null,
+    string? TenNganHang = null,
+    string? GhiChu = null,
+    /// <summary>
+    /// Liên kết MXH — **null = không gửi → GIỮ NGUYÊN** danh sách hiện có; danh sách (kể cả
+    /// rỗng) = THAY THẾ toàn bộ.
+    ///
+    /// Không dùng "null nghĩa là xoá hết": mọi client cũ và mọi form không có ô MXH sẽ âm thầm
+    /// xoá sạch liên kết của người ta mỗi lần lưu — đúng lỗi 16/08 với ô địa chỉ (quy tắc #1).
+    /// Ở đây `List` có hai giá trị trống phân biệt được (`null` vs `[]`) nên không cần cờ riêng
+    /// như `DoiChucVu`.
+    /// </summary>
+    List<LuuLienKetMxh>? LienKetMxhs = null,
     /// <summary>null = client không gửi → giữ ảnh đang có (quy tắc #1).</summary>
     string? AnhDaiDienUrl = null) : IRequest;
 
@@ -379,6 +476,10 @@ public class CapNhatNguoiDungHandler(IAppDbContext db)
             .Include(u => u.HoSoGiaoVien)
             .Include(u => u.HoSoHocVien)
             .Include(u => u.HoSoNhanVien)
+            // BẮT BUỘC Include: `GhiLienKetMxh` gọi `RemoveRange(nd.LienKetMxhs)`. Không
+            // Include thì collection luôn rỗng, nên gửi danh sách rỗng KHÔNG xoá được liên kết
+            // cũ, và gửi danh sách mới sẽ CỘNG THÊM thay vì thay thế. Test bắt được cả hai.
+            .Include(u => u.LienKetMxhs)
             .FirstOrDefaultAsync(u => u.Id == request.Id, ct)
             ?? throw new KhongTimThayException($"NguoiDung {request.Id}");
 
@@ -387,6 +488,10 @@ public class CapNhatNguoiDungHandler(IAppDbContext db)
         nd.SoDienThoai = request.SoDienThoai;
         nd.DiaChi = request.DiaChi;
         nd.NgaySinh = request.NgaySinh;
+        nd.Cccd = TaoNguoiDungHandler.Gon(request.Cccd);
+        nd.SoTaiKhoan = TaoNguoiDungHandler.Gon(request.SoTaiKhoan);
+        nd.TenNganHang = TaoNguoiDungHandler.Gon(request.TenNganHang);
+        nd.GhiChu = TaoNguoiDungHandler.Gon(request.GhiChu);
         nd.LoaiNguoiDung = request.LoaiNguoiDung;
         nd.TrangThaiNhanSu = request.TrangThaiNhanSu;
 
@@ -422,6 +527,8 @@ public class CapNhatNguoiDungHandler(IAppDbContext db)
         TaoNguoiDungHandler.GhiHoSo(db, nd, request.LoaiNguoiDung,
             request.HoSoGiaoVien, request.HoSoHocVien,
             taoMoiNeuThieu: true);
+
+        TaoNguoiDungHandler.GhiLienKetMxh(db, nd, request.LienKetMxhs);
 
         await db.SaveChangesAsync(ct);
     }

@@ -8,6 +8,48 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — FR-23 Hồ sơ nhân sự mở rộng: CCCD, số tài khoản, MXH, tệp (10/09/2026)
+
+**HRM nay đủ nghiệp vụ** (FR-22 → FR-24), 23/24 mã FR chạy đầu-cuối.
+
+- `NGUOI_DUNG` thêm `cccd`, `so_tai_khoan`, `ten_ngan_hang`, `ghi_chu` — hiện cho **mọi vai trò
+  nhân sự**, vì CCCD và số tài khoản là thứ cần cho hợp đồng và trả lương, áp cả cho giáo viên.
+- **`cccd` KHÔNG unique**: dữ liệu nhập tay thường thiếu, ép duy nhất sẽ chặn lưu hồ sơ chỉ vì
+  hai người cùng để trống. Trùng CCCD là việc cảnh báo ở UI.
+- Bảng mới **`LIEN_KET_MXH`** — nhiều dòng mỗi người (Facebook · Zalo · LinkedIn · Telegram ·
+  Khác). Bảng riêng chứ không vài cột trên `NGUOI_DUNG` (thêm mạng mới là thêm cột + migration)
+  và không `jsonb` (mảng không mang `tenant_id` nên nằm ngoài Global Query Filter). **Không**
+  unique theo `(nguoi_dung_id, loai)`: một người có hai Facebook là chuyện thật.
+- `duong_dan` **không validate là URL** — Zalo thường là số điện thoại; UI chỉ mở tab mới khi giá
+  trị bắt đầu bằng `http(s)://`.
+- **Tệp hồ sơ** (hợp đồng, bằng cấp scan) dùng `TEP_DINH_KEM` với **cột FK thứ sáu**
+  `nguoi_dung_id`, tải/xoá ở view chi tiết.
+
+### Fixed — Thiếu `Include` làm danh sách MXH không thay thế được (10/09/2026)
+
+Handler cập nhật thiếu `.Include(u => u.LienKetMxhs)` nên `RemoveRange(nd.LienKetMxhs)` chạy trên
+collection rỗng: gửi danh sách rỗng **không** xoá được liên kết cũ, và gửi danh sách mới thì
+**cộng thêm** thay vì thay thế. Hai test bắt được ngay lần chạy đầu; đã kiểm bằng đột biến (bỏ
+`Include` → đúng 2 test đỏ).
+
+### Ba điểm thiết kế đáng ghi
+
+1. **Thêm cột FK vào `TEP_DINH_KEM` phải sửa cả `CHECK`.** Constraint
+   `ck_tep_dinh_kem_dung_mot_chu` đếm "đúng một cột khác null", nên quên là mọi tệp hồ sơ bị
+   chặn ở tầng DB — lỗi lộ lúc chạy, không lúc biên dịch. Đã thử ba chiều trên PostgreSQL: chỉ
+   `nguoi_dung_id` → vào được; không cột nào → chặn; hai cột → chặn.
+2. **Handler tải tệp RIÊNG, không thêm nhánh vào `TaiTepCommand`** của học liệu — lệnh kia phụ
+   thuộc `IPhamViLopHoc` ("lớp mình dạy"), không liên quan hồ sơ nhân sự. Thêm nhánh là đặt logic
+   HRM trong handler LMS và `RanhGioiHeThongConTests` sẽ đỏ (ADR-0005). Vẫn dùng chung
+   `ILuuTruTep` + bảng `TEP_DINH_KEM`.
+3. **Quy tắc #1 với `List` khác với `Guid?`**: `lienKetMxhs = null` → giữ nguyên, danh sách (kể
+   cả rỗng) → thay thế. Không cần cờ riêng như `DoiChucVu` vì `List` có **hai** giá trị trống
+   phân biệt được.
+
+11 test mới (`HoSoNhanSuTests`). 414 test xanh, build 0 warning. Migration thuần additive — đối
+chiếu: 66 người dùng · 2 tệp · 48 chức vụ **không đổi**. Đã lái UI: 11/11 trường hiện đúng ở view
+chi tiết, form sửa nạp lại đủ MXH.
+
 ### Added — FR-24 Danh mục chức vụ, gồm "Ban quản lý" (10/09/2026)
 
 - Bảng `CHUC_VU` do admin tự quản (tên · mô tả · thứ tự · còn dùng), màn `/hrm/chuc-vu`. Seeder

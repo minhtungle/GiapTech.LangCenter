@@ -1,6 +1,6 @@
 # ERD — Mô hình dữ liệu
 
-**35 bảng**, PostgreSQL. Mọi cột chuỗi có `HasMaxLength` (canh bởi
+**36 bảng**, PostgreSQL. Mọi cột chuỗi có `HasMaxLength` (canh bởi
 `MoiEntityPhaiCoConfigTests`); ngoại lệ duy nhất là hai cột JSON của `NHAT_KY_HE_THONG`. Nội dung dưới đây khớp với schema thật (kiểm bằng
 `information_schema` sau khi áp toàn bộ migration), không phải bản thiết kế trên giấy.
 
@@ -82,6 +82,8 @@ erDiagram
     PHONG_BAN |o--o{ PHONG_BAN : "phòng ban cấp dưới"
     NGUOI_DUNG |o--o{ PHONG_BAN : "quản lý phòng"
     CHUC_VU ||--o{ NGUOI_DUNG : "giữ chức vụ"
+    NGUOI_DUNG ||--o{ LIEN_KET_MXH : "có liên kết MXH"
+    NGUOI_DUNG ||--o{ TEP_DINH_KEM : "tệp hồ sơ"
     DANG_KY_KHOA_HOC ||--o{ YEU_CAU_XEP_LOP : "gửi yêu cầu xếp lớp (nhiều lần)"
     NGUOI_DUNG ||--o{ YEU_CAU_XEP_LOP : "chờ xếp lớp"
     LOP_HOC |o--o{ YEU_CAU_XEP_LOP : "được xếp vào"
@@ -89,7 +91,7 @@ erDiagram
 
 ## Chi tiết bảng
 
-### Nhóm nền tảng (14 bảng)
+### Nhóm nền tảng (15 bảng)
 
 **Người và tài khoản là hai bảng riêng** (tách 07/09/2026). `NGUOI_DUNG` là bảng "con người",
 `TAI_KHOAN` là cách họ đăng nhập — xem [FR-03](../nghiep-vu/quan-tri-he-thong.md#fr-03--người-dùng-hồ-sơ-con-người).
@@ -102,6 +104,7 @@ erDiagram
 | `HO_SO_GIAO_VIEN` | Hồ sơ người dạy | Bằng cấp, chuyên môn, ngày vào làm. **Trợ giảng dùng chung** |
 | `HO_SO_HOC_VIEN` | Hồ sơ người học | Trường/lớp, tên và SĐT phụ huynh — trung tâm dạy trẻ em cần gọi được cho phụ huynh |
 | `HO_SO_NHAN_VIEN` | Hồ sơ vận hành | **Hiện chưa có trường nào** — `chuc_vu` và `phong_ban` (chuỗi) đã chuyển lên `NGUOI_DUNG`. Giữ bảng cho FR-23 (CCCD, số tài khoản, MXH) |
+| `LIEN_KET_MXH` | **Liên kết MXH** (FR-23) | Nhiều dòng mỗi người (`loai`, `duong_dan`, `ghi_chu`). Bảng riêng chứ không vài cột trên `NGUOI_DUNG`: thêm mạng mới là thêm cột + migration. **Không** unique theo `(nguoi_dung_id, loai)` — một người có thể có hai Facebook |
 | `CHUC_VU` | **Danh mục chức vụ** (FR-24) | "Ban quản lý", "Trưởng phòng"… `dang_dung` để ngừng dùng mà giữ lịch sử. **Khác `LoaiNguoiDung`**: đây là chức danh, không phải loại nghiệp vụ, và **không cấp quyền** |
 | `PHONG_BAN` | **Cơ cấu tổ chức** (FR-22) | Cây tự tham chiếu `phong_ban_cha_id` (null = gốc), `nguoi_quan_ly_id`, `thu_tu` (sắp theo tên thì "Kế toán" luôn đứng trước "Đào tạo"). Chống chu trình làm ở **handler** — không ép được bằng constraint (cần recursive CTE). **`nguoi_quan_ly_id` là THÔNG TIN tổ chức, KHÔNG phải quyền** |
 | `QUYEN` | Nhóm quyền | Seeder tạo sẵn 4 nhóm: Quản trị viên / Giáo viên / Trợ giảng / Học viên |
@@ -147,7 +150,7 @@ không phân công được họ vào lớp cũ nữa.
 | `BAI_LAM` | `han_nop_rieng` nullable = gia hạn riêng; hạn hiệu lực = `han_nop_rieng ?? bai_kiem_tra.dong_luc` |
 | `TAI_LIEU` | Tài liệu giảng dạy của trung tâm; tệp thật nằm ở `TEP_DINH_KEM` |
 | `TAI_LIEU_LOP_HOC` | Bảng gán tài liệu ↔ lớp. **Không có hàng nào** = tài liệu chung toàn trung tâm — ở đây "rỗng" và "chung" là **cùng một nghĩa** nên không cần cột cờ (khác `BUOI_HOC.da_tuy_chinh_hoc_vien`) |
-| `TEP_DINH_KEM` | Một bảng dùng chung, **5 cột FK nullable loại trừ nhau**, ép bằng `CHECK` |
+| `TEP_DINH_KEM` | Một bảng dùng chung, **6 cột FK nullable loại trừ nhau**, ép bằng `CHECK`. Cột thứ sáu `nguoi_dung_id` = tệp hồ sơ nhân sự (FR-23). **Thêm cột FK mới phải sửa cả `CHECK`** — quên là mọi hàng dùng cột đó bị chặn ở tầng DB |
 
 ### Nhóm CRM (7 bảng)
 
