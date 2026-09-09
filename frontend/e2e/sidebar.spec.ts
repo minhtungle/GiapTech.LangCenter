@@ -89,4 +89,64 @@ test.describe('Sidebar', () => {
     expect(d.navCaoHopLe).toBeTruthy()
     expect(d.dangXuatTrongTamNhin, 'nút Đăng xuất bị đẩy ra ngoài màn hình').toBeTruthy()
   })
+
+  /**
+   * Bộ chuyển hệ thống phải chuyển được từ MỌI trang, kể cả trang thuộc một hệ thống khác.
+   *
+   * Lỗi thật (09/09/2026): đứng ở `/crm/khach-hang` bấm HRM thì `doi('Hrm')` ghi localStorage,
+   * rồi effect "URL thắng" đọc lại đường dẫn `/crm/...` và ghi đè về `Crm` sau 16ms — bộ chuyển
+   * như chết trên mọi trang thuộc hệ thống, tức gần như toàn bộ app. Từ Tổng quan (`/`) thì
+   * chuyển được nên rất dễ bỏ sót khi thử tay.
+   *
+   * Sửa bằng cách ĐIỀU HƯỚNG sang trang của hệ thống đích, để URL và lựa chọn nói cùng chuyện.
+   */
+  test('chuyển hệ thống được từ trang thuộc hệ thống khác', async ({ page, request }) => {
+    await vaoHeThong(page, request, 'chuyen-he-thong')
+
+    const nutChuyen = page.locator('button').filter({ hasText: /HRM|CRM|LMS/ }).first()
+    const doi = async (ten: string) => {
+      await nutChuyen.click()
+      await page.locator('div.absolute button').filter({ hasText: ten }).first().click()
+      await page.waitForTimeout(600)
+    }
+
+    // Vào một trang CRM — đây là điều kiện gây lỗi, không phải Tổng quan.
+    await page.goto('/crm/khach-hang')
+    await page.waitForTimeout(1200)
+    await expect(nutChuyen).toContainText('CRM')
+
+    // Chuyển sang HRM: cả nhãn, localStorage và URL đều phải theo.
+    await doi('HRM')
+    await expect(nutChuyen).toContainText('HRM')
+    expect(await page.evaluate(() => localStorage.getItem('lms_he_thong'))).toBe('Hrm')
+    expect(new URL(page.url()).pathname).toMatch(/^\/hrm\//)
+
+    // Và chuyển tiếp được — lỗi cũ kẹt luôn từ lần thứ hai.
+    await doi('LMS')
+    await expect(nutChuyen).toContainText('LMS')
+    expect(await page.evaluate(() => localStorage.getItem('lms_he_thong'))).toBe('Lms')
+
+    await doi('CRM')
+    await expect(nutChuyen).toContainText('CRM')
+    expect(await page.evaluate(() => localStorage.getItem('lms_he_thong'))).toBe('Crm')
+  })
+
+  /**
+   * Chiều ngược: mở link trực tiếp thì URL vẫn THẮNG lựa chọn đã lưu.
+   *
+   * Đây là chức năng cái effect kia tồn tại để làm (thêm 08/09/2026) — sửa lỗi trên không được
+   * làm hỏng nó, nếu không mở bookmark sẽ hiện sidebar của hệ thống khác.
+   */
+  test('URL thắng lựa chọn đã lưu khi mở link trực tiếp', async ({ page, request }) => {
+    await vaoHeThong(page, request, 'url-thang')
+
+    await page.evaluate(() => localStorage.setItem('lms_he_thong', 'Lms'))
+    await page.goto('/crm/doanh-thu')
+    await page.waitForTimeout(1200)
+
+    expect(await page.evaluate(() => localStorage.getItem('lms_he_thong'))).toBe('Crm')
+    await expect(
+      page.locator('button').filter({ hasText: /HRM|CRM|LMS/ }).first(),
+    ).toContainText('CRM')
+  })
 })

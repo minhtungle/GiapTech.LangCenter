@@ -8,6 +8,21 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Fixed — Bộ chuyển hệ thống không chuyển được từ trang thuộc hệ thống khác (09/09/2026)
+
+- Đứng ở `/crm/khach-hang` bấm HRM thì **không có gì xảy ra**. Nguyên nhân: `doi()` chỉ ghi
+  `localStorage`, rồi effect "URL thắng" (thêm 08/09) đọc lại đường dẫn `/crm/...` và ghi đè về
+  `Crm`. Đo được bằng cách chặn `Storage.prototype.setItem`: **hai lần ghi cách nhau 16ms** —
+  "Hrm" rồi "Crm".
+- Bộ chuyển như chết trên **mọi** trang thuộc hệ thống, tức gần như toàn bộ app. Từ Tổng quan
+  (`/`) thì chuyển được bình thường nên rất dễ bỏ sót khi thử tay.
+- Sửa: đổi hệ thống nay **điều hướng** sang trang đầu tiên vào được của hệ thống đích, để URL và
+  lựa chọn nói cùng một chuyện. Đích suy từ **chính menu đã lọc quyền**, không hard-code — thêm
+  module hay thu quyền thì đích tự đúng theo.
+- 2 test E2E mới (`sidebar.spec.ts`): một cho chuỗi CRM → HRM → LMS → CRM từ trang thuộc hệ
+  thống, một cho chiều ngược (URL vẫn thắng khi mở link trực tiếp — chức năng effect kia tồn tại
+  để làm). Đã kiểm bằng đột biến: bỏ điều hướng → đúng 1 test đỏ.
+
 ### Changed — Tab thông tin của view chi tiết chỉ ĐỌC, sửa qua modal (09/09/2026)
 
 - `ChiTietKhachHang` (tab *Thông tin chung*) và `ChiTietLopHoc` (tab *Tổng quan*): form sửa

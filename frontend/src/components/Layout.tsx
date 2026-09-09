@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Users, ShieldCheck, Settings, LogOut, Home, GraduationCap, BookOpen, Wallet,
   PanelLeftClose, PanelLeft, Menu, X, ScrollText, Briefcase, UserCog, TrendingUp,
@@ -33,6 +33,7 @@ export default function Layout() {
   const { t } = useTranslation()
   const { phien, dangXuat } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
 
   // Nhớ lựa chọn giữa các phiên: người thích sidebar hẹp không muốn thu gọn lại mỗi lần vào.
   const [thuGon, setThuGon] = useState(() => localStorage.getItem(KHOA_THU_GON) === '1')
@@ -185,6 +186,37 @@ export default function Layout() {
         .map((n) => ({ ...n, muc: n.muc.filter((m) => !m.can || coQuyen(m.can)) }))
         .filter((n) => n.muc.length > 0)
 
+  /**
+   * Trang đầu tiên vào được của một hệ thống — dùng khi bấm bộ chuyển.
+   *
+   * Suy từ CHÍNH menu đã lọc quyền, không hard-code: thêm/bỏ module hay thu quyền của người
+   * dùng thì đích đến tự đúng theo. Trả null khi hệ thống đó không có mục nào (đang tải quyền,
+   * hoặc người dùng không có quyền nào trong đó) — lúc đó chỉ đổi lựa chọn, không điều hướng.
+   */
+  const trangDauCua = (ma: MaHeThong): string | null =>
+    nhomGoc
+      .filter((n) => n.heThong === ma)
+      .flatMap((n) => n.muc)
+      .find((m) => !m.can || coQuyen(m.can))?.to ?? null
+
+  /**
+   * Đổi hệ thống = đổi lựa chọn **và** điều hướng sang trang của hệ thống đó.
+   *
+   * Phải điều hướng, không chỉ `doi()`. Lỗi gặp 09/09/2026: đứng ở `/crm/khach-hang` bấm HRM
+   * thì `doi('Hrm')` ghi localStorage, rồi effect "URL thắng" ở trên đọc lại đường dẫn `/crm/...`
+   * và ghi đè về `Crm` sau 16ms — bộ chuyển như chết trên MỌI trang thuộc hệ thống. Đo được
+   * bằng cách chặn `Storage.prototype.setItem`: hai lần ghi liên tiếp "Hrm" rồi "Crm".
+   *
+   * Điều hướng làm URL và lựa chọn nói cùng một chuyện, nên effect kia không còn gì để sửa.
+   */
+  const doiHeThong = (ma: MaHeThong) => {
+    heThong.doi(ma)
+    const dich = trangDauCua(ma)
+    // `/` (Tổng quan) thuộc mọi hệ thống nên không kéo lựa chọn về đâu — đích an toàn khi hệ
+    // thống đích chưa có mục nào hiện được.
+    navigate(dich ?? '/')
+  }
+
   const tenTrang = nhomMenu
     .flatMap((n) => n.muc)
     .find((m) => (m.cuoi ? location.pathname === m.to : location.pathname.startsWith(m.to)))?.nhan
@@ -297,7 +329,7 @@ export default function Layout() {
                       key={ma}
                       type="button"
                       onClick={() => {
-                        heThong.doi(ma)
+                        doiHeThong(ma)
                         setMoChonHeThong(false)
                       }}
                       className={cn(
