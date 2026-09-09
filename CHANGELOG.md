@@ -8,6 +8,22 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — Tab thông tin của view chi tiết chỉ ĐỌC, sửa qua modal (09/09/2026)
+
+- `ChiTietKhachHang` (tab *Thông tin chung*) và `ChiTietLopHoc` (tab *Tổng quan*): form sửa
+  không còn hiện sẵn cạnh khối thông tin, thay bằng **một nút mở modal**.
+- Đọc thông tin là việc thường xuyên hơn sửa nhiều lần; để form nằm sẵn thì mỗi lần chỉ muốn xem
+  số điện thoại hay sĩ số đều phải nhìn qua một form không dùng tới, và ở lưới hai cột thì khối
+  thông tin bị bóp còn nửa bề rộng. Nay thông tin dàn hết chiều ngang.
+- **Bỏ được mẹo `key` remount** ở `ChiTietLopHoc`: bản cũ phải ghép `key` từ mọi trường để form
+  nạp lại giá trị sau khi lưu (ô `defaultValue` không tự cập nhật). Modal chỉ mount form lúc mở
+  nên không cần nữa.
+- Ô select lưu bằng `useState` được **reset khi đóng modal** — không reset thì lần mở sau vẫn giữ
+  lựa chọn vừa bỏ dở.
+- Bỏ dòng "Đã lưu" tạm ở cả hai chỗ: modal tự đóng đã là phản hồi đủ rõ.
+- `FormLopHoc` **không sửa** (còn dùng ở màn tạo lớp) — chỉ truyền thêm prop `onHuy` đã có sẵn để
+  modal có nút Huỷ.
+
 ### Fixed — Textarea kéo được vô hạn, đẩy nút Lưu ra khỏi màn hình (09/09/2026)
 
 - `resize-y` không kèm giới hạn nên tay cầm kéo được vô hạn. Đo thật: ô ghi chú kéo lên

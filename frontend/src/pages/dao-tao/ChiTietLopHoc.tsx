@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Pencil } from 'lucide-react'
 import { api, layMaLoi } from '@/lib/api'
 import { useQuyen } from '@/lib/quyen'
-import { Badge, Card, CardContent, TrangTrong } from '@/components/ui'
+import { Badge, Button, Card, CardContent, TrangTrong } from '@/components/ui'
+import { Modal } from '@/components/ui/Modal'
 import { LichVaDiemDanh } from './LichVaDiemDanh'
 import { BaiTapCuaLop } from './BaiTapCuaLop'
 import { HocVienCuaLop } from './HocVienCuaLop'
@@ -163,8 +164,9 @@ function TongQuanLop({
 }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
+  const { coQuyen } = useQuyen()
   const [maLoi, setMaLoi] = useState<string | null>(null)
-  const [daLuu, setDaLuu] = useState(false)
+  const [moSua, setMoSua] = useState(false)
 
   const capNhat = useMutation({
     mutationFn: (du: DuLieuLopHoc) => api.put(`/lop-hoc/${lop.id}`, { ...du, id: lop.id }),
@@ -172,13 +174,10 @@ function TongQuanLop({
       // Làm mới cả chi tiết lẫn danh sách: tên lớp vừa đổi phải hiện đúng ở cả hai chỗ.
       void qc.invalidateQueries({ queryKey: ['lop-hoc'] })
       setMaLoi(null)
-      setDaLuu(true)
-      window.setTimeout(() => setDaLuu(false), 2500)
+      // Modal đóng là phản hồi đủ rõ — không cần dòng "Đã lưu" tạm như khi form hiện sẵn.
+      setMoSua(false)
     },
-    onError: (e) => {
-      setMaLoi(layMaLoi(e))
-      setDaLuu(false)
-    },
+    onError: (e) => setMaLoi(layMaLoi(e)),
   })
 
   const { data: buoiHocs = [] } = useQuery({
@@ -206,6 +205,16 @@ function TongQuanLop({
         />
       </div>
 
+      {/* Nút Sửa gác bằng chính quyền sửa lớp — người chỉ được xem không thấy nút. */}
+      {coQuyen('LopHoc', 'Sua') && (
+        <div className="flex justify-end">
+          <Button variant="outline" onClick={() => { setMaLoi(null); setMoSua(true) }}>
+            <Pencil className="h-4 w-4" />
+            {t('lopHoc.suaThongTin')}
+          </Button>
+        </div>
+      )}
+
       <Card>
         <CardContent className="pt-4">
           <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
@@ -228,36 +237,36 @@ function TongQuanLop({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="space-y-3 pt-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold">{t('lopHoc.suaThongTin')}</h3>
-            {daLuu && (
-              <span className="flex items-center gap-1 text-sm text-status-ok">
-                <CheckCircle2 className="h-4 w-4" />
-                {t('chung.daLuu')}
-              </span>
-            )}
-          </div>
+      {/*
+        Form sửa nằm trong modal, KHÔNG hiện sẵn dưới khối thông tin (đổi 09/09/2026 — cùng
+        kiểu với tab Thông tin chung của khách hàng).
 
-          <FormLopHoc
-            // Key đổi khi dữ liệu server đổi, để form nạp lại giá trị mới sau khi lưu —
-            // các ô dùng `defaultValue` nên không tự cập nhật. Ghép từ chính các trường form
-            // ghi đè: sửa xong query làm mới, key đổi, form remount với dữ liệu mới.
-            key={[
-              lop.id, lop.ten, lop.giaoVienChinhId, lop.hinhThuc,
-              lop.phongHoc, lop.linkHoc, lop.hocPhi, lop.sucChuaToiDa, lop.ghiChu,
-              lop.troGiangIds.join(','),
-            ].join('|')}
-            lop={lop}
-            nguoiDungs={nguoiDungs}
-            dangLuu={capNhat.isPending}
-            maLoi={maLoi}
-            nhanLuu={t('lopHoc.luuThongTin')}
-            onLuu={(du) => capNhat.mutate(du)}
-          />
-        </CardContent>
-      </Card>
+        Đọc thông tin lớp là việc làm thường xuyên hơn sửa; để form nằm sẵn thì mỗi lần chỉ muốn
+        xem sĩ số hay phòng học đều phải cuộn qua một form không dùng tới.
+
+        Không cần `key` remount như bản cũ nữa: modal chỉ mount `FormLopHoc` lúc mở, nên các ô
+        `defaultValue` luôn nạp dữ liệu mới nhất.
+      */}
+      <Modal
+        mo={moSua}
+        onDong={() => setMoSua(false)}
+        chanDoiKhiXuLy={capNhat.isPending}
+        tieuDe={t('lopHoc.suaThongTin')}
+        moTa={lop.ten}
+        rong="lg"
+      >
+        <FormLopHoc
+          lop={lop}
+          nguoiDungs={nguoiDungs}
+          dangLuu={capNhat.isPending}
+          maLoi={maLoi}
+          nhanLuu={t('lopHoc.luuThongTin')}
+          onLuu={(du) => capNhat.mutate(du)}
+          // `onHuy` đã có sẵn trong FormLopHoc — truyền vào để modal có nút Huỷ như mọi modal
+          // khác, không phải sửa component dùng chung (nó còn dùng ở màn tạo lớp).
+          onHuy={() => setMoSua(false)}
+        />
+      </Modal>
     </div>
   )
 }

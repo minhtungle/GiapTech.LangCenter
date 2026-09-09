@@ -113,7 +113,7 @@ function TabThongTin({ kh, onXong }: { kh: ChiTietKhachHangDto; onXong: () => vo
   const { hoi, hop } = useXacNhan()
   const [phuongThuc, setPhuongThuc] = useState<PhuongThucThanhToan>(kh.phuongThucThanhToan)
   const [maLoi, setMaLoi] = useState<string | null>(null)
-  const [daLuu, setDaLuu] = useState(false)
+  const [moSua, setMoSua] = useState(false)
 
   const luu = useMutation({
     mutationFn: (fd: FormData) =>
@@ -132,19 +132,37 @@ function TabThongTin({ kh, onXong }: { kh: ChiTietKhachHangDto; onXong: () => vo
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['khach-hang'] })
       setMaLoi(null)
-      setDaLuu(true)
-      window.setTimeout(() => setDaLuu(false), 2500)
+      // Modal đóng lại là phản hồi đủ rõ — không cần dòng "Đã lưu" tạm như khi form hiện sẵn.
+      setMoSua(false)
       onXong()
     },
     onError: (e) => setMaLoi(layMaLoi(e)),
   })
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid gap-4">
+      {/*
+        Nút Sửa mở modal, KHÔNG hiện form sẵn bên cạnh (đổi 09/09/2026).
+
+        Trước đó form sửa chiếm hẳn một cột của lưới `lg:grid-cols-2`, nên phần lớn thời gian
+        người dùng chỉ muốn ĐỌC thông tin lại phải nhìn một form không dùng tới, và khối thông
+        tin bị bóp còn nửa bề rộng. Nay thông tin dàn hết chiều ngang, sửa là hành động có chủ ý.
+      */}
+      {coQuyen('KhachHang', 'Sua') && (
+        <div className="flex justify-end">
+          <Button variant="outline" onClick={() => { setMaLoi(null); setMoSua(true) }}>
+            <Pencil className="h-4 w-4" />
+            {t('chiTietKhach.suaThongTin')}
+          </Button>
+        </div>
+      )}
+
       <Card>
         <CardContent className="grid gap-3 pt-6 sm:grid-cols-2">
           <Dong nhan={t('khachHang.soDienThoai')} giaTri={kh.soDienThoai ?? '—'} />
           <Dong nhan={t('khachHang.email')} giaTri={kh.email ?? '—'} />
+          {/* Hai trường dài trải hết hàng — link Facebook bị bó trong một cột thì xuống dòng
+              giữa URL, đọc không ra. */}
           <div className="sm:col-span-2">
             <Dong
               nhan={t('khachHang.linkFacebook')}
@@ -203,80 +221,85 @@ function TabThongTin({ kh, onXong }: { kh: ChiTietKhachHangDto; onXong: () => vo
         </CardContent>
       </Card>
 
-      {coQuyen('KhachHang', 'Sua') && (
-        <Card>
-          <CardContent className="pt-6">
-            <h3 className="mb-3 font-semibold">{t('chiTietKhach.suaThongTin')}</h3>
-            <form
-              className="grid gap-3"
-              onSubmit={(e) => {
-                e.preventDefault()
-                const fd = new FormData(e.currentTarget)
-                hoi({
-                  tieuDe: t('chung.xacNhanLuu'),
-                  thongDiep: t('khachHang.hoiLuu'),
-                  onDongY: () => luu.mutate(fd),
-                })
+      <Modal
+        mo={moSua}
+        onDong={() => {
+          setMoSua(false)
+          // Trả select về giá trị đang lưu: nó là state chứ không phải input có `defaultValue`,
+          // nên đóng modal mà không reset thì lần mở sau vẫn giữ lựa chọn vừa bỏ dở.
+          setPhuongThuc(kh.phuongThucThanhToan)
+        }}
+        chanDoiKhiXuLy={luu.isPending}
+        tieuDe={t('chiTietKhach.suaThongTin')}
+        moTa={kh.hoTen}
+      >
+        <form
+          className="grid gap-3"
+          onSubmit={(e) => {
+            e.preventDefault()
+            const fd = new FormData(e.currentTarget)
+            hoi({
+              tieuDe: t('chung.xacNhanLuu'),
+              thongDiep: t('khachHang.hoiLuu'),
+              onDongY: () => luu.mutate(fd),
+            })
+          }}
+        >
+          <div>
+            <Label htmlFor="hoTen">{t('khachHang.hoTen')} *</Label>
+            <Input id="hoTen" name="hoTen" required defaultValue={kh.hoTen} />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="soDienThoai">{t('khachHang.soDienThoai')}</Label>
+              <Input id="soDienThoai" name="soDienThoai" defaultValue={kh.soDienThoai ?? ''} />
+            </div>
+            <div>
+              <Label htmlFor="email">{t('khachHang.email')}</Label>
+              <Input id="email" name="email" type="email" defaultValue={kh.email ?? ''} />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="linkFacebook">{t('khachHang.linkFacebook')}</Label>
+            <Input id="linkFacebook" name="linkFacebook" defaultValue={kh.linkFacebook ?? ''} />
+          </div>
+          <div>
+            <Label htmlFor="pt">{t('khachHang.phuongThuc')}</Label>
+            <SelectTimKiem
+              id="pt"
+              luaChon={CAC_PHUONG_THUC.map((p) => ({
+                giaTri: p,
+                nhan: t(`phuongThucThanhToan.${p}`),
+              }))}
+              giaTri={phuongThuc}
+              onDoi={(v) => setPhuongThuc((v as PhuongThucThanhToan) ?? 'ChuyenKhoan')}
+              choPhepXoa={false}
+            />
+          </div>
+          <div>
+            <Label htmlFor="ghiChu">{t('chung.ghiChu')}</Label>
+            <Textarea id="ghiChu" name="ghiChu" rows={3} defaultValue={kh.ghiChu ?? ''} />
+          </div>
+
+          {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
+
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setMoSua(false)
+                setPhuongThuc(kh.phuongThucThanhToan)
               }}
             >
-              <div>
-                <Label htmlFor="hoTen">{t('khachHang.hoTen')} *</Label>
-                <Input id="hoTen" name="hoTen" required defaultValue={kh.hoTen} />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="soDienThoai">{t('khachHang.soDienThoai')}</Label>
-                  <Input
-                    id="soDienThoai"
-                    name="soDienThoai"
-                    defaultValue={kh.soDienThoai ?? ''}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">{t('khachHang.email')}</Label>
-                  <Input id="email" name="email" type="email" defaultValue={kh.email ?? ''} />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="linkFacebook">{t('khachHang.linkFacebook')}</Label>
-                <Input
-                  id="linkFacebook"
-                  name="linkFacebook"
-                  defaultValue={kh.linkFacebook ?? ''}
-                />
-              </div>
-              <div>
-                <Label htmlFor="pt">{t('khachHang.phuongThuc')}</Label>
-                <SelectTimKiem
-                  id="pt"
-                  luaChon={CAC_PHUONG_THUC.map((p) => ({
-                    giaTri: p,
-                    nhan: t(`phuongThucThanhToan.${p}`),
-                  }))}
-                  giaTri={phuongThuc}
-                  onDoi={(v) => setPhuongThuc((v as PhuongThucThanhToan) ?? 'ChuyenKhoan')}
-                  choPhepXoa={false}
-                />
-              </div>
-              <div>
-                <Label htmlFor="ghiChu">{t('chung.ghiChu')}</Label>
-                <Textarea id="ghiChu" name="ghiChu" rows={3} defaultValue={kh.ghiChu ?? ''} />
-              </div>
-
-              {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
-
-              <div className="flex items-center justify-end gap-2">
-                {daLuu && (
-                  <span className="mr-auto text-sm text-status-ok">{t('chung.daLuu')}</span>
-                )}
-                <Button type="submit" disabled={luu.isPending}>
-                  {t('chung.luu')}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+              {t('chung.huy')}
+            </Button>
+            <Button type="submit" disabled={luu.isPending}>
+              {t('chung.luu')}
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {hop}
     </div>

@@ -155,6 +155,30 @@ Sàn đặt qua `style` chứ không class (Tailwind không có class động th
 `{...props}`** kèm trải lại `props.style`: đặt trước thì caller truyền `style` ghi đè cả object
 và mất sàn — lỗi im lặng, không có cảnh báo biên dịch.
 
+## View chi tiết: xem trước, sửa là hành động có chủ ý
+
+**Tab thông tin của mọi view chi tiết chỉ ĐỌC, kèm một nút mở modal sửa** (chốt 09/09/2026 —
+trước đó form sửa hiện sẵn ngay cạnh khối thông tin).
+
+Vì sao: đọc thông tin là việc làm thường xuyên hơn sửa rất nhiều. Để form nằm sẵn thì mỗi lần chỉ
+muốn xem số điện thoại hay sĩ số đều phải nhìn qua một form không dùng tới, và ở lưới hai cột thì
+khối thông tin bị bóp còn nửa bề rộng.
+
+Đã áp cho: `ChiTietKhachHang` (tab *Thông tin chung*), `ChiTietLopHoc` (tab *Tổng quan*).
+
+Ba điểm dễ sai:
+
+1. **Không cần `key` remount cho form nữa.** Bản cũ phải ghép `key` từ mọi trường để form nạp lại
+   giá trị sau khi lưu (các ô dùng `defaultValue` không tự cập nhật). Modal chỉ mount form lúc
+   mở, nên bỏ được cả mẹo đó.
+2. **State không phải `defaultValue` thì phải reset khi đóng.** Ô select lưu bằng `useState` sẽ
+   giữ lựa chọn bỏ dở sang lần mở sau — `onDong` phải gán lại giá trị đang lưu.
+3. **Bỏ dòng "Đã lưu" tạm.** Modal tự đóng đã là phản hồi đủ rõ; giữ thêm badge biến mất sau
+   2.5s là dư.
+
+Form dùng chung nhiều nơi (`FormLopHoc` còn dùng ở màn tạo lớp) thì **truyền prop**, đừng sửa
+component — nó đã có `onHuy` sẵn để modal có nút Huỷ.
+
 ## Xác nhận thao tác ghi
 
 **Cập nhật 07/09/2026 — chủ sản phẩm chọn hỏi xác nhận trước MỌI thao tác thêm/sửa/xoá, kể cả
