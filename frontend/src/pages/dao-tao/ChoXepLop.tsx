@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import { UserPlus, X } from 'lucide-react'
 import { api, layMaLoi, type KetQuaTrang } from '@/lib/api'
 import {
-  Badge, Button, CanhBaoLoi, Card, CardContent, Label, Table, Td, Th, TrangTrong,
+  Badge, Button, CanhBaoLoi, Card, CardContent, Label, Table, Td, Textarea, Th, TrangTrong,
 } from '@/components/ui'
 import { Modal } from '@/components/ui/Modal'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
@@ -28,6 +28,7 @@ export default function ChoXepLop() {
   const { hoi, hop } = useXacNhan()
   const duocSuaLop = coQuyen('LopHoc', 'Sua')
   const [duyetCho, setDuyetCho] = useState<YeuCauXepLopDto | null>(null)
+  const [tuChoiCho, setTuChoiCho] = useState<YeuCauXepLopDto | null>(null)
   const [lopChon, setLopChon] = useState<string | null>(null)
   const [maLoi, setMaLoi] = useState<string | null>(null)
 
@@ -64,9 +65,14 @@ export default function ChoXepLop() {
     onError: (e) => setMaLoi(layMaLoi(e)),
   })
 
-  const huy = useMutation({
-    mutationFn: (id: string) => api.delete(`/lop-hoc/cho-xep-lop/${id}`),
-    onSuccess: lamMoi,
+  const tuChoi = useMutation({
+    mutationFn: ({ id, lyDo }: { id: string; lyDo: string }) =>
+      api.post(`/lop-hoc/cho-xep-lop/${id}/tu-choi`, { lyDo }),
+    onSuccess: () => {
+      lamMoi()
+      setTuChoiCho(null)
+      setMaLoi(null)
+    },
     onError: (e) => setMaLoi(layMaLoi(e)),
   })
 
@@ -122,9 +128,23 @@ export default function ChoXepLop() {
                 {ds.map((y) => (
                   <tr key={y.id} className="hover:bg-muted/40">
                     <Td>
-                      <div className="font-medium">{y.tenHocVien}</div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="font-medium">{y.tenHocVien}</span>
+                        {/* Lần gửi > 1 = đơn này đã bị từ chối trước đó. Đánh dấu để người xử lý
+                            đọc ghi chú thay vì từ chối lại vì cùng một lý do. */}
+                        {y.lanGui > 1 && (
+                          <Badge variant="cho">
+                            {t('xepLop.lanGuiThu', { so: y.lanGui })}
+                          </Badge>
+                        )}
+                      </div>
                       {y.soDienThoai && (
                         <div className="text-xs text-muted-foreground">{y.soDienThoai}</div>
+                      )}
+                      {y.ghiChu && (
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {t('xepLop.ghiChuNguoiGui')}: {y.ghiChu}
+                        </div>
                       )}
                     </Td>
                     <Td>
@@ -158,21 +178,19 @@ export default function ChoXepLop() {
                               <UserPlus className="h-4 w-4" />
                               {t('xepLop.duyet')}
                             </Button>
+                            {/* TỪ CHỐI, không phải "huỷ": huỷ là hành động của bên BÁN thu
+                                lại yêu cầu, từ chối là bên đào tạo không nhận. Lý do bắt buộc
+                                nên phải mở form, không dùng hộp confirm trơn. */}
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() =>
-                                hoi({
-                                  tieuDe: t('xepLop.huyYeuCau'),
-                                  thongDiep: t('xepLop.hoiHuy', { ten: y.tenHocVien }),
-                                  nhanDongY: t('xepLop.huyYeuCau'),
-                                  nguyHiem: true,
-                                  onDongY: () => huy.mutate(y.id),
-                                })
-                              }
+                              onClick={() => {
+                                setMaLoi(null)
+                                setTuChoiCho(y)
+                              }}
                             >
                               <X className="h-4 w-4" />
-                              {t('chung.huy')}
+                              {t('xepLop.tuChoi')}
                             </Button>
                           </>
                         )}
@@ -185,6 +203,58 @@ export default function ChoXepLop() {
           )}
         </CardContent>
       </Card>
+
+      <Modal
+        mo={!!tuChoiCho}
+        onDong={() => setTuChoiCho(null)}
+        chanDoiKhiXuLy={tuChoi.isPending}
+        tieuDe={t('xepLop.tuChoiXepLop')}
+        moTa={tuChoiCho?.tenHocVien}
+        rong="sm"
+      >
+        {tuChoiCho && (
+          <form
+            className="grid gap-3"
+            onSubmit={(e) => {
+              e.preventDefault()
+              const fd = new FormData(e.currentTarget)
+              const lyDo = String(fd.get('lyDo') ?? '').trim()
+              hoi({
+                tieuDe: t('xepLop.tuChoiXepLop'),
+                thongDiep: t('xepLop.hoiTuChoi', { ten: tuChoiCho.tenHocVien }),
+                nhanDongY: t('xepLop.tuChoi'),
+                nguyHiem: true,
+                onDongY: () => tuChoi.mutate({ id: tuChoiCho.id, lyDo }),
+              })
+            }}
+          >
+            <p className="text-sm text-muted-foreground">{t('xepLop.lyDoBatBuoc')}</p>
+
+            <div>
+              <Label htmlFor="lyDo">{t('xepLop.lyDo')} *</Label>
+              <Textarea
+                id="lyDo"
+                name="lyDo"
+                rows={3}
+                required
+                maxLength={500}
+                placeholder={t('xepLop.lyDoGoiY')}
+              />
+            </div>
+
+            {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setTuChoiCho(null)}>
+                {t('chung.huy')}
+              </Button>
+              <Button type="submit" variant="destructive" disabled={tuChoi.isPending}>
+                {t('xepLop.tuChoi')}
+              </Button>
+            </div>
+          </form>
+        )}
+      </Modal>
 
       <Modal
         mo={!!duyetCho}

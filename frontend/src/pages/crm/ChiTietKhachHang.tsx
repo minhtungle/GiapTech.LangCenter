@@ -17,8 +17,8 @@ import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { useQuyen } from '@/lib/quyen'
 import { useXacNhan } from '@/lib/xacNhan'
 import {
-  CAC_DON_VI, CAC_HINH_THUC, CAC_PHUONG_THUC, CAC_TRANG_THAI_KH, mauPhanTram, mauTrangThaiKh,
-  ngayChoInput, ngayVN, phanTram, tien,
+  CAC_DON_VI, CAC_HINH_THUC, CAC_PHUONG_THUC, CAC_TRANG_THAI_KH, gioNgayVN, mauPhanTram,
+  mauTrangThaiKh, mauTrangThaiXepLop, ngayChoInput, ngayVN, phanTram, tien,
   type ChiTietKhachHangDto, type DangKyKemThuDto, type DonViTien, type HinhThucChamSoc,
   type KhoaHocDto, type LanThuDto, type LichSuChamSocDto, type LoaiDonHang,
   type PhuongThucThanhToan, type SanPhamDto, type TrangThaiKhachHang,
@@ -872,6 +872,8 @@ function TabKhoaHoc({ khachHangId }: { khachHangId: string }) {
   const [moMuaHang, setMoMuaHang] = useState(false)
   /** Id các đơn đang mở sổ thu — mở nhiều đơn cùng lúc để so sánh được. */
   const [moSo, setMoSo] = useState<string[]>([])
+  /** Đơn đang mở form gửi yêu cầu xếp lớp (null = đóng). */
+  const [guiCho, setGuiCho] = useState<DangKyKemThuDto | null>(null)
 
   const { data: ds = [], isLoading } = useQuery({
     queryKey: ['khach-hang', khachHangId, 'dang-ky'],
@@ -918,9 +920,15 @@ function TabKhoaHoc({ khachHangId }: { khachHangId: string }) {
   })
 
   const guiYeuCau = useMutation({
-    mutationFn: (dangKyId: string) =>
-      api.post(`/doanh-thu/${dangKyId}/yeu-cau-xep-lop`, { dangKyId }),
-    onSuccess: lamMoi,
+    mutationFn: ({ dangKyId, ghiChu }: { dangKyId: string; ghiChu: string | null }) =>
+      api.post(`/doanh-thu/${dangKyId}/yeu-cau-xep-lop`, { dangKyId, ghiChu }),
+    onSuccess: () => {
+      lamMoi()
+      // Mở sổ của đơn vừa gửi: người bán thấy ngay dòng lần gửi mới trong lịch sử.
+      if (guiCho && !moSo.includes(guiCho.id)) setMoSo((cu) => [...cu, guiCho.id])
+      setGuiCho(null)
+      setMaLoi(null)
+    },
     onError: (e) => setMaLoi(layMaLoi(e)),
   })
 
@@ -1013,14 +1021,10 @@ function TabKhoaHoc({ khachHangId }: { khachHangId: string }) {
                         onDongY: () => xoaThu.mutate(lt.id),
                       })
                     }
-                    onGuiYeuCau={() =>
-                      hoi({
-                        tieuDe: t('chiTietKhach.guiYeuCauXepLop'),
-                        thongDiep: t('chiTietKhach.hoiGuiYeuCau', { ten: d.tenMatHang }),
-                        nhanDongY: t('chiTietKhach.guiYeuCau'),
-                        onDongY: () => guiYeuCau.mutate(d.id),
-                      })
-                    }
+                    onGuiYeuCau={() => {
+                      setMaLoi(null)
+                      setGuiCho(d)
+                    }}
                   />
                 ))}
               </div>
@@ -1047,6 +1051,78 @@ function TabKhoaHoc({ khachHangId }: { khachHangId: string }) {
         onDong={() => setMoMuaHang(false)}
         onXong={lamMoi}
       />
+
+      {/*
+        Form gửi yêu cầu xếp lớp — modal chứ không phải hộp confirm trơn, vì cần ô GHI CHÚ:
+        bên đào tạo chọn lớp dựa vào bối cảnh (trình độ, nguyện vọng giờ học), và khi gửi LẠI
+        sau khi bị từ chối thì ghi chú là chỗ người bán bổ sung thông tin còn thiếu.
+      */}
+      <Modal
+        mo={!!guiCho}
+        onDong={() => setGuiCho(null)}
+        chanDoiKhiXuLy={guiYeuCau.isPending}
+        tieuDe={t('chiTietKhach.guiYeuCauXepLop')}
+        moTa={guiCho?.tenMatHang}
+        rong="sm"
+      >
+        {guiCho && (
+          <form
+            className="grid gap-3"
+            onSubmit={(e) => {
+              e.preventDefault()
+              const fd = new FormData(e.currentTarget)
+              const ghiChu = String(fd.get('ghiChuYeuCau') ?? '').trim() || null
+              hoi({
+                tieuDe: t('chiTietKhach.guiYeuCauXepLop'),
+                thongDiep: t('chiTietKhach.hoiGuiYeuCau', { ten: guiCho.tenMatHang }),
+                nhanDongY: t('chiTietKhach.guiYeuCau'),
+                onDongY: () => guiYeuCau.mutate({ dangKyId: guiCho.id, ghiChu }),
+              })
+            }}
+          >
+            {/* Gửi lại lần thứ n: nhắc lại lý do bị từ chối ngay trên form, để người bán biết
+                phải bổ sung gì mà không cần đóng modal đi đọc lịch sử. */}
+            {guiCho.cacLanGuiXepLop.length > 0 && (
+              <div className="rounded-md border border-border bg-muted/40 p-2.5 text-sm">
+                <p className="font-medium">
+                  {t('chiTietKhach.guiLanThu', {
+                    so: guiCho.cacLanGuiXepLop[0].lanGui + 1,
+                  })}
+                </p>
+                {guiCho.cacLanGuiXepLop[0].lyDoTuChoi && (
+                  <p className="mt-1 text-muted-foreground">
+                    {t('chiTietKhach.lyDoTuChoiTruoc')}:{' '}
+                    <em>{guiCho.cacLanGuiXepLop[0].lyDoTuChoi}</em>
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div>
+              <Label htmlFor="ghiChuYeuCau">{t('chiTietKhach.ghiChuYeuCau')}</Label>
+              <Textarea
+                id="ghiChuYeuCau"
+                name="ghiChuYeuCau"
+                rows={3}
+                maxLength={500}
+                placeholder={t('chiTietKhach.ghiChuYeuCauGoiY')}
+              />
+            </div>
+
+            {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setGuiCho(null)}>
+                {t('chung.huy')}
+              </Button>
+              <Button type="submit" disabled={guiYeuCau.isPending}>
+                <Send className="h-4 w-4" />
+                {t('chiTietKhach.guiYeuCau')}
+              </Button>
+            </div>
+          </form>
+        )}
+      </Modal>
 
       <Modal
         mo={!!thuCho}
@@ -1238,21 +1314,38 @@ function DongDonHang({
               </Button>
             )}
 
-            {/* GỬI YÊU CẦU TẠO LỚP — chỉ đơn KHOÁ HỌC (sách không có lớp), gác bằng quyền
-                `DoanhThu.Sua` là quyền của người bán trên đơn của mình. */}
-            {d.loai === 'KhoaHoc' && coQuyen('DoanhThu', 'Sua') && (
-              d.trangThaiXepLop === null || d.trangThaiXepLop === 'DaHuy' ? (
-                <Button size="sm" variant="outline" onClick={onGuiYeuCau}>
-                  <Send className="h-4 w-4" />
-                  {t('chiTietKhach.guiYeuCau')}
-                </Button>
-              ) : d.trangThaiXepLop === 'DangCho' ? (
-                <Badge variant="cho">{t('chiTietKhach.dangChoXepLop')}</Badge>
-              ) : (
-                <Badge variant="ok">
-                  {t('chiTietKhach.daXepLop', { ten: d.tenLopDaXep ?? '' })}
-                </Badge>
-              )
+            {/* XẾP LỚP — chỉ đơn KHOÁ HỌC (sách không có lớp).
+                Ba trạng thái loại trừ nhau, theo đúng thứ tự ưu tiên đọc:
+                đã vào lớp → đang chờ → còn gửi được (kể cả sau khi bị từ chối). */}
+            {d.loai === 'KhoaHoc' && (
+              <>
+                {d.tenLopDaXep ? (
+                  <Badge variant="ok">
+                    {t('chiTietKhach.daXepLop', { ten: d.tenLopDaXep })}
+                  </Badge>
+                ) : d.dangChoXepLop ? (
+                  <Badge variant="cho">{t('chiTietKhach.dangChoXepLop')}</Badge>
+                ) : (
+                  coQuyen('DoanhThu', 'Sua') && (
+                    <Button size="sm" variant="outline" onClick={onGuiYeuCau}>
+                      <Send className="h-4 w-4" />
+                      {d.cacLanGuiXepLop.length > 0
+                        ? t('chiTietKhach.guiLai')
+                        : t('chiTietKhach.guiYeuCau')}
+                    </Button>
+                  )
+                )}
+
+                {/* SỐ LẦN GỬI — chỉ hiện khi đã gửi từ 2 lần, một lần thì con số không nói
+                    thêm gì mà chiếm chỗ. Bấm vào mở luôn phần lịch sử bên dưới. */}
+                {d.cacLanGuiXepLop.length > 1 && (
+                  <button type="button" onClick={onDoiMo}>
+                    <Badge variant="muted">
+                      {t('chiTietKhach.daGuiNLan', { so: d.cacLanGuiXepLop.length })}
+                    </Badge>
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -1310,6 +1403,70 @@ function DongDonHang({
                   ))}
                 </tbody>
               </Table>
+            )}
+
+            {/*
+              LỊCH SỬ GỬI YÊU CẦU XẾP LỚP (FR-21) — từng lần gửi kèm người gửi, ghi chú, kết quả
+              và lý do từ chối. Đây là chỗ trả lời câu hỏi của khách "sao em chưa có lớp": người
+              bán mở ra là thấy đã gửi mấy lần và trung tâm trả lời gì.
+
+              Mới nhất trước (backend đã sắp) — lần gần nhất là thứ đang cần biết.
+            */}
+            {d.cacLanGuiXepLop.length > 0 && (
+              <div className="mt-4">
+                <h5 className="mb-2 text-sm font-semibold">
+                  {t('chiTietKhach.lichSuGuiYeuCau')}
+                </h5>
+                <ul className="grid gap-2">
+                  {d.cacLanGuiXepLop.map((y) => (
+                    <li key={y.id} className="rounded-md border border-border p-2.5 text-sm">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="muted">
+                          {t('chiTietKhach.lanThu', { so: y.lanGui })}
+                        </Badge>
+                        <Badge variant={mauTrangThaiXepLop(y.trangThai)}>
+                          {t(`trangThaiXepLop.${y.trangThai}`)}
+                        </Badge>
+                        {y.tenLopHoc && <Badge variant="accent">{y.tenLopHoc}</Badge>}
+                        <span className="ml-auto text-xs text-muted-foreground">
+                          {gioNgayVN(y.thoiDiemGui)}
+                        </span>
+                      </div>
+
+                      <p className="mt-1.5 text-xs text-muted-foreground">
+                        {t('chiTietKhach.nguoiGui')}: {y.tenNguoiGui ?? '—'}
+                        {y.thoiDiemXuLy && (
+                          <>
+                            {' · '}
+                            {t('chiTietKhach.nguoiXuLy')}: {y.tenNguoiXuLy ?? '—'}
+                            {' · '}
+                            {gioNgayVN(y.thoiDiemXuLy)}
+                          </>
+                        )}
+                      </p>
+
+                      {y.ghiChu && (
+                        <p className="mt-1.5">
+                          <span className="text-muted-foreground">
+                            {t('chung.ghiChu')}:{' '}
+                          </span>
+                          {y.ghiChu}
+                        </p>
+                      )}
+
+                      {/* Lý do từ chối nổi bật hơn ghi chú: đó là việc người bán phải xử lý. */}
+                      {y.lyDoTuChoi && (
+                        <p className="mt-1.5 rounded bg-destructive/10 px-2 py-1 text-destructive">
+                          <span className="font-medium">
+                            {t('chiTietKhach.lyDoTuChoi')}:{' '}
+                          </span>
+                          {y.lyDoTuChoi}
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         )}

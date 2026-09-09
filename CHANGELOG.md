@@ -8,6 +8,36 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — FR-21: ghi chú, người gửi, và lịch sử nhiều lần gửi yêu cầu xếp lớp (09/09/2026)
+
+- Form gửi yêu cầu nay có ô **ghi chú cho bên đào tạo** (trình độ, nguyện vọng giờ học…) — người
+  xếp lớp dựa vào đó chọn lớp. **Người gửi** lấy từ token, không do client gửi lên.
+- Bên đào tạo **từ chối** được (`POST /lop-hoc/cho-xep-lop/{id}/tu-choi`) với **lý do bắt buộc**.
+  `TuChoi` là trạng thái riêng, không gộp với `DaHuy`: từ chối là bên đào tạo không nhận, huỷ là
+  bên bán thu lại — gộp thì không trả lời được ai quyết định.
+- **Một đơn gửi được nhiều lần**: bị từ chối thì người bán bổ sung thông tin rồi gửi lại, **giữ
+  nguyên lần cũ**. Tab *Lịch sử mua hàng* hiện badge *đã gửi n lần* và, khi mở đơn, danh sách
+  từng lần kèm trạng thái · người gửi · người xử lý · thời điểm · ghi chú · lý do từ chối. Form
+  gửi lại nhắc lại lý do bị từ chối lần trước để người bán biết phải bổ sung gì.
+- Danh sách chờ bên LMS hiện **ghi chú của người gửi** và đánh dấu *lần gửi thứ n* khi n > 1 —
+  người xử lý đọc bối cảnh thay vì từ chối lại vì cùng một lý do.
+
+### Changed — FR-21: bỏ `UNIQUE(dang_ky_id)`, thay bằng "chỉ một lần ĐANG CHỜ" (09/09/2026)
+
+- Ràng buộc cũ (thêm cùng ngày, commit trước) chỉ cho **một** yêu cầu mỗi đơn, nên đơn bị từ
+  chối là bế tắc. Nay hai ràng buộc ở tầng DB (quy tắc #8): `UNIQUE(dang_ky_id, lan_gui)` và
+  **partial** unique index `UNIQUE(dang_ky_id) WHERE trang_thai = 0`.
+- `lan_gui` là **cột** chứ không đếm động — đó là số thứ tự của chính dòng đó, xoá dòng giữa thì
+  các lần sau không được đánh số lại.
+- Đổi tên cột `thoi_diem_xep` → `thoi_diem_xu_ly`: nay giữ cả thời điểm **từ chối**. Migration
+  dùng `RenameColumn` nên **giữ nguyên dữ liệu**; `lan_gui` thêm với `defaultValue: 1` (không
+  phải 0 như EF sinh mặc định) vì các yêu cầu đã có đều là lần gửi thứ nhất.
+- Chốt chặn mới: **đã xếp lớp thì không gửi lại** (`DON_DA_DUOC_XEP_LOP`).
+- 8 test mới + 1 test cũ cập nhật (`XepLopTests`, 21 test) và `DongThoiTests` thêm 3 dòng
+  `InlineData` cho CRM + một test riêng cho partial index. Đã kiểm bằng đột biến mã: chặn mọi
+  lần gửi lại → 3 test đỏ; bỏ bắt buộc lý do → 1 test đỏ; bỏ filter của index → test partial
+  index đỏ.
+
 ### Added — FR-21 Yêu cầu xếp lớp: cầu nối CRM → LMS (09/09/2026)
 
 - Bán xong một khoá, người bán bấm **Gửi yêu cầu tạo lớp** ngay trên dòng đơn ở tab *Lịch sử mua

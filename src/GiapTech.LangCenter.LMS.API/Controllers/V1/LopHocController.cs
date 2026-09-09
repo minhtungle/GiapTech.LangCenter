@@ -198,6 +198,21 @@ public class LopHocController(ISender sender) : ControllerBase
 
     public record DuyetVaoLopBody(List<Guid> YeuCauIds);
 
+    /// <summary>
+    /// Bên đào tạo từ chối xếp lớp — **lý do bắt buộc**, người bán phải trả lời được khách.
+    /// Từ chối rồi thì người bán bổ sung thông tin và gửi lại (lần gửi mới).
+    /// </summary>
+    [HttpPost("cho-xep-lop/{yeuCauId:guid}/tu-choi")]
+    [RequirePermission(ChucNang.LopHoc, HanhDong.Sua)]
+    public async Task<IActionResult> TuChoiXepLop(
+        Guid yeuCauId, [FromBody] TuChoiBody body, CancellationToken ct)
+    {
+        await sender.Send(new TuChoiXepLopCommand(yeuCauId, body.LyDo), ct);
+        return NoContent();
+    }
+
+    public record TuChoiBody(string LyDo);
+
     [HttpDelete("cho-xep-lop/{yeuCauId:guid}")]
     [RequirePermission(ChucNang.LopHoc, HanhDong.Sua)]
     public async Task<IActionResult> HuyYeuCauXepLop(Guid yeuCauId, CancellationToken ct)

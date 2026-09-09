@@ -238,8 +238,15 @@ bán gửi yêu cầu, bên đào tạo xếp lớp.
 1. **CRM** — tab *Lịch sử mua hàng* của khách, ở dòng đơn **khoá học** có nút
    *Gửi yêu cầu tạo lớp* (`POST /doanh-thu/{dangKyId}/yeu-cau-xep-lop`, gác bằng
    `DoanhThu.Sua`). Đơn sản phẩm không có nút này.
-2. **LMS** — yêu cầu vào *danh sách chờ xếp lớp*, xếp theo **cũ nhất trước**.
-3. Đưa vào lớp bằng **một trong hai cách**, cùng gọi
+
+   Form gửi có ô **ghi chú cho bên đào tạo** (trình độ, nguyện vọng giờ học…) — người xếp lớp
+   dựa vào đó chọn lớp. **Người gửi** lấy từ token, không do client gửi lên.
+2. **LMS** — yêu cầu vào *danh sách chờ xếp lớp*, xếp theo **cũ nhất trước**. Danh sách hiện
+   ghi chú của người gửi và đánh dấu *lần gửi thứ n* khi n > 1.
+3. Bên đào tạo **duyệt** hoặc **từ chối** (`POST /lop-hoc/cho-xep-lop/{id}/tu-choi`, **lý do bắt
+   buộc**). Bị từ chối thì người bán bổ sung thông tin và **gửi lại** — lần gửi mới, giữ nguyên
+   lần cũ. Form gửi lại nhắc lại lý do bị từ chối lần trước.
+4. Đưa vào lớp bằng **một trong hai cách**, cùng gọi
    `POST /lop-hoc/{lopId}/duyet-cho-xep-lop`:
 
    | | Vào từ đâu | Dùng khi |
@@ -260,8 +267,22 @@ bán gửi yêu cầu, bên đào tạo xếp lớp.
   `Don_ngoai_te_quy_ve_vnd_theo_ty_gia_da_chup`.
 - **Một bảng `YEU_CAU_XEP_LOP` riêng**, không phải một cột trạng thái trên đơn: giữ được *ai
   gửi · ai duyệt · lúc nào · vào lớp nào*.
-- `UNIQUE(dang_ky_id)` (quy tắc #8) — một đơn gửi đúng một yêu cầu. Muốn xếp lại thì bán đơn
-  mới, đúng nghiệp vụ.
+- **Một đơn gửi được NHIỀU lần** (đổi 09/09/2026 — trước đó `UNIQUE(dang_ky_id)` chỉ cho một
+  lần). Lịch sử mua hàng hiện *đã gửi n lần* kèm trạng thái, người gửi, người xử lý, ghi chú và
+  lý do từ chối của **từng lần** — đó là chỗ người bán trả lời câu hỏi "sao em chưa có lớp".
+- Hai ràng buộc ở tầng DB (quy tắc #8):
+  `UNIQUE(dang_ky_id, lan_gui)` — mỗi lần gửi một số thứ tự, chặn hai request song song cùng
+  đọc `MAX(lan_gui)` rồi cùng ghi "lần 2";
+  `ux_yeu_cau_xep_lop_dang_ky_dang_cho` — *partial* unique index `WHERE trang_thai = 0`, chỉ
+  **một** lần được đang chờ trên mỗi đơn. Không có filter thì đơn bị từ chối không gửi lại được;
+  không có index thì danh sách chờ có hai dòng cùng học viên. Canh bởi
+  `DongThoiTests.Moi_don_chi_mot_yeu_cau_xep_lop_DANG_CHO`.
+- `lan_gui` là **cột**, không đếm động: đó là số thứ tự của chính dòng đó, xoá dòng giữa thì các
+  lần sau không được đánh số lại.
+- **Đã xếp lớp rồi thì không gửi lại** (`DON_DA_DUOC_XEP_LOP`) — học viên đang học, gửi thêm là
+  xếp lớp hai lần.
+- **`TuChoi` ≠ `DaHuy`**: từ chối là bên **đào tạo** không nhận (kèm lý do bắt buộc), huỷ là bên
+  **bán** thu lại yêu cầu. Gộp một trạng thái thì không trả lời được ai quyết định.
 - **Duyệt hai lần bị chặn** (`YEU_CAU_DA_XU_LY`): bấm lại, hoặc hai người cùng duyệt, sẽ tạo hai
   dòng ghi danh và học viên bị tính học phí hai lần.
 - Vượt sức chứa **chặn cả lô**, không xếp một phần rồi báo lỗi.
@@ -295,7 +316,9 @@ ghi `daThu = 0`. Hai sổ độc lập — xem *Chưa làm* bên dưới.
 | `CHI_KHOA_HOC_MOI_XEP_LOP` | Gửi yêu cầu xếp lớp cho đơn mua sản phẩm |
 | `DA_GUI_YEU_CAU_XEP_LOP` | Đơn đã gửi yêu cầu trước đó |
 | `YEU_CAU_KHONG_HOP_LE` | Yêu cầu không tồn tại (hoặc thuộc tenant khác) |
-| `YEU_CAU_DA_XU_LY` | Duyệt/huỷ một yêu cầu đã xếp lớp |
+| `YEU_CAU_DA_XU_LY` | Duyệt/từ chối/huỷ một yêu cầu đã được xử lý |
+| `DON_DA_DUOC_XEP_LOP` | Gửi lại yêu cầu cho đơn đã vào lớp |
+| `CHUA_NHAP_LY_DO_TU_CHOI` | Từ chối mà không nhập lý do |
 
 ## Chưa làm
 

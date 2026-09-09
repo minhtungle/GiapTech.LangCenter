@@ -1,4 +1,5 @@
 using GiapTech.LangCenter.LMS.Domain.Entities;
+using GiapTech.LangCenter.LMS.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -174,18 +175,29 @@ public class YeuCauXepLopConfig : IEntityTypeConfiguration<YeuCauXepLop>
         b.ToTable("YEU_CAU_XEP_LOP");
 
         b.Property(x => x.GhiChu).HasMaxLength(500);
+        b.Property(x => x.LyDoTuChoi).HasMaxLength(500);
 
         b.HasIndex(x => x.TenantId);
         // Danh sách chờ luôn lọc theo trạng thái.
         b.HasIndex(x => x.TrangThai);
 
-        // Một đơn hàng một yêu cầu — chặn ở tầng DB (quy tắc #8): hai lần bấm "gửi yêu cầu"
-        // song song đều thấy "chưa có" và đều ghi, danh sách chờ thành hai dòng cùng học viên.
-        b.HasIndex(x => x.DangKyId).IsUnique();
+        // Một đơn gửi được NHIỀU lần (09/09/2026): bị từ chối thì người bán bổ sung thông tin
+        // rồi gửi lại, và lịch sử mua hàng phải hiện đủ số lần gửi kèm trạng thái từng lần.
+        //
+        // `UNIQUE(dang_ky_id, lan_gui)` chặn hai dòng cùng số thứ tự — bấm gửi hai lần song song
+        // thì cả hai đọc `MAX(lan_gui)` được cùng một giá trị và đều muốn ghi "lần 2".
+        b.HasIndex(x => new { x.DangKyId, x.LanGui }).IsUnique();
+
+        // Và chỉ ĐÚNG MỘT lần đang chờ trên mỗi đơn — partial unique index (quy tắc #8).
+        // Không có nó thì danh sách chờ có hai dòng cùng học viên, xếp lớp hai lần.
+        b.HasIndex(x => x.DangKyId)
+            .IsUnique()
+            .HasFilter($"trang_thai = {(int)TrangThaiYeuCauXepLop.DangCho}")
+            .HasDatabaseName("ux_yeu_cau_xep_lop_dang_ky_dang_cho");
 
         // Restrict: yêu cầu là vết bàn giao giữa hai bộ phận, xoá đơn hàng không được cuốn nó đi.
-        b.HasOne(x => x.DangKy).WithOne(x => x.YeuCauXepLop)
-            .HasForeignKey<YeuCauXepLop>(x => x.DangKyId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.DangKy).WithMany(x => x.CacYeuCauXepLop)
+            .HasForeignKey(x => x.DangKyId).OnDelete(DeleteBehavior.Restrict);
 
         b.HasOne(x => x.HocVien).WithMany()
             .HasForeignKey(x => x.HocVienId).OnDelete(DeleteBehavior.Restrict);

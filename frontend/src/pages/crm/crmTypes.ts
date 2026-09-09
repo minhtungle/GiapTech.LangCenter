@@ -167,13 +167,35 @@ export interface DangKyKemThuDto {
   /** `soTien − daThu`, tính động ở backend. ≤ 0 = đã đóng đủ. */
   conThieu: number
   cacLanThu: LanThuDto[]
-  /** FR-21 — null = chưa gửi yêu cầu xếp lớp. Chỉ có nghĩa với đơn khoá học. */
-  trangThaiXepLop: TrangThaiYeuCauXepLop | null
+  /** FR-21 — mọi lần gửi yêu cầu xếp lớp, mới nhất trước. Rỗng = chưa gửi lần nào. */
+  cacLanGuiXepLop: LanGuiXepLopDto[]
+  /** Có lần nào đang chờ bên đào tạo xử lý — backend tính, nút gửi ẩn khi true. */
+  dangChoXepLop: boolean
+  /** Tên lớp đã xếp, để trả lời khách "đã vào lớp nào". null = chưa vào lớp. */
   tenLopDaXep: string | null
 }
 
-/** FR-21 — trạng thái một yêu cầu xếp lớp. */
-export type TrangThaiYeuCauXepLop = 'DangCho' | 'DaXep' | 'DaHuy'
+/** FR-21 — trạng thái một lần gửi yêu cầu xếp lớp. */
+export type TrangThaiYeuCauXepLop = 'DangCho' | 'DaXep' | 'DaHuy' | 'TuChoi'
+
+/** FR-21 — một lần gửi yêu cầu, kèm kết quả xử lý. */
+export interface LanGuiXepLopDto {
+  id: string
+  /** Lần thứ mấy — hiện nguyên số này, không đánh lại theo vị trí trong danh sách. */
+  lanGui: number
+  trangThai: TrangThaiYeuCauXepLop
+  thoiDiemGui: string
+  tenNguoiGui: string | null
+  ghiChu: string | null
+  thoiDiemXuLy: string | null
+  tenNguoiXuLy: string | null
+  tenLopHoc: string | null
+  lyDoTuChoi: string | null
+}
+
+/** Màu badge theo trạng thái lần gửi — cùng quy ước với các bảng khác. */
+export const mauTrangThaiXepLop = (tt: TrangThaiYeuCauXepLop) =>
+  tt === 'DaXep' ? 'ok' : tt === 'DangCho' ? 'cho' : 'loi'
 
 /** FR-21 — một học viên đang chờ xếp lớp, dùng ở màn LMS. */
 export interface YeuCauXepLopDto {
@@ -191,6 +213,8 @@ export interface YeuCauXepLopDto {
   donViTien: DonViTien
   tyGiaVeVnd: number
   trangThai: TrangThaiYeuCauXepLop
+  /** > 1 = đơn này đã bị từ chối/huỷ trước đó, nên đọc ghi chú trước khi xử lý lại. */
+  lanGui: number
   thoiDiemGui: string
   tenNguoiGui: string | null
   lopHocId: string | null

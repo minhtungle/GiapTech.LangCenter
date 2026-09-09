@@ -182,12 +182,39 @@ public record DangKyKemThuDto(
     decimal ConThieu,
     List<LanThuDto> CacLanThu,
     /// <summary>
-    /// Trạng thái yêu cầu xếp lớp (FR-21) — null = chưa gửi, nút "Gửi yêu cầu tạo lớp" còn bấm
-    /// được. Chỉ đơn khoá học mới có nghĩa.
+    /// **Mọi lần** gửi yêu cầu xếp lớp (FR-21), mới nhất trước. Rỗng = chưa gửi lần nào.
+    ///
+    /// Trả cả danh sách chứ không chỉ trạng thái lần cuối: người bán cần thấy đã gửi mấy lần và
+    /// vì sao những lần trước bị từ chối — đó là thứ họ phải trả lời khách.
+    /// Chỉ đơn khoá học mới có.
     /// </summary>
-    TrangThaiYeuCauXepLop? TrangThaiXepLop,
-    /// <summary>Tên lớp đã được xếp vào, để người bán trả lời khách "đã vào lớp nào".</summary>
-    string? TenLopDaXep);
+    List<LanGuiXepLopDto> CacLanGuiXepLop)
+{
+    /// <summary>Có lần nào đang chờ bên đào tạo xử lý? Nút "Gửi yêu cầu" ẩn khi đang chờ.</summary>
+    public bool DangChoXepLop =>
+        CacLanGuiXepLop.Any(x => x.TrangThai == TrangThaiYeuCauXepLop.DangCho);
+
+    /// <summary>Tên lớp đã xếp — để người bán trả lời khách "đã vào lớp nào". null = chưa vào lớp.</summary>
+    public string? TenLopDaXep => CacLanGuiXepLop
+        .FirstOrDefault(x => x.TrangThai == TrangThaiYeuCauXepLop.DaXep)?.TenLopHoc;
+}
+
+/// <summary>Một lần gửi yêu cầu xếp lớp, kèm kết quả xử lý.</summary>
+public record LanGuiXepLopDto(
+    Guid Id,
+    /// <summary>Lần thứ mấy — 1, 2, 3… Hiện nguyên số này, không đánh lại theo vị trí.</summary>
+    int LanGui,
+    TrangThaiYeuCauXepLop TrangThai,
+    DateTimeOffset ThoiDiemGui,
+    string? TenNguoiGui,
+    /// <summary>Ghi chú của người gửi — bối cảnh gửi kèm cho bên đào tạo.</summary>
+    string? GhiChu,
+    DateTimeOffset? ThoiDiemXuLy,
+    /// <summary>Người duyệt hoặc từ chối.</summary>
+    string? TenNguoiXuLy,
+    string? TenLopHoc,
+    /// <summary>Lý do từ chối — chỉ có khi `TrangThai = TuChoi`.</summary>
+    string? LyDoTuChoi);
 
 public record LanThuDto(
     Guid Id,
@@ -224,10 +251,18 @@ public class LayDangKyCuaKhachHandler(IAppDbContext db)
                         t.Id, t.SoTien, t.NgayThu, t.PhuongThuc, t.GhiChu,
                         t.NguoiThu == null ? null : t.NguoiThu.HoTen))
                     .ToList(),
-                d.YeuCauXepLop == null ? null : d.YeuCauXepLop.TrangThai,
-                d.YeuCauXepLop == null || d.YeuCauXepLop.LopHoc == null
-                    ? null
-                    : d.YeuCauXepLop.LopHoc.Ten))
+                d.CacYeuCauXepLop
+                    // Mới nhất TRƯỚC: người bán quan tâm lần gửi gần nhất, các lần cũ là bối cảnh.
+                    .OrderByDescending(y => y.LanGui)
+                    .Select(y => new LanGuiXepLopDto(
+                        y.Id, y.LanGui, y.TrangThai, y.ThoiDiemGui,
+                        y.NguoiGui == null ? null : y.NguoiGui.HoTen,
+                        y.GhiChu,
+                        y.ThoiDiemXuLy,
+                        y.NguoiDuyet == null ? null : y.NguoiDuyet.HoTen,
+                        y.LopHoc == null ? null : y.LopHoc.Ten,
+                        y.LyDoTuChoi))
+                    .ToList()))
             .ToListAsync(ct);
 }
 

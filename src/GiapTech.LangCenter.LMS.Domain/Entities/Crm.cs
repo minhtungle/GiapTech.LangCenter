@@ -231,8 +231,14 @@ public class DangKyKhoaHoc : TenantEntity
 
     public ICollection<ThuTienDangKy> CacLanThu { get; set; } = [];
 
-    /// <summary>Yêu cầu xếp lớp (0..1) — chỉ đơn mua KHOÁ HỌC mới có.</summary>
-    public YeuCauXepLop? YeuCauXepLop { get; set; }
+    /// <summary>
+    /// Các lần gửi yêu cầu xếp lớp — chỉ đơn mua KHOÁ HỌC mới có.
+    ///
+    /// NHIỀU lần, không phải một: bị từ chối thì người bán gửi lại, và lịch sử mua hàng phải
+    /// hiện đủ số lần kèm trạng thái từng lần. Chỉ đúng một lần được ở trạng thái `DangCho`
+    /// (partial unique index).
+    /// </summary>
+    public ICollection<YeuCauXepLop> CacYeuCauXepLop { get; set; } = [];
 }
 
 /// <summary>
@@ -265,6 +271,16 @@ public class YeuCauXepLop : TenantEntity
 
     public TrangThaiYeuCauXepLop TrangThai { get; set; } = TrangThaiYeuCauXepLop.DangCho;
 
+    /// <summary>
+    /// Lần gửi thứ mấy cho **cùng một đơn** — 1, 2, 3…
+    ///
+    /// Lưu thành cột thay vì đếm động (`COUNT(*)` theo `dang_ky_id`) vì đây là **số thứ tự của
+    /// chính dòng này**, không phải một con số tổng hợp: xoá dòng giữa thì các lần sau không
+    /// được đánh số lại, "lần 3" phải mãi là lần 3. `UNIQUE(dang_ky_id, lan_gui)` cũng cần cột
+    /// này mới ép được.
+    /// </summary>
+    public int LanGui { get; set; } = 1;
+
     public DateTimeOffset ThoiDiemGui { get; set; }
 
     /// <summary>SetNull: xoá hồ sơ người gửi không được cuốn theo yêu cầu.</summary>
@@ -275,10 +291,28 @@ public class YeuCauXepLop : TenantEntity
     public Guid? LopHocId { get; set; }
     public LopHoc? LopHoc { get; set; }
 
-    public DateTimeOffset? ThoiDiemXep { get; set; }
+    /// <summary>
+    /// Thời điểm bên đào tạo **xử lý** — duyệt hoặc từ chối. null = còn `DangCho`.
+    ///
+    /// Một cột cho cả hai: hai cột `thoi_diem_xep`/`thoi_diem_tu_choi` thì luôn có đúng một cột
+    /// NULL, và mọi chỗ sắp xếp theo "lúc nào xong" phải viết `COALESCE`.
+    /// </summary>
+    public DateTimeOffset? ThoiDiemXuLy { get; set; }
 
+    /// <summary>Người **xử lý** — duyệt hoặc từ chối, không chỉ duyệt.</summary>
     public Guid? NguoiDuyetId { get; set; }
     public NguoiDung? NguoiDuyet { get; set; }
 
+    /// <summary>Ghi chú của người GỬI: bối cảnh cho bên đào tạo (trình độ, nguyện vọng giờ học…).</summary>
     public string? GhiChu { get; set; }
+
+    /// <summary>
+    /// Lý do bên đào tạo từ chối — **bắt buộc** khi `TrangThai = TuChoi` (validator ép).
+    ///
+    /// Không ép bằng CHECK constraint ở DB: điều kiện phụ thuộc trạng thái, và
+    /// `ThoiDiemXuLy`/`NguoiDuyetId` cũng đã theo cùng quy ước "nullable, do handler đặt".
+    /// Từ chối mà không nói vì sao thì người bán phải đi hỏi bằng miệng — đúng thứ hệ thống
+    /// này định thay thế.
+    /// </summary>
+    public string? LyDoTuChoi { get; set; }
 }

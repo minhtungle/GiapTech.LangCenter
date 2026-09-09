@@ -24,10 +24,16 @@ public record YeuCauXepLopDto(
     DonViTien DonViTien,
     decimal TyGiaVeVnd,
     TrangThaiYeuCauXepLop TrangThai,
+    /// <summary>
+    /// Lần gửi thứ mấy. > 1 nghĩa là đơn này ĐÃ bị từ chối/huỷ trước đó — bên đào tạo nên đọc
+    /// ghi chú trước khi xử lý lại.
+    /// </summary>
+    int LanGui,
     DateTimeOffset ThoiDiemGui,
     string? TenNguoiGui,
     Guid? LopHocId,
     string? TenLopHoc,
+    /// <summary>Ghi chú của người gửi — bối cảnh để bên đào tạo chọn lớp.</summary>
     string? GhiChu);
 
 // ---------- Query: danh sách chờ ----------
@@ -60,7 +66,7 @@ public class LayDanhSachChoXepLopHandler(IAppDbContext db)
                 // phẩm), nên `KhoaHoc` luôn có.
                 y.DangKy.KhoaHocId!.Value, y.DangKy.KhoaHoc!.Ten, y.DangKy.KhoaHoc.SoBuoi,
                 y.DangKy.SoTien, y.DangKy.DonViTien, y.DangKy.TyGiaVeVnd,
-                y.TrangThai, y.ThoiDiemGui,
+                y.TrangThai, y.LanGui, y.ThoiDiemGui,
                 y.NguoiGui == null ? null : y.NguoiGui.HoTen,
                 y.LopHocId, y.LopHoc == null ? null : y.LopHoc.Ten,
                 y.GhiChu))
@@ -94,9 +100,26 @@ public class GuiYeuCauXepLopHandler(IAppDbContext db, ICurrentUser currentUser)
         // Chỉ đơn mua KHOÁ HỌC mới xếp lớp được — mua sách thì không có lớp nào để vào.
         if (dk.KhoaHocId is null) throw new AppException("CHI_KHOA_HOC_MOI_XEP_LOP");
 
-        // UNIQUE(DangKyId) chặn ở tầng DB; đây là chỗ trả mã lỗi đọc được.
-        if (await db.YeuCauXepLops.AnyAsync(y => y.DangKyId == dk.Id, ct))
+        var cacLanTruoc = await db.YeuCauXepLops
+            .Where(y => y.DangKyId == dk.Id)
+            .Select(y => new { y.LanGui, y.TrangThai })
+            .ToListAsync(ct);
+
+        // Chỉ chặn khi còn một lần ĐANG CHỜ — bị từ chối thì được gửi lại (chốt 09/09/2026).
+        // Partial unique index `ux_yeu_cau_xep_lop_dang_ky_dang_cho` chặn ở tầng DB; đây là chỗ
+        // trả mã lỗi đọc được.
+        if (cacLanTruoc.Any(y => y.TrangThai == TrangThaiYeuCauXepLop.DangCho))
             throw new AppException("DA_GUI_YEU_CAU_XEP_LOP");
+
+        // Đã xếp lớp rồi thì không gửi lại: học viên đang học, gửi thêm là xếp lớp hai lần.
+        if (cacLanTruoc.Any(y => y.TrangThai == TrangThaiYeuCauXepLop.DaXep))
+            throw new AppException("DON_DA_DUOC_XEP_LOP");
+
+        // MAX + 1. Hiện tại không có đường nào XOÁ hẳn một yêu cầu (huỷ và từ chối đều giữ
+        // dòng), nên Count + 1 sẽ cho cùng kết quả — nhưng MAX là cái đúng theo định nghĩa
+        // "số thứ tự lần gửi", và giữ đúng khi có ai dọn dữ liệu bằng SQL. Count + 1 lúc đó
+        // cấp lại số đã dùng và đụng `UNIQUE(dang_ky_id, lan_gui)`.
+        var lanGui = cacLanTruoc.Count == 0 ? 1 : cacLanTruoc.Max(y => y.LanGui) + 1;
 
         // Khách chưa có hồ sơ học viên → TỰ TẠO từ dữ liệu khách (chốt 09/09/2026).
         //
@@ -128,6 +151,7 @@ public class GuiYeuCauXepLopHandler(IAppDbContext db, ICurrentUser currentUser)
             DangKyId = dk.Id,
             HocVienId = hocVienId.Value,
             TrangThai = TrangThaiYeuCauXepLop.DangCho,
+            LanGui = lanGui,
             ThoiDiemGui = DateTimeOffset.UtcNow,
             NguoiGuiId = currentUser.UserId,
             GhiChu = string.IsNullOrWhiteSpace(request.GhiChu) ? null : request.GhiChu.Trim()
@@ -223,7 +247,7 @@ public class DuyetVaoLopHandler(
 
             yc.TrangThai = TrangThaiYeuCauXepLop.DaXep;
             yc.LopHocId = lop.Id;
-            yc.ThoiDiemXep = bayGio;
+            yc.ThoiDiemXuLy = bayGio;
             yc.NguoiDuyetId = currentUser.UserId;
         }
 
@@ -246,9 +270,50 @@ public class HuyYeuCauXepLopHandler(IAppDbContext db)
         if (yc.TrangThai == TrangThaiYeuCauXepLop.DaXep)
             throw new AppException("YEU_CAU_DA_XU_LY");
 
-        // Huỷ chứ không XOÁ: giữ vết đã từng có yêu cầu, và `UNIQUE(DangKyId)` vẫn chặn gửi lại
-        // — muốn gửi lại thì bán đơn mới, đúng nghiệp vụ.
+        // Huỷ chứ không XOÁ: giữ vết đã từng có yêu cầu. Huỷ xong người bán gửi lại được (lần
+        // gửi mới, số thứ tự tăng) — `DaHuy` không còn chiếm chỗ "đang chờ".
         yc.TrangThai = TrangThaiYeuCauXepLop.DaHuy;
+        yc.ThoiDiemXuLy = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(ct);
+    }
+}
+
+/// <summary>
+/// Bên đào tạo **từ chối** xếp lớp (FR-21) — khác huỷ ở chỗ ai quyết định.
+///
+/// Lý do **bắt buộc**: người bán phải trả lời được khách vì sao chưa vào lớp. Từ chối rồi thì
+/// người bán bổ sung thông tin và gửi lại — lần gửi mới, giữ nguyên lần cũ trong lịch sử.
+/// </summary>
+public record TuChoiXepLopCommand(Guid Id, string LyDo) : IRequest;
+
+public class TuChoiXepLopValidator : AbstractValidator<TuChoiXepLopCommand>
+{
+    public TuChoiXepLopValidator()
+    {
+        RuleFor(x => x.Id).NotEmpty();
+        RuleFor(x => x.LyDo).NotEmpty().WithErrorCode("CHUA_NHAP_LY_DO_TU_CHOI")
+            .MaximumLength(500);
+    }
+}
+
+public class TuChoiXepLopHandler(IAppDbContext db, ICurrentUser currentUser)
+    : IRequestHandler<TuChoiXepLopCommand>
+{
+    public async Task Handle(TuChoiXepLopCommand request, CancellationToken ct)
+    {
+        var yc = await db.YeuCauXepLops.FirstOrDefaultAsync(y => y.Id == request.Id, ct)
+                 ?? throw new KhongTimThayException($"YeuCauXepLop {request.Id}");
+
+        // Chỉ từ chối được lần ĐANG CHỜ: từ chối một yêu cầu đã xếp lớp sẽ để học viên nằm
+        // trong lớp mà lịch sử nói "bị từ chối" — hai chỗ nói hai chuyện.
+        if (yc.TrangThai != TrangThaiYeuCauXepLop.DangCho)
+            throw new AppException("YEU_CAU_DA_XU_LY");
+
+        yc.TrangThai = TrangThaiYeuCauXepLop.TuChoi;
+        yc.LyDoTuChoi = request.LyDo.Trim();
+        yc.ThoiDiemXuLy = DateTimeOffset.UtcNow;
+        yc.NguoiDuyetId = currentUser.UserId;
+
         await db.SaveChangesAsync(ct);
     }
 }

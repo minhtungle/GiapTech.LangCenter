@@ -55,6 +55,12 @@ public class DongThoiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     // Bài kiểm tra KHÔNG cho nộp lại — mỗi học viên đúng một bài làm.
     [InlineData("BaiLam", new[] { "BaiKiemTraId", "HocVienId" })]
     [InlineData("TaiLieuLopHoc", new[] { "TaiLieuId", "LopHocId" })]
+    // --- CRM (FR-17 → FR-21) ---
+    // Trùng tên khoá/sản phẩm thì người bán chọn sai mặt hàng khi lên đơn.
+    [InlineData("KhoaHoc", new[] { "TenantId", "Ten" })]
+    [InlineData("SanPham", new[] { "TenantId", "Ten" })]
+    // Một đơn gửi được nhiều lần yêu cầu xếp lớp, nhưng mỗi lần đúng một số thứ tự.
+    [InlineData("YeuCauXepLop", new[] { "DangKyId", "LanGui" })]
     public void Rang_buoc_chi_mot_phai_co_UNIQUE_o_tang_DB(string tenEntity, string[] cot)
     {
         using var scope = factory.Services.CreateScope();
@@ -74,6 +80,38 @@ public class DongThoiTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         Assert.True(index!.IsUnique,
             $"Index trên {tenEntity}({string.Join(", ", cot)}) phải UNIQUE.");
+    }
+
+    /// <summary>
+    /// FR-21: mỗi đơn chỉ ĐÚNG MỘT yêu cầu **đang chờ**, ép bằng *partial* unique index.
+    ///
+    /// Không dùng được `[Theory]` ở trên: `UNIQUE(dang_ky_id)` không lọc trạng thái sẽ chặn cả
+    /// việc gửi lại sau khi bị từ chối — đúng cột nhưng sai nghiệp vụ. Phần quan trọng là cái
+    /// FILTER, nên phải kiểm riêng.
+    /// </summary>
+    [Fact]
+    public void Moi_don_chi_mot_yeu_cau_xep_lop_DANG_CHO()
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider
+            .GetRequiredService<Infrastructure.Persistence.AppDbContext>();
+
+        var e = db.Model.GetEntityTypes().Single(x => x.ClrType.Name == "YeuCauXepLop");
+
+        var index = e.GetIndexes().FirstOrDefault(i =>
+            i.IsUnique
+            && i.Properties.Count == 1
+            && i.Properties[0].Name == "DangKyId");
+
+        Assert.True(index is not null,
+            "YEU_CAU_XEP_LOP thiếu unique index trên (dang_ky_id) — hai lần bấm 'gửi yêu cầu' "
+            + "song song sẽ tạo hai dòng đang chờ, và người xếp lớp xếp học viên hai lần.");
+
+        var filter = index!.GetFilter();
+        Assert.False(string.IsNullOrWhiteSpace(filter),
+            "Index này PHẢI có filter theo trạng thái đang chờ. Không filter thì đơn bị từ chối "
+            + "không gửi lại được — trái yêu cầu 09/09/2026 (giữ lịch sử nhiều lần gửi).");
+        Assert.Contains("trang_thai", filter!);
     }
 
     /// <summary>

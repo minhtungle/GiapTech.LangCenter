@@ -100,12 +100,21 @@ public class XepLopTests(ApiFactory factory) : IClassFixture<ApiFactory>
         return await res.Content.ReadFromJsonAsync<Guid>();
     }
 
-    private static async Task<Guid> GuiYeuCau(HttpClient c, Guid dangKyId)
+    private static async Task<Guid> GuiYeuCau(
+        HttpClient c, Guid dangKyId, string? ghiChu = null)
     {
         var res = await c.PostAsJsonAsync(
-            $"/api/v1/doanh-thu/{dangKyId}/yeu-cau-xep-lop", new { DangKyId = dangKyId });
+            $"/api/v1/doanh-thu/{dangKyId}/yeu-cau-xep-lop",
+            new { DangKyId = dangKyId, GhiChu = ghiChu });
         res.EnsureSuccessStatusCode();
         return await res.Content.ReadFromJsonAsync<Guid>();
+    }
+
+    private static async Task<JsonElement> LayDon(HttpClient c, Guid khachHangId, Guid donId)
+    {
+        var ds = await (await c.GetAsync($"/api/v1/khach-hang/{khachHangId}/dang-ky"))
+            .Content.ReadFromJsonAsync<JsonElement>();
+        return ds.EnumerateArray().Single(x => x.GetProperty("id").GetGuid() == donId);
     }
 
     // ---------- Gửi yêu cầu ----------
@@ -190,6 +199,10 @@ public class XepLopTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Contains("CHI_KHOA_HOC_MOI_XEP_LOP", await res.Content.ReadAsStringAsync());
     }
 
+    /// <summary>
+    /// Vẫn chặn khi lần trước CÒN ĐANG CHỜ — nếu không, danh sách chờ có hai dòng cùng học viên
+    /// và người xếp lớp xếp hai lần.
+    /// </summary>
     [Fact]
     public async Task Khong_gui_duoc_yeu_cau_hai_lan_cho_cung_mot_don()
     {
@@ -279,8 +292,17 @@ public class XepLopTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var dsDon = await (await c.GetAsync($"/api/v1/khach-hang/{khach}/dang-ky"))
             .Content.ReadFromJsonAsync<JsonElement>();
         var don = dsDon.EnumerateArray().Single(x => x.GetProperty("id").GetGuid() == dk);
-        Assert.Equal("DaXep", don.GetProperty("trangThaiXepLop").GetString());
         Assert.Equal("Lớp rời hàng chờ", don.GetProperty("tenLopDaXep").GetString());
+        Assert.False(don.GetProperty("dangChoXepLop").GetBoolean());
+
+        var lan = don.GetProperty("cacLanGuiXepLop").EnumerateArray().Single();
+        Assert.Equal("DaXep", lan.GetProperty("trangThai").GetString());
+        Assert.Equal(1, lan.GetProperty("lanGui").GetInt32());
+        Assert.Equal("Lớp rời hàng chờ", lan.GetProperty("tenLopHoc").GetString());
+        // Người GỬI và người XỬ LÝ đều phải có tên — đó là yêu cầu của người dùng 09/09.
+        Assert.False(string.IsNullOrWhiteSpace(lan.GetProperty("tenNguoiGui").GetString()));
+        Assert.False(string.IsNullOrWhiteSpace(lan.GetProperty("tenNguoiXuLy").GetString()));
+        Assert.NotNull(lan.GetProperty("thoiDiemXuLy").GetString());
     }
 
     [Fact]
@@ -358,6 +380,203 @@ public class XepLopTests(ApiFactory factory) : IClassFixture<ApiFactory>
             new { YeuCauIds = new[] { yc } });
 
         Assert.Equal(HttpStatusCode.BadRequest, duyet.StatusCode);
+    }
+
+    // ---------- Ghi chú · người gửi · số lần gửi (09/09/2026) ----------
+
+    [Fact]
+    public async Task Ghi_chu_va_nguoi_gui_hien_lai_o_lich_su_mua_hang()
+    {
+        var c = await Client();
+        var khoa = await TaoKhoa(c, "Khoá có ghi chú", 5_000_000m);
+        var khach = await TaoKhach(c, "Khách Có Ghi Chú");
+        var dk = await TaoDangKy(c, khach, khoa, 5_000_000m);
+
+        await GuiYeuCau(c, dk, "Học viên trình độ 5.0, muốn học tối thứ 2-4-6");
+
+        var lan = (await LayDon(c, khach, dk))
+            .GetProperty("cacLanGuiXepLop").EnumerateArray().Single();
+
+        Assert.Equal("Học viên trình độ 5.0, muốn học tối thứ 2-4-6",
+            lan.GetProperty("ghiChu").GetString());
+        // Người gửi lấy từ token, không phải client gửi lên.
+        Assert.False(string.IsNullOrWhiteSpace(lan.GetProperty("tenNguoiGui").GetString()));
+        Assert.Equal(1, lan.GetProperty("lanGui").GetInt32());
+        Assert.True((await LayDon(c, khach, dk)).GetProperty("dangChoXepLop").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Ghi_chu_hien_o_danh_sach_cho_cho_ben_dao_tao_doc()
+    {
+        var c = await Client();
+        var khoa = await TaoKhoa(c, "Khoá ghi chú cho đào tạo", 5_000_000m);
+        var khach = await TaoKhach(c, "Khách Ghi Chú Đào Tạo");
+        var yc = await GuiYeuCau(c, await TaoDangKy(c, khach, khoa, 5_000_000m),
+            "Cần lớp sáng, học viên đi làm chiều");
+
+        var ds = await (await c.GetAsync("/api/v1/lop-hoc/cho-xep-lop"))
+            .Content.ReadFromJsonAsync<JsonElement>();
+        var d = ds.EnumerateArray().Single(x => x.GetProperty("id").GetGuid() == yc);
+
+        Assert.Equal("Cần lớp sáng, học viên đi làm chiều", d.GetProperty("ghiChu").GetString());
+        Assert.Equal(1, d.GetProperty("lanGui").GetInt32());
+    }
+
+    // ---------- Từ chối + gửi lại ----------
+
+    [Fact]
+    public async Task Tu_choi_thi_luu_ly_do_va_nguoi_xu_ly()
+    {
+        var c = await Client();
+        var khoa = await TaoKhoa(c, "Khoá bị từ chối", 5_000_000m);
+        var khach = await TaoKhach(c, "Khách Bị Từ Chối");
+        var dk = await TaoDangKy(c, khach, khoa, 5_000_000m);
+        var yc = await GuiYeuCau(c, dk, "gửi lần đầu");
+
+        (await c.PostAsJsonAsync($"/api/v1/lop-hoc/cho-xep-lop/{yc}/tu-choi",
+            new { LyDo = "Chưa mở lớp trình độ này, đề nghị chờ khoá sau" }))
+            .EnsureSuccessStatusCode();
+
+        // Rời khỏi hàng chờ.
+        var ds = await (await c.GetAsync("/api/v1/lop-hoc/cho-xep-lop"))
+            .Content.ReadFromJsonAsync<JsonElement>();
+        Assert.DoesNotContain(ds.EnumerateArray(), x => x.GetProperty("id").GetGuid() == yc);
+
+        // Và người bán thấy lý do ở lịch sử mua hàng.
+        var don = await LayDon(c, khach, dk);
+        var lan = don.GetProperty("cacLanGuiXepLop").EnumerateArray().Single();
+        Assert.Equal("TuChoi", lan.GetProperty("trangThai").GetString());
+        Assert.Equal("Chưa mở lớp trình độ này, đề nghị chờ khoá sau",
+            lan.GetProperty("lyDoTuChoi").GetString());
+        Assert.False(string.IsNullOrWhiteSpace(lan.GetProperty("tenNguoiXuLy").GetString()));
+        Assert.NotNull(lan.GetProperty("thoiDiemXuLy").GetString());
+
+        // Không còn chờ → nút gửi lại hiện được.
+        Assert.False(don.GetProperty("dangChoXepLop").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Tu_choi_khong_co_ly_do_bi_chan()
+    {
+        var c = await Client();
+        var khoa = await TaoKhoa(c, "Khoá từ chối thiếu lý do", 5_000_000m);
+        var khach = await TaoKhach(c, "Khách Từ Chối Thiếu Lý Do");
+        var yc = await GuiYeuCau(c, await TaoDangKy(c, khach, khoa, 5_000_000m));
+
+        var res = await c.PostAsJsonAsync(
+            $"/api/v1/lop-hoc/cho-xep-lop/{yc}/tu-choi", new { LyDo = "   " });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        Assert.Contains("CHUA_NHAP_LY_DO_TU_CHOI", await res.Content.ReadAsStringAsync());
+    }
+
+    /// <summary>
+    /// Yêu cầu 09/09/2026: sau khi bị từ chối, gửi lại phải TẠO LẦN MỚI và **giữ lần cũ** —
+    /// lịch sử mua hàng hiện đủ số lần gửi kèm trạng thái từng lần.
+    /// </summary>
+    [Fact]
+    public async Task Bi_tu_choi_thi_gui_lai_duoc_va_giu_ca_lan_cu()
+    {
+        var c = await Client();
+        var khoa = await TaoKhoa(c, "Khoá gửi lại", 5_000_000m);
+        var khach = await TaoKhach(c, "Khách Gửi Lại");
+        var dk = await TaoDangKy(c, khach, khoa, 5_000_000m);
+
+        var yc1 = await GuiYeuCau(c, dk, "lần 1: chưa có thông tin trình độ");
+        (await c.PostAsJsonAsync($"/api/v1/lop-hoc/cho-xep-lop/{yc1}/tu-choi",
+            new { LyDo = "Thiếu thông tin trình độ" })).EnsureSuccessStatusCode();
+
+        var yc2 = await GuiYeuCau(c, dk, "lần 2: đã test, trình độ 5.5");
+        Assert.NotEqual(yc1, yc2);
+
+        var lan = (await LayDon(c, khach, dk))
+            .GetProperty("cacLanGuiXepLop").EnumerateArray().ToList();
+
+        // HAI dòng, không phải một dòng bị ghi đè.
+        Assert.Equal(2, lan.Count);
+        // Mới nhất TRƯỚC.
+        Assert.Equal(2, lan[0].GetProperty("lanGui").GetInt32());
+        Assert.Equal("DangCho", lan[0].GetProperty("trangThai").GetString());
+        Assert.Equal("lần 2: đã test, trình độ 5.5", lan[0].GetProperty("ghiChu").GetString());
+
+        // Lần cũ còn nguyên cả lý do từ chối.
+        Assert.Equal(1, lan[1].GetProperty("lanGui").GetInt32());
+        Assert.Equal("TuChoi", lan[1].GetProperty("trangThai").GetString());
+        Assert.Equal("Thiếu thông tin trình độ", lan[1].GetProperty("lyDoTuChoi").GetString());
+    }
+
+    [Fact]
+    public async Task Don_da_xep_lop_thi_khong_gui_lai_duoc()
+    {
+        var c = await Client();
+        var khoa = await TaoKhoa(c, "Khoá đã xếp không gửi lại", 5_000_000m);
+        var khach = await TaoKhach(c, "Khách Đã Xếp");
+        var dk = await TaoDangKy(c, khach, khoa, 5_000_000m);
+        var yc = await GuiYeuCau(c, dk);
+
+        var gv = await TaoNguoiDung(c, "gv-da-xep-khong-gui-lai", "GiaoVien");
+        var lop = await TaoLop(c, "Lớp đã nhận rồi", gv);
+        (await c.PostAsJsonAsync($"/api/v1/lop-hoc/{lop}/duyet-cho-xep-lop",
+            new { YeuCauIds = new[] { yc } })).EnsureSuccessStatusCode();
+
+        var lai = await c.PostAsJsonAsync(
+            $"/api/v1/doanh-thu/{dk}/yeu-cau-xep-lop", new { DangKyId = dk });
+
+        Assert.Equal(HttpStatusCode.BadRequest, lai.StatusCode);
+        Assert.Contains("DON_DA_DUOC_XEP_LOP", await lai.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Tu_choi_yeu_cau_da_xu_ly_bi_chan()
+    {
+        var c = await Client();
+        var khoa = await TaoKhoa(c, "Khoá từ chối hai lần", 5_000_000m);
+        var khach = await TaoKhach(c, "Khách Từ Chối Hai Lần");
+        var yc = await GuiYeuCau(c, await TaoDangKy(c, khach, khoa, 5_000_000m));
+
+        (await c.PostAsJsonAsync($"/api/v1/lop-hoc/cho-xep-lop/{yc}/tu-choi",
+            new { LyDo = "lý do lần một" })).EnsureSuccessStatusCode();
+
+        var lai = await c.PostAsJsonAsync($"/api/v1/lop-hoc/cho-xep-lop/{yc}/tu-choi",
+            new { LyDo = "lý do lần hai" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, lai.StatusCode);
+        Assert.Contains("YEU_CAU_DA_XU_LY", await lai.Content.ReadAsStringAsync());
+    }
+
+    /// <summary>
+    /// Số lần gửi tăng đơn điệu qua cả TỪ CHỐI và HUỶ, và lịch sử giữ đủ ba dòng với ba trạng
+    /// thái khác nhau — đúng thứ người bán cần đọc.
+    ///
+    /// Test này **không** phân biệt được `MAX+1` với `Count+1` (không có đường xoá hẳn yêu cầu
+    /// nên hai cách luôn cho cùng số) — đã kiểm bằng đột biến mã. Lý do chọn MAX ghi ở handler.
+    /// </summary>
+    [Fact]
+    public async Task So_lan_gui_tang_dan_qua_tu_choi_va_huy()
+    {
+        var c = await Client();
+        var khoa = await TaoKhoa(c, "Khoá đánh số lần gửi", 5_000_000m);
+        var khach = await TaoKhach(c, "Khách Đánh Số");
+        var dk = await TaoDangKy(c, khach, khoa, 5_000_000m);
+
+        var yc1 = await GuiYeuCau(c, dk);
+        (await c.PostAsJsonAsync($"/api/v1/lop-hoc/cho-xep-lop/{yc1}/tu-choi",
+            new { LyDo = "lần 1 từ chối" })).EnsureSuccessStatusCode();
+
+        var yc2 = await GuiYeuCau(c, dk);
+        // Huỷ (bên bán thu lại) — khác từ chối, nhưng cũng nhường chỗ cho lần sau.
+        (await c.DeleteAsync($"/api/v1/lop-hoc/cho-xep-lop/{yc2}")).EnsureSuccessStatusCode();
+
+        await GuiYeuCau(c, dk, "lần 3");
+
+        var lan = (await LayDon(c, khach, dk))
+            .GetProperty("cacLanGuiXepLop").EnumerateArray().ToList();
+
+        Assert.Equal(3, lan.Count);
+        Assert.Equal([3, 2, 1], lan.Select(x => x.GetProperty("lanGui").GetInt32()));
+        Assert.Equal("DangCho", lan[0].GetProperty("trangThai").GetString());
+        Assert.Equal("DaHuy", lan[1].GetProperty("trangThai").GetString());
+        Assert.Equal("TuChoi", lan[2].GetProperty("trangThai").GetString());
     }
 
     // ---------- Cách ly tenant (quy tắc #2) ----------

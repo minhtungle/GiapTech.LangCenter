@@ -35,7 +35,7 @@ Còn lại    ██████░░░░░░░░░░  Dashboard + nghi
 | FR-18 | Doanh thu (CRM) | ✅ | ✅ | Đa tiền tệ VND/USD/EUR/CAD, **tỷ giá chụp lúc đăng ký**; giá gốc snapshot, % tính động. Đăng ký = **cam kết**, sổ thu nhiều đợt riêng |
 | FR-19 | Khoá học (CRM) | ✅ | ✅ | Danh mục khoá bán ra. Khác `LOP_HOC` (lần mở cụ thể). Đã bán thì ngừng bán, không xoá |
 | FR-20 | Sản phẩm khác (CRM) | ✅ | ✅ | Sách, học cụ; có **số lượng**. Đơn hàng dùng **2 FK nullable loại trừ** + `CHECK`. Mua hàng từ tab chăm sóc ghi **cả đơn + lịch sử** trong một transaction |
-| FR-21 | Yêu cầu xếp lớp (CRM → LMS) | ✅ | ✅ | Bán khoá → gửi yêu cầu → duyệt vào lớp **2 cách** (từ hàng chờ chọn lớp · từ trong lớp chọn người chờ). **Học phí lấy từ đơn CRM**, không lấy giá lớp; hồ sơ học viên tự tạo từ dữ liệu khách |
+| FR-21 | Yêu cầu xếp lớp (CRM → LMS) | ✅ | ✅ | Bán khoá → gửi yêu cầu (kèm **ghi chú** + người gửi) → duyệt vào lớp **2 cách**, hoặc **từ chối kèm lý do bắt buộc**. Một đơn gửi **nhiều lần**, lịch sử mua hàng hiện số lần + trạng thái từng lần. **Học phí lấy từ đơn CRM**; hồ sơ học viên tự tạo từ dữ liệu khách |
 
 Ngoài bảng: **Bài kiểm tra** (`BAI_KIEM_TRA`, `BAI_LAM`) đã có schema và cách ly tenant, nhưng
 **chưa có API và UI** — xem nợ N1.
@@ -125,7 +125,7 @@ VPS → domain + HTTPS → backup. Xem
 
 ## Kiểm chứng hiện tại
 
-- **349 test backend xanh** (61 unit + 288 integration), build 0 warning.
+- **361 test backend xanh** (61 unit + 300 integration), build 0 warning.
 - Frontend `tsc -b` + `vite build` sạch, `oxlint` không lỗi.
 - **PostgreSQL + MinIO thật**: 20 bảng, migration áp sạch, luồng đầu-cuối chạy tay đủ từ tạo
   trung tâm tới thu học phí.

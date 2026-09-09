@@ -249,6 +249,17 @@ public enum TrangThaiYeuCauXepLop
     /// <summary>Đã xếp vào một lớp cụ thể.</summary>
     DaXep = 1,
 
-    /// <summary>Huỷ yêu cầu (khách đổi ý, hoàn tiền…).</summary>
-    DaHuy = 2
+    /// <summary>Huỷ yêu cầu (khách đổi ý, hoàn tiền…) — do BÊN BÁN thu lại.</summary>
+    DaHuy = 2,
+
+    /// <summary>
+    /// Bên đào tạo **từ chối** xếp lớp — khác `DaHuy` ở chỗ ai quyết định.
+    ///
+    /// Tách hai trạng thái vì hai câu chuyện khác nhau khi đọc lịch sử: `DaHuy` là "khách rút",
+    /// `TuChoi` là "trung tâm chưa nhận được". Gộp thành một thì không trả lời được câu hỏi
+    /// đầu tiên của người bán: tại sao học viên của tôi chưa vào lớp.
+    ///
+    /// Kèm `LyDoTuChoi` bắt buộc.
+    /// </summary>
+    TuChoi = 3
 }
