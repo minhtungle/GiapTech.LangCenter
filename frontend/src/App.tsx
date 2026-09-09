@@ -22,6 +22,7 @@ import TaiLieu from '@/pages/dao-tao/TaiLieu'
 import HocPhi from '@/pages/dao-tao/HocPhi'
 import TaiKhoan from '@/pages/quan-tri/TaiKhoan'
 import NhanSu from '@/pages/hrm/NhanSu'
+import CoCauToChuc from '@/pages/hrm/CoCauToChuc'
 import HocVien from '@/pages/dao-tao/HocVien'
 import PhanQuyen from '@/pages/quan-tri/PhanQuyen'
 import ThietLap from '@/pages/quan-tri/ThietLap'
@@ -71,6 +72,7 @@ export default function App() {
             >
               <Route path="/" element={<TongQuan />} />
               {/* HRM · CRM — hiện là khung trống, xem components/ui/DangPhatTrien.tsx */}
+              <Route path="/hrm/co-cau" element={<CoCauToChuc />} />
               <Route path="/hrm/nhan-su" element={<NhanSu />} />
               <Route path="/hrm/nhan-vien-kinh-doanh" element={<NhanVienKinhDoanh />} />
               <Route path="/hrm/giao-vien" element={<GiaoVienNhanSu />} />

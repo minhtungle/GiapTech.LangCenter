@@ -88,6 +88,15 @@ Cả hai cùng ghi một cột `NGUOI_DUNG.phong_ban_id`:
 | 1 | Form tạo/sửa hồ sơ → chọn phòng ban | Tuyển người mới, biết trước họ vào phòng nào |
 | 2 | Cây cơ cấu → node phòng ban → *Thêm nhân sự* → chọn người đã có | Sắp xếp lại tổ chức, hoặc lấp phòng mới lập |
 
+Màn cây ở `/hrm/co-cau`, dùng `@headless-tree` (MIT, ~13.5 KB gzip, 0 dependency): thu/mở nhánh,
+sĩ số riêng/cả nhánh, menu thao tác mỗi dòng. Chọn thư viện *headless* để dùng lại `MenuThaoTac`
+và `Badge` sẵn có, và để có sẵn điều hướng bàn phím + ARIA `tree`/`treeitem`.
+
+> **Bẫy của thư viện** (mất thời gian nhất khi làm): `useTree` gọi `createTree` **đúng một lần**,
+> nên cấu trúc cây bị cache — dữ liệu về sau phải gọi `rebuildTree()` mới hiện. Và mở nhánh phải
+> qua `item.expand()`, **không** phải `setState({ expandedItems })`: bản kia đổi state mà
+> `getItems()` vẫn không trả con. Đã đo bằng script độc lập chứ không đoán.
+
 ## FR-23 — Hồ sơ nhân sự (mở rộng)
 
 Bổ sung vào `NGUOI_DUNG`: `cccd`, `so_tai_khoan`, `ten_ngan_hang`.

@@ -4,7 +4,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Users, ShieldCheck, Settings, LogOut, Home, GraduationCap, BookOpen, Wallet,
   PanelLeftClose, PanelLeft, Menu, X, ScrollText, Briefcase, UserCog, TrendingUp,
-  LayoutGrid, Check, KeyRound, Contact, PackageOpen, BookMarked, UserPlus,
+  LayoutGrid, Check, KeyRound, Contact, PackageOpen, BookMarked, UserPlus, Network,
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useQuyen } from '@/lib/quyen'
@@ -105,6 +105,10 @@ export default function Layout() {
       heThong: 'Hrm',
       muc: [
         // Hồ sơ con người của BA vai trò nhân sự. Học viên ở LMS — xem pages/hrm/NhanSu.tsx.
+        {
+          to: '/hrm/co-cau', nhan: t('menu.coCauToChuc'),
+          icon: Network, can: 'PhongBan',
+        },
         {
           to: '/hrm/nhan-su', nhan: t('menu.nhanSuNguoiDung'),
           icon: UserCog, can: 'GiaoVienNhanSu',

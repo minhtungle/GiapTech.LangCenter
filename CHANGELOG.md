@@ -8,6 +8,22 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — Màn cơ cấu tổ chức (FR-22, phần giao diện) (09/09/2026)
+
+- Route `/hrm/co-cau` + mục menu **Cơ cấu tổ chức** ở đầu nhóm HRM. Trước đó FR-22 chỉ có API —
+  không có route, không có mục menu, nên **không thấy module đâu cả**.
+- Cây phòng ban: thụt lề theo cấp, thu/mở nhánh, sĩ số **riêng / cả nhánh**, badge người quản lý,
+  `MenuThaoTac` mỗi dòng (thêm phòng cấp dưới · thêm nhân sự · sửa · xoá).
+- **Cách 2 của FR-22** làm được từ đây: chọn nhiều nhân sự đã có xếp vào phòng. Danh sách hiện
+  phòng ban hiện tại của từng người và **không có học viên** (họ không thuộc cơ cấu).
+- Thư viện `@headless-tree/core` + `@headless-tree/react` (MIT, ~13.5 KB gzip, **0 dependency
+  runtime**). Chọn nó vì *headless* — mọi JSX là của mình nên dùng lại được `MenuThaoTac`,
+  `Badge`, token Tailwind sẵn có; và nó lo sẵn điều hướng bàn phím + ARIA `tree`/`treeitem`.
+  Bundle 731 → 767 KB (+~10 KB gzip).
+- Ô "Phòng ban" trên form hồ sơ (**cách 1**) đổi từ chuỗi tự do sang select, **hiện cho mọi vai
+  trò nhân sự** kể cả giáo viên. Nhãn mang đường dẫn cha ("Ban giám đốc / Đào tạo / Bộ môn Anh")
+  vì tên lá hay trùng giữa các nhánh.
+
 ### Added — FR-22 Cơ cấu tổ chức: cây phòng ban (09/09/2026)
 
 - Bảng `PHONG_BAN` tự tham chiếu (`phong_ban_cha_id`), có `nguoi_quan_ly_id`, `thu_tu`, `mo_ta`.
