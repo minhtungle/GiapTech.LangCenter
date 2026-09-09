@@ -121,6 +121,36 @@ public class NhanSuController(ISender sender) : ControllerBase
             id, s, tep.ContentType, tep.FileName), ct));
     }
 
+    /// <summary>
+    /// Xem tệp online hoặc tải về (10/09/2026).
+    ///
+    /// Gác bằng **`Xem`**, không `Sua`: đọc hợp đồng của mình không phải hành vi sửa hồ sơ.
+    ///
+    /// `?taiVe=true` đổi `Content-Disposition` từ `inline` sang `attachment`. Một endpoint hai
+    /// chế độ chứ không hai route: cùng một phép kiểm quyền và cùng một truy vấn, tách ra chỉ
+    /// nhân đôi chỗ có thể quên gác.
+    ///
+    /// **`Content-Type` lấy từ DB, và whitelist HRM (`LoaiTepHoSo`) mới là thứ giữ an toàn cho
+    /// `inline`**: trả `inline` cho tệp do người dùng tải lên là đường XSS lưu trữ kinh điển
+    /// nếu loại tệp có thể là SVG/HTML. Ở đây danh sách chỉ có PDF/Word/Excel nên không có
+    /// nhánh nào chạy script; `X-Content-Type-Options: nosniff` chặn trình duyệt tự đoán lại.
+    /// </summary>
+    [HttpGet("tep/{tepId:guid}")]
+    [RequirePermission(ChucNang.NhanSu, HanhDong.Xem)]
+    public async Task<IActionResult> XemTep(
+        Guid tepId, [FromQuery] bool taiVe, CancellationToken ct)
+    {
+        var tep = await sender.Send(new XemTepHoSoQuery(tepId), ct);
+
+        Response.Headers["X-Content-Type-Options"] = "nosniff";
+
+        // `fileDownloadName` null ⇒ ASP.NET Core KHÔNG đặt `Content-Disposition: attachment`,
+        // tệp hiện ngay trong tab/iframe. Có tên ⇒ tải về đúng tên gốc.
+        return taiVe
+            ? File(tep.NoiDung, tep.LoaiNoiDung, tep.TenGoc)
+            : File(tep.NoiDung, tep.LoaiNoiDung);
+    }
+
     [HttpDelete("tep/{tepId:guid}")]
     [RequirePermission(ChucNang.NhanSu, HanhDong.Sua)]
     public async Task<IActionResult> XoaTep(Guid tepId, CancellationToken ct)

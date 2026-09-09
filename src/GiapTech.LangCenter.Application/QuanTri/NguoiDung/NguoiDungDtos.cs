@@ -55,10 +55,10 @@ public record NguoiDungDto(
 /// <summary>Một liên kết mạng xã hội (FR-23).</summary>
 public record LienKetMxhDto(Guid Id, LoaiMxh Loai, string DuongDan, string? GhiChu);
 
-/// <summary>Một tệp trong hồ sơ nhân sự (FR-23).</summary>
 /// <summary>Một liên kết MXH khi ghi (không có Id — danh sách thay thế toàn bộ).</summary>
 public record LuuLienKetMxh(LoaiMxh Loai, string DuongDan, string? GhiChu = null);
 
+/// <summary>Một tệp trong hồ sơ nhân sự (FR-23).</summary>
 public record TepHoSoDto(
     Guid Id,
     string TenGoc,

@@ -192,11 +192,12 @@ public class HoSoNhanSuTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
     // ---------- Tệp hồ sơ ----------
 
-    private static MultipartFormDataContent Tep(string ten, string noiDung = "noi dung thu")
+    private static MultipartFormDataContent Tep(
+        string ten, string noiDung = "noi dung thu", string loai = "application/pdf")
     {
         var form = new MultipartFormDataContent();
         var bytes = new ByteArrayContent(Encoding.UTF8.GetBytes(noiDung));
-        bytes.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
+        bytes.Headers.ContentType = new MediaTypeHeaderValue(loai);
         form.Add(bytes, "tep", ten);
         return form;
     }
@@ -282,5 +283,150 @@ public class HoSoNhanSuTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(
             HttpStatusCode.NotFound,
             (await c.DeleteAsync($"/api/v1/nhan-su/tep/{tepId}")).StatusCode);
+    }
+
+    // ---------- Giới hạn định dạng + xem online (10/09/2026) ----------
+
+    /// <summary>
+    /// Hồ sơ nhân sự nhận đúng PDF · Word · Excel, và **từ chối những loại mà kho lưu trữ dùng
+    /// chung vẫn cho phép** (ảnh, zip, txt, mp3 — học liệu LMS cần chúng).
+    ///
+    /// Đây là lý do whitelist HRM nằm ở tầng Application chứ không sửa `MinioLuuTruTep`: hai
+    /// nghiệp vụ có hai danh sách khác nhau trên cùng một kho.
+    /// </summary>
+    [Theory]
+    [InlineData("application/pdf", true)]
+    [InlineData("application/msword", true)]
+    [InlineData(
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document", true)]
+    [InlineData("application/vnd.ms-excel", true)]
+    [InlineData(
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", true)]
+    // Dưới đây: kho lưu trữ CHẤP NHẬN, hồ sơ nhân sự phải TỪ CHỐI.
+    [InlineData("image/png", false)]
+    [InlineData("image/jpeg", false)]
+    [InlineData("application/zip", false)]
+    [InlineData("text/plain", false)]
+    public async Task Ho_so_nhan_su_chi_nhan_pdf_word_excel(string loai, bool duocPhep)
+    {
+        var c = await Client();
+        var id = await Tao(c, new { HoTen = $"NV {loai}", LoaiNguoiDung = "NhanVien" });
+
+        var res = await c.PostAsync(
+            $"/api/v1/nhan-su/{id}/tep", Tep("tep-thu", loai: loai));
+
+        if (duocPhep)
+        {
+            res.EnsureSuccessStatusCode();
+            return;
+        }
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+
+        // Mã lỗi RIÊNG của HRM, không phải `LOAI_TEP_KHONG_HO_TRO` của kho: hai thông điệp
+        // liệt kê hai danh sách khác nhau (xem `MaLoi.LoaiTepHoSoKhongHoTro`).
+        var body = await res.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("LOAI_TEP_HO_SO_KHONG_HO_TRO", body.GetProperty("errorCode").GetString());
+    }
+
+    /// <summary>
+    /// Tệp sai loại **không được nằm trong kho** dù chỉ một lúc — kiểm loại chạy TRƯỚC khi
+    /// stream đi vào `ILuuTruTep`.
+    ///
+    /// Không có test này thì đảo hai bước (kiểm sau khi tải lên) vẫn trả 400 đúng và mọi test
+    /// khác vẫn xanh, chỉ để lại tệp mồ côi mỗi lần người dùng chọn sai định dạng.
+    /// </summary>
+    [Fact]
+    public async Task Tep_sai_loai_khong_de_lai_rac_trong_kho()
+    {
+        var c = await Client();
+        var id = await Tao(c, new { HoTen = "NV tệp rác", LoaiNguoiDung = "NhanVien" });
+
+        var truoc = TestLuuTruTep.SoTep(factory.TenantAId);
+
+        var res = await c.PostAsync(
+            $"/api/v1/nhan-su/{id}/tep", Tep("anh.png", loai: "image/png"));
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+
+        Assert.Equal(truoc, TestLuuTruTep.SoTep(factory.TenantAId));
+    }
+
+    /// <summary>
+    /// Xem online: trả đúng nội dung, đúng `Content-Type`, và **KHÔNG** có
+    /// `Content-Disposition: attachment` — đó là thứ khiến trình duyệt hiện PDF trong tab/iframe
+    /// thay vì bật hộp thoại tải về.
+    /// </summary>
+    [Fact]
+    public async Task Xem_tep_online_tra_inline_dung_noi_dung()
+    {
+        var c = await Client();
+        var id = await Tao(c, new { HoTen = "NV xem tệp", LoaiNguoiDung = "NhanVien" });
+
+        var tai = await c.PostAsync(
+            $"/api/v1/nhan-su/{id}/tep", Tep("hop-dong.pdf", "NOI DUNG HOP DONG"));
+        tai.EnsureSuccessStatusCode();
+        var tepId = (await tai.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id").GetGuid();
+
+        var res = await c.GetAsync($"/api/v1/nhan-su/tep/{tepId}");
+        res.EnsureSuccessStatusCode();
+
+        Assert.Equal("application/pdf", res.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("NOI DUNG HOP DONG", await res.Content.ReadAsStringAsync());
+
+        // `attachment` = tải về. Xem online phải KHÔNG có nó.
+        Assert.NotEqual("attachment", res.Content.Headers.ContentDisposition?.DispositionType);
+
+        // Trả `inline` cho tệp người dùng tải lên thì bắt buộc chặn trình duyệt đoán lại kiểu.
+        Assert.Contains("nosniff", res.Headers.GetValues("X-Content-Type-Options"));
+    }
+
+    /// <summary>`?taiVe=true` đổi sang tải về, và đặt đúng TÊN GỐC chứ không phải khoá GUID.</summary>
+    [Fact]
+    public async Task Tai_ve_dat_ten_goc()
+    {
+        var c = await Client();
+        var id = await Tao(c, new { HoTen = "NV tải về", LoaiNguoiDung = "NhanVien" });
+
+        var tai = await c.PostAsync($"/api/v1/nhan-su/{id}/tep", Tep("bang-dai-hoc.pdf"));
+        tai.EnsureSuccessStatusCode();
+        var tepId = (await tai.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id").GetGuid();
+
+        var res = await c.GetAsync($"/api/v1/nhan-su/tep/{tepId}?taiVe=true");
+        res.EnsureSuccessStatusCode();
+
+        Assert.Equal("attachment", res.Content.Headers.ContentDisposition?.DispositionType);
+        Assert.Contains(
+            "bang-dai-hoc.pdf", res.Content.Headers.ContentDisposition?.FileName ?? "");
+    }
+
+    /// <summary>
+    /// Endpoint xem của HRM **không đọc được tệp học liệu** — cùng lý do như lệnh xoá: quyền
+    /// `NhanSu.Xem` nói "được xem hồ sơ nhân sự", không nói "được đọc mọi hàng
+    /// `TEP_DINH_KEM`". Chỉ cần đoán đúng id là lọt nếu thiếu bộ lọc `NguoiDungId != null`.
+    /// </summary>
+    [Fact]
+    public async Task Endpoint_HRM_khong_xem_duoc_tep_cua_hoc_lieu()
+    {
+        var c = await Client();
+
+        var tl = await c.PostAsJsonAsync("/api/v1/tai-lieu", new
+        {
+            TieuDe = $"TL riêng tư {Guid.NewGuid():N}", Loai = "GiaoTrinh",
+            LopHocIds = Array.Empty<Guid>()
+        });
+        tl.EnsureSuccessStatusCode();
+        var tlId = await tl.Content.ReadFromJsonAsync<Guid>();
+
+        var tai = await c.PostAsync(
+            $"/api/v1/tep?loai=TaiLieu&doiTuongId={tlId}", Tep("de-thi.pdf"));
+        tai.EnsureSuccessStatusCode();
+        var tepId = (await tai.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id").GetGuid();
+
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await c.GetAsync($"/api/v1/nhan-su/tep/{tepId}")).StatusCode);
     }
 }

@@ -92,3 +92,76 @@ phạm vi commit này.
 Chạy cả bộ E2E vẫn phải `GIOI_HAN_TAN_SUAT=false`: mỗi test tự tạo một trung tâm, mà
 `/dang-ky-trung-tam` giới hạn 10 req/phút mỗi IP → không tắt là 429 và triệu chứng hiện ra dưới
 dạng "Không tạo được trung tâm", rất dễ hiểu nhầm là API chết.
+
+## Xem tệp online + giới hạn định dạng, dung lượng
+
+Yêu cầu ba phần: *"cho phép xem tệp online, giới hạn định dạng file và kích thước cho phép (pdf,
+word, excel)"*. Khảo sát trước khi code cho thấy tình trạng thật khác với chữ "giới hạn lại" gợi ý:
+
+| Phần | Tình trạng trước |
+|---|---|
+| Xem online | **Không có endpoint nào cả** — chỉ có tải lên và xoá. Danh sách hiện tên tệp mà không cách nào mở |
+| Định dạng | Có whitelist, nhưng **rộng** (13 loại: cả ảnh, mp3, zip, ppt, txt) |
+| Dung lượng | Đã có, 20 MB |
+
+Nên phần "xem online" là **làm mới**, còn "giới hạn" là **siết lại**.
+
+### Quyết định đáng cân nhắc nhất: siết ở đâu
+
+`ILuuTruTep` dùng **chung** cho HRM và học liệu LMS. Siết `MinioLuuTruTep` xuống 5 kiểu MIME cho
+thoả yêu cầu HRM sẽ chặn luôn file nghe `mp3`, ảnh chụp bài nộp và slide `pptx` của lớp ngoại ngữ
+— **hỏng nghiệp vụ đang chạy để thoả một yêu cầu của hệ thống con khác**. Đã hỏi chủ sản phẩm và
+chốt: whitelist riêng cho HRM ở tầng Application, kho giữ nguyên vai trò chốt ngoài cùng.
+
+Hai tầng, và **thứ tự kiểm quan trọng**: tầng HRM chạy trước khi stream đi vào kho. Đảo lại vẫn
+trả 400 đúng và mọi test khác vẫn xanh, chỉ để lại tệp mồ côi trong MinIO mỗi lần người dùng chọn
+sai định dạng — nên có test đếm số tệp trong kho trước/sau.
+
+Mã lỗi cũng phải riêng: dùng lại `LOAI_TEP_KHONG_HO_TRO` của kho thì người dùng HRM đọc được
+"chấp nhận cả ảnh và file nén" rồi thử và bị từ chối.
+
+### `inline` chỉ an toàn nhờ whitelist hẹp
+
+Trả `Content-Disposition: inline` cho tệp **do người dùng tải lên** là đường XSS lưu trữ kinh
+điển — nếu loại tệp có thể là SVG hoặc HTML. Ở đây danh sách chỉ có PDF/Word/Excel nên không nhánh
+nào chạy script, thêm `X-Content-Type-Options: nosniff` chặn trình duyệt đoán lại kiểu.
+
+Điều này đã ghi vào FR: **nới whitelist về sau phải xem lại chỗ đó**. Sự an toàn không nằm ở
+header, nó nằm ở danh sách.
+
+### Nhúng Office qua viewer ngoài: đã loại
+
+Muốn xem Word/Excel ngay trong trang thì phải nhờ Microsoft/Google viewer, mà chúng cần **URL công
+khai** để bên thứ ba đọc được tệp — vi phạm quy tắc #6 và đưa hợp đồng, CCCD nhân viên ra Internet.
+Chốt: Word/Excel **không có nút Xem**, chỉ tải về. Cho bấm Xem rồi hiện modal trắng còn tệ hơn là
+không có nút.
+
+### Ba lần tự sai, và cách phát hiện
+
+**1. Đoán tên field mã lỗi.** Viết `body.GetProperty("maLoi")` trong test; middleware thật trả
+`{ errorCode }`. 4 test đỏ với `KeyNotFoundException` — app đúng, test sai.
+
+**2. Test xanh nhưng iframe TRẮNG.** Spec khẳng định `src` khớp `/^blob:/` và **đã pass**, nhưng
+ảnh chụp cho thấy khung xem trống trơn. Không đoán: viết một thăm dò độc lập với app — HTML thuần,
+hai iframe cùng một blob PDF, một trong `<dialog>` một ngoài. **Cả hai** đều
+`net::ERR_ABORTED`. Kết luận: Chromium **headless** không có plugin đọc PDF, không liên quan
+`<dialog>` hay code của mình. Chạy `--headed`: 0 lỗi, PDF render đủ chữ "HOP DONG LAO DONG", có
+thumbnail và thanh zoom.
+
+> Bài học ghi vào spec: khẳng định `blob:` **không** chứng minh PDF render được. Giới hạn của test
+> phải viết ra, không để người sau đọc màu xanh rồi tin quá mức.
+
+**3. Sửa một thứ không sửa được.** Ảnh chụp cho thấy thanh công cụ PDF hiện GUID của blob thay vì
+tên tệp. Thêm `#tên-tệp` vào URL blob, kèm cả việc tách `urlGoc` để `revokeObjectURL` vẫn đúng —
+chụp lại: **vẫn là GUID**. Chrome lấy tiêu đề từ chính blob, không từ fragment. Đã **lùi toàn bộ**
+thay vì giữ code kèm comment nói sai sự thật; tên gốc vốn đã hiện ở tiêu đề modal ngay phía trên,
+và không đáng kéo `pdf.js` (~300 KB) cho một dòng chữ.
+
+### Đột biến
+
+- Bỏ kiểm whitelist HRM → **5 test đỏ** (4 dòng `InlineData` bị chặn + test tệp mồ côi).
+- Bỏ lọc `NguoiDungId != null` ở endpoint xem → **1 test đỏ** đúng chỗ "HRM không đọc được tệp
+  học liệu".
+
+Cộng thêm: bản giả `TestLuuTruTep` thiếu hai kiểu MIME của Excel, không thêm thì test "hồ sơ nhận
+xlsx" đỏ vì **bản giả** từ chối chứ không phải app sai — một cái bẫy chẩn đoán nếu để nguyên.

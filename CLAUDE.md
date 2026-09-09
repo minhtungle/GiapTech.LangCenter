@@ -25,7 +25,7 @@ Mỗi trung tâm đăng ký là một tenant độc lập, dữ liệu cách ly 
 Tách ra từ một ứng dụng quản lý CLB đá bóng (04/09/2026), giữ toàn bộ tầng hệ thống. Nghiệp vụ
 LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 
-**23/24 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 414 test backend xanh.
+**23/24 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 427 test backend xanh.
 
 | Đã chạy đầu-cuối | Chưa có |
 |---|---|
@@ -234,7 +234,7 @@ Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 ```bash
 # --- Backend ---
 dotnet build          # 0 warning — TreatWarningsAsErrors đang bật
-dotnet test           # 414 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
+dotnet test           # 427 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
                       #           quản trị, lớp học, điểm danh, học liệu, học phí
 
 # Chạy API cần 2 biến bắt buộc (thiếu là 500 lúc đăng nhập / tải ảnh, không phải lúc khởi động):

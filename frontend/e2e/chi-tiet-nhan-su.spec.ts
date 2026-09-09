@@ -69,4 +69,112 @@ test.describe('Chi tiết hồ sơ nhân sự', () => {
     expect(new URL(page.url()).searchParams.get('tab')).toBe(null)
     expect(await page.getByRole('heading', { name: 'Tệp hồ sơ' }).isVisible()).toBe(false)
   })
+
+  /**
+   * Xem tệp online + giới hạn định dạng (10/09/2026).
+   *
+   * Chỗ dễ sai nhất là **iframe phải có nguồn thật**: endpoint cần header `Authorization` nên
+   * `<iframe src="/api/...">` sẽ 401 và hiện khung trắng — phải tải blob rồi
+   * `createObjectURL`. Test kiểm `src` bắt đầu bằng `blob:` chính là để canh điều đó.
+   */
+  test('xem PDF trong modal, chặn định dạng không cho phép', async ({ page, request }) => {
+    await vaoHeThong(page, request, 'xem-tep')
+
+    await page.goto('/hrm/nhan-su')
+    await page.waitForTimeout(1200)
+    await page.getByRole('button', { name: /Thêm|Tạo/ }).first().click()
+    await page.waitForTimeout(600)
+    await page.fill('#hoTen', 'Nguyễn Thị Xem Tệp')
+    await page.locator('button[type=submit]').last().click()
+    await page.waitForTimeout(600)
+    await page.getByRole('button', { name: 'Đồng ý' }).click()
+    await page.waitForTimeout(2000)
+
+    await page.getByText('Nguyễn Thị Xem Tệp').first().click()
+    await page.waitForURL(/\/hrm\/nhan-su\/[0-9a-f-]{36}/, { timeout: 10_000 })
+    await page.getByRole('button', { name: 'Tệp hồ sơ' }).click()
+    await page.waitForTimeout(600)
+
+    // Giới hạn phải được NÓI TRƯỚC, không để người dùng chọn xong mới biết.
+    await expect(page.getByText(/Chỉ nhận PDF, Word, Excel/)).toBeVisible()
+
+    // --- Định dạng KHÔNG cho phép: ảnh (kho lưu trữ dùng chung vẫn nhận, hồ sơ nhân sự không).
+    await page.setInputFiles('input[type=file]', {
+      name: 'anh-the.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from('\x89PNG\r\n\x1a\n fake'),
+    })
+    await page.waitForTimeout(1200)
+    await expect(page.getByText(/chỉ nhận PDF, Word hoặc Excel/i)).toBeVisible()
+    // Và tệp KHÔNG được vào danh sách.
+    expect(await page.getByText('anh-the.png').isVisible()).toBe(false)
+
+    // --- PDF hợp lệ: vào danh sách, có nút Xem.
+    await page.setInputFiles('input[type=file]', {
+      name: 'hop-dong-lao-dong.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>'),
+    })
+    await page.waitForTimeout(2500)
+    await expect(page.getByText('hop-dong-lao-dong.pdf')).toBeVisible()
+
+    // --- Mở modal xem: iframe phải trỏ tới blob: (đã tải kèm token), không phải URL API.
+    await page.getByRole('button', { name: 'Xem' }).first().click()
+    await page.waitForTimeout(1500)
+
+    const iframe = page.locator('iframe')
+    await expect(iframe).toBeVisible()
+
+    // GIỚI HẠN CỦA TEST NÀY: chỉ kiểm được `src` là `blob:` (tức đã tải kèm token và không
+    // trỏ thẳng vào API). **Không** kiểm được PDF có render ra chữ hay không — Chromium
+    // headless không có plugin đọc PDF, mọi `<iframe src="blob:...pdf">` đều báo
+    // `net::ERR_ABORTED` và ra khung trắng, kể cả HTML thuần không liên quan tới app (đã
+    // thăm dò riêng 10/09). Việc render thật đã xác nhận bằng tay ở chế độ `--headed`.
+    expect(await iframe.getAttribute('src')).toMatch(/^blob:/)
+
+    // Tiêu đề modal là tên gốc, không phải khoá GUID.
+    await expect(
+      page.getByRole('heading', { name: 'hop-dong-lao-dong.pdf' }),
+    ).toBeVisible()
+
+    // --- Đóng modal: iframe biến mất (và blob được thu hồi).
+    await page.getByRole('button', { name: 'Đóng' }).click()
+    await page.waitForTimeout(600)
+    expect(await iframe.isVisible()).toBe(false)
+  })
+
+  /**
+   * Word/Excel **không** có nút Xem: trình duyệt không render được, mở modal ra sẽ trắng trơn.
+   * Chỉ có nút Tải về.
+   */
+  test('Word không có nút Xem, chỉ có Tải về', async ({ page, request }) => {
+    await vaoHeThong(page, request, 'tep-word')
+
+    await page.goto('/hrm/nhan-su')
+    await page.waitForTimeout(1200)
+    await page.getByRole('button', { name: /Thêm|Tạo/ }).first().click()
+    await page.waitForTimeout(600)
+    await page.fill('#hoTen', 'Trần Văn Word')
+    await page.locator('button[type=submit]').last().click()
+    await page.waitForTimeout(600)
+    await page.getByRole('button', { name: 'Đồng ý' }).click()
+    await page.waitForTimeout(2000)
+
+    await page.getByText('Trần Văn Word').first().click()
+    await page.waitForURL(/\/hrm\/nhan-su\/[0-9a-f-]{36}/, { timeout: 10_000 })
+    await page.getByRole('button', { name: 'Tệp hồ sơ' }).click()
+    await page.waitForTimeout(600)
+
+    await page.setInputFiles('input[type=file]', {
+      name: 'ly-lich.docx',
+      mimeType:
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      buffer: Buffer.from('PK fake docx'),
+    })
+    await page.waitForTimeout(2500)
+
+    await expect(page.getByText('ly-lich.docx')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Tải về' })).toBeVisible()
+    expect(await page.getByRole('button', { name: 'Xem' }).isVisible()).toBe(false)
+  })
 })

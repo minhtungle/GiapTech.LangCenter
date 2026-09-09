@@ -136,14 +136,66 @@ lương, áp cho cả giáo viên. Học viên không có các trường này.
 - **Handler RIÊNG, không thêm nhánh vào `TaiTepCommand`** của học liệu: lệnh kia nằm ở
   `Application/DaoTao/HocLieu` và phụ thuộc `IPhamViLopHoc` ("lớp mình dạy") — không liên quan
   hồ sơ nhân sự. Thêm nhánh là đặt logic HRM trong handler LMS và `RanhGioiHeThongConTests` sẽ
-  đỏ (ADR-0005). Vẫn dùng chung `ILuuTruTep` + bảng `TEP_DINH_KEM`: whitelist loại tệp và hạn
-  mức dung lượng là một, job dọn tệp mồ côi chỉ phải quét một bảng.
+  đỏ (ADR-0005). Vẫn dùng chung `ILuuTruTep` + bảng `TEP_DINH_KEM`: hạn mức dung lượng là một
+  và job dọn tệp mồ côi chỉ phải quét một bảng — nhưng **whitelist định dạng thì KHÔNG dùng
+  chung** (xem mục dưới).
 - Endpoint xoá tệp HRM lọc `NguoiDungId != null` — chặn việc dùng nó để xoá tệp của bài tập hay
   tài liệu. Canh bởi `HoSoNhanSuTests.Endpoint_HRM_khong_xoa_duoc_tep_cua_hoc_lieu`.
 - **Xoá hàng DB trước, xoá tệp sau**: kho lỗi thì còn tệp mồ côi (job dọn rác lo — nợ N5); làm
   ngược lại mà DB lỗi thì hàng còn trỏ tới tệp đã mất và UI hiện một tệp tải về không được.
 - Tải tệp làm ở **view chi tiết**, không trong modal sửa: tệp là thao tác từng cái một, ghép vào
   form sẽ phải giữ tệp trong bộ nhớ tới lúc bấm Lưu.
+
+### Xem online + giới hạn định dạng và dung lượng (10/09/2026)
+
+Yêu cầu: *"cho phép xem tệp online, giới hạn định dạng file và kích thước cho phép (pdf, word,
+excel)"*.
+
+| Hạng mục | Chốt |
+|---|---|
+| Định dạng | **PDF · Word (doc/docx) · Excel (xls/xlsx)** — 5 kiểu MIME |
+| Dung lượng | **20 MB** mỗi tệp (giữ hạn mức chung của `ILuuTruTep`) |
+| Xem online | PDF xem trong modal; Word/Excel **chỉ tải về** |
+
+- **Whitelist HRM hẹp hơn kho lưu trữ, và đặt ở tầng Application** (`LoaiTepHoSo.ChoPhep`), KHÔNG
+  sửa `MinioLuuTruTep`. Kho dùng chung với học liệu LMS, mà lớp ngoại ngữ cần file nghe `mp3`,
+  ảnh chụp bài nộp và slide `pptx` — siết danh sách chung xuống 5 kiểu sẽ **hỏng nghiệp vụ LMS
+  đang chạy** để thoả một yêu cầu của HRM. Hai tầng: HRM (hẹp, theo nghiệp vụ) + kho (rộng, chặn
+  SVG/HTML gây XSS và giữ hạn mức 20 MB).
+- **Thứ tự kiểm quan trọng**: whitelist chạy **trước** khi stream đi vào kho, nên tệp sai loại
+  không bao giờ nằm trong MinIO dù chỉ một lúc. Đảo hai bước vẫn trả 400 đúng và mọi test khác
+  vẫn xanh, chỉ để lại tệp mồ côi mỗi lần người dùng chọn sai — canh bởi
+  `HoSoNhanSuTests.Tep_sai_loai_khong_de_lai_rac_trong_kho`.
+- **Mã lỗi riêng `LOAI_TEP_HO_SO_KHONG_HO_TRO`**, không dùng lại `LOAI_TEP_KHONG_HO_TRO` của kho:
+  hai thông điệp liệt kê hai danh sách khác nhau, dùng chung thì người dùng HRM đọc được "chấp
+  nhận cả ảnh và file nén" rồi thử và bị từ chối.
+- **`accept` ở `<input type=file>` là tiện lợi, KHÔNG phải bảo mật** — người dùng đổi được sang
+  "All files". Chốt thật ở handler; test backend canh tầng thật. Client cũng kiểm dung lượng
+  trước để không bắt người dùng chờ tải xong 20 MB rồi mới bị từ chối.
+  - `File.type` **rỗng** với vài tệp Office cũ trên Windows → lúc đó tin phần mở rộng và để
+    backend phán quyết, thay vì chặn oan một `.doc` hợp lệ.
+- **Endpoint xem gác bằng `NhanSu.Xem`**, không `Sua`: đọc hợp đồng không phải hành vi sửa hồ sơ.
+  Lọc `NguoiDungId != null` — cùng lý do như lệnh xoá, quyền `NhanSu.Xem` không có nghĩa "được
+  đọc mọi hàng `TEP_DINH_KEM`". Canh bởi `Endpoint_HRM_khong_xem_duoc_tep_cua_hoc_lieu`.
+- **`?taiVe=true` đổi `Content-Disposition`** từ `inline` sang `attachment`. Một endpoint hai chế
+  độ chứ không hai route: cùng phép kiểm quyền và cùng truy vấn, tách ra chỉ nhân đôi chỗ có thể
+  quên gác.
+- **Trả `inline` an toàn được ở đây là NHỜ whitelist hẹp**: `inline` cho tệp người dùng tải lên là
+  đường XSS lưu trữ kinh điển nếu loại tệp có thể là SVG/HTML. Danh sách chỉ có PDF/Word/Excel nên
+  không nhánh nào chạy script; thêm `X-Content-Type-Options: nosniff` chặn trình duyệt đoán lại
+  kiểu. **Nới whitelist này về sau phải xem lại chỗ đó.**
+- **Frontend tải blob rồi `createObjectURL`**, không trỏ `<iframe src>` thẳng vào API: endpoint cần
+  header `Authorization` mà `<a href>`/`<iframe src>` không gửi được (cùng khuôn `Anh.tsx`,
+  `ChonTep.tsx`). `revokeObjectURL` gọi **lúc đóng modal**, không ngay sau khi gán — thu hồi sớm
+  thì iframe mất nguồn và hiện khung trắng.
+- **Word/Excel không có nút "Xem"**: không trình duyệt nào render chúng, trả `inline` cũng chỉ dẫn
+  tới hộp thoại tải về. Cho bấm Xem thì modal mở ra trắng trơn — tệ hơn là không có nút. Nhúng qua
+  Microsoft/Google viewer đã **bị loại**: phải public URL tệp ra Internet cho bên thứ ba đọc, vi
+  phạm quy tắc #6 và làm lộ hợp đồng, CCCD nhân viên.
+- Thanh công cụ của bộ đọc PDF hiện **GUID của blob** chứ không phải tên tệp. Thử thêm
+  `#tên-tệp` vào URL blob — **không có tác dụng**, Chrome lấy tiêu đề từ chính blob. Đã bỏ, tên
+  gốc hiện ở **tiêu đề modal** ngay phía trên khung xem; không đáng kéo `pdf.js` (~300 KB) chỉ để
+  sửa một dòng chữ.
 
 ## FR-24 — Danh mục chức vụ
 

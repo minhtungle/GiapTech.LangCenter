@@ -41,6 +41,7 @@ const vi = {
     thuGonSidebar: 'Thu gọn thanh bên',
     daLuu: 'Đã lưu',
     taiVe: 'Tải về',
+    xem: 'Xem',
   },
   dangKy: {
     tieuDe: 'Đăng ký trung tâm',
@@ -181,6 +182,7 @@ const vi = {
     tepHoSo: 'Tệp hồ sơ',
     taiTep: 'Tải tệp lên',
     chuaCoTep: 'Chưa có tệp nào — hợp đồng, bằng cấp scan, CCCD scan…',
+    gioiHanTep: 'Chỉ nhận PDF, Word, Excel · tối đa 20 MB mỗi tệp',
     hoiXoaTep: 'Xoá tệp "{{ten}}"? Không khôi phục được.',
     phongBan: 'Phòng ban',
     chuaXepPhongBan: 'Chưa xếp vào cơ cấu',
@@ -1003,6 +1005,9 @@ const vi = {
     HOC_VIEN_KHONG_VAO_CO_CAU: 'Học viên không thuộc cơ cấu tổ chức',
     CHUA_CHON_NHAN_SU: 'Chưa chọn nhân sự nào',
     LOAI_TEP_KHONG_HO_TRO: 'Chỉ nhận PDF, Word, Excel, PowerPoint, ảnh hoặc file nén',
+    // Hồ sơ nhân sự hẹp hơn kho dùng chung — hai thông điệp phải nói hai danh sách khác nhau,
+    // dùng chung một mã thì người dùng HRM đọc được "chấp nhận cả ảnh" rồi thử và bị từ chối.
+    LOAI_TEP_HO_SO_KHONG_HO_TRO: 'Hồ sơ nhân sự chỉ nhận PDF, Word hoặc Excel',
     TEP_QUA_LON: 'Tệp quá lớn, tối đa 20 MB',
     TEP_RONG: 'Tệp rỗng',
     LOAI_ANH_KHONG_HO_TRO: 'Chỉ nhận ảnh JPG, PNG, WebP hoặc GIF',

@@ -24,6 +24,16 @@ public static class MaLoi
     public const string KhongDuQuyen = "KHONG_DU_QUYEN";
     public const string TokenThieuTenant = "TOKEN_THIEU_TENANT";
 
+    // --- Tệp hồ sơ nhân sự (FR-23) ---
+    /// <summary>
+    /// Hồ sơ nhân sự chỉ nhận PDF/Word/Excel — HẸP HƠN whitelist của kho lưu trữ dùng chung
+    /// (kho còn nhận ảnh, mp3, zip, pptx cho học liệu LMS). Cần mã riêng chứ không dùng lại
+    /// <c>LOAI_TEP_KHONG_HO_TRO</c> của kho: hai thông điệp liệt kê hai danh sách khác nhau,
+    /// dùng chung thì người dùng HRM đọc được "chấp nhận cả ảnh và file nén" rồi thử và bị từ
+    /// chối. → <see cref="NhanSu.LoaiTepHoSo"/>
+    /// </summary>
+    public const string LoaiTepHoSoKhongHoTro = "LOAI_TEP_HO_SO_KHONG_HO_TRO";
+
     // --- Chung ---
     public const string KhongTimThay = "KHONG_TIM_THAY";
     public const string DuLieuKhongHopLe = "DU_LIEU_KHONG_HOP_LE";

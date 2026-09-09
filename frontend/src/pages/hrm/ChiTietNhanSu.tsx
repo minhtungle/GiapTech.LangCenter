@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, FileText, Pencil, Trash2, Upload } from 'lucide-react'
+import { ArrowLeft, Download, Eye, FileText, Pencil, Trash2, Upload } from 'lucide-react'
 import { api, layMaLoi } from '@/lib/api'
 import { Badge, Button, CanhBaoLoi, Card, CardContent, TrangTrong } from '@/components/ui'
+import { Modal } from '@/components/ui/Modal'
 import { useXacNhan } from '@/lib/xacNhan'
 import { useQuyen } from '@/lib/quyen'
 import type { NguoiDungDto } from '@/pages/quan-tri/NguoiDung'
@@ -26,6 +27,37 @@ type Tab = (typeof CAC_TAB)[number]['ma']
 const ngayVN = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('vi-VN') : '—')
 
 /**
+ * Định dạng cho phép — PHẢI khớp `LoaiTepHoSo.ChoPhep` ở backend (10/09/2026).
+ *
+ * Đây chỉ là **tiện lợi**, không phải bảo mật: `accept` của `<input type=file>` lọc hộp thoại
+ * chọn tệp và người dùng vẫn đổi được sang "All files". Chốt thật nằm ở handler — hai tầng này
+ * cố tình trùng nhau, và test backend canh tầng thật.
+ *
+ * Ghi cả đuôi lẫn MIME trong `accept`: một số hệ điều hành báo MIME rỗng hoặc sai cho tệp
+ * Office cũ (`.doc`, `.xls`), chỉ ghi MIME thì hộp thoại làm mờ đúng tệp cần chọn.
+ */
+const DINH_DANG_CHO_PHEP =
+  '.pdf,.doc,.docx,.xls,.xlsx,' +
+  'application/pdf,application/msword,' +
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document,' +
+  'application/vnd.ms-excel,' +
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+/** 20 MB — khớp `MinioLuuTruTep.KichThuocToiDa`. */
+const KICH_THUOC_TOI_DA = 20 * 1024 * 1024
+
+/**
+ * Trình duyệt chỉ render được PDF. Word/Excel thì **không** — mở trong iframe chỉ ra khung
+ * trắng hoặc bật hộp thoại tải về, nên UI phải biết trước để hiện nút "Tải về" thay vì mở modal
+ * xem rồi trống trơn.
+ */
+const xemDuocTrenTrinhDuyet = (loaiNoiDung: string) =>
+  loaiNoiDung.toLowerCase() === 'application/pdf'
+
+/** Suy từ DTO chứ không khai lại: thêm/đổi trường ở `NguoiDungDto` là tự động theo. */
+type TepHoSo = NguoiDungDto['tepHoSos'][number]
+
+/**
  * FR-03/FR-23 — view chi tiết hồ sơ nhân sự.
  *
  * Bấm một dòng ở màn Hồ sơ nhân sự thì mở view này (yêu cầu 09/09/2026). Chỉ ĐỌC, sửa qua modal
@@ -44,6 +76,7 @@ export default function ChiTietNhanSu() {
   const qc = useQueryClient()
   const { hoi, hop } = useXacNhan()
   const [maLoi, setMaLoi] = useState<string | null>(null)
+  const [dangXem, setDangXem] = useState<{ tep: TepHoSo; url: string } | null>(null)
 
   const tabQuery = sp.get('tab') as Tab | null
   const tab: Tab = tabQuery && CAC_TAB.some((x) => x.ma === tabQuery) ? tabQuery : 'thong-tin'
@@ -74,6 +107,65 @@ export default function ChiTietNhanSu() {
     onSuccess: () => { lamMoi(); setMaLoi(null) },
     onError: (e) => setMaLoi(layMaLoi(e)),
   })
+
+  /**
+   * Chọn tệp: kiểm phía client TRƯỚC khi gửi.
+   *
+   * Không phải để bảo mật (backend mới là chốt) mà để không bắt người dùng chờ tải xong 20 MB
+   * rồi mới bị từ chối — và để thông điệp chỉ đúng vào cái sai.
+   */
+  const chonTep = (f: File) => {
+    if (f.size === 0) return setMaLoi('TEP_RONG')
+    if (f.size > KICH_THUOC_TOI_DA) return setMaLoi('TEP_QUA_LON')
+
+    // `f.type` rỗng với vài tệp Office cũ trên Windows → lúc đó tin phần mở rộng và để
+    // backend phán quyết, thay vì chặn oan một tệp .doc hợp lệ.
+    const duoiHopLe = /\.(pdf|docx?|xlsx?)$/i.test(f.name)
+    if (f.type && !DINH_DANG_CHO_PHEP.includes(f.type.toLowerCase()) && !duoiHopLe)
+      return setMaLoi('LOAI_TEP_HO_SO_KHONG_HO_TRO')
+
+    taiTep.mutate(f)
+  }
+
+  /**
+   * Xem/tải tệp qua **blob**, không mở thẳng URL: endpoint cần header `Authorization`, mà
+   * `<a href>` và `<iframe src>` không gửi được nó (cùng lý do như `ChonTep.tsx` và `Anh.tsx`).
+   */
+  const moTep = async (tep: TepHoSo, taiVe: boolean) => {
+    try {
+      const res = await api.get(`/nhan-su/tep/${tep.id}`, {
+        params: taiVe ? { taiVe: true } : undefined,
+        responseType: 'blob',
+      })
+      const url = URL.createObjectURL(res.data as Blob)
+
+      if (taiVe) {
+        const a = document.createElement('a')
+        a.href = url
+        a.download = tep.tenGoc
+        a.click()
+        URL.revokeObjectURL(url)
+        return
+      }
+
+      // Xem online: giữ URL cho iframe dùng, thu hồi khi đóng modal (xem `dongXem`).
+      //
+      // Thanh công cụ của bộ đọc PDF hiện GUID của blob, không phải tên tệp — thử thêm
+      // `#tên-tệp` vào URL (10/09) KHÔNG có tác dụng, Chrome lấy tiêu đề từ chính blob chứ
+      // không từ fragment. Vì vậy tên gốc hiện ở TIÊU ĐỀ MODAL ngay phía trên khung xem.
+      setDangXem({ tep, url })
+      setMaLoi(null)
+    } catch (e) {
+      setMaLoi(layMaLoi(e))
+    }
+  }
+
+  // `revokeObjectURL` lúc đóng chứ không ngay sau khi gán: thu hồi sớm thì iframe mất nguồn
+  // và hiện khung trắng. Không thu hồi thì blob nằm trong bộ nhớ tới lúc rời trang.
+  const dongXem = () => {
+    if (dangXem) URL.revokeObjectURL(dangXem.url)
+    setDangXem(null)
+  }
 
   if (isLoading) return <TrangTrong thongDiep={t('chung.dangTai')} />
   if (isError || !u) return <TrangTrong thongDiep={t('loi.KHONG_TIM_THAY')} />
@@ -246,9 +338,10 @@ export default function ChiTietNhanSu() {
                   <input
                     type="file"
                     className="hidden"
+                    accept={DINH_DANG_CHO_PHEP}
                     onChange={(e) => {
                       const f = e.target.files?.[0]
-                      if (f) taiTep.mutate(f)
+                      if (f) chonTep(f)
                       // Reset để chọn lại CÙNG một tệp vẫn kích hoạt onChange.
                       e.target.value = ''
                     }}
@@ -260,6 +353,11 @@ export default function ChiTietNhanSu() {
                 </label>
               )}
             </div>
+
+            {/* Nói trước giới hạn thay vì để người dùng chọn xong mới bị từ chối. */}
+            {coQuyen('NhanSu', 'Sua') && (
+              <p className="text-xs text-muted-foreground">{t('nguoiDung.gioiHanTep')}</p>
+            )}
 
             {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
@@ -277,11 +375,37 @@ export default function ChiTietNhanSu() {
                     <span className="text-xs text-muted-foreground">
                       {(tep.kichThuoc / 1024).toFixed(0)} KB · {ngayVN(tep.ngayTao)}
                     </span>
-                    {coQuyen('NhanSu', 'Sua') && (
+
+                    {/*
+                      Chỉ hiện "Xem" cho loại trình duyệt render được. Word/Excel mà cũng cho
+                      bấm Xem thì modal mở ra trắng trơn — tệ hơn là không có nút.
+                    */}
+                    {xemDuocTrenTrinhDuyet(tep.loaiNoiDung) && (
                       <Button
                         size="sm"
                         variant="ghost"
                         className="ml-auto"
+                        title={t('chung.xem')}
+                        onClick={() => void moTep(tep, false)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    )}
+
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className={xemDuocTrenTrinhDuyet(tep.loaiNoiDung) ? '' : 'ml-auto'}
+                      title={t('chung.taiVe')}
+                      onClick={() => void moTep(tep, true)}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+
+                    {coQuyen('NhanSu', 'Sua') && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
                         onClick={() =>
                           hoi({
                             tieuDe: t('chung.xacNhanXoa'),
@@ -302,6 +426,35 @@ export default function ChiTietNhanSu() {
           </CardContent>
         </Card>
       )}
+
+      {/*
+        Xem tệp online. `rong="xl"` vì PDF khổ A4 trong khung hẹp thì chữ nhỏ tới mức phải zoom.
+
+        Nội dung là `<iframe src={blob:}>` — trình duyệt tự dùng bộ đọc PDF sẵn có, không cần
+        kéo thêm thư viện (pdf.js ~300 KB) cho một việc nó vốn làm được.
+      */}
+      <Modal
+        mo={!!dangXem}
+        onDong={dongXem}
+        tieuDe={dangXem?.tep.tenGoc ?? ''}
+        rong="xl"
+      >
+        {dangXem && (
+          <div className="grid gap-3">
+            <iframe
+              src={dangXem.url}
+              title={dangXem.tep.tenGoc}
+              className="h-[70vh] w-full rounded-md border border-border bg-muted"
+            />
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => void moTep(dangXem.tep, true)}>
+                <Download className="h-4 w-4" />
+                {t('chung.taiVe')}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {hop}
     </div>

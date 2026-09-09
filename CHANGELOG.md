@@ -8,6 +8,26 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — Xem tệp hồ sơ online + giới hạn định dạng, dung lượng (10/09/2026)
+
+- **Endpoint mới `GET /nhan-su/tep/{id}`** gác bằng `NhanSu.Xem` (không `Sua` — đọc hợp đồng
+  không phải hành vi sửa hồ sơ). `?taiVe=true` đổi `Content-Disposition` từ `inline` sang
+  `attachment`; một endpoint hai chế độ để không nhân đôi chỗ có thể quên gác.
+- **Chỉ nhận PDF · Word (doc/docx) · Excel (xls/xlsx)**, tối đa **20 MB** mỗi tệp.
+- Whitelist đặt ở **tầng Application** (`LoaiTepHoSo`), **không** siết `MinioLuuTruTep`: kho dùng
+  chung với học liệu LMS, mà lớp ngoại ngữ cần `mp3`, ảnh bài nộp và `pptx` — siết danh sách
+  chung sẽ hỏng nghiệp vụ đang chạy để thoả một yêu cầu của HRM.
+- Kiểm loại **trước** khi stream vào kho: tệp sai định dạng không nằm trong MinIO dù chỉ một lúc.
+- Mã lỗi riêng **`LOAI_TEP_HO_SO_KHONG_HO_TRO`** — không dùng lại mã của kho, vì hai thông điệp
+  liệt kê hai danh sách khác nhau.
+- **PDF xem trong modal**, Word/Excel chỉ có nút Tải về (trình duyệt không render được, cho bấm
+  Xem thì modal trắng trơn). Nhúng qua Microsoft/Google viewer bị loại: phải public URL tệp ra
+  Internet, vi phạm quy tắc #6 và làm lộ hợp đồng/CCCD.
+- Frontend tải **blob** rồi `createObjectURL` — endpoint cần header `Authorization` mà
+  `<iframe src>` không gửi được.
+- `inline` an toàn được **nhờ whitelist hẹp** (không có SVG/HTML), cộng
+  `X-Content-Type-Options: nosniff`. Nới whitelist về sau phải xem lại chỗ này.
+
 ### Changed — View chi tiết hồ sơ nhân sự chia hai tab (10/09/2026)
 
 - **Thông tin chung** và **Tệp hồ sơ** thành hai tab thay vì hai thẻ xếp dọc. Thẻ tệp đẩy phần
