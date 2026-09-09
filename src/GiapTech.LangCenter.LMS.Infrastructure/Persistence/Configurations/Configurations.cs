@@ -45,6 +45,51 @@ public class NguoiDungConfig : IEntityTypeConfiguration<NguoiDung>
 
         b.HasOne(x => x.Tenant).WithMany(t => t.NguoiDungs)
             .HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
+
+        // Đếm sĩ số từng phòng ban và liệt kê người trong phòng đều chạy trên cột này.
+        b.HasIndex(x => x.PhongBanId);
+
+        // SetNull: xoá phòng ban KHÔNG được cuốn người theo. Handler vẫn chặn xoá phòng còn
+        // người (`PHONG_BAN_CON_NGUOI`) — SetNull ở đây là lưới an toàn cho đường xoá khác.
+        b.HasOne(x => x.PhongBan).WithMany(p => p.NhanSus)
+            .HasForeignKey(x => x.PhongBanId).OnDelete(DeleteBehavior.SetNull);
+    }
+}
+
+/// <summary>Cơ cấu tổ chức dạng cây (FR-22).</summary>
+public class PhongBanConfig : IEntityTypeConfiguration<PhongBan>
+{
+    public void Configure(EntityTypeBuilder<PhongBan> b)
+    {
+        b.ToTable("PHONG_BAN");
+        b.Property(x => x.Ten).HasMaxLength(200).IsRequired();
+        b.Property(x => x.MoTa).HasMaxLength(1000);
+
+        b.HasIndex(x => x.TenantId);
+        // Dựng cây: truy vấn "các con của phòng X" chạy trên cột này.
+        b.HasIndex(x => x.PhongBanChaId);
+
+        // Trùng tên trong CÙNG MỘT CHA thì người dùng chọn sai phòng (quy tắc #8). Khác cha thì
+        // cho trùng: "Bộ môn Anh" dưới hai chi nhánh là hợp lệ.
+        //
+        // Lưu ý PostgreSQL: NULL không bằng NULL, nên index này KHÔNG chặn hai phòng gốc trùng
+        // tên (`phong_ban_cha_id` cùng NULL). Đó là lý do có thêm index partial bên dưới.
+        b.HasIndex(x => new { x.TenantId, x.PhongBanChaId, x.Ten }).IsUnique();
+
+        // Phòng ban GỐC (cha = NULL) — partial unique index cho đúng trường hợp NULL ở trên.
+        b.HasIndex(x => new { x.TenantId, x.Ten })
+            .IsUnique()
+            .HasFilter("phong_ban_cha_id IS NULL")
+            .HasDatabaseName("ux_phong_ban_goc_ten");
+
+        // Restrict: xoá phòng cha còn phòng con phải bị chặn, buộc người dùng dọn cây từ dưới
+        // lên. Cascade sẽ âm thầm xoá cả nhánh — mất cả cơ cấu vì một cú bấm.
+        b.HasOne(x => x.PhongBanCha).WithMany(x => x.PhongBanCons)
+            .HasForeignKey(x => x.PhongBanChaId).OnDelete(DeleteBehavior.Restrict);
+
+        // SetNull: người quản lý nghỉ việc thì phòng ban vẫn còn, chỉ trống chỗ quản lý.
+        b.HasOne(x => x.NguoiQuanLy).WithMany()
+            .HasForeignKey(x => x.NguoiQuanLyId).OnDelete(DeleteBehavior.SetNull);
     }
 }
 
@@ -117,7 +162,6 @@ public class HoSoNhanVienConfig : IEntityTypeConfiguration<HoSoNhanVien>
     {
         b.ToTable("HO_SO_NHAN_VIEN");
         b.Property(x => x.ChucVu).HasMaxLength(200);
-        b.Property(x => x.PhongBan).HasMaxLength(200);
 
         b.HasIndex(x => x.NguoiDungId).IsUnique();
         b.HasIndex(x => x.TenantId);

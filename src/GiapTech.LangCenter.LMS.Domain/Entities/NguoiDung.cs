@@ -41,6 +41,29 @@ public class NguoiDung : TenantEntity
     /// </summary>
     public TrangThaiNhanSu TrangThaiNhanSu { get; set; } = TrangThaiNhanSu.DangLamViec;
 
+    /// <summary>
+    /// Phòng ban đang thuộc (FR-22) — null = chưa xếp vào cơ cấu.
+    ///
+    /// Đặt ở ĐÂY chứ không ở `HO_SO_NHAN_VIEN` — ba lý do, kiểm bằng dữ liệu thật 09/09/2026:
+    ///
+    /// 1. **Phòng ban không thuộc riêng vai trò nào.** "Bộ môn Anh" gồm giáo viên là cách dùng
+    ///    cơ cấu tự nhiên nhất của trung tâm ngoại ngữ. `HO_SO_NHAN_VIEN` là hồ sơ của vai trò
+    ///    `NhanVien`, còn giáo viên dùng `HO_SO_GIAO_VIEN` — để cột ở đó là buộc form gửi hai
+    ///    khối hồ sơ cùng lúc, mà `GhiHoSo` đã ghi rõ làm vậy sẽ ghi rỗng đè lên hồ sơ vai trò
+    ///    còn lại (quy tắc #1).
+    /// 2. **Hồ sơ vai trò sống lâu hơn vai trò.** Đổi vai trò không xoá hồ sơ cũ, nên trong DB
+    ///    thật đã có một `TroGiang` còn giữ `HO_SO_NHAN_VIEN` từ hồi làm nhân viên. Nếu phòng
+    ///    ban nằm ở đó thì không trả lời được "phòng ban HIỆN TẠI của người này là gì".
+    /// 3. Cột `HO_SO_NHAN_VIEN.phong_ban` (chuỗi) **chưa ai dùng** — NULL cả 34 hàng, nên bỏ nó
+    ///    không mất dữ liệu. Khác `chuc_vu`: cột đó đang có 30 hàng dữ liệu thật, FR-24 phải
+    ///    chuyển đổi cẩn thận chứ không xoá được.
+    ///
+    /// **Một người một phòng ban** (chốt 09/09/2026): đủ cho quy mô trung tâm, và sĩ số phòng
+    /// đếm không bị trùng người. Cần nhiều phòng thì thêm bảng trung gian sau, không phá cột này.
+    /// </summary>
+    public Guid? PhongBanId { get; set; }
+    public PhongBan? PhongBan { get; set; }
+
     public Tenant Tenant { get; set; } = null!;
 
     /// <summary>Tài khoản đăng nhập của người này — null nếu họ không cần đăng nhập.</summary>

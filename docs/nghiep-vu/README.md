@@ -16,6 +16,7 @@ một API, một database, một lần đăng nhập.
 | Hệ thống | Module | Trạng thái |
 |---|---|---|
 | **HRM** | Hồ sơ nhân sự (nhân viên · giáo viên · trợ giảng) | ✅ Chạy |
+| | Cơ cấu tổ chức · hồ sơ mở rộng · chức vụ (FR-22 → FR-24) | 🟡 Đang làm |
 | | Nhân viên kinh doanh · Giáo viên (góc nhìn nhân sự) | ⬜ Khung trống |
 | **CRM** | Khách hàng · Doanh thu · Khoá học · Sản phẩm (FR-17 → FR-20) | ✅ Chạy |
 | **CRM → LMS** | Yêu cầu xếp lớp (FR-21) | ✅ Chạy |
@@ -70,6 +71,9 @@ Hai điều dễ nhầm:
 | FR-19 | Khoá học — danh mục khoá bán ra (CRM) | [CRM](./crm.md) |
 | FR-20 | Sản phẩm khác — sách, học cụ (CRM) | [CRM](./crm.md) |
 | FR-21 | Yêu cầu xếp lớp — cầu nối CRM → LMS | [CRM](./crm.md#fr-21--yêu-cầu-xếp-lớp-crm--lms) |
+| FR-22 | Cơ cấu tổ chức (HRM) | [HRM](./hrm.md#fr-22--cơ-cấu-tổ-chức) |
+| FR-23 | Hồ sơ nhân sự mở rộng (HRM) | [HRM](./hrm.md#fr-23--hồ-sơ-nhân-sự-mở-rộng) |
+| FR-24 | Danh mục chức vụ (HRM) | [HRM](./hrm.md#fr-24--danh-mục-chức-vụ) |
 
 ## Quy tắc nghiệp vụ xuyên suốt
 

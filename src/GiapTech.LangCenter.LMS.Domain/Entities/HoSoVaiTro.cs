@@ -46,5 +46,10 @@ public class HoSoNhanVien : TenantEntity
     public NguoiDung NguoiDung { get; set; } = null!;
 
     public string? ChucVu { get; set; }
-    public string? PhongBan { get; set; }
+
+    // `PhongBan` (chuỗi tự do) bỏ 09/09/2026 — thay bằng `NGUOI_DUNG.phong_ban_id` → `PHONG_BAN`
+    // (FR-22). Chuỗi thì "Phòng Đào tạo" và "phòng đào tạo" là hai phòng khác nhau, và không cây
+    // nào dựng được từ đó. An toàn khi bỏ: NULL cả 44 hàng, chưa ai dùng.
+    //
+    // KHÁC `ChucVu`: cột đó đang có ~30 hàng dữ liệu thật, FR-24 phải chuyển đổi chứ không xoá.
 }

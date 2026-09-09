@@ -3,17 +3,20 @@ using System;
 using GiapTech.LangCenter.LMS.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace GiapTech.LangCenter.LMS.Infrastructure.Migrations
+namespace GiapTech.LangCenter.LMS.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260909131738_ThemPhongBan")]
+    partial class ThemPhongBan
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -691,6 +694,11 @@ namespace GiapTech.LangCenter.LMS.Infrastructure.Migrations
                     b.Property<Guid>("NguoiDungId")
                         .HasColumnType("uuid")
                         .HasColumnName("nguoi_dung_id");
+
+                    b.Property<string>("PhongBan")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("phong_ban");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")

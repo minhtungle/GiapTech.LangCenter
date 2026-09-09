@@ -5,7 +5,7 @@
 ## Tiến độ tổng
 
 ```
-Nghiệp vụ  ██████████████░░  19/21 FR chạy đầu-cuối (còn FR-15 Thống kê)
+Nghiệp vụ  █████████████░░░  20/24 FR chạy đầu-cuối (FR-15 Thống kê, FR-23/24 HRM)
 Ba hệ thống ████████████░░░░  CRM xong nghiệp vụ; HRM còn khung trống
 Hạ tầng    ████████████░░░░  CI/CD sẵn sàng, chờ VPS thật
 Còn lại    ██████░░░░░░░░░░  Dashboard + nghiệp vụ HRM + 15 nợ kỹ thuật
@@ -36,6 +36,9 @@ Còn lại    ██████░░░░░░░░░░  Dashboard + nghi
 | FR-19 | Khoá học (CRM) | ✅ | ✅ | Danh mục khoá bán ra. Khác `LOP_HOC` (lần mở cụ thể). Đã bán thì ngừng bán, không xoá |
 | FR-20 | Sản phẩm khác (CRM) | ✅ | ✅ | Sách, học cụ; có **số lượng**. Đơn hàng dùng **2 FK nullable loại trừ** + `CHECK`. Mua hàng từ tab chăm sóc ghi **cả đơn + lịch sử** trong một transaction |
 | FR-21 | Yêu cầu xếp lớp (CRM → LMS) | ✅ | ✅ | Bán khoá → gửi yêu cầu (kèm **ghi chú** + người gửi) → duyệt vào lớp **2 cách**, hoặc **từ chối kèm lý do bắt buộc**. Một đơn gửi **nhiều lần**, lịch sử mua hàng hiện số lần + trạng thái từng lần. **Học phí lấy từ đơn CRM**; hồ sơ học viên tự tạo từ dữ liệu khách |
+| FR-22 | Cơ cấu tổ chức (HRM) | ✅ | 🟡 | Cây `PHONG_BAN` tự tham chiếu + người quản lý. **Mọi vai trò nhân sự** xếp được vào phòng (giáo viên cũng là nhân viên). Hai cách xếp; chống chu trình ở handler. **Chưa có màn cây** — API + form hồ sơ đã chạy |
+| FR-23 | Hồ sơ nhân sự mở rộng (HRM) | ⬜ | ⬜ | CCCD, số tài khoản, liên kết MXH (nhiều), tệp đính kèm |
+| FR-24 | Danh mục chức vụ (HRM) | ⬜ | ⬜ | Bảng `CHUC_VU` thay cột chuỗi — cột cũ có 39 hàng dữ liệu thật, phải chuyển đổi |
 
 Ngoài bảng: **Bài kiểm tra** (`BAI_KIEM_TRA`, `BAI_LAM`) đã có schema và cách ly tenant, nhưng
 **chưa có API và UI** — xem nợ N1.
@@ -125,7 +128,7 @@ VPS → domain + HTTPS → backup. Xem
 
 ## Kiểm chứng hiện tại
 
-- **361 test backend xanh** (61 unit + 300 integration), build 0 warning.
+- **380 test backend xanh** (61 unit + 319 integration), build 0 warning.
 - Frontend `tsc -b` + `vite build` sạch, `oxlint` không lỗi.
 - **PostgreSQL + MinIO thật**: 20 bảng, migration áp sạch, luồng đầu-cuối chạy tay đủ từ tạo
   trung tâm tới thu học phí.

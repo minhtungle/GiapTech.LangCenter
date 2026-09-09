@@ -8,6 +8,43 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — FR-22 Cơ cấu tổ chức: cây phòng ban (09/09/2026)
+
+- Bảng `PHONG_BAN` tự tham chiếu (`phong_ban_cha_id`), có `nguoi_quan_ly_id`, `thu_tu`, `mo_ta`.
+  API: `GET /phong-ban` trả **cây lồng nhau** kèm sĩ số riêng và sĩ số cả nhánh; thêm/sửa/xoá;
+  `POST /phong-ban/xep-nhan-su` xếp nhiều người một lần.
+- **Hai cách xếp nhân sự**: (1) chọn phòng ban ngay trên form hồ sơ, (2) vào cây chọn người đã
+  có. Cả hai ghi cùng một cột `NGUOI_DUNG.phong_ban_id`.
+- **Mọi vai trò nhân sự xếp được vào phòng ban** — nhân viên · giáo viên · trợ giảng (chốt:
+  *giáo viên cũng là nhân viên*). Vì thế cột nằm trên `NGUOI_DUNG` chứ không `HO_SO_NHAN_VIEN`:
+  bảng đó là hồ sơ của riêng vai trò `NhanVien`, và trong DB thật đã có một trợ giảng còn giữ
+  `HO_SO_NHAN_VIEN` từ hồi làm nhân viên — phòng ban nằm ở đó thì không trả lời được "phòng ban
+  hiện tại của người này".
+- **Học viên không vào cơ cấu**, chặn ở **cả hai đường vào** và lọc cả ở tầng đọc (sĩ số phòng);
+  đổi vai trò sang học viên thì tự rời cơ cấu.
+- **Chống chu trình** ở handler (không ép được bằng constraint — cần recursive CTE): gán một
+  phòng làm con của hậu duệ nó bị chặn (`PHONG_BAN_CHU_TRINH`), nhưng chuyển nhánh sang cha khác
+  vẫn được.
+- Hai unique index (quy tắc #8): `(tenant_id, phong_ban_cha_id, ten)` và **partial**
+  `(tenant_id, ten) WHERE phong_ban_cha_id IS NULL`. Cái thứ hai là bắt buộc: PostgreSQL coi
+  `NULL != NULL` nên index đầu không chặn hai phòng **gốc** trùng tên — đã thử trực tiếp trên DB,
+  hai dòng `(1, NULL, 'X')` đều insert được.
+- `nguoi_quan_ly_id` là **thông tin tổ chức, KHÔNG phải quyền** — quyền vẫn đọc từ
+  `QUYEN_CHUC_NANG` (quy tắc #9). Chức năng mới `ChucNang.PhongBan` (HRM).
+- Lệnh cập nhật người dùng có cờ **`DoiPhongBan`** riêng: `Guid?` không có hai giá trị trống để
+  phân biệt "không gửi" với "gỡ ra", nên thiếu cờ này thì mọi form không có ô phòng ban sẽ âm
+  thầm gỡ người khỏi cơ cấu (quy tắc #1 — đúng lỗi 16/08 với ô địa chỉ).
+- 17 test mới (`PhongBanTests`) + 2 dòng canh ràng buộc trong `DongThoiTests`. Đã kiểm bằng đột
+  biến mã: bỏ chống chu trình → 2 test đỏ; bỏ cờ `DoiPhongBan` → 1 test đỏ.
+
+### Removed — Cột chuỗi `HO_SO_NHAN_VIEN.phong_ban` (09/09/2026)
+
+- Thay bằng `NGUOI_DUNG.phong_ban_id` → `PHONG_BAN`. Chuỗi tự do thì "Phòng Đào tạo" và "phòng
+  đào tạo" là hai phòng khác nhau, và không cây nào dựng được từ đó.
+- **An toàn khi bỏ: NULL cả 44 hàng** (chưa ai dùng) — đã đếm trước khi xoá. Khác `chuc_vu`: cột
+  đó đang có **39 hàng dữ liệu thật**, nên FR-24 phải sinh danh mục từ giá trị đang có rồi nối
+  lại, không xoá được. Đã kiểm sau migration: `chuc_vu` còn đủ 39 hàng.
+
 ### Fixed — Bộ chuyển hệ thống không chuyển được từ trang thuộc hệ thống khác (09/09/2026)
 
 - Đứng ở `/crm/khach-hang` bấm HRM thì **không có gì xảy ra**. Nguyên nhân: `doi()` chỉ ghi

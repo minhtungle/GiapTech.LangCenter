@@ -57,6 +57,18 @@ public static class ChucNang
     /// </summary>
     public const string GiaoVienNhanSu = nameof(GiaoVienNhanSu);
 
+    /// <summary>
+    /// Cơ cấu tổ chức — cây phòng ban, người quản lý, xếp nhân sự vào phòng (FR-22).
+    ///
+    /// Tách khỏi <see cref="GiaoVienNhanSu"/>: sửa cơ cấu tổ chức là việc của người quản trị
+    /// hoặc trưởng phòng nhân sự, còn xem/sửa hồ sơ một người là việc thường ngày của người
+    /// trực nhân sự. Ma trận khác nhau nên không gộp.
+    ///
+    /// **Không gác quyền theo `PHONG_BAN.nguoi_quan_ly_id`** — đó là thông tin tổ chức. Quyền
+    /// vẫn đọc từ `QUYEN_CHUC_NANG` (quy tắc #9).
+    /// </summary>
+    public const string PhongBan = nameof(PhongBan);
+
     // ---------- Khách hàng (CRM) ----------
 
     /// <summary>
@@ -146,7 +158,7 @@ public static class ChucNang
     public static readonly IReadOnlyList<string> TatCa =
     [
         TaiKhoan, PhanQuyen, ThietLapChung, Anh, DoiMatKhauNguoiKhac,
-        NhanVienKinhDoanh, GiaoVienNhanSu, DoanhThu, KhachHang, KhoaHoc, SanPham,
+        NhanVienKinhDoanh, GiaoVienNhanSu, PhongBan, DoanhThu, KhachHang, KhoaHoc, SanPham,
         LopHoc, BuoiHoc, DiemDanh, BaiTap, BaiNopBaiTap, BaiKiemTra, BaiLamKiemTra,
         TaiLieu, HocPhi, ThongKe, LopHocToanTrungTam, NhatKyHeThong
     ];
@@ -165,6 +177,7 @@ public static class ChucNang
     {
         [NhanVienKinhDoanh] = HeThong.Hrm,
         [GiaoVienNhanSu] = HeThong.Hrm,
+        [PhongBan] = HeThong.Hrm,
 
         [DoanhThu] = HeThong.Crm,
         [KhachHang] = HeThong.Crm,

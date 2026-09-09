@@ -61,6 +61,9 @@ public class DongThoiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [InlineData("SanPham", new[] { "TenantId", "Ten" })]
     // Một đơn gửi được nhiều lần yêu cầu xếp lớp, nhưng mỗi lần đúng một số thứ tự.
     [InlineData("YeuCauXepLop", new[] { "DangKyId", "LanGui" })]
+    // --- HRM (FR-22) ---
+    // Trùng tên trong CÙNG phòng ban cha thì người dùng chọn sai phòng.
+    [InlineData("PhongBan", new[] { "TenantId", "PhongBanChaId", "Ten" })]
     public void Rang_buoc_chi_mot_phai_co_UNIQUE_o_tang_DB(string tenEntity, string[] cot)
     {
         using var scope = factory.Services.CreateScope();
@@ -112,6 +115,39 @@ public class DongThoiTests(ApiFactory factory) : IClassFixture<ApiFactory>
             "Index này PHẢI có filter theo trạng thái đang chờ. Không filter thì đơn bị từ chối "
             + "không gửi lại được — trái yêu cầu 09/09/2026 (giữ lịch sử nhiều lần gửi).");
         Assert.Contains("trang_thai", filter!);
+    }
+
+    /// <summary>
+    /// FR-22: hai phòng ban GỐC không được trùng tên — cần *partial* unique index.
+    ///
+    /// `UNIQUE(tenant, cha, ten)` KHÔNG chặn được ca này: PostgreSQL coi `NULL != NULL` nên hai
+    /// phòng gốc (`phong_ban_cha_id` cùng NULL) lọt qua. Đã thử trực tiếp trên DB 09/09/2026:
+    /// hai dòng `(1, NULL, 'X')` đều insert được.
+    /// </summary>
+    [Fact]
+    public void Hai_phong_ban_GOC_trung_ten_phai_bi_chan()
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider
+            .GetRequiredService<Infrastructure.Persistence.AppDbContext>();
+
+        var e = db.Model.GetEntityTypes().Single(x => x.ClrType.Name == "PhongBan");
+
+        var index = e.GetIndexes().FirstOrDefault(i =>
+            i.IsUnique
+            && i.Properties.Count == 2
+            && i.Properties.Any(p => p.Name == "TenantId")
+            && i.Properties.Any(p => p.Name == "Ten"));
+
+        Assert.True(index is not null,
+            "PHONG_BAN thiếu unique index (tenant_id, ten) cho phòng GỐC. "
+            + "UNIQUE(tenant, cha, ten) không đủ: NULL != NULL trong PostgreSQL.");
+
+        var filter = index!.GetFilter();
+        Assert.False(string.IsNullOrWhiteSpace(filter),
+            "Index này PHẢI có filter `phong_ban_cha_id IS NULL` — không filter thì nó chặn cả "
+            + "phòng con trùng tên khác cha, mà 'Bộ môn Anh' dưới hai chi nhánh là hợp lệ.");
+        Assert.Contains("phong_ban_cha_id", filter!);
     }
 
     /// <summary>

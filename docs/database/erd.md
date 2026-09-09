@@ -1,6 +1,6 @@
 # ERD — Mô hình dữ liệu
 
-**33 bảng**, PostgreSQL. Nội dung dưới đây khớp với schema thật (kiểm bằng
+**34 bảng**, PostgreSQL. Nội dung dưới đây khớp với schema thật (kiểm bằng
 `information_schema` sau khi áp toàn bộ migration), không phải bản thiết kế trên giấy.
 
 ## Nguyên tắc bắt buộc
@@ -77,6 +77,9 @@ erDiagram
     KHOA_HOC ||--o{ DANG_KY_KHOA_HOC : "được đăng ký"
     SAN_PHAM ||--o{ DANG_KY_KHOA_HOC : "được mua"
     NGUOI_DUNG |o--o| KHACH_HANG : "cùng một người (0..1)"
+    PHONG_BAN ||--o{ NGUOI_DUNG : "nhân sự thuộc phòng"
+    PHONG_BAN |o--o{ PHONG_BAN : "phòng ban cấp dưới"
+    NGUOI_DUNG |o--o{ PHONG_BAN : "quản lý phòng"
     DANG_KY_KHOA_HOC ||--o{ YEU_CAU_XEP_LOP : "gửi yêu cầu xếp lớp (nhiều lần)"
     NGUOI_DUNG ||--o{ YEU_CAU_XEP_LOP : "chờ xếp lớp"
     LOP_HOC |o--o{ YEU_CAU_XEP_LOP : "được xếp vào"
@@ -84,7 +87,7 @@ erDiagram
 
 ## Chi tiết bảng
 
-### Nhóm nền tảng (12 bảng)
+### Nhóm nền tảng (13 bảng)
 
 **Người và tài khoản là hai bảng riêng** (tách 07/09/2026). `NGUOI_DUNG` là bảng "con người",
 `TAI_KHOAN` là cách họ đăng nhập — xem [FR-03](../nghiep-vu/quan-tri-he-thong.md#fr-03--người-dùng-hồ-sơ-con-người).
@@ -92,11 +95,12 @@ erDiagram
 | Bảng | Vai trò | Ghi chú |
 |---|---|---|
 | `TENANT` | Trung tâm | `ma_trung_tam` 7 ký tự, duy nhất **toàn hệ thống**. `mui_gio` (mặc định `Asia/Ho_Chi_Minh`), `so_ngay_canh_bao_no_hoc_phi` (mặc định 14) |
-| `NGUOI_DUNG` | **Con người** | `ho_ten` bắt buộc, `loai_nguoi_dung` **chỉ để lọc và chọn hồ sơ**, không dùng phân quyền. `trang_thai_nhan_su` = còn thuộc trung tâm không. **12 khoá ngoại nghiệp vụ trỏ vào đây** |
+| `NGUOI_DUNG` | **Con người** | `ho_ten` bắt buộc, `loai_nguoi_dung` **chỉ để lọc và chọn hồ sơ**, không dùng phân quyền. `trang_thai_nhan_su` = còn thuộc trung tâm không. `phong_ban_id` (FR-22) đặt ở đây chứ không ở `HO_SO_NHAN_VIEN` — **mọi vai trò nhân sự** xếp được vào phòng ban, kể cả giáo viên. **12 khoá ngoại nghiệp vụ trỏ vào đây** |
 | `TAI_KHOAN` | **Đăng nhập** | `username`, `password_hash`, `phai_doi_mat_khau`, `trang_thai` = còn đăng nhập được không. `nguoi_dung_id` nullable (tài khoản kỹ thuật) |
 | `HO_SO_GIAO_VIEN` | Hồ sơ người dạy | Bằng cấp, chuyên môn, ngày vào làm. **Trợ giảng dùng chung** |
 | `HO_SO_HOC_VIEN` | Hồ sơ người học | Trường/lớp, tên và SĐT phụ huynh — trung tâm dạy trẻ em cần gọi được cho phụ huynh |
-| `HO_SO_NHAN_VIEN` | Hồ sơ vận hành | Chức vụ, phòng ban |
+| `HO_SO_NHAN_VIEN` | Hồ sơ vận hành | Chức vụ (`phong_ban` chuỗi cũ **đã bỏ** — xem `PHONG_BAN`) |
+| `PHONG_BAN` | **Cơ cấu tổ chức** (FR-22) | Cây tự tham chiếu `phong_ban_cha_id` (null = gốc), `nguoi_quan_ly_id`, `thu_tu` (sắp theo tên thì "Kế toán" luôn đứng trước "Đào tạo"). Chống chu trình làm ở **handler** — không ép được bằng constraint (cần recursive CTE). **`nguoi_quan_ly_id` là THÔNG TIN tổ chức, KHÔNG phải quyền** |
 | `QUYEN` | Nhóm quyền | Seeder tạo sẵn 4 nhóm: Quản trị viên / Giáo viên / Trợ giảng / Học viên |
 | `QUYEN_CHUC_NANG` | Chi tiết quyền | `(quyen_id, ten_chuc_nang, hanh_dong)` — nguồn của phân quyền động |
 | `NGUOIDUNG_QUYEN` | Gán nhóm quyền | Nhiều–nhiều, gán cho **TÀI KHOẢN** (`tai_khoan_id`) chứ không cho người |
@@ -176,6 +180,8 @@ không phân công được họ vào lớp cũ nữa.
 | `UNIQUE(tenant_id, so_dien_thoai)` **partial** | `KHACH_HANG` | Chặn hai người bán nhập cùng một khách. Lọc `IS NOT NULL AND <> ''` — khách chỉ để lại Facebook thì không có số, UNIQUE thường sẽ chặn oan người thứ hai |
 | `UNIQUE(tenant_id, ten)` | `KHOA_HOC` | Hai khoá cùng tên thì người bán chọn sai |
 | `UNIQUE(tenant_id, ten)` | `SAN_PHAM` | Cùng lý do |
+| `UNIQUE(tenant_id, phong_ban_cha_id, ten)` | `PHONG_BAN` | Trùng tên trong CÙNG cha thì người dùng chọn sai phòng. Khác cha thì cho trùng: "Bộ môn Anh" dưới hai chi nhánh là hợp lệ |
+| `UNIQUE(tenant_id, ten) WHERE phong_ban_cha_id IS NULL` | `PHONG_BAN` | **Partial** index cho phòng GỐC. Index trên không chặn được vì PostgreSQL coi `NULL != NULL` — đã thử trực tiếp: hai dòng `(1, NULL, 'X')` đều insert được |
 | `UNIQUE(dang_ky_id, lan_gui)` | `YEU_CAU_XEP_LOP` | Mỗi lần gửi một số thứ tự. Hai request song song cùng đọc `MAX(lan_gui)` rồi cùng ghi "lần 2" |
 | `UNIQUE(dang_ky_id) WHERE trang_thai = 0` | `YEU_CAU_XEP_LOP` | **Partial** index: chỉ MỘT lần đang chờ trên mỗi đơn. Không filter thì đơn bị từ chối không gửi lại được; không index thì danh sách chờ có hai dòng cùng học viên |
 | `CHECK` đúng một mặt hàng | `DANG_KY_KHOA_HOC` | `(khoa_hoc_id NOT NULL AND san_pham_id NULL) OR (ngược lại)` — đơn không có mặt hàng, hoặc có cả hai, là dữ liệu mà mọi báo cáo phải tự đoán cách xử lý |

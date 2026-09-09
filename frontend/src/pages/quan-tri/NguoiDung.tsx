@@ -13,6 +13,22 @@ import { PhanTrang } from '@/components/ui/PhanTrang'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 
+/** FR-22 — một node của cây cơ cấu tổ chức. */
+export interface PhongBanNode {
+  id: string
+  ten: string
+  phongBanChaId: string | null
+  nguoiQuanLyId: string | null
+  tenNguoiQuanLy: string | null
+  moTa: string | null
+  thuTu: number
+  /** Số nhân sự thuộc CHÍNH phòng này, không gồm phòng con. */
+  soNhanSu: number
+  /** Số nhân sự cả nhánh (phòng này + mọi cấp dưới). */
+  soNhanSuCaNhanh: number
+  phongBanCons: PhongBanNode[]
+}
+
 export type LoaiNguoiDung = 'NhanVien' | 'GiaoVien' | 'TroGiang' | 'HocVien'
 export type TrangThaiNhanSu = 'DangLamViec' | 'DaNghi'
 
@@ -29,7 +45,6 @@ interface HoSoHocVien {
 }
 interface HoSoNhanVien {
   chucVu: string | null
-  phongBan: string | null
 }
 
 export interface NguoiDungDto {
@@ -45,6 +60,9 @@ export interface NguoiDungDto {
   hoSoGiaoVien: HoSoGiaoVien | null
   hoSoHocVien: HoSoHocVien | null
   hoSoNhanVien: HoSoNhanVien | null
+  /** FR-22 — null = chưa xếp vào cơ cấu. */
+  phongBanId: string | null
+  tenPhongBan: string | null
   username: string | null
   trangThaiTaiKhoan: 'HoatDong' | 'VoHieuHoa' | null
 }
@@ -107,6 +125,8 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
   const [buocDoiMk, setBuocDoiMk] = useState(true)
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
+  /** Phòng ban đang chọn trên form (FR-22) — null = chưa xếp vào cơ cấu. */
+  const [phongBan, setPhongBan] = useState<string | null>(null)
 
   const { data: kq = trangRong<NguoiDungDto>(), isLoading } = useQuery({
     queryKey: [phamVi.duong, timKiem, locVaiTro, locNhanSu, trang, soDong],
@@ -126,6 +146,35 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
     queryKey: ['quyen'],
     queryFn: async () => (await api.get<QuyenNgan[]>('/quyen')).data,
   })
+
+  /**
+   * Cây phòng ban, làm phẳng để đưa vào select (FR-22).
+   *
+   * Nhãn mang cả đường dẫn cha ("Ban giám đốc / Đào tạo / Bộ môn Anh") vì tên lá hay trùng nhau
+   * giữa các nhánh — "Bộ môn Anh" dưới hai chi nhánh là hợp lệ, hiện tên trần thì không phân
+   * biệt được.
+   *
+   * Không tải khi form đóng: người chỉ xem danh sách không cần thêm một request.
+   */
+  const { data: cayPhongBan = [] } = useQuery({
+    queryKey: ['phong-ban'],
+    queryFn: async () => (await api.get<PhongBanNode[]>('/phong-ban')).data,
+    enabled: moForm,
+  })
+
+  const phongBanPhang = (() => {
+    const ra: { giaTri: string; nhan: string }[] = []
+    const di = (ns: PhongBanNode[], duong: string[]) => {
+      for (const n of ns) {
+        const duongMoi = [...duong, n.ten]
+        ra.push({ giaTri: n.id, nhan: duongMoi.join(' / ') })
+        di(n.phongBanCons, duongMoi)
+      }
+    }
+    di(cayPhongBan, [])
+    return ra
+  })()
+
 
   /** Đổi người dùng thì danh sách chọn giáo viên/học viên ở màn Lớp học cũng phải mới. */
   const lamMoi = () => {
@@ -177,12 +226,18 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
             : null,
         hoSoNhanVien:
           loai === 'NhanVien'
-            ? { chucVu: s('chucVu'), phongBan: s('phongBan') }
+            ? { chucVu: s('chucVu') }
             : null,
+        // Học viên không vào cơ cấu; các vai trò nhân sự thì gửi phòng ban đang chọn.
+        phongBanId: loai === 'HocVien' ? null : phongBan,
       }
 
       if (dangSua) {
         than.trangThaiNhanSu = nhanSu
+        // Cờ bắt buộc khi SỬA: `Guid?` không phân biệt "không gửi" với "gỡ ra", nên backend chỉ
+        // ghi phòng ban khi client nói rõ là muốn đổi. Form này LUÔN có ô phòng ban (trừ học
+        // viên) nên luôn gửi true.
+        than.doiPhongBan = true
         await api.put(`${phamVi.duong}/${dangSua.id}`, { ...than, id: dangSua.id })
       } else {
         if (taoTaiKhoan) {
@@ -212,6 +267,7 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
   const moSua = (u: NguoiDungDto) => {
     setDangSua(u)
     setLoai(u.loaiNguoiDung)
+    setPhongBan(u.phongBanId ?? null)
     setNhanSu(u.trangThaiNhanSu)
     setMaLoi(null)
     setMoForm(true)
@@ -546,23 +602,36 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
             )}
 
             {loai === 'NhanVien' && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="chucVu">{t('nguoiDung.chucVu')}</Label>
-                  <Input
-                    id="chucVu"
-                    name="chucVu"
-                    defaultValue={dangSua?.hoSoNhanVien?.chucVu ?? ''}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="phongBan">{t('nguoiDung.phongBan')}</Label>
-                  <Input
-                    id="phongBan"
-                    name="phongBan"
-                    defaultValue={dangSua?.hoSoNhanVien?.phongBan ?? ''}
-                  />
-                </div>
+              <div>
+                <Label htmlFor="chucVu">{t('nguoiDung.chucVu')}</Label>
+                <Input
+                  id="chucVu"
+                  name="chucVu"
+                  defaultValue={dangSua?.hoSoNhanVien?.chucVu ?? ''}
+                />
+              </div>
+            )}
+
+            {/*
+              PHÒNG BAN (FR-22) — hiện cho MỌI vai trò nhân sự, không riêng NhanVien: chốt
+              09/09/2026 "giáo viên cũng là nhân viên", nên "Bộ môn Anh" gồm giáo viên là cách
+              dùng cơ cấu tự nhiên nhất.
+
+              Học viên KHÔNG có ô này (backend cũng chặn) — họ là khách, không phải nhân sự.
+
+              Đây là **cách 1** của FR-22; cách 2 là vào cây cơ cấu chọn người đã có.
+            */}
+            {loai !== 'HocVien' && (
+              <div>
+                <Label htmlFor="phongBan">{t('nguoiDung.phongBan')}</Label>
+                <SelectTimKiem
+                  id="phongBan"
+                  luaChon={phongBanPhang}
+                  giaTri={phongBan}
+                  onDoi={setPhongBan}
+                  placeholder={t('nguoiDung.chuaXepPhongBan')}
+                  placeholderTimKiem={t('nguoiDung.phongBan')}
+                />
               </div>
             )}
           </fieldset>
