@@ -658,6 +658,10 @@ const vi = {
     DaMua: 'Đã mua',
     TuChoi: 'Từ chối',
   },
+  chiTietNhanSu: {
+    tabThongTin: 'Thông tin chung',
+    tabTep: 'Tệp hồ sơ',
+  },
   chiTietKhach: {
     tabThongTin: 'Thông tin chung',
     tabChamSoc: 'Lịch sử chăm sóc',

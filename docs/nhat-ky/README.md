@@ -46,6 +46,7 @@ Lỗi đã bắt được, thứ tưởng đúng mà sai, giới hạn chưa g�
 
 | Ngày | Nội dung chính |
 |---|---|
+| [2026-09-10 (HRM)](./2026-09-10-hrm-ho-so-mo-rong.md) | **FR-23 hồ sơ mở rộng** — bảng `LIEN_KET_MXH` nhiều dòng, cột FK thứ sáu của `TEP_DINH_KEM`; thiếu `Include` làm `RemoveRange` thành no-op im lặng; chia tab view chi tiết, `{/*…*/}` trong expression container báo lỗi lệch 70 dòng |
 | [2026-09-08 (CRM)](./2026-09-08-crm.md) | **Nghiệp vụ CRM** (FR-17 → FR-19) — khách hàng · doanh thu đa tiền tệ · khoá học; vá script i18n quét namespace lồng |
 | [2026-09-09 (Xếp lớp)](./2026-09-09-xep-lop.md) | **FR-21 yêu cầu xếp lớp** — cầu nối CRM → LMS, học phí lấy từ đơn CRM; gộp tab mua hàng; script Python ngắt `Layout.tsx` còn 7 dòng |
 | [2026-09-09 (HRM)](./2026-09-09-hrm-co-cau.md) | **FR-22 cơ cấu tổ chức** — cây phòng ban, chống chu trình, mọi vai trò nhân sự xếp được vào phòng; 4 chỗ tự sửa sau khi rà lại; quên migration làm hỏng môi trường dev |

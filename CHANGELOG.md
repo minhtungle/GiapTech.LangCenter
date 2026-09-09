@@ -8,6 +8,23 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — View chi tiết hồ sơ nhân sự chia hai tab (10/09/2026)
+
+- **Thông tin chung** và **Tệp hồ sơ** thành hai tab thay vì hai thẻ xếp dọc. Thẻ tệp đẩy phần
+  thông tin xuống, người có nhiều tệp phải cuộn mới xem hết — mà thông tin chung mới là thứ người
+  ta vào view này để xem.
+- **Số tệp hiện trên nhãn tab** để biết có gì bên đó mà không cần bấm sang; bỏ badge đếm trùng ở
+  tiêu đề trong thẻ.
+- Mã tab nằm trong `?tab=`, `replace: true` nên bấm qua lại **không sinh mục lịch sử**: nút Back
+  về danh sách nhân sự chứ không lùi từng tab. Trạng thái mặc định giữ URL sạch (`?tab=` biến mất
+  hẳn, không phải `?tab=thong-tin`).
+- Cùng khuôn với view chi tiết khách hàng: khoá i18n **gắn sẵn trên hằng `CAC_TAB`**, không ghép
+  chuỗi động — ghép động sinh `tab_thong-tin` không khớp khoá nào và người dùng thấy chuỗi khoá
+  (lỗi thật 07/09).
+- Canh bởi `e2e/chi-tiet-nhan-su.spec.ts`: hai khối **loại trừ nhau** (bỏ điều kiện là UI về đúng
+  trạng thái cũ mà `npm run build` vẫn xanh — đã chứng minh bằng đột biến), `?tab=` sống qua F5,
+  badge đếm đúng.
+
 ### Added — FR-23 Hồ sơ nhân sự mở rộng: CCCD, số tài khoản, MXH, tệp (10/09/2026)
 
 **HRM nay đủ nghiệp vụ** (FR-22 → FR-24), 23/24 mã FR chạy đầu-cuối.

@@ -125,6 +125,7 @@ VPS → domain + HTTPS → backup. Xem
 | N22 | `RanhGioiHeThongConTests` chỉ quét `Application/`; tầng `API/Controllers` vẫn gọi chéo hệ thống tự do (đúng vì controller là chỗ ghép, nhưng nếu muốn siết thì cần danh sách khai tương tự) | Thấp |
 | N23 | **Role PostgreSQL và bucket MinIO cũ còn nằm đó** sau khi đổi tên 09/09 (`langcenter_lms`, `langcenter-lms-anh`) — giữ làm dự phòng, dọn tay sau khi chắc chắn | Thấp |
 | N24 | **Kéo-thả đổi cha trong cây cơ cấu** chưa làm (`@headless-tree` có `dragAndDropFeature`, chưa bật) — nay đổi cha bằng cách sửa phòng ban | Thấp |
+| N25 | **4 test E2E còn chờ chữ "đội" thời dự án bóng đá** (`dang-nhap-tra-ma.spec.ts` ×2, `quan-tri.spec.ts` ×2) — app trả "Không tìm thấy **trung tâm** tương ứng" là đúng, test lạc hậu mới sai. Đỏ sẵn từ trước 10/09, không phải lỗi nghiệp vụ; sửa kỳ vọng của test | Trung bình |
 | N16 | **4 test E2E lạc hậu**: `quan-tri.spec.ts` tìm `button[title="Sửa"]` nhưng nút thao tác đã chuyển vào `MenuThaoTac` (07/09), và `dang-nhap-tra-ma.spec.ts` còn dùng từ ngữ "mã đội". Không phải lỗi mới — chưa cập nhật khi đổi UI | Trung bình |
 | N15 | **E2E phải tắt rate limit mới chạy được** (`GIOI_HAN_TAN_SUAT=false`) vì mỗi test tự tạo tenant qua endpoint có hạn mức 10 req/phút. Cách đúng hơn: fixture dùng CHUNG một tenant, hoặc endpoint tạo tenant riêng cho test | Trung bình |
 | N14 | Màn Học viên (LMS) và Nhân sự (HRM) cho đọc danh sách **toàn trung tâm**, chưa giới hạn "học viên lớp mình" — cần mở rộng `IPhamViLopHoc` cho hồ sơ con người | Trung bình |
