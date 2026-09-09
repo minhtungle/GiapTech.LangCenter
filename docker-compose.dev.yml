@@ -15,8 +15,8 @@ services:
   api:
     build:
       context: .
-      dockerfile: src/GiapTech.LangCenter.LMS.API/Dockerfile
-    image: langcenter-lms-api:local
+      dockerfile: src/GiapTech.LangCenter.API/Dockerfile
+    image: langcenter-api:local
     environment:
       # TẮT giới hạn tần suất trên máy dev — chỉ ở đây, KHÔNG ở production.
       #

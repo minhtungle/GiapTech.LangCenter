@@ -1,4 +1,4 @@
-# GiapTech.LangCenter.LMS — Hệ thống Quản lý Trung tâm Ngoại ngữ
+# GiapTech.LangCenter — Hệ thống Quản lý Trung tâm Ngoại ngữ
 
 > **14/15 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật · 306 test backend xanh.
 > Còn lại: FR-15 Thống kê/Dashboard, và nghiệp vụ hai module HRM/CRM.

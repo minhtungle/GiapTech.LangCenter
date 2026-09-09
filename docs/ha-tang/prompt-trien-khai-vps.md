@@ -11,15 +11,15 @@
 
 ---
 
-Tôi cần bạn triển khai trọn bộ **GiapTech.LangCenter.LMS** lên VPS này, từ máy trắng đến chạy
+Tôi cần bạn triển khai trọn bộ **GiapTech.LangCenter** lên VPS này, từ máy trắng đến chạy
 được trên HTTPS.
 
 ## Thông tin
 
 - **Domain**: `<domain>` (DNS đã trỏ về VPS này — hãy kiểm chứng trước khi cấu hình Nginx)
-- **Repo**: `https://github.com/minhtungle/GiapTech.LangCenter.LMS.git` — public, clone không cần xác thực
+- **Repo**: `https://github.com/minhtungle/GiapTech.LangCenter.git` — public, clone không cần xác thực
 - **Nhánh**: `main`
-- **Thư mục triển khai**: `/opt/langcenter-lms`
+- **Thư mục triển khai**: `/opt/langcenter`
 - **Ứng dụng**: **hệ thống quản lý trung tâm ngoại ngữ (LMS)**, multi-tenant — mỗi trung tâm là
   một tenant độc lập, đăng nhập bằng bộ ba {mã trung tâm, tên đăng nhập, mật khẩu}. Gồm ba hệ
   thống con chia theo nhóm quyền: HRM · CRM · LMS (một API, một DB, một lần đăng nhập).
@@ -63,8 +63,8 @@ Xác nhận `dig +short <domain>` trả về đúng IP công khai của VPS này
 ### 3. Clone và cấu hình
 
 ```
-sudo mkdir -p /opt/langcenter-lms && sudo chown $USER:$USER /opt/langcenter-lms
-git clone https://github.com/minhtungle/GiapTech.LangCenter.LMS.git /opt/langcenter-lms
+sudo mkdir -p /opt/langcenter && sudo chown $USER:$USER /opt/langcenter
+git clone https://github.com/minhtungle/GiapTech.LangCenter.git /opt/langcenter
 ```
 
 Tạo `.env` từ `.env.example`. Những biến **bắt buộc** đặt đúng:
@@ -91,7 +91,7 @@ Repo có `scripts/trien-khai.sh` làm sẵn toàn bộ. **Dùng nó, đừng t�
 tay** — script có những bước dễ bỏ sót:
 
 ```
-cd /opt/langcenter-lms
+cd /opt/langcenter
 ./scripts/trien-khai.sh
 ```
 

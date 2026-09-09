@@ -8,6 +8,49 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — Đổi tên toàn bộ về `GiapTech.LangCenter` (bỏ hậu tố `.LMS`) (09/09/2026)
+
+Dự án nay gồm cả CRM (FR-17 → FR-21) và HRM (FR-22 → FR-24), nên tên "LMS" gây nhầm là chỉ có
+đào tạo. Quyết định và số đo ghi ở [ADR-0005](./docs/kien-truc/adr/0005-mot-source-va-doi-ten-langcenter.md).
+
+**Mã nguồn** (214 file, không rủi ro dữ liệu):
+- Namespace `GiapTech.LangCenter.LMS.*` → `GiapTech.LangCenter.*`
+- 6 project + solution đổi tên (`git mv` để giữ lịch sử file)
+
+**Định danh hạ tầng** (động tới dữ liệu — làm từng bước có đối chiếu):
+- Database `langcenter_lms` → `langcenter` bằng `ALTER DATABASE ... RENAME`, **không** dump/restore.
+  Đã đối chiếu 6 con số trước/sau: 35 bảng · 41 tenant · 64 người dùng · 4 lớp · 9 đơn · 10 phòng ban
+  — **khớp tuyệt đối**.
+- Role PostgreSQL: **không** rename được (role đang kết nối, và container không có superuser
+  `postgres`) → tạo role `langcenter` mới, role cũ giữ lại.
+- Bucket MinIO `langcenter-lms-anh` → `langcenter-anh`: bucket không rename được nên
+  `mc cp --recursive`, đối chiếu **từng khoá và kích thước**; bucket cũ giữ làm dự phòng.
+- `JWT_ISSUER` `langcenter-lms-api` → `langcenter-api` ở **cả ba chỗ** (`Program.cs` validate ·
+  `TokenService.cs` phát hành · `ApiFactory.cs` test). Lệch một chỗ là mọi request 401 mà không
+  có lỗi biên dịch.
+- Image Docker, docker-compose project, Dockerfile user, `SMTP_FROM`, `.env.example`.
+
+⚠️ **`ValidateIssuer = true`** nên đổi `JWT_ISSUER` **vô hiệu mọi token đang lưu hành** — khi
+triển khai production phải thông báo trước là mọi người đăng nhập lại. Các bước triển khai an toàn
+ghi trong ADR-0005.
+
+**Chưa đổi** (ngoài repo): tên repo GitHub và thư mục local.
+
+Kiểm chứng: 380 test xanh, build 0 warning. Chạy API trên DB + bucket mới, đăng nhập bằng **dữ
+liệu cũ** thành công (issuer = `langcenter-api`), 5 endpoint trả 200, tải ảnh mới vào bucket mới
+OK, lái UI 4 màn đều có dữ liệu, 0 lỗi console.
+
+### Added — ADR-0005: một source cho cả ba hệ thống con (09/09/2026)
+
+Trả lời câu hỏi "có nên tách 3 source theo HRM/CRM/LMS?" — **không**, kèm số đo:
+- FR-21 là **giao dịch cắt ngang** CRM↔LMS trong một `SaveChanges` — tách là mất ACID.
+- `NGUOI_DUNG` bị **17 bảng của cả ba hệ thống** trỏ vào; ba database là ba bản phải đồng bộ.
+- Hạ tầng dùng chung **3.031 dòng** > nghiệp vụ riêng của từng hệ thống — tách là nhân ba phần
+  chứa Global Query Filter và phân quyền động.
+- ADR-0004 chốt 1 VPS: tách 3 service trên cùng máy không được lợi ích microservice nào.
+
+Kèm ba dấu hiệu để xét lại về sau (scale lệch · hai đội chờ nhau · bán riêng từng module).
+
 ### Added — Màn cơ cấu tổ chức (FR-22, phần giao diện) (09/09/2026)
 
 - Route `/hrm/co-cau` + mục menu **Cơ cấu tổ chức** ở đầu nhóm HRM. Trước đó FR-22 chỉ có API —
@@ -874,7 +917,7 @@ hàng quyền rồi khởi động lại thì bổ khuyết cấp lại đúng 4
 ## [2.0.0] — 2026-09-05 — Tách base cho dự án LMS
 
 Repo chuyển từ **quản lý CLB đá bóng** (`GiapTech.SoccerRoom`) thành **base cho hệ thống quản
-lý trung tâm ngoại ngữ** (`GiapTech.LangCenter.LMS`): giữ toàn bộ tầng hệ thống, bỏ hết nghiệp
+lý trung tâm ngoại ngữ** (`GiapTech.LangCenter`): giữ toàn bộ tầng hệ thống, bỏ hết nghiệp
 vụ bóng đá. Bản bóng đá đầy đủ vẫn còn ở repo cũ.
 
 ### Removed
@@ -895,7 +938,7 @@ vụ bóng đá. Bản bóng đá đầy đủ vẫn còn ở repo cũ.
   compose, CI, docs.
 - **Thống nhất 4 lược đặt tên** vốn lẫn lộn từ trước — `GiapTech.SoccerRoom` (code),
   `soccercity` (compose + image), `soccerroom` (JWT issuer · MinIO bucket · SMTP), `clubmgmt`
-  (DB name) — về một tên `langcenter-lms`. CI trước đây push
+  (DB name) — về một tên `langcenter`. CI trước đây push
   `ghcr.io/$owner/soccerroom-api` còn compose kéo `soccercity-api`: **hai bên đã lệch nhau**,
   nay khớp.
 - **Từ ngữ định danh**: `MaDoi`/`TenDoi` → `MaTrungTam`/`TenTrungTam`; claim JWT
@@ -1097,7 +1140,7 @@ vụ bóng đá. Bản bóng đá đầy đủ vẫn còn ở repo cũ.
 
 ### Changed
 - Chuyển bộ khung từ `repo-scaffold/` lên gốc repo — sửa link hỏng và đường dẫn sai trong CI.
-- Chốt tên `GiapTech.LangCenter.LMS` cho namespace/solution/image.
+- Chốt tên `GiapTech.LangCenter` cho namespace/solution/image.
 - **`ma_doi` đổi từ chuỗi người dùng tự đặt sang mã 7 ký tự sinh tự động** (bộ 31 ký tự bỏ `0/O`
   và `1/I/L`, không phân biệt hoa/thường). Tên dạng "FC ..." rất dễ trùng giữa các CLB.
 - CI bỏ bước build image frontend — frontend là static do Caddy phục vụ (ADR-0004).

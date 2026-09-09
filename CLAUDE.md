@@ -18,7 +18,7 @@ một lần đăng nhập. → [phan-quyen-dong.md](./docs/backend/phan-quyen-do
 Mỗi trung tâm đăng ký là một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`.
 Đăng nhập bằng bộ ba **{mã trung tâm, tên đăng nhập, mật khẩu}**.
 
-**Tên chuẩn:** `GiapTech.LangCenter.LMS` (namespace, solution, image `ghcr.io/giaptech/langcenter-lms-api`).
+**Tên chuẩn:** `GiapTech.LangCenter` (namespace, solution, image `ghcr.io/giaptech/langcenter-api`).
 
 ### Trạng thái
 
@@ -105,7 +105,7 @@ Chi tiết và nợ kỹ thuật: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 | Hạ tầng, VPS, runbook sự cố | [`docs/ha-tang/`](./docs/ha-tang/README.md) |
 | **Triển khai lên VPS** (`git pull` + build tại chỗ) | [`docs/ha-tang/trien-khai-pull-code.md`](./docs/ha-tang/trien-khai-pull-code.md) |
 | Kiến trúc tổng quan + trạng thái quyết định | [`docs/kien-truc/TONG-QUAN-KIEN-TRUC.md`](./docs/kien-truc/TONG-QUAN-KIEN-TRUC.md) |
-| 4 ADR đã chốt | [`docs/kien-truc/adr/`](./docs/kien-truc/adr/) |
+| 5 ADR đã chốt | [`docs/kien-truc/adr/`](./docs/kien-truc/adr/) |
 | Git flow, commit convention, PR checklist | [`CONTRIBUTING.md`](./CONTRIBUTING.md) |
 | Chính sách bảo mật | [`SECURITY.md`](./SECURITY.md) |
 | Thuật ngữ dễ nhầm | [`docs/kien-truc/THUAT-NGU.md`](./docs/kien-truc/THUAT-NGU.md) |
@@ -135,10 +135,10 @@ Chi tiết và nợ kỹ thuật: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ```
 src/
-├── GiapTech.LangCenter.LMS.Domain          # Entity, Enum, quy tắc nghiệp vụ thuần — KHÔNG phụ thuộc EF Core/ASP.NET
-├── GiapTech.LangCenter.LMS.Application     # CQRS: mỗi FR-xx = Command/Query riêng, DTO, interface, FluentValidation
-├── GiapTech.LangCenter.LMS.Infrastructure  # EF Core DbContext, Repository, gửi SMS/Email, MinIO client
-└── GiapTech.LangCenter.LMS.API             # Controller theo version (Controllers/V1/...), Middleware, JWT, Swagger
+├── GiapTech.LangCenter.Domain          # Entity, Enum, quy tắc nghiệp vụ thuần — KHÔNG phụ thuộc EF Core/ASP.NET
+├── GiapTech.LangCenter.Application     # CQRS: mỗi FR-xx = Command/Query riêng, DTO, interface, FluentValidation
+├── GiapTech.LangCenter.Infrastructure  # EF Core DbContext, Repository, gửi SMS/Email, MinIO client
+└── GiapTech.LangCenter.API             # Controller theo version (Controllers/V1/...), Middleware, JWT, Swagger
 frontend/                                    # React (Vite + Tailwind + TanStack Query)
 docs/                                        # Tài liệu (xem mục 3)
 ```
@@ -241,7 +241,7 @@ dotnet test           # 380 test: luật phụ thuộc, cách ly tenant, phân q
 export JWT_SECRET="chuoi-bi-mat-dev-dai-hon-32-ky-tu-cho-du-an-toan"
 export Minio__Endpoint="localhost:59000" Minio__AccessKey="devminio" \
        Minio__SecretKey="devminio123" Minio__UseSsl="false"
-dotnet run --project src/GiapTech.LangCenter.LMS.API   # Swagger tại /swagger, cổng 5229
+dotnet run --project src/GiapTech.LangCenter.API   # Swagger tại /swagger, cổng 5229
 
 # --- Kiểm tra tài liệu ---
 python3 scripts/check-doc-links.py
@@ -258,18 +258,18 @@ npx oxlint src e2e
 # --- E2E (Playwright) ---
 # Mỗi test tự tạo một trung tâm qua /dang-ky-trung-tam, mà endpoint đó có hạn mức 10 req/phút
 # mỗi IP (thêm 08/09/2026) → chạy cả bộ sẽ 429. PHẢI tắt hạn mức khi chạy E2E:
-GIOI_HAN_TAN_SUAT=false dotnet run --project src/GiapTech.LangCenter.LMS.API   # ở terminal khác
+GIOI_HAN_TAN_SUAT=false dotnet run --project src/GiapTech.LangCenter.API   # ở terminal khác
 E2E_BASE_URL=http://localhost:5173 npx playwright test
 
 # --- PostgreSQL + MinIO cho dev ---
 docker run -d --name lms-minio -p 59000:9000 \
   -e MINIO_ROOT_USER=devminio -e MINIO_ROOT_PASSWORD=devminio123 \
   minio/minio:latest server /data
-docker run -d --name lms-pg -e POSTGRES_PASSWORD=devpass -e POSTGRES_USER=langcenter_lms \
-  -e POSTGRES_DB=langcenter_lms -p 55432:5432 postgres:16-alpine
-export ConnectionStrings__Default="Host=localhost;Port=55432;Database=langcenter_lms;Username=langcenter_lms;Password=devpass"
-dotnet ef database update --project src/GiapTech.LangCenter.LMS.Infrastructure \
-  --startup-project src/GiapTech.LangCenter.LMS.API
+docker run -d --name lms-pg -e POSTGRES_PASSWORD=devpass -e POSTGRES_USER=langcenter \
+  -e POSTGRES_DB=langcenter -p 55432:5432 postgres:16-alpine
+export ConnectionStrings__Default="Host=localhost;Port=55432;Database=langcenter;Username=langcenter;Password=devpass"
+dotnet ef database update --project src/GiapTech.LangCenter.Infrastructure \
+  --startup-project src/GiapTech.LangCenter.API
 # → 34 bảng (13 hệ thống + 21 nghiệp vụ) — xem docs/database/erd.md
 
 # Tạo trung tâm thử — endpoint ẩn danh, mã 7 ký tự do hệ thống sinh:
@@ -283,8 +283,8 @@ curl -X POST localhost:5229/api/v1/dang-ky-trung-tam \
 
 ```bash
 dotnet ef migrations add TenMigration \
-  --project src/GiapTech.LangCenter.LMS.Infrastructure \
-  --startup-project src/GiapTech.LangCenter.LMS.API \
+  --project src/GiapTech.LangCenter.Infrastructure \
+  --startup-project src/GiapTech.LangCenter.API \
   --output-dir Persistence/Migrations
 ```
 

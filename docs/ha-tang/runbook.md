@@ -3,7 +3,7 @@
 > ⚠️ Quy trình tham chiếu, **chưa diễn tập thực tế**. Cập nhật sau mỗi sự cố thật với những gì đã thực
 > sự làm.
 
-Mọi lệnh chạy từ `/opt/langcenter-lms` trên VPS.
+Mọi lệnh chạy từ `/opt/langcenter` trên VPS.
 
 ## Lệnh chẩn đoán nhanh
 

@@ -4,10 +4,10 @@
 
 ```
 src/
-├── GiapTech.LangCenter.LMS.Domain          # Entity, Enum, quy tắc nghiệp vụ thuần
-├── GiapTech.LangCenter.LMS.Application     # CQRS Command/Query, DTO, interface, FluentValidation
-├── GiapTech.LangCenter.LMS.Infrastructure  # EF Core DbContext, Repository, SMS/Email, MinIO client
-└── GiapTech.LangCenter.LMS.API             # Controller theo version, Middleware, JWT, Swagger
+├── GiapTech.LangCenter.Domain          # Entity, Enum, quy tắc nghiệp vụ thuần
+├── GiapTech.LangCenter.Application     # CQRS Command/Query, DTO, interface, FluentValidation
+├── GiapTech.LangCenter.Infrastructure  # EF Core DbContext, Repository, SMS/Email, MinIO client
+└── GiapTech.LangCenter.API             # Controller theo version, Middleware, JWT, Swagger
 frontend/                               # React + shadcn-admin (Vite)
 ```
 

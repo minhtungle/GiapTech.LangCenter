@@ -9,15 +9,16 @@
 | Frontend | React + TypeScript, shadcn-admin (Vite/Tailwind/shadcn-ui) | [ADR-0002](./adr/0002-frontend-shadcn-admin.md) |
 | API | REST, versioning theo URL segment `/api/v{n}/` | [ADR-0003](./adr/0003-api-versioning.md) |
 | Hạ tầng | 1 VPS, Docker Compose, Caddy, MinIO, Prometheus/Grafana/Loki, Uptime Kuma | [ADR-0004](./adr/0004-ha-tang-tu-host-vps.md) |
+- [ADR-0005](./adr/0005-mot-source-va-doi-ten-langcenter.md) — **một source** cho cả ba hệ thống con (không tách HRM/CRM/LMS), đổi tên về `GiapTech.LangCenter`
 
 ## Cấu trúc mã nguồn
 
 ```
 src/
-├── GiapTech.LangCenter.LMS.Domain          # Entity, Enum, quy tắc nghiệp vụ thuần
-├── GiapTech.LangCenter.LMS.Application     # CQRS Command/Query, DTO, interface, FluentValidation
-├── GiapTech.LangCenter.LMS.Infrastructure  # EF Core DbContext, Repository, SMS/Email, MinIO client
-└── GiapTech.LangCenter.LMS.API             # Controller theo version, Middleware, JWT, Swagger
+├── GiapTech.LangCenter.Domain          # Entity, Enum, quy tắc nghiệp vụ thuần
+├── GiapTech.LangCenter.Application     # CQRS Command/Query, DTO, interface, FluentValidation
+├── GiapTech.LangCenter.Infrastructure  # EF Core DbContext, Repository, SMS/Email, MinIO client
+└── GiapTech.LangCenter.API             # Controller theo version, Middleware, JWT, Swagger
 frontend/                               # React + shadcn-admin (Vite)
 ```
 
@@ -38,7 +39,7 @@ Luật phụ thuộc giữa các lớp: [../backend/clean-architecture.md](../ba
 | Multi-tenant qua `tenant_id` | ✅ Đã chốt | [multi-tenant.md](../backend/multi-tenant.md) |
 | Phân quyền động theo chức năng/thao tác | ✅ Đã chốt | Custom `IAuthorizationHandler` đọc `QUYEN_CHUC_NANG` |
 | Đa ngôn ngữ | ✅ Đã chốt | Backend `.resx` theo culture; Frontend `react-i18next` |
-| Tên namespace/solution | ✅ Đã chốt | `GiapTech.LangCenter.LMS.*` |
+| Tên namespace/solution | ✅ Đã chốt | `GiapTech.LangCenter.*` |
 | **Ba hệ thống con HRM · CRM · LMS** | ✅ Đã chốt (08/09/2026) | **Nhóm chức năng phân quyền, KHÔNG tách service** — một API, một DB, một lần đăng nhập. [phan-quyen-dong.md](../backend/phan-quyen-dong.md#ba-hệ-thống-con-hrm--crm--lms) |
 | Giá trị design token (màu cụ thể) | 🕓 Chưa chốt | Chốt cùng lúc dựng style-guide — [design-tokens.md](../frontend/design-tokens.md) |
 | `tenant_id` ở bảng con | ✅ Đã chốt | Denormalize xuống **25/26 bảng** (mọi bảng trừ `TENANT`) — [ERD](../database/erd.md#denormalize-tenant_id-xuống-bảng-con) |
