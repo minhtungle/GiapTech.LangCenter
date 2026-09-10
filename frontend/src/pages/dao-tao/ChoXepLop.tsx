@@ -20,8 +20,15 @@ import { tien, type YeuCauXepLopDto } from '../crm/crmTypes'
  * Cách 2 (từ trong lớp chọn người chờ) nằm ở tab Học viên của view chi tiết lớp. Hai lối vào
  * cho hai tình huống thật: ở đây người điều phối nhìn cả hàng chờ để cân lớp, còn ở kia người
  * phụ trách một lớp cụ thể muốn lấp cho đủ chỗ. Cả hai gọi cùng một endpoint duyệt.
+ *
+ * **Không phải module riêng** (10/09/2026): hiện thành một TAB của màn Lớp học. Hàng chờ là
+ * việc của người xếp lớp, không phải một khu vực nghiệp vụ tách biệt — và tab đó chỉ hiện cho
+ * ai có `LopHoc.Sua`, đúng bằng quyền mà endpoint đang đòi.
+ *
+ * `nhung` = đang nằm trong tab của màn khác → bỏ tiêu đề và link quay lại của riêng nó, vì màn
+ * cha đã có sẵn hai thứ đó. Cùng quy ước với `LichVaDiemDanh`, `BaiTapCuaLop`.
  */
-export default function ChoXepLop() {
+export default function ChoXepLop({ nhung = false }: { nhung?: boolean } = {}) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const { coQuyen } = useQuyen()
@@ -93,16 +100,18 @@ export default function ChoXepLop() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-lg font-semibold">{t('menu.choXepLop')}</h2>
-        {ds.length > 0 && <Badge variant="cho">{ds.length}</Badge>}
-        <Link
-          to="/lms/lop-hoc"
-          className="ml-auto text-sm text-muted-foreground hover:text-foreground"
-        >
-          {t('menu.lopHoc')}
-        </Link>
-      </div>
+      {!nhung && (
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-lg font-semibold">{t('menu.choXepLop')}</h2>
+          {ds.length > 0 && <Badge variant="cho">{ds.length}</Badge>}
+          <Link
+            to="/lms/lop-hoc"
+            className="ml-auto text-sm text-muted-foreground hover:text-foreground"
+          >
+            {t('menu.lopHoc')}
+          </Link>
+        </div>
+      )}
 
       {maLoi && !duyetCho && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 

@@ -251,8 +251,19 @@ bán gửi yêu cầu, bên đào tạo xếp lớp.
 
    | | Vào từ đâu | Dùng khi |
    |---|---|---|
-   | **Cách 1** | Màn *Chờ xếp lớp* → bấm duyệt → chọn lớp | Người điều phối nhìn cả hàng chờ để cân lớp |
+   | **Cách 1** | **Tab *Chờ xếp lớp* của màn Lớp học** → bấm duyệt → chọn lớp | Người điều phối nhìn cả hàng chờ để cân lớp |
    | **Cách 2** | Tab *Học viên* của một lớp → chọn người đang chờ | Người phụ trách một lớp muốn lấp cho đủ chỗ |
+
+   **Chờ xếp lớp KHÔNG phải module riêng** (10/09/2026): nó là một tab của `/lms/lop-hoc`, hiện
+   cho ai có quyền. Hàng chờ là việc của người xếp lớp, không phải một khu vực nghiệp vụ tách
+   biệt — và người điều phối cần nhìn hàng chờ cạnh danh sách lớp để cân chỗ.
+
+   > **Lỗi đã sửa cùng lúc**: mục menu cũ gác bằng `LopHoc.Xem`, còn cả ba endpoint chờ xếp lớp
+   > đòi `LopHoc.**Sua**`. `Xem` là quyền **giáo viên và học viên cũng có**, nên họ thấy menu
+   > "Chờ xếp lớp" rồi bấm vào và nhận **403** — đã kiểm bằng tay: giáo viên có đúng `['Xem']`
+   > trên `LopHoc`. Nay tab gác bằng đúng `LopHoc.Sua`, và gõ thẳng `?tab=cho-xep-lop` khi không
+   > có quyền thì rơi về danh sách chứ không phải tab trắng.
+   > Canh bởi `e2e/cho-xep-lop-tab.spec.ts` (có test chiều giáo viên **không** thấy tab).
 
 ### Quy tắc
 

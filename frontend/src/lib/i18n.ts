@@ -289,6 +289,7 @@ const vi = {
     siSo: 'Sĩ số',
     buoiDaHoc: 'Buổi đã học',
     thoiGian: 'Thời gian',
+    tabDanhSach: 'Danh sách lớp',
     tabTongQuan: 'Tổng quan',
     tabHocVien: 'Học viên',
     tabLich: 'Lịch & điểm danh',

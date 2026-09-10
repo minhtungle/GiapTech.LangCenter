@@ -8,6 +8,23 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — "Chờ xếp lớp" thành tab của màn Lớp học, không còn module riêng (10/09/2026)
+
+- `/lms/lop-hoc` nay có 2 tab: **Danh sách lớp** · **Chờ xếp lớp** (`?tab=cho-xep-lop`). Bỏ mục
+  menu riêng ở sidebar; route cũ `/lms/lop-hoc/cho-xep-lop` vẫn giữ nên link đã gửi không chết.
+- **Sửa luôn một lỗi phân quyền thật**: mục menu cũ gác bằng `LopHoc.Xem`, còn ba endpoint chờ
+  xếp lớp đòi `LopHoc.Sua`. `Xem` là quyền **giáo viên và học viên cũng có** → họ thấy menu rồi
+  bấm vào nhận **403** (kiểm bằng tay: giáo viên có đúng `['Xem']` trên `LopHoc`). Nay tab gác
+  bằng `LopHoc.Sua`, và gõ thẳng `?tab=cho-xep-lop` khi không có quyền thì rơi về danh sách.
+- Thanh tab **chỉ hiện khi có nhiều hơn một tab được phép** — người chỉ có `LopHoc.Xem` thấy
+  đúng bảng lớp như trước, không thêm thanh tab một mục vô nghĩa.
+- Query đếm hàng chờ (badge trên nhãn tab) có `enabled` theo quyền: không có nó thì giáo viên và
+  học viên bắn một request chắc chắn 403 mỗi lần mở màn Lớp học.
+- `ChoXepLop` nhận prop `nhung` để bỏ tiêu đề/link quay lại của riêng nó khi nằm trong tab —
+  cùng quy ước với `LichVaDiemDanh`, `BaiTapCuaLop`.
+- Canh bởi `e2e/cho-xep-lop-tab.spec.ts`; đột biến (gác tab lại bằng `Xem` như lỗi cũ) làm test
+  đỏ đúng chỗ "giáo viên không được thấy tab".
+
 ### Added — Test canh phạm vi lớp học của HỌC VIÊN (10/09/2026)
 
 Chủ sản phẩm hỏi "học viên và giáo viên dùng chung module lớp học hay cần module khác". Rà lại

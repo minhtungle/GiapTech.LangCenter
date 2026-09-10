@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { CalendarDays, ClipboardList, Eye, Pencil, Plus, Trash2, Users, X } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang, type ThamSoTrang } from '@/lib/api'
 import { useQuyen } from '@/lib/quyen'
@@ -14,17 +14,47 @@ import { PhanTrang } from '@/components/ui/PhanTrang'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { FormLopHoc, type DuLieuLopHoc } from './FormLopHoc'
+import ChoXepLop from './ChoXepLop'
+import type { YeuCauXepLopDto } from '../crm/crmTypes'
 import {
   ngayVN, mauTrangThai,
   type LopHocDto, type NguoiDungNgan,
 } from './lopHocTypes'
 
+/**
+ * Mã tab (nằm trong `?tab=`) đi kèm khoá i18n — **không ghép chuỗi động** (bẫy `tab_...` 07/09).
+ *
+ * `can`/`hanhDong`: tab Chờ xếp lớp cần `LopHoc.Sua`, đúng bằng quyền endpoint
+ * `GET /lop-hoc/cho-xep-lop` đang đòi. Trước 10/09 mục này là menu riêng gác bằng `LopHoc.Xem`
+ * — quyền mà giáo viên và học viên cũng có — nên họ thấy menu rồi bấm vào nhận **403**.
+ */
+const CAC_TAB = [
+  { ma: 'danh-sach', khoa: 'lopHoc.tabDanhSach', can: undefined, hanhDong: undefined },
+  { ma: 'cho-xep-lop', khoa: 'menu.choXepLop', can: 'LopHoc', hanhDong: 'Sua' },
+] as const
+
+type Tab = (typeof CAC_TAB)[number]['ma']
+
 /** FR-07 — quản lý lớp học. */
 export default function LopHoc() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { coQuyen } = useQuyen()
+  const { coQuyen, dangTai: dangTaiQuyen } = useQuyen()
   const qc = useQueryClient()
+
+  const [sp, setSp] = useSearchParams()
+
+  // Trong lúc chưa biết quyền thì hiện đủ tab — ẩn rồi hiện lại sẽ nhấp nháy mỗi lần tải.
+  const tabHienThi = dangTaiQuyen
+    ? CAC_TAB
+    : CAC_TAB.filter((x) => !x.can || coQuyen(x.can, x.hanhDong))
+
+  const tabQuery = sp.get('tab') as Tab | null
+  // Gõ thẳng `?tab=cho-xep-lop` khi không có quyền thì rơi về danh sách, không phải tab trắng.
+  const tab: Tab =
+    tabQuery && tabHienThi.some((x) => x.ma === tabQuery) ? tabQuery : 'danh-sach'
+  // `replace` để bấm qua lại hai tab không sinh một mục lịch sử mỗi lần.
+  const doiTab = (x: Tab) => setSp(x === 'danh-sach' ? {} : { tab: x }, { replace: true })
 
   const [trang, setTrang] = useState(1)
   const [soDong, setSoDong] = useState(20)
@@ -38,6 +68,17 @@ export default function LopHoc() {
 
   const [xoaCho, setXoaCho] = useState<LopHocDto | null>(null)
   const [huyCho, setHuyCho] = useState<LopHocDto | null>(null)
+
+  const xemDuocHangCho = coQuyen('LopHoc', 'Sua')
+
+  // Đếm hàng chờ để hiện badge trên nhãn tab. `enabled` theo quyền: không có nó thì giáo viên
+  // và học viên bắn một request chắc chắn 403 mỗi lần mở màn Lớp học.
+  const { data: soCho = 0 } = useQuery({
+    queryKey: ['cho-xep-lop', 'dem'],
+    queryFn: async () =>
+      (await api.get<YeuCauXepLopDto[]>('/lop-hoc/cho-xep-lop')).data.length,
+    enabled: xemDuocHangCho,
+  })
 
   const thamSo: ThamSoTrang = { trang, soDong }
 
@@ -137,6 +178,41 @@ export default function LopHoc() {
 
   return (
     <div className="grid gap-4">
+      {/*
+        Chờ xếp lớp là một TAB ở đây, không phải module riêng (yêu cầu 10/09/2026): hàng chờ là
+        việc của người xếp lớp chứ không phải một khu vực nghiệp vụ tách biệt, và người điều
+        phối cần nhìn hàng chờ cạnh danh sách lớp để cân chỗ.
+
+        Chỉ hiện tab khi có nhiều hơn một tab được phép — người chỉ có `LopHoc.Xem` (giáo viên,
+        học viên) thấy đúng bảng lớp như trước, không thêm thanh tab một mục vô nghĩa.
+      */}
+      {tabHienThi.length > 1 && (
+        <div className="flex flex-wrap gap-1 rounded-lg border border-border p-1">
+          {tabHienThi.map((x) => (
+            <button
+              key={x.ma}
+              type="button"
+              onClick={() => doiTab(x.ma)}
+              className={
+                'inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ' +
+                (tab === x.ma
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-muted')
+              }
+            >
+              {t(x.khoa)}
+              {x.ma === 'cho-xep-lop' && soCho > 0 && (
+                <Badge variant={tab === x.ma ? 'muted' : 'cho'}>{soCho}</Badge>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {tab === 'cho-xep-lop' && <ChoXepLop nhung />}
+
+      {tab === 'danh-sach' && (
+      <>
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="timKiem">{t('chung.timKiem')}</Label>
@@ -322,6 +398,8 @@ export default function LopHoc() {
           )}
         </CardContent>
       </Card>
+      </>
+      )}
 
       <Modal
         mo={moForm}

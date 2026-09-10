@@ -14,6 +14,10 @@ import { vaoHeThong } from './tro-giup'
  * biến (bỏ `search`/`hash` → test đỏ đúng chỗ).
  */
 test.describe('URL ba hệ thống con', () => {
+// Test này đi qua ~12 lần điều hướng (5 đường cũ + 2 link có id/query + Back + menu) nên vượt
+// ngân sách 30s mặc định. Nới timeout thay vì bỏ bước kiểm — mỗi bước canh một thứ khác nhau.
+test.setTimeout(90_000)
+
 test('URL LMS có tiền tố /lms, đường cũ redirect giữ id + query', async ({ page, request }) => {
   await vaoHeThong(page, request, 'url-lms')
 

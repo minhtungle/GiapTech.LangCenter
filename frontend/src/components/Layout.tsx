@@ -4,7 +4,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Users, ShieldCheck, Settings, LogOut, Home, GraduationCap, BookOpen, Wallet,
   PanelLeftClose, PanelLeft, Menu, X, ScrollText, Briefcase, UserCog, TrendingUp,
-  LayoutGrid, Check, KeyRound, Contact, PackageOpen, BookMarked, UserPlus, Network,
+  LayoutGrid, Check, KeyRound, Contact, PackageOpen, BookMarked, Network,
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useQuyen } from '@/lib/quyen'
@@ -136,10 +136,6 @@ export default function Layout() {
       muc: [
         { to: '/lms/hoc-vien', nhan: t('menu.hocVien'), icon: Users, can: 'TaiKhoan' },
         { to: '/lms/lop-hoc', nhan: t('menu.lopHoc'), icon: GraduationCap, can: 'LopHoc' },
-        {
-          to: '/lms/lop-hoc/cho-xep-lop', nhan: t('menu.choXepLop'), icon: UserPlus,
-          can: 'LopHoc',
-        },
         { to: '/lms/tai-lieu', nhan: t('menu.taiLieu'), icon: BookOpen, can: 'TaiLieu' },
         { to: '/lms/hoc-phi', nhan: t('menu.hocPhi'), icon: Wallet, can: 'HocPhi' },
       ],
