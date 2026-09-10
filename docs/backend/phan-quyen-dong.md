@@ -106,6 +106,29 @@ Nguồn sự thật duy nhất: `ChucNang.HeThongCua()` trong `Domain/Common/Chu
 xuống DB** — hệ thống của một chức năng là thuộc tính của mã nguồn (`LopHoc` thuộc LMS là bất
 biến), lưu xuống DB thì mỗi tenant nhóm một kiểu và sidebar hết xác định.
 
+### Đường dẫn frontend: mỗi hệ thống một tiền tố
+
+`/hrm/...` · `/crm/...` · `/lms/...` — **cả ba cùng khuôn** (thống nhất 10/09/2026). Quản trị
+dùng chung nằm ở `/quan-tri/...`.
+
+`Layout.tsx` suy ra đang ở hệ thống con nào **từ tiền tố đường dẫn**, và URL **thắng** lựa chọn
+lưu trong `localStorage`: mở bookmark `/crm/...` thì sidebar phải nhảy sang CRM, không hiện menu
+của hệ thống lưu từ phiên trước.
+
+> Trước 10/09, route LMS **không có tiền tố** (`/lop-hoc`, `/hoc-vien`, `/buoi-hoc`, `/tai-lieu`,
+> `/hoc-phi` — vì LMS dựng trước khi tách ba hệ thống). Cái giá: `Layout.tsx` phải giữ một **danh
+> sách 5 đường hardcode**, và thêm một màn LMS mới mà quên khai vào đó thì sidebar hiện **sai hệ
+> thống con** — lỗi im lặng, không có lỗi biên dịch. Nay chỉ còn một bảng tra tiền tố.
+>
+> Đường cũ vẫn **chuyển tiếp** sang `/lms/...` (`DoiSangLms` trong `App.tsx`) để bookmark và link
+> đã gửi cho nhau không chết. Chuyển tiếp **giữ nguyên `:id` và query** — dùng `<Navigate to>`
+> tĩnh sẽ làm mất chúng và link tới đúng một lớp/buổi cụ thể sẽ lặng lẽ rơi về danh sách.
+> Canh bởi `e2e/url-he-thong-con.spec.ts`.
+
+**Đừng lẫn route với endpoint API**: `/lms/hoc-vien` là đường frontend, còn API vẫn là
+`/api/v1/hoc-vien`. Ở `NguoiDung.tsx` hai thứ này là hai trường riêng (`duong` = endpoint,
+`duongChiTiet` = route) đúng vì lý do đó — đổi tiền tố route **không** được đụng tới lời gọi API.
+
 ### Vì sao có nhóm "dùng chung"
 
 `TaiKhoan`, `PhanQuyen`… **không thuộc hệ thống nào**. Ép chúng vào một hệ thống sẽ sai theo cả

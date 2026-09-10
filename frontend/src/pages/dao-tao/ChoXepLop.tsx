@@ -97,7 +97,7 @@ export default function ChoXepLop() {
         <h2 className="text-lg font-semibold">{t('menu.choXepLop')}</h2>
         {ds.length > 0 && <Badge variant="cho">{ds.length}</Badge>}
         <Link
-          to="/lop-hoc"
+          to="/lms/lop-hoc"
           className="ml-auto text-sm text-muted-foreground hover:text-foreground"
         >
           {t('menu.lopHoc')}

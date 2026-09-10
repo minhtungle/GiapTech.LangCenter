@@ -68,7 +68,7 @@ export default function ChiTietBuoiHoc() {
   // Giữ tab khi nhảy buổi. `replace: false` — chuyển buổi LÀ một bước điều hướng, Back phải
   // quay về buổi vừa xem (khác với đổi tab, xem `doiTab`).
   const sangBuoi = (buoiId: string) =>
-    navigate(`/buoi-hoc/${buoiId}${tab === 'thong-tin' ? '' : `?tab=${tab}`}`)
+    navigate(`/lms/buoi-hoc/${buoiId}${tab === 'thong-tin' ? '' : `?tab=${tab}`}`)
 
   if (isLoading) return <TrangTrong thongDiep={t('chung.dangTai')} />
   if (isError || !buoi) return <TrangTrong thongDiep={t('chiTietBuoi.khongTimThayBuoi')} />
@@ -81,7 +81,7 @@ export default function ChiTietBuoiHoc() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <Link
-          to={`/lop-hoc/${buoi.lopHocId}?tab=lich`}
+          to={`/lms/lop-hoc/${buoi.lopHocId}?tab=lich`}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -155,7 +155,7 @@ export default function ChiTietBuoiHoc() {
         <BangDiemDanh
           nhung
           buoi={buoi}
-          onDong={() => navigate(`/lop-hoc/${buoi.lopHocId}?tab=lich`)}
+          onDong={() => navigate(`/lms/lop-hoc/${buoi.lopHocId}?tab=lich`)}
           onXong={() => {}}
         />
       )}
@@ -170,7 +170,7 @@ export default function ChiTietBuoiHoc() {
           buoiHocId={buoi.id}
           lopHocId={buoi.lopHocId}
           tenLop={buoi.tenLopHoc}
-          onDong={() => navigate(`/lop-hoc/${buoi.lopHocId}?tab=lich`)}
+          onDong={() => navigate(`/lms/lop-hoc/${buoi.lopHocId}?tab=lich`)}
         />
       )}
 
@@ -265,7 +265,7 @@ function ThongTinBuoi({ buoi }: { buoi: BuoiHocDto }) {
         <Dong
           nhan={t('lopHoc.tieuDe')}
           giaTri={
-            <Link to={`/lop-hoc/${buoi.lopHocId}`} className="text-primary hover:underline">
+            <Link to={`/lms/lop-hoc/${buoi.lopHocId}`} className="text-primary hover:underline">
               {buoi.tenLopHoc}
             </Link>
           }

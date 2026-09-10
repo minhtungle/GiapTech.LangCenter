@@ -92,7 +92,7 @@ export default function ChiTietLopHoc() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <Link
-          to="/lop-hoc"
+          to="/lms/lop-hoc"
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -129,16 +129,16 @@ export default function ChiTietLopHoc() {
           nhung
           lop={lop}
           nguoiDungs={nguoiDungs ?? []}
-          onDong={() => navigate('/lop-hoc')}
+          onDong={() => navigate('/lms/lop-hoc')}
         />
       )}
 
       {tab === 'lich' && (
-        <LichVaDiemDanh nhung lopHocId={lop.id} tenLop={lop.ten} onDong={() => navigate('/lop-hoc')} />
+        <LichVaDiemDanh nhung lopHocId={lop.id} tenLop={lop.ten} onDong={() => navigate('/lms/lop-hoc')} />
       )}
 
       {tab === 'bai-tap' && (
-        <BaiTapCuaLop nhung lopHocId={lop.id} tenLop={lop.ten} onDong={() => navigate('/lop-hoc')} />
+        <BaiTapCuaLop nhung lopHocId={lop.id} tenLop={lop.ten} onDong={() => navigate('/lms/lop-hoc')} />
       )}
 
       {tab === 'hoc-phi' && <HocPhi lopHocId={lop.id} />}

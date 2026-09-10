@@ -58,15 +58,12 @@ export default function Layout() {
    * đường dẫn hiện tại không có trong menu đang hiện. Gặp thật 08/09/2026 khi lái UI.
    */
   useEffect(() => {
-    const theoDuong: Record<string, MaHeThong> = { '/hrm': 'Hrm', '/crm': 'Crm' }
+    // Cả ba hệ thống con nay đều có tiền tố (LMS thêm `/lms` ngày 10/09/2026), nên chỉ cần
+    // một bảng tra. Trước đó LMS phải liệt kê tường minh 5 đường và thêm màn mới mà quên khai
+    // thì sidebar hiện sai hệ thống con — lỗi im lặng, không có lỗi biên dịch.
+    const theoDuong: Record<string, MaHeThong> = { '/hrm': 'Hrm', '/crm': 'Crm', '/lms': 'Lms' }
     const tienTo = Object.keys(theoDuong).find((x) => location.pathname.startsWith(x))
-    const suyRa = tienTo
-      ? theoDuong[tienTo]
-      // Route LMS không có tiền tố chung (`/lop-hoc`, `/hoc-vien`…) nên liệt kê tường minh.
-      : ['/lop-hoc', '/buoi-hoc', '/hoc-vien', '/tai-lieu', '/hoc-phi'].some((x) =>
-            location.pathname.startsWith(x))
-        ? 'Lms'
-        : null
+    const suyRa = tienTo ? theoDuong[tienTo] : null
 
     // Chỉ đổi khi người dùng THẬT SỰ vào được hệ thống đó — tránh kẹt ở sidebar trống.
     if (suyRa && suyRa !== heThong.hienTai && heThong.duocPhep.includes(suyRa))
@@ -137,14 +134,14 @@ export default function Layout() {
       tieuDe: t('menu.daoTao'),
       heThong: 'Lms',
       muc: [
-        { to: '/hoc-vien', nhan: t('menu.hocVien'), icon: Users, can: 'TaiKhoan' },
-        { to: '/lop-hoc', nhan: t('menu.lopHoc'), icon: GraduationCap, can: 'LopHoc' },
+        { to: '/lms/hoc-vien', nhan: t('menu.hocVien'), icon: Users, can: 'TaiKhoan' },
+        { to: '/lms/lop-hoc', nhan: t('menu.lopHoc'), icon: GraduationCap, can: 'LopHoc' },
         {
-          to: '/lop-hoc/cho-xep-lop', nhan: t('menu.choXepLop'), icon: UserPlus,
+          to: '/lms/lop-hoc/cho-xep-lop', nhan: t('menu.choXepLop'), icon: UserPlus,
           can: 'LopHoc',
         },
-        { to: '/tai-lieu', nhan: t('menu.taiLieu'), icon: BookOpen, can: 'TaiLieu' },
-        { to: '/hoc-phi', nhan: t('menu.hocPhi'), icon: Wallet, can: 'HocPhi' },
+        { to: '/lms/tai-lieu', nhan: t('menu.taiLieu'), icon: BookOpen, can: 'TaiLieu' },
+        { to: '/lms/hoc-phi', nhan: t('menu.hocPhi'), icon: Wallet, can: 'HocPhi' },
       ],
     },
 

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/lib/auth'
 import Layout from '@/components/Layout'
 import DangNhap from '@/pages/DangNhap'
@@ -43,6 +43,19 @@ const queryClient = new QueryClient({
   },
 })
 
+/**
+ * Chuyển đường LMS cũ (không tiền tố) sang `/lms/...`, **giữ nguyên phần còn lại của URL**.
+ *
+ * `/lop-hoc/abc-123?tab=lich` → `/lms/lop-hoc/abc-123?tab=lich`.
+ *
+ * `replace` để nút Back không kẹt vòng: không có nó thì bấm Back từ trang mới sẽ về đường cũ,
+ * đường cũ lại chuyển tiếp sang mới — người dùng bấm Back mãi không ra được.
+ */
+function DoiSangLms() {
+  const { pathname, search, hash } = useLocation()
+  return <Navigate to={`/lms${pathname}${search}${hash}`} replace />
+}
+
 /** Chặn route cần đăng nhập; còn cờ buộc đổi mật khẩu thì ép về màn đổi. */
 function CanDangNhap({ children }: { children: React.ReactNode }) {
   const { daDangNhap, phaiDoiMatKhau } = useAuth()
@@ -82,13 +95,28 @@ export default function App() {
               <Route path="/crm/khoa-hoc" element={<KhoaHoc />} />
               <Route path="/crm/san-pham" element={<SanPham />} />
 
-              <Route path="/hoc-vien" element={<HocVien />} />
-              <Route path="/lop-hoc" element={<LopHoc />} />
-              <Route path="/lop-hoc/cho-xep-lop" element={<ChoXepLop />} />
-              <Route path="/lop-hoc/:id" element={<ChiTietLopHoc />} />
-              <Route path="/buoi-hoc/:id" element={<ChiTietBuoiHoc />} />
-              <Route path="/tai-lieu" element={<TaiLieu />} />
-              <Route path="/hoc-phi" element={<HocPhi />} />
+              {/* LMS — tiền tố `/lms` cho đồng nhất với `/hrm`, `/crm` (10/09/2026). */}
+              <Route path="/lms/hoc-vien" element={<HocVien />} />
+              <Route path="/lms/lop-hoc" element={<LopHoc />} />
+              <Route path="/lms/lop-hoc/cho-xep-lop" element={<ChoXepLop />} />
+              <Route path="/lms/lop-hoc/:id" element={<ChiTietLopHoc />} />
+              <Route path="/lms/buoi-hoc/:id" element={<ChiTietBuoiHoc />} />
+              <Route path="/lms/tai-lieu" element={<TaiLieu />} />
+              <Route path="/lms/hoc-phi" element={<HocPhi />} />
+
+              {/*
+                Đường LMS CŨ (không tiền tố) → chuyển sang `/lms/...`.
+
+                Bookmark và link đã gửi cho nhau vẫn phải mở được: không có mấy dòng này thì
+                route `*` ở dưới sẽ lặng lẽ đẩy về Tổng quan, người dùng tưởng mất dữ liệu.
+
+                Dùng `<DoiSangLms>` chứ không `<Navigate to="...">` cố định: `to` tĩnh sẽ mất
+                `:id` và query (`?tab=lich`), tức link tới đúng một lớp/buổi cụ thể sẽ rơi về
+                danh sách.
+              */}
+              {['/hoc-vien', '/lop-hoc', '/buoi-hoc', '/tai-lieu', '/hoc-phi'].map((cu) => (
+                <Route key={cu} path={`${cu}/*`} element={<DoiSangLms />} />
+              ))}
               <Route path="/quan-tri/tai-khoan" element={<TaiKhoan />} />
               <Route path="/quan-tri/phan-quyen" element={<PhanQuyen />} />
               <Route path="/quan-tri/thiet-lap" element={<ThietLap />} />

@@ -207,7 +207,7 @@ export default function LopHoc() {
                         {/* Bấm thẳng tên lớp là thao tác tự nhiên nhất — menu chỉ để dành
                             cho những việc không đoán được. */}
                         <Link
-                          to={`/lop-hoc/${l.id}`}
+                          to={`/lms/lop-hoc/${l.id}`}
                           className="hover:text-primary hover:underline"
                         >
                           {l.ten}
@@ -235,22 +235,22 @@ export default function LopHoc() {
                               {
                                 nhan: t('lopHoc.xemChiTiet'),
                                 icon: Eye,
-                                onChon: () => navigate(`/lop-hoc/${l.id}`),
+                                onChon: () => navigate(`/lms/lop-hoc/${l.id}`),
                               },
                               {
                                 nhan: t('lopHoc.hocVien'),
                                 icon: Users,
-                                onChon: () => navigate(`/lop-hoc/${l.id}?tab=hoc-vien`),
+                                onChon: () => navigate(`/lms/lop-hoc/${l.id}?tab=hoc-vien`),
                               },
                               {
                                 nhan: t('buoiHoc.lich'),
                                 icon: CalendarDays,
-                                onChon: () => navigate(`/lop-hoc/${l.id}?tab=lich`),
+                                onChon: () => navigate(`/lms/lop-hoc/${l.id}?tab=lich`),
                               },
                               {
                                 nhan: t('hocLieu.baiTap'),
                                 icon: ClipboardList,
-                                onChon: () => navigate(`/lop-hoc/${l.id}?tab=bai-tap`),
+                                onChon: () => navigate(`/lms/lop-hoc/${l.id}?tab=bai-tap`),
                               },
                               {
                                 nhan: t('chung.sua'),

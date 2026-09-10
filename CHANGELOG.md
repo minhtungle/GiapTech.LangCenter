@@ -8,6 +8,24 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — URL LMS thêm tiền tố `/lms`, đồng nhất ba hệ thống con (10/09/2026)
+
+Người dùng phát hiện: vào HRM/CRM thì URL có `/hrm/`, `/crm/`, còn LMS thì không.
+
+- 7 route LMS thành `/lms/hoc-vien`, `/lms/lop-hoc`, `/lms/lop-hoc/cho-xep-lop`,
+  `/lms/lop-hoc/:id`, `/lms/buoi-hoc/:id`, `/lms/tai-lieu`, `/lms/hoc-phi`. (Nguyên nhân cũ: LMS
+  dựng trước khi tách ba hệ thống con.)
+- **Đường cũ vẫn chuyển tiếp** sang `/lms/...`, **giữ nguyên `:id` và query** — bookmark và link
+  đã gửi cho nhau không chết. `<Navigate to>` tĩnh sẽ làm mất chúng nên dùng component
+  `DoiSangLms` đọc `useLocation()`.
+- **Xoá được danh sách 5 đường hardcode trong `Layout.tsx`**: nay cả ba hệ thống đều suy từ tiền
+  tố, chỉ còn một bảng tra. Trước đó thêm một màn LMS mới mà quên khai vào danh sách thì sidebar
+  hiện sai hệ thống con — lỗi im lặng, không có lỗi biên dịch.
+- **Không đụng endpoint API**: `/api/v1/lop-hoc` giữ nguyên. Chỉ sửa 18 dòng điều hướng
+  (`navigate(`/`to=`/`to:`), đã kiểm chéo hai chiều để không lời gọi API nào bị đổi.
+- Canh bởi `e2e/url-he-thong-con.spec.ts`; đột biến (bỏ `search`/`hash` khi chuyển tiếp) làm test
+  đỏ đúng chỗ.
+
 ### Added — Xem tệp hồ sơ online + giới hạn định dạng, dung lượng (10/09/2026)
 
 - **Endpoint mới `GET /nhan-su/tep/{id}`** gác bằng `NhanSu.Xem` (không `Sua` — đọc hợp đồng

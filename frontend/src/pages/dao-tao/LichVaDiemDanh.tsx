@@ -182,7 +182,7 @@ export function LichVaDiemDanh({
               // Bấm buổi → view chi tiết, không mở thẳng modal điểm danh nữa: view chi tiết
               // có cả điểm danh lẫn nhận xét / bài tập, và chuyển được sang buổi khác.
               // Điểm danh nhanh vẫn còn ở menu thao tác của bảng.
-              onChonBuoi={(id) => navigate(`/buoi-hoc/${id}`)}
+              onChonBuoi={(id) => navigate(`/lms/buoi-hoc/${id}`)}
             />
           </Suspense>
         ) : (
@@ -203,7 +203,7 @@ export function LichVaDiemDanh({
                   <tr
                     key={b.id}
                     className="cursor-pointer hover:bg-muted/40"
-                    onClick={() => navigate(`/buoi-hoc/${b.id}`)}
+                    onClick={() => navigate(`/lms/buoi-hoc/${b.id}`)}
                   >
                     <Td className="font-medium">{b.thuTu}</Td>
                     <Td className="text-muted-foreground">
@@ -247,7 +247,7 @@ export function LichVaDiemDanh({
                             {
                               nhan: t('chung.xemChiTiet'),
                               icon: Eye,
-                              onChon: () => navigate(`/buoi-hoc/${b.id}`),
+                              onChon: () => navigate(`/lms/buoi-hoc/${b.id}`),
                             },
                             {
                               nhan: t('buoiHoc.diemDanh'),
