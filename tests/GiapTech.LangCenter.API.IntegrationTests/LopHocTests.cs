@@ -164,6 +164,61 @@ public class LopHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     /// <summary>
+    /// HỌC VIÊN chỉ thấy lớp mình đang học — cùng module `/lop-hoc`, cùng quyền `LopHoc.Xem`,
+    /// khác nhau ở phạm vi hàng do `IPhamViLopHoc` lọc.
+    ///
+    /// Bổ sung 10/09/2026 khi chủ sản phẩm hỏi "học viên và giáo viên dùng chung module lớp học
+    /// hay cần module khác". Trước đó chỉ có test cho GIÁO VIÊN
+    /// (<see cref="Giao_vien_chi_thay_lop_minh_phu_trach"/>) — nhánh học viên trong
+    /// `PhamViLopHoc.LocTheoPhamVi` (`l.HocViens.Any(...)`) **không test nào canh**, xoá đi vẫn
+    /// xanh cả bộ. Đây chính là chỗ rò rỉ nặng nhất nếu sai: học viên thấy mọi lớp của trung tâm.
+    /// </summary>
+    [Fact]
+    public async Task Hoc_vien_chi_thay_lop_minh_dang_hoc()
+    {
+        var admin = await Client();
+
+        var quyens = (await admin.GetFromJsonAsync<List<JsonElement>>("/api/v1/quyen"))!;
+        var quyenGv = quyens.Single(q => q.GetProperty("tenQuyen").GetString() == "Giáo viên")
+            .GetProperty("id").GetString()!;
+        var quyenHv = quyens.Single(q => q.GetProperty("tenQuyen").GetString() == "Học viên")
+            .GetProperty("id").GetString()!;
+
+        var gv = await TaoNguoiDung(admin, "gv-pv-hv", "GiaoVien", [quyenGv]);
+        var hv = await TaoNguoiDung(admin, "hv-pham-vi", "HocVien", [quyenHv]);
+
+        var lopCoHv = await TaoLop(admin, "Lớp HV đang học", gv);
+        var lopKhongCoHv = await TaoLop(admin, "Lớp HV không học", gv);
+
+        // Rời trạng thái nháp — lớp nháp chỉ người tạo thấy, nếu không test sẽ xanh vì lý do sai.
+        foreach (var id in new[] { lopCoHv, lopKhongCoHv })
+        {
+            var ht = await admin.PostAsJsonAsync($"/api/v1/lop-hoc/{id}/hoan-tat",
+                new { NgayKhaiGiang = DateTimeOffset.UtcNow.AddDays(7) });
+            ht.EnsureSuccessStatusCode();
+        }
+
+        (await admin.PostAsJsonAsync($"/api/v1/lop-hoc/{lopCoHv}/hoc-vien",
+            new { HocVienIds = new[] { hv } })).EnsureSuccessStatusCode();
+
+        var cHv = await Client(factory.MaTrungTamA, "hv-pham-vi", "matkhau123");
+
+        var ds = await cHv.GetFromJsonAsync<JsonElement>("/api/v1/lop-hoc");
+        var ten = ds.GetProperty("duLieu").EnumerateArray()
+            .Select(l => l.GetProperty("ten").GetString()).ToList();
+
+        Assert.Contains("Lớp HV đang học", ten);
+        Assert.DoesNotContain("Lớp HV không học", ten);
+
+        // IDOR: gõ thẳng id lớp mình không học → 404, không phải 403 (403 xác nhận lớp tồn tại).
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await cHv.GetAsync($"/api/v1/lop-hoc/{lopKhongCoHv}")).StatusCode);
+
+        Assert.Equal(HttpStatusCode.OK,
+            (await cHv.GetAsync($"/api/v1/lop-hoc/{lopCoHv}")).StatusCode);
+    }
+
+    /// <summary>
     /// Chiều ngược: người có `LopHocToanTrungTam` thấy hết.
     ///
     /// Không có test này thì ai đó "sửa" bằng cách lọc cứng theo giáo viên sẽ làm admin mù mà

@@ -8,6 +8,18 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — Test canh phạm vi lớp học của HỌC VIÊN (10/09/2026)
+
+Chủ sản phẩm hỏi "học viên và giáo viên dùng chung module lớp học hay cần module khác". Rà lại
+thì **hành vi đã đúng** (`IPhamViLopHoc` lọc hàng, ba vai trò dùng chung một module), nhưng phát
+hiện **lỗ hổng vùng phủ test**: chỉ có test cho giáo viên, nhánh học viên
+(`l.HocViens.Any(...)`) trong `PhamViLopHoc.LocTheoPhamVi` **không test nào canh**.
+
+- Thêm `LopHocTests.Hoc_vien_chi_thay_lop_minh_dang_hoc` — kiểm cả danh sách lẫn **IDOR** (gõ
+  thẳng id lớp mình không học → 404, không phải 403 vì 403 xác nhận lớp đó tồn tại).
+- Đột biến chứng minh test có răng: bỏ nhánh học viên khỏi bộ lọc → **chỉ test này đỏ**, 13 test
+  khác trong `LopHocTests` vẫn xanh, tức trước đây xoá nhánh đó đi cả bộ test vẫn xanh.
+
 ### Changed — URL LMS thêm tiền tố `/lms`, đồng nhất ba hệ thống con (10/09/2026)
 
 Người dùng phát hiện: vào HRM/CRM thì URL có `/hrm/`, `/crm/`, còn LMS thì không.
