@@ -47,6 +47,9 @@ public class DongThoiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     // Một học viên MỘT bản ghi trong một lớp — chống import/bấm hai lần tạo hàng trùng.
     [InlineData("LopHocHocVien", new[] { "LopHocId", "HocVienId" })]
     [InlineData("LopHocTroGiang", new[] { "LopHocId", "TroGiangId" })]
+    // Một khoá gán MỘT lần vào một lớp (12/09/2026). `AnyAsync` rồi `Add` trong handler là bẫy
+    // kinh điển: hai request song song đều thấy "chưa có" và đều ghi.
+    [InlineData("LopHocKhoaHoc", new[] { "LopHocId", "KhoaHocId" })]
     [InlineData("BuoiHoc", new[] { "LopHocId", "ThuTu" })]
     // Mỗi học viên đúng một bản ghi điểm danh cho mỗi buổi.
     [InlineData("DiemDanh", new[] { "BuoiHocId", "HocVienId" })]
