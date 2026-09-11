@@ -76,7 +76,11 @@ export default function LopHoc() {
   const { data: soCho = 0 } = useQuery({
     queryKey: ['cho-xep-lop', 'dem'],
     queryFn: async () =>
-      (await api.get<YeuCauXepLopDto[]>('/lop-hoc/cho-xep-lop')).data.length,
+      // Chỉ cần CON SỐ cho badge: xin 1 dòng rồi đọc `tongSoDong`, không kéo cả danh sách
+      // về chỉ để `.length` (12/09/2026 — endpoint nay có phân trang).
+      (await api.get<KetQuaTrang<YeuCauXepLopDto>>('/lop-hoc/cho-xep-lop', {
+        params: { soDong: 1 },
+      })).data.tongSoDong,
     enabled: xemDuocHangCho,
   })
 

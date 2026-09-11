@@ -3,11 +3,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { UserPlus, X } from 'lucide-react'
-import { api, layMaLoi, type KetQuaTrang } from '@/lib/api'
 import {
-  Badge, Button, CanhBaoLoi, Card, CardContent, Label, Table, Td, Textarea, Th, TrangTrong,
+  api, layDuLieuLoi, layMaLoi, trangRong, type KetQuaTrang, type ThamSoTrang,
+} from '@/lib/api'
+import {
+  Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
+  TrangTrong,
 } from '@/components/ui'
 import { Modal } from '@/components/ui/Modal'
+import { PhanTrang } from '@/components/ui/PhanTrang'
+import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
+import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { useQuyen } from '@/lib/quyen'
 import { useXacNhan } from '@/lib/xacNhan'
@@ -39,10 +45,23 @@ export default function ChoXepLop({ nhung = false }: { nhung?: boolean } = {}) {
   const [lopChon, setLopChon] = useState<string | null>(null)
   const [maLoi, setMaLoi] = useState<string | null>(null)
 
-  const { data: ds = [], isLoading } = useQuery({
-    queryKey: ['cho-xep-lop'],
-    queryFn: async () => (await api.get<YeuCauXepLopDto[]>('/lop-hoc/cho-xep-lop')).data,
+  // Tìm kiếm + phân trang ở SERVER (12/09/2026): hàng chờ của trung tâm đông lên vài trăm
+  // dòng, kéo hết về rồi cắt ở trình duyệt sẽ chậm dần mà không ai để ý cho tới khi quá muộn.
+  const [timKiem, setTimKiem] = useState('')
+  const [trang, setTrang] = useState(1)
+  const [soDong, setSoDong] = useState(20)
+  const thamSo: ThamSoTrang = { trang, soDong }
+
+  const { data: kq = trangRong<YeuCauXepLopDto>(), isLoading } = useQuery({
+    queryKey: ['cho-xep-lop', timKiem, trang, soDong],
+    queryFn: async () =>
+      (
+        await api.get<KetQuaTrang<YeuCauXepLopDto>>('/lop-hoc/cho-xep-lop', {
+          params: { timKiem: timKiem || undefined, ...thamSo },
+        })
+      ).data,
   })
+  const ds = kq.duLieu
 
   // Chỉ tải danh sách lớp khi thật sự mở hộp thoại duyệt — vào màn này chỉ để xem thì không
   // cần gọi thêm một API 200 dòng.
@@ -60,16 +79,49 @@ export default function ChoXepLop({ nhung = false }: { nhung?: boolean } = {}) {
     void qc.invalidateQueries({ queryKey: ['khach-hang'] })
   }
 
+  /**
+   * Cảnh báo lệch khoá học (12/09/2026). null = chưa có cảnh báo nào đang chờ trả lời.
+   *
+   * Là **cảnh báo, không phải chặn**: backend trả `KHOA_HOC_KHONG_KHOP_LOP` ở lần gọi đầu; người
+   * duyệt đọc rồi đồng ý thì gọi lại với `boQuaCanhBaoKhoaHoc: true`.
+   */
+  const [canhBaoKhoa, setCanhBaoKhoa] = useState<{
+    khoaCuaDon: string[]
+    khoaCuaLop: string[]
+    tenLop: string
+  } | null>(null)
+
   const duyet = useMutation({
-    mutationFn: () =>
-      api.post(`/lop-hoc/${lopChon}/duyet-cho-xep-lop`, { yeuCauIds: [duyetCho!.id] }),
+    // Kiểu tham số khai tường minh: `(x = false) =>` làm TanStack suy ra `void` và mọi lời
+    // gọi `mutate(true)` thành lỗi biên dịch.
+    mutationFn: (boQuaCanhBao: boolean) =>
+      api.post(`/lop-hoc/${lopChon}/duyet-cho-xep-lop`, {
+        yeuCauIds: [duyetCho!.id],
+        boQuaCanhBaoKhoaHoc: boQuaCanhBao,
+      }),
     onSuccess: () => {
       lamMoi()
       setDuyetCho(null)
       setLopChon(null)
       setMaLoi(null)
+      setCanhBaoKhoa(null)
     },
-    onError: (e) => setMaLoi(layMaLoi(e)),
+    onError: (e) => {
+      const ma = layMaLoi(e)
+      if (ma === 'KHOA_HOC_KHONG_KHOP_LOP') {
+        // Không hiện ô lỗi đỏ: đây chưa phải lỗi, chỉ là điều người duyệt cần biết trước khi
+        // quyết. Mở hộp hỏi lại kèm tên khoá hai bên để họ so được ngay tại chỗ.
+        const du = layDuLieuLoi(e)
+        setCanhBaoKhoa({
+          khoaCuaDon: (du?.khoaCuaDon as string[]) ?? [],
+          khoaCuaLop: (du?.khoaCuaLop as string[]) ?? [],
+          tenLop: (du?.tenLop as string) ?? '',
+        })
+        setMaLoi(null)
+        return
+      }
+      setMaLoi(ma)
+    },
   })
 
   const tuChoi = useMutation({
@@ -103,7 +155,7 @@ export default function ChoXepLop({ nhung = false }: { nhung?: boolean } = {}) {
       {!nhung && (
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-lg font-semibold">{t('menu.choXepLop')}</h2>
-          {ds.length > 0 && <Badge variant="cho">{ds.length}</Badge>}
+          {kq.tongSoDong > 0 && <Badge variant="cho">{kq.tongSoDong}</Badge>}
           <Link
             to="/lms/lop-hoc"
             className="ml-auto text-sm text-muted-foreground hover:text-foreground"
@@ -116,11 +168,27 @@ export default function ChoXepLop({ nhung = false }: { nhung?: boolean } = {}) {
       {maLoi && !duyetCho && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="space-y-4 pt-6">
+          {/* Ô tìm: gõ là đổi `timKiem` → queryKey đổi → TanStack tự gọi lại. Về trang 1 vì
+              đang ở trang 3 mà lọc còn 2 kết quả thì bảng trống trơn một cách vô lý. */}
+          <Input
+            value={timKiem}
+            onChange={(e) => {
+              setTimKiem(e.target.value)
+              setTrang(1)
+            }}
+            placeholder={t('xepLop.timHocVienCho')}
+            className="sm:max-w-xs"
+          />
+
           {isLoading ? (
             <TrangTrong thongDiep={t('chung.dangTai')} />
           ) : ds.length === 0 ? (
-            <TrangTrong thongDiep={t('xepLop.khongCoAiCho')} />
+            // Phân biệt hai tình huống: chưa ai chờ, vs lọc không ra. Cùng một câu thì người
+            // dùng tưởng hàng chờ rỗng trong khi chỉ là gõ sai tên.
+            <TrangTrong
+              thongDiep={timKiem ? t('xepLop.timKhongThayCho') : t('xepLop.khongCoAiCho')}
+            />
           ) : (
             <Table>
               <thead>
@@ -128,8 +196,10 @@ export default function ChoXepLop({ nhung = false }: { nhung?: boolean } = {}) {
                   <Th>{t('xepLop.hocVien')}</Th>
                   <Th>{t('khoaHoc.tenKhoa')}</Th>
                   <Th className="text-right">{t('xepLop.hocPhiTuDon')}</Th>
-                  <Th>{t('xepLop.nguoiGui')}</Th>
-                  <Th>{t('xepLop.thoiDiemGui')}</Th>
+                  {/* Người gửi + ngày gửi gộp MỘT cột và ẩn ở màn hẹp: hàng chờ dài thì
+                      thông tin quyết định là "ai · khoá gì · bao nhiêu tiền", còn ai gửi
+                      lúc nào là bối cảnh — vẫn cần nhưng không đáng hai cột (12/09/2026). */}
+                  <Th className="hidden lg:table-cell">{t('xepLop.nguoiGui')}</Th>
                   <Th />
                 </tr>
               </thead>
@@ -147,14 +217,29 @@ export default function ChoXepLop({ nhung = false }: { nhung?: boolean } = {}) {
                           </Badge>
                         )}
                       </div>
-                      {y.soDienThoai && (
-                        <div className="text-xs text-muted-foreground">{y.soDienThoai}</div>
-                      )}
-                      {y.ghiChu && (
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          {t('xepLop.ghiChuNguoiGui')}: {y.ghiChu}
+                      {/* Điện thoại và ghi chú gộp một dòng thay vì hai: mỗi dòng bảng bớt
+                          được một tầng, mà hàng chờ dài thì chiều cao dòng là thứ tốn nhất.
+                          Ghi chú cắt ở 1 dòng (`truncate`) + `title` để xem đủ khi cần —
+                          ghi chú dài 500 ký tự từng đẩy một dòng cao gấp ba. */}
+                      {(y.soDienThoai || y.ghiChu) && (
+                        <div
+                          className="truncate text-xs text-muted-foreground"
+                          title={
+                            [
+                              y.soDienThoai,
+                              y.ghiChu && `${t('xepLop.ghiChuNguoiGui')}: ${y.ghiChu}`,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')
+                          }
+                        >
+                          {[y.soDienThoai, y.ghiChu].filter(Boolean).join(' · ')}
                         </div>
                       )}
+                      {/* Màn hẹp không có cột người gửi → đưa xuống đây để không mất thông tin. */}
+                      <div className="text-xs text-muted-foreground lg:hidden">
+                        {(y.tenNguoiGui ?? '—') + ' · ' + ngayVN(y.thoiDiemGui)}
+                      </div>
                     </Td>
                     <Td>
                       {y.tenKhoaHoc}
@@ -162,7 +247,7 @@ export default function ChoXepLop({ nhung = false }: { nhung?: boolean } = {}) {
                         {t('khoaHoc.soBuoiNgan', { so: y.soBuoi })}
                       </div>
                     </Td>
-                    <Td className="text-right">
+                    <Td className="whitespace-nowrap text-right">
                       {tien(y.soTien, y.donViTien)}
                       {y.donViTien !== 'VND' && (
                         <div className="text-xs text-muted-foreground">
@@ -170,10 +255,22 @@ export default function ChoXepLop({ nhung = false }: { nhung?: boolean } = {}) {
                         </div>
                       )}
                     </Td>
-                    <Td className="text-muted-foreground">{y.tenNguoiGui ?? '—'}</Td>
-                    <Td className="text-muted-foreground">{ngayVN(y.thoiDiemGui)}</Td>
+                    <Td className="hidden whitespace-nowrap text-muted-foreground lg:table-cell">
+                      {y.tenNguoiGui ?? '—'}
+                      <div className="text-xs">{ngayVN(y.thoiDiemGui)}</div>
+                    </Td>
                     <Td>
-                      <div className="flex justify-end gap-2">
+                      {/*
+                        GIỮ nút Duyệt ra ngoài, đưa Từ chối vào menu (12/09/2026).
+
+                        Không gom cả hai vào menu: duyệt là việc làm hàng chục lần mỗi phiên,
+                        bắt bấm hai lần (mở menu → chọn) cho thao tác chính là tính thêm một
+                        cú bấm vào mọi học viên. Từ chối thì hiếm và đã phải mở form nhập lý
+                        do, thêm một cú bấm không đáng kể.
+
+                        Cột hẹp lại đáng kể: hai nút có chữ chiếm ~210px, nay còn ~140px.
+                      */}
+                      <div className="flex items-center justify-end gap-1">
                         {duocSuaLop && (
                           <>
                             <Button
@@ -190,17 +287,20 @@ export default function ChoXepLop({ nhung = false }: { nhung?: boolean } = {}) {
                             {/* TỪ CHỐI, không phải "huỷ": huỷ là hành động của bên BÁN thu
                                 lại yêu cầu, từ chối là bên đào tạo không nhận. Lý do bắt buộc
                                 nên phải mở form, không dùng hộp confirm trơn. */}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setMaLoi(null)
-                                setTuChoiCho(y)
-                              }}
-                            >
-                              <X className="h-4 w-4" />
-                              {t('xepLop.tuChoi')}
-                            </Button>
+                            <MenuThaoTac
+                              nhanMo={t('chung.thaoTac')}
+                              muc={[
+                                {
+                                  nhan: t('xepLop.tuChoi'),
+                                  icon: X,
+                                  nguyHiem: true,
+                                  onChon: () => {
+                                    setMaLoi(null)
+                                    setTuChoiCho(y)
+                                  },
+                                },
+                              ]}
+                            />
                           </>
                         )}
                       </div>
@@ -209,6 +309,21 @@ export default function ChoXepLop({ nhung = false }: { nhung?: boolean } = {}) {
                 ))}
               </tbody>
             </Table>
+          )}
+
+          {/* Ẩn khi chỉ có một trang: thanh phân trang cho 3 dòng là nhiễu. */}
+          {kq.tongSoTrang > 1 && (
+            <PhanTrang
+              trang={kq.trang}
+              soDong={kq.soDong}
+              tongSoDong={kq.tongSoDong}
+              tongSoTrang={kq.tongSoTrang}
+              onDoiTrang={setTrang}
+              onDoiSoDong={(n) => {
+                setSoDong(n)
+                setTrang(1)
+              }}
+            />
           )}
         </CardContent>
       </Card>
@@ -324,7 +439,7 @@ export default function ChoXepLop({ nhung = false }: { nhung?: boolean } = {}) {
                       hocPhi: tienVN(duyetCho.soTien * duyetCho.tyGiaVeVnd),
                     }),
                     nhanDongY: t('xepLop.duyet'),
-                    onDongY: () => duyet.mutate(),
+                    onDongY: () => duyet.mutate(false),
                   })
                 }
               >
@@ -334,6 +449,34 @@ export default function ChoXepLop({ nhung = false }: { nhung?: boolean } = {}) {
           </div>
         )}
       </Modal>
+
+      {/*
+        CẢNH BÁO LỆCH KHOÁ HỌC (12/09/2026) — thông báo để người duyệt lưu ý, **vẫn cho phép**
+        nếu họ đồng ý (yêu cầu chủ sản phẩm).
+
+        Dùng `HopXacNhan` trực tiếp chứ không qua `useXacNhan`: hộp này mở TỪ TRONG modal duyệt
+        và cần lời văn nhiều dòng (khoá của đơn vs khoá của lớp) để người duyệt so được ngay.
+        Modal duyệt bên dưới bị `inert` tự động nên không bấm nhầm được (vá 11/09/2026).
+      */}
+      <HopXacNhan
+        mo={canhBaoKhoa !== null}
+        tieuDe={t('xepLop.canhBaoLechKhoa')}
+        thongDiep={
+          canhBaoKhoa
+            ? t('xepLop.hoiLechKhoa', {
+                khoaDon: canhBaoKhoa.khoaCuaDon.join(', '),
+                lop: canhBaoKhoa.tenLop,
+                khoaLop: canhBaoKhoa.khoaCuaLop.join(', '),
+              })
+            : ''
+        }
+        nhanDongY={t('xepLop.vanDuyet')}
+        onHuy={() => setCanhBaoKhoa(null)}
+        onDongY={() => {
+          setCanhBaoKhoa(null)
+          duyet.mutate(true)
+        }}
+      />
 
       {hop}
     </div>

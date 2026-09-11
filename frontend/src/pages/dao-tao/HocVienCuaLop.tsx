@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Trash2, UserPlus } from 'lucide-react'
-import { api, layMaLoi } from '@/lib/api'
+import { api, layDuLieuLoi, layMaLoi, type KetQuaTrang } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Label, Table, Td, Th, TrangTrong,
 } from '@/components/ui'
 import { KhungNoiDung } from '@/components/ui/KhungNoiDung'
+import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import { SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { useQuyen } from '@/lib/quyen'
@@ -76,20 +77,53 @@ export function HocVienCuaLop({
    * chỉ để nhận 403.
    */
   const { data: dsCho = [] } = useQuery({
-    queryKey: ['cho-xep-lop'],
+    queryKey: ['cho-xep-lop', 'trong-lop'],
     queryFn: async () =>
-      (await api.get<YeuCauXepLopDto[]>('/lop-hoc/cho-xep-lop')).data,
+      // `soDong: 200` (chặn trên của `ThamSoTrang`): đây là danh sách CHỌN trong lớp, không
+      // phải bảng duyệt — người phụ trách cần thấy cả hàng chờ để lấp chỗ, không phân trang.
+      // Endpoint có phân trang từ 12/09/2026 nên mặc định 20 sẽ cắt mất người chờ lâu nhất.
+      (
+        await api.get<KetQuaTrang<YeuCauXepLopDto>>('/lop-hoc/cho-xep-lop', {
+          params: { soDong: 200 },
+        })
+      ).data.duLieu,
     enabled: duocSuaLop,
   })
 
+  /** Cảnh báo lệch khoá học (12/09/2026) — xem chú thích cùng tên ở `ChoXepLop.tsx`. */
+  const [canhBaoKhoa, setCanhBaoKhoa] = useState<{
+    ids: string[]
+    khoaCuaDon: string[]
+    khoaCuaLop: string[]
+  } | null>(null)
+
   const duyet = useMutation({
-    mutationFn: (yeuCauIds: string[]) =>
-      api.post(`/lop-hoc/${lop.id}/duyet-cho-xep-lop`, { yeuCauIds }),
+    mutationFn: ({ ids, boQua }: { ids: string[]; boQua: boolean }) =>
+      api.post(`/lop-hoc/${lop.id}/duyet-cho-xep-lop`, {
+        yeuCauIds: ids,
+        boQuaCanhBaoKhoaHoc: boQua,
+      }),
     onSuccess: () => {
       setMaLoi(null)
+      setCanhBaoKhoa(null)
       lamMoi()
     },
-    onError: (e) => setMaLoi(layMaLoi(e)),
+    onError: (e, bien) => {
+      const ma = layMaLoi(e)
+      if (ma === 'KHOA_HOC_KHONG_KHOP_LOP') {
+        const du = layDuLieuLoi(e)
+        // Giữ lại `ids` của lần gọi vừa thất bại: người duyệt đồng ý thì gọi lại đúng lô đó,
+        // không phải bắt họ chọn lại từ đầu.
+        setCanhBaoKhoa({
+          ids: bien.ids,
+          khoaCuaDon: (du?.khoaCuaDon as string[]) ?? [],
+          khoaCuaLop: (du?.khoaCuaLop as string[]) ?? [],
+        })
+        setMaLoi(null)
+        return
+      }
+      setMaLoi(ma)
+    },
   })
 
   const daTrongLop = new Set(hocViens.map((h) => h.hocVienId))
@@ -153,7 +187,7 @@ export function HocVienCuaLop({
                             hocPhi: tienVN(y.soTien * y.tyGiaVeVnd),
                           }),
                           nhanDongY: t('xepLop.duyet'),
-                          onDongY: () => duyet.mutate([y.id]),
+                          onDongY: () => duyet.mutate({ ids: [y.id], boQua: false }),
                         })
                       }
                     >
@@ -259,6 +293,28 @@ export function HocVienCuaLop({
           </Table>
         )}
       </div>
+      {/* Cảnh báo lệch khoá học — thông báo để lưu ý, vẫn cho phép nếu đồng ý (12/09/2026). */}
+      <HopXacNhan
+        mo={canhBaoKhoa !== null}
+        tieuDe={t('xepLop.canhBaoLechKhoa')}
+        thongDiep={
+          canhBaoKhoa
+            ? t('xepLop.hoiLechKhoa', {
+                khoaDon: canhBaoKhoa.khoaCuaDon.join(', '),
+                lop: lop.ten,
+                khoaLop: canhBaoKhoa.khoaCuaLop.join(', '),
+              })
+            : ''
+        }
+        nhanDongY={t('xepLop.vanDuyet')}
+        onHuy={() => setCanhBaoKhoa(null)}
+        onDongY={() => {
+          const ids = canhBaoKhoa?.ids ?? []
+          setCanhBaoKhoa(null)
+          if (ids.length > 0) duyet.mutate({ ids, boQua: true })
+        }}
+      />
+
       {hop}
     </KhungNoiDung>
   )
