@@ -1,6 +1,7 @@
 using FluentValidation;
 using GiapTech.LangCenter.Application.Common.Exceptions;
 using GiapTech.LangCenter.Application.Common.Interfaces;
+using GiapTech.LangCenter.Application.Common.Models;
 using GiapTech.LangCenter.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -38,27 +39,53 @@ public record YeuCauXepLopDto(
 
 // ---------- Query: danh sách chờ ----------
 
+/// <summary>
+/// Danh sách chờ xếp lớp, **có phân trang** (12/09/2026).
+///
+/// Trước đó trả mảng trần: một trung tâm đông thì hàng chờ vài trăm dòng về hết một lần, và
+/// trang chậm dần mà không ai để ý cho tới khi quá muộn — đúng điều `ThamSoTrang` cảnh báo.
+/// </summary>
 public record LayDanhSachChoXepLopQuery(
     /// <summary>null = chỉ lấy `DangCho` (mặc định của màn hình).</summary>
     TrangThaiYeuCauXepLop? TrangThai = null,
     /// <summary>Lọc theo khoá — dùng khi mở từ trong một lớp cụ thể.</summary>
-    Guid? KhoaHocId = null) : IRequest<List<YeuCauXepLopDto>>;
+    Guid? KhoaHocId = null,
+    /// <summary>Tìm theo tên học viên hoặc số điện thoại. null/rỗng = không lọc.</summary>
+    string? TimKiem = null,
+    ThamSoTrang? Trang = null) : IRequest<KetQuaTrang<YeuCauXepLopDto>>;
 
 public class LayDanhSachChoXepLopHandler(IAppDbContext db)
-    : IRequestHandler<LayDanhSachChoXepLopQuery, List<YeuCauXepLopDto>>
+    : IRequestHandler<LayDanhSachChoXepLopQuery, KetQuaTrang<YeuCauXepLopDto>>
 {
-    public async Task<List<YeuCauXepLopDto>> Handle(
+    public async Task<KetQuaTrang<YeuCauXepLopDto>> Handle(
         LayDanhSachChoXepLopQuery request, CancellationToken ct)
     {
+        var trang = request.Trang ?? new ThamSoTrang();
         var q = db.YeuCauXepLops.AsQueryable();
 
         q = q.Where(y => y.TrangThai == (request.TrangThai ?? TrangThaiYeuCauXepLop.DangCho));
 
         if (request.KhoaHocId is { } kh) q = q.Where(y => y.DangKy.KhoaHocId == kh);
 
-        return await q
+        if (!string.IsNullOrWhiteSpace(request.TimKiem))
+        {
+            // `ToLower().Contains()` — cùng mẫu với các màn danh sách khác (`KhoaHocDtos`,
+            // `KhachHangDtos`). Không dùng `EF.Functions.ILike`: đó là hàm của Npgsql, mà
+            // `Application` KHÔNG được phụ thuộc provider (quy tắc #10).
+            var tu = request.TimKiem.Trim().ToLower();
+            q = q.Where(y => y.HocVien.HoTen.ToLower().Contains(tu)
+                             || (y.HocVien.SoDienThoai != null
+                                 && y.HocVien.SoDienThoai.Contains(tu)));
+        }
+
+        // Đếm TRƯỚC khi phân trang, sau khi lọc — nếu không thanh phân trang báo sai số trang.
+        var tong = await q.CountAsync(ct);
+
+        var duLieu = await q
             // Cũ nhất TRƯỚC: người chờ lâu nhất phải được xếp trước.
             .OrderBy(y => y.ThoiDiemGui)
+            .Skip(trang.BoQua)
+            .Take(trang.SoDongHopLe)
             .Select(y => new YeuCauXepLopDto(
                 y.Id, y.DangKyId, y.HocVienId, y.HocVien.HoTen, y.HocVien.SoDienThoai,
                 y.DangKy.KhachHangId,
@@ -71,6 +98,9 @@ public class LayDanhSachChoXepLopHandler(IAppDbContext db)
                 y.LopHocId, y.LopHoc == null ? null : y.LopHoc.Ten,
                 y.GhiChu))
             .ToListAsync(ct);
+
+        return new KetQuaTrang<YeuCauXepLopDto>(
+            duLieu, tong, trang.TrangHopLe, trang.SoDongHopLe);
     }
 }
 
@@ -108,12 +138,28 @@ public class GuiYeuCauXepLopHandler(IAppDbContext db, ICurrentUser currentUser)
         // Chỉ chặn khi còn một lần ĐANG CHỜ — bị từ chối thì được gửi lại (chốt 09/09/2026).
         // Partial unique index `ux_yeu_cau_xep_lop_dang_ky_dang_cho` chặn ở tầng DB; đây là chỗ
         // trả mã lỗi đọc được.
+        //
+        // Đây là chốt DUY NHẤT còn lại: "mỗi khoá chỉ được gửi yêu cầu tiếp khi yêu cầu hiện
+        // tại đã được duyệt hoặc từ chối" (chốt 12/09/2026). Hai yêu cầu cùng chờ trên một đơn
+        // làm người điều phối thấy hai dòng trùng mà không biết duyệt cái nào.
         if (cacLanTruoc.Any(y => y.TrangThai == TrangThaiYeuCauXepLop.DangCho))
             throw new AppException("DA_GUI_YEU_CAU_XEP_LOP");
 
-        // Đã xếp lớp rồi thì không gửi lại: học viên đang học, gửi thêm là xếp lớp hai lần.
-        if (cacLanTruoc.Any(y => y.TrangThai == TrangThaiYeuCauXepLop.DaXep))
-            throw new AppException("DON_DA_DUOC_XEP_LOP");
+        /*
+          BỎ chốt `DON_DA_DUOC_XEP_LOP` (12/09/2026, theo yêu cầu chủ sản phẩm).
+
+          Trước đây: đơn đã xếp lớp một lần thì KHÔNG gửi lại được nữa. Điều đó chặn cả những ca
+          hợp lệ mà nghiệp vụ thật cần:
+          - Học viên bị **gỡ khỏi lớp** → cần xếp lại vào lớp khác, nhưng đơn đã "DaXep" nên
+            người bán không gửi được yêu cầu nào nữa.
+          - Lớp **kết thúc / bị huỷ** → học viên còn buổi chưa học, cần chuyển sang lớp mới.
+          - Học lại, học bù, đổi ca.
+
+          Ghi danh thật nằm ở `LOP_HOC_HOC_VIEN`, và trạng thái "đang tham gia lớp nào" nay
+          **suy động** từ bảng đó (xem `LayTrangThaiThamGiaLopHandler`) chứ không suy từ trạng
+          thái yêu cầu. Nên một đơn có nhiều lần `DaXep` không còn gây mâu thuẫn dữ liệu: mỗi
+          lần là một lần xếp lớp có thật trong lịch sử.
+        */
 
         // MAX + 1. Hiện tại không có đường nào XOÁ hẳn một yêu cầu (huỷ và từ chối đều giữ
         // dòng), nên Count + 1 sẽ cho cùng kết quả — nhưng MAX là cái đúng theo định nghĩa
@@ -175,7 +221,16 @@ public class GuiYeuCauXepLopHandler(IAppDbContext db, ICurrentUser currentUser)
 /// Cùng một lệnh vì cùng một việc; hai lệnh riêng sẽ trôi khỏi nhau ở phần kiểm sức chứa và
 /// chốt học phí.
 /// </summary>
-public record DuyetVaoLopCommand(List<Guid> YeuCauIds, Guid LopHocId) : IRequest;
+public record DuyetVaoLopCommand(
+    List<Guid> YeuCauIds,
+    Guid LopHocId,
+    /// <summary>
+    /// true = người duyệt ĐÃ XEM cảnh báo lệch khoá và vẫn muốn tiếp tục (12/09/2026).
+    ///
+    /// Mặc định false để lần gọi đầu luôn nhận được cảnh báo: cờ mặc định true thì client cũ
+    /// (hoặc ai gọi API trực tiếp) sẽ bỏ qua cảnh báo mà không biết là có.
+    /// </summary>
+    bool BoQuaCanhBaoKhoaHoc = false) : IRequest;
 
 public class DuyetVaoLopValidator : AbstractValidator<DuyetVaoLopCommand>
 {
@@ -209,20 +264,103 @@ public class DuyetVaoLopHandler(
         if (ycs.Any(y => y.TrangThai != TrangThaiYeuCauXepLop.DangCho))
             throw new AppException("YEU_CAU_DA_XU_LY");
 
+        /*
+          CẢNH BÁO LỆCH KHOÁ HỌC (FR-21, chốt 12/09/2026) — **cảnh báo, KHÔNG chặn**.
+
+          Lớp nay gán được tối đa 3 khoá (`LOP_HOC_KHOA_HOC`, đóng nợ N19). Nếu khoá trong đơn
+          CRM không nằm trong số đó thì gần như chắc người duyệt chọn sai lớp — nhưng vẫn có ca
+          hợp lệ: học bù, lớp ghép, khoá tương đương chưa kịp gán. Nên chủ sản phẩm chốt
+          *"thông báo để người duyệt lưu ý, vẫn cho phép nếu đồng ý"*.
+
+          Cơ chế: lần gọi đầu (`BoQuaCanhBaoKhoaHoc = false`) trả mã lỗi kèm tên khoá lệch để
+          UI hỏi lại; người duyệt đồng ý thì client gọi lại với cờ true.
+
+          Lớp CHƯA gán khoá nào thì KHÔNG cảnh báo: lớp cũ tạo trước 12/09 đều rỗng, cảnh báo
+          hết sẽ thành tiếng ồn và người duyệt học cách bấm qua — đúng thứ làm cảnh báo mất tác
+          dụng khi cần nhất.
+        */
+        if (!request.BoQuaCanhBaoKhoaHoc)
+        {
+            var khoaCuaLop = await db.LopHocKhoaHocs
+                .Where(k => k.LopHocId == lop.Id)
+                .Select(k => k.KhoaHocId)
+                .ToListAsync(ct);
+
+            if (khoaCuaLop.Count > 0)
+            {
+                var lech = ycs
+                    .Where(y => y.DangKy.KhoaHocId is { } kh && !khoaCuaLop.Contains(kh))
+                    .ToList();
+
+                if (lech.Count > 0)
+                {
+                    // Tên khoá của đơn đi kèm mã lỗi: "không khớp khoá" mà không nói khoá nào
+                    // thì người duyệt phải tự mở lại đơn để biết mình sắp làm gì.
+                    var tenKhoaLech = await db.DangKyKhoaHocs
+                        .Where(d => lech.Select(y => y.DangKyId).Contains(d.Id))
+                        .Select(d => d.KhoaHoc!.Ten)
+                        .Distinct()
+                        .ToListAsync(ct);
+
+                    var tenLop = lop.Ten;
+                    var tenKhoaLop = await db.LopHocKhoaHocs
+                        .Where(k => k.LopHocId == lop.Id)
+                        .Select(k => k.KhoaHoc.Ten)
+                        .ToListAsync(ct);
+
+                    // `DuLieu` chứ không nhét vào chuỗi log: middleware trả nó về client, nên
+                    // frontend dựng được câu tiếng Việt đầy đủ mà backend vẫn chỉ trả MÃ LỖI
+                    // (quy tắc #3 — không hard-code message một ngôn ngữ ở API).
+                    throw new AppException("KHOA_HOC_KHONG_KHOP_LOP",
+                        $"Đơn thuộc khoá [{string.Join(", ", tenKhoaLech)}], "
+                        + $"lớp {tenLop} dạy [{string.Join(", ", tenKhoaLop)}]")
+                    {
+                        DuLieu = new Dictionary<string, object>
+                        {
+                            ["khoaCuaDon"] = tenKhoaLech,
+                            ["khoaCuaLop"] = tenKhoaLop,
+                            ["tenLop"] = tenLop
+                        }
+                    };
+                }
+            }
+        }
+
         var hocVienIds = ycs.Select(y => y.HocVienId).ToList();
 
-        var daCo = await db.LopHocHocViens
-            .Where(hv => hv.LopHocId == lop.Id && hocVienIds.Contains(hv.HocVienId))
-            .AnyAsync(ct);
-        if (daCo) throw new AppException("HOC_VIEN_DA_TRONG_LOP");
+        /*
+          Học viên ĐÃ ở trong lớp đích: KHÔNG báo lỗi, chỉ bỏ qua bước ghi danh và vẫn đóng
+          yêu cầu (chốt 11/09/2026).
 
-        // Sức chứa: đếm người ĐANG HỌC, không đếm người đã nghỉ.
-        if (lop.SucChuaToiDa is { } max)
+          Trước đây chỗ này `throw HOC_VIEN_DA_TRONG_LOP` và tạo ra bế tắc thật: người điều phối
+          thêm học viên vào lớp bằng tay (`ThemHocVienVaoLopCommand` — lệnh đó KHÔNG đóng yêu
+          cầu chờ nào), sau đó bấm duyệt thì lần nào cũng 400, mà dòng vẫn nằm trong hàng chờ.
+          Không có đường nào thoát: duyệt thì lỗi, mà hàng chờ không tự sạch. Nhật ký của một
+          trung tâm thật cho thấy **7 lần** bấm duyệt liên tiếp đều `HOC_VIEN_DA_TRONG_LOP`.
+
+          Vì sao bỏ qua là đúng chứ không phải "âm thầm bỏ sót": đích của việc duyệt là
+          *"người này vào lớp này"*. Nếu họ đã ở trong lớp thì đích đã đạt — ghi danh thêm một
+          dòng nữa mới là sai (`UNIQUE(lop_hoc_id, hoc_vien_id)` cũng chặn), và tính học phí
+          hai lần.
+
+          KHÔNG đụng tới yêu cầu khác của cùng học viên: mỗi yêu cầu là một ĐƠN riêng, một khoá
+          riêng, cần một lớp riêng (chốt 11/09/2026 — học viên được học nhiều lớp song song).
+          Đóng lây sang đơn khoá khác sẽ làm mất một khoá khách đã trả tiền.
+        */
+        var ghiDanhSan = await db.LopHocHocViens
+            .Where(hv => hv.LopHocId == lop.Id && hocVienIds.Contains(hv.HocVienId))
+            .ToListAsync(ct);
+        var daTrongLop = ghiDanhSan.Select(hv => hv.HocVienId).ToList();
+
+        // Sức chứa: đếm người ĐANG HỌC, không đếm người đã nghỉ. Chỉ tính người THẬT SỰ được
+        // thêm mới — người đã ở trong lớp không chiếm thêm chỗ nào.
+        var soThemMoi = ycs.Count(y => !daTrongLop.Contains(y.HocVienId));
+        if (lop.SucChuaToiDa is { } max && soThemMoi > 0)
         {
             var dangHoc = await db.LopHocHocViens
                 .CountAsync(hv => hv.LopHocId == lop.Id
                                   && hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc, ct);
-            if (dangHoc + ycs.Count > max) throw new AppException("VUOT_SUC_CHUA");
+            if (dangHoc + soThemMoi > max) throw new AppException("VUOT_SUC_CHUA");
         }
 
         var bayGio = DateTimeOffset.UtcNow;
@@ -236,15 +374,32 @@ public class DuyetVaoLopHandler(
             // Đơn ngoại tệ quy về VND bằng tỷ giá đã chụp: sổ học phí LMS chỉ có một đơn vị.
             var hocPhi = yc.DangKy.SoTien * yc.DangKy.TyGiaVeVnd;
 
-            db.LopHocHocViens.Add(new Domain.Entities.LopHocHocVien
+            var ghiDanh = ghiDanhSan.FirstOrDefault(hv => hv.HocVienId == yc.HocVienId);
+            if (ghiDanh is null)
             {
-                LopHocId = lop.Id,
-                HocVienId = yc.HocVienId,
-                NgayVaoLop = bayGio,
-                TrangThai = TrangThaiHocVienTrongLop.DangHoc,
-                HocPhiApDung = hocPhi
-            });
+                db.LopHocHocViens.Add(new Domain.Entities.LopHocHocVien
+                {
+                    LopHocId = lop.Id,
+                    HocVienId = yc.HocVienId,
+                    NgayVaoLop = bayGio,
+                    TrangThai = TrangThaiHocVienTrongLop.DangHoc,
+                    HocPhiApDung = hocPhi
+                });
+            }
+            else
+            {
+                // Đã ở trong lớp (thường là do thêm TAY, lấy giá lớp): ghi đè học phí bằng số
+                // của đơn CRM — chốt 11/09/2026 theo quyết định của chủ sản phẩm.
+                //
+                // Đây là thao tác GHI ĐÈ SỐ TIỀN đã chốt, nên chỉ làm ở đúng đường duyệt yêu
+                // cầu: người điều phối đang tuyên bố "đơn CRM này ứng với chỗ trong lớp này",
+                // và số của đơn mới là số khách thật sự nợ. Ca thật (11/09/2026): thêm tay lấy
+                // giá lớp 5.000.000đ trong khi đơn IELTS 6.5 cấp tốc là 10.800.000đ — giữ giá
+                // lớp thì sổ học phí thiếu 5.800.000đ.
+                ghiDanh.HocPhiApDung = hocPhi;
+            }
 
+            // Đóng yêu cầu trong CẢ HAI nhánh: ghi danh mới, hoặc đã ở trong lớp từ trước.
             yc.TrangThai = TrangThaiYeuCauXepLop.DaXep;
             yc.LopHocId = lop.Id;
             yc.ThoiDiemXuLy = bayGio;

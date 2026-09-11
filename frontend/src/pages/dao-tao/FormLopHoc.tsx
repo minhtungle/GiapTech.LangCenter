@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { api, type KetQuaTrang } from '@/lib/api'
 import { Button, CanhBaoLoi, Input, Label, Textarea } from '@/components/ui'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 import { useXacNhan } from '@/lib/xacNhan'
@@ -20,7 +22,12 @@ export interface DuLieuLopHoc {
   hocPhi?: number | null
   sucChuaToiDa: number | null
   boGioiHanSucChua: boolean
+  /** Khoá học lớp này dạy — tối đa 3 (12/09/2026). Luôn gửi tường minh từ form. */
+  khoaHocIds: string[]
 }
+
+/** Số khoá tối đa một lớp dạy — khớp `LopHocKhoaHocHelper.ToiDaKhoa` ở backend. */
+const TOI_DA_KHOA = 3
 
 /**
  * Form thông tin lớp học — dùng chung cho modal "thêm/sửa" ở danh sách và tab Tổng quan
@@ -67,7 +74,26 @@ export function FormLopHoc({
   const [hinhThuc, setHinhThuc] = useState<HinhThucHoc>(
     lop?.hinhThuc && lop.hinhThuc !== 'ChuaChon' ? lop.hinhThuc : 'Offline',
   )
+  const [khoaChon, setKhoaChon] = useState<string[]>(
+    lop?.khoaHocs?.map((k) => k.id) ?? [],
+  )
   const [loiCucBo, setLoiCucBo] = useState<string | null>(null)
+
+  /**
+   * Form tự nạp danh mục khoá thay vì nhận qua prop: form dùng ở hai nơi (modal danh sách và
+   * tab Tổng quan), truyền prop thì cả hai phải nhớ nạp — quên một chỗ là ô chọn trống rỗng
+   * mà không có lỗi nào.
+   *
+   * `dangBan: undefined` để lấy CẢ khoá ngừng bán: lớp cũ có thể đang dạy một khoá đã ngừng
+   * bán, lọc nó đi thì mở form sửa là mất liên kết đó (quy tắc #1).
+   */
+  const { data: khoaHocs = [] } = useQuery({
+    queryKey: ['khoa-hoc', 'chon-cho-lop'],
+    queryFn: async () =>
+      (await api.get<KetQuaTrang<{ id: string; ten: string; soBuoi: number }>>(
+        '/khoa-hoc', { params: { soDong: 200 } },
+      )).data.duLieu,
+  })
 
   const giaoVienLuaChon = nguoiDungs
     .filter((u) => u.loaiNguoiDung === 'GiaoVien')
@@ -114,6 +140,9 @@ export function FormLopHoc({
       // Ô sức chứa để trống khi SỬA nghĩa là "bỏ giới hạn" — null không diễn đạt được điều
       // đó vì null đã mang nghĩa "không gửi".
       boGioiHanSucChua: Boolean(lop) && sucChuaTho === '',
+      // LUÔN gửi tường minh: backend hiểu null là "giữ nguyên", nên bỏ trường này đi thì
+      // người dùng bỏ hết khoá trên form mà dữ liệu không đổi — im lặng và khó hiểu.
+      khoaHocIds: khoaChon,
     }
 
     // Hỏi trước khi ghi. Lời văn nói rõ tên lớp và việc ghi đè, không phải "Bạn có chắc?".
@@ -168,6 +197,36 @@ export function FormLopHoc({
           placeholder={t('lopHoc.chonTroGiang')}
           placeholderTimKiem={t('lopHoc.timTroGiang')}
         />
+      </div>
+
+      {/* KHOÁ HỌC — tối đa 3 (12/09/2026). Có liên kết này thì lúc duyệt học viên vào lớp,
+          hệ thống đối chiếu được khoá trong đơn CRM và cảnh báo khi lệch (đóng nợ N19). */}
+      <div className="flex flex-col gap-1.5 sm:col-span-2">
+        <Label htmlFor="khoaHocIds">
+          {t('lopHoc.khoaHocCuaLop')}
+          <span className="ml-1.5 font-normal text-muted-foreground">
+            {t('lopHoc.toiDaNKhoa', { so: TOI_DA_KHOA })}
+          </span>
+        </Label>
+        <SelectTimKiemNhieu
+          id="khoaHocIds"
+          luaChon={khoaHocs.map((k) => ({
+            giaTri: k.id,
+            nhan: k.ten,
+            phu: t('khoaHoc.soBuoiNgan', { so: k.soBuoi }),
+          }))}
+          giaTri={khoaChon}
+          // Chặn chọn cái thứ 4 ngay tại UI: để người dùng chọn rồi mới báo lỗi lúc Lưu là
+          // bắt họ làm lại. Validator backend vẫn giữ — UI không phải lớp bảo vệ.
+          onDoi={(v) => setKhoaChon(v.slice(0, TOI_DA_KHOA))}
+          placeholder={t('lopHoc.chonKhoaHoc')}
+          placeholderTimKiem={t('lopHoc.timKhoaHoc')}
+        />
+        {khoaChon.length >= TOI_DA_KHOA && (
+          <p className="text-xs text-muted-foreground">
+            {t('lopHoc.daDatToiDaKhoa', { so: TOI_DA_KHOA })}
+          </p>
+        )}
       </div>
 
       {hinhThuc !== 'Online' && (

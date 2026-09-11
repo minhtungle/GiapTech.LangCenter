@@ -94,6 +94,21 @@ export function layMaLoi(error: unknown): string {
 }
 
 /**
+ * Dữ liệu kèm theo mã lỗi (`AppException.DuLieu` ở backend) — để frontend dựng câu thông báo
+ * cụ thể mà API vẫn chỉ trả MÃ LỖI, không hard-code tiếng Việt (quy tắc #3).
+ *
+ * Ví dụ `KHOA_HOC_KHONG_KHOP_LOP` mang theo tên khoá của đơn và tên khoá của lớp, nên người
+ * duyệt đọc được "lệch ở đâu" thay vì chỉ "không khớp".
+ */
+export function layDuLieuLoi(error: unknown): Record<string, unknown> | null {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data as { duLieu?: Record<string, unknown> } | undefined
+    if (data?.duLieu) return data.duLieu
+  }
+  return null
+}
+
+/**
  * Kết quả phân trang từ API.
  *
  * Bốn endpoint danh sách (`/cau-thu`, `/tai-khoan`, `/doi-thu`, `/tran-dau`) trả về hình dạng

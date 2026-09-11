@@ -223,6 +223,17 @@ function TongQuanLop({
               nhan={t('lopHoc.troGiang')}
               giaTri={lop.tenTroGiangs.length > 0 ? lop.tenTroGiangs.join(', ') : '—'}
             />
+            {/* Khoá học lớp dạy (tối đa 3, 12/09/2026). Ghép chuỗi như dòng Trợ giảng ngay
+                trên thay vì badge: `Dong` dùng ở 6 chỗ và chỉ nhận string — nới thành
+                ReactNode chỉ để một dòng này là đổi API của component vì lý do trang trí. */}
+            <Dong
+              nhan={t('lopHoc.khoaHocCuaLop')}
+              giaTri={
+                lop.khoaHocs.length > 0
+                  ? lop.khoaHocs.map((k) => k.ten).join(', ')
+                  : t('lopHoc.chuaGanKhoa')
+              }
+            />
             <Dong nhan={t('lopHoc.hinhThuc')} giaTri={t(`hinhThucHoc.${lop.hinhThuc}`)} />
             <Dong
               nhan={lop.hinhThuc === 'Online' ? t('lopHoc.linkHoc') : t('lopHoc.phongHoc')}

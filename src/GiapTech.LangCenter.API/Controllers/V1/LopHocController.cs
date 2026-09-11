@@ -177,11 +177,15 @@ public class LopHocController(ISender sender) : ControllerBase
     /// </summary>
     [HttpGet("cho-xep-lop")]
     [RequirePermission(ChucNang.LopHoc, HanhDong.Sua)]
-    public async Task<ActionResult<List<YeuCauXepLopDto>>> ChoXepLop(
+    public async Task<ActionResult<KetQuaTrang<YeuCauXepLopDto>>> ChoXepLop(
         [FromQuery] TrangThaiYeuCauXepLop? trangThai,
         [FromQuery] Guid? khoaHocId,
+        [FromQuery] string? timKiem,
+        [FromQuery] int trang = 1,
+        [FromQuery] int soDong = 20,
         CancellationToken ct = default)
-        => Ok(await sender.Send(new LayDanhSachChoXepLopQuery(trangThai, khoaHocId), ct));
+        => Ok(await sender.Send(new LayDanhSachChoXepLopQuery(
+            trangThai, khoaHocId, timKiem, new ThamSoTrang(trang, soDong)), ct));
 
     /// <summary>
     /// Duyệt học viên đang chờ vào một lớp. Dùng cho cả hai lối vào của UI: từ danh sách chờ
@@ -192,11 +196,16 @@ public class LopHocController(ISender sender) : ControllerBase
     public async Task<IActionResult> DuyetVaoLop(
         Guid id, [FromBody] DuyetVaoLopBody body, CancellationToken ct)
     {
-        await sender.Send(new DuyetVaoLopCommand(body.YeuCauIds, id), ct);
+        await sender.Send(
+            new DuyetVaoLopCommand(body.YeuCauIds, id, body.BoQuaCanhBaoKhoaHoc), ct);
         return NoContent();
     }
 
-    public record DuyetVaoLopBody(List<Guid> YeuCauIds);
+    /// <param name="BoQuaCanhBaoKhoaHoc">
+    /// true = người duyệt đã xem cảnh báo lệch khoá học và vẫn muốn tiếp tục (12/09/2026).
+    /// Mặc định false nên client cũ vẫn nhận được cảnh báo thay vì bỏ qua âm thầm.
+    /// </param>
+    public record DuyetVaoLopBody(List<Guid> YeuCauIds, bool BoQuaCanhBaoKhoaHoc = false);
 
     /// <summary>
     /// Bên đào tạo từ chối xếp lớp — **lý do bắt buộc**, người bán phải trả lời được khách.

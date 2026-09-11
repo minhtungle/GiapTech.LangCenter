@@ -74,6 +74,18 @@ public class LopHoc : TenantEntity
     public ICollection<LopHocTroGiang> TroGiangs { get; set; } = [];
 
     /// <summary>
+    /// Khoá học mà lớp này dạy — **tối đa 3** (FR-07, chốt 12/09/2026).
+    ///
+    /// Bảng trung gian chứ không 3 cột `KhoaHoc1Id/2/3`: ba cột thì mọi truy vấn "lớp nào dạy
+    /// khoá X" phải `OR` ba lần và quên một cột là lọt, còn thêm khoá thứ tư phải đổi schema.
+    /// Giới hạn 3 ép ở validator, không ở schema — con số này do nghiệp vụ đặt và có thể đổi.
+    ///
+    /// Rỗng = lớp chưa gán khoá (lớp nháp, hoặc lớp cũ tạo trước 12/09). Không ràng buộc
+    /// NOT NULL để không phá dữ liệu đang có (quy tắc #1).
+    /// </summary>
+    public ICollection<LopHocKhoaHoc> KhoaHocs { get; set; } = [];
+
+    /// <summary>
     /// Trạng thái hiển thị cho người dùng, suy từ ngày với các lớp đang chạy.
     ///
     /// Không lưu vào DB: lưu thì phải có job đổi lúc nửa đêm, job chết là lớp kẹt sai trạng
@@ -139,4 +151,20 @@ public class LopHocTroGiang : TenantEntity
     public NguoiDung TroGiang { get; set; } = null!;
 
     public string? GhiChu { get; set; }
+}
+
+/// <summary>
+/// LOP_HOC_KHOA_HOC — lớp này dạy khoá học nào (FR-07, 12/09/2026). Tối đa 3 khoá mỗi lớp.
+///
+/// Đóng nợ N19: trước đây `LOP_HOC` không nối `KHOA_HOC` nên khi duyệt học viên vào lớp,
+/// hệ thống không biết đơn CRM của họ có khớp lớp không — người điều phối phải tự đối chiếu
+/// tên khoá bằng mắt.
+/// </summary>
+public class LopHocKhoaHoc : TenantEntity
+{
+    public Guid LopHocId { get; set; }
+    public LopHoc LopHoc { get; set; } = null!;
+
+    public Guid KhoaHocId { get; set; }
+    public KhoaHoc KhoaHoc { get; set; } = null!;
 }

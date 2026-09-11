@@ -83,3 +83,25 @@ public class LopHocTroGiangConfig : IEntityTypeConfiguration<LopHocTroGiang>
             .HasForeignKey(x => x.TroGiangId).OnDelete(DeleteBehavior.Cascade);
     }
 }
+
+public class LopHocKhoaHocConfig : IEntityTypeConfiguration<LopHocKhoaHoc>
+{
+    public void Configure(EntityTypeBuilder<LopHocKhoaHoc> b)
+    {
+        b.ToTable("LOP_HOC_KHOA_HOC");
+
+        // Quy tắc #8: "một khoá chỉ gán một lần vào một lớp" là UNIQUE ở tầng DB, không phải
+        // `if` trong handler — hai request song song đều thấy "chưa có" và đều ghi.
+        b.HasIndex(x => new { x.LopHocId, x.KhoaHocId }).IsUnique();
+        b.HasIndex(x => x.TenantId);
+
+        b.HasOne(x => x.LopHoc).WithMany(l => l.KhoaHocs)
+            .HasForeignKey(x => x.LopHocId).OnDelete(DeleteBehavior.Cascade);
+
+        // RESTRICT, KHÔNG Cascade: xoá một khoá học đang được lớp dạy sẽ âm thầm bỏ liên kết,
+        // và lớp mất căn cứ để đối chiếu đơn CRM lúc duyệt học viên. Bắt người xoá phải gỡ
+        // khỏi lớp trước — cùng lý lẽ với `KHOA_HOC` đã bán thì ngừng bán chứ không xoá (FR-19).
+        b.HasOne(x => x.KhoaHoc).WithMany()
+            .HasForeignKey(x => x.KhoaHocId).OnDelete(DeleteBehavior.Restrict);
+    }
+}

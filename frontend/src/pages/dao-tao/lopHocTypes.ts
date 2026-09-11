@@ -27,6 +27,14 @@ export interface LopHocDto {
   troGiangIds: string[]
   tenTroGiangs: string[]
   soHocVien: number
+  /** Khoá học lớp này dạy — tối đa 3 (12/09/2026). Rỗng = chưa gán. */
+  khoaHocs: KhoaHocCuaLopDto[]
+}
+
+/** Một khoá học mà lớp dạy — đủ để hiện tên và đối chiếu với đơn CRM. */
+export interface KhoaHocCuaLopDto {
+  id: string
+  ten: string
 }
 
 export interface NguoiDungNgan {

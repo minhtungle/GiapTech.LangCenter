@@ -36,7 +36,12 @@ public record LopHocDto(
     string? GhiChu,
     List<Guid> TroGiangIds,
     List<string> TenTroGiangs,
-    int SoHocVien);
+    int SoHocVien,
+    /// <summary>Khoá học lớp này dạy (tối đa 3, FR-07 12/09/2026). Rỗng = chưa gán.</summary>
+    List<KhoaHocCuaLopDto> KhoaHocs);
+
+/// <summary>Một khoá học mà lớp dạy — đủ để hiện tên và đối chiếu với đơn CRM.</summary>
+public record KhoaHocCuaLopDto(Guid Id, string Ten);
 
 // ---------- Queries ----------
 
@@ -82,7 +87,8 @@ public class LayDanhSachLopHocHandler(
                 l.NgayKhaiGiang, l.NgayKetThuc, l.TrangThai, l.GhiChu,
                 l.TroGiangs.Select(tg => tg.TroGiangId).ToList(),
                 l.TroGiangs.Select(tg => tg.TroGiang.HoTen).ToList(),
-                l.HocViens.Count(hv => hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc)))
+                l.HocViens.Count(hv => hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc),
+                l.KhoaHocs.Select(k => new KhoaHocCuaLopDto(k.KhoaHocId, k.KhoaHoc.Ten)).ToList()))
             .ToListAsync(ct);
 
         return new KetQuaTrang<LopHocDto>(duLieu, tong, trang.TrangHopLe, trang.SoDongHopLe);
@@ -112,7 +118,9 @@ public class LayLopHocHandler(
                        l.NgayKhaiGiang, l.NgayKetThuc, l.TrangThai, l.GhiChu,
                        l.TroGiangs.Select(tg => tg.TroGiangId).ToList(),
                        l.TroGiangs.Select(tg => tg.TroGiang.HoTen).ToList(),
-                       l.HocViens.Count(hv => hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc)))
+                       l.HocViens.Count(hv => hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc),
+                       l.KhoaHocs.Select(k => new KhoaHocCuaLopDto(k.KhoaHocId, k.KhoaHoc.Ten))
+                           .ToList()))
                    .FirstOrDefaultAsync(ct)
                // 404 chứ không 403: 403 xác nhận lớp đó tồn tại, tự nó là rò rỉ thông tin.
                ?? throw new KhongTimThayException($"LopHoc {request.Id}");
@@ -130,7 +138,12 @@ public record TaoLopHocCommand(
     decimal? HocPhi,
     int? SucChuaToiDa,
     string? GhiChu,
-    List<Guid> TroGiangIds) : IRequest<Guid>;
+    List<Guid> TroGiangIds,
+    /// <summary>
+    /// Khoá học lớp này dạy — **tối đa 3** (12/09/2026). Rỗng = chưa gán, vẫn tạo được lớp
+    /// (wizard cho lưu nháp trước khi biết dạy khoá nào).
+    /// </summary>
+    List<Guid>? KhoaHocIds = null) : IRequest<Guid>;
 
 public class TaoLopHocValidator : AbstractValidator<TaoLopHocCommand>
 {
@@ -145,6 +158,12 @@ public class TaoLopHocValidator : AbstractValidator<TaoLopHocCommand>
             .WithErrorCode("HOC_PHI_AM");
         RuleFor(x => x.SucChuaToiDa).GreaterThan(0).When(x => x.SucChuaToiDa.HasValue)
             .WithErrorCode("SUC_CHUA_KHONG_HOP_LE");
+        RuleFor(x => x.KhoaHocIds!).Must(x => x.Distinct().Count() <= LopHocKhoaHocHelper.ToiDaKhoa)
+            .When(x => x.KhoaHocIds != null).WithErrorCode("VUOT_SO_KHOA_HOC_CUA_LOP");
+        // Giới hạn 3 ép ở validator chứ không ở schema: con số do nghiệp vụ đặt, đổi nó không
+        // nên cần migration. Distinct trước khi đếm — gửi cùng một khoá ba lần không phải 3 khoá.
+        RuleFor(x => x.KhoaHocIds!).Must(x => x.Distinct().Count() <= LopHocKhoaHocHelper.ToiDaKhoa)
+            .When(x => x.KhoaHocIds != null).WithErrorCode("VUOT_SO_KHOA_HOC_CUA_LOP");
     }
 }
 
@@ -156,6 +175,7 @@ public class TaoLopHocHandler(IAppDbContext db, ICurrentUser currentUser)
         var ten = request.Ten.Trim();
 
         await KiemNhanSu(db, request.GiaoVienChinhId, request.TroGiangIds, ct);
+        await LopHocKhoaHocHelper.KiemKhoaHoc(db, request.KhoaHocIds, ct);
 
         var lop = new Domain.Entities.LopHoc
         {
@@ -174,6 +194,7 @@ public class TaoLopHocHandler(IAppDbContext db, ICurrentUser currentUser)
         db.LopHocs.Add(lop);
 
         ThemTroGiang(db, lop.Id, request.TroGiangIds);
+        LopHocKhoaHocHelper.Gan(db, lop.Id, request.KhoaHocIds);
 
         await db.SaveChangesAsync(ct);
         return lop.Id;
@@ -244,7 +265,12 @@ public record CapNhatLopHocCommand(
     int? SucChuaToiDa = null,
     string? GhiChu = null,
     /// <summary>true = bỏ giới hạn sức chứa. Cần cờ riêng vì null đã mang nghĩa "không gửi".</summary>
-    bool BoGioiHanSucChua = false) : IRequest;
+    bool BoGioiHanSucChua = false,
+    /// <summary>
+    /// Khoá học lớp này dạy, **tối đa 3**. `null` = client không gửi → **GIỮ NGUYÊN** (quy
+    /// tắc #1: form thiếu ô không được âm thầm xoá dữ liệu). Danh sách rỗng = chủ động bỏ hết.
+    /// </summary>
+    List<Guid>? KhoaHocIds = null) : IRequest;
 
 public class CapNhatLopHocValidator : AbstractValidator<CapNhatLopHocCommand>
 {
@@ -272,10 +298,14 @@ public class CapNhatLopHocHandler(IAppDbContext db, IPhamViLopHoc phamVi)
 
         var lop = await q
             .Include(l => l.TroGiangs)
+            // Thiếu Include thì `RemoveRange` bên dưới thành no-op IM LẶNG — đúng lỗi đã gặp
+            // 10/09/2026 với `LIEN_KET_MXH`.
+            .Include(l => l.KhoaHocs)
             .FirstOrDefaultAsync(l => l.Id == request.Id, ct)
             ?? throw new KhongTimThayException($"LopHoc {request.Id}");
 
         await TaoLopHocHandler.KiemNhanSu(db, request.GiaoVienChinhId, request.TroGiangIds, ct);
+        await LopHocKhoaHocHelper.KiemKhoaHoc(db, request.KhoaHocIds, ct);
 
         lop.Ten = request.Ten.Trim();
         lop.GiaoVienChinhId = request.GiaoVienChinhId;
@@ -297,6 +327,13 @@ public class CapNhatLopHocHandler(IAppDbContext db, IPhamViLopHoc phamVi)
         // BẮT BUỘC phải có ô này — thiếu thì mỗi lần sửa lớp là mất sạch trợ giảng.
         db.LopHocTroGiangs.RemoveRange(lop.TroGiangs);
         TaoLopHocHandler.ThemTroGiang(db, lop.Id, request.TroGiangIds);
+
+        // null = không gửi → giữ nguyên khoá đang gán. Chỉ thay khi client gửi tường minh.
+        if (request.KhoaHocIds is { } khoaIds)
+        {
+            db.LopHocKhoaHocs.RemoveRange(lop.KhoaHocs);
+            LopHocKhoaHocHelper.Gan(db, lop.Id, khoaIds);
+        }
 
         await db.SaveChangesAsync(ct);
     }
@@ -372,5 +409,51 @@ public class XoaLopHocNhapHandler(IAppDbContext db, IPhamViLopHoc phamVi)
 
         db.LopHocs.Remove(lop);
         await db.SaveChangesAsync(ct);
+    }
+}
+
+/// <summary>
+/// Gán khoá học cho lớp (FR-07, 12/09/2026) — dùng chung cho lệnh tạo và lệnh cập nhật.
+///
+/// Đóng nợ N19: có liên kết này thì lúc duyệt học viên vào lớp, hệ thống đối chiếu được khoá
+/// trong đơn CRM với khoá của lớp và cảnh báo khi lệch.
+/// </summary>
+internal static class LopHocKhoaHocHelper
+{
+    /// <summary>
+    /// Số khoá tối đa một lớp dạy. Ép ở validator, KHÔNG ở schema — con số do nghiệp vụ đặt
+    /// (chủ sản phẩm chốt 3 ngày 12/09/2026) và đổi nó không nên cần migration.
+    /// </summary>
+    internal const int ToiDaKhoa = 3;
+
+    /// <summary>
+    /// Khoá phải tồn tại TRONG tenant hiện tại. Query filter đã giới hạn phạm vi nên id của
+    /// trung tâm khác tự rơi vào nhánh lỗi — đây chính là chỗ chặn gán khoá của trung tâm khác.
+    ///
+    /// KHÔNG kiểm `DangBan`: khoá ngừng bán vẫn đang được dạy ở các lớp đã mở (FR-19 — đã bán
+    /// thì ngừng bán, không xoá). Chặn ở đây sẽ không sửa nổi lớp cũ khi khoá của nó ngừng bán.
+    /// </summary>
+    internal static async Task KiemKhoaHoc(
+        IAppDbContext db, List<Guid>? khoaHocIds, CancellationToken ct)
+    {
+        if (khoaHocIds is null or { Count: 0 }) return;
+
+        var ids = khoaHocIds.Distinct().ToList();
+        var soHopLe = await db.KhoaHocs.CountAsync(k => ids.Contains(k.Id), ct);
+        if (soHopLe != ids.Count) throw new AppException("KHOA_HOC_KHONG_HOP_LE");
+    }
+
+    internal static void Gan(IAppDbContext db, Guid lopHocId, List<Guid>? khoaHocIds)
+    {
+        if (khoaHocIds is null) return;
+
+        foreach (var id in khoaHocIds.Distinct())
+        {
+            db.LopHocKhoaHocs.Add(new Domain.Entities.LopHocKhoaHoc
+            {
+                LopHocId = lopHocId,
+                KhoaHocId = id
+            });
+        }
     }
 }
