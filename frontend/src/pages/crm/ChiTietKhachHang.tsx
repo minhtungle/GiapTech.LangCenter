@@ -1338,15 +1338,32 @@ function DongDonHang({
             )}
 
             {/* XẾP LỚP — chỉ đơn KHOÁ HỌC (sách không có lớp).
-                Ba trạng thái loại trừ nhau, theo đúng thứ tự ưu tiên đọc:
-                đã vào lớp → đang chờ → còn gửi được (kể cả sau khi bị từ chối). */}
+
+                Badge trạng thái và nút gửi KHÔNG loại trừ nhau nữa (12/09/2026): đã vào lớp
+                vẫn gửi yêu cầu tiếp được (học thêm lớp, học lại, chuyển lớp sau khi bị gỡ).
+                Chỉ khi ĐANG CHỜ thì nút mới ẩn — endpoint chặn hai yêu cầu cùng chờ trên một
+                đơn, hiện nút chỉ để nhận lỗi. */}
             {d.loai === 'KhoaHoc' && (
               <>
-                {d.tenLopDaXep ? (
+                {/* Trạng thái tham gia lớp — đọc từ bảng ghi danh, nên gỡ khỏi lớp là badge
+                    biến mất ngay, không cần đồng bộ gì. */}
+                {d.dangThamGiaLop && (
                   <Badge variant="ok">
-                    {t('chiTietKhach.daXepLop', { ten: d.tenLopDaXep })}
+                    {t('chiTietKhach.daXepLop', { ten: d.tenLopDangHoc })}
                   </Badge>
-                ) : d.dangChoXepLop ? (
+                )}
+
+                {/* Lớp đã kết thúc/huỷ, hoặc đã nghỉ — chỉ hiện khi KHÔNG còn lớp đang học,
+                    nếu không hai badge cùng lúc làm rối dòng thao tác. */}
+                {!d.dangThamGiaLop && d.cacLopDaHoc.length > 0 && (
+                  <Badge variant="muted">
+                    {t('chiTietKhach.daHocLop', {
+                      ten: d.cacLopDaHoc.map((l) => l.tenLopHoc).join(', '),
+                    })}
+                  </Badge>
+                )}
+
+                {d.dangChoXepLop ? (
                   <Badge variant="cho">{t('chiTietKhach.dangChoXepLop')}</Badge>
                 ) : (
                   coQuyen('DoanhThu', 'Sua') && (

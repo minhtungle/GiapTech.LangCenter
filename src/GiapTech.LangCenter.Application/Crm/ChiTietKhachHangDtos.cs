@@ -188,16 +188,55 @@ public record DangKyKemThuDto(
     /// vì sao những lần trước bị từ chối — đó là thứ họ phải trả lời khách.
     /// Chỉ đơn khoá học mới có.
     /// </summary>
-    List<LanGuiXepLopDto> CacLanGuiXepLop)
+    List<LanGuiXepLopDto> CacLanGuiXepLop,
+    /// <summary>
+    /// Các lớp học viên **đang tham gia thật** — đọc từ `LOP_HOC_HOC_VIEN`, không suy từ trạng
+    /// thái yêu cầu (chốt 12/09/2026).
+    ///
+    /// Vì sao không suy từ yêu cầu: yêu cầu `DaXep` là **một sự kiện trong quá khứ**
+    /// ("đã từng được duyệt vào lớp X"), còn "đang học lớp nào" là **trạng thái hiện tại**. Gỡ
+    /// học viên khỏi lớp không đổi yêu cầu, nên suy từ yêu cầu sẽ báo sai mãi mãi.
+    ///
+    /// Rỗng = chưa tham gia lớp nào, hoặc đã rời hết. Lớp `DaKetThuc`/`DaHuy` **không** nằm ở
+    /// đây (xem `CacLopDaHoc`).
+    /// </summary>
+    List<LopDaThamGiaDto> CacLopDangHoc,
+    /// <summary>
+    /// Các lớp đã tham gia nhưng **không còn hoạt động**: lớp `DaKetThuc` hoặc `DaHuy`, hoặc
+    /// học viên đã `DaNghi`/`ChuyenLop`. Giữ để người bán trả lời được "đã từng học lớp nào".
+    /// </summary>
+    List<LopDaThamGiaDto> CacLopDaHoc)
 {
     /// <summary>Có lần nào đang chờ bên đào tạo xử lý? Nút "Gửi yêu cầu" ẩn khi đang chờ.</summary>
     public bool DangChoXepLop =>
         CacLanGuiXepLop.Any(x => x.TrangThai == TrangThaiYeuCauXepLop.DangCho);
 
-    /// <summary>Tên lớp đã xếp — để người bán trả lời khách "đã vào lớp nào". null = chưa vào lớp.</summary>
-    public string? TenLopDaXep => CacLanGuiXepLop
-        .FirstOrDefault(x => x.TrangThai == TrangThaiYeuCauXepLop.DaXep)?.TenLopHoc;
+    /// <summary>
+    /// Đang tham gia lớp nào không — dùng cho badge "Đã tham gia lớp" ở tab lịch sử mua hàng.
+    /// </summary>
+    public bool DangThamGiaLop => CacLopDangHoc.Count > 0;
+
+    /// <summary>
+    /// Tên các lớp đang học, ghép bằng dấu phẩy. null = chưa vào lớp nào.
+    ///
+    /// Giữ tên cũ `TenLopDaXep` sẽ gây hiểu nhầm: nó từng suy từ yêu cầu và **không** phản ánh
+    /// việc gỡ khỏi lớp.
+    /// </summary>
+    public string? TenLopDangHoc => CacLopDangHoc.Count == 0
+        ? null
+        : string.Join(", ", CacLopDangHoc.Select(l => l.TenLopHoc));
 }
+
+/// <summary>Một lớp mà học viên có mặt trong `LOP_HOC_HOC_VIEN`.</summary>
+public record LopDaThamGiaDto(
+    Guid LopHocId,
+    string TenLopHoc,
+    TrangThaiLopHoc TrangThaiLop,
+    /// <summary>Trạng thái của học viên TRONG lớp đó: đang học, bảo lưu, đã nghỉ…</summary>
+    TrangThaiHocVienTrongLop TrangThaiHocVien,
+    DateTimeOffset NgayVaoLop,
+    /// <summary>Học phí đã chốt cho người này ở lớp này.</summary>
+    decimal HocPhiApDung);
 
 /// <summary>Một lần gửi yêu cầu xếp lớp, kèm kết quả xử lý.</summary>
 public record LanGuiXepLopDto(
@@ -231,7 +270,42 @@ public class LayDangKyCuaKhachHandler(IAppDbContext db)
 {
     public async Task<List<DangKyKemThuDto>> Handle(
         LayDangKyCuaKhachQuery request, CancellationToken ct)
-        => await db.DangKyKhoaHocs
+    {
+        /*
+          Ghi danh thật của khách này, đọc MỘT LẦN rồi gắn vào từng đơn.
+
+          Không nhét vào `Select` của đơn: `LOP_HOC_HOC_VIEN` nối theo `hoc_vien_id` (con người),
+          không theo `dang_ky_id` (đơn) — `LOP_HOC` chưa có FK về `KHOA_HOC` (nợ N19), nên
+          không biết lớp nào ứng với đơn nào. Vì vậy MỌI đơn khoá học của khách cùng thấy danh
+          sách lớp của người đó; đó là thông tin đúng và đủ để trả lời "đang học lớp nào".
+
+          Khách chưa nối hồ sơ học viên (`NguoiDungId == null`) thì chưa thể ở lớp nào.
+        */
+        var nguoiDungId = await db.KhachHangs
+            .Where(k => k.Id == request.KhachHangId)
+            .Select(k => k.NguoiDungId)
+            .FirstOrDefaultAsync(ct);
+
+        var cacLop = nguoiDungId is null
+            ? []
+            : await db.LopHocHocViens
+                .Where(hv => hv.HocVienId == nguoiDungId)
+                .OrderByDescending(hv => hv.NgayVaoLop)
+                .Select(hv => new LopDaThamGiaDto(
+                    hv.LopHocId, hv.LopHoc.Ten, hv.LopHoc.TrangThai,
+                    hv.TrangThai, hv.NgayVaoLop, hv.HocPhiApDung))
+                .ToListAsync(ct);
+
+        // "Đang tham gia" = lớp còn hoạt động VÀ học viên chưa rời. Lớp DaKetThuc/DaHuy và
+        // người DaNghi/ChuyenLop đều rơi sang `CacLopDaHoc` (chốt 12/09/2026).
+        var dangHoc = cacLop
+            .Where(l => l.TrangThaiLop is not (TrangThaiLopHoc.DaKetThuc or TrangThaiLopHoc.DaHuy)
+                        && l.TrangThaiHocVien is TrangThaiHocVienTrongLop.DangHoc
+                            or TrangThaiHocVienTrongLop.BaoLuu)
+            .ToList();
+        var daHoc = cacLop.Except(dangHoc).ToList();
+
+        var dons = await db.DangKyKhoaHocs
             .Where(d => d.KhachHangId == request.KhachHangId)
             .OrderByDescending(d => d.NgayDangKy)
             .Select(d => new DangKyKemThuDto(
@@ -262,8 +336,19 @@ public class LayDangKyCuaKhachHandler(IAppDbContext db)
                         y.NguoiDuyet == null ? null : y.NguoiDuyet.HoTen,
                         y.LopHoc == null ? null : y.LopHoc.Ten,
                         y.LyDoTuChoi))
-                    .ToList()))
+                    .ToList(),
+                // Hai danh sách lớp gắn sau khi materialize — xem chú thích đầu handler.
+                new List<LopDaThamGiaDto>(),
+                new List<LopDaThamGiaDto>()))
             .ToListAsync(ct);
+
+        // Chỉ đơn KHOÁ HỌC mới có khái niệm vào lớp; đơn sản phẩm (sách, học cụ) giữ rỗng.
+        return dons
+            .Select(d => d.Loai == LoaiDonHang.KhoaHoc
+                ? d with { CacLopDangHoc = dangHoc, CacLopDaHoc = daHoc }
+                : d)
+            .ToList();
+    }
 }
 
 public record LuuThuTienCommand(

@@ -171,8 +171,27 @@ export interface DangKyKemThuDto {
   cacLanGuiXepLop: LanGuiXepLopDto[]
   /** Có lần nào đang chờ bên đào tạo xử lý — backend tính, nút gửi ẩn khi true. */
   dangChoXepLop: boolean
-  /** Tên lớp đã xếp, để trả lời khách "đã vào lớp nào". null = chưa vào lớp. */
-  tenLopDaXep: string | null
+  /**
+   * Các lớp học viên ĐANG tham gia thật — backend đọc từ `LOP_HOC_HOC_VIEN`, không suy từ
+   * trạng thái yêu cầu (12/09/2026). Gỡ khỏi lớp / lớp kết thúc thì danh sách này tự đúng.
+   */
+  cacLopDangHoc: LopDaThamGiaDto[]
+  /** Lớp đã tham gia nhưng không còn hoạt động (lớp kết thúc/huỷ, hoặc học viên đã nghỉ). */
+  cacLopDaHoc: LopDaThamGiaDto[]
+  /** Đang tham gia lớp nào không — backend tính từ `cacLopDangHoc`. */
+  dangThamGiaLop: boolean
+  /** Tên các lớp đang học, ghép bằng dấu phẩy. null = chưa vào lớp nào. */
+  tenLopDangHoc: string | null
+}
+
+/** Một lớp mà học viên có mặt trong bảng ghi danh. */
+export interface LopDaThamGiaDto {
+  lopHocId: string
+  tenLopHoc: string
+  trangThaiLop: 'Nhap' | 'SapKhaiGiang' | 'DangHoc' | 'DaKetThuc' | 'DaHuy'
+  trangThaiHocVien: 'DangHoc' | 'BaoLuu' | 'ChuyenLop' | 'DaNghi'
+  ngayVaoLop: string
+  hocPhiApDung: number
 }
 
 /** FR-21 — trạng thái một lần gửi yêu cầu xếp lớp. */
