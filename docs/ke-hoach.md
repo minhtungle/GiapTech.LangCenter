@@ -1,6 +1,6 @@
 # Kế hoạch & tiến độ
 
-> Cập nhật cuối: **2026-09-11**. Nhật ký chi tiết theo ngày: [nhat-ky/](./nhat-ky/README.md).
+> Cập nhật cuối: **2026-09-12**. Nhật ký chi tiết theo ngày: [nhat-ky/](./nhat-ky/README.md).
 
 ## Tiến độ tổng
 
@@ -8,7 +8,7 @@
 Nghiệp vụ  ███████████████░  23/24 FR chạy đầu-cuối (còn FR-15 Thống kê)
 Ba hệ thống ████████████████  Cả ba hệ thống đủ nghiệp vụ
 Hạ tầng    ████████████░░░░  CI/CD sẵn sàng, chờ VPS thật
-Còn lại    █████░░░░░░░░░░░  Dashboard + Bài kiểm tra + 22 nợ kỹ thuật
+Còn lại    █████░░░░░░░░░░░  Dashboard + Bài kiểm tra + 23 nợ kỹ thuật
 ```
 
 ## Trạng thái mã FR
@@ -21,7 +21,7 @@ Còn lại    █████░░░░░░░░░░░  Dashboard + Bài
 | FR-04 | Tài khoản đăng nhập | ✅ | ✅ | Màn riêng ở cụm Quản trị dùng chung; gán được cho cả bốn vai trò |
 | FR-05 | Phân quyền truy cập | ✅ | ✅ | Ma trận **24 chức năng** × 4 thao tác, 4 nhóm dựng sẵn. Từ 08/09 có **tab theo hệ thống** HRM/CRM/LMS |
 | FR-06 | Thiết lập chung | ✅ | ✅ | Gồm múi giờ và ngưỡng cảnh báo nợ học phí |
-| FR-07 | Lớp học | ✅ | ✅ | Vòng đời nháp → sắp khai giảng → đang học → kết thúc; tên nháp không chiếm chỗ |
+| FR-07 | Lớp học | ✅ | ✅ | Vòng đời nháp → sắp khai giảng → đang học → kết thúc (bước **kết thúc chưa có endpoint** — nợ N26); tên nháp không chiếm chỗ. Từ 12/09 gán được **tối đa 3 khoá học** |
 | FR-08 | Học viên trong lớp | ✅ | ✅ | Học phí riêng từng người (snapshot lúc ghi danh) |
 | FR-09 | Buổi học & sinh lịch | ✅ | ✅ | Sinh theo thứ trong tuần, tối đa 500 buổi / 10 năm. Có **lịch dạng calendar** (FullCalendar) và **view chi tiết buổi 5 tab** |
 | FR-10 | Điểm danh | ✅ | ✅ | Hai nguồn: học viên tự khai + giáo viên chốt. Kèm **nhận xét hai chiều**: GV nhận xét từng học viên, học viên nhận xét buổi học |
@@ -35,7 +35,7 @@ Còn lại    █████░░░░░░░░░░░  Dashboard + Bài
 | FR-18 | Doanh thu (CRM) | ✅ | ✅ | Đa tiền tệ VND/USD/EUR/CAD, **tỷ giá chụp lúc đăng ký**; giá gốc snapshot, % tính động. Đăng ký = **cam kết**, sổ thu nhiều đợt riêng |
 | FR-19 | Khoá học (CRM) | ✅ | ✅ | Danh mục khoá bán ra. Khác `LOP_HOC` (lần mở cụ thể). Đã bán thì ngừng bán, không xoá |
 | FR-20 | Sản phẩm khác (CRM) | ✅ | ✅ | Sách, học cụ; có **số lượng**. Đơn hàng dùng **2 FK nullable loại trừ** + `CHECK`. Mua hàng từ tab chăm sóc ghi **cả đơn + lịch sử** trong một transaction |
-| FR-21 | Yêu cầu xếp lớp (CRM → LMS) | ✅ | ✅ | Bán khoá → gửi yêu cầu (kèm **ghi chú** + người gửi) → duyệt vào lớp **2 cách**, hoặc **từ chối kèm lý do bắt buộc**. Một đơn gửi **nhiều lần**, lịch sử mua hàng hiện số lần + trạng thái từng lần. **Học phí lấy từ đơn CRM**; hồ sơ học viên tự tạo từ dữ liệu khách |
+| FR-21 | Yêu cầu xếp lớp (CRM → LMS) | ✅ | ✅ | Bán khoá → gửi yêu cầu (kèm **ghi chú** + người gửi) → duyệt vào lớp **2 cách**, hoặc **từ chối kèm lý do bắt buộc**. Một đơn gửi **nhiều lần**, lịch sử mua hàng hiện số lần + trạng thái từng lần. **Học phí lấy từ đơn CRM**; hồ sơ học viên tự tạo từ dữ liệu khách. Từ 12/09: đơn **đã xếp vẫn gửi lại được**, trạng thái tham gia lớp **suy động** từ bảng ghi danh, **cảnh báo lệch khoá** khi duyệt (không chặn) |
 | FR-22 | Cơ cấu tổ chức (HRM) | ✅ | ✅ | Cây `PHONG_BAN` tự tham chiếu + người quản lý, màn `/hrm/co-cau` (thư viện `@headless-tree`). **Mọi vai trò nhân sự** xếp được vào phòng (giáo viên cũng là nhân viên). Hai cách xếp; chống chu trình ở handler |
 | FR-23 | Hồ sơ nhân sự mở rộng (HRM) | ✅ | ✅ | CCCD (không unique), số tài khoản, **liên kết MXH nhiều dòng** (bảng riêng), tệp hồ sơ dùng `TEP_DINH_KEM` cột FK thứ sáu. Áp cho mọi vai trò nhân sự |
 | FR-24 | Danh mục chức vụ (HRM) | ✅ | ✅ | Bảng `CHUC_VU` do admin quản, seeder dựng sẵn 5 chức vụ gồm **Ban quản lý**. Áp cho **mọi vai trò nhân sự**; ngừng dùng thay vì xoá. Migration sinh danh mục từ 40 hàng dữ liệu cũ |
@@ -110,16 +110,17 @@ VPS → domain + HTTPS → backup. Xem
 | N1 | **Bài kiểm tra**: schema xong, chưa có API và UI | Cao |
 | N3 | `/dang-ky-trung-tam` **mở ở mọi môi trường** — ai cũng tự tạo trung tâm. Đã có hạn mức 10 req/phút mỗi IP ở tầng ứng dụng (08/09), nhưng **rate limit ở reverse proxy vẫn bắt buộc** trước khi mở ra Internet; chưa có captcha / xác thực email | Cao |
 | N4 | Kiểm trùng lịch giáo viên có API nhưng **chưa nối vào UI** | Trung bình |
+| N26 | **Chưa có đường kết thúc lớp** — `TrangThaiLopHoc.DaKetThuc` có trong enum và mọi logic đã xử lý đúng (trạng thái tham gia lớp, danh sách lớp chọn để xếp), nhưng **không endpoint nào set được** nó: chỉ có `/huy` → `DaHuy`. Vòng đời lớp trong tài liệu ghi "nháp → sắp khai giảng → đang học → kết thúc" nhưng bước cuối chưa chạy được (phát hiện 12/09/2026) | Trung bình |
 | N5 | Job dọn tệp mồ côi trong MinIO (Cascade xoá hàng DB nhưng không xoá object) | Trung bình |
 | N6 | Danh mục ngày nghỉ hệ thống (sinh lịch hiện không né ngày lễ) | Trung bình |
 | N7 | Import Excel danh sách học viên | Trung bình |
 | N9 | Lịch sử chỉnh sửa khoản thu (ai sửa gì lúc nào) | Thấp |
 | N10 | Nhắc nợ học phí / thông báo lịch học qua email (`IEmailSender` đã có, chưa nối) | Thấp |
-| N11 | Endpoint dọn tenant test + `globalTeardown` cho E2E — **DB dev phình từ 42 lên 170 tenant** (đo 10/09/2026; mỗi lần chạy cả bộ E2E thêm ~19, cộng các lần thử tay). Đang làm chậm mọi truy vấn `TENANT` và làm số liệu tài liệu khó đối chiếu | **Cao** |
+| N11 | Endpoint dọn tenant test + `globalTeardown` cho E2E. **Đã dọn tay 12/09/2026**: DB dev từ 212 → **1 tenant** (`W686AE9`, trung tâm chủ sản phẩm đang dùng), xoá kèm 33.960 dòng nhật ký; DB còn 17 MB. Nhưng **nguyên nhân chưa chữa** — mỗi lần chạy cả bộ E2E vẫn sinh ~19 tenant mới. Chốt 12/09: Claude kiểm chứng thay đổi **trực tiếp trên `W686AE9`**, không tạo tenant mới | Trung bình |
 | N13 | **Chưa dọn nhật ký cũ** — bảng `NHAT_KY_HE_THONG` tăng vô hạn, cần chính sách lưu giữ trước khi chạy production lâu dài | Trung bình |
 | N17 | Đổi tên bảng `DANG_KY_KHOA_HOC` → `DON_HANG` (nay chứa cả sản phẩm) và **tồn kho sản phẩm** — hiện bán không giới hạn | Thấp |
 | N18 | **Số đã thu ở CRM không chảy sang sổ học phí LMS** — FR-21 chuyển *số cam kết* thành học phí áp dụng, nhưng khách đóng 4tr ở CRM thì sổ LMS vẫn ghi `daThu = 0`. Cùng một khoản tiền phải ghi hai lần nếu muốn cả hai sổ đúng | **Cao** |
-| N19 | `LOP_HOC` chưa có FK về `KHOA_HOC` nên hộp thoại chọn lớp ở FR-21 **không ưu tiên được lớp cùng khoá** — nay chỉ hiện tên khoá của đơn để người điều phối tự đối chiếu | Trung bình |
+| ~~N19~~ | ~~`LOP_HOC` chưa có FK về `KHOA_HOC`~~ — **XONG 12/09/2026**: bảng `LOP_HOC_KHOA_HOC` (tối đa 3 khoá/lớp) + cảnh báo lệch khoá khi duyệt. Còn lại: hộp thoại chọn lớp chưa **ưu tiên sắp xếp** lớp cùng khoá lên đầu (đã có dữ liệu để làm) | Thấp |
 | N20 | Badge `%` trên giá gốc hiện cả ở đơn **sản phẩm** (luôn `100.0%`) — sản phẩm không có khái niệm giảm giá so với niêm yết nên con số vô nghĩa | Thấp |
 | N21 | **Chưa canh: mỗi `Command` phải có `Validator`** — quên validator thì dữ liệu rác vào DB mà không lỗi nào. Thêm một test canh theo khuôn `MoiEndpointPhaiDuocGacTests` | Trung bình |
 | N22 | `RanhGioiHeThongConTests` chỉ quét `Application/`; tầng `API/Controllers` vẫn gọi chéo hệ thống tự do (đúng vì controller là chỗ ghép, nhưng nếu muốn siết thì cần danh sách khai tương tự) | Thấp |
@@ -132,9 +133,9 @@ VPS → domain + HTTPS → backup. Xem
 
 ## Kiểm chứng hiện tại
 
-- **428 test backend xanh** (65 unit + 363 integration), build 0 warning — đo `dotnet test` 11/09/2026.
-- **19 test E2E / 7 spec**; 15 xanh, **4 đỏ là nợ N16** (test lạc hậu thời dự án bóng đá, không
+- **439 test backend xanh** (65 unit + 374 integration), build 0 warning — đo `dotnet test` 12/09/2026.
+- **20 test E2E / 8 spec**; 16 xanh, **4 đỏ là nợ N16** (test lạc hậu thời dự án bóng đá, không
   phải lỗi nghiệp vụ). Chạy cả bộ phải `GIOI_HAN_TAN_SUAT=false` — xem nợ N15.
 - Frontend `tsc -b` + `vite build` sạch, `oxlint` không lỗi.
-- **PostgreSQL + MinIO thật**: 36 bảng, 19 migration áp sạch, luồng đầu-cuối chạy tay đủ từ tạo
+- **PostgreSQL + MinIO thật**: 37 bảng, 20 migration áp sạch, luồng đầu-cuối chạy tay đủ từ tạo
   trung tâm tới thu học phí.

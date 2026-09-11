@@ -8,6 +8,153 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — Hàng chờ xếp lớp: phân trang, tìm kiếm, bảng gọn hơn (12/09/2026)
+
+Theo yêu cầu chủ sản phẩm *"làm gọn hơn, vì sau có thể có nhiều học viên"*.
+
+- **`GET /lop-hoc/cho-xep-lop` nay trả `KetQuaTrang`** (20 dòng/trang) thay vì mảng trần. Trước
+  đó hàng chờ vài trăm dòng về hết một lần — đúng điều `ThamSoTrang` cảnh báo: *"tải hết về rồi
+  mới cắt sẽ chậm dần và không ai để ý cho tới khi quá muộn"*. **Breaking change nội bộ**, nhưng
+  không tăng version API vì endpoint chưa có client ngoài (ADR-0003).
+- **Tìm theo tên học viên hoặc số điện thoại** (`?timKiem=`). Đếm `tongSoDong` **sau khi lọc** —
+  đếm trước thì thanh phân trang báo 50 trang trong khi chỉ có 1 kết quả.
+- Dùng `ToLower().Contains()` như các màn danh sách khác, **không** `EF.Functions.ILike`: đó là
+  hàm của Npgsql mà `Application` không được phụ thuộc provider (quy tắc #10).
+- **Bảng gọn lại**: gộp *người gửi + ngày gửi* thành một cột (ẩn ở màn hẹp, thông tin xuống dòng
+  dưới tên để không mất); gộp *điện thoại + ghi chú* một dòng có `truncate` + `title` — ghi chú
+  500 ký tự từng đẩy một dòng cao gấp ba, nay mọi dòng cao đều **53px**.
+- **Từ chối vào `MenuThaoTac`**, giữ nút Duyệt ra ngoài: duyệt là việc làm hàng chục lần mỗi
+  phiên, bắt bấm hai lần cho thao tác chính là tính thêm một cú bấm vào mọi học viên. Cột thao
+  tác từ ~210px còn ~140px.
+- Badge số ở tab và tiêu đề dùng `tongSoDong`, không `duLieu.length` — nếu không thì badge báo
+  20 trong khi hàng chờ có 25.
+- Badge đếm ở `LopHoc.tsx` xin `soDong=1` rồi đọc `tongSoDong`, không kéo cả danh sách về chỉ để
+  `.length`.
+- Danh sách chọn người chờ **trong lớp** (`HocVienCuaLop`) xin `soDong=200`: đó là danh sách chọn
+  để lấp chỗ, không phải bảng duyệt — mặc định 20 sẽ cắt mất người chờ lâu nhất.
+- Trang trống phân biệt *"chưa ai chờ"* vs *"tìm không thấy"* — cùng một câu thì người dùng tưởng
+  hàng chờ rỗng trong khi chỉ gõ sai tên.
+- Canh bởi 2 test mới. Đột biến (đếm trước khi lọc) làm đỏ **cả hai**.
+
+### Added — Tab Tổng quan của lớp hiện khoá học (12/09/2026)
+
+Dòng "Khoá học lớp này dạy" trong tab Tổng quan; lớp chưa gán thì hiện "Chưa gán khoá học" chứ
+không để trống. Dữ liệu có sẵn từ `GET /lop-hoc/{id}`, không thêm request nào.
+
+### Added — Lớp học gán khoá học (tối đa 3) + cảnh báo lệch khoá khi duyệt (12/09/2026)
+
+Theo yêu cầu chủ sản phẩm. **Đóng nợ N19** — trước đây `LOP_HOC` không nối `KHOA_HOC` nên lúc
+duyệt học viên, hệ thống không biết đơn CRM có khớp lớp không; người điều phối phải tự đối chiếu
+tên khoá bằng mắt.
+
+- **Bảng mới `LOP_HOC_KHOA_HOC`** (migration `ThemLopHocKhoaHoc`, 37 → 38 bảng). Chỉ
+  `CreateTable`, không đụng bảng nào có dữ liệu (quy tắc #1).
+- Bảng trung gian chứ không 3 cột `KhoaHoc1Id/2/3`: ba cột thì mọi truy vấn "lớp nào dạy khoá X"
+  phải `OR` ba lần và quên một cột là lọt, còn thêm khoá thứ tư phải đổi schema.
+- **Giới hạn 3 ép ở validator, không ở schema** — con số do nghiệp vụ đặt, đổi nó không nên cần
+  migration. `Distinct()` trước khi đếm: gửi cùng một khoá ba lần không phải 3 khoá.
+- `UNIQUE(lop_hoc_id, khoa_hoc_id)` ở tầng DB (quy tắc #8). FK về `KHOA_HOC` là **RESTRICT**
+  không Cascade: xoá khoá đang được lớp dạy sẽ âm thầm bỏ liên kết và lớp mất căn cứ đối chiếu.
+- **Cảnh báo lệch khoá khi duyệt** — `KHOA_HOC_KHONG_KHOP_LOP`. Là **cảnh báo, KHÔNG chặn**:
+  lần gọi đầu trả mã lỗi kèm `duLieu` (khoá của đơn · khoá của lớp · tên lớp) để UI hỏi lại;
+  người duyệt đồng ý thì client gọi lại với `boQuaCanhBaoKhoaHoc: true`.
+- Cờ mặc định **false** để client cũ (hoặc ai gọi API trực tiếp) vẫn nhận được cảnh báo thay vì
+  bỏ qua âm thầm.
+- Dùng `AppException.DuLieu` chứ không nhét tên khoá vào chuỗi message: frontend dựng câu tiếng
+  Việt đầy đủ mà API vẫn chỉ trả **mã lỗi** (quy tắc #3).
+- **Lớp chưa gán khoá thì KHÔNG cảnh báo**: mọi lớp tạo trước 12/09 đều rỗng, cảnh báo hết sẽ
+  thành tiếng ồn và người duyệt học cách bấm qua mà không đọc.
+- **Không kiểm `DangBan`** khi gán: khoá ngừng bán vẫn đang được dạy ở lớp đã mở (FR-19 — đã bán
+  thì ngừng bán, không xoá). Chặn ở đây sẽ không sửa nổi lớp cũ khi khoá của nó ngừng bán.
+- Lệnh cập nhật giữ quy ước `null = giữ nguyên` (quy tắc #1): form không gửi `khoaHocIds` thì
+  khoá đang gán còn nguyên; danh sách rỗng mới là chủ động bỏ hết.
+- **UI**: ô chọn khoá trong form lớp (tối đa 3, chặn chọn cái thứ 4 ngay tại UI), hộp cảnh báo
+  "Vẫn duyệt" ở **cả hai** đường duyệt — tab Chờ xếp lớp và tab Học viên của lớp.
+- Canh bởi 4 test mới. Đột biến (coi như không bao giờ lệch) làm đỏ đúng test cảnh báo, 28 test
+  khác vẫn xanh.
+
+### Changed — Trạng thái tham gia lớp suy động từ bảng ghi danh (12/09/2026)
+
+Theo yêu cầu chủ sản phẩm. Gốc vấn đề: `TenLopDaXep` suy từ **trạng thái yêu cầu xếp lớp**, nên
+gỡ học viên khỏi lớp thì CRM vẫn báo "Đã vào lớp X" mãi — yêu cầu vẫn `DaXep`.
+
+- **Bỏ chốt `DON_DA_DUOC_XEP_LOP`**: đơn đã xếp lớp nay **vẫn gửi được yêu cầu mới** — học thêm
+  lớp, học lại, hoặc xếp lại sau khi bị gỡ khỏi lớp. Trước đây ba ca đó đều bế tắc: đơn đã
+  "DaXep" thì người bán không gửi được yêu cầu nào nữa.
+- **Giữ chốt `DA_GUI_YEU_CAU_XEP_LOP`**: mỗi khoá chỉ gửi tiếp khi yêu cầu hiện tại **đã duyệt
+  hoặc đã từ chối**. Hai yêu cầu cùng chờ trên một đơn làm người điều phối thấy hai dòng trùng
+  mà không biết duyệt cái nào. Partial unique index ở DB giữ nguyên.
+- **`DangKyKemThuDto` thay `TenLopDaXep`** bằng `CacLopDangHoc` · `CacLopDaHoc` ·
+  `DangThamGiaLop` · `TenLopDangHoc` — đọc trực tiếp `LOP_HOC_HOC_VIEN`. Yêu cầu `DaXep` trở về
+  đúng vai trò **lịch sử** ("đã từng được duyệt vào lớp X"), không còn kiêm việc mô tả trạng
+  thái hiện tại.
+- **Hệ quả: gỡ khỏi lớp và huỷ lớp tự động đúng**, không cần viết đồng bộ ngược. Cùng nguyên tắc
+  "công nợ tính động, không lưu cột" của FR-14.
+- "Đang tham gia" = lớp **không** `DaKetThuc`/`DaHuy` **và** học viên `DangHoc`/`BaoLuu`. Lớp đã
+  đóng hoặc người đã nghỉ rơi sang `CacLopDaHoc` — vẫn trả lời được "đã từng học lớp nào".
+- **UI**: badge trạng thái lớp và nút "Gửi yêu cầu" **không còn loại trừ nhau** — đã vào lớp vẫn
+  gửi tiếp được. Chỉ khi đang chờ thì nút mới ẩn. Thêm badge `daHocLop` cho lớp đã đóng.
+- Mã lỗi `DON_DA_DUOC_XEP_LOP` xoá khỏi `i18n.ts` (backend không còn phát) — để không ai tưởng
+  hành vi đó còn.
+- **`LOP_HOC` chưa có FK về `KHOA_HOC`** (nợ N19) nên chưa biết lớp nào ứng với đơn nào: mọi đơn
+  khoá học của một khách cùng thấy danh sách lớp của người đó. Đủ để trả lời "đang học lớp nào".
+- Canh bởi 3 test mới trong `XepLopTests`; test `Don_da_xep_lop_thi_khong_gui_lai_duoc` **xoá**
+  vì canh đúng hành vi vừa bỏ.
+
+**Chưa có endpoint kết thúc lớp** — `TrangThaiLopHoc.DaKetThuc` có trong enum nhưng không chỗ
+nào set được (chỉ có `/huy` → `DaHuy`). Logic đã xử lý đúng `DaKetThuc`, nhưng phải thêm đường
+kết thúc lớp mới dùng tới.
+
+### Fixed — Duyệt xếp lớp khi học viên đã ở trong lớp: hết bế tắc (11/09/2026)
+
+Người dùng báo *"Nguyễn Thu Hà vẫn còn trong danh sách chờ, ấn duyệt thì báo học viên đã trong
+lớp này"*. Đây là **bế tắc thật**, không phải cái bẫy click ở mục dưới.
+
+- **Nguyên nhân**: `ThemHocVienVaoLopCommand` (thêm học viên vào lớp bằng tay) **không đóng yêu
+  cầu xếp lớp chờ nào**. Sau khi thêm tay, `DuyetVaoLopCommand` gặp `HOC_VIEN_DA_TRONG_LOP` và
+  `throw` — nên duyệt thì 400, mà hàng chờ không tự sạch. **Không có đường nào thoát.** Nhật ký
+  của trung tâm thật ghi **7 lần** bấm duyệt liên tiếp đều cùng mã lỗi đó.
+- **Sửa**: học viên đã ở trong lớp đích thì **bỏ qua bước ghi danh** (không tạo dòng thứ hai —
+  `UNIQUE(lop_hoc_id, hoc_vien_id)` cũng chặn, và tính học phí hai lần là lỗi tiền bạc) nhưng
+  **vẫn đóng yêu cầu**: `DaXep` + gắn `lop_hoc_id`. Đích của việc duyệt là *"người này vào lớp
+  này"*; họ đã ở trong lớp thì đích đã đạt.
+- **Học phí ghi đè theo đơn CRM** (quyết định của chủ sản phẩm 11/09): thêm tay lấy giá lớp, mà
+  đơn CRM mới là số khách thật sự nợ. Ca thật: lớp 5.000.000đ trong khi đơn IELTS 6.5 cấp tốc là
+  10.800.000đ — giữ giá lớp thì sổ học phí LMS **thiếu 5.800.000đ**.
+- **KHÔNG đóng lây yêu cầu khác của cùng học viên**: mỗi yêu cầu là một đơn riêng, một khoá
+  riêng, cần một lớp riêng — học viên học nhiều lớp song song là bình thường (chốt 11/09).
+  Ca thật: Thu Hà mua **hai** khoá, duyệt khoá IELTS thì khoá "Giao tiếp cơ bản" phải **vẫn
+  chờ** lớp của nó.
+- Sức chứa nay chỉ đếm người **thật sự được thêm mới** — người đã ở trong lớp không chiếm thêm
+  chỗ.
+- `HOC_VIEN_DA_TRONG_LOP` **giữ nguyên** ở đường thêm tay (`ThemHocVienVaoLopHandler`): ở đó nó
+  đúng, vì người dùng đang chọn sai người.
+- Canh bởi 2 test mới trong `XepLopTests`. Đột biến (trả lại `throw`) làm đỏ đúng test bế tắc;
+  đột biến (bỏ ghi đè học phí) cho `Expected: 5000000, Actual: 1000`.
+
+### Fixed — Modal lồng nhau: chỉ lớp trên cùng nhận tương tác (11/09/2026)
+
+Người dùng báo *"duyệt học viên vào lớp rồi mà vẫn còn trong danh sách chờ"*. Điều tra đầu-cuối
+trên PostgreSQL thật: **nghiệp vụ đúng hoàn toàn** — duyệt đặt `TrangThai = DaXep`, từ chối đặt
+`TuChoi`, mà query hàng chờ lọc `DangCho`, nên cả hai đều rời danh sách ngay. Lỗi nằm ở chỗ
+**cú bấm không tới được handler**.
+
+- **Nguyên nhân**: `showModal()` đưa dialog vào **top layer**, và `::backdrop` của dialog trên
+  chỉ che nội dung trang thường — **không che dialog khác cũng ở top layer**. Nên khi modal
+  "Duyệt học viên vào lớp" mở tiếp hộp xác nhận, nút của modal dưới **vẫn thấy và vẫn bấm
+  được**.
+- **Cái bẫy**: cả hai nút cùng nhãn **"Duyệt vào lớp"** (`i18n.xepLop.duyet`), cùng màu xanh,
+  cách nhau ~77px. Bấm nhầm nút lớp dưới thì chỉ mở lại chính hộp xác nhận đó — **không ghi gì,
+  không báo lỗi gì**. Người dùng tưởng xong; F5 thì dòng quay lại hàng chờ.
+- **Sửa ở tầng `Modal`**, không ở màn Chờ xếp lớp: giữ ngăn xếp dialog đang mở, lớp không phải
+  trên cùng bị `inert` (chặn cả click, tab và focus) và mờ còn 40%. Vá một chỗ cho **20 màn
+  dùng `Modal` × 23 chỗ dùng `useXacNhan`**, không riêng chỗ phát hiện ra.
+- Dùng `inert` chứ không `pointer-events: none`: cái sau vẫn cho tab tới nút rồi gõ Enter.
+- Có `useEffect` dọn khi unmount lúc đang mở (đổi route, cha ngừng render) — thiếu nó thì dialog
+  nằm lại trong ngăn xếp và khoá `inert` vĩnh viễn lên mọi modal mở sau đó.
+- Canh bởi `e2e/modal-long-nhau.spec.ts`. Đột biến (`d.inert = false`) làm test đỏ đúng dòng
+  "modal dưới phải inert khi hộp xác nhận mở".
+
 ### Changed — "Chờ xếp lớp" thành tab của màn Lớp học, không còn module riêng (10/09/2026)
 
 - `/lms/lop-hoc` nay có 2 tab: **Danh sách lớp** · **Chờ xếp lớp** (`?tab=cho-xep-lop`). Bỏ mục

@@ -1,6 +1,6 @@
 # ERD — Mô hình dữ liệu
 
-**36 bảng**, PostgreSQL. Mọi cột chuỗi có `HasMaxLength` (canh bởi
+**37 bảng**, PostgreSQL. Mọi cột chuỗi có `HasMaxLength` (canh bởi
 `MoiEntityPhaiCoConfigTests`); ngoại lệ duy nhất là hai cột JSON của `NHAT_KY_HE_THONG`. Nội dung dưới đây khớp với schema thật (kiểm bằng
 `information_schema` sau khi áp toàn bộ migration), không phải bản thiết kế trên giấy.
 
@@ -48,6 +48,8 @@ erDiagram
 
     LOP_HOC ||--o{ LOP_HOC_HOC_VIEN : "ghi danh"
     LOP_HOC ||--o{ LOP_HOC_TRO_GIANG : "phân công"
+    LOP_HOC ||--o{ LOP_HOC_KHOA_HOC : "dạy khoá"
+    KHOA_HOC ||--o{ LOP_HOC_KHOA_HOC : "được dạy ở"
     LOP_HOC ||--o{ BUOI_HOC : "lịch học"
     LOP_HOC ||--o{ BAI_KIEM_TRA : "bài kiểm tra"
     LOP_HOC ||--o{ TAI_LIEU_LOP_HOC : "gán tài liệu"
@@ -131,6 +133,7 @@ không phân công được họ vào lớp cũ nữa.
 | `LOP_HOC` | `giao_vien_chinh_id` NOT NULL (đúng 1 người), `hoc_phi` nullable (`null` = chưa nhập ≠ `0` = miễn phí), `suc_chua_toi_da` nullable = không giới hạn, `nhan_ban_tu_lop_id` (dấu vết nguồn gốc), `trang_thai` |
 | `LOP_HOC_HOC_VIEN` | `ngay_vao_lop`, `ngay_roi_lop`, `trang_thai`, **`hoc_phi_ap_dung`** — snapshot lúc ghi danh, cho phép miễn giảm từng người |
 | `LOP_HOC_TRO_GIANG` | Bảng **riêng**, không gộp với học viên bằng cột `vai_tro`: gộp thì nửa số cột luôn NULL và mọi query học viên phải nhớ `WHERE vai_tro = 1` |
+| `LOP_HOC_KHOA_HOC` | Lớp dạy khoá nào — **tối đa 3** (12/09/2026, đóng nợ N19). Bảng trung gian chứ không 3 cột `khoa_hoc_1/2/3_id`: ba cột thì query "lớp nào dạy khoá X" phải `OR` ba lần, quên một cột là lọt. Giới hạn 3 ép ở **validator**, không ở schema — con số do nghiệp vụ đặt. FK về `KHOA_HOC` là **RESTRICT**: xoá khoá đang được dạy sẽ âm thầm bỏ liên kết và lớp mất căn cứ đối chiếu đơn CRM lúc duyệt học viên |
 
 ### Nhóm buổi học & điểm danh (3 bảng)
 
@@ -181,6 +184,7 @@ không phân công được họ vào lớp cũ nữa.
 | `UNIQUE(tenant_id, ten) WHERE trang_thai <> 0` | `LOP_HOC` | Tên lớp duy nhất trong trung tâm, **nhưng lớp nháp không chiếm tên** — nháp bỏ ngang không được chặn người khác ba tháng sau |
 | `UNIQUE(lop_hoc_id, hoc_vien_id)` | `LOP_HOC_HOC_VIEN` | Ghi danh một lần |
 | `UNIQUE(lop_hoc_id, tro_giang_id)` | `LOP_HOC_TRO_GIANG` | Phân công một lần |
+| `UNIQUE(lop_hoc_id, khoa_hoc_id)` | `LOP_HOC_KHOA_HOC` | Một khoá gán một lần vào một lớp |
 | `UNIQUE(lop_hoc_id, thu_tu)` | `BUOI_HOC` | Số thứ tự buổi không trùng trong lớp |
 | `UNIQUE(buoi_hoc_id, hoc_vien_id)` | `DIEM_DANH` | Mỗi học viên một dòng điểm danh/buổi — chặn ở **tầng DB**, không chỉ ở UI |
 | `UNIQUE(buoi_hoc_id, hoc_vien_id)` | `NHAN_XET_BUOI_HOC` | Mỗi học viên một nhận xét/buổi. Gửi lần hai là **sửa**, không tạo bản mới |

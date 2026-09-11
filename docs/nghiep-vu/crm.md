@@ -243,6 +243,12 @@ bán gửi yêu cầu, bên đào tạo xếp lớp.
    dựa vào đó chọn lớp. **Người gửi** lấy từ token, không do client gửi lên.
 2. **LMS** — yêu cầu vào *danh sách chờ xếp lớp*, xếp theo **cũ nhất trước**. Danh sách hiện
    ghi chú của người gửi và đánh dấu *lần gửi thứ n* khi n > 1.
+
+   **Phân trang ở server** (20 dòng/trang) + **tìm theo tên hoặc số điện thoại** (12/09/2026):
+   hàng chờ của trung tâm đông lên vài trăm dòng, kéo hết về rồi cắt ở trình duyệt sẽ chậm dần
+   mà không ai để ý. `tongSoDong` đếm **sau khi lọc** — đếm trước thì thanh phân trang báo sai
+   số trang. Canh bởi `XepLopTests.Hang_cho_phan_trang_va_giu_thu_tu_cu_nhat_truoc` và
+   `Tim_kiem_hang_cho_theo_ten_va_dem_sau_khi_loc`.
 3. Bên đào tạo **duyệt** hoặc **từ chối** (`POST /lop-hoc/cho-xep-lop/{id}/tu-choi`, **lý do bắt
    buộc**). Bị từ chối thì người bán bổ sung thông tin và **gửi lại** — lần gửi mới, giữ nguyên
    lần cũ. Form gửi lại nhắc lại lý do bị từ chối lần trước.
@@ -290,8 +296,53 @@ bán gửi yêu cầu, bên đào tạo xếp lớp.
   `DongThoiTests.Moi_don_chi_mot_yeu_cau_xep_lop_DANG_CHO`.
 - `lan_gui` là **cột**, không đếm động: đó là số thứ tự của chính dòng đó, xoá dòng giữa thì các
   lần sau không được đánh số lại.
-- **Đã xếp lớp rồi thì không gửi lại** (`DON_DA_DUOC_XEP_LOP`) — học viên đang học, gửi thêm là
-  xếp lớp hai lần.
+- **Đã xếp lớp rồi VẪN gửi lại được** (đổi 12/09/2026 — bỏ chốt `DON_DA_DUOC_XEP_LOP`). Ba ca
+  nghiệp vụ thật cần điều đó: học viên **bị gỡ khỏi lớp** cần xếp lại; lớp **kết thúc/bị huỷ** mà
+  còn buổi chưa học; học thêm lớp / học lại / đổi ca. Trước đây cả ba đều bế tắc — đơn đã `DaXep`
+  thì người bán không gửi được yêu cầu nào nữa.
+
+  Chốt **duy nhất** còn lại: `DA_GUI_YEU_CAU_XEP_LOP` — mỗi khoá chỉ gửi tiếp khi yêu cầu hiện
+  tại **đã duyệt hoặc đã từ chối**. Hai yêu cầu cùng chờ trên một đơn làm người điều phối thấy
+  hai dòng trùng mà không biết duyệt cái nào.
+- **Trạng thái "đang học lớp nào" suy động từ `LOP_HOC_HOC_VIEN`**, không suy từ trạng thái yêu
+  cầu (chốt 12/09/2026).
+
+  Yêu cầu `DaXep` là **sự kiện quá khứ** ("đã từng được duyệt vào lớp X"); "đang học lớp nào" là
+  **trạng thái hiện tại**. Trước đây `TenLopDaXep` suy từ yêu cầu, nên gỡ học viên khỏi lớp thì
+  CRM vẫn báo "Đã vào lớp X" **mãi mãi** — yêu cầu không đổi.
+
+  `DangKyKemThuDto` nay trả `CacLopDangHoc` · `CacLopDaHoc` · `DangThamGiaLop` · `TenLopDangHoc`.
+  Hệ quả: **gỡ khỏi lớp và huỷ lớp tự động đúng**, không cần viết đồng bộ ngược — cùng nguyên tắc
+  "công nợ tính động, không lưu cột" của FR-14.
+
+  *"Đang tham gia"* = lớp **không** `DaKetThuc`/`DaHuy` **và** học viên `DangHoc`/`BaoLuu`. Lớp
+  đã đóng hoặc người đã nghỉ rơi sang `CacLopDaHoc` — vẫn trả lời được "đã từng học lớp nào".
+
+  Canh bởi `XepLopTests.Go_hoc_vien_khoi_lop_thi_CRM_khong_con_bao_dang_hoc` và
+  `Lop_bi_huy_thi_khong_con_dang_hoc_nhung_con_lich_su`.
+
+  > **Giới hạn**: một lớp gán được tối đa 3 khoá, nhưng bảng ghi danh nối theo `hoc_vien_id`
+  > (con người) chứ không theo `dang_ky_id` (đơn) — nên mọi đơn khoá học của một khách cùng thấy
+  > danh sách lớp của người đó. Đủ để trả lời "đang học lớp nào", chưa đủ để nói "đơn này ứng
+  > với lớp này".
+- **Cảnh báo lệch khoá học khi duyệt** (`KHOA_HOC_KHONG_KHOP_LOP`, 12/09/2026) — **cảnh báo,
+  KHÔNG chặn**.
+
+  Lớp gán được tối đa 3 khoá (`LOP_HOC_KHOA_HOC`, đóng nợ N19). Khoá trong đơn CRM không nằm
+  trong số đó thì gần như chắc người duyệt chọn sai lớp — nhưng vẫn có ca hợp lệ: học bù, lớp
+  ghép, khoá tương đương chưa kịp gán. Chủ sản phẩm chốt *"thông báo để người duyệt lưu ý, vẫn
+  cho phép nếu đồng ý"*.
+
+  Cơ chế: lần gọi đầu (`BoQuaCanhBaoKhoaHoc = false`) trả mã lỗi kèm `DuLieu` gồm **khoá của
+  đơn · khoá của lớp · tên lớp** để UI dựng câu hỏi lại; người duyệt đồng ý thì client gọi lại
+  với cờ `true`. Cờ mặc định false nên client cũ vẫn nhận được cảnh báo thay vì bỏ qua âm thầm.
+
+  **Lớp chưa gán khoá nào thì KHÔNG cảnh báo**: mọi lớp tạo trước 12/09/2026 đều rỗng, cảnh báo
+  hết sẽ thành tiếng ồn và người duyệt học cách bấm qua mà không đọc — đúng thứ làm cảnh báo mất
+  tác dụng khi cần nhất.
+
+  Canh bởi `XepLopTests.Duyet_lech_khoa_hoc_thi_canh_bao_nhung_van_cho_phep_khi_dong_y`,
+  `Duyet_dung_khoa_thi_khong_canh_bao` và `Lop_chua_gan_khoa_thi_khong_canh_bao`.
 - **`TuChoi` ≠ `DaHuy`**: từ chối là bên **đào tạo** không nhận (kèm lý do bắt buộc), huỷ là bên
   **bán** thu lại yêu cầu. Gộp một trạng thái thì không trả lời được ai quyết định.
 - **Duyệt hai lần bị chặn** (`YEU_CAU_DA_XU_LY`): bấm lại, hoặc hai người cùng duyệt, sẽ tạo hai

@@ -25,11 +25,11 @@ FR-23/24 chưa làm. → [phan-quyen-dong.md](./backend/phan-quyen-dong.md#ba-h�
 |---|---|---|---|
 | 1 | [Đăng nhập](./nghiep-vu/dang-nhap.md) | Xác thực theo trung tâm, quên mật khẩu, refresh token có xoay vòng | FR-01 → FR-02 |
 | 2 | [Quản trị hệ thống](./nghiep-vu/quan-tri-he-thong.md) | **Người dùng** (hồ sơ con người + hồ sơ riêng theo vai trò) tách khỏi **tài khoản** (đăng nhập) — từ 08/09 hồ sơ chia hai màn: Nhân sự (HRM) · Học viên (LMS); phân quyền động 24 chức năng × thao tác, có tab theo hệ thống; thiết lập chung | FR-03 → FR-06 |
-| 3 | [Lớp học](./nghiep-vu/lop-hoc.md) | Vòng đời lớp (nháp → sắp khai giảng → đang học → kết thúc), phân công giáo viên/trợ giảng, ghi danh học viên với học phí riêng từng người | FR-07 → FR-08 |
+| 3 | [Lớp học](./nghiep-vu/lop-hoc.md) | Vòng đời lớp (nháp → sắp khai giảng → đang học → kết thúc), phân công giáo viên/trợ giảng, **gán tối đa 3 khoá học**, ghi danh học viên với học phí riêng từng người | FR-07 → FR-08 |
 | 4 | [Buổi học & Điểm danh](./nghiep-vu/buoi-hoc-diem-danh.md) | Sinh lịch tự động theo thứ trong tuần, lịch dạng calendar, view chi tiết buổi 5 tab; điểm danh **2 nguồn** (học viên tự khai + giáo viên chốt); **nhận xét hai chiều** | FR-09 → FR-10 |
 | 5 | [Học liệu](./nghiep-vu/hoc-lieu.md) · [Học phí](./nghiep-vu/hoc-phi.md) | Bài tập (nộp nhiều lần, giữ lịch sử), tài liệu, tệp đính kèm; sổ thu và công nợ | FR-11 → FR-14 |
 | 6 | [Nhật ký hệ thống](./nghiep-vu/nhat-ky-he-thong.md) | Một bản ghi cho mỗi **lệnh**, chụp lại trường nào đã đổi. Chỉ ghi thêm — không sửa, không xoá | FR-16 |
-| 7 | [CRM](./nghiep-vu/crm.md) | Khách hàng (view 3 tab, phễu bán hàng) · doanh thu **đa tiền tệ** (VND/USD/EUR/CAD, tỷ giá chụp lúc bán) · khoá học · sản phẩm. **FR-21 nối sang LMS**: bán khoá → gửi yêu cầu → duyệt vào lớp, học phí lấy từ đơn CRM | FR-17 → FR-21 |
+| 7 | [CRM](./nghiep-vu/crm.md) | Khách hàng (view 3 tab, phễu bán hàng) · doanh thu **đa tiền tệ** (VND/USD/EUR/CAD, tỷ giá chụp lúc bán) · khoá học · sản phẩm. **FR-21 nối sang LMS**: bán khoá → gửi yêu cầu → duyệt vào lớp, học phí lấy từ đơn CRM; **cảnh báo nếu khoá của đơn không khớp khoá lớp dạy** (không chặn) | FR-17 → FR-21 |
 | 8 | [HRM](./nghiep-vu/hrm.md) | **Cơ cấu tổ chức** dạng cây (phòng ban lồng nhau, người quản lý, hai cách xếp nhân sự). Mọi vai trò nhân sự xếp được vào phòng — *giáo viên cũng là nhân viên* | FR-22 → FR-24 |
 
 > **Ba hệ thống con HRM · CRM · LMS là cách nhóm quyền, KHÔNG phải ba ứng dụng** — một API, một

@@ -6,9 +6,9 @@ Quản lý lớp học của trung tâm: thông tin lớp, phân công giáo vi�
 
 CRUD lớp học.
 
-**Trường dữ liệu:** tên lớp, giáo viên chính (1), trợ giảng (nhiều), hình thức học
-(trực tuyến / tại lớp / kết hợp), phòng học hoặc link, học phí, sức chứa tối đa, ngày khai
-giảng, ngày kết thúc, ghi chú.
+**Trường dữ liệu:** tên lớp, giáo viên chính (1), trợ giảng (nhiều), **khoá học (tối đa 3)**,
+hình thức học (trực tuyến / tại lớp / kết hợp), phòng học hoặc link, học phí, sức chứa tối đa,
+ngày khai giảng, ngày kết thúc, ghi chú.
 
 ### Vòng đời
 
@@ -39,6 +39,23 @@ Nháp ──[Hoàn tất]──> Sắp khai giảng ──(tới ngày)──> �
 - **Sức chứa `null` = không giới hạn.** Vì `null` đã mang nghĩa "không gửi" trong lệnh cập
   nhật (quy tắc #1), muốn *bỏ* giới hạn phải gửi cờ riêng `boGioiHanSucChua`.
 - Xoá tài khoản giáo viên đang dạy bị **chặn** — buộc bàn giao lớp trước.
+- **Lớp gán được tối đa 3 khoá học** (`LOP_HOC_KHOA_HOC`, 12/09/2026 — đóng nợ N19).
+
+  Dùng để đối chiếu khi duyệt học viên từ CRM: khoá trong đơn không nằm trong số khoá lớp dạy
+  thì **cảnh báo** người duyệt (`KHOA_HOC_KHONG_KHOP_LOP`), nhưng **vẫn cho phép** nếu họ đồng ý
+  — xem [FR-21](./crm.md#fr-21--yêu-cầu-xếp-lớp-crm--lms).
+
+  Giới hạn 3 ép ở **validator**, không ở schema: con số do nghiệp vụ đặt, đổi nó không nên cần
+  migration. `Distinct()` trước khi đếm — gửi cùng một khoá ba lần không phải 3 khoá.
+
+  **Rỗng là hợp lệ**: wizard cho lưu nháp trước khi biết dạy khoá nào, và mọi lớp tạo trước
+  12/09/2026 đều rỗng. Lớp rỗng thì không cảnh báo gì khi duyệt.
+
+  **Không kiểm `dang_ban`** khi gán: khoá ngừng bán vẫn đang được dạy ở lớp đã mở (FR-19 — đã
+  bán thì ngừng bán, không xoá). Chặn ở đây sẽ không sửa nổi lớp cũ khi khoá của nó ngừng bán.
+
+  Lệnh cập nhật giữ quy ước `null = giữ nguyên` (quy tắc #1): form không gửi `khoaHocIds` thì
+  khoá đang gán còn nguyên; danh sách rỗng mới là chủ động bỏ hết.
 
 ### Phạm vi truy cập — "chỉ lớp mình phụ trách"
 
@@ -76,6 +93,8 @@ Thêm / gỡ học viên, xem danh sách.
 | Mã | Khi nào |
 |---|---|
 | `NHAN_SU_KHONG_HOP_LE` | Giáo viên/trợ giảng không tồn tại, đã nghỉ, hoặc thuộc trung tâm khác |
+| `VUOT_SO_KHOA_HOC_CUA_LOP` | Gán quá 3 khoá cho một lớp |
+| `KHOA_HOC_KHONG_HOP_LE` | Khoá không tồn tại hoặc thuộc trung tâm khác |
 | `GIAO_VIEN_TRUNG_TRO_GIANG` | Giáo viên chính đồng thời là trợ giảng của chính lớp đó |
 | `CHUA_CHON_HINH_THUC_HOC` | Thiếu hình thức học (JSON thiếu trường enum sẽ thành 0) |
 | `CHUA_NHAP_HOC_PHI` | Hoàn tất lớp khi học phí còn `null` |
