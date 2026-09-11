@@ -46,6 +46,7 @@ Lỗi đã bắt được, thứ tưởng đúng mà sai, giới hạn chưa g�
 
 | Ngày | Nội dung chính |
 |---|---|
+| [2026-09-10 (LMS)](./2026-09-10-url-pham-vi-cho-xep-lop.md) | **URL `/lms`** cho đồng nhất ba hệ thống · **phạm vi lớp của học viên** (nhánh chưa test nào phủ) · gộp **Chờ xếp lớp** thành tab — lộ ra mục menu gác `Xem` trong khi endpoint đòi `Sua`, giáo viên bấm vào nhận 403 |
 | [2026-09-10 (HRM)](./2026-09-10-hrm-ho-so-mo-rong.md) | **FR-23 hồ sơ mở rộng** — bảng `LIEN_KET_MXH` nhiều dòng, cột FK thứ sáu của `TEP_DINH_KEM`; thiếu `Include` làm `RemoveRange` thành no-op im lặng; chia tab view chi tiết, `{/*…*/}` trong expression container báo lỗi lệch 70 dòng |
 | [2026-09-08 (CRM)](./2026-09-08-crm.md) | **Nghiệp vụ CRM** (FR-17 → FR-19) — khách hàng · doanh thu đa tiền tệ · khoá học; vá script i18n quét namespace lồng |
 | [2026-09-09 (Xếp lớp)](./2026-09-09-xep-lop.md) | **FR-21 yêu cầu xếp lớp** — cầu nối CRM → LMS, học phí lấy từ đơn CRM; gộp tab mua hàng; script Python ngắt `Layout.tsx` còn 7 dòng |

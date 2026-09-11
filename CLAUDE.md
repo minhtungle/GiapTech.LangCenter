@@ -18,6 +18,11 @@ một lần đăng nhập. → [phan-quyen-dong.md](./docs/backend/phan-quyen-do
 Mỗi trung tâm đăng ký là một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`.
 Đăng nhập bằng bộ ba **{mã trung tâm, tên đăng nhập, mật khẩu}**.
 
+**Đường dẫn frontend theo hệ thống con**: `/hrm/...` · `/crm/...` · `/lms/...` (thống nhất
+10/09/2026), quản trị dùng chung ở `/quan-tri/...`. `Layout.tsx` suy ra hệ thống con **từ tiền
+tố**, nên route mới **phải** có tiền tố đúng. **Đừng lẫn route với endpoint API**: `/lms/hoc-vien`
+là đường frontend, API vẫn là `/api/v1/hoc-vien`.
+
 **Tên chuẩn:** `GiapTech.LangCenter` (namespace, solution, image `ghcr.io/giaptech/langcenter-api`).
 
 ### Trạng thái
@@ -31,7 +36,7 @@ LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 |---|---|
 | Đăng nhập · quên mật khẩu · buộc đổi mật khẩu lần đầu | **FR-15 Thống kê / Dashboard** |
 | Người dùng (hồ sơ 3 vai trò) tách khỏi tài khoản · nhóm quyền · thiết lập | **Bài kiểm tra** — có schema, chưa có API/UI |
-| **Ba hệ thống con** HRM/CRM/LMS: bộ chuyển, sidebar lọc, tab phân quyền | **Bài kiểm tra** — có schema, chưa có API/UI |
+| **Ba hệ thống con** HRM/CRM/LMS: bộ chuyển, sidebar lọc, tab phân quyền · URL `/hrm` `/crm` `/lms` | Dọn tenant rác ở DB dev (nợ N11) |
 | **CRM** (FR-17 → FR-20): khách hàng + view 3 tab · doanh thu đa tiền tệ · **khoá học + sản phẩm** | Số **đã thu** ở CRM chưa chảy sang sổ học phí LMS |
 | **HRM** đủ nghiệp vụ (FR-22 → FR-24): cơ cấu tổ chức · chức vụ · hồ sơ mở rộng (CCCD, số TK, MXH, tệp) | `LOP_HOC` chưa nối `KHOA_HOC` (chưa ưu tiên lớp cùng khoá) |
 | Hồ sơ con người tách theo hệ thống: Nhân sự (HRM) · Học viên (LMS) | |

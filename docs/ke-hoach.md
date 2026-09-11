@@ -1,6 +1,6 @@
 # Kế hoạch & tiến độ
 
-> Cập nhật cuối: **2026-09-08**. Nhật ký chi tiết theo ngày: [nhat-ky/](./nhat-ky/README.md).
+> Cập nhật cuối: **2026-09-11**. Nhật ký chi tiết theo ngày: [nhat-ky/](./nhat-ky/README.md).
 
 ## Tiến độ tổng
 
@@ -8,7 +8,7 @@
 Nghiệp vụ  ███████████████░  23/24 FR chạy đầu-cuối (còn FR-15 Thống kê)
 Ba hệ thống ████████████████  Cả ba hệ thống đủ nghiệp vụ
 Hạ tầng    ████████████░░░░  CI/CD sẵn sàng, chờ VPS thật
-Còn lại    █████░░░░░░░░░░░  Dashboard + Bài kiểm tra + 23 nợ kỹ thuật
+Còn lại    █████░░░░░░░░░░░  Dashboard + Bài kiểm tra + 22 nợ kỹ thuật
 ```
 
 ## Trạng thái mã FR
@@ -76,22 +76,22 @@ Không migration. 3 dashboard. Báo cáo điểm danh **luôn dùng `trang_thai_
 nợ dùng `TENANT.so_ngay_canh_bao_no_hoc_phi`. Nếu chậm: tối ưu index trước, materialized view
 sau — không denormalize sớm.
 
-### Giai đoạn 5b — Ba hệ thống con HRM · CRM · LMS · 🟡 khung xong, nghiệp vụ chưa
+### Giai đoạn 5b — Ba hệ thống con HRM · CRM · LMS · ✅ xong
 
 Chia chức năng phân quyền thành ba hệ thống + nhóm dùng chung (08/09). **Không tách service** —
-một API, một DB, một lần đăng nhập; mỗi hệ thống hiện chỉ 1–2 module và dữ liệu dùng chung
-(`NGUOI_DUNG`, `TENANT`, nhóm quyền) sẽ phải đồng bộ giữa ba DB nếu tách.
+một API, một DB, một lần đăng nhập; dữ liệu dùng chung (`NGUOI_DUNG`, `TENANT`, nhóm quyền) sẽ
+phải đồng bộ giữa ba DB nếu tách. Quyết định giữ một source: [ADR-0005](./kien-truc/adr/0005-mot-source-va-doi-ten-langcenter.md).
 
 Đã chạy: bộ chuyển hệ thống, sidebar lọc theo hệ thống, tab phân quyền, hồ sơ con người tách
-đôi (Nhân sự → HRM · Học viên → LMS).
+đôi (Nhân sự → HRM · Học viên → LMS), **URL theo tiền tố** `/hrm` `/crm` `/lms` (10/09).
 
-**Chưa có nghiệp vụ** cho 3 module mới — cần chốt trước khi làm:
+Nghiệp vụ ba hệ thống nay **đủ**: HRM có FR-22 → FR-24, CRM có FR-17 → FR-21, LMS có FR-07 →
+FR-14.
 
-| Module | Cần chốt |
-|---|---|
-| Nhân viên kinh doanh (HRM) | Theo dõi gì: chỉ tiêu, hoa hồng, khách hàng phụ trách? |
-| Giáo viên — góc nhìn nhân sự (HRM) | Thêm trường gì so với `HO_SO_GIAO_VIEN`: hợp đồng, lương, chấm công? |
-| Doanh thu (CRM) | Tính từ đâu: tổng `KHOAN_THU_HOC_PHI`, hay có nguồn thu khác? |
+**Hai màn từng dự kiến đã BỎ** (10/09, theo yêu cầu chủ sản phẩm): "Nhân viên kinh doanh" và
+"Giáo viên — góc nhìn nhân sự". Lý do: hồ sơ của **cả ba vai trò nhân sự** đã nằm chung ở màn Hồ
+sơ nhân sự, và "nhân viên kinh doanh" vốn là **quyền** (`ChucNang.NhanVienKinhDoanh`) chứ không
+phải một loại người — tách màn riêng là nhân đôi cùng một dữ liệu.
 
 Đã chốt: giáo viên ở HRM và ở LMS là **cùng một con người** (`NGUOI_DUNG` + `HO_SO_GIAO_VIEN`),
 khác quyền và khác màn hình. Không tạo bảng nhân sự thứ hai.
@@ -115,7 +115,7 @@ VPS → domain + HTTPS → backup. Xem
 | N7 | Import Excel danh sách học viên | Trung bình |
 | N9 | Lịch sử chỉnh sửa khoản thu (ai sửa gì lúc nào) | Thấp |
 | N10 | Nhắc nợ học phí / thông báo lịch học qua email (`IEmailSender` đã có, chưa nối) | Thấp |
-| N11 | Endpoint dọn tenant test + `globalTeardown` cho E2E — **DB dev đã có 39/42 tenant rác** (đếm 09/09/2026; mỗi lần chạy E2E thêm ~6). Đang làm chậm mọi truy vấn `TENANT` và làm số liệu tài liệu khó đối chiếu | **Cao** |
+| N11 | Endpoint dọn tenant test + `globalTeardown` cho E2E — **DB dev phình từ 42 lên 170 tenant** (đo 10/09/2026; mỗi lần chạy cả bộ E2E thêm ~19, cộng các lần thử tay). Đang làm chậm mọi truy vấn `TENANT` và làm số liệu tài liệu khó đối chiếu | **Cao** |
 | N13 | **Chưa dọn nhật ký cũ** — bảng `NHAT_KY_HE_THONG` tăng vô hạn, cần chính sách lưu giữ trước khi chạy production lâu dài | Trung bình |
 | N17 | Đổi tên bảng `DANG_KY_KHOA_HOC` → `DON_HANG` (nay chứa cả sản phẩm) và **tồn kho sản phẩm** — hiện bán không giới hạn | Thấp |
 | N18 | **Số đã thu ở CRM không chảy sang sổ học phí LMS** — FR-21 chuyển *số cam kết* thành học phí áp dụng, nhưng khách đóng 4tr ở CRM thì sổ LMS vẫn ghi `daThu = 0`. Cùng một khoản tiền phải ghi hai lần nếu muốn cả hai sổ đúng | **Cao** |
@@ -125,15 +125,16 @@ VPS → domain + HTTPS → backup. Xem
 | N22 | `RanhGioiHeThongConTests` chỉ quét `Application/`; tầng `API/Controllers` vẫn gọi chéo hệ thống tự do (đúng vì controller là chỗ ghép, nhưng nếu muốn siết thì cần danh sách khai tương tự) | Thấp |
 | N23 | **Role PostgreSQL và bucket MinIO cũ còn nằm đó** sau khi đổi tên 09/09 (`langcenter_lms`, `langcenter-lms-anh`) — giữ làm dự phòng, dọn tay sau khi chắc chắn | Thấp |
 | N24 | **Kéo-thả đổi cha trong cây cơ cấu** chưa làm (`@headless-tree` có `dragAndDropFeature`, chưa bật) — nay đổi cha bằng cách sửa phòng ban | Thấp |
-| N25 | **4 test E2E còn chờ chữ "đội" thời dự án bóng đá** (`dang-nhap-tra-ma.spec.ts` ×2, `quan-tri.spec.ts` ×2) — app trả "Không tìm thấy **trung tâm** tương ứng" là đúng, test lạc hậu mới sai. Đỏ sẵn từ trước 10/09, không phải lỗi nghiệp vụ; sửa kỳ vọng của test | Trung bình |
-| N16 | **4 test E2E lạc hậu**: `quan-tri.spec.ts` tìm `button[title="Sửa"]` nhưng nút thao tác đã chuyển vào `MenuThaoTac` (07/09), và `dang-nhap-tra-ma.spec.ts` còn dùng từ ngữ "mã đội". Không phải lỗi mới — chưa cập nhật khi đổi UI | Trung bình |
+| N16 | **4 test E2E lạc hậu** (`dang-nhap-tra-ma.spec.ts` ×2, `quan-tri.spec.ts` ×2): `quan-tri` tìm `button[title="Sửa"]` nhưng nút thao tác đã vào `MenuThaoTac` (07/09), còn `dang-nhap-tra-ma` chờ chữ **"đội"** thời dự án bóng đá trong khi app trả "Không tìm thấy **trung tâm** tương ứng". **App đúng, test lạc hậu mới sai** — đỏ liên tục từ trước 10/09. Sửa kỳ vọng của test. *(Từng ghi trùng thành N25, đã gộp 11/09.)* | Trung bình |
 | N15 | **E2E phải tắt rate limit mới chạy được** (`GIOI_HAN_TAN_SUAT=false`) vì mỗi test tự tạo tenant qua endpoint có hạn mức 10 req/phút. Cách đúng hơn: fixture dùng CHUNG một tenant, hoặc endpoint tạo tenant riêng cho test | Trung bình |
 | N14 | Màn Học viên (LMS) và Nhân sự (HRM) cho đọc danh sách **toàn trung tâm**, chưa giới hạn "học viên lớp mình" — cần mở rộng `IPhamViLopHoc` cho hồ sơ con người | Trung bình |
 | N12 | `Token_bi_sua_chu_ky_thi_bi_tu_choi` **chớp nháy** — đỏ một lần khi chạy toàn bộ (12 giây), xanh khi chạy riêng | Trung bình |
 
 ## Kiểm chứng hiện tại
 
-- **414 test backend xanh** (65 unit + 349 integration), build 0 warning.
+- **428 test backend xanh** (65 unit + 363 integration), build 0 warning — đo `dotnet test` 11/09/2026.
+- **19 test E2E / 7 spec**; 15 xanh, **4 đỏ là nợ N16** (test lạc hậu thời dự án bóng đá, không
+  phải lỗi nghiệp vụ). Chạy cả bộ phải `GIOI_HAN_TAN_SUAT=false` — xem nợ N15.
 - Frontend `tsc -b` + `vite build` sạch, `oxlint` không lỗi.
 - **PostgreSQL + MinIO thật**: 36 bảng, 19 migration áp sạch, luồng đầu-cuối chạy tay đủ từ tạo
   trung tâm tới thu học phí.
