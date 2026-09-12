@@ -2,6 +2,9 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using GiapTech.LangCenter.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GiapTech.LangCenter.API.IntegrationTests;
 
@@ -10,6 +13,24 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class LopHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
+    /// <summary>
+    /// Học phí đọc THẲNG TỪ DB — API của LMS không trả tiền học nữa (12/09/2026, chỉ CRM nắm
+    /// số tiền). Nhưng dữ liệu **vẫn phải đúng**: CRM và báo cáo đọc từ đây.
+    /// </summary>
+    private async Task<(decimal? Lop, decimal? ApDung)> TienTrongDb(Guid lopHocId, Guid? hocVienId = null)
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var lop = await db.LopHocs.IgnoreQueryFilters().FirstAsync(x => x.Id == lopHocId);
+        decimal? apDung = hocVienId is null
+            ? null
+            : (await db.LopHocHocViens.IgnoreQueryFilters()
+                .FirstAsync(x => x.LopHocId == lopHocId && x.HocVienId == hocVienId)).HocPhiApDung;
+
+        return (lop.HocPhi, apDung);
+    }
+
     private async Task<HttpClient> Client(string? maTrungTam = null, string user = "manager",
         string mk = "manager123")
     {
@@ -326,8 +347,8 @@ public class LopHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
             HinhThuc = "Offline", HocPhi = 6_000_000m, TroGiangIds = Array.Empty<Guid>()
         })).EnsureSuccessStatusCode();
 
-        var ds = await c.GetFromJsonAsync<List<JsonElement>>($"/api/v1/lop-hoc/{lop}/hoc-vien");
-        Assert.Equal(5_000_000m, ds!.Single().GetProperty("hocPhiApDung").GetDecimal());
+        // Mức đã chốt lúc ghi danh KHÔNG đổi theo lớp — đọc từ DB vì API LMS không trả tiền.
+        Assert.Equal(5_000_000m, (await TienTrongDb(lop, hv)).ApDung);
     }
 
     // ---------- Quy tắc #1 ----------
@@ -368,7 +389,9 @@ public class LopHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         Assert.Equal("Tên đã đổi", d.GetProperty("ten").GetString());
         Assert.Equal("P.201", d.GetProperty("phongHoc").GetString());
-        Assert.Equal(3_000_000m, d.GetProperty("hocPhi").GetDecimal());
+        // Học phí lớp: đọc từ DB (API LMS không trả tiền từ 12/09/2026) — quy tắc #1 vẫn phải
+        // đúng ở TẦNG DỮ LIỆU: sửa tên lớp không được làm mất học phí.
+        Assert.Equal(3_000_000m, (await TienTrongDb(lop)).Lop);
         Assert.Equal(25, d.GetProperty("sucChuaToiDa").GetInt32());
         Assert.Equal("Ghi chú ban đầu", d.GetProperty("ghiChu").GetString());
         Assert.Single(d.GetProperty("troGiangIds").EnumerateArray());

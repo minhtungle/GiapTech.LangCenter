@@ -102,6 +102,13 @@ export default function App() {
               <Route path="/lms/lop-hoc/:id" element={<ChiTietLopHoc />} />
               <Route path="/lms/buoi-hoc/:id" element={<ChiTietBuoiHoc />} />
               <Route path="/lms/tai-lieu" element={<TaiLieu />} />
+              {/*
+                Màn Học phí KHÔNG còn trong sidebar và không còn là tab của lớp (12/09/2026):
+                LMS không quản lý, không hiển thị tiền học nữa — chỉ CRM nắm số tiền.
+
+                Route giữ lại có chủ ý: bookmark và link đã gửi không chết, và bật lại chỉ cần
+                thêm một dòng menu. Endpoint `/hoc-phi` vẫn gác bằng `HocPhi.Xem` như cũ.
+              */}
               <Route path="/lms/hoc-phi" element={<HocPhi />} />
 
               {/*

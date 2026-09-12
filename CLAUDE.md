@@ -30,7 +30,7 @@ là đường frontend, API vẫn là `/api/v1/hoc-vien`.
 Tách ra từ một ứng dụng quản lý CLB đá bóng (04/09/2026), giữ toàn bộ tầng hệ thống. Nghiệp vụ
 LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 
-**23/24 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 442 test backend xanh.
+**23/24 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 440 test backend xanh.
 
 | Đã chạy đầu-cuối | Chưa có |
 |---|---|
@@ -43,7 +43,7 @@ LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 | Lớp học: vòng đời, phân công, ghi danh, học phí riêng từng người, **gán tối đa 3 khoá** | Đăng ký trung tâm an toàn production (nợ N3) |
 | Buổi học: sinh lịch tự động; điểm danh hai nguồn | Nhắc nợ / thông báo qua email |
 | Bài tập, bài nộp nhiều lần, tài liệu, tệp đính kèm | Import Excel học viên |
-| Học phí: sổ thu + công nợ tính động | Danh mục ngày nghỉ khi sinh lịch |
+| Học phí: sổ thu + công nợ tính động — **ẩn khỏi LMS 12/09, chỉ CRM nắm tiền** | Danh mục ngày nghỉ khi sinh lịch |
 | **Nhật ký thao tác** mọi module (FR-16) | Dọn nhật ký cũ theo chính sách lưu giữ |
 | **FR-21 xếp lớp** CRM → LMS: duyệt/từ chối, trạng thái tham gia lớp **suy động**, **cảnh báo lệch khoá** | |
 
@@ -213,6 +213,8 @@ Tầng hệ thống hiện có, đặt ở đâu:
   **hai nguồn** — học viên tự khai (giới hạn khung giờ) và giáo viên chốt.
 - **Học liệu** (FR-11 → FR-13): bài tập, bài nộp nhiều lần giữ lịch sử, tài liệu, tệp đính kèm.
 - **Học phí** (FR-14): sổ thu + công nợ **tính động, không lưu cột**.
+  **Từ 12/09/2026 ẩn khỏi giao diện và API của LMS** — chỉ CRM nắm số tiền. Dữ liệu, bảng và
+  endpoint giữ nguyên; `LopHocDto.HocPhi` và `HocVienTrongLopDto.HocPhiApDung` luôn trả `null`.
 - **Ba tầng bảo vệ riêng biệt** — đừng gộp:
 
   | Tầng | Lo việc gì |
@@ -245,7 +247,7 @@ Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 ```bash
 # --- Backend ---
 dotnet build          # 0 warning — TreatWarningsAsErrors đang bật
-dotnet test           # 442 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
+dotnet test           # 440 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
                       #           quản trị, lớp học, điểm danh, học liệu, học phí
 
 # Chạy API cần 2 biến bắt buộc (thiếu là 500 lúc đăng nhập / tải ảnh, không phải lúc khởi động):

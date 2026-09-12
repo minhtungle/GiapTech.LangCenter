@@ -18,11 +18,14 @@ public record HocVienTrongLopDto(
     DateTimeOffset NgayVaoLop,
     TrangThaiHocVienTrongLop TrangThai,
     /// <summary>
-    /// Mức học phí riêng của người này — **dữ liệu nhạy cảm nhất trong DTO này** vì nó tiết lộ
-    /// ai được miễn giảm và giảm bao nhiêu.
+    /// Mức học phí riêng của người này — **LUÔN null từ 12/09/2026**.
     ///
-    /// null khi người gọi không được xem: giáo viên và trợ giảng thấy null ở mọi dòng, học
-    /// viên chỉ thấy số của chính mình. Xem <c>IPhamViHocPhi.DuocXemTienCuaLop</c>.
+    /// LMS không quản lý và không hiển thị tiền học nữa; chỉ CRM nắm số tiền (chốt với chủ sản
+    /// phẩm). Cột `LOP_HOC_HOC_VIEN.hoc_phi_ap_dung` vẫn còn trong DB — FR-21 vẫn ghi nó khi
+    /// duyệt vào lớp, và CRM đọc được — nhưng API của LMS không trả nó về.
+    ///
+    /// Trước đó trường này gác bằng `IPhamViHocPhi.DuocXemTienCuaLop`. Bỏ cổng đó đi là **chặt
+    /// hơn**, không lỏng hơn: không còn nhánh nào trả ra số tiền, nên không còn chỗ để sai.
     /// </summary>
     decimal? HocPhiApDung,
     string? GhiChu,
@@ -44,7 +47,7 @@ public record HocVienTrongLopDto(
 public record LayHocVienTrongLopQuery(Guid LopHocId) : IRequest<List<HocVienTrongLopDto>>;
 
 public class LayHocVienTrongLopHandler(
-    IAppDbContext db, IPhamViLopHoc phamVi, IPhamViHocPhi phamViTien, ICurrentUser currentUser,
+    IAppDbContext db, IPhamViLopHoc phamVi, ICurrentUser currentUser,
     IQuyenService quyenService, ICurrentTenant tenant)
     : IRequestHandler<LayHocVienTrongLopQuery, List<HocVienTrongLopDto>>
 {
@@ -57,8 +60,6 @@ public class LayHocVienTrongLopHandler(
         // Ba mức, hẹp dần. Đây là chỗ từng rò rỉ nặng nhất: giáo viên đọc được mức miễn giảm
         // của từng học viên, và học viên đọc được học phí của bạn cùng lớp — cả hai đi vòng
         // qua cổng HocPhi vì endpoint này gác bằng `LopHoc.Xem`.
-        var xemTien = await phamViTien.DuocXemTienCuaLop(ct);
-        var toi = currentUser.UserId;
 
         // Tên nhân viên kinh doanh là dữ liệu CRM đi nhờ DTO của LMS — gác riêng bằng
         // `KhachHang.Xem` (12/09/2026). Endpoint này gác bằng `LopHoc.Xem`, quyền mà GIÁO VIÊN
@@ -74,7 +75,8 @@ public class LayHocVienTrongLopHandler(
             .Select(hv => new HocVienTrongLopDto(
                 hv.Id, hv.HocVienId, hv.HocVien.HoTen, hv.HocVien.Email,
                 hv.HocVien.SoDienThoai, hv.NgayVaoLop, hv.TrangThai,
-                xemTien || hv.HocVienId == toi ? hv.HocPhiApDung : null,
+                // LMS không trả tiền học (12/09/2026) — xem chú thích ở DTO.
+                null,
                 hv.GhiChu,
                 // Nối qua KHACH_HANG: học viên thêm TAY (không qua CRM) không có hồ sơ khách
                 // nào trỏ tới nên trả null — đúng, họ không do ai bán.

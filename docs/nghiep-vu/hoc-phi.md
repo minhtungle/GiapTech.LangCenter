@@ -1,5 +1,20 @@
 # Module Học phí (FR-14)
 
+> ⚠️ **Từ 12/09/2026: module này ẨN khỏi giao diện LMS.** Chốt với chủ sản phẩm —
+> *"LMS không quản lý tiền học nữa, cũng không hiển thị tiền. Bảo mật thông tin, chỉ CRM mới
+> nắm được số tiền."*
+>
+> Cụ thể: bỏ mục Học phí khỏi sidebar và bỏ tab Học phí khỏi view chi tiết lớp; `LopHocDto.HocPhi`
+> và `HocVienTrongLopDto.HocPhiApDung` **luôn trả `null`**.
+>
+> **Giữ nguyên**: bảng `KHOAN_THU_HOC_PHI`, cột `LOP_HOC.hoc_phi`,
+> `LOP_HOC_HOC_VIEN.hoc_phi_ap_dung`, 5 endpoint `/hoc-phi`, và route `/lms/hoc-phi`. FR-21 vẫn
+> ghi học phí từ đơn CRM khi duyệt vào lớp — CRM và báo cáo đọc từ đó. Bật lại chỉ cần thêm một
+> dòng menu.
+>
+> Canh bởi `RoRiHocPhiTests.Khong_ai_thay_tien_hoc_qua_API_cua_LMS_ke_ca_quan_tri` (duyệt cả bốn
+> vai trò, có chiều ngược kiểm dữ liệu còn trong DB).
+
 Ghi nhận tiền học viên đã nộp và theo dõi ai còn nợ.
 
 > **Hệ thống không xử lý tiền.** Không cổng thanh toán, không đối chiếu sao kê ngân hàng,

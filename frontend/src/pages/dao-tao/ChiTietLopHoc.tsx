@@ -12,7 +12,6 @@ import { BaiTapCuaLop } from './BaiTapCuaLop'
 import { HocVienCuaLop } from './HocVienCuaLop'
 import { FormLopHoc, type DuLieuLopHoc } from './FormLopHoc'
 import TaiLieu from './TaiLieu'
-import HocPhi from './HocPhi'
 import {
   ngayVN, mauTrangThai,
   type LopHocDto, type NguoiDungNgan,
@@ -32,7 +31,6 @@ const CAC_TAB = [
   { ma: 'hoc-vien', khoa: 'lopHoc.tabHocVien', can: undefined },
   { ma: 'lich', khoa: 'lopHoc.tabLich', can: 'BuoiHoc' },
   { ma: 'bai-tap', khoa: 'lopHoc.tabBaiTap', can: 'BaiTap' },
-  { ma: 'hoc-phi', khoa: 'lopHoc.tabHocPhi', can: 'HocPhi' },
   { ma: 'tai-lieu', khoa: 'lopHoc.tabTaiLieu', can: 'TaiLieu' },
 ] as const
 
@@ -141,7 +139,6 @@ export default function ChiTietLopHoc() {
         <BaiTapCuaLop nhung lopHocId={lop.id} tenLop={lop.ten} onDong={() => navigate('/lms/lop-hoc')} />
       )}
 
-      {tab === 'hoc-phi' && <HocPhi lopHocId={lop.id} />}
 
       {tab === 'tai-lieu' && <TaiLieu lopHocId={lop.id} />}
     </div>

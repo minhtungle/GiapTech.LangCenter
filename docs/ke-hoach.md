@@ -28,7 +28,7 @@ Còn lại    █████░░░░░░░░░░░  Dashboard + Bài
 | FR-11 | Bài tập | ✅ | ✅ | Đính kèm nhiều tệp |
 | FR-12 | Bài nộp | ✅ | ✅ | Nộp nhiều lần, giữ lịch sử; chấm điểm qua endpoint riêng |
 | FR-13 | Tài liệu | ✅ | ✅ | Gán lớp, hoặc để trống = chung toàn trung tâm |
-| FR-14 | Học phí & công nợ | ✅ | ✅ | Sổ thu + bảng công nợ tính động. Phạm vi tách riêng khỏi phạm vi lớp |
+| FR-14 | Học phí & công nợ | ✅ | 🔒 | Sổ thu + công nợ tính động. **Từ 12/09/2026 ẩn khỏi LMS** — chỉ CRM nắm tiền. Bảng, endpoint và màn hình giữ nguyên (route `/lms/hoc-phi` còn sống), chỉ bỏ khỏi sidebar và tab lớp; DTO của LMS trả `null` cho mọi trường tiền |
 | FR-15 | Thống kê / Dashboard | ⬜ | ⬜ | 3 dashboard: Admin / Giáo viên / Học viên |
 | FR-16 | Nhật ký hệ thống | ✅ | ✅ | Ghi tự động ở pipeline MediatR + interceptor chụp trường đổi |
 | FR-17 | Khách hàng (CRM) | ✅ | ✅ | Bảng riêng, nối `nguoi_dung_id` khi khách vào học. **View 3 tab**: thông tin · lịch sử chăm sóc (kèm phễu bán hàng) · lịch sử mua hàng (gộp cả sổ tiền đã đóng, 09/09) |
@@ -119,7 +119,7 @@ VPS → domain + HTTPS → backup. Xem
 | N11 | Endpoint dọn tenant test + `globalTeardown` cho E2E. **Đã dọn tay 12/09/2026**: DB dev từ 212 → **1 tenant** (`W686AE9`, trung tâm chủ sản phẩm đang dùng), xoá kèm 33.960 dòng nhật ký; DB còn 17 MB. Nhưng **nguyên nhân chưa chữa** — mỗi lần chạy cả bộ E2E vẫn sinh ~19 tenant mới. Chốt 12/09: Claude kiểm chứng thay đổi **trực tiếp trên `W686AE9`**, không tạo tenant mới | Trung bình |
 | N13 | **Chưa dọn nhật ký cũ** — bảng `NHAT_KY_HE_THONG` tăng vô hạn, cần chính sách lưu giữ trước khi chạy production lâu dài | Trung bình |
 | N17 | Đổi tên bảng `DANG_KY_KHOA_HOC` → `DON_HANG` (nay chứa cả sản phẩm) và **tồn kho sản phẩm** — hiện bán không giới hạn | Thấp |
-| N18 | **Số đã thu ở CRM không chảy sang sổ học phí LMS** — FR-21 chuyển *số cam kết* thành học phí áp dụng, nhưng khách đóng 4tr ở CRM thì sổ LMS vẫn ghi `daThu = 0`. Cùng một khoản tiền phải ghi hai lần nếu muốn cả hai sổ đúng | **Cao** |
+| ~~N18~~ | ~~Số đã thu ở CRM không chảy sang sổ học phí LMS~~ — **GIẢI QUYẾT KHÁC 12/09/2026**: không đồng bộ hai sổ mà **bỏ hẳn tiền khỏi LMS**. Chốt với chủ sản phẩm: *"LMS không quản lý tiền học nữa, cũng không hiển thị tiền. Bảo mật thông tin — chỉ CRM mới nắm được số tiền."* Bảng và cột GIỮ NGUYÊN (CRM + báo cáo đọc), chỉ ẩn khỏi API và UI của LMS | ✅ |
 | ~~N19~~ | ~~`LOP_HOC` chưa có FK về `KHOA_HOC`~~ — **XONG 12/09/2026**: bảng `LOP_HOC_KHOA_HOC` (tối đa 3 khoá/lớp) + cảnh báo lệch khoá khi duyệt. Còn lại: hộp thoại chọn lớp chưa **ưu tiên sắp xếp** lớp cùng khoá lên đầu (đã có dữ liệu để làm) | Thấp |
 | N20 | Badge `%` trên giá gốc hiện cả ở đơn **sản phẩm** (luôn `100.0%`) — sản phẩm không có khái niệm giảm giá so với niêm yết nên con số vô nghĩa | Thấp |
 | N21 | **Chưa canh: mỗi `Command` phải có `Validator`** — quên validator thì dữ liệu rác vào DB mà không lỗi nào. Thêm một test canh theo khuôn `MoiEndpointPhaiDuocGacTests` | Trung bình |
@@ -133,7 +133,7 @@ VPS → domain + HTTPS → backup. Xem
 
 ## Kiểm chứng hiện tại
 
-- **442 test backend xanh** (66 unit + 376 integration), build 0 warning — đo `dotnet test` 12/09/2026.
+- **440 test backend xanh** (66 unit + 374 integration), build 0 warning — đo `dotnet test` 12/09/2026.
 - **20 test E2E / 8 spec — XANH HẾT** (12/09/2026, đóng nợ N16). Chạy cả bộ phải
   `GIOI_HAN_TAN_SUAT=false` — xem nợ N15.
 - Frontend `tsc -b` + `vite build` sạch, `oxlint` không lỗi.

@@ -26,7 +26,12 @@ public record LopHocDto(
     /// <summary>
     /// **null với người không có quyền xem tiền** (giáo viên, trợ giảng, học viên) — không
     /// phân biệt được với "lớp chưa nhập học phí", và đó là chủ ý: phía nhận không cần biết.
-    /// Xem <c>IPhamViHocPhi.DuocXemTienCuaLop</c>.
+    /// **LUÔN null từ 12/09/2026** — LMS không quản lý và không hiển thị tiền học nữa; chỉ CRM
+    /// nắm số tiền (chốt với chủ sản phẩm). Cột `LOP_HOC.hoc_phi` vẫn còn trong DB để CRM và
+    /// báo cáo dùng, nhưng API của LMS không trả nó về.
+    ///
+    /// Giữ nguyên trường trong DTO thay vì xoá: xoá là **breaking change** với client đang
+    /// chạy, mà `null` đã có nghĩa "không được xem" từ trước nên frontend xử lý sẵn.
     /// </summary>
     decimal? HocPhi,
     int? SucChuaToiDa,
@@ -51,7 +56,7 @@ public record LayDanhSachLopHocQuery(
     ThamSoTrang? Trang = null) : IRequest<KetQuaTrang<LopHocDto>>;
 
 public class LayDanhSachLopHocHandler(
-    IAppDbContext db, IPhamViLopHoc phamVi, IPhamViHocPhi phamViTien)
+    IAppDbContext db, IPhamViLopHoc phamVi)
     : IRequestHandler<LayDanhSachLopHocQuery, KetQuaTrang<LopHocDto>>
 {
     public async Task<KetQuaTrang<LopHocDto>> Handle(
@@ -74,7 +79,6 @@ public class LayDanhSachLopHocHandler(
 
         // Che cột tiền chứ không lọc hàng: giáo viên vẫn thấy lớp mình dạy, chỉ không thấy
         // học phí. Tính TRƯỚC vòng chiếu để không hỏi quyền lặp lại theo từng dòng.
-        var xemTien = await phamViTien.DuocXemTienCuaLop(ct);
 
         var duLieu = await q
             .OrderByDescending(l => l.NgayKhaiGiang ?? l.CreatedAt)
@@ -83,7 +87,8 @@ public class LayDanhSachLopHocHandler(
             .Select(l => new LopHocDto(
                 l.Id, l.Ten, l.GiaoVienChinhId, l.GiaoVienChinh.HoTen,
                 l.HinhThuc, l.PhongHoc, l.LinkHoc,
-                xemTien ? l.HocPhi : null, l.SucChuaToiDa,
+                // LMS không trả tiền học (12/09/2026) — xem chú thích ở `LopHocDto.HocPhi`.
+                null, l.SucChuaToiDa,
                 l.NgayKhaiGiang, l.NgayKetThuc, l.TrangThai, l.GhiChu,
                 l.TroGiangs.Select(tg => tg.TroGiangId).ToList(),
                 l.TroGiangs.Select(tg => tg.TroGiang.HoTen).ToList(),
@@ -98,7 +103,7 @@ public class LayDanhSachLopHocHandler(
 public record LayLopHocQuery(Guid Id) : IRequest<LopHocDto>;
 
 public class LayLopHocHandler(
-    IAppDbContext db, IPhamViLopHoc phamVi, IPhamViHocPhi phamViTien)
+    IAppDbContext db, IPhamViLopHoc phamVi)
     : IRequestHandler<LayLopHocQuery, LopHocDto>
 {
     public async Task<LopHocDto> Handle(LayLopHocQuery request, CancellationToken ct)
@@ -107,14 +112,14 @@ public class LayLopHocHandler(
         // không lọc thì gõ thẳng id vào URL là đọc được lớp người khác (IDOR).
         var q = await phamVi.LocTheoPhamVi(db.LopHocs.AsQueryable(), HanhDong.Xem, ct);
 
-        var xemTien = await phamViTien.DuocXemTienCuaLop(ct);
 
         return await q
                    .Where(l => l.Id == request.Id)
                    .Select(l => new LopHocDto(
                        l.Id, l.Ten, l.GiaoVienChinhId, l.GiaoVienChinh.HoTen,
                        l.HinhThuc, l.PhongHoc, l.LinkHoc,
-                       xemTien ? l.HocPhi : null, l.SucChuaToiDa,
+                       // LMS không trả tiền học (12/09/2026) — xem chú thích ở `LopHocDto.HocPhi`.
+                null, l.SucChuaToiDa,
                        l.NgayKhaiGiang, l.NgayKetThuc, l.TrangThai, l.GhiChu,
                        l.TroGiangs.Select(tg => tg.TroGiangId).ToList(),
                        l.TroGiangs.Select(tg => tg.TroGiang.HoTen).ToList(),

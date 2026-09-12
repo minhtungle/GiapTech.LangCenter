@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  Users, ShieldCheck, Settings, LogOut, Home, GraduationCap, BookOpen, Wallet,
+  Users, ShieldCheck, Settings, LogOut, Home, GraduationCap, BookOpen,
   PanelLeftClose, PanelLeft, Menu, X, ScrollText, Briefcase, UserCog, TrendingUp,
   LayoutGrid, Check, KeyRound, Contact, PackageOpen, BookMarked, Network,
 } from 'lucide-react'
@@ -137,7 +137,6 @@ export default function Layout() {
         { to: '/lms/hoc-vien', nhan: t('menu.hocVien'), icon: Users, can: 'TaiKhoan' },
         { to: '/lms/lop-hoc', nhan: t('menu.lopHoc'), icon: GraduationCap, can: 'LopHoc' },
         { to: '/lms/tai-lieu', nhan: t('menu.taiLieu'), icon: BookOpen, can: 'TaiLieu' },
-        { to: '/lms/hoc-phi', nhan: t('menu.hocPhi'), icon: Wallet, can: 'HocPhi' },
       ],
     },
 

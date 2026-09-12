@@ -2,6 +2,9 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using GiapTech.LangCenter.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GiapTech.LangCenter.API.IntegrationTests;
 
@@ -118,6 +121,26 @@ public class XepLopTests(ApiFactory factory) : IClassFixture<ApiFactory>
     /// `soDong=200` (chặn trên của `ThamSoTrang`): test cần thấy MỌI yêu cầu, mặc định 20 sẽ
     /// làm test xanh sai lý do khi có nhiều dòng hơn thế.
     /// </summary>
+    /// <summary>
+    /// Học phí áp dụng của học viên trong lớp, đọc THẲNG TỪ DB.
+    ///
+    /// Từ 12/09/2026 LMS không trả tiền học qua API nữa (chỉ CRM nắm số tiền), nên
+    /// `hocPhiApDung` trong DTO luôn null. Nhưng FR-21 **vẫn phải ghi đúng** số từ đơn CRM vào
+    /// `LOP_HOC_HOC_VIEN.hoc_phi_ap_dung` — đó là thứ CRM và báo cáo đọc. Test này canh chính
+    /// việc ghi đó, nên phải xuống tận DB.
+    /// </summary>
+    private async Task<decimal> HocPhiTrongDb(Guid lopHocId, Guid hocVienId)
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        // `IgnoreQueryFilters`: scope này không có tenant nên query filter sẽ lọc sạch.
+        var hv = await db.LopHocHocViens.IgnoreQueryFilters()
+            .FirstAsync(x => x.LopHocId == lopHocId && x.HocVienId == hocVienId);
+
+        return hv.HocPhiApDung;
+    }
+
     private static async Task<List<JsonElement>> LayHangCho(HttpClient c)
     {
         var res = await c.GetAsync("/api/v1/lop-hoc/cho-xep-lop?soDong=200");
@@ -254,10 +277,11 @@ public class XepLopTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var hvs = await (await c.GetAsync($"/api/v1/lop-hoc/{lop}/hoc-vien"))
             .Content.ReadFromJsonAsync<JsonElement>();
-        var hv = hvs.EnumerateArray().Single();
+        var hocVienId = hvs.EnumerateArray().Single().GetProperty("hocVienId").GetGuid();
 
         // 7 triệu của đơn, KHÔNG phải 12 triệu của lớp.
-        Assert.Equal(7_000_000m, hv.GetProperty("hocPhiApDung").GetDecimal());
+        // Đọc từ DB vì API của LMS không trả tiền học nữa (12/09/2026) — xem `HocPhiTrongDb`.
+        Assert.Equal(7_000_000m, await HocPhiTrongDb(lop, hocVienId));
     }
 
     [Fact]
@@ -277,10 +301,10 @@ public class XepLopTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var hvs = await (await c.GetAsync($"/api/v1/lop-hoc/{lop}/hoc-vien"))
             .Content.ReadFromJsonAsync<JsonElement>();
+        var hvId = hvs.EnumerateArray().Single().GetProperty("hocVienId").GetGuid();
 
-        // Sổ học phí LMS chỉ có VND: 1500 × 18000.
-        Assert.Equal(27_000_000m,
-            hvs.EnumerateArray().Single().GetProperty("hocPhiApDung").GetDecimal());
+        // Quy về VND bằng tỷ giá đã chụp: 1500 × 18000.
+        Assert.Equal(27_000_000m, await HocPhiTrongDb(lop, hvId));
     }
 
     [Fact]
@@ -707,8 +731,8 @@ public class XepLopTests(ApiFactory factory) : IClassFixture<ApiFactory>
             .Where(x => x.GetProperty("hocVienId").GetGuid() == hocVienId));
 
         // Học phí phải là số của ĐƠN CRM (5.000.000), không phải giá lớp mặc định (1.000) mà
-        // lệnh thêm tay đã chốt — chốt 11/09/2026. Giữ giá lớp thì sổ học phí LMS thiếu tiền.
-        Assert.Equal(5_000_000m, dong.GetProperty("hocPhiApDung").GetDecimal());
+        // lệnh thêm tay đã chốt — chốt 11/09/2026. Giữ giá lớp thì CRM đối chiếu ra số sai.
+        Assert.Equal(5_000_000m, await HocPhiTrongDb(lop, hocVienId));
     }
 
     /// <summary>
@@ -909,7 +933,7 @@ public class XepLopTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Single(hvs.EnumerateArray());
         // Học phí vẫn lấy từ ĐƠN CRM, không phải giá lớp — cảnh báo không đổi quy tắc tiền.
         Assert.Equal(5_000_000m,
-            hvs.EnumerateArray().Single().GetProperty("hocPhiApDung").GetDecimal());
+            await HocPhiTrongDb(lop, hvs.EnumerateArray().Single().GetProperty("hocVienId").GetGuid()));
     }
 
     /// <summary>

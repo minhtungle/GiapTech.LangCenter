@@ -8,6 +8,40 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — LMS không hiển thị tiền học nữa; chỉ CRM nắm số tiền (12/09/2026)
+
+Đóng nợ **N18** theo hướng khác hẳn kế hoạch. Nợ ghi *"số đã thu ở CRM không chảy sang sổ học
+phí LMS"* và ba phương án đề xuất đều là **đồng bộ hai sổ**. Chủ sản phẩm chọn hướng thứ tư:
+
+> *"LMS không quản lý tiền học nữa, cũng không hiển thị tiền. Bảo mật thông tin — chỉ CRM mới
+> nắm được số tiền."*
+
+Hai sổ lệch nhau vì **có hai sổ**. Bỏ một sổ thì không còn gì để đồng bộ.
+
+- **`LopHocDto.HocPhi` và `HocVienTrongLopDto.HocPhiApDung` LUÔN trả `null`.** Trước đó gác bằng
+  `IPhamViHocPhi.DuocXemTienCuaLop`; bỏ cổng đó là **chặt hơn**, không lỏng hơn — không còn
+  nhánh nào trả ra số tiền nên không còn chỗ để sai.
+- Giữ nguyên trường trong DTO thay vì xoá: xoá là breaking change, mà `null` đã có nghĩa "không
+  được xem" từ trước nên frontend xử lý sẵn.
+- **Bỏ mục Học phí khỏi sidebar LMS** và **bỏ tab Học phí** khỏi view chi tiết lớp.
+- **Route `/lms/hoc-phi` GIỮ LẠI** có chủ ý: bookmark và link đã gửi không chết, bật lại chỉ cần
+  thêm một dòng menu. Endpoint vẫn gác bằng `HocPhi.Xem` như cũ.
+- **Dữ liệu và schema giữ nguyên hoàn toàn** — `KHOAN_THU_HOC_PHI`, `LOP_HOC.hoc_phi`,
+  `LOP_HOC_HOC_VIEN.hoc_phi_ap_dung` đều còn. FR-21 **vẫn ghi** học phí từ đơn CRM khi duyệt vào
+  lớp; CRM và báo cáo đọc từ đó. Đây là lựa chọn **đảo ngược được**.
+
+**Test đổi theo, và mạnh hơn.** Ba test cũ trong `RoRiHocPhiTests` khẳng định *"học viên thấy
+mức của chính mình"* và *"admin thấy đủ mọi số tiền"* — nay sai. Gộp thành một test:
+`Khong_ai_thay_tien_hoc_qua_API_cua_LMS_ke_ca_quan_tri`, duyệt **cả bốn vai trò**, kèm **chiều
+ngược** kiểm dữ liệu vẫn còn trong DB (thiếu nó thì xoá sạch cột tiền cũng làm test xanh).
+
+Sáu test nghiệp vụ về tiền (`XepLopTests`, `LopHocTests`) chuyển sang **đọc thẳng DB** qua helper
+`HocPhiTrongDb`/`TienTrongDb`: hành vi *"FR-21 ghi đúng số từ đơn CRM"* vẫn phải đúng, chỉ là
+không kiểm qua API LMS được nữa.
+
+Đột biến (trả lại `l.HocPhi` cho API) làm đỏ đúng test với thông báo *"quản trị KHÔNG được thấy
+học phí lớp"*.
+
 ### Fixed — Đóng nợ N16 và N12: bộ test xanh hết (12/09/2026)
 
 E2E từ **16 xanh / 4 đỏ** thành **20 xanh / 0 đỏ**; backend hết đỏ ngẫu nhiên.

@@ -1,6 +1,9 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using GiapTech.LangCenter.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GiapTech.LangCenter.API.IntegrationTests;
 
@@ -158,55 +161,49 @@ public class RoRiHocPhiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     /// <summary>
-    /// Học viên thấy mức của CHÍNH MÌNH nhưng không thấy của bạn cùng lớp — nếu không thì cả
-    /// lớp biết ai được giảm học phí.
+    /// **KHÔNG AI** đọc được tiền học qua API của LMS — kể cả quản trị viên (12/09/2026).
+    ///
+    /// Chốt với chủ sản phẩm: *"LMS không quản lý tiền học nữa, cũng không hiển thị tiền. Bảo
+    /// mật thông tin — chỉ CRM mới nắm được số tiền."*
+    ///
+    /// Thay ba test cũ (`Hoc_vien_chi_thay_muc_hoc_phi_cua_chinh_minh`,
+    /// `Quan_tri_van_thay_du_moi_so_tien`) vốn khẳng định **có người thấy được** — nay sai.
+    /// Quy tắc mới **chặt hơn**: không còn nhánh nào trả ra số tiền, nên không còn chỗ để sai.
     /// </summary>
     [Fact]
-    public async Task Hoc_vien_chi_thay_muc_hoc_phi_cua_chinh_minh()
+    public async Task Khong_ai_thay_tien_hoc_qua_API_cua_LMS_ke_ca_quan_tri()
     {
         var c = await Client();
-        var (lop, hv1, hv2) = await DungLop(c, "hv");
+        var (lop, hv1, hv2) = await DungLop(c, "khongai");
 
-        var cHv1 = await Client("hvrr1-hv", "matkhau123");
-        var ds = await cHv1.GetFromJsonAsync<List<JsonElement>>($"/api/v1/lop-hoc/{lop}/hoc-vien");
+        foreach (var (nhan, client) in new[]
+                 {
+                     ("quản trị", c),
+                     ("giáo viên", await Client("gvrr-khongai", "matkhau123")),
+                     ("trợ giảng", await Client("tgrr-khongai", "matkhau123")),
+                     ("học viên", await Client("hvrr1-khongai", "matkhau123")),
+                 })
+        {
+            var l = await client.GetFromJsonAsync<JsonElement>($"/api/v1/lop-hoc/{lop}");
+            Assert.True(Tien(l, "hocPhi") is null, $"{nhan} KHÔNG được thấy học phí lớp");
 
-        var minh = ds!.Single(h => h.GetProperty("hocVienId").GetGuid() == hv1);
-        var ban = ds!.Single(h => h.GetProperty("hocVienId").GetGuid() == hv2);
+            var ds = await client.GetFromJsonAsync<List<JsonElement>>(
+                $"/api/v1/lop-hoc/{lop}/hoc-vien");
+            Assert.All(ds!, h => Assert.Null(Tien(h, "hocPhiApDung")));
+        }
 
-        Assert.Equal(9_000_000m, Tien(minh, "hocPhiApDung"));
-        Assert.Null(Tien(ban, "hocPhiApDung"));
-    }
+        // CHIỀU NGƯỢC: dữ liệu VẪN CÒN trong DB — chỉ ẩn khỏi API, không xoá. CRM và báo cáo
+        // đọc từ đây. Thiếu phép kiểm này thì xoá sạch cột tiền cũng làm test xanh.
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    /// <summary>Học viên cũng không thấy mức chuẩn của lớp — chỉ mức áp dụng cho họ mới có nghĩa.</summary>
-    [Fact]
-    public async Task Hoc_vien_khong_thay_hoc_phi_chuan_cua_lop()
-    {
-        var c = await Client();
-        var (lop, _, _) = await DungLop(c, "hvchuan");
+        var lopDb = await db.LopHocs.IgnoreQueryFilters().FirstAsync(x => x.Id == lop);
+        Assert.Equal(9_000_000m, lopDb.HocPhi);
 
-        var cHv = await Client("hvrr1-hvchuan", "matkhau123");
-        var l = await cHv.GetFromJsonAsync<JsonElement>($"/api/v1/lop-hoc/{lop}");
-
-        Assert.Null(Tien(l, "hocPhi"));
-    }
-
-    /// <summary>Chiều ngược lại: vá xong admin phải vẫn thấy đủ, nếu không là vá hỏng.</summary>
-    [Fact]
-    public async Task Quan_tri_van_thay_du_moi_so_tien()
-    {
-        var c = await Client();
-        var (lop, hv1, hv2) = await DungLop(c, "admin");
-
-        var l = await c.GetFromJsonAsync<JsonElement>($"/api/v1/lop-hoc/{lop}");
-        Assert.Equal(9_000_000m, Tien(l, "hocPhi"));
-
-        var ds = await c.GetFromJsonAsync<List<JsonElement>>($"/api/v1/lop-hoc/{lop}/hoc-vien");
-        Assert.Equal(
-            9_000_000m,
-            Tien(ds!.Single(h => h.GetProperty("hocVienId").GetGuid() == hv1), "hocPhiApDung"));
-        Assert.Equal(
-            1_000_000m,
-            Tien(ds!.Single(h => h.GetProperty("hocVienId").GetGuid() == hv2), "hocPhiApDung"));
+        var hvs = await db.LopHocHocViens.IgnoreQueryFilters()
+            .Where(x => x.LopHocId == lop).ToListAsync();
+        Assert.Equal(9_000_000m, hvs.Single(x => x.HocVienId == hv1).HocPhiApDung);
+        Assert.Equal(1_000_000m, hvs.Single(x => x.HocVienId == hv2).HocPhiApDung);
     }
 
     /// <summary>
