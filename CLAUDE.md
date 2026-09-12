@@ -34,18 +34,19 @@ LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 
 | Đã chạy đầu-cuối | Chưa có |
 |---|---|
-| Đăng nhập · quên mật khẩu · buộc đổi mật khẩu lần đầu | **FR-15 Thống kê / Dashboard** |
-| Người dùng (hồ sơ 3 vai trò) tách khỏi tài khoản · nhóm quyền · thiết lập | **Bài kiểm tra** — có schema, chưa có API/UI |
-| **Ba hệ thống con** HRM/CRM/LMS: bộ chuyển, sidebar lọc, tab phân quyền · URL `/hrm` `/crm` `/lms` | **Kết thúc lớp** — enum có `DaKetThuc` nhưng chưa endpoint nào set (nợ N26) |
-| **CRM** (FR-17 → FR-20): khách hàng + view 3 tab · doanh thu đa tiền tệ · **khoá học + sản phẩm** | Số **đã thu** ở CRM chưa chảy sang sổ học phí LMS |
-| **HRM** đủ nghiệp vụ (FR-22 → FR-24): cơ cấu tổ chức · chức vụ · hồ sơ mở rộng (CCCD, số TK, MXH, tệp) | Hộp thoại chọn lớp chưa **sắp** lớp cùng khoá lên đầu (nợ N19, còn phần nhỏ) |
-| Hồ sơ con người tách theo hệ thống: Nhân sự (HRM) · Học viên (LMS) | |
-| Lớp học: vòng đời, phân công, ghi danh, học phí riêng từng người, **gán tối đa 3 khoá** | Đăng ký trung tâm an toàn production (nợ N3) |
-| Buổi học: sinh lịch tự động; điểm danh hai nguồn | Nhắc nợ / thông báo qua email |
-| Bài tập, bài nộp nhiều lần, tài liệu, tệp đính kèm | Import Excel học viên |
-| Học phí: sổ thu + công nợ tính động — **ẩn khỏi LMS 12/09, chỉ CRM nắm tiền** | Danh mục ngày nghỉ khi sinh lịch |
-| **Nhật ký thao tác** mọi module (FR-16) | Dọn nhật ký cũ theo chính sách lưu giữ |
+| Đăng nhập · quên mật khẩu · buộc đổi mật khẩu lần đầu | **Bài kiểm tra** — có schema, chưa có API/UI |
+| Người dùng (hồ sơ 3 vai trò) tách khỏi tài khoản · nhóm quyền · thiết lập | **Kết thúc lớp** — enum có `DaKetThuc` nhưng chưa endpoint nào set (nợ N26) |
+| **Ba hệ thống con** HRM/CRM/LMS: bộ chuyển, sidebar lọc, tab phân quyền · URL `/hrm` `/crm` `/lms` | Số **đã thu** ở CRM chưa chảy sang sổ học phí LMS |
+| **CRM** (FR-17 → FR-20): khách hàng + view 3 tab · doanh thu đa tiền tệ · **khoá học + sản phẩm** | Hộp thoại chọn lớp chưa **sắp** lớp cùng khoá lên đầu (nợ N19, còn phần nhỏ) |
+| **HRM** đủ nghiệp vụ (FR-22 → FR-24): cơ cấu tổ chức · chức vụ · hồ sơ mở rộng (CCCD, số TK, MXH, tệp) | Đăng ký trung tâm an toàn production (nợ N3) |
+| Hồ sơ con người tách theo hệ thống: Nhân sự (HRM) · Học viên (LMS) | Nhắc nợ / thông báo qua email |
+| Lớp học: vòng đời, phân công, ghi danh, học phí riêng từng người, **gán tối đa 3 khoá** | Import Excel học viên |
+| Buổi học: sinh lịch tự động; điểm danh hai nguồn | Dọn nhật ký cũ theo chính sách lưu giữ |
+| Bài tập, bài nộp nhiều lần, tài liệu, tệp đính kèm | Danh mục ngày nghỉ khi sinh lịch |
+| Học phí: sổ thu + công nợ tính động — **ẩn khỏi LMS 12/09, chỉ CRM nắm tiền** |  |
+| **Nhật ký thao tác** mọi module (FR-16) | |
 | **FR-21 xếp lớp** CRM → LMS: duyệt/từ chối, trạng thái tham gia lớp **suy động**, **cảnh báo lệch khoá** | |
+| **FR-15 Tổng quan**: một màn cho mọi vai trò, chỉ hiện việc tồn đọng, không có số tiền | |
 
 Chi tiết và nợ kỹ thuật: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 

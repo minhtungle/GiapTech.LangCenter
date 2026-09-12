@@ -22,6 +22,7 @@ một API, một database, một lần đăng nhập.
 | **CRM** | Khách hàng · Doanh thu · Khoá học · Sản phẩm (FR-17 → FR-20) | ✅ Chạy |
 | **CRM → LMS** | Yêu cầu xếp lớp (FR-21) | ✅ Chạy |
 | **LMS** | FR-07 → FR-14 + Học viên | ✅ Chạy |
+| **Dùng chung** | **Tổng quan** (FR-15) — màn chủ, một màn cho mọi vai trò | ✅ Chạy |
 | **Dùng chung** | FR-03 → FR-06, FR-16 (tài khoản, phân quyền, thiết lập, nhật ký) | ✅ Chạy |
 
 Hai điều dễ nhầm:
@@ -65,7 +66,7 @@ Hai điều dễ nhầm:
 | FR-12 | Bài nộp | [Học liệu](./hoc-lieu.md) |
 | FR-13 | Tài liệu | [Học liệu](./hoc-lieu.md) |
 | FR-14 | Học phí & công nợ | [Học phí](./hoc-phi.md) |
-| FR-15 | Thống kê / Dashboard | *(chưa làm)* |
+| FR-15 | Thống kê / Tổng quan | [Thống kê](./thong-ke.md) |
 | FR-16 | Nhật ký hệ thống | [Nhật ký hệ thống](./nhat-ky-he-thong.md) |
 | FR-17 | Khách hàng (CRM) | [CRM](./crm.md) |
 | FR-18 | Doanh thu — đăng ký khoá học (CRM) | [CRM](./crm.md) |

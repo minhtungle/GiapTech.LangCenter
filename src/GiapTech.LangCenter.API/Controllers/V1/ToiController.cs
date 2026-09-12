@@ -1,6 +1,8 @@
 using Asp.Versioning;
 using GiapTech.LangCenter.Application.Common.Interfaces;
+using GiapTech.LangCenter.Application.DaoTao.ThongKe;
 using GiapTech.LangCenter.Domain.Common;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -21,7 +23,8 @@ public class ToiController(
     IQuyenService quyenService,
     ICurrentTenant tenant,
     ICurrentUser currentUser,
-    IMuiGioTrungTam muiGio)
+    IMuiGioTrungTam muiGio,
+    ISender sender)
     : ControllerBase
 {
     /// <summary>Cấu hình trung tâm mà MỌI vai trò cần để hiển thị đúng.</summary>
@@ -43,6 +46,21 @@ public class ToiController(
         var tz = await muiGio.LayMuiGio(ct);
         return Ok(new CauHinhCuaToi(tz.Id));
     }
+
+    /// <summary>
+    /// FR-15 — số liệu cho màn Tổng quan, đã lọc theo phạm vi của chính người đang đăng nhập.
+    ///
+    /// Đặt ở `ToiController` chứ không tạo `ThongKeController` riêng: đây là *"việc của tôi
+    /// hôm nay"*, không phải báo cáo toàn trung tâm. Cùng lý lẽ với `/toi/cau-hinh`.
+    ///
+    /// **Không gác `[RequirePermission]`** — cùng lẽ với các endpoint khác trong controller
+    /// này: ai đăng nhập được cũng thấy màn Tổng quan. `IPhamViLopHoc` đã lọc dữ liệu về đúng
+    /// phạm vi từng người, và số hàng chờ tự về 0 với ai không có `LopHoc.Sua`. Gác thêm bằng
+    /// `ThongKe.Xem` sẽ làm giáo viên và học viên thấy màn đầu tiên trống trơn.
+    /// </summary>
+    [HttpGet("tong-quan")]
+    public async Task<ActionResult<TongQuanDto>> TongQuan(CancellationToken ct)
+        => Ok(await sender.Send(new LayTongQuanQuery(), ct));
 
     /// <summary>Một dòng quyền: chức năng + thao tác.</summary>
     public record QuyenCuaToi(string ChucNang, string HanhDong);

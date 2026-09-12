@@ -5,10 +5,10 @@
 ## Tiến độ tổng
 
 ```
-Nghiệp vụ  ███████████████░  23/24 FR chạy đầu-cuối (còn FR-15 Thống kê)
+Nghiệp vụ  ████████████████  24/24 FR chạy đầu-cuối
 Ba hệ thống ████████████████  Cả ba hệ thống đủ nghiệp vụ
 Hạ tầng    ████████████░░░░  CI/CD sẵn sàng, chờ VPS thật
-Còn lại    █████░░░░░░░░░░░  Dashboard + Bài kiểm tra + 23 nợ kỹ thuật
+Còn lại    ████░░░░░░░░░░░░  Bài kiểm tra + 22 nợ kỹ thuật
 ```
 
 ## Trạng thái mã FR
@@ -29,7 +29,7 @@ Còn lại    █████░░░░░░░░░░░  Dashboard + Bài
 | FR-12 | Bài nộp | ✅ | ✅ | Nộp nhiều lần, giữ lịch sử; chấm điểm qua endpoint riêng |
 | FR-13 | Tài liệu | ✅ | ✅ | Gán lớp, hoặc để trống = chung toàn trung tâm |
 | FR-14 | Học phí & công nợ | ✅ | 🔒 | Sổ thu + công nợ tính động. **Từ 12/09/2026 ẩn khỏi LMS** — chỉ CRM nắm tiền. Bảng, endpoint và màn hình giữ nguyên (route `/lms/hoc-phi` còn sống), chỉ bỏ khỏi sidebar và tab lớp; DTO của LMS trả `null` cho mọi trường tiền |
-| FR-15 | Thống kê / Dashboard | ⬜ | ⬜ | 3 dashboard: Admin / Giáo viên / Học viên |
+| FR-15 | Thống kê / Tổng quan | ✅ | ✅ | **Một màn cho mọi vai trò**, không phải 3 dashboard — `IPhamViLopHoc` đã lọc đúng phạm vi từng người. 5 số: 3 việc tồn đọng (chỉ hiện khi > 0) + 2 bối cảnh. **Không có số tiền nào**. `choXepLop` trả 0 với người không có `LopHoc.Sua` |
 | FR-16 | Nhật ký hệ thống | ✅ | ✅ | Ghi tự động ở pipeline MediatR + interceptor chụp trường đổi |
 | FR-17 | Khách hàng (CRM) | ✅ | ✅ | Bảng riêng, nối `nguoi_dung_id` khi khách vào học. **View 3 tab**: thông tin · lịch sử chăm sóc (kèm phễu bán hàng) · lịch sử mua hàng (gộp cả sổ tiền đã đóng, 09/09) |
 | FR-18 | Doanh thu (CRM) | ✅ | ✅ | Đa tiền tệ VND/USD/EUR/CAD, **tỷ giá chụp lúc đăng ký**; giá gốc snapshot, % tính động. Đăng ký = **cam kết**, sổ thu nhiều đợt riêng |
@@ -70,11 +70,20 @@ giờ `[bắt đầu − 15 phút, kết thúc]`.
 Sổ thu + công nợ tính động. `IPhamViHocPhi` **tách riêng** khỏi `IPhamViLopHoc`: giáo viên thấy
 lớp mình dạy nhưng học phí là quan hệ giữa học viên và trung tâm.
 
-### Giai đoạn 5 — Thống kê / Dashboard (FR-15) · ⬜ chưa làm
+### Giai đoạn 5 — Thống kê / Tổng quan (FR-15) · ✅ xong (12/09/2026)
 
-Không migration. 3 dashboard. Báo cáo điểm danh **luôn dùng `trang_thai_chinh_thuc`**. Cảnh báo
-nợ dùng `TENANT.so_ngay_canh_bao_no_hoc_phi`. Nếu chậm: tối ưu index trước, materialized view
-sau — không denormalize sớm.
+Không migration. **Hai điểm làm khác kế hoạch cũ**, lý do đầy đủ trong
+[đặc tả FR-15](./nghiep-vu/thong-ke.md):
+
+- Kế hoạch ghi *"3 dashboard Admin / Giáo viên / Học viên"* → làm **một màn**. `IPhamViLopHoc`
+  đã lọc đúng phạm vi từng người nên cùng một truy vấn cho ra con số đúng với từng người. Ba bản
+  sao là ba chỗ phải sửa khi đổi.
+- Kế hoạch ghi *"cảnh báo nợ dùng `TENANT.so_ngay_canh_bao_no_hoc_phi`"* → **bỏ**. LMS không
+  hiển thị tiền học từ 12/09 (N18); ngưỡng đó vẫn còn trong thiết lập cho CRM dùng sau.
+
+`GET /api/v1/toi/tong-quan` — không `[RequirePermission]` (mọi người đăng nhập đều thấy màn
+chủ), khai lý do trong `MoiEndpointPhaiDuocGacTests`. Chưa cần tối ưu: 5 `COUNT` trên tập lớp
+đã lọc; nếu chậm thì index trước, materialized view sau — không denormalize sớm.
 
 ### Giai đoạn 5b — Ba hệ thống con HRM · CRM · LMS · ✅ xong
 

@@ -41,6 +41,10 @@ public class MoiEndpointPhaiDuocGacTests
             "Danh sách hệ thống con người này vào được — suy từ quyền của chính họ.",
         ["ToiController.Quyen"] =
             "Quyền của chính người đang đăng nhập; gác bằng quyền sẽ thành vòng tròn.",
+        ["ToiController.TongQuan"] =
+            "FR-15 — số liệu màn Tổng quan, đã lọc qua IPhamViLopHoc về đúng phạm vi người gọi. "
+            + "Gác bằng ThongKe.Xem sẽ làm giáo viên và học viên thấy màn ĐẦU TIÊN trống trơn. "
+            + "Số hàng chờ tự về 0 với ai không có LopHoc.Sua, nên không lộ gì ngoài phạm vi.",
     };
 
     private static IEnumerable<(string Ten, MethodInfo Method, Type Controller)> MoiEndpoint()

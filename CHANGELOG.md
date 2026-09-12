@@ -8,6 +8,37 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — FR-15 Tổng quan: mã FR cuối cùng chạy đầu-cuối (12/09/2026)
+
+`GET /api/v1/toi/tong-quan` + màn `TongQuan.tsx` viết lại. **24/24 FR** chạy đầu-cuối.
+
+Hai chỗ làm **khác kế hoạch**, đều có lý do:
+
+- Kế hoạch ghi *"3 dashboard Admin / Giáo viên / Học viên"* → làm **một màn**. `IPhamViLopHoc`
+  lọc đúng phạm vi từng người rồi, nên cùng một truy vấn cho ra con số đúng với từng người —
+  admin thấy toàn trung tâm, giáo viên thấy lớp mình dạy, học viên thấy lớp mình học. Ba bản sao
+  là ba chỗ phải sửa khi đổi, và trái với cách dự án làm phân quyền (quy tắc #9).
+- Kế hoạch ghi *"cảnh báo nợ học phí"* → **bỏ**: LMS không hiển thị tiền học nữa (N18, cùng
+  ngày). Canh bởi `Khong_co_truong_tien_nao_trong_DTO`.
+
+**Năm con số, mỗi số dẫn tới một màn xử lý** — nguyên tắc giữ từ bản base: *"một con số không
+kèm đường đi tiếp chỉ làm người dùng biết có việc mà không biết làm ở đâu"*. Nên DTO cố tình
+**không** có "tổng số học viên" hay "tổng số lớp".
+
+- **Việc tồn đọng** (chỉ hiện khi > 0): buổi quá hạn chưa điểm danh · bài nộp chưa chấm ·
+  yêu cầu chờ xếp lớp.
+- **Bối cảnh**: buổi hôm nay · lớp đang hoạt động.
+- `choXepLop` trả **0** với người không có `LopHoc` + `Sua` — hàng chờ chỉ có nghĩa với người
+  điều phối được; trả số cho người không bấm được là mời họ vào ngõ cụt (đúng lỗi menu
+  10/09/2026).
+- **"Hôm nay" theo múi giờ trung tâm**, không phải UTC: buổi 6h sáng giờ Việt Nam là 23h UTC
+  *hôm trước*, lấy ngày theo UTC sẽ đếm thiếu.
+- Endpoint **không `[RequirePermission]`** — mọi người đăng nhập đều thấy màn chủ; lý do khai
+  trong danh sách ngoại lệ của `MoiEndpointPhaiDuocGacTests`.
+
+Đặc tả: [`docs/nghiep-vu/thong-ke.md`](./docs/nghiep-vu/thong-ke.md).
+
+
 ### Changed — LMS không hiển thị tiền học nữa; chỉ CRM nắm số tiền (12/09/2026)
 
 Đóng nợ **N18** theo hướng khác hẳn kế hoạch. Nợ ghi *"số đã thu ở CRM không chảy sang sổ học

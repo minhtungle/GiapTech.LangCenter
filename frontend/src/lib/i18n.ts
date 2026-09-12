@@ -227,6 +227,13 @@ const vi = {
     Khac: 'Khác',
   },
   tongQuan: {
+    viecCanLam: 'Việc cần làm',
+    khongCoViec: 'Không có việc nào cần xử lý',
+    buoiHomNay: 'Buổi học hôm nay',
+    lopDangHoatDong: 'Lớp đang hoạt động',
+    buoiQuaHan: 'Buổi đã qua chưa chốt điểm danh',
+    baiChuaCham: 'Bài nộp chưa chấm',
+    choXepLop: 'Học viên chờ xếp lớp',
     chuaCoNoiDung:
       'Hệ thống đang ở trạng thái nền — chưa có nghiệp vụ nào được cấu hình. '
       + 'Bắt đầu bằng việc tạo tài khoản và nhóm quyền cho trung tâm của bạn.',
