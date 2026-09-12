@@ -1,7 +1,8 @@
 # ADR-0006: Đặt tên bằng tiếng Anh toàn hệ thống, và bốn cột audit chuẩn
 
 - **Ngày:** 12/09/2026
-- **Trạng thái:** Đã chốt
+- **Trạng thái:** Cột audit **đã làm xong**; đổi tên tiếng Anh **đã chốt nhưng HOÃN thi hành**
+  (xem "Lần thử 12/09/2026 và vì sao dừng" ở cuối)
 - **Bối cảnh liên quan:** [ADR-0005](./0005-mot-source-va-doi-ten-langcenter.md) (một source),
   [quy-uoc-migration.md](../../database/quy-uoc-migration.md) (quy ước cũ — bị ADR này thay thế)
 
@@ -130,3 +131,57 @@ thứ tiếng, và mỗi PR trong giai đoạn đó phải quyết định dùng
 - Thêm test canh: entity mới phải có đủ 4 cột audit; hằng `ChucNang` khớp dữ liệu DB.
 - 21 migration cũ **không sửa lại** (đã áp) — lịch sử migration sẽ lẫn hai hệ tên. Chấp nhận:
   sửa lại migration đã áp là rủi ro lớn hơn nhiều so với một lần đọc khó.
+
+---
+
+## Lần thử 12/09/2026 và vì sao dừng
+
+Phần **cột audit** đã hoàn thành và đang chạy. Phần **đổi tên** đã thử một lượt rồi **hoàn
+nguyên** — ghi lại đây để lần sau không lặp lại cùng sai lầm.
+
+### Đã đi được tới đâu
+
+Đổi xong tên **37 bảng + 149 cột** trên DB thật (dữ liệu nguyên vẹn 100%, đối chiếu từng bảng),
+**37 entity C#**, **33 `DbSet`**, **24 hằng `ChucNang`** kèm `UPDATE` dữ liệu. Build sạch, API
+khởi động được, đăng nhập chạy.
+
+Rồi dừng ở **148/376 test đỏ** và **108 tên trường JSON** frontend chưa sửa.
+
+### Sai lầm 1: tưởng tách được "đổi DB" khỏi "đổi code"
+
+Kế hoạch chia 5 bước, bước 2 = "rename bảng/cột", bước 3 = "đổi property C#". **Không tách
+được**: `UseSnakeCaseNamingConvention()` suy tên cột **từ** tên property, nên cột `role_name`
+buộc property phải là `RoleName`. Đổi một nửa thì EF sinh SQL trỏ cột không tồn tại — API không
+khởi động nổi.
+
+Và property đổi → **tên trường JSON đổi** → mọi test và toàn bộ frontend phải sửa theo. Ba việc
+này là **một**, không phải ba bước.
+
+### Sai lầm 2: regex hàng loạt trên 100.000 dòng
+
+Ba lỗi **ngữ nghĩa** mà trình biên dịch không thấy:
+
+| Lỗi | Hậu quả |
+|---|---|
+| `SoTaiKhoan` trong `QuyenDto` (ĐẾM tài khoản) → `BankAccountNo` (số TK ngân hàng) | Sai nghĩa hoàn toàn, build xanh |
+| `HanhDong` → `Action` | Đụng `System.Action`, hỏng cả delegate không liên quan |
+| Chuỗi `"NguoiDung"` trong `SuyChucNang()` → `"Person"` | Nhật ký mất trường chức năng — **chỉ 1 test bắt được** |
+
+Lỗi thứ ba đáng sợ nhất: chuỗi đó khớp với **tên lệnh** (`TaoNguoiDungCommand`), mà tên lệnh là
+class CQRS — ADR này không đổi chúng. Regex không phân biệt được "định danh cần đổi" với "chuỗi
+tham chiếu tới định danh khác".
+
+### Cách làm cho lần sau
+
+1. **Theo từng module nhỏ**, không phải 37 bảng cùng lúc: một bảng + entity + DTO + frontend của
+   nó + test của nó → commit → sang bảng kế. Mỗi commit hệ thống vẫn chạy được.
+2. **Để test dẫn đường**: chạy test, sửa đúng chỗ đỏ, lặp lại. Không regex rồi mới chạy test.
+3. **Rà chuỗi văn bản riêng**: mọi `"..."` chứa tên định danh phải xem bằng mắt — chúng có thể
+   trỏ tới tên lệnh, khoá i18n, hay giá trị dữ liệu.
+4. Tên trường JSON là **hợp đồng API**. Đổi nó là breaking change; phải sửa frontend trong cùng
+   commit, nếu không hệ thống hỏng lúc chạy mà build vẫn xanh.
+
+### Việc còn nợ
+
+Từ điển thuật ngữ ở trên **vẫn dùng được** — nó đã đối chiếu khớp 100% với 37 bảng, 149 cột và
+24 hằng thật. Ai làm tiếp thì bắt đầu từ đó, theo cách ở mục trên.

@@ -1,18 +1,23 @@
 # Quy ước đặt tên & Migration EF Core
 
-> ⚠️ Tài liệu này chốt quy ước **trước khi** tạo migration đầu tiên. Khi solution .NET được khởi tạo,
-> cập nhật các mục còn để ngỏ ở đây trong cùng PR.
+> Quy ước đặt tên đầy đủ cho **cả dự án** (C#, TS, SQL): [quy-uoc-code.md](../quy-uoc-code.md).
+> File này chỉ nói phần **DB và migration**.
 
 ## Quy ước đặt tên
 
 | Đối tượng | Quy ước | Ví dụ |
 |---|---|---|
-| Tên bảng | `UPPER_SNAKE_CASE`, tiếng Việt không dấu | `TRAN_DAU`, `DONGGOP_QUY` |
-| Tên cột | `lower_snake_case`, tiếng Việt không dấu | `thoi_gian`, `so_ban_ghi_duoc` |
+| Tên bảng | `UPPER_SNAKE_CASE`, tiếng Việt không dấu | `LOP_HOC`, `KHOAN_THU_HOC_PHI` |
+| Tên cột | `lower_snake_case`, tiếng Việt không dấu | `hoc_phi_ap_dung`, `ngay_vao_lop` |
 | Khóa chính | `id` | `id` |
-| Khóa ngoại | `<tên_bảng_đích_số_ít>_id` | `tran_dau_id`, `cau_thu_id` |
-| Entity C# | `PascalCase` tiếng Việt không dấu | `TranDau`, `DongGopQuy` |
-| Property C# | `PascalCase` | `ThoiGian`, `SoBanGhiDuoc` |
+| Khóa ngoại | `<tên_bảng_đích_số_ít>_id` | `lop_hoc_id`, `hoc_vien_id` |
+| Entity C# | `PascalCase` tiếng Việt không dấu | `LopHoc`, `KhoanThuHocPhi` |
+| Property C# | `PascalCase` | `HocPhiApDung`, `NgayVaoLop` |
+| 4 cột audit (mọi bảng) | có sẵn ở `BaseEntity` | `created_at`, `updated_at`, `created_by_id`, `updated_by_id` |
+
+> ⚠️ `UseSnakeCaseNamingConvention()` suy tên cột **TỪ** tên property. Đổi tên property nghĩa là
+> **đổi tên cột** — cần migration, và mọi tên trường JSON của API cũng đổi theo. Đây là chỗ đã
+> làm hỏng một lần: xem [ADR-0006](../kien-truc/adr/0006-dat-ten-tieng-anh-va-cot-audit.md).
 
 Ánh xạ tên C# ↔ tên cột DB cấu hình tập trung trong `DbContext.OnModelCreating` (hoặc convention
 `UseSnakeCaseNamingConvention` của Npgsql), **không rải `[Column]` attribute** khắp Domain layer —

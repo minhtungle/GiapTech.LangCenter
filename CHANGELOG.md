@@ -8,6 +8,40 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — Tài liệu quy ước viết mã cho toàn dự án (12/09/2026)
+
+[`docs/quy-uoc-code.md`](./docs/quy-uoc-code.md) — quy ước áp cho cả C#, TypeScript, SQL và tài
+liệu. Trước đó chỉ có `quy-uoc-migration.md` nói về DB, và nó còn ví dụ từ **dự án bóng đá cũ**
+(`TRAN_DAU`, `DONGGOP_QUY`, `cau_thu_id`) — đã sửa sang ví dụ thật của dự án này.
+
+Chín mục, trong đó ba mục rút từ lỗi đã thực sự xảy ra:
+
+- **Ranh giới ngôn ngữ đặt tên** — bảng/entity/biến tiếng Việt không dấu; migration và từ vựng
+  kỹ thuật tiếng Anh; chuỗi hiển thị qua i18n. Không trộn hai thứ tiếng trong một định danh.
+- **Quy ước `null` trong lệnh cập nhật** — `null` = giữ nguyên, `""` = chủ động xoá, `[]` = bỏ
+  hết. Quy tắc #1 đã bị vi phạm hai lần vì chỗ này.
+- **Test phải kiểm chiều ngược và chứng minh bằng đột biến.** Kèm bài học 12/09: một test audit
+  tạo và sửa bằng cùng một người nên đột biến vẫn qua — phải dùng hai người khác nhau.
+- **Mục 9: đổi tên hàng loạt** — đọc trước khi làm, rút từ lần thất bại cùng ngày.
+
+### Changed — ADR-0006 ghi rõ trạng thái thật (12/09/2026)
+
+Phần **cột audit đã xong**; phần **đổi tên tiếng Anh đã chốt nhưng HOÃN thi hành**. Thêm mục
+"Lần thử 12/09/2026 và vì sao dừng": đã đổi xong 37 bảng + 149 cột + 37 entity + 24 hằng trên DB
+thật, rồi dừng ở 148/376 test đỏ và 108 tên trường JSON frontend, và **hoàn nguyên**.
+
+Hai sai lầm ghi lại để không lặp:
+
+1. **Tưởng tách được "đổi DB" khỏi "đổi code"** — `UseSnakeCaseNamingConvention()` suy tên cột
+   TỪ tên property, nên hai việc là một; và property đổi thì tên trường JSON đổi theo, kéo cả
+   test lẫn frontend.
+2. **Regex hàng loạt trên 100.000 dòng** — ba lỗi ngữ nghĩa lọt qua trình biên dịch, nguy nhất
+   là chuỗi `"NguoiDung"` trong `SuyChucNang()` bị đổi làm nhật ký mất trường chức năng mà build
+   vẫn xanh.
+
+Từ điển thuật ngữ trong ADR **vẫn dùng được** — đã đối chiếu khớp 100% với 37 bảng, 149 cột và
+24 hằng thật.
+
 ### Added — Bốn cột audit trên mọi bảng + ADR-0006 đặt tên tiếng Anh (12/09/2026)
 
 Theo yêu cầu chủ sản phẩm: *"cần cột người tạo, người sửa, ngày tạo, ngày sửa để check lịch sử

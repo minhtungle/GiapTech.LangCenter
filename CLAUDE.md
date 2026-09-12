@@ -102,7 +102,8 @@ Chi tiết và nợ kỹ thuật: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 | **ERD 37 bảng** + ràng buộc + hành vi xoá | [`docs/database/erd.md`](./docs/database/erd.md) |
 | **Nhật ký theo ngày** (bối cảnh git log không có) | [`docs/nhat-ky/`](./docs/nhat-ky/README.md) |
 | Clean Architecture, luật phụ thuộc | [`docs/backend/clean-architecture.md`](./docs/backend/clean-architecture.md) |
-| Quy ước đặt tên, migration EF Core | [`docs/database/quy-uoc-migration.md`](./docs/database/quy-uoc-migration.md) |
+| **Quy ước viết mã** (đặt tên, null, chú thích, test) | [`docs/quy-uoc-code.md`](./docs/quy-uoc-code.md) |
+| Quy ước đặt tên DB, migration EF Core | [`docs/database/quy-uoc-migration.md`](./docs/database/quy-uoc-migration.md) |
 | CQRS/MediatR, tổ chức handler theo FR | [`docs/backend/cqrs-mediatr.md`](./docs/backend/cqrs-mediatr.md) |
 | Multi-tenant, chỗ Query Filter **không** bảo vệ | [`docs/backend/multi-tenant.md`](./docs/backend/multi-tenant.md) |
 | Phân quyền động | [`docs/backend/phan-quyen-dong.md`](./docs/backend/phan-quyen-dong.md) |
@@ -111,7 +112,7 @@ Chi tiết và nợ kỹ thuật: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 | Hạ tầng, VPS, runbook sự cố | [`docs/ha-tang/`](./docs/ha-tang/README.md) |
 | **Triển khai lên VPS** (`git pull` + build tại chỗ) | [`docs/ha-tang/trien-khai-pull-code.md`](./docs/ha-tang/trien-khai-pull-code.md) |
 | Kiến trúc tổng quan + trạng thái quyết định | [`docs/kien-truc/TONG-QUAN-KIEN-TRUC.md`](./docs/kien-truc/TONG-QUAN-KIEN-TRUC.md) |
-| 5 ADR đã chốt | [`docs/kien-truc/adr/`](./docs/kien-truc/adr/) |
+| 6 ADR đã chốt | [`docs/kien-truc/adr/`](./docs/kien-truc/adr/) |
 | Git flow, commit convention, PR checklist | [`CONTRIBUTING.md`](./CONTRIBUTING.md) |
 | Chính sách bảo mật | [`SECURITY.md`](./SECURITY.md) |
 | Thuật ngữ dễ nhầm | [`docs/kien-truc/THUAT-NGU.md`](./docs/kien-truc/THUAT-NGU.md) |
