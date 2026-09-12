@@ -138,9 +138,14 @@ export default function ChoXepLop({ nhung = false }: { nhung?: boolean } = {}) {
   /**
    * Lớp đã kết thúc/huỷ bị loại: xếp người mới vào lớp đã đóng là sai trong mọi trường hợp.
    *
-   * KHÔNG ưu tiên "lớp cùng khoá" được: `LOP_HOC` hiện chưa có khoá ngoại về `KHOA_HOC` (CRM
-   * đứng riêng, chốt 08/09/2026). Vì vậy tên khoá của đơn hiện ở cả bảng và hộp thoại để người
-   * điều phối tự đối chiếu. Khi nối hai bảng thì đưa lớp cùng khoá lên đầu ở đây.
+   * CHƯA ưu tiên "lớp cùng khoá" — nhưng nay đã LÀM ĐƯỢC, chỉ là chưa làm (nợ N19).
+   *
+   * Lý do cũ ghi ở đây ("`LOP_HOC` chưa có khoá ngoại về `KHOA_HOC`") **hết đúng từ 12/09/2026**:
+   * bảng `LOP_HOC_KHOA_HOC` đã có, và `LopHocDto.khoaHocs` đã trả về sẵn cho client. Ghép với
+   * `duyetCho.khoaHocId` là đủ để `.sort()` ngay tại đây, không cần đổi API.
+   *
+   * Tạm thời tên khoá của đơn vẫn hiện ở cả bảng và hộp thoại để người điều phối tự đối chiếu,
+   * và backend đã cảnh báo khi duyệt nhầm lớp khác khoá.
    */
   const luaChonLop = lopHocs
     .filter((l) => l.trangThai !== 'DaKetThuc' && l.trangThai !== 'DaHuy')

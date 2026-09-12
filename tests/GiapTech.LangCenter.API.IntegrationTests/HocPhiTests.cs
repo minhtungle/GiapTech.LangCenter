@@ -272,6 +272,66 @@ public class HocPhiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal("Đợt 1", sau.GetProperty("ghiChu").GetString());
     }
 
+    /// <summary>
+    /// Nợ **N9** ghi *"chưa có lịch sử chỉnh sửa khoản thu (ai sửa gì lúc nào)"*. Test này kiểm
+    /// xem điều đó còn đúng không — và kết luận là **không còn**: nhật ký hệ thống (FR-16) đã
+    /// trả lời đủ cả ba vế.
+    ///
+    /// Cơ chế không nằm ở module học phí mà ở hai chỗ dùng chung, nên nó tự áp cho khoản thu
+    /// mà không ai phải viết thêm gì:
+    ///
+    /// - `ChanBatThayDoi` quét `ChangeTracker.Entries&lt;BaseEntity&gt;()` — **mọi** entity, và
+    ///   `KhoanThuHocPhi : TenantEntity : BaseEntity`.
+    /// - `NhatKyBehavior` nằm trong pipeline MediatR nên mọi `Command` đều đi qua.
+    ///
+    /// Vì sao vẫn cần test dù cơ chế là dùng chung: `NhatKyHeThongTests` chỉ chứng minh nó chạy
+    /// với `NguoiDung.HoTen`. Một cột tiền có thể bị lọc mất ở chỗ khác — `TruongNhayCam` trong
+    /// `ChanBatThayDoi` đã lọc `matkhau`/`token`/`secret`, và thêm `tien` vào đó là một thay đổi
+    /// hợp lý trông có vẻ vô hại. Test này khoá lại: số tiền **phải** để lại vết.
+    /// </summary>
+    [Fact]
+    public async Task Sua_khoan_thu_de_lai_vet_ai_sua_gi_luc_nao()
+    {
+        var c = await Client();
+        var (lop, _, hv) = await DungLop(c, "vetsua");
+
+        var id = await (await c.PostAsJsonAsync("/api/v1/hoc-phi", new
+        {
+            LopHocId = lop, HocVienId = hv, SoTien = 500_000m,
+            NgayThu = (DateTimeOffset?)null, PhuongThuc = "TienMat",
+            SoPhieu = "PT-VET", GhiChu = (string?)null
+        })).Content.ReadFromJsonAsync<Guid>();
+
+        var truoc = await KhoanThu(c, lop, id);
+        (await c.PutAsJsonAsync($"/api/v1/hoc-phi/{id}", new
+        {
+            Id = id, SoTien = 750_000m,
+            NgayThu = truoc.GetProperty("ngayThu").GetDateTimeOffset(),
+            PhuongThuc = "TienMat", SoPhieu = "PT-VET", GhiChu = (string?)null
+        })).EnsureSuccessStatusCode();
+
+        var ban = (await c.GetFromJsonAsync<JsonElement>("/api/v1/nhat-ky?soDong=50"))!
+            .GetProperty("duLieu").EnumerateArray()
+            .First(x => x.GetProperty("tenLenh").GetString() == "SuaKhoanThuCommand");
+
+        // "ai" và "lúc nào"
+        Assert.Equal("manager", ban.GetProperty("username").GetString());
+        Assert.True(ban.GetProperty("thanhCong").GetBoolean());
+
+        // "gì" — và phải là giá trị TRƯỚC/SAU thật, không chỉ tên trường. Khớp đúng mục nói về
+        // SoTien chứ không tìm chuỗi con trong cả JSON: lệnh này chạm nhiều trường, khớp lỏng
+        // sẽ xanh cả khi giá trị ghi sai.
+        var chiTiet = ban.GetProperty("chiTiet").GetString();
+        Assert.False(string.IsNullOrEmpty(chiTiet));
+
+        var muc = JsonSerializer.Deserialize<List<JsonElement>>(chiTiet!)!
+            .Single(x => x.GetProperty("bang").GetString() == "KHOAN_THU_HOC_PHI"
+                         && x.GetProperty("truong").GetString() == "SoTien");
+
+        Assert.Equal("500000", muc.GetProperty("truoc").GetString());
+        Assert.Equal("750000", muc.GetProperty("sau").GetString());
+    }
+
     /// <summary>Cách ly tenant tầng ghi: không thu được vào lớp của trung tâm khác.</summary>
     [Fact]
     public async Task Khong_thu_duoc_vao_lop_cua_tenant_khac()

@@ -8,7 +8,7 @@
 Nghiệp vụ  ████████████████  24/24 FR chạy đầu-cuối
 Ba hệ thống ████████████████  Cả ba hệ thống đủ nghiệp vụ
 Hạ tầng    ████████████░░░░  CI/CD sẵn sàng, chờ VPS thật
-Còn lại    ████░░░░░░░░░░░░  Bài kiểm tra + 22 nợ kỹ thuật
+Còn lại    ████░░░░░░░░░░░░  Bài kiểm tra + 15 nợ kỹ thuật (rà lại toàn bộ 12/09)
 ```
 
 ## Trạng thái mã FR
@@ -114,35 +114,43 @@ VPS → domain + HTTPS → backup. Xem
 
 ## Nợ kỹ thuật
 
+> **Rà lại toàn bộ 12/09/2026.** Đọc kế hoạch cũ phải hỏi *"nay còn đúng không"*, không chỉ
+> *"đã làm chưa"* — FR-15 hôm nay mô tả một cách làm viết trước khi `IPhamViLopHoc` tồn tại,
+> và N16 · N12 trước đó đều **mô tả sai bản chất** vấn đề. Nên mỗi nợ dưới đây đã được đối
+> chiếu với mã nguồn hiện tại, kèm file:dòng làm bằng chứng.
+>
+> Kết quả: **1 nợ đã tự hết** (N9), **1 nợ mô tả sai** (N4 — tệ hơn ghi chép), **2 nợ rẻ hơn**
+> ghi chép (N19, N20), **1 nợ đáng lo hơn** và đã nâng mức (N14).
+
 | # | Việc | Mức |
 |---|---|---|
 | N1 | **Bài kiểm tra**: schema xong, chưa có API và UI | Cao |
 | N3 | `/dang-ky-trung-tam` **mở ở mọi môi trường** — ai cũng tự tạo trung tâm. Đã có hạn mức 10 req/phút mỗi IP ở tầng ứng dụng (08/09), nhưng **rate limit ở reverse proxy vẫn bắt buộc** trước khi mở ra Internet; chưa có captcha / xác thực email | Cao |
-| N4 | Kiểm trùng lịch giáo viên có API nhưng **chưa nối vào UI** | Trung bình |
+| N4 | ~~Kiểm trùng lịch giáo viên có API nhưng chưa nối vào UI~~ — **MÔ TẢ SAI, rà lại 12/09/2026**: không có endpoint nào cả. `KiemTrungLichQuery` + `KiemTrungLichHandler` (`Application/DaoTao/BuoiHoc/BuoiHocDtos.cs:516-566`) là **mã chết**: 0 tham chiếu ngoài chính file định nghĩa, không controller, không UI, **không test nào chạm tới**. Handler viết chín (loại trừ lớp đang sửa, dùng `<` nghiêm ngặt để không cảnh báo giả) nhưng chưa chạy lần nào. Nối vào API còn vướng: `List<(DateTimeOffset, DateTimeOffset)>` không bind được từ JSON body, phải thêm DTO trung gian | Trung bình |
 | N26 | **Chưa có đường kết thúc lớp** — `TrangThaiLopHoc.DaKetThuc` có trong enum và mọi logic đã xử lý đúng (trạng thái tham gia lớp, danh sách lớp chọn để xếp), nhưng **không endpoint nào set được** nó: chỉ có `/huy` → `DaHuy`. Vòng đời lớp trong tài liệu ghi "nháp → sắp khai giảng → đang học → kết thúc" nhưng bước cuối chưa chạy được (phát hiện 12/09/2026) | Trung bình |
 | N5 | Job dọn tệp mồ côi trong MinIO (Cascade xoá hàng DB nhưng không xoá object) | Trung bình |
 | N6 | Danh mục ngày nghỉ hệ thống (sinh lịch hiện không né ngày lễ) | Trung bình |
 | N7 | Import Excel danh sách học viên | Trung bình |
-| N9 | Lịch sử chỉnh sửa khoản thu (ai sửa gì lúc nào) | Thấp |
+| ~~N9~~ | ~~Lịch sử chỉnh sửa khoản thu (ai sửa gì lúc nào)~~ — **ĐÃ TỰ HẾT, xác minh 12/09/2026**. Không ai làm riêng cho học phí: `ChanBatThayDoi` quét `ChangeTracker.Entries<BaseEntity>()` nên áp cho **mọi** entity (`KhoanThuHocPhi : TenantEntity : BaseEntity`), `NhatKyBehavior` trong pipeline MediatR bắt mọi `Command`, và 4 cột audit (12/09) cho vế "ai". Khoá lại bằng `Sua_khoan_thu_de_lai_vet_ai_sua_gi_luc_nao` — kiểm **đủ ba vế** *ai* (`username`) · *lúc nào* (`createdAt`) · *gì* (`truoc=500000`, `sau=750000`). Hai đột biến đã kiểm đỏ: thêm `"tien"` vào `TruongNhayCam`, và bỏ chụp trước `SaveChanges` | ✅ |
 | N10 | Nhắc nợ học phí / thông báo lịch học qua email (`IEmailSender` đã có, chưa nối) | Thấp |
 | N11 | Endpoint dọn tenant test + `globalTeardown` cho E2E. **Đã dọn tay 12/09/2026**: DB dev từ 212 → **1 tenant** (`W686AE9`, trung tâm chủ sản phẩm đang dùng), xoá kèm 33.960 dòng nhật ký; DB còn 17 MB. Nhưng **nguyên nhân chưa chữa** — mỗi lần chạy cả bộ E2E vẫn sinh ~19 tenant mới. Chốt 12/09: Claude kiểm chứng thay đổi **trực tiếp trên `W686AE9`**, không tạo tenant mới | Trung bình |
 | N13 | **Chưa dọn nhật ký cũ** — bảng `NHAT_KY_HE_THONG` tăng vô hạn, cần chính sách lưu giữ trước khi chạy production lâu dài | Trung bình |
 | N17 | Đổi tên bảng `DANG_KY_KHOA_HOC` → `DON_HANG` (nay chứa cả sản phẩm) và **tồn kho sản phẩm** — hiện bán không giới hạn | Thấp |
 | ~~N18~~ | ~~Số đã thu ở CRM không chảy sang sổ học phí LMS~~ — **GIẢI QUYẾT KHÁC 12/09/2026**: không đồng bộ hai sổ mà **bỏ hẳn tiền khỏi LMS**. Chốt với chủ sản phẩm: *"LMS không quản lý tiền học nữa, cũng không hiển thị tiền. Bảo mật thông tin — chỉ CRM mới nắm được số tiền."* Bảng và cột GIỮ NGUYÊN (CRM + báo cáo đọc), chỉ ẩn khỏi API và UI của LMS | ✅ |
-| ~~N19~~ | ~~`LOP_HOC` chưa có FK về `KHOA_HOC`~~ — **XONG 12/09/2026**: bảng `LOP_HOC_KHOA_HOC` (tối đa 3 khoá/lớp) + cảnh báo lệch khoá khi duyệt. Còn lại: hộp thoại chọn lớp chưa **ưu tiên sắp xếp** lớp cùng khoá lên đầu (đã có dữ liệu để làm) | Thấp |
-| N20 | Badge `%` trên giá gốc hiện cả ở đơn **sản phẩm** (luôn `100.0%`) — sản phẩm không có khái niệm giảm giá so với niêm yết nên con số vô nghĩa | Thấp |
-| N21 | **Chưa canh: mỗi `Command` phải có `Validator`** — quên validator thì dữ liệu rác vào DB mà không lỗi nào. Thêm một test canh theo khuôn `MoiEndpointPhaiDuocGacTests` | Trung bình |
-| N22 | `RanhGioiHeThongConTests` chỉ quét `Application/`; tầng `API/Controllers` vẫn gọi chéo hệ thống tự do (đúng vì controller là chỗ ghép, nhưng nếu muốn siết thì cần danh sách khai tương tự) | Thấp |
+| ~~N19~~ | ~~`LOP_HOC` chưa có FK về `KHOA_HOC`~~ — **XONG 12/09/2026**: bảng `LOP_HOC_KHOA_HOC` (tối đa 3 khoá/lớp) + cảnh báo lệch khoá khi duyệt. Còn lại: hộp thoại chọn lớp chưa **ưu tiên sắp xếp** lớp cùng khoá lên đầu. **Rẻ hơn ghi chép**: dữ liệu đã có sẵn ở client (`LopHocDto.khoaHocs` + `YeuCauXepLopDto.tenKhoaHoc`), chỉ cần một `.sort()` ở `ChoXepLop.tsx:145`, không phải đổi API. ⚠️ Comment ở `ChoXepLop.tsx:141` vẫn ghi *"`LOP_HOC` hiện chưa có khoá ngoại về `KHOA_HOC`"* — **lỗi thời từ chính ngày 12/09**, cần xoá khi làm | Thấp |
+| N20 | Badge `%` trên giá gốc hiện cả ở đơn **sản phẩm** (mặc định `100.0%`) — sản phẩm không có khái niệm giảm giá so với niêm yết nên con số vô nghĩa. **Rà 12/09/2026**: 4 chỗ render (`DoanhThu.tsx:349,523` · `ChiTietKhachHang.tsx:1313,784`), không chỗ nào kiểm `d.loai` — mà trường đó **đã có sẵn cùng scope** (`DoanhThu.tsx:334` đang dùng nó). Hệ quả phụ: `mauPhanTram` tô xanh "ok" mọi `p >= 100` nên đơn sản phẩm nào cũng xanh, che mất đơn khoá học thật sự giảm giá | Thấp |
+| N21 | **Chưa canh: mỗi `Command` phải có `Validator`** — quên validator thì dữ liệu rác vào DB mà không lỗi nào. **Đo 12/09/2026: 70 Command / 39 Validator → 31 thiếu**, và `grep "Validator" tests/` trả về **0**. Nhưng 26/31 là lệnh Xoá/Huỷ chỉ nhận `Guid Id` — không cần validator thật. **5 chỗ đáng lo**: `ChamBaiNopCommand` (không ai canh khoảng điểm hợp lệ), `NopBaiCommand`, `TaiAnhLenCommand`, `TaiTepCommand`, `TaiTepHoSoCommand`. Test canh phải có danh sách ngoại lệ khai lý do, nếu không 26 lệnh nhóm Xoá làm nó đỏ vô ích | Trung bình |
+| N22 | `RanhGioiHeThongConTests` chỉ quét `Application/`; tầng `API/Controllers` vẫn gọi chéo hệ thống tự do. **Rà 12/09/2026 — nhẹ hơn mô tả**: quét 14 controller, chỉ **1 file** dùng từ 2 hệ thống trở lên (`LopHocController.cs` — chính cầu nối FR-21, đã khai hợp lệ ở tầng Application), và `grep IAppDbContext Controllers/` trả về **0** nên biến thể lỗ hổng `db.X` không tồn tại ở tầng này. Lỗ hổng `db.KhachHangs` phát hiện cùng ngày **đã vá** (`DbSetCuaHeThong`). Cách siết rẻ: cho `GocApplication()` nhận tham số thư mục rồi thêm `[Theory]` chạy cả `API/Controllers` | Thấp |
 | N23 | **Role PostgreSQL và bucket MinIO cũ còn nằm đó** sau khi đổi tên 09/09 (`langcenter_lms`, `langcenter-lms-anh`) — giữ làm dự phòng, dọn tay sau khi chắc chắn | Thấp |
 | N24 | **Kéo-thả đổi cha trong cây cơ cấu** chưa làm (`@headless-tree` có `dragAndDropFeature`, chưa bật) — nay đổi cha bằng cách sửa phòng ban | Thấp |
 | ~~N16~~ | ~~4 test E2E lạc hậu~~ — **XONG 12/09/2026**. Ba test `dang-nhap-tra-ma` chờ chữ "đội" thời dự án bóng đá; hai test `quan-tri` trỏ **màn Tài khoản** trong khi địa chỉ/email đã sang `/hrm/nhan-su` (tách người ≠ tài khoản 07/09) và thiếu bước **xác nhận lưu** (thêm 07/09). App đúng, test lạc hậu | ✅ |
 | N15 | **E2E phải tắt rate limit mới chạy được** (`GIOI_HAN_TAN_SUAT=false`) vì mỗi test tự tạo tenant qua endpoint có hạn mức 10 req/phút. Cách đúng hơn: fixture dùng CHUNG một tenant, hoặc endpoint tạo tenant riêng cho test | Trung bình |
-| N14 | Màn Học viên (LMS) và Nhân sự (HRM) cho đọc danh sách **toàn trung tâm**, chưa giới hạn "học viên lớp mình" — cần mở rộng `IPhamViLopHoc` cho hồ sơ con người | Trung bình |
+| N14 | Màn Học viên (LMS) và Nhân sự (HRM) cho đọc danh sách **toàn trung tâm**, chưa giới hạn "học viên lớp mình" — cần mở rộng `IPhamViLopHoc` cho hồ sơ con người. **Rà 12/09/2026 — đây là nợ đáng lo nhất còn lại**: `LayDanhSachNguoiDungHandler` chỉ nhận `IAppDbContext`, không inject `IPhamViLopHoc`, nên chỉ Global Query Filter chặn. Nhóm quyền mặc định cấp giáo viên `(TaiKhoan, DocThoi)` kèm chú thích *"xem học viên lớp mình"* — **ý định và hành vi lệch nhau**: giáo viên đọc được hồ sơ MỌI học viên trung tâm, gồm `soDienThoai`, `diaChi`, `ngaySinh`, `tenPhuHuynh`, `soDienThoaiPhuHuynh`. HRM rủi ro thấp hơn vì `ChucNang.NhanSu` không nằm trong bộ quyền mặc định của giáo viên | **Cao** |
 | ~~N12~~ | ~~`Token_bi_sua_chu_ky_thi_bi_tu_choi` chớp nháy~~ — **XONG 12/09/2026**. KHÔNG phải chớp nháy: test đổi **ký tự cuối** chữ ký base64url, mà ký tự cuối chỉ mang 2 bit có nghĩa nên **16 nhóm ký tự cho ra cùng chữ ký** — rơi trúng cùng nhóm thì token vẫn hợp lệ. Nay đổi ký tự ở giữa. Chạy 5 lần đơn + 3 lần toàn bộ đều xanh | ✅ |
 
 ## Kiểm chứng hiện tại
 
-- **440 test backend xanh** (66 unit + 374 integration), build 0 warning — đo `dotnet test` 12/09/2026.
+- **444 test backend xanh** (66 unit + 378 integration), build 0 warning — đo `dotnet test` 12/09/2026.
 - **20 test E2E / 8 spec — XANH HẾT** (12/09/2026, đóng nợ N16). Chạy cả bộ phải
   `GIOI_HAN_TAN_SUAT=false` — xem nợ N15.
 - Frontend `tsc -b` + `vite build` sạch, `oxlint` không lỗi.
