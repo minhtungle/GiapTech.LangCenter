@@ -23,8 +23,6 @@ public class BaiKiemTra : TenantEntity
 
     public TrangThaiBaiKiemTra TrangThai { get; set; } = TrangThaiBaiKiemTra.Nhap;
 
-    public Guid? NguoiTaoId { get; set; }
-    public NguoiDung? NguoiTao { get; set; }
 
     /// <summary>Đề bài đính kèm.</summary>
     public ICollection<TepDinhKem> Teps { get; set; } = [];

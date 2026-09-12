@@ -37,8 +37,6 @@ public class LopHocConfig : IEntityTypeConfiguration<LopHoc>
         b.HasOne(x => x.NhanBanTuLop).WithMany()
             .HasForeignKey(x => x.NhanBanTuLopId).OnDelete(DeleteBehavior.SetNull);
 
-        b.HasOne(x => x.NguoiTao).WithMany()
-            .HasForeignKey(x => x.NguoiTaoId).OnDelete(DeleteBehavior.SetNull);
     }
 }
 

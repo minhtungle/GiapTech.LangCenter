@@ -38,9 +38,9 @@ public class PhamViLopHoc(IQuyenService quyenService, ICurrentTenant tenant, ICu
         return nguon.Where(l =>
             // Lớp nháp chỉ người tạo mới thấy: nó chưa phải lớp thật, và giáo viên nhìn thấy
             // tên mình trong một lớp admin còn đang nghĩ sẽ tưởng đã được phân công.
-            (l.TrangThai != TrangThaiLopHoc.Nhap || l.NguoiTaoId == uid)
+            (l.TrangThai != TrangThaiLopHoc.Nhap || l.CreatedById == uid)
             && (l.GiaoVienChinhId == uid
-                || l.NguoiTaoId == uid
+                || l.CreatedById == uid
                 || l.TroGiangs.Any(tg => tg.TroGiangId == uid)
                 || l.HocViens.Any(hv => hv.HocVienId == uid)));
     }

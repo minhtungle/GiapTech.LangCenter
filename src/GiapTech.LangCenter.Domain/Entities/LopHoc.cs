@@ -63,12 +63,6 @@ public class LopHoc : TenantEntity
     public Guid? NhanBanTuLopId { get; set; }
     public LopHoc? NhanBanTuLop { get; set; }
 
-    /// <summary>
-    /// Người tạo — cần để trả lời "lớp nháp này của ai" (nháp chỉ hiện cho người tạo và
-    /// người có quyền xem toàn trung tâm).
-    /// </summary>
-    public Guid? NguoiTaoId { get; set; }
-    public NguoiDung? NguoiTao { get; set; }
 
     public ICollection<LopHocHocVien> HocViens { get; set; } = [];
     public ICollection<LopHocTroGiang> TroGiangs { get; set; } = [];

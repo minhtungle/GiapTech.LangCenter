@@ -39,8 +39,6 @@ public class KhachHangConfig : IEntityTypeConfiguration<KhachHang>
 
         // SetNull cùng lý lẽ: nhân viên kinh doanh nghỉ việc và bị xoá khỏi hệ thống thì hồ sơ
         // khách hàng KHÔNG được biến mất theo — đó là tài sản của trung tâm, không của người bán.
-        b.HasOne(x => x.NguoiTao).WithMany()
-            .HasForeignKey(x => x.NguoiTaoId).OnDelete(DeleteBehavior.SetNull);
     }
 }
 

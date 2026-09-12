@@ -8,6 +8,34 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Fixed — gộp hai cột trùng nghĩa + thêm khoá ngoại cho cột audit (13/09/2026)
+
+Hai sót của lần thêm 4 cột audit hôm qua, lộ ra khi bàn về khách vãng lai.
+
+- **4 bảng có HAI cột cùng nghĩa**: `LOP_HOC`, `KHACH_HANG`, `BAI_TAP`, `BAI_KIEM_TRA` đã có
+  `nguoi_tao_id` từ trước, thêm `created_by_id` vào `BaseEntity` thành ra có cả hai — cùng gán
+  `ICurrentUser.UserId`, cùng trỏ `NGUOI_DUNG`. Gộp về `created_by_id`, chuyển dữ liệu bằng
+  `COALESCE` (ưu tiên giá trị mới hơn).
+- **Cột audit không có khoá ngoại** — nghiêm trọng hơn. Chú thích nói "trỏ `PERSON.id`" nhưng
+  không gì ép; trong khi cột cũ nó thay thế thì **có** FK. Nay áp **74 FK** `SET NULL` cho cả
+  `CreatedById` lẫn `UpdatedById` trên mọi entity.
+
+Hai bẫy chỉ lộ khi sinh migration, `dotnet build` xanh cả hai lần: `HasOne(typeof(...))` tạo
+**108 cột bóng** `CreatedById1`; và `NGUOI_DUNG` tự tham chiếu làm EF tưởng hai navigation là
+một quan hệ 1-1.
+
+Thêm `Lop_nhap_chi_nguoi_tao_thay`: nhánh "lớp nháp chỉ người tạo thấy" dùng đúng cột vừa đổi mà
+**không test nào canh** — đổi sai thì 444 test vẫn xanh trong khi lớp nháp lộ cho người khác.
+Đột biến đã kiểm đỏ.
+
+### Added — khách vãng lai: cột `KHACH_HANG.nguon` (13/09/2026)
+
+`NhanVienTao` (mặc định) / `TuDangKy`. Lưu cột chứ không suy từ `created_by_id is null`: null ở
+đó đã mang sẵn hai nghĩa khác (khách cũ trước 12/09, người tạo đã bị xoá), chồng nghĩa thứ ba
+làm "khách tự đăng ký" và "dữ liệu cũ" không phân biệt được — mà đó đúng là con số báo cáo doanh
+số cá nhân dựa vào.
+
+
 ### Added — FR-15 Tổng quan: mã FR cuối cùng chạy đầu-cuối (12/09/2026)
 
 `GET /api/v1/toi/tong-quan` + màn `TongQuan.tsx` viết lại. **24/24 FR** chạy đầu-cuối.

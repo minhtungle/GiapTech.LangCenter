@@ -37,18 +37,21 @@ public class KhachHang : TenantEntity
     public NguoiDung? NguoiDung { get; set; }
 
     /// <summary>
-    /// Nhân viên kinh doanh đã TẠO hồ sơ khách này (12/09/2026). Handler tự gán từ
-    /// `ICurrentUser.UserId`, không nhận từ client — nếu không thì ai cũng khai được mình là
-    /// người tạo của khách người khác.
+    /// **Nhân viên kinh doanh phụ trách khách này = `CreatedById`** (cột audit của
+    /// <see cref="BaseEntity"/>, gộp 13/09/2026 — trước đó là cột `NguoiTaoId` riêng trùng nghĩa).
     ///
-    /// Nullable vì hai lẽ: khách tạo TRƯỚC 12/09/2026 không truy ngược được ai tạo (thêm cột
-    /// NOT NULL sẽ phải bịa một giá trị), và người tạo có thể đã bị xoá khỏi hệ thống.
+    /// `AppDbContext` tự gán từ `ICurrentUser.UserId`, client không gửi được — nếu không thì ai
+    /// cũng khai được mình là người tạo của khách người khác.
+    ///
+    /// Nullable vì ba lẽ: khách tạo trước 12/09/2026 không truy ngược được; người tạo có thể đã
+    /// bị xoá (FK `SET NULL`); và **khách tự đăng ký thì không có nhân viên nào tạo** — ca này
+    /// phân biệt bằng <see cref="Nguon"/>, đừng suy từ `CreatedById is null`.
     ///
     /// Khác `LICH_SU_CHAM_SOC.NguoiPhuTrachId` (ai đang chăm khách — đổi theo thời gian) và
     /// khác `YEU_CAU_XEP_LOP.NguoiGuiId` (ai đẩy khách sang đào tạo). Ba câu hỏi khác nhau.
     /// </summary>
-    public Guid? NguoiTaoId { get; set; }
-    public NguoiDung? NguoiTao { get; set; }
+    /// <summary>Xem <see cref="NguonKhachHang"/> — vì sao là cột chứ không suy.</summary>
+    public NguonKhachHang Nguon { get; set; } = NguonKhachHang.NhanVienTao;
 
     public ICollection<DangKyKhoaHoc> DangKys { get; set; } = [];
 

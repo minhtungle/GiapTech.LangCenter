@@ -1,3 +1,5 @@
+using GiapTech.LangCenter.Domain.Entities;
+
 namespace GiapTech.LangCenter.Domain.Common;
 
 /// <summary>
@@ -34,11 +36,23 @@ public abstract class BaseEntity
     public Guid? CreatedById { get; set; }
 
     /// <summary>
+    /// Người tạo, để truy ra tên mà không phải join tay ở từng truy vấn.
+    ///
+    /// Khoá ngoại thật (`SET NULL` khi người bị xoá) áp cho mọi entity ở
+    /// <c>AppDbContext.ApDungKhoaNgoaiChoCotAudit</c> — một cột `uuid` không ràng buộc thì chứa
+    /// được GUID rác, và dấu vết audit sai còn tệ hơn không có dấu vết.
+    /// </summary>
+    public NguoiDung? CreatedBy { get; set; }
+
+    /// <summary>
     /// Người sửa **lần cuối** — trỏ <c>PERSON.id</c>. null = chưa ai sửa kể từ khi tạo.
     ///
     /// Chỉ giữ lần cuối, không phải lịch sử. Cần toàn bộ lịch sử thì tra `AUDIT_LOG`.
     /// </summary>
     public Guid? UpdatedById { get; set; }
+
+    /// <summary>Người sửa lần cuối — xem <see cref="CreatedBy"/>.</summary>
+    public NguoiDung? UpdatedBy { get; set; }
 }
 
 /// <summary>Entity nghiệp vụ thuộc một tenant — mặc định cho hầu hết bảng.</summary>

@@ -15,8 +15,6 @@ public class BaiTap : TenantEntity
     /// <summary>null = không đặt hạn. Có hạn thì bài nộp sau đó được đánh dấu nộp muộn.</summary>
     public DateTimeOffset? HanNop { get; set; }
 
-    public Guid? NguoiTaoId { get; set; }
-    public NguoiDung? NguoiTao { get; set; }
 
     public ICollection<TepDinhKem> Teps { get; set; } = [];
     public ICollection<BaiNop> BaiNops { get; set; } = [];

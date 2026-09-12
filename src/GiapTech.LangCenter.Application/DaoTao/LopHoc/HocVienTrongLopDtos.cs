@@ -82,8 +82,8 @@ public class LayHocVienTrongLopHandler(
                 // nào trỏ tới nên trả null — đúng, họ không do ai bán.
                 xemNvkd
                     ? db.KhachHangs
-                        .Where(k => k.NguoiDungId == hv.HocVienId && k.NguoiTao != null)
-                        .Select(k => k.NguoiTao!.HoTen)
+                        .Where(k => k.NguoiDungId == hv.HocVienId && k.CreatedBy != null)
+                        .Select(k => k.CreatedBy!.HoTen)
                         .FirstOrDefault()
                     : null))
             .ToListAsync(ct);

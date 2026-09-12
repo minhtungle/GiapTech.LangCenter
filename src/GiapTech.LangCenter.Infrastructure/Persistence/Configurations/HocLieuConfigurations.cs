@@ -70,9 +70,6 @@ public class BaiTapConfig : IEntityTypeConfiguration<BaiTap>
         // buổi chưa diễn ra.
         b.HasOne(x => x.BuoiHoc).WithMany()
             .HasForeignKey(x => x.BuoiHocId).OnDelete(DeleteBehavior.Cascade);
-
-        b.HasOne(x => x.NguoiTao).WithMany()
-            .HasForeignKey(x => x.NguoiTaoId).OnDelete(DeleteBehavior.SetNull);
     }
 }
 
@@ -115,9 +112,6 @@ public class BaiKiemTraConfig : IEntityTypeConfiguration<BaiKiemTra>
         // Restrict: kết quả kiểm tra là dữ liệu học tập, không biến mất theo lớp.
         b.HasOne(x => x.LopHoc).WithMany()
             .HasForeignKey(x => x.LopHocId).OnDelete(DeleteBehavior.Restrict);
-
-        b.HasOne(x => x.NguoiTao).WithMany()
-            .HasForeignKey(x => x.NguoiTaoId).OnDelete(DeleteBehavior.SetNull);
     }
 }
 

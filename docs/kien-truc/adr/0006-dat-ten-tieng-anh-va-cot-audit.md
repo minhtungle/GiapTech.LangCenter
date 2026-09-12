@@ -30,7 +30,7 @@ Trạng thái audit trước ADR này:
 | Cột | Phạm vi |
 |---|---|
 | `ngay_tao` · `ngay_cap_nhat` | **37/37 bảng** — ở `BaseEntity`, `AppDbContext` tự gán |
-| `nguoi_tao_id` | **4/37 bảng** — thêm lẻ tẻ khi có nhu cầu, không theo chuẩn |
+| `nguoi_tao_id` | **4/37 bảng** — thêm lẻ tẻ khi có nhu cầu, không theo chuẩn. **Gộp vào `created_by_id` ngày 13/09/2026** (xem mục bổ sung cuối ADR) |
 | người sửa | **0/37** |
 
 ## Quyết định
@@ -185,3 +185,39 @@ tham chiếu tới định danh khác".
 
 Từ điển thuật ngữ ở trên **vẫn dùng được** — nó đã đối chiếu khớp 100% với 37 bảng, 149 cột và
 24 hằng thật. Ai làm tiếp thì bắt đầu từ đó, theo cách ở mục trên.
+
+---
+
+## Bổ sung 13/09/2026 — gộp cột trùng nghĩa và thêm khoá ngoại
+
+Lần thêm 4 cột audit (12/09) bỏ sót hai việc, phát hiện khi chủ sản phẩm hỏi về khách vãng lai.
+
+### 1. Bốn bảng có HAI cột cùng nghĩa
+
+`LOP_HOC`, `KHACH_HANG`, `BAI_TAP`, `BAI_KIEM_TRA` đã có sẵn `nguoi_tao_id` từ trước; thêm
+`created_by_id` vào `BaseEntity` khiến chúng có cả hai. Cả hai đều gán `ICurrentUser.UserId`,
+cùng trỏ `NGUOI_DUNG` — **cùng nghĩa, không phải hai câu hỏi khác nhau**.
+
+Hai nguồn sự thật cho một câu hỏi thì sớm muộn cũng lệch. Đã gộp về `created_by_id`, chuyển dữ
+liệu bằng `COALESCE(created_by_id, nguoi_tao_id)` — ưu tiên giá trị mới hơn nếu cả hai cùng có.
+
+### 2. Cột audit KHÔNG có khoá ngoại
+
+Nghiêm trọng hơn. Chú thích `BaseEntity` viết *"trỏ `PERSON.id`"* nhưng **không gì ép điều đó**:
+`created_by_id` là `uuid` trần, chứa được GUID rác hoặc trỏ người đã bị xoá. Trong khi
+`nguoi_tao_id` — cột cũ mà nó thay thế — **có** FK `SET NULL`. Gộp mà không thêm FK là bước lùi.
+
+Nay áp FK cho **cả hai cột trên mọi entity** ở `AppDbContext.ApDungKhoaNgoaiChoCotAudit` (74 FK),
+`SET NULL` khi người bị xoá. Không `CASCADE`: xoá một người không được kéo theo mọi bản ghi họ
+từng tạo.
+
+> **Dấu vết audit sai còn tệ hơn không có dấu vết** — người đọc tin vào nó.
+
+### Hai cái bẫy khi khai FK toàn cục
+
+| Bẫy | Triệu chứng | Cách đúng |
+|---|---|---|
+| `HasOne(typeof(NguoiDung))` | EF không biết quan hệ đi qua property nào → tạo **cột bóng** `CreatedById1` bên cạnh cột thật. **108 cột rác** trong snapshot | `HasOne(nameof(BaseEntity.CreatedBy))` — khai theo tên navigation |
+| `NGUOI_DUNG` tự tham chiếu | Hai navigation cùng trỏ `NguoiDung` → EF tưởng là hai đầu của một quan hệ 1-1, ném *"dependent side could not be determined"* | Khai hai quan hệ tách rời, mỗi cái một `HasForeignKey` |
+
+Cả hai đều chỉ lộ ra khi **sinh migration**, không phải lúc build — `dotnet build` xanh cả hai lần.

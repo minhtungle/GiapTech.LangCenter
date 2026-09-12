@@ -185,6 +185,53 @@ public class LopHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     /// <summary>
+    /// **Lớp NHÁP chỉ người tạo mới thấy** — nhánh `l.TrangThai != Nhap || l.CreatedById == uid`
+    /// trong `PhamViLopHoc.LocTheoPhamVi`.
+    ///
+    /// Viết 13/09/2026 khi gộp hai cột trùng nghĩa `nguoi_tao_id` → `created_by_id`: nhánh này
+    /// dùng đúng cột đó, mà **không test nào canh** — đổi sai thì cả bộ 444 test vẫn xanh trong
+    /// khi lớp nháp của người này lộ cho người khác. Đúng kiểu lỗ hổng đã gặp ở nhánh học viên
+    /// (xem <see cref="Hoc_vien_chi_thay_lop_minh_dang_hoc"/>).
+    ///
+    /// Vì sao nháp phải giấu: giáo viên nhìn thấy tên mình trong một lớp admin còn đang nghĩ sẽ
+    /// tưởng đã được phân công.
+    /// </summary>
+    [Fact]
+    public async Task Lop_nhap_chi_nguoi_tao_thay()
+    {
+        var admin = await Client();
+
+        var quyenGv = (await admin.GetFromJsonAsync<List<JsonElement>>("/api/v1/quyen"))!
+            .Single(q => q.GetProperty("tenQuyen").GetString() == "Giáo viên")
+            .GetProperty("id").GetString()!;
+
+        // Giáo viên được phân công DẠY lớp nháp này — nếu lọc sai thì chính họ là người thấy.
+        var gv = await TaoNguoiDung(admin, "gv-lop-nhap", "GiaoVien", [quyenGv]);
+        var lopNhap = await TaoLop(admin, "Lớp còn đang nghĩ", gv);
+
+        var cGv = await Client(factory.MaTrungTamA, "gv-lop-nhap", "matkhau123");
+
+        var ds = await cGv.GetFromJsonAsync<JsonElement>("/api/v1/lop-hoc");
+        Assert.DoesNotContain("Lớp còn đang nghĩ",
+            ds.GetProperty("duLieu").EnumerateArray()
+                .Select(l => l.GetProperty("ten").GetString()));
+
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await cGv.GetAsync($"/api/v1/lop-hoc/{lopNhap}")).StatusCode);
+
+        // CHIỀU NGƯỢC — không có phần này thì test xanh cả khi phạm vi chặn nhầm MỌI người:
+        // admin tạo lớp phải thấy được nó, và hoàn tất xong thì giáo viên mới thấy.
+        Assert.Equal(HttpStatusCode.OK,
+            (await admin.GetAsync($"/api/v1/lop-hoc/{lopNhap}")).StatusCode);
+
+        (await admin.PostAsJsonAsync($"/api/v1/lop-hoc/{lopNhap}/hoan-tat",
+            new { NgayKhaiGiang = DateTimeOffset.UtcNow.AddDays(7) })).EnsureSuccessStatusCode();
+
+        Assert.Equal(HttpStatusCode.OK,
+            (await cGv.GetAsync($"/api/v1/lop-hoc/{lopNhap}")).StatusCode);
+    }
+
+    /// <summary>
     /// HỌC VIÊN chỉ thấy lớp mình đang học — cùng module `/lop-hoc`, cùng quyền `LopHoc.Xem`,
     /// khác nhau ở phạm vi hàng do `IPhamViLopHoc` lọc.
     ///

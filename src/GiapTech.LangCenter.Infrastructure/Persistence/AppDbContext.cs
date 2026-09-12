@@ -87,7 +87,50 @@ public class AppDbContext(
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
         ChuanHoaThoiGianVeUtc(modelBuilder);
+        ApDungKhoaNgoaiChoCotAudit(modelBuilder);
         ApDungQueryFilterTheoTenant(modelBuilder);
+    }
+
+    /// <summary>
+    /// Nối `CreatedById` / `UpdatedById` về `NGUOI_DUNG` bằng **khoá ngoại thật** cho MỌI entity.
+    ///
+    /// Bản đầu (12/09/2026) chỉ khai hai cột `Guid?` trong <see cref="BaseEntity"/> và để chú
+    /// thích nói rằng chúng "trỏ `PERSON.id`" — nhưng **không gì ép điều đó**. Một cột `uuid`
+    /// không ràng buộc thì chứa được GUID rác, hoặc trỏ người đã bị xoá, và câu hỏi "ai tạo bản
+    /// ghi này" trả về một id không join được. Dấu vết audit sai còn tệ hơn không có dấu vết:
+    /// người đọc tin vào nó.
+    ///
+    /// `SET NULL` khi người bị xoá — cùng hành vi với `NguoiTaoId` cũ mà hai cột này thay thế.
+    /// Không dùng `CASCADE`: xoá một người không được kéo theo mọi bản ghi họ từng tạo.
+    ///
+    /// `NGUOI_DUNG` **tự tham chiếu** — người tạo ra một người cũng là một người. Không bỏ qua
+    /// nó (ai tạo tài khoản này là câu hỏi chính đáng), nhưng phải khai hai quan hệ TÁCH RỜI:
+    /// để mặc định thì EF thấy hai navigation cùng trỏ `NguoiDung` và tưởng chúng là hai đầu
+    /// của MỘT quan hệ 1-1, rồi ném "dependent side could not be determined".
+    /// Seeder tạo người đầu tiên khi chưa có ai để trỏ tới — `CreatedById` null, ca hợp lệ.
+    /// </summary>
+    private static void ApDungKhoaNgoaiChoCotAudit(ModelBuilder modelBuilder)
+    {
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (!typeof(BaseEntity).IsAssignableFrom(entityType.ClrType)) continue;
+
+            // `HasOne(typeof(NguoiDung))` KHÔNG dùng được ở đây: nó không nói rõ quan hệ này
+            // đi qua property nào, nên EF tạo cột bóng `CreatedById1` bên cạnh cột thật —
+            // 108 cột rác trong snapshot, phát hiện khi sinh migration lần đầu (13/09/2026).
+            // `HasOne` theo TÊN NAVIGATION thì EF ghép đúng vào `CreatedById` sẵn có.
+            var e = modelBuilder.Entity(entityType.ClrType);
+
+            e.HasOne(nameof(BaseEntity.CreatedBy))
+                .WithMany()
+                .HasForeignKey(nameof(BaseEntity.CreatedById))
+                .OnDelete(DeleteBehavior.SetNull);
+
+            e.HasOne(nameof(BaseEntity.UpdatedBy))
+                .WithMany()
+                .HasForeignKey(nameof(BaseEntity.UpdatedById))
+                .OnDelete(DeleteBehavior.SetNull);
+        }
     }
 
     /// <summary>

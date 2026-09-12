@@ -20,7 +20,7 @@ public static class ClaimTenant
     /// tách hai bảng.
     ///
     /// Vì sao NameIdentifier giữ id người chứ không đổi sang id tài khoản: 12 khoá ngoại
-    /// nghiệp vụ (`HocVienId`, `NguoiTaoId`, `NguoiChamId`…) trỏ tới NGUOI_DUNG, và mọi handler
+    /// nghiệp vụ (`HocVienId`, `CreatedById`, `NguoiChamId`…) trỏ tới NGUOI_DUNG, và mọi handler
     /// đang so `currentUser.UserId` với chúng. Đổi nghĩa claim cũ sẽ làm mọi so sánh đó sai
     /// **âm thầm** — không lỗi biên dịch, chỉ trả về rỗng.
     ///

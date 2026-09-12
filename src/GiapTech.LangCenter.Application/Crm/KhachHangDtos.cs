@@ -104,7 +104,7 @@ public class LuuKhachHangValidator : AbstractValidator<LuuKhachHangCommand>
     }
 }
 
-public class LuuKhachHangHandler(IAppDbContext db, ICurrentUser currentUser)
+public class LuuKhachHangHandler(IAppDbContext db)
     : IRequestHandler<LuuKhachHangCommand, Guid>
 {
     public async Task<Guid> Handle(LuuKhachHangCommand request, CancellationToken ct)
@@ -148,7 +148,6 @@ public class LuuKhachHangHandler(IAppDbContext db, ICurrentUser currentUser)
                 //
                 // `UserId` chứ không `TaiKhoanId`: đây là khoá ngoại nghiệp vụ trỏ `NGUOI_DUNG`
                 // — lẫn hai thứ này trả rỗng im lặng, không có lỗi biên dịch.
-                NguoiTaoId = currentUser.UserId
             };
             db.KhachHangs.Add(kh);
         }

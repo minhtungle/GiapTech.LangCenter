@@ -172,7 +172,7 @@ public class TaoLopHocValidator : AbstractValidator<TaoLopHocCommand>
     }
 }
 
-public class TaoLopHocHandler(IAppDbContext db, ICurrentUser currentUser)
+public class TaoLopHocHandler(IAppDbContext db)
     : IRequestHandler<TaoLopHocCommand, Guid>
 {
     public async Task<Guid> Handle(TaoLopHocCommand request, CancellationToken ct)
@@ -194,7 +194,6 @@ public class TaoLopHocHandler(IAppDbContext db, ICurrentUser currentUser)
             GhiChu = request.GhiChu,
             // Wizard lưu nháp giữa chừng — lớp chỉ thành thật khi bấm Hoàn tất.
             TrangThai = TrangThaiLopHoc.Nhap,
-            NguoiTaoId = currentUser.UserId
         };
         db.LopHocs.Add(lop);
 

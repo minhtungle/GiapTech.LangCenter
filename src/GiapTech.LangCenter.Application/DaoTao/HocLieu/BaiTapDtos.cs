@@ -132,7 +132,7 @@ public class TaoBaiTapValidator : AbstractValidator<TaoBaiTapCommand>
     }
 }
 
-public class TaoBaiTapHandler(IAppDbContext db, IPhamViLopHoc phamVi, ICurrentUser currentUser)
+public class TaoBaiTapHandler(IAppDbContext db, IPhamViLopHoc phamVi)
     : IRequestHandler<TaoBaiTapCommand, Guid>
 {
     public async Task<Guid> Handle(TaoBaiTapCommand request, CancellationToken ct)
@@ -146,7 +146,6 @@ public class TaoBaiTapHandler(IAppDbContext db, IPhamViLopHoc phamVi, ICurrentUs
             TieuDe = request.TieuDe.Trim(),
             MoTa = request.MoTa,
             HanNop = request.HanNop,
-            NguoiTaoId = currentUser.UserId
         };
         db.BaiTaps.Add(bt);
 

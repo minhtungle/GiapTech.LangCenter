@@ -233,6 +233,25 @@ public enum TrangThaiKhachHang
     TuChoi = 3
 }
 
+/// <summary>
+/// Khách đến từ đâu (13/09/2026) — **lưu thành cột**, khác `TrangThaiKhachHang` ở trên.
+///
+/// Vì sao không suy từ `CreatedById is null`: null ở đó đã mang sẵn hai nghĩa khác — khách tạo
+/// trước 12/09/2026 (chưa có cột audit), và người tạo đã bị xoá (FK `SET NULL`). Chồng nghĩa
+/// thứ ba lên thì "khách tự đăng ký" và "dữ liệu cũ" thành không phân biệt được, mà đó đúng là
+/// con số báo cáo doanh số của nhân viên kinh doanh dựa vào.
+/// </summary>
+public enum NguonKhachHang
+{
+    /// <summary>Nhân viên tạo hồ sơ — `CreatedById` là người phụ trách. Mặc định, giữ nguyên
+    /// nghĩa cho mọi hàng đã có.</summary>
+    NhanVienTao = 0,
+
+    /// <summary>Khách tự tìm đến / tự đăng ký. Không có nhân viên nào phụ trách, nên đơn của
+    /// khách này KHÔNG tính vào doanh số cá nhân.</summary>
+    TuDangKy = 1
+}
+
 /// <summary>Loại đơn hàng (FR-18/FR-20) — suy từ khoá ngoại nào có giá trị, không lưu cột.</summary>
 public enum LoaiDonHang
 {
