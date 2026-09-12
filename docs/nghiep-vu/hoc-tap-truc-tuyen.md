@@ -7,35 +7,44 @@
 
 ## Luồng chủ sản phẩm mô tả
 
-Ba câu, mỗi câu chốt một ranh giới:
+Ba bước, chốt lại 13/09/2026 — *"rất đơn giản, tách biệt không chồng chéo"*:
 
-| # | Phát biểu | Ranh giới nó chốt |
+```
+1. LMS:  tạo các khoá học elearning
+2. CRM:  học viên mua hàng → ghi nhận DOANH THU (như mọi đơn hàng khác)
+3. LMS:  quản trị tạo tài khoản học viên, vào khoá elearning, thêm quyền truy cập
+```
+
+### Điểm cốt lõi: KHÔNG có liên kết tự động giữa hai bước
+
+Bước 2 và bước 3 **không nối với nhau bằng code**. CRM ghi tiền, LMS cấp quyền, người điều phối
+là **con người** — quản trị viên nhìn đơn rồi vào LMS cấp quyền.
+
+Nghe như thiếu sót, nhưng đó chính là chỗ *"tách biệt không chồng chéo"*:
+
+| | Nếu nối tự động | Luồng đã chốt |
 |---|---|---|
-| 1 | Dữ liệu và doanh thu khách hàng đều lưu tại **CRM** | Tiền và hồ sơ khách ở CRM, không chảy sang LMS |
-| 2 | **Quản trị** khởi tạo tài khoản và gán với hồ sơ (người dùng **hoặc khách hàng**) | Tài khoản do quản trị cấp, và gán được cho **hai** loại hồ sơ |
-| 3 | **LMS** quản lý kênh học tập cho **tất cả** học viên (khoá học, elearning) | Nội dung học ở LMS, không phân biệt học viên đến từ đâu |
+| CRM phải biết | có những khoá online nào, món nào mở khoá nào | **không biết gì** về elearning |
+| Bảng giá | `SAN_PHAM` phải phân loại hàng hoá / khoá online | giữ nguyên, khoá online là một món như mọi món |
+| Khi sai | đơn ghi nhầm món → học viên vào nhầm khoá, phải sửa hai bên | quản trị cấp nhầm → sửa một chỗ ở LMS |
+| Ca không mua mà vẫn học | phải thêm nhánh ngoại lệ (học thử, tặng, học bù) | **không phải ca đặc biệt** — mọi ghi danh đều do người cấp |
 
-Câu 3 là câu quan trọng nhất và **sửa một hiểu nhầm**: elearning không phải một hệ thống thứ tư,
-cũng không thuộc CRM. Nó là **một kênh học tập nữa của LMS**, song song với lớp offline.
+Cái giá phải trả: bán nhiều thì quản trị cấp quyền bằng tay nhiều. Khi nào thành gánh nặng thật
+thì mới tự động hoá — và lúc đó đã có dữ liệu thật để biết nối theo tiêu chí nào. Tự động hoá
+trước khi biết là đoán.
 
 ```
 CRM                              LMS
 ├── KHACH_HANG  (hồ sơ khách)    ├── LOP_HOC     — kênh 1: học theo lớp, có lịch, có giáo viên
-├── DANG_KY_KHOA_HOC (đơn)       └── KHOA_ONLINE — kênh 2: tự học, không lịch, không giáo viên
-├── KHOA_HOC   (bảng giá lớp)              ↑
-└── SAN_PHAM   (bảng giá món) ──────────────┘
-         └── đơn thanh toán → mở quyền học
+├── DANG_KY_KHOA_HOC (đơn+tiền)  └── KHOA_ONLINE — kênh 2: tự học, không lịch, không giáo viên
+├── KHOA_HOC   (bảng giá lớp)             ↑
+└── SAN_PHAM   (bảng giá món)             │
+                                  quản trị cấp quyền bằng tay
+                                  (không có FK nào nối sang CRM)
 ```
 
-**CRM bán, LMS dạy.** Danh mục bán hàng ở CRM chỉ là *bảng giá* — không chứa bài học nào. Nội
-dung học nằm ở LMS.
-
-**Khoá online bán như một SẢN PHẨM** (chốt 13/09/2026), **không** dùng chung `KHOA_HOC`:
-`KHOA_HOC` là khoá dạy theo lớp, có `so_buoi`, và `LOP_HOC` gắn tối đa 3 khoá đó để đối chiếu
-khi xếp lớp. Khoá online không có buổi nào và không xếp lớp — nhét chung sẽ làm cảnh báo lệch
-khoá (FR-21) so nhầm.
-
----
+**CRM bán và giữ tiền, LMS dạy.** Không bảng nào của LMS trỏ sang CRM, và ngược lại — trừ
+`KHACH_HANG.nguoi_dung_id` đã có sẵn từ FR-21.
 
 ## Vì sao KHÔNG tách hệ thống thứ tư
 
@@ -51,62 +60,59 @@ Chủ sản phẩm có hỏi. Câu trả lời là **không**, cùng lý lẽ đ
 Elearning vào LMS dưới dạng **nhóm chức năng mới trong `ChucNang`**, hiện trong sidebar LMS như
 Lớp học và Bài tập hiện nay.
 
+> Lưu ý: *"tách biệt"* trong yêu cầu của chủ sản phẩm nói về **luồng nghiệp vụ** (CRM ghi tiền,
+> LMS cấp quyền, không tự động nối), **không** phải tách database hay service. Hai thứ khác nhau
+> — và cách làm ở đây đạt được cái thứ nhất mà không phải trả giá cho cái thứ hai.
+
 ---
 
-## FR-25 — Tài khoản gán cho khách hàng
+## FR-25 — Tài khoản học viên cho người mua khoá online
 
-### Vấn đề hiện tại
+### Vấn đề
 
-`TAI_KHOAN.nguoi_dung_id` chỉ trỏ `NGUOI_DUNG`. Nhưng câu 2 nói tài khoản gán được cho
-**"người dùng hoặc khách hàng"**, và khách mua khoá online thì **chưa phải học viên** —
-không có buổi học nào, không thuộc lớp nào.
+`TAI_KHOAN.nguoi_dung_id` chỉ trỏ `NGUOI_DUNG`. Người mua khoá online là `KHACH_HANG` ở CRM và
+**chưa phải học viên** — không thuộc lớp nào, không có buổi học nào.
 
-Hiện FR-21 xử lý bằng cách **tạo `NGUOI_DUNG` khi duyệt vào lớp**
-(`YeuCauXepLopDtos.cs:188`). Cách đó đúng cho lớp offline, nhưng khoá online không đi qua bước
-duyệt xếp lớp nào cả.
+Hiện FR-21 tạo `NGUOI_DUNG` khi **duyệt vào lớp** (`YeuCauXepLopDtos.cs:188`). Khoá online không
+đi qua bước duyệt xếp lớp nào.
 
-### Ba phương án, chọn phương án 3
+### Cách làm: quản trị tạo, không tự động
 
-| | Cách làm | Vấn đề |
-|---|---|---|
-| 1 | Thêm `TAI_KHOAN.khach_hang_id` nullable, loại trừ với `nguoi_dung_id` | Mọi truy vấn "tài khoản này là ai" phải rẽ hai nhánh. Phân quyền, nhật ký, `ICurrentUser.UserId` đều phải sửa |
-| 2 | Bỏ `KHACH_HANG`, dồn hết vào `NGUOI_DUNG` | Phá ranh giới CRM/LMS, trái câu 1 |
-| 3 | **Khách mua hàng → tự tạo `NGUOI_DUNG` tối thiểu, nối bằng `KHACH_HANG.nguoi_dung_id` đã có** | Không đổi schema tài khoản |
+Đúng bước 3 của luồng — **quản trị viên LMS tạo tài khoản học viên**. Không đổi schema
+`TAI_KHOAN`, không thêm nhánh tự động nào.
 
-**Chọn 3.** Lý do: `KHACH_HANG.nguoi_dung_id` **đã tồn tại và đã dùng** — FR-21 đang làm đúng
-việc này khi duyệt vào lớp. Ta chỉ mở rộng thời điểm gọi nó: thêm một thời điểm nữa là *khi đơn
-khoá online được thanh toán*.
+Màn Học viên (`/lms/hoc-vien`) đã có sẵn nút tạo người dùng + cấp tài khoản. Việc duy nhất phải
+thêm: khi tạo học viên, cho **chọn một `KHACH_HANG` đã có** để nối `nguoi_dung_id` — tránh một
+người thành hai hồ sơ ở hai hệ thống.
 
-`NGUOI_DUNG` ở đây là **danh tính để đăng nhập và học**, không phải "nhân sự". Đó cũng đúng với
-thiết kế đã chốt 07/09: *người ≠ tài khoản*, và `NGUOI_DUNG` sống lâu hơn cả hai.
+```
+Quản trị vào /lms/hoc-vien → Thêm học viên
+  ├── nhập họ tên, liên hệ
+  ├── [tuỳ chọn] chọn khách hàng CRM tương ứng → nối KHACH_HANG.nguoi_dung_id
+  └── cấp tài khoản đăng nhập (username + mật khẩu tạm)
+Rồi vào khoá elearning → Thêm học viên vào khoá  (FR-26)
+```
+
+**Ô chọn khách hàng là TUỲ CHỌN**, không bắt buộc: học viên học thử hay được tặng khoá thì không
+có đơn nào ở CRM cả. Bắt buộc nối sẽ biến ca hợp lệ thành ca không nhập được.
 
 > **Không copy họ tên/email từ `KHACH_HANG` sang `NGUOI_DUNG`** — nối bằng khoá ngoại. Copy thì
 > hai bên trôi khỏi nhau và không biết bên nào đúng (lỗi đã gặp 07/09/2026).
 
-### Luồng
+### Ranh giới hệ thống con
 
-```
-1. CRM: nhân viên tạo đơn mua SẢN PHẨM là khoá online
-        (hoặc khách tự đăng ký — KHACH_HANG.nguon = TuDangKy)
-2. CRM: đơn được đánh dấu đã thanh toán
-3. → tự tạo NGUOI_DUNG (LoaiNguoiDung = HocVien) + HO_SO_HOC_VIEN
-        nếu KHACH_HANG.nguoi_dung_id còn null
-4. → mở quyền học: ghi GHI_DANH_KHOA_ONLINE
-5. Quản trị: cấp tài khoản đăng nhập, gán vào NGUOI_DUNG vừa tạo
-6. Học viên đăng nhập → thấy khoá đã mua ở LMS
-```
+Màn này ở LMS nhưng đọc `KHACH_HANG` của CRM → là **cầu nối chéo thứ hai** sau FR-21. Phải khai
+vào `CauNoiDuocPhep` của `RanhGioiHeThongConTests`, và khai cả `db.KhachHangs` vào
+`DbSetCuaHeThong` — lỗ hổng đã vá 12/09 chính là kiểu này lọt qua.
 
-**Bước 5 do quản trị làm, không tự động** — đúng câu 2. Không tự sinh mật khẩu gửi email ở bản
-này: `IEmailSender` chưa nối SMTP thật (nợ N10), và tự tạo tài khoản từ endpoint công khai là
-đúng bề mặt tấn công mà nợ N3 đang cảnh báo.
+Chỉ đọc `ho_ten` + `so_dien_thoai` để người dùng chọn đúng người. **Không đọc số tiền** — quy
+tắc đã chốt 12/09: chỉ CRM nắm tiền.
 
 ### Cái bẫy: `LoaiNguoiDung.HocVien` không phải quyền
 
 `LoaiNguoiDung` chỉ dùng để **lọc danh sách**, không bao giờ để phân quyền (quy tắc #9). Người
 mua khoá online nhận nhóm quyền "Học viên" như mọi học viên khác; việc họ thấy gì do
 `GHI_DANH_KHOA_ONLINE` quyết định, không do loại người dùng.
-
----
 
 ## FR-26 — Khoá học trực tuyến
 
@@ -117,42 +123,47 @@ KHOA_ONLINE                      BAI_HOC_ONLINE
 ├── id                           ├── id
 ├── ten                          ├── khoa_online_id  → KHOA_ONLINE (Cascade)
 ├── mo_ta                        ├── tieu_de
-├── san_pham_id  → SAN_PHAM ?    ├── noi_dung        (markdown)
-├── trang_thai                   ├── thu_tu
-└── (4 cột audit)                ├── cong_khai       bool
+├── trang_thai                   ├── noi_dung        (markdown)
+└── (4 cột audit)                ├── thu_tu
+                                 ├── cong_khai       bool
                                  └── (4 cột audit)
 
 GHI_DANH_KHOA_ONLINE             TIEN_DO_BAI_HOC
 ├── id                           ├── id
 ├── khoa_online_id               ├── bai_hoc_online_id
 ├── hoc_vien_id  → NGUOI_DUNG    ├── hoc_vien_id  → NGUOI_DUNG
-├── dang_ky_id   → DANG_KY ?     ├── hoan_thanh_luc
-├── ngay_bat_dau                 └── (4 cột audit)
-├── ngay_het_han ?               UNIQUE(bai_hoc_online_id, hoc_vien_id)
+├── ngay_bat_dau                 ├── hoan_thanh_luc
+├── ngay_het_han ?               └── (4 cột audit)
+├── ghi_chu ?                    UNIQUE(bai_hoc_online_id, hoc_vien_id)
 └── UNIQUE(khoa_online_id, hoc_vien_id)
 ```
 
-Năm điểm thiết kế:
+**Bốn bảng, không bảng nào trỏ sang CRM.** Đó là điều đáng chú ý nhất: không có `khoa_hoc_id`,
+không có `san_pham_id`, không có `dang_ky_id`. Quản trị cấp quyền bằng tay nên LMS không cần
+biết đơn hàng nào tồn tại.
 
-- **`san_pham_id` nullable** — nối sang bảng giá để biết "mua món này thì mở khoá nào". Nullable
-  vì khoá nội bộ không bán (học bù, học thử, tài liệu miễn phí cho học viên đang học lớp) là ca
-  hợp lệ, không phải dữ liệu thiếu. `RESTRICT` khi xoá: xoá món đang bán không được âm thầm cắt
-  đường mở quyền học.
-- **`SAN_PHAM` nay có hai loại hàng.** Cần thêm `SAN_PHAM.loai` (`HangHoa` / `KhoaOnline`) chứ
-  không suy từ `san_pham_id` có bản ghi `KHOA_ONLINE` trỏ về hay không — suy ngược như vậy thì
-  một khoá online chưa soạn xong sẽ bị tính là hàng vật lý. Hai hệ quả bắt buộc:
+Bốn điểm thiết kế:
 
-  | | Hàng hoá | Khoá online |
-  |---|---|---|
-  | `SoLuong` | mua 3 quyển = 1 dòng `SoLuong=3` | **luôn 1** — ép ở handler như `KHOA_HOC` đang làm, không tin client |
-  | Tồn kho (nợ N17) | có giới hạn | **không áp dụng** — bán bao nhiêu suất cũng được |
-
-- **`dang_ky_id` nullable**: ghi danh thường sinh từ đơn CRM, nhưng quản trị cấp tay được (học
-  thử, đền bù, học viên lớp offline được tặng khoá ôn). Null = cấp tay — đó là **thông tin**,
-  không phải thiếu dữ liệu.
+- **`ghi_chu` thay cho `dang_ky_id`**: ai cấp và vì sao — *"mua đơn #123"*, *"học thử"*,
+  *"tặng kèm lớp IELTS"*. Chữ tự do chứ không khoá ngoại: nối FK sang `DANG_KY_KHOA_HOC` là dựng
+  lại đúng cái chồng chéo vừa bỏ. Ai cấp thì **`created_by_id`** đã trả lời (cột audit, 12/09).
 - **`ngay_het_han` nullable**: null = học vĩnh viễn.
 - **UNIQUE ở tầng DB**, không phải `if` trong handler (quy tắc #8) — thêm `InlineData` vào
-  `DongThoiTests`.
+  `DongThoiTests`. Cấp quyền hai lần cho cùng người là thao tác tay dễ xảy ra.
+- **Không cột "đã thanh toán"** ở `GHI_DANH`: tiền là việc của CRM. Có bản ghi ghi danh nghĩa là
+  quản trị đã quyết định cho học — căn cứ nằm ở `ghi_chu`.
+
+### Việc KHÔNG phải làm nữa
+
+Bản đặc tả trước (cùng ngày) có hai việc nay **bỏ hẳn**, vì chúng chỉ tồn tại để phục vụ liên
+kết tự động:
+
+| Đã bỏ | Vì sao |
+|---|---|
+| `SAN_PHAM.loai` (`HangHoa`/`KhoaOnline`) | CRM không cần biết món nào là khoá online. Khoá online bán như mọi món khác, hoặc không bán qua CRM cũng được |
+| `KHOA_ONLINE.san_pham_id` | Không có bước "mua món này thì mở khoá kia" |
+
+Kéo theo: **`SoLuong` và tồn kho (nợ N17) không phải xử lý gì thêm** — vì `SAN_PHAM` không đổi.
 
 ### Hết hạn: chặn, trừ bài công khai
 
@@ -233,13 +244,12 @@ khoá online không có giáo viên phụ trách, nên **ai chấm** phải nói
 
 ---
 
-## Thứ tự làm — 5 bước, commit riêng
+## Thứ tự làm — 4 bước, commit riêng
 
 | Bước | Nội dung | Rủi ro |
 |---|---|---|
-| 0 | `SAN_PHAM.loai` (`HangHoa`/`KhoaOnline`) + ép `SoLuong=1` cho khoá online | Thấp — cột mới, mặc định `HangHoa` giữ nguyên nghĩa 3 hàng đang có |
-| 1 | FR-25: tự tạo `NGUOI_DUNG` khi đơn thanh toán + màn gán tài khoản | Thấp — dùng cột đã có |
-| 2 | FR-26 schema + soạn khoá/bài học + `IPhamViKhoaOnline` | Trung bình — tầng phạm vi mới |
+| 1 | FR-25: ô chọn khách hàng CRM khi tạo học viên | Thấp — dùng cột đã có |
+| 2 | FR-26 schema + soạn khoá/bài học + cấp quyền + `IPhamViKhoaOnline` | Trung bình — tầng phạm vi mới |
 | 3 | FR-26 tiến độ học + màn học viên | Thấp |
 | 4 | FR-27 nới `BAI_TAP` + chấm bài | **Cao — đụng FR-11/12 đang chạy** |
 
@@ -252,7 +262,7 @@ phải hoãn thì elearning vẫn dùng được ở mức "học và theo dõi 
 |---|---|---|
 | Khoá có **video** không? | **Tạm thời chưa cần** | Bài học là markdown + tệp đính kèm. Không đụng bài toán streaming/băng thông VPS. Nếu sau này cần thì bàn riêng, đừng gộp |
 | **Hết hạn** có xem lại được? | **Không, trừ bài công khai** | `cong_khai` nằm ở bài học; truy vấn đọc được là **hợp của hai tập** |
-| Gắn **nhiều khoá CRM**? | **Không liên quan khoá CRM** — bán như một **sản phẩm** | Thêm `SAN_PHAM.loai`; `KHOA_ONLINE.san_pham_id` thay cho `khoa_hoc_id` |
+| Gắn **nhiều khoá CRM**? | **Không liên quan khoá CRM** | LMS **không trỏ sang CRM** chút nào. Quản trị cấp quyền bằng tay, nên không cần `khoa_hoc_id` lẫn `san_pham_id`. `SAN_PHAM` giữ nguyên |
 
 ## Liên quan
 
