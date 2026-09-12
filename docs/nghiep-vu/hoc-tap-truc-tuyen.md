@@ -2,6 +2,8 @@
 
 > **Trạng thái: ĐẶC TẢ, chưa code.** Viết 13/09/2026 theo yêu cầu chủ sản phẩm, chờ duyệt trước
 > khi làm (quy ước: mô tả FR trước khi viết dòng code nào — CLAUDE.md mục 5).
+>
+> Ba câu hỏi mở đã được chốt cùng ngày — xem [mục cuối](#ba-câu-đã-chốt-13092026).
 
 ## Luồng chủ sản phẩm mô tả
 
@@ -17,16 +19,21 @@ Câu 3 là câu quan trọng nhất và **sửa một hiểu nhầm**: elearning
 cũng không thuộc CRM. Nó là **một kênh học tập nữa của LMS**, song song với lớp offline.
 
 ```
-CRM                          LMS
-├── KHACH_HANG (hồ sơ)       ├── LOP_HOC      — kênh 1: học theo lớp, có lịch, có giáo viên
-├── DANG_KY_KHOA_HOC (đơn)   └── KHOA_ONLINE  — kênh 2: tự học, không lịch, không giáo viên
-└── KHOA_HOC (bảng giá)               ↑
-         │                            │
-         └────── đơn đã thanh toán mở quyền học ──┘
+CRM                              LMS
+├── KHACH_HANG  (hồ sơ khách)    ├── LOP_HOC     — kênh 1: học theo lớp, có lịch, có giáo viên
+├── DANG_KY_KHOA_HOC (đơn)       └── KHOA_ONLINE — kênh 2: tự học, không lịch, không giáo viên
+├── KHOA_HOC   (bảng giá lớp)              ↑
+└── SAN_PHAM   (bảng giá món) ──────────────┘
+         └── đơn thanh toán → mở quyền học
 ```
 
-**CRM bán, LMS dạy.** `KHOA_HOC` của CRM là *dòng trong bảng giá* (tên, giá, số buổi) — nó
-không chứa bài học nào. Nội dung học nằm ở LMS.
+**CRM bán, LMS dạy.** Danh mục bán hàng ở CRM chỉ là *bảng giá* — không chứa bài học nào. Nội
+dung học nằm ở LMS.
+
+**Khoá online bán như một SẢN PHẨM** (chốt 13/09/2026), **không** dùng chung `KHOA_HOC`:
+`KHOA_HOC` là khoá dạy theo lớp, có `so_buoi`, và `LOP_HOC` gắn tối đa 3 khoá đó để đối chiếu
+khi xếp lớp. Khoá online không có buổi nào và không xếp lớp — nhét chung sẽ làm cảnh báo lệch
+khoá (FR-21) so nhầm.
 
 ---
 
@@ -79,9 +86,11 @@ thiết kế đã chốt 07/09: *người ≠ tài khoản*, và `NGUOI_DUNG` s�
 ### Luồng
 
 ```
-1. CRM: nhân viên tạo đơn (hoặc khách tự đăng ký — KHACH_HANG.nguon = TuDangKy)
+1. CRM: nhân viên tạo đơn mua SẢN PHẨM là khoá online
+        (hoặc khách tự đăng ký — KHACH_HANG.nguon = TuDangKy)
 2. CRM: đơn được đánh dấu đã thanh toán
-3. → tự tạo NGUOI_DUNG (LoaiNguoiDung = HocVien) + HO_SO_HOC_VIEN nếu KHACH_HANG.nguoi_dung_id null
+3. → tự tạo NGUOI_DUNG (LoaiNguoiDung = HocVien) + HO_SO_HOC_VIEN
+        nếu KHACH_HANG.nguoi_dung_id còn null
 4. → mở quyền học: ghi GHI_DANH_KHOA_ONLINE
 5. Quản trị: cấp tài khoản đăng nhập, gán vào NGUOI_DUNG vừa tạo
 6. Học viên đăng nhập → thấy khoá đã mua ở LMS
@@ -108,9 +117,10 @@ KHOA_ONLINE                      BAI_HOC_ONLINE
 ├── id                           ├── id
 ├── ten                          ├── khoa_online_id  → KHOA_ONLINE (Cascade)
 ├── mo_ta                        ├── tieu_de
-├── khoa_hoc_id  → KHOA_HOC ?    ├── noi_dung        (text/markdown)
+├── san_pham_id  → SAN_PHAM ?    ├── noi_dung        (markdown)
 ├── trang_thai                   ├── thu_tu
-└── (4 cột audit)                └── (4 cột audit)
+└── (4 cột audit)                ├── cong_khai       bool
+                                 └── (4 cột audit)
 
 GHI_DANH_KHOA_ONLINE             TIEN_DO_BAI_HOC
 ├── id                           ├── id
@@ -122,17 +132,43 @@ GHI_DANH_KHOA_ONLINE             TIEN_DO_BAI_HOC
 └── UNIQUE(khoa_online_id, hoc_vien_id)
 ```
 
-Bốn điểm thiết kế:
+Năm điểm thiết kế:
 
-- **`khoa_hoc_id` nullable**: khoá online thường tương ứng một khoá bán ra của CRM, nhưng không
-  bắt buộc — trung tâm có thể làm khoá nội bộ miễn phí. `RESTRICT` khi xoá, cùng lẽ với
-  `LOP_HOC_KHOA_HOC` (12/09): xoá khoá đang bán không được âm thầm phá căn cứ đối chiếu.
+- **`san_pham_id` nullable** — nối sang bảng giá để biết "mua món này thì mở khoá nào". Nullable
+  vì khoá nội bộ không bán (học bù, học thử, tài liệu miễn phí cho học viên đang học lớp) là ca
+  hợp lệ, không phải dữ liệu thiếu. `RESTRICT` khi xoá: xoá món đang bán không được âm thầm cắt
+  đường mở quyền học.
+- **`SAN_PHAM` nay có hai loại hàng.** Cần thêm `SAN_PHAM.loai` (`HangHoa` / `KhoaOnline`) chứ
+  không suy từ `san_pham_id` có bản ghi `KHOA_ONLINE` trỏ về hay không — suy ngược như vậy thì
+  một khoá online chưa soạn xong sẽ bị tính là hàng vật lý. Hai hệ quả bắt buộc:
+
+  | | Hàng hoá | Khoá online |
+  |---|---|---|
+  | `SoLuong` | mua 3 quyển = 1 dòng `SoLuong=3` | **luôn 1** — ép ở handler như `KHOA_HOC` đang làm, không tin client |
+  | Tồn kho (nợ N17) | có giới hạn | **không áp dụng** — bán bao nhiêu suất cũng được |
+
 - **`dang_ky_id` nullable**: ghi danh thường sinh từ đơn CRM, nhưng quản trị cấp tay được (học
-  thử, đền bù). Null = cấp tay, và đó là thông tin chứ không phải thiếu dữ liệu.
-- **`ngay_het_han` nullable**: null = học vĩnh viễn. Có hạn thì hết hạn **chặn đọc bài mới**,
-  không xoá tiến độ đã có.
+  thử, đền bù, học viên lớp offline được tặng khoá ôn). Null = cấp tay — đó là **thông tin**,
+  không phải thiếu dữ liệu.
+- **`ngay_het_han` nullable**: null = học vĩnh viễn.
 - **UNIQUE ở tầng DB**, không phải `if` trong handler (quy tắc #8) — thêm `InlineData` vào
   `DongThoiTests`.
+
+### Hết hạn: chặn, trừ bài công khai
+
+Chốt 13/09/2026: **hết hạn thì không xem được, trừ bài đánh dấu `cong_khai`.**
+
+- Hết hạn **không xoá** `TIEN_DO_BAI_HOC` — gia hạn lại thì học tiếp từ chỗ cũ, và tiến độ là
+  dấu vết học tập của người ta, không phải thứ để dọn.
+- `cong_khai = true` → **ai đăng nhập cũng xem được**, không cần ghi danh khoá đó. Dùng cho bài
+  giới thiệu, bài mẫu.
+- **Không có endpoint ẩn danh** cho bài công khai ở bản này: "công khai" ở đây nghĩa là *trong
+  trung tâm*, vẫn nằm trong ranh giới tenant. Mở ra Internet là bề mặt tấn công mới và phải bàn
+  riêng — xem nợ N3.
+
+> Cái bẫy: `cong_khai` nằm ở **bài học**, không ở khoá. Nên truy vấn "học viên này đọc được bài
+> nào" là **hợp của hai tập** — bài thuộc khoá còn hạn, và bài công khai của mọi khoá. Viết
+> thành hai truy vấn rồi `UNION` thì dễ đúng hơn một `WHERE` lồng nhau.
 
 ### Quyền
 
@@ -149,10 +185,21 @@ Ba chức năng mới trong `ChucNang`, đều thuộc `HeThong.Lms`:
 Ba tầng hiện có (`RequirePermission` · Query Filter · `IPhamViLopHoc`) **không đủ**:
 `IPhamViLopHoc` lọc theo `LOP_HOC`, mà khoá online không có lớp nào.
 
-Cần `IPhamViKhoaOnline`: học viên chỉ đọc được khoá **mình đã ghi danh và chưa hết hạn**. Đây là
-chỗ rò rỉ nặng nhất nếu sai — mua một khoá đọc được tất cả. **Bắt buộc có test kiểu
-`Hoc_vien_chi_doc_khoa_minh_ghi_danh` kèm kiểm chiều ngược**, theo đúng bài học từ
-`Hoc_vien_chi_thay_lop_minh_dang_hoc`: nhánh phạm vi không test nào canh thì xoá đi vẫn xanh.
+Cần `IPhamViKhoaOnline` với **ba nhánh**, mỗi nhánh một test riêng:
+
+| Nhánh | Điều kiện | Rủi ro nếu sai |
+|---|---|---|
+| Ghi danh còn hạn | `GHI_DANH` có và `ngay_het_han` null hoặc chưa qua | Mua một khoá đọc được tất cả |
+| Bài công khai | `BAI_HOC_ONLINE.cong_khai` | Đánh dấu nhầm → lộ toàn bộ nội dung trả phí |
+| Người soạn | có `KhoaOnline` + `Sua` | Giáo vụ không sửa được khoá mình soạn |
+
+**Bắt buộc test cả ba kèm kiểm chiều ngược**, theo đúng bài học từ
+`Hoc_vien_chi_thay_lop_minh_dang_hoc` và `Lop_nhap_chi_nguoi_tao_thay` (13/09): nhánh phạm vi
+không test nào canh thì xoá đi vẫn xanh cả bộ.
+
+Nhánh **hết hạn** đặc biệt dễ xanh giả: test dựng ghi danh mặc định `ngay_het_han = null` thì
+nhánh kiểm hạn không bao giờ chạy. Phải có ca ghi danh **đã hết hạn** và khẳng định đọc bài
+thường → 404, bài công khai → 200.
 
 ---
 
@@ -186,10 +233,11 @@ khoá online không có giáo viên phụ trách, nên **ai chấm** phải nói
 
 ---
 
-## Thứ tự làm — 4 bước, commit riêng
+## Thứ tự làm — 5 bước, commit riêng
 
 | Bước | Nội dung | Rủi ro |
 |---|---|---|
+| 0 | `SAN_PHAM.loai` (`HangHoa`/`KhoaOnline`) + ép `SoLuong=1` cho khoá online | Thấp — cột mới, mặc định `HangHoa` giữ nguyên nghĩa 3 hàng đang có |
 | 1 | FR-25: tự tạo `NGUOI_DUNG` khi đơn thanh toán + màn gán tài khoản | Thấp — dùng cột đã có |
 | 2 | FR-26 schema + soạn khoá/bài học + `IPhamViKhoaOnline` | Trung bình — tầng phạm vi mới |
 | 3 | FR-26 tiến độ học + màn học viên | Thấp |
@@ -198,13 +246,13 @@ khoá online không có giáo viên phụ trách, nên **ai chấm** phải nói
 Bước 4 tách riêng và làm cuối **có chủ ý**: ba bước đầu không đụng gì đang chạy, nên nếu bước 4
 phải hoãn thì elearning vẫn dùng được ở mức "học và theo dõi tiến độ".
 
-## Câu chưa chốt, cần chủ sản phẩm trả lời trước bước 2
+## Ba câu đã chốt (13/09/2026)
 
-1. **Khoá online có video không?** MinIO đang dùng cho ảnh và tệp hồ sơ. Video là bài toán khác
-   (dung lượng, streaming, băng thông VPS) — nếu có thì nên bàn riêng, đừng gộp vào bước 2.
-2. **Hết hạn khoá**: hết hạn rồi có xem lại bài đã học được không, hay chặn hoàn toàn?
-3. **Một khoá online có gắn nhiều khoá CRM không?** (`LOP_HOC` đã cho gắn tối đa 3 khoá từ
-   12/09 — có cần tương tự?)
+| Câu hỏi | Trả lời | Ảnh hưởng |
+|---|---|---|
+| Khoá có **video** không? | **Tạm thời chưa cần** | Bài học là markdown + tệp đính kèm. Không đụng bài toán streaming/băng thông VPS. Nếu sau này cần thì bàn riêng, đừng gộp |
+| **Hết hạn** có xem lại được? | **Không, trừ bài công khai** | `cong_khai` nằm ở bài học; truy vấn đọc được là **hợp của hai tập** |
+| Gắn **nhiều khoá CRM**? | **Không liên quan khoá CRM** — bán như một **sản phẩm** | Thêm `SAN_PHAM.loai`; `KHOA_ONLINE.san_pham_id` thay cho `khoa_hoc_id` |
 
 ## Liên quan
 
