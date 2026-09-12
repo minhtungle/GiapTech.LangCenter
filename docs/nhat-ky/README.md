@@ -46,6 +46,7 @@ Lỗi đã bắt được, thứ tưởng đúng mà sai, giới hạn chưa g�
 
 | Ngày | Nội dung chính |
 |---|---|
+| [2026-09-12 (Test)](./2026-09-12-dong-no-test.md) | **Đóng nợ N16 + N12** — E2E từ 16/4 đỏ thành **20 xanh**. Hai test `quan-tri` lạc hậu **sâu hơn** nợ mô tả: trỏ màn Tài khoản trong khi địa chỉ đã sang `/hrm/nhan-su`. N12 **không phải chớp nháy**: đổi ký tự cuối chữ ký base64url mà ký tự đó chỉ mang 2 bit — 16 nhóm cho ra cùng chữ ký |
 | [2026-09-12 (Audit + đổi tên)](./2026-09-12-doi-ten-that-bai.md) | **4 cột audit** trên 37/37 bảng (xong) · **thử đổi toàn bộ sang tiếng Anh rồi HOÀN NGUYÊN**. Hai sai lầm: tưởng tách được "đổi DB" khỏi "đổi code" (`UseSnakeCaseNamingConvention` suy tên cột TỪ property nên chúng là một), và regex hàng loạt gây **3 lỗi ngữ nghĩa mà build vẫn xanh** |
 | [2026-09-12 (FR-08)](./2026-09-12-tab-hoc-vien-nvkd.md) | **Tab Học viên gọn lại** (thêm học viên vào modal) + **tên nhân viên kinh doanh** gác riêng bằng `KhachHang.Xem`. Phát hiện **lỗ hổng trong `RanhGioiHeThongConTests`**: nó chỉ quét namespace nên `db.KhachHangs` — cầu nối chéo qua `IAppDbContext` — lọt hoàn toàn |
 | [2026-09-12 (FR-07+21)](./2026-09-12-lop-gan-khoa-canh-bao-lech.md) | **Lớp gán khoá học (tối đa 3)** + **cảnh báo lệch khoá khi duyệt** — đóng nợ N19. Bảng trung gian chứ không 3 cột (quên một cột là lọt âm thầm); FK **RESTRICT** để xoá khoá không âm thầm phá căn cứ đối chiếu; cảnh báo **không chặn** vì có ca hợp lệ (học bù, lớp ghép). Cờ mặc định `false` để client cũ vẫn thấy cảnh báo |

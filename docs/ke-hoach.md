@@ -126,16 +126,16 @@ VPS → domain + HTTPS → backup. Xem
 | N22 | `RanhGioiHeThongConTests` chỉ quét `Application/`; tầng `API/Controllers` vẫn gọi chéo hệ thống tự do (đúng vì controller là chỗ ghép, nhưng nếu muốn siết thì cần danh sách khai tương tự) | Thấp |
 | N23 | **Role PostgreSQL và bucket MinIO cũ còn nằm đó** sau khi đổi tên 09/09 (`langcenter_lms`, `langcenter-lms-anh`) — giữ làm dự phòng, dọn tay sau khi chắc chắn | Thấp |
 | N24 | **Kéo-thả đổi cha trong cây cơ cấu** chưa làm (`@headless-tree` có `dragAndDropFeature`, chưa bật) — nay đổi cha bằng cách sửa phòng ban | Thấp |
-| N16 | **4 test E2E lạc hậu** (`dang-nhap-tra-ma.spec.ts` ×2, `quan-tri.spec.ts` ×2): `quan-tri` tìm `button[title="Sửa"]` nhưng nút thao tác đã vào `MenuThaoTac` (07/09), còn `dang-nhap-tra-ma` chờ chữ **"đội"** thời dự án bóng đá trong khi app trả "Không tìm thấy **trung tâm** tương ứng". **App đúng, test lạc hậu mới sai** — đỏ liên tục từ trước 10/09. Sửa kỳ vọng của test. *(Từng ghi trùng thành N25, đã gộp 11/09.)* | Trung bình |
+| ~~N16~~ | ~~4 test E2E lạc hậu~~ — **XONG 12/09/2026**. Ba test `dang-nhap-tra-ma` chờ chữ "đội" thời dự án bóng đá; hai test `quan-tri` trỏ **màn Tài khoản** trong khi địa chỉ/email đã sang `/hrm/nhan-su` (tách người ≠ tài khoản 07/09) và thiếu bước **xác nhận lưu** (thêm 07/09). App đúng, test lạc hậu | ✅ |
 | N15 | **E2E phải tắt rate limit mới chạy được** (`GIOI_HAN_TAN_SUAT=false`) vì mỗi test tự tạo tenant qua endpoint có hạn mức 10 req/phút. Cách đúng hơn: fixture dùng CHUNG một tenant, hoặc endpoint tạo tenant riêng cho test | Trung bình |
 | N14 | Màn Học viên (LMS) và Nhân sự (HRM) cho đọc danh sách **toàn trung tâm**, chưa giới hạn "học viên lớp mình" — cần mở rộng `IPhamViLopHoc` cho hồ sơ con người | Trung bình |
-| N12 | `Token_bi_sua_chu_ky_thi_bi_tu_choi` **chớp nháy** — đỏ một lần khi chạy toàn bộ (12 giây), xanh khi chạy riêng | Trung bình |
+| ~~N12~~ | ~~`Token_bi_sua_chu_ky_thi_bi_tu_choi` chớp nháy~~ — **XONG 12/09/2026**. KHÔNG phải chớp nháy: test đổi **ký tự cuối** chữ ký base64url, mà ký tự cuối chỉ mang 2 bit có nghĩa nên **16 nhóm ký tự cho ra cùng chữ ký** — rơi trúng cùng nhóm thì token vẫn hợp lệ. Nay đổi ký tự ở giữa. Chạy 5 lần đơn + 3 lần toàn bộ đều xanh | ✅ |
 
 ## Kiểm chứng hiện tại
 
 - **442 test backend xanh** (66 unit + 376 integration), build 0 warning — đo `dotnet test` 12/09/2026.
-- **20 test E2E / 8 spec**; 16 xanh, **4 đỏ là nợ N16** (test lạc hậu thời dự án bóng đá, không
-  phải lỗi nghiệp vụ). Chạy cả bộ phải `GIOI_HAN_TAN_SUAT=false` — xem nợ N15.
+- **20 test E2E / 8 spec — XANH HẾT** (12/09/2026, đóng nợ N16). Chạy cả bộ phải
+  `GIOI_HAN_TAN_SUAT=false` — xem nợ N15.
 - Frontend `tsc -b` + `vite build` sạch, `oxlint` không lỗi.
 - **PostgreSQL + MinIO thật**: 37 bảng, 22 migration áp sạch, luồng đầu-cuối chạy tay đủ từ tạo
   trung tâm tới thu học phí.

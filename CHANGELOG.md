@@ -8,6 +8,28 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Fixed — Đóng nợ N16 và N12: bộ test xanh hết (12/09/2026)
+
+E2E từ **16 xanh / 4 đỏ** thành **20 xanh / 0 đỏ**; backend hết đỏ ngẫu nhiên.
+
+**N16 — bốn test E2E lạc hậu.** Hai test `dang-nhap-tra-ma` chờ chữ "đội" thời dự án bóng đá.
+Hai test `quan-tri` lạc hậu **sâu hơn** nợ mô tả: chúng mở modal Tài khoản để điền `#diaChi`,
+nhưng modal đó không còn ô địa chỉ — nó đã sang `/hrm/nhan-su` qua **hai lần dịch chuyển** (tách
+người ≠ tài khoản 07/09, chia ba hệ thống con 08/09). Cả hai còn thiếu bước **xác nhận lưu**
+(thêm 07/09 cho mọi thao tác ghi).
+
+**N12 — KHÔNG phải "test chớp nháy".** Test đổi **ký tự cuối** chữ ký base64url để tạo token
+giả. Chữ ký HS256 là 32 byte = 43 ký tự, nên ký tự cuối chỉ mang **2 bit có nghĩa**: đo được
+**16 nhóm ký tự cho ra cùng chữ ký** (`A`,`B`,`C`,`D` là một nhóm). Rơi trúng cùng nhóm thì chữ
+ký không đổi, token vẫn hợp lệ, API trả 200 thay vì 401. Xác suất ~25% mỗi lần — không liên quan
+chạy riêng hay chạy cả bộ. Nay đổi ký tự **ở giữa**; chạy 5 lần đơn + 3 lần toàn bộ đều xanh.
+
+> Nợ này bị chẩn đoán sai hai ngày. Nhãn "flaky" là lời giải thích dễ chấp nhận và nó khiến
+> không ai tìm nguyên nhân thật.
+
+Bắt được thêm một lỗi khi chạy cả bộ: `modal-long-nhau.spec.ts` đọc `api.length`, nhưng endpoint
+hàng chờ đã đổi sang phân trang cùng ngày → sửa thành `api.tongSoDong`.
+
 ### Added — Tài liệu quy ước viết mã cho toàn dự án (12/09/2026)
 
 [`docs/quy-uoc-code.md`](./docs/quy-uoc-code.md) — quy ước áp cho cả C#, TypeScript, SQL và tài

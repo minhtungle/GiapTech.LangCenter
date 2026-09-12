@@ -15,35 +15,67 @@ import { vaoHeThong } from './tro-giup'
  * Reload ngay sau click sẽ huỷ request PUT đang bay — test đỏ trong khi ứng dụng hoàn toàn
  * đúng. Chờ chỉ dấu "Đã lưu" là cách chắc chắn nhất.
  */
+/**
+ * Mở modal Sửa của một dòng bảng.
+ *
+ * Nút Sửa nằm trong `MenuThaoTac` từ 07/09/2026, không còn là `button[title="Sửa"]` bày sẵn
+ * trên dòng — gom nhiều nút vào menu để cột thao tác không thành dải icon khó phân biệt.
+ */
+async function moSua(hang: import('@playwright/test').Locator) {
+  await hang.getByRole('button', { name: 'Thao tác' }).click()
+  await hang.page().getByText('Sửa', { exact: true }).click()
+}
+
+/**
+ * Bấm Lưu trong modal rồi ĐỒNG Ý ở hộp xác nhận.
+ *
+ * Từ 07/09/2026 mọi thao tác ghi đều hỏi xác nhận — bấm submit thôi thì modal không đóng.
+ */
+async function luuVaXacNhan(page: import('@playwright/test').Page) {
+  await page.locator('dialog[open] button[type=submit]').click()
+  await page.getByRole('button', { name: 'Đồng ý' }).click()
+  await expect(page.locator('dialog[open]')).toHaveCount(0)
+}
+
 async function luuThietLap(page: import('@playwright/test').Page) {
   await page.locator('button[type=submit]').click()
+  // Xác nhận trước khi ghi — thêm 07/09/2026 cho MỌI thao tác ghi.
+  await page.getByRole('button', { name: 'Đồng ý' }).click()
   await expect(page.locator('text=Đã lưu')).toBeVisible({ timeout: 10_000 })
 }
 
 test.describe('Quản trị hệ thống', () => {
-  test('sửa tài khoản không làm mất địa chỉ', async ({ page, request }) => {
+  /**
+   * Canh quy tắc #1 trên màn **Người dùng**, không phải Tài khoản.
+   *
+   * Địa chỉ và email chuyển sang màn **Hồ sơ nhân sự** (`/hrm/nhan-su`) khi tách người ≠ tài
+   * khoản (07/09/2026) rồi chia theo hệ thống con (08/09) — modal Tài khoản nay chỉ còn
+   * username, nhóm quyền, trạng thái. Test cũ trỏ màn Tài khoản nên đỏ liên tục từ trước 10/09
+   * (nợ N16): **app đúng, test lạc hậu**.
+   *
+   * Tầng integration đã canh chặt hơn (`CapNhatKhongMatDuLieuTests`); giữ bản E2E này vì nó
+   * kiểm cả FORM — lỗi 16/08 nằm ở form thiếu ô, không ở handler.
+   */
+  test('sửa người dùng không làm mất địa chỉ', async ({ page, request }) => {
     // Chính sự cố ngày 16/08 — quy tắc #1 sinh ra từ đây.
     await vaoHeThong(page, request, 'tai-khoan')
-    await page.goto('/quan-tri/tai-khoan')
+    await page.goto('/hrm/nhan-su')
 
-    const hang = page.locator('tbody tr', { hasText: 'admin' }).first()
-    await hang.locator('button[title="Sửa"]').click()
+    const hang = page.locator('tbody tr', { hasText: 'Quản trị viên' }).first()
+    await moSua(hang)
 
     await page.fill('#diaChi', '123 Đường Test, Đà Nẵng')
     await page.fill('#email', 'test@example.com')
-    await page.locator('dialog[open] button[type=submit]').click()
-    await expect(page.locator('dialog[open]')).toHaveCount(0)
+    await luuVaXacNhan(page)
 
     // Sửa lại CHỈ email — địa chỉ phải còn.
-    await hang.locator('button[title="Sửa"]').click()
+    await moSua(hang)
     await expect(page.locator('#diaChi')).toHaveValue('123 Đường Test, Đà Nẵng')
     await page.fill('#email', 'doi@example.com')
-    await page.locator('dialog[open] button[type=submit]').click()
-    await expect(page.locator('dialog[open]')).toHaveCount(0)
+    await luuVaXacNhan(page)
 
     await page.reload()
-    await page.locator('tbody tr', { hasText: 'admin' }).first()
-      .locator('button[title="Sửa"]').click()
+    await moSua(page.locator('tbody tr', { hasText: 'Quản trị viên' }).first())
     await expect(page.locator('#diaChi')).toHaveValue('123 Đường Test, Đà Nẵng')
     await expect(page.locator('#email')).toHaveValue('doi@example.com')
   })

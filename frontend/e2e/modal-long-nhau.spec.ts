@@ -74,6 +74,7 @@ test('modal dưới bị inert khi hộp xác nhận mở; duyệt vẫn ghi đ�
   await page.waitForTimeout(1800)
   expect(await page.getByText('Khach M').isVisible().catch(() => false),
     'đã duyệt thì phải rời hàng chờ, kể cả sau F5').toBe(false)
+  // Endpoint trả `KetQuaTrang` từ 12/09/2026 (trước đó là mảng trần) — đọc `tongSoDong`.
   const api = await (await request.get('/api/v1/lop-hoc/cho-xep-lop', { headers: H })).json()
-  expect(api.length, 'API hàng chờ phải rỗng').toBe(0)
+  expect(api.tongSoDong, 'API hàng chờ phải rỗng').toBe(0)
 })

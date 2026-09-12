@@ -120,8 +120,19 @@ public class PhanQuyenVaCachLyTests(ApiFactory factory) : IClassFixture<ApiFacto
         // hai test chạy song song sẽ tranh nhau — cái chạy sau không đăng nhập được.
         var token = await LayToken(factory.MaTrungTamA, "manager", "manager123");
 
-        // Đổi ký tự cuối của phần chữ ký.
-        var gia = token[..^1] + (token[^1] == 'a' ? 'b' : 'a');
+        /*
+          Đổi một ký tự Ở GIỮA chữ ký, KHÔNG phải ký tự cuối (sửa 12/09/2026 — nợ N12).
+
+          Chữ ký HS256 là 32 byte = 43 ký tự base64url, nên ký tự CUỐI chỉ mang 2 bit có nghĩa:
+          16 nhóm ký tự khác nhau giải mã ra **cùng một chuỗi byte** ('A','B','C','D' là một
+          nhóm). Đổi ký tự cuối rơi trúng cùng nhóm thì chữ ký KHÔNG đổi và token vẫn hợp lệ —
+          test đỏ ngẫu nhiên tuỳ chữ ký sinh ra lần đó. Đây là lỗi của TEST, không phải hệ
+          thống xác thực, và trước 12/09 nó bị ghi nhầm là "test chớp nháy".
+
+          Ký tự ở giữa mang đủ 6 bit nên đổi là chữ ký chắc chắn khác.
+        */
+        var viTri = token.LastIndexOf('.') + 1 + (token.Length - token.LastIndexOf('.') - 1) / 2;
+        var gia = token[..viTri] + (token[viTri] == 'a' ? 'b' : 'a') + token[(viTri + 1)..];
 
         var res = await ClientVoiToken(gia).GetAsync("/api/v1/tai-khoan");
         Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
