@@ -1,6 +1,6 @@
 # FR-25 → FR-27 — Học tập trực tuyến (E-learning)
 
-> **Trạng thái: bước 1 XONG, bước 2-4 còn là đặc tả.** Viết 13/09/2026 theo yêu cầu chủ sản phẩm, chờ duyệt trước
+> **Trạng thái: bước 1-3 XONG (elearning dùng được). Bước 4 (bài tập được chấm) còn là đặc tả.** Viết 13/09/2026 theo yêu cầu chủ sản phẩm, chờ duyệt trước
 > khi làm (quy ước: mô tả FR trước khi viết dòng code nào — CLAUDE.md mục 5).
 >
 > Ba câu hỏi mở đã được chốt cùng ngày — xem [mục cuối](#ba-câu-đã-chốt-13092026).
@@ -250,7 +250,7 @@ khoá online không có giáo viên phụ trách, nên **ai chấm** phải nói
 |---|---|---|
 | 1 | ~~FR-25: ô chọn khách hàng CRM khi tạo học viên~~ **✅ XONG 13/09/2026** | Thấp — dùng cột đã có |
 | 2 | ~~FR-26 schema + soạn khoá/bài học + cấp quyền + `IPhamViKhoaOnline`~~ **✅ XONG 13/09/2026** (backend) | Trung bình — tầng phạm vi mới |
-| 3 | FR-26 **giao diện**: màn soạn khoá, màn học của học viên | Thấp — backend đã xong |
+| 3 | ~~FR-26 **giao diện**: màn soạn khoá, màn học của học viên~~ **✅ XONG 13/09/2026** | Thấp — backend đã xong |
 | 4 | FR-27 nới `BAI_TAP` + chấm bài | **Cao — đụng FR-11/12 đang chạy** |
 
 Bước 4 tách riêng và làm cuối **có chủ ý**: ba bước đầu không đụng gì đang chạy, nên nếu bước 4

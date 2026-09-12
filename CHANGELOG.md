@@ -8,6 +8,38 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — FR-26 giao diện: soạn và học khoá trực tuyến (13/09/2026)
+
+Bước 3/4. Elearning **dùng được đầu-cuối** từ đây (bài tập chấm điểm ở bước 4).
+
+- `/lms/khoa-online` — **một màn cho cả hai vai trò**, nội dung tự đổi theo quyền: giáo vụ thấy
+  cột "học viên", học viên thấy cột "tiến độ". Backend đã lọc phạm vi nên hai vai trò gọi cùng
+  một endpoint.
+- `/lms/khoa-online/:id` — tab Bài học (ai cũng thấy) + tab Học viên (chỉ người điều phối).
+- Bài không đọc được hiện **ổ khoá** thay vì để người dùng bấm rồi nhận 404: họ cần biết nội
+  dung đó tồn tại và vì sao mình chưa vào được.
+- Menu gác bằng `HocOnline` chứ không `KhoaOnline` — học viên phải thấy menu để vào khoá mình
+  học, mà họ không có quyền soạn.
+
+### Fixed — sửa bài học ghi đè nhầm nội dung bài khác (13/09/2026)
+
+Lỗi **chỉ E2E thấy được**. `Modal` giữ children khi đóng (nó chỉ đóng thẻ `<dialog>`), nên
+`defaultValue` chỉ áp dụng đúng **lần mount đầu**. Mở sửa Bài 1 sau khi vừa soạn Bài 2 thì ô nội
+dung hiện nội dung Bài 2 — bấm Lưu là ghi đè Bài 1 (quy tắc #1).
+
+`tsc` xanh, 456 test tích hợp xanh, vì lỗi nằm ở vòng đời component chứ không ở handler. Vá bằng
+`key={formBai?.id}` để React dựng lại form mỗi lần đổi bài.
+
+> Test đầu tiên tôi viết cho chỗ này **không bắt được** — nó chỉ soạn một bài, nên không phân
+> biệt nổi "nạp đúng nội dung" với "giữ lại nội dung lần trước". Phải hai bài khác nội dung.
+
+### Fixed — E2E `url-he-thong-con` lạc hậu từ 12/09 (13/09/2026)
+
+Test bấm mục "Học phí" trong sidebar, mà mục đó đã bỏ khỏi sidebar hôm 12/09 khi ẩn tiền khỏi
+LMS (N18) — tôi sửa sidebar mà không cập nhật test. Nó chỉ đỏ khi chạy **cả bộ** E2E nên không
+ai thấy suốt một ngày. Đổi sang mục "Tài liệu".
+
+
 ### Added — FR-26 backend: khoá học trực tuyến (13/09/2026)
 
 Bước 2/4. **4 bảng mới, không bảng nào trỏ sang CRM** — quản trị cấp quyền học bằng tay.

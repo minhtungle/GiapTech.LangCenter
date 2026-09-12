@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  Users, ShieldCheck, Settings, LogOut, Home, GraduationCap, BookOpen,
+  Users, ShieldCheck, Settings, LogOut, Home, GraduationCap, BookOpen, MonitorPlay,
   PanelLeftClose, PanelLeft, Menu, X, ScrollText, Briefcase, UserCog, TrendingUp,
   LayoutGrid, Check, KeyRound, Contact, PackageOpen, BookMarked, Network,
 } from 'lucide-react'
@@ -136,6 +136,9 @@ export default function Layout() {
       muc: [
         { to: '/lms/hoc-vien', nhan: t('menu.hocVien'), icon: Users, can: 'TaiKhoan' },
         { to: '/lms/lop-hoc', nhan: t('menu.lopHoc'), icon: GraduationCap, can: 'LopHoc' },
+        // FR-26 — gác bằng `HocOnline` chứ không `KhoaOnline`: học viên phải thấy menu để vào
+        // khoá mình học, mà họ không có quyền soạn.
+        { to: '/lms/khoa-online', nhan: t('menu.khoaOnline'), icon: MonitorPlay, can: 'HocOnline' },
         { to: '/lms/tai-lieu', nhan: t('menu.taiLieu'), icon: BookOpen, can: 'TaiLieu' },
       ],
     },

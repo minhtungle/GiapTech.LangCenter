@@ -66,11 +66,15 @@ test('URL LMS có tiền tố /lms, đường cũ redirect giữ id + query', as
     .toBe('/lms/hoc-phi')
 
   // --- Điều hướng trong app: bấm menu LMS ra đường có tiền tố.
+  //
+  // Dùng "Tài liệu" chứ không "Học phí": mục Học phí đã BỎ khỏi sidebar 12/09/2026 khi ẩn tiền
+  // khỏi LMS (nợ N18) — route `/lms/hoc-phi` vẫn sống nhưng không có lối vào từ menu nữa.
+  // Test này đỏ suốt từ đó mà không ai thấy, vì nó chỉ đỏ khi chạy CẢ BỘ E2E (13/09/2026).
   await page.goto('/lms/lop-hoc')
   await page.waitForTimeout(1200)
-  await page.locator('aside').getByText('Học phí', { exact: true }).click()
+  await page.locator('aside').getByText('Tài liệu', { exact: true }).click()
   await page.waitForTimeout(1200)
-  expect(new URL(page.url()).pathname).toBe('/lms/hoc-phi')
+  expect(new URL(page.url()).pathname).toBe('/lms/tai-lieu')
   await page.screenshot({ path: '/tmp/u2-menu-lms.png', fullPage: true })
 })
 })

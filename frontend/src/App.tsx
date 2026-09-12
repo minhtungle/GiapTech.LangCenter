@@ -16,6 +16,8 @@ import KhachHang from '@/pages/crm/KhachHang'
 import ChiTietKhachHang from '@/pages/crm/ChiTietKhachHang'
 import KhoaHoc from '@/pages/crm/KhoaHoc'
 import SanPham from '@/pages/crm/SanPham'
+import KhoaOnline from '@/pages/dao-tao/KhoaOnline'
+import ChiTietKhoaOnline from '@/pages/dao-tao/ChiTietKhoaOnline'
 import TaiLieu from '@/pages/dao-tao/TaiLieu'
 import HocPhi from '@/pages/dao-tao/HocPhi'
 import TaiKhoan from '@/pages/quan-tri/TaiKhoan'
@@ -101,6 +103,8 @@ export default function App() {
               <Route path="/lms/lop-hoc/cho-xep-lop" element={<ChoXepLop />} />
               <Route path="/lms/lop-hoc/:id" element={<ChiTietLopHoc />} />
               <Route path="/lms/buoi-hoc/:id" element={<ChiTietBuoiHoc />} />
+              <Route path="/lms/khoa-online" element={<KhoaOnline />} />
+              <Route path="/lms/khoa-online/:id" element={<ChiTietKhoaOnline />} />
               <Route path="/lms/tai-lieu" element={<TaiLieu />} />
               {/*
                 Màn Học phí KHÔNG còn trong sidebar và không còn là tab của lớp (12/09/2026):
