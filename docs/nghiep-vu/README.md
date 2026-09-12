@@ -22,6 +22,7 @@ một API, một database, một lần đăng nhập.
 | **CRM** | Khách hàng · Doanh thu · Khoá học · Sản phẩm (FR-17 → FR-20) | ✅ Chạy |
 | **CRM → LMS** | Yêu cầu xếp lớp (FR-21) | ✅ Chạy |
 | **LMS** | FR-07 → FR-14 + Học viên | ✅ Chạy |
+| **LMS** | **Học tập trực tuyến** (FR-25 → FR-27) — kênh học thứ hai, song song lớp offline | 📝 Đặc tả |
 | **Dùng chung** | **Tổng quan** (FR-15) — màn chủ, một màn cho mọi vai trò | ✅ Chạy |
 | **Dùng chung** | FR-03 → FR-06, FR-16 (tài khoản, phân quyền, thiết lập, nhật ký) | ✅ Chạy |
 
@@ -76,6 +77,9 @@ Hai điều dễ nhầm:
 | FR-22 | Cơ cấu tổ chức (HRM) | [HRM](./hrm.md#fr-22--cơ-cấu-tổ-chức) |
 | FR-23 | Hồ sơ nhân sự mở rộng (HRM) | [HRM](./hrm.md#fr-23--hồ-sơ-nhân-sự-mở-rộng) |
 | FR-24 | Danh mục chức vụ (HRM) | [HRM](./hrm.md#fr-24--danh-mục-chức-vụ) |
+| FR-25 | Tài khoản cho khách hàng — cầu CRM → LMS | [Học tập trực tuyến](./hoc-tap-truc-tuyen.md#fr-25--tài-khoản-gán-cho-khách-hàng) *(đặc tả)* |
+| FR-26 | Khoá học trực tuyến + tiến độ | [Học tập trực tuyến](./hoc-tap-truc-tuyen.md#fr-26--khoá-học-trực-tuyến) *(đặc tả)* |
+| FR-27 | Bài tập cho khoá online | [Học tập trực tuyến](./hoc-tap-truc-tuyen.md#fr-27--bài-tập-cho-khoá-online) *(đặc tả)* |
 
 ## Quy tắc nghiệp vụ xuyên suốt
 
