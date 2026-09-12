@@ -252,6 +252,22 @@ public enum NguonKhachHang
     TuDangKy = 1
 }
 
+/// <summary>Trạng thái một khoá học trực tuyến (FR-26).</summary>
+public enum TrangThaiKhoaOnline
+{
+    /// <summary>Đang soạn — học viên KHÔNG thấy, kể cả đã ghi danh.</summary>
+    Nhap = 0,
+
+    /// <summary>Đang mở — học viên được ghi danh thì học được.</summary>
+    DangMo = 1,
+
+    /// <summary>
+    /// Ngừng cấp mới. Người ĐANG học vẫn học tiếp — đóng khoá không được cắt quyền của người
+    /// đã trả tiền. Khác `Nhap` ở chỗ đó.
+    /// </summary>
+    NgungCapMoi = 2
+}
+
 /// <summary>Loại đơn hàng (FR-18/FR-20) — suy từ khoá ngoại nào có giá trị, không lưu cột.</summary>
 public enum LoaiDonHang
 {

@@ -43,6 +43,12 @@ public class AppDbContext(
     public DbSet<TepDinhKem> TepDinhKems => Set<TepDinhKem>();
     public DbSet<BaiTap> BaiTaps => Set<BaiTap>();
     public DbSet<BaiNop> BaiNops => Set<BaiNop>();
+    // ---------- FR-26: học tập trực tuyến ----------
+    public DbSet<KhoaOnline> KhoaOnlines => Set<KhoaOnline>();
+    public DbSet<BaiHocOnline> BaiHocOnlines => Set<BaiHocOnline>();
+    public DbSet<GhiDanhKhoaOnline> GhiDanhKhoaOnlines => Set<GhiDanhKhoaOnline>();
+    public DbSet<TienDoBaiHoc> TienDoBaiHocs => Set<TienDoBaiHoc>();
+
     public DbSet<BaiKiemTra> BaiKiemTras => Set<BaiKiemTra>();
     public DbSet<BaiLam> BaiLams => Set<BaiLam>();
     public DbSet<TaiLieu> TaiLieus => Set<TaiLieu>();

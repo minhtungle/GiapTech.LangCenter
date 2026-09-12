@@ -135,6 +135,23 @@ public static class ChucNang
     /// <summary>Bài học viên làm cho bài kiểm tra — tách cùng lý do với <see cref="BaiNopBaiTap"/>.</summary>
     public const string BaiLamKiemTra = nameof(BaiLamKiemTra);
 
+    /// <summary>
+    /// Soạn khoá học trực tuyến và bài học trong đó (FR-26). Quyền của giáo vụ.
+    ///
+    /// Tách khỏi <see cref="GhiDanhKhoaOnline"/> vì hai việc khác người làm: soạn nội dung là
+    /// chuyên môn, cấp quyền học là điều phối. Gộp lại thì ai sửa được bài cũng cấp được quyền.
+    /// </summary>
+    public const string KhoaOnline = nameof(KhoaOnline);
+
+    /// <summary>Cấp / thu quyền học một khoá trực tuyến — xem <see cref="KhoaOnline"/>.</summary>
+    public const string GhiDanhKhoaOnline = nameof(GhiDanhKhoaOnline);
+
+    /// <summary>
+    /// Học viên đọc bài và đánh dấu đã học. Quyền của **chính người học**, tách khỏi hai quyền
+    /// trên cùng lẽ với <see cref="BaiNopBaiTap"/> tách khỏi <see cref="BaiTap"/>.
+    /// </summary>
+    public const string HocOnline = nameof(HocOnline);
+
     public const string TaiLieu = nameof(TaiLieu);
     public const string HocPhi = nameof(HocPhi);
     public const string ThongKe = nameof(ThongKe);
@@ -166,6 +183,7 @@ public static class ChucNang
         TaiKhoan, PhanQuyen, ThietLapChung, Anh, DoiMatKhauNguoiKhac,
         NhanSu, ChucVu, PhongBan, DoanhThu, KhachHang, KhoaHoc, SanPham,
         LopHoc, BuoiHoc, DiemDanh, BaiTap, BaiNopBaiTap, BaiKiemTra, BaiLamKiemTra,
+        KhoaOnline, GhiDanhKhoaOnline, HocOnline,
         TaiLieu, HocPhi, ThongKe, LopHocToanTrungTam, NhatKyHeThong
     ];
 
@@ -197,6 +215,9 @@ public static class ChucNang
         [BaiNopBaiTap] = HeThong.Lms,
         [BaiKiemTra] = HeThong.Lms,
         [BaiLamKiemTra] = HeThong.Lms,
+        [KhoaOnline] = HeThong.Lms,
+        [GhiDanhKhoaOnline] = HeThong.Lms,
+        [HocOnline] = HeThong.Lms,
         [TaiLieu] = HeThong.Lms,
         [HocPhi] = HeThong.Lms,
         [ThongKe] = HeThong.Lms,

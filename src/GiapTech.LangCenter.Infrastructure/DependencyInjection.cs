@@ -57,6 +57,7 @@ public static class DependencyInjection
         services.AddScoped<IQuyenService, QuyenService>();
         services.AddScoped<IPhamViLopHoc, PhamViLopHoc>();
         services.AddScoped<IPhamViHocPhi, PhamViHocPhi>();
+        services.AddScoped<IPhamViKhoaOnline, PhamViKhoaOnline>();
         services.AddScoped<IGhiNhatKy, NhatKy.GhiNhatKy>();
         services.AddScoped<IMuiGioTrungTam, MuiGioTrungTam>();
         services.AddSingleton<IPasswordHasher, AppPasswordHasher>();

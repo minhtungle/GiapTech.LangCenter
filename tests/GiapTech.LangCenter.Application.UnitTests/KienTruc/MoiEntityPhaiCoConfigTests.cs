@@ -34,6 +34,10 @@ public class MoiEntityPhaiCoConfigTests
             + "nhật ký chỉ ghi thêm không sửa nên không có đường phục hồi.",
         ["NhatKyHeThong.ThamSo"] =
             "JSON tham số của lệnh, cùng lý do như ChiTiet.",
+        ["BaiHocOnline.NoiDung"] =
+            "Nội dung bài học trực tuyến (FR-26) — markdown do giáo vụ soạn, dài tuỳ bài. Đặt "
+            + "trần cứng là hoặc chọn số quá nhỏ làm mất bài dài, hoặc quá lớn nên vô nghĩa. "
+            + "Giới hạn thật nằm ở tầng ứng dụng và ở kích thước request.",
     };
 
     private sealed class TenantGia : ICurrentTenant

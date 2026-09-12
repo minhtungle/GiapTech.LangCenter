@@ -41,6 +41,12 @@ public interface IAppDbContext
     DbSet<TepDinhKem> TepDinhKems { get; }
     DbSet<BaiTap> BaiTaps { get; }
     DbSet<BaiNop> BaiNops { get; }
+    // ---------- FR-26: học tập trực tuyến ----------
+    DbSet<KhoaOnline> KhoaOnlines { get; }
+    DbSet<BaiHocOnline> BaiHocOnlines { get; }
+    DbSet<GhiDanhKhoaOnline> GhiDanhKhoaOnlines { get; }
+    DbSet<TienDoBaiHoc> TienDoBaiHocs { get; }
+
     DbSet<BaiKiemTra> BaiKiemTras { get; }
     DbSet<BaiLam> BaiLams { get; }
     DbSet<TaiLieu> TaiLieus { get; }

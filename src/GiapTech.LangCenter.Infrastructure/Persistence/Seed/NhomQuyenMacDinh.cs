@@ -44,6 +44,10 @@ internal static class NhomQuyenMacDinh
         (ChucNang.BaiKiemTra, ToanBo),
         (ChucNang.BaiLamKiemTra, [HanhDong.Xem, HanhDong.Sua]),
         (ChucNang.TaiLieu, [HanhDong.Xem, HanhDong.Them]),
+        // FR-26 — soạn nội dung khoá trực tuyến là chuyên môn. KHÔNG có GhiDanhKhoaOnline:
+        // cấp quyền học là việc điều phối, và ai bán được thì không nên tự cấp cho mình.
+        (ChucNang.KhoaOnline, ToanBo),
+        (ChucNang.HocOnline, DocThoi),                            // xem bài như học viên thấy
         (ChucNang.TaiKhoan, DocThoi),                            // xem học viên lớp mình
         // Đính kèm đề bài và tài liệu — endpoint /tep dùng chung gác bằng chức năng này.
         (ChucNang.Anh, ToanBo),
@@ -66,6 +70,9 @@ internal static class NhomQuyenMacDinh
         (ChucNang.BaiKiemTra, DocThoi),
         (ChucNang.BaiLamKiemTra, DocThoi),
         (ChucNang.TaiLieu, DocThoi),
+        // Trợ giảng xem được nội dung khoá online nhưng không sửa — cùng lẽ với BaiKiemTra.
+        (ChucNang.KhoaOnline, DocThoi),
+        (ChucNang.HocOnline, DocThoi),
         (ChucNang.TaiKhoan, DocThoi),
         (ChucNang.Anh, ToanBo),
         (ChucNang.ThongKe, DocThoi),
@@ -90,6 +97,11 @@ internal static class NhomQuyenMacDinh
         (ChucNang.BaiKiemTra, DocThoi),
         (ChucNang.BaiLamKiemTra, [HanhDong.Xem, HanhDong.Them]),
         (ChucNang.TaiLieu, DocThoi),
+        // FR-26 — `Them` = tự đánh dấu đã học xong một bài. An toàn như `DiemDanh.Them`:
+        // endpoint không nhận "đánh dấu cho ai", nó lấy người dùng từ token.
+        // KHÔNG có `KhoaOnline` (đó là quyền soạn bài) — học viên đọc bài qua `HocOnline`,
+        // và `IPhamViKhoaOnline` lọc về đúng khoá họ được ghi danh.
+        (ChucNang.HocOnline, [HanhDong.Xem, HanhDong.Them]),
         (ChucNang.HocPhi, DocThoi),
         // Đính kèm bài nộp. Có Xoa để gỡ tệp nộp nhầm — quyền trên TỆP, không phải trên bài
         // của người khác: handler kiểm tệp phải thuộc bài nộp của chính họ.

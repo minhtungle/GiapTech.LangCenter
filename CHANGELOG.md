@@ -8,6 +8,25 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — FR-26 backend: khoá học trực tuyến (13/09/2026)
+
+Bước 2/4. **4 bảng mới, không bảng nào trỏ sang CRM** — quản trị cấp quyền học bằng tay.
+
+- `KHOA_ONLINE` · `BAI_HOC_ONLINE` · `GHI_DANH_KHOA_ONLINE` · `TIEN_DO_BAI_HOC`
+- **3 chức năng phân quyền tách rời**: `KhoaOnline` (soạn) · `GhiDanhKhoaOnline` (cấp quyền) ·
+  `HocOnline` (học). Gộp lại thì ai sửa được bài cũng cấp được quyền — kể cả cho chính mình.
+- **`IPhamViKhoaOnline` — tầng phạm vi thứ tư**, ba nhánh: ghi danh còn hạn · bài công khai ·
+  người soạn. Cần riêng vì `IPhamViLopHoc` lọc theo `LOP_HOC` mà khoá online không có lớp.
+- Lọc ở **hai mức** — khoá và bài. Thấy khoá không đồng nghĩa đọc được mọi bài trong đó: học
+  viên hết hạn thấy đủ tên bài nhưng chỉ mở được bài `CongKhai`.
+- Không xoá được khoá đã có người học (`KHOA_ONLINE_DA_CO_NGUOI_HOC`): xoá sẽ Cascade cả ghi
+  danh lẫn tiến độ, tức xoá dấu vết học tập của người đã trả tiền (quy tắc #1).
+- Thu quyền học **không** xoá tiến độ; gia hạn thì học tiếp từ chỗ cũ.
+
+6 test, **4 đột biến kiểm đỏ**: bỏ kiểm hạn · bỏ nhánh công khai · `LocBaiHoc` không lọc gì ·
+bỏ chặn khoá nháp.
+
+
 ### Added — FR-25: nối hồ sơ học viên với khách hàng CRM (13/09/2026)
 
 Bước 1/4 của học tập trực tuyến. Người mua khoá online là `KHACH_HANG` ở CRM, chưa phải học
