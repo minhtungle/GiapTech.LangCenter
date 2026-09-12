@@ -26,7 +26,19 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
             .UseSnakeCaseNamingConvention()
             .Options;
 
-        return new AppDbContext(options, new TenantRong());
+        return new AppDbContext(options, new TenantRong(), new NguoiDungRong());
+    }
+
+    /// <summary>
+    /// Không có người dùng lúc design-time. EF chỉ đọc schema, không ghi bản ghi nào — nên bốn
+    /// cột audit (ADR-0006) không được gán và điều đó đúng.
+    /// </summary>
+    private sealed class NguoiDungRong : ICurrentUser
+    {
+        public Guid? UserId => null;
+        public Guid? TaiKhoanId => null;
+        public string? Username => null;
+        public bool DaXacThuc => false;
     }
 
     /// <summary>Không có tenant lúc design-time — Global Query Filter không ảnh hưởng schema.</summary>

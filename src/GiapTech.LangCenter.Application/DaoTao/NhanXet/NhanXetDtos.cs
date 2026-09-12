@@ -44,10 +44,10 @@ public class LayNhanXetBuoiHocHandler(
             q = q.Where(n => n.HocVienId == toi);
 
         return await q
-            .OrderByDescending(n => n.NgayTao)
+            .OrderByDescending(n => n.CreatedAt)
             .Select(n => new NhanXetBuoiHocDto(
                 n.Id, n.HocVienId, n.HocVien.HoTen, n.NoiDung, n.MucHaiLong,
-                n.NgayTao, n.HocVienId == toi))
+                n.CreatedAt, n.HocVienId == toi))
             .ToListAsync(ct);
     }
 

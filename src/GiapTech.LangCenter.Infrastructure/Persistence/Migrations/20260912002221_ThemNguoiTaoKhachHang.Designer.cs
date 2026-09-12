@@ -3,17 +3,20 @@ using System;
 using GiapTech.LangCenter.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace GiapTech.LangCenter.Infrastructure.Migrations
+namespace GiapTech.LangCenter.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260912002221_ThemNguoiTaoKhachHang")]
+    partial class ThemNguoiTaoKhachHang
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -28,14 +31,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
 
                     b.Property<DateTimeOffset?>("DongLuc")
                         .HasColumnType("timestamp with time zone")
@@ -57,6 +52,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("mo_ta");
+
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<Guid?>("NguoiTaoId")
                         .HasColumnType("uuid")
@@ -85,14 +88,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("trang_thai");
 
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
-
                     b.HasKey("Id")
                         .HasName("pk_bai_kiem_tra");
 
@@ -119,14 +114,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("bai_kiem_tra_id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<decimal?>("Diem")
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)")
@@ -139,6 +126,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<Guid>("HocVienId")
                         .HasColumnType("uuid")
                         .HasColumnName("hoc_vien_id");
+
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<Guid?>("NguoiChamId")
                         .HasColumnType("uuid")
@@ -160,14 +155,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<DateTimeOffset?>("ThoiDiemNop")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("thoi_diem_nop");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_bai_lam");
@@ -199,14 +186,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("bai_tap_id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<decimal?>("Diem")
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)")
@@ -219,6 +198,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<int>("LanNop")
                         .HasColumnType("integer")
                         .HasColumnName("lan_nop");
+
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<Guid?>("NguoiChamId")
                         .HasColumnType("uuid")
@@ -250,14 +237,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("trang_thai");
 
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
-
                     b.HasKey("Id")
                         .HasName("pk_bai_nop");
 
@@ -288,14 +267,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("buoi_hoc_id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<DateTimeOffset?>("HanNop")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("han_nop");
@@ -304,6 +275,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("mo_ta");
+
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<Guid?>("NguoiTaoId")
                         .HasColumnType("uuid")
@@ -318,14 +297,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("tieu_de");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_bai_tap");
@@ -353,14 +324,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("bat_dau");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<string>("GhiChu")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
@@ -387,6 +350,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("lop_hoc_id");
 
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
+
                     b.Property<string>("PhongHoc")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
@@ -403,14 +374,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<int>("TrangThai")
                         .HasColumnType("integer")
                         .HasColumnName("trang_thai");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_buoi_hoc");
@@ -435,14 +398,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<bool>("DangDung")
                         .HasColumnType("boolean")
                         .HasColumnName("dang_dung");
@@ -451,6 +406,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
                         .HasColumnName("mo_ta");
+
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<string>("Ten")
                         .IsRequired()
@@ -465,14 +428,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<int>("ThuTu")
                         .HasColumnType("integer")
                         .HasColumnName("thu_tu");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_chuc_vu");
@@ -493,14 +448,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
 
                     b.Property<int>("DonViTien")
                         .HasColumnType("integer")
@@ -524,9 +471,17 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("khoa_hoc_id");
 
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
                     b.Property<DateTimeOffset>("NgayDangKy")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ngay_dang_ky");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<int>("PhuongThuc")
                         .HasColumnType("integer")
@@ -553,14 +508,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasPrecision(18, 6)
                         .HasColumnType("numeric(18,6)")
                         .HasColumnName("ty_gia_ve_vnd");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_dang_ky_khoa_hoc");
@@ -605,14 +552,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("buoi_hoc_id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<Guid>("HocVienId")
                         .HasColumnType("uuid")
                         .HasColumnName("hoc_vien_id");
@@ -621,6 +560,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
                         .HasColumnName("ly_do_vang");
+
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<Guid?>("NguoiXacNhanId")
                         .HasColumnType("uuid")
@@ -654,14 +601,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<int?>("TrangThaiTuKhai")
                         .HasColumnType("integer")
                         .HasColumnName("trang_thai_tu_khai");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_diem_danh");
@@ -699,13 +638,13 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("character varying(300)")
                         .HasColumnName("chuyen_mon");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("ngay_cap_nhat");
 
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<DateTimeOffset?>("NgayVaoLam")
                         .HasColumnType("timestamp with time zone")
@@ -718,14 +657,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_ho_so_giao_vien");
@@ -747,13 +678,13 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("ngay_cap_nhat");
 
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<Guid>("NguoiDungId")
                         .HasColumnType("uuid")
@@ -778,14 +709,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("character varying(300)")
                         .HasColumnName("truong_lop");
 
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
-
                     b.HasKey("Id")
                         .HasName("pk_ho_so_hoc_vien");
 
@@ -806,13 +729,13 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("ngay_cap_nhat");
 
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<Guid>("NguoiDungId")
                         .HasColumnType("uuid")
@@ -821,14 +744,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_ho_so_nhan_vien");
@@ -849,14 +764,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
 
                     b.Property<string>("Email")
                         .HasMaxLength(200)
@@ -879,6 +786,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("link_facebook");
 
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
+
                     b.Property<Guid?>("NguoiDungId")
                         .HasColumnType("uuid")
                         .HasColumnName("nguoi_dung_id");
@@ -899,14 +814,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_khach_hang");
@@ -938,14 +845,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<bool>("DangBan")
                         .HasColumnType("boolean")
                         .HasColumnName("dang_ban");
@@ -964,6 +863,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("gia_tien");
 
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
+
                     b.Property<int>("SoBuoi")
                         .HasColumnType("integer")
                         .HasColumnName("so_buoi");
@@ -977,14 +884,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_khoa_hoc");
@@ -1009,14 +908,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<string>("GhiChu")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
@@ -1029,6 +920,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<Guid>("LopHocId")
                         .HasColumnType("uuid")
                         .HasColumnName("lop_hoc_id");
+
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<DateTimeOffset>("NgayThu")
                         .HasColumnType("timestamp with time zone")
@@ -1055,14 +954,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_khoan_thu_hoc_phi");
@@ -1092,14 +983,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<int>("HinhThuc")
                         .HasColumnType("integer")
                         .HasColumnName("hinh_thuc");
@@ -1107,6 +990,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<Guid>("KhachHangId")
                         .HasColumnType("uuid")
                         .HasColumnName("khach_hang_id");
+
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<Guid?>("NguoiPhuTrachId")
                         .HasColumnType("uuid")
@@ -1130,14 +1021,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("trang_thai_sau");
 
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
-
                     b.HasKey("Id")
                         .HasName("pk_lich_su_cham_soc");
 
@@ -1160,14 +1043,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<string>("DuongDan")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -1183,6 +1058,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("loai");
 
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
+
                     b.Property<Guid>("NguoiDungId")
                         .HasColumnType("uuid")
                         .HasColumnName("nguoi_dung_id");
@@ -1190,14 +1073,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_lien_ket_mxh");
@@ -1217,14 +1092,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
 
                     b.Property<string>("GhiChu")
                         .HasMaxLength(1000)
@@ -1249,6 +1116,10 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("link_hoc");
 
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
                     b.Property<DateTimeOffset?>("NgayKetThuc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ngay_ket_thuc");
@@ -1256,6 +1127,10 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<DateTimeOffset?>("NgayKhaiGiang")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ngay_khai_giang");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<Guid?>("NguoiTaoId")
                         .HasColumnType("uuid")
@@ -1288,14 +1163,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("trang_thai");
 
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
-
                     b.HasKey("Id")
                         .HasName("pk_lop_hoc");
 
@@ -1326,14 +1193,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<string>("GhiChu")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
@@ -1352,9 +1211,17 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("lop_hoc_id");
 
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
                     b.Property<DateTimeOffset?>("NgayRoiLop")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ngay_roi_lop");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<DateTimeOffset>("NgayVaoLop")
                         .HasColumnType("timestamp with time zone")
@@ -1367,14 +1234,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<int>("TrangThai")
                         .HasColumnType("integer")
                         .HasColumnName("trang_thai");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_lop_hoc_hoc_vien");
@@ -1399,14 +1258,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<Guid>("KhoaHocId")
                         .HasColumnType("uuid")
                         .HasColumnName("khoa_hoc_id");
@@ -1415,17 +1266,17 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("lop_hoc_id");
 
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_lop_hoc_khoa_hoc");
@@ -1450,14 +1301,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<string>("GhiChu")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
@@ -1467,6 +1310,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("lop_hoc_id");
 
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
@@ -1474,14 +1325,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<Guid>("TroGiangId")
                         .HasColumnType("uuid")
                         .HasColumnName("tro_giang_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_lop_hoc_tro_giang");
@@ -1520,14 +1363,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("chuc_vu_id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<string>("DiaChi")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
@@ -1553,9 +1388,17 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("loai_nguoi_dung");
 
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
                     b.Property<DateTimeOffset?>("NgaySinh")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ngay_sinh");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<Guid?>("PhongBanId")
                         .HasColumnType("uuid")
@@ -1584,14 +1427,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("trang_thai_nhan_su");
 
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
-
                     b.HasKey("Id")
                         .HasName("pk_nguoi_dung");
 
@@ -1614,13 +1449,13 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("ngay_cap_nhat");
 
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<Guid>("QuyenId")
                         .HasColumnType("uuid")
@@ -1633,14 +1468,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_nguoidung_quyen");
@@ -1669,14 +1496,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("buoi_hoc_id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<Guid>("HocVienId")
                         .HasColumnType("uuid")
                         .HasColumnName("hoc_vien_id");
@@ -1684,6 +1503,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<int?>("MucHaiLong")
                         .HasColumnType("integer")
                         .HasColumnName("muc_hai_long");
+
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<string>("NoiDung")
                         .IsRequired()
@@ -1694,14 +1521,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_nhan_xet_buoi_hoc");
@@ -1735,14 +1554,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("chuc_nang");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<string>("DiaChiIp")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
@@ -1761,6 +1572,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("ma_loi");
+
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<Guid?>("NguoiDungId")
                         .HasColumnType("uuid")
@@ -1792,14 +1611,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("thanh_cong");
 
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
-
                     b.Property<string>("Username")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
@@ -1814,8 +1625,8 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.HasIndex("TenantId", "ChucNang")
                         .HasDatabaseName("ix_nhat_ky_he_thong_tenant_id_chuc_nang");
 
-                    b.HasIndex("TenantId", "CreatedAt")
-                        .HasDatabaseName("ix_nhat_ky_he_thong_tenant_id_created_at");
+                    b.HasIndex("TenantId", "NgayTao")
+                        .HasDatabaseName("ix_nhat_ky_he_thong_tenant_id_ngay_tao");
 
                     b.HasIndex("TenantId", "NguoiDungId")
                         .HasDatabaseName("ix_nhat_ky_he_thong_tenant_id_nguoi_dung_id");
@@ -1830,18 +1641,18 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<string>("MoTa")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("mo_ta");
+
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<Guid?>("NguoiQuanLyId")
                         .HasColumnType("uuid")
@@ -1864,14 +1675,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<int>("ThuTu")
                         .HasColumnType("integer")
                         .HasColumnName("thu_tu");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_phong_ban");
@@ -1904,18 +1707,18 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<string>("MoTa")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
                         .HasColumnName("mo_ta");
+
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<string>("TenQuyen")
                         .IsRequired()
@@ -1926,14 +1729,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_quyen");
@@ -1952,17 +1747,17 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<int>("HanhDong")
                         .HasColumnType("integer")
                         .HasColumnName("hanh_dong");
+
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<Guid>("QuyenId")
                         .HasColumnType("uuid")
@@ -1977,14 +1772,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_quyen_chuc_nang");
@@ -2006,17 +1793,17 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<DateTimeOffset>("HetHan")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("het_han");
+
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<Guid>("TaiKhoanId")
                         .HasColumnType("uuid")
@@ -2035,14 +1822,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)")
                         .HasColumnName("token_hash");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_refresh_token");
@@ -2063,14 +1842,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
 
                     b.Property<bool>("DangBan")
                         .HasColumnType("boolean")
@@ -2095,6 +1866,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("gia_tien");
 
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
+
                     b.Property<string>("Ten")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -2104,14 +1883,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_san_pham");
@@ -2136,13 +1907,13 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("ngay_cap_nhat");
 
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<Guid?>("NguoiDungId")
                         .HasColumnType("uuid")
@@ -2165,14 +1936,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<int>("TrangThai")
                         .HasColumnType("integer")
                         .HasColumnName("trang_thai");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.Property<string>("Username")
                         .IsRequired()
@@ -2202,14 +1965,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<int>("Loai")
                         .HasColumnType("integer")
                         .HasColumnName("loai");
@@ -2218,6 +1973,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("mo_ta");
+
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<Guid?>("NguoiTaiLenId")
                         .HasColumnType("uuid")
@@ -2232,14 +1995,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("tieu_de");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_tai_lieu");
@@ -2260,17 +2015,17 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<Guid>("LopHocId")
                         .HasColumnType("uuid")
                         .HasColumnName("lop_hoc_id");
+
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<Guid>("TaiLieuId")
                         .HasColumnType("uuid")
@@ -2279,14 +2034,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_tai_lieu_lop_hoc");
@@ -2326,14 +2073,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("chu_tai_khoan");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<string>("DiaChi")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
@@ -2367,6 +2106,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("character varying(64)")
                         .HasColumnName("mui_gio");
 
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
+
                     b.Property<int>("SoNgayCanhBaoNoHocPhi")
                         .HasColumnType("integer")
                         .HasColumnName("so_ngay_canh_bao_no_hoc_phi");
@@ -2391,14 +2138,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("ten_viet_tat");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_tenant");
@@ -2433,14 +2172,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("bai_tap_id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<string>("KhoaLuuTru")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -2456,6 +2187,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)")
                         .HasColumnName("loai_noi_dung");
+
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<Guid?>("NguoiDungId")
                         .HasColumnType("uuid")
@@ -2478,14 +2217,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_tep_dinh_kem");
@@ -2530,14 +2261,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<Guid>("DangKyId")
                         .HasColumnType("uuid")
                         .HasColumnName("dang_ky_id");
@@ -2546,6 +2269,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
                         .HasColumnName("ghi_chu");
+
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<DateTimeOffset>("NgayThu")
                         .HasColumnType("timestamp with time zone")
@@ -2567,14 +2298,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_thu_tien_dang_ky");
@@ -2601,14 +2324,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
                     b.Property<DateTimeOffset?>("DaDungLuc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("da_dung_luc");
@@ -2616,6 +2331,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("HetHan")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("het_han");
+
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
 
                     b.Property<Guid>("TaiKhoanId")
                         .HasColumnType("uuid")
@@ -2630,14 +2353,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)")
                         .HasColumnName("token_hash");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_token_datlai_matkhau");
@@ -2658,14 +2373,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
 
                     b.Property<Guid>("DangKyId")
                         .HasColumnType("uuid")
@@ -2693,6 +2400,14 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("ly_do_tu_choi");
 
+                    b.Property<DateTimeOffset?>("NgayCapNhat")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_cap_nhat");
+
+                    b.Property<DateTimeOffset>("NgayTao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ngay_tao");
+
                     b.Property<Guid?>("NguoiDuyetId")
                         .HasColumnType("uuid")
                         .HasColumnName("nguoi_duyet_id");
@@ -2716,14 +2431,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Property<int>("TrangThai")
                         .HasColumnType("integer")
                         .HasColumnName("trang_thai");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
 
                     b.HasKey("Id")
                         .HasName("pk_yeu_cau_xep_lop");

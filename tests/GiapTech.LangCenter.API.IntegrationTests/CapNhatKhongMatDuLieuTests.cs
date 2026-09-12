@@ -2,6 +2,9 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using GiapTech.LangCenter.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GiapTech.LangCenter.API.IntegrationTests;
 
@@ -24,11 +27,11 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
         var body = await res.Content.ReadFromJsonAsync<JsonElement>();
         return body.GetProperty("duLieu").EnumerateArray().ToList();
     }
-    private async Task<HttpClient> Client()
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaTrungTam = factory.MaTrungTamA, Username = "manager", MatKhau = "manager123" });
+            new { MaTrungTam = factory.MaTrungTamA, Username = user, MatKhau = mk });
         res.EnsureSuccessStatusCode();
         var body = await res.Content.ReadFromJsonAsync<JsonElement>();
 
@@ -397,5 +400,76 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
             TrangThaiNhanSu = "DangLamViec"
         });
         Assert.Equal(HttpStatusCode.BadRequest, rong.StatusCode);
+    }
+
+    /// <summary>
+    /// Bốn cột audit (ADR-0006) do `AppDbContext` **tự gán** — không handler nào phải nhớ.
+    ///
+    /// Canh ba điều, mỗi điều là một cách hỏng khác nhau:
+    /// 1. Tạo mới → `CreatedById` = người đang đăng nhập, `UpdatedById` còn null.
+    /// 2. Sửa → `UpdatedById` được gán, `UpdatedAt` có giá trị.
+    /// 3. **`CreatedById` KHÔNG đổi khi sửa** — đây là chỗ dễ hỏng nhất: gán ở nhánh chung thì
+    ///    người sửa âm thầm trở thành người tạo, và không có gì báo vì cả hai đều là Guid hợp lệ.
+    /// </summary>
+    [Fact]
+    public async Task Bon_cot_audit_tu_gan_va_nguoi_tao_khong_bi_ghi_de_khi_sua()
+    {
+        var c = await Client();
+
+        var tao = await c.PostAsJsonAsync("/api/v1/khoa-hoc", new
+        {
+            Ten = "Khoá canh audit", GhiChu = (string?)null, GiaTien = 1_000_000m,
+            DonViTien = "VND", SoBuoi = 10, DangBan = true
+        });
+        tao.EnsureSuccessStatusCode();
+        var id = await tao.Content.ReadFromJsonAsync<Guid>();
+
+        var (taoBoi, suaBoi, suaLuc) = await DocAudit(id);
+        Assert.NotNull(taoBoi);          // người đăng nhập, không phải null
+        Assert.Null(suaBoi);             // chưa ai sửa
+        Assert.Null(suaLuc);
+
+        // Sửa bằng NGƯỜI KHÁC — bắt buộc, nếu không thì `CreatedById` bị ghi đè vẫn bằng giá
+        // trị cũ và test xanh sai. Đã chứng minh bằng đột biến: cùng một người thì bỏ hẳn chốt
+        // giữ `CreatedById` mà test vẫn qua.
+        var quyens = await c.GetFromJsonAsync<List<JsonElement>>("/api/v1/quyen");
+        var quyenAdmin = quyens!.First(q => q.GetProperty("tenQuyen").GetString() == "Quản trị viên")
+            .GetProperty("id").GetString();
+
+        (await c.PostAsJsonAsync("/api/v1/nguoi-dung", new
+        {
+            HoTen = "Người sửa audit", LoaiNguoiDung = "NhanVien",
+            TaiKhoan = new
+            {
+                Username = "audit-nguoi-sua", MatKhau = "matkhau123",
+                QuyenIds = new[] { quyenAdmin }, PhaiDoiMatKhau = false
+            }
+        })).EnsureSuccessStatusCode();
+
+        var c2 = await Client("audit-nguoi-sua", "matkhau123");
+        (await c2.PutAsJsonAsync($"/api/v1/khoa-hoc/{id}", new
+        {
+            Id = id, Ten = "Khoá canh audit (đã sửa)", GhiChu = (string?)null,
+            GiaTien = 1_000_000m, DonViTien = "VND", SoBuoi = 10, DangBan = true
+        })).EnsureSuccessStatusCode();
+
+        var (taoBoiSau, suaBoiSau, suaLucSau) = await DocAudit(id);
+        Assert.Equal(taoBoi, taoBoiSau);      // KHÔNG bị ghi đè bởi người sửa
+        Assert.NotNull(suaBoiSau);
+        Assert.NotEqual(taoBoi, suaBoiSau);   // và người sửa THẬT SỰ khác người tạo
+        Assert.NotNull(suaLucSau);
+    }
+
+    /// <summary>Đọc thẳng 4 cột audit từ DB — chúng không lộ ra DTO nào.</summary>
+    private async Task<(Guid? TaoBoi, Guid? SuaBoi, DateTimeOffset? SuaLuc)> DocAudit(Guid khoaHocId)
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        // `IgnoreQueryFilters`: scope này không có tenant nên query filter sẽ lọc sạch.
+        var k = await db.KhoaHocs.IgnoreQueryFilters()
+            .FirstAsync(x => x.Id == khoaHocId);
+
+        return (k.CreatedById, k.UpdatedById, k.UpdatedAt);
     }
 }

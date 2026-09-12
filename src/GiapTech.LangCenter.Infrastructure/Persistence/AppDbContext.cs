@@ -11,7 +11,10 @@ namespace GiapTech.LangCenter.Infrastructure.Persistence;
 /// DbContext của ứng dụng. Chịu trách nhiệm cách ly dữ liệu giữa các tenant
 /// — xem docs/backend/multi-tenant.md.
 /// </summary>
-public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant currentTenant)
+public class AppDbContext(
+    DbContextOptions<AppDbContext> options,
+    ICurrentTenant currentTenant,
+    ICurrentUser currentUser)
     : DbContext(options), IAppDbContext
 {
     public DbSet<Tenant> Tenants => Set<Tenant>();
@@ -167,32 +170,39 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        GanTenantVaDauVetThoiGian();
+        GanTenantVaDauVetAudit();
         return base.SaveChangesAsync(cancellationToken);
     }
 
     public override int SaveChanges()
     {
-        GanTenantVaDauVetThoiGian();
+        GanTenantVaDauVetAudit();
         return base.SaveChanges();
     }
 
     /// <summary>
-    /// TẦNG PHÒNG VỆ 2 — tự gán tenant_id khi thêm mới.
+    /// TẦNG PHÒNG VỆ 2 — tự gán tenant_id và **bốn cột audit** khi ghi (ADR-0006).
     ///
     /// Để tầng Application tự gán thì sớm muộn cũng có chỗ quên; gán tập trung ở đây khiến
     /// việc quên trở nên bất khả thi.
     /// </summary>
-    private void GanTenantVaDauVetThoiGian()
+    private void GanTenantVaDauVetAudit()
     {
         var bayGio = DateTimeOffset.UtcNow;
+
+        // `UserId` (PERSON) chứ không `TaiKhoanId`: đây là khoá ngoại nghiệp vụ trỏ con người.
+        // null khi lệnh chạy bởi hệ thống — seeder, job nền, hoặc endpoint ẩn danh như đăng ký
+        // trung tâm. Đó là lý do hai cột này nullable.
+        var nguoiHienTai = currentUser.UserId;
 
         foreach (var entry in ChangeTracker.Entries<BaseEntity>())
         {
             switch (entry.State)
             {
                 case EntityState.Added:
-                    entry.Entity.NgayTao = bayGio;
+                    entry.Entity.CreatedAt = bayGio;
+                    entry.Entity.CreatedById ??= nguoiHienTai;
+
                     if (entry.Entity is ITenantEntity moi && moi.TenantId == Guid.Empty
                                                           && currentTenant.TenantId is { } tid)
                     {
@@ -201,7 +211,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentTenant
                     break;
 
                 case EntityState.Modified:
-                    entry.Entity.NgayCapNhat = bayGio;
+                    entry.Entity.UpdatedAt = bayGio;
+                    entry.Entity.UpdatedById = nguoiHienTai;
+
+                    // KHÔNG đụng `CreatedById` khi cập nhật: người sửa sẽ âm thầm trở thành
+                    // "người tạo" và không có gì báo vì cả hai đều là Guid hợp lệ.
+                    entry.Property(nameof(BaseEntity.CreatedById)).IsModified = false;
+                    entry.Property(nameof(BaseEntity.CreatedAt)).IsModified = false;
+
                     // Không cho đổi tenant của bản ghi đã tồn tại — đó là chuyển dữ liệu sang trung tâm khác.
                     if (entry.Entity is ITenantEntity)
                         entry.Property(nameof(ITenantEntity.TenantId)).IsModified = false;

@@ -223,7 +223,7 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
             .Include(t => t.TaiKhoan).ThenInclude(tk => tk.NguoiDung)
             .Where(t => t.TaiKhoan.NguoiDung != null
                         && t.TaiKhoan.NguoiDung.Email == email && t.DaDungLuc == null)
-            .OrderByDescending(t => t.NgayTao)
+            .OrderByDescending(t => t.CreatedAt)
             .FirstOrDefault();
 
         return banGhi is null ? null : TokenThoDaGhiNhan.GetValueOrDefault(banGhi.TokenHash);

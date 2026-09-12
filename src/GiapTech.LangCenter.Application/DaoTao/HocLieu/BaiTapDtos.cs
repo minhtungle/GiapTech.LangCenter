@@ -55,7 +55,7 @@ public class LayBaiTapCuaLopHandler(IAppDbContext db, IPhamViLopHoc phamVi)
         if (request.BuoiHocId is { } bh) q = q.Where(bt => bt.BuoiHocId == bh);
 
         return await q
-            .OrderBy(bt => bt.BuoiHoc.ThuTu).ThenBy(bt => bt.NgayTao)
+            .OrderBy(bt => bt.BuoiHoc.ThuTu).ThenBy(bt => bt.CreatedAt)
             .Select(bt => new BaiTapDto(
                 bt.Id, bt.BuoiHocId, bt.BuoiHoc.ThuTu, bt.TieuDe, bt.MoTa, bt.HanNop,
                 bt.Teps.Select(t => new TepDto(t.Id, t.TenGoc, t.LoaiNoiDung, t.KichThuoc))

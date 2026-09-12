@@ -133,6 +133,8 @@ không phân công được họ vào lớp cũ nữa.
 | `LOP_HOC` | `giao_vien_chinh_id` NOT NULL (đúng 1 người), `hoc_phi` nullable (`null` = chưa nhập ≠ `0` = miễn phí), `suc_chua_toi_da` nullable = không giới hạn, `nhan_ban_tu_lop_id` (dấu vết nguồn gốc), `trang_thai` |
 | `LOP_HOC_HOC_VIEN` | `ngay_vao_lop`, `ngay_roi_lop`, `trang_thai`, **`hoc_phi_ap_dung`** — snapshot lúc ghi danh, cho phép miễn giảm từng người |
 | `LOP_HOC_TRO_GIANG` | Bảng **riêng**, không gộp với học viên bằng cột `vai_tro`: gộp thì nửa số cột luôn NULL và mọi query học viên phải nhớ `WHERE vai_tro = 1` |
+| **4 cột audit** (mọi bảng) | `created_at` · `updated_at` · `created_by_id` · `updated_by_id` — ADR-0006. `AppDbContext` **tự gán**, không handler nào phải nhớ. Nullable vì: hàng có trước 12/09/2026, lệnh chạy bởi hệ thống (seeder/job), người tạo đã bị xoá. `created_by_id` **không đổi khi sửa** — gán ở nhánh chung thì người sửa âm thầm thành người tạo. Bổ sung `AUDIT_LOG` chứ không thay: cột là **ảnh chụp hiện tại**, log là **dòng thời gian** |
+| `KHACH_HANG.nguoi_tao_id` | Nhân viên kinh doanh đã tạo hồ sơ khách (12/09/2026). **SetNull**: nhân viên nghỉ việc bị xoá thì hồ sơ khách không biến mất theo — tài sản của trung tâm, không của người bán. Nullable vì khách tạo trước 12/09 không truy ngược được |
 | `LOP_HOC_KHOA_HOC` | Lớp dạy khoá nào — **tối đa 3** (12/09/2026, đóng nợ N19). Bảng trung gian chứ không 3 cột `khoa_hoc_1/2/3_id`: ba cột thì query "lớp nào dạy khoá X" phải `OR` ba lần, quên một cột là lọt. Giới hạn 3 ép ở **validator**, không ở schema — con số do nghiệp vụ đặt. FK về `KHOA_HOC` là **RESTRICT**: xoá khoá đang được dạy sẽ âm thầm bỏ liên kết và lớp mất căn cứ đối chiếu đơn CRM lúc duyệt học viên |
 
 ### Nhóm buổi học & điểm danh (3 bảng)

@@ -36,7 +36,7 @@ public class CachLyTenantTests
                 Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
-        return new AppDbContext(options, tenant);
+        return new AppDbContext(options, tenant, new NguoiDungGia());
     }
 
     // Mỗi tenant dùng một context riêng — phản ánh đúng runtime, nơi DbContext đăng ký scoped
@@ -109,7 +109,7 @@ public class CachLyTenantTests
         db.SaveChanges();
 
         Assert.Equal(TenantA, quyen.TenantId);
-        Assert.NotEqual(default, quyen.NgayTao);
+        Assert.NotEqual(default, quyen.CreatedAt);
     }
 
     [Fact]

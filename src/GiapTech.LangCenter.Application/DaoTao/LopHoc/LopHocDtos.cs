@@ -77,7 +77,7 @@ public class LayDanhSachLopHocHandler(
         var xemTien = await phamViTien.DuocXemTienCuaLop(ct);
 
         var duLieu = await q
-            .OrderByDescending(l => l.NgayKhaiGiang ?? l.NgayTao)
+            .OrderByDescending(l => l.NgayKhaiGiang ?? l.CreatedAt)
             .Skip(trang.BoQua)
             .Take(trang.SoDongHopLe)
             .Select(l => new LopHocDto(

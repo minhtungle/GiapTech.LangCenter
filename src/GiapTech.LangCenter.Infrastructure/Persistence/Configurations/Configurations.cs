@@ -242,7 +242,7 @@ public class NhatKyHeThongConfig : IEntityTypeConfiguration<NhatKyHeThong>
         b.Property(x => x.DiaChiIp).HasMaxLength(64);
 
         // Truy vấn chính của màn nhật ký: mới nhất trước, trong phạm vi tenant.
-        b.HasIndex(x => new { x.TenantId, x.NgayTao });
+        b.HasIndex(x => new { x.TenantId, x.CreatedAt });
         // Lọc theo module và theo người — hai bộ lọc hay dùng nhất.
         b.HasIndex(x => new { x.TenantId, x.ChucNang });
         b.HasIndex(x => new { x.TenantId, x.NguoiDungId });

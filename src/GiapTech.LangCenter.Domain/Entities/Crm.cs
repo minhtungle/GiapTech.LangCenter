@@ -36,6 +36,20 @@ public class KhachHang : TenantEntity
     public Guid? NguoiDungId { get; set; }
     public NguoiDung? NguoiDung { get; set; }
 
+    /// <summary>
+    /// Nhân viên kinh doanh đã TẠO hồ sơ khách này (12/09/2026). Handler tự gán từ
+    /// `ICurrentUser.UserId`, không nhận từ client — nếu không thì ai cũng khai được mình là
+    /// người tạo của khách người khác.
+    ///
+    /// Nullable vì hai lẽ: khách tạo TRƯỚC 12/09/2026 không truy ngược được ai tạo (thêm cột
+    /// NOT NULL sẽ phải bịa một giá trị), và người tạo có thể đã bị xoá khỏi hệ thống.
+    ///
+    /// Khác `LICH_SU_CHAM_SOC.NguoiPhuTrachId` (ai đang chăm khách — đổi theo thời gian) và
+    /// khác `YEU_CAU_XEP_LOP.NguoiGuiId` (ai đẩy khách sang đào tạo). Ba câu hỏi khác nhau.
+    /// </summary>
+    public Guid? NguoiTaoId { get; set; }
+    public NguoiDung? NguoiTao { get; set; }
+
     public ICollection<DangKyKhoaHoc> DangKys { get; set; } = [];
 
     public ICollection<LichSuChamSoc> LichSuChamSocs { get; set; } = [];

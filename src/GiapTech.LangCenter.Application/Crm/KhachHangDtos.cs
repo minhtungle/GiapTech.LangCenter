@@ -104,7 +104,8 @@ public class LuuKhachHangValidator : AbstractValidator<LuuKhachHangCommand>
     }
 }
 
-public class LuuKhachHangHandler(IAppDbContext db) : IRequestHandler<LuuKhachHangCommand, Guid>
+public class LuuKhachHangHandler(IAppDbContext db, ICurrentUser currentUser)
+    : IRequestHandler<LuuKhachHangCommand, Guid>
 {
     public async Task<Guid> Handle(LuuKhachHangCommand request, CancellationToken ct)
     {
@@ -138,7 +139,17 @@ public class LuuKhachHangHandler(IAppDbContext db) : IRequestHandler<LuuKhachHan
         }
         else
         {
-            kh = new Domain.Entities.KhachHang();
+            kh = new Domain.Entities.KhachHang
+            {
+                // Nhân viên kinh doanh tạo hồ sơ — gán Ở ĐÂY, trong nhánh TẠO MỚI (12/09/2026).
+                //
+                // KHÔNG gán ở phần ghi trường chung bên dưới: sửa hồ sơ khách sẽ biến người sửa
+                // thành "người tạo", và không có gì báo vì cả hai đều là Guid hợp lệ.
+                //
+                // `UserId` chứ không `TaiKhoanId`: đây là khoá ngoại nghiệp vụ trỏ `NGUOI_DUNG`
+                // — lẫn hai thứ này trả rỗng im lặng, không có lỗi biên dịch.
+                NguoiTaoId = currentUser.UserId
+            };
             db.KhachHangs.Add(kh);
         }
 

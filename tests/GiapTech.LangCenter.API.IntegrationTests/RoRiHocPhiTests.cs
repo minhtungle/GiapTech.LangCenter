@@ -208,4 +208,52 @@ public class RoRiHocPhiTests(ApiFactory factory) : IClassFixture<ApiFactory>
             1_000_000m,
             Tien(ds!.Single(h => h.GetProperty("hocVienId").GetGuid() == hv2), "hocPhiApDung"));
     }
+
+    /// <summary>
+    /// Tên NHÂN VIÊN KINH DOANH trong `HocVienTrongLopDto` là dữ liệu CRM đi nhờ DTO của LMS
+    /// (12/09/2026) — đúng cái bẫy đã làm rò rỉ học phí ở chính file test này.
+    ///
+    /// Endpoint gác bằng `LopHoc.Xem`, quyền mà GIÁO VIÊN và HỌC VIÊN đều có. Nếu không gác
+    /// riêng bằng `KhachHang.Xem` thì họ đọc được ai bán khách nào — thông tin nội bộ của bộ
+    /// phận kinh doanh.
+    ///
+    /// Có cả CHIỀU NGƯỢC (admin THẤY được): thiếu nó thì trả null cho mọi người cũng xanh, và
+    /// tính năng coi như không tồn tại.
+    /// </summary>
+    [Fact]
+    public async Task Giao_vien_va_hoc_vien_khong_thay_ten_nhan_vien_kinh_doanh()
+    {
+        var admin = await Client();
+        var (lop, hv1, _) = await DungLop(admin, "nvkd");
+
+        // Khách hàng do admin tạo, nối với hồ sơ học viên hv1 → NVKD chính là admin.
+        var khach = await admin.PostAsJsonAsync("/api/v1/khach-hang", new
+        {
+            HoTen = "Khách của NVKD", SoDienThoai = "0988000111", NguoiDungId = hv1
+        });
+        khach.EnsureSuccessStatusCode();
+
+        // ADMIN (có KhachHang.Xem) PHẢI thấy — chiều ngược.
+        var cuaAdmin = await admin.GetFromJsonAsync<List<JsonElement>>(
+            $"/api/v1/lop-hoc/{lop}/hoc-vien");
+        var dongAdmin = cuaAdmin!.Single(x => x.GetProperty("hocVienId").GetGuid() == hv1);
+        Assert.False(
+            string.IsNullOrEmpty(dongAdmin.GetProperty("tenNhanVienKinhDoanh").GetString()),
+            "Admin có KhachHang.Xem thì phải thấy tên nhân viên kinh doanh.");
+
+        // GIÁO VIÊN không có KhachHang.Xem → null ở MỌI dòng.
+        var gv = await Client($"gvrr-nvkd", "matkhau123");
+        var cuaGv = await gv.GetFromJsonAsync<List<JsonElement>>(
+            $"/api/v1/lop-hoc/{lop}/hoc-vien");
+        Assert.All(cuaGv!, x => Assert.Equal(
+            JsonValueKind.Null, x.GetProperty("tenNhanVienKinhDoanh").ValueKind));
+
+        // HỌC VIÊN cũng không — kể cả với dòng của CHÍNH MÌNH. Khác học phí (họ thấy số của
+        // mình): ai bán mình không phải thông tin của mình.
+        var hocVien = await Client($"hvrr1-nvkd", "matkhau123");
+        var cuaHv = await hocVien.GetFromJsonAsync<List<JsonElement>>(
+            $"/api/v1/lop-hoc/{lop}/hoc-vien");
+        Assert.All(cuaHv!, x => Assert.Equal(
+            JsonValueKind.Null, x.GetProperty("tenNhanVienKinhDoanh").ValueKind));
+    }
 }

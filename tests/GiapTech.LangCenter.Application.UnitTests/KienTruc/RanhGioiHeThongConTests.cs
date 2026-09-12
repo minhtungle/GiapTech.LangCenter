@@ -38,6 +38,26 @@ public class RanhGioiHeThongConTests
             "FR-21 là cầu nối CRM → LMS theo thiết kế: bán khoá xong xếp học viên vào lớp. "
             + "Handler duyệt phải gọi BaoDamThayLop của LMS để tôn trọng IPhamViLopHoc — viết "
             + "lại phép kiểm phạm vi ở CRM là hai bản sẽ trôi khỏi nhau. Xem ADR-0005.",
+
+        ["HocVienTrongLopDtos.cs → Crm"] =
+            "Chiều NGƯỢC của FR-21 (12/09/2026): danh sách học viên trong lớp hiện tên nhân "
+            + "viên kinh doanh đã tạo hồ sơ khách, theo yêu cầu chủ sản phẩm. Chỉ ĐỌC "
+            + "`KHACH_HANG.NguoiTao` qua IAppDbContext, không gọi handler nào của CRM. "
+            + "Gác riêng bằng `KhachHang.Xem` vì endpoint này gác `LopHoc.Xem` — quyền mà giáo "
+            + "viên và học viên cũng có.",
+    };
+
+    /// <summary>
+    /// Entity của hệ thống khác mà một hệ thống KHÔNG được đọc thẳng qua `IAppDbContext`.
+    ///
+    /// Vì sao cần riêng test này: test namespace ở trên chỉ bắt `using ...Application.Crm` và
+    /// `Crm.X` — nó **không bắt** `db.KhachHangs` vì mọi `DbSet` nằm chung trong `IAppDbContext`.
+    /// Phát hiện 12/09/2026 khi thêm tên NVKD vào DTO học viên: cầu nối mới lọt qua lưới cũ mà
+    /// test vẫn xanh.
+    /// </summary>
+    private static readonly Dictionary<string, string[]> DbSetCuaHeThong = new()
+    {
+        ["Crm"] = ["KhachHangs", "DangKyKhoaHocs", "ThuTienDangKys", "LichSuChamSocs"],
     };
 
     private static DirectoryInfo GocApplication()
@@ -50,6 +70,48 @@ public class RanhGioiHeThongConTests
         var app = new DirectoryInfo(Path.Combine(d!.FullName, "src", "GiapTech.LangCenter.Application"));
         Assert.True(app.Exists, $"Không thấy thư mục Application ở {app.FullName}");
         return app;
+    }
+
+    /// <summary>
+    /// Chiều thứ hai: đọc thẳng `DbSet` của hệ thống khác qua `IAppDbContext` cũng là cầu nối,
+    /// dù không có `using` nào. Phải khai như mọi cầu nối khác.
+    /// </summary>
+    [Fact]
+    public void Khong_doc_thang_DbSet_cua_he_thong_khac_ngoai_cau_noi_da_khai()
+    {
+        var app = GocApplication();
+        var viPham = new List<string>();
+
+        foreach (var (tenHeThong, thuMuc) in ThuMucHeThong)
+        {
+            var dir = new DirectoryInfo(Path.Combine(app.FullName, thuMuc));
+            if (!dir.Exists) continue;
+
+            foreach (var (heThongKhac, dbSets) in DbSetCuaHeThong)
+            {
+                if (heThongKhac == tenHeThong) continue;
+
+                foreach (var f in dir.GetFiles("*.cs", SearchOption.AllDirectories))
+                {
+                    var noiDung = File.ReadAllText(f.FullName);
+                    foreach (var ds in dbSets)
+                    {
+                        if (!Regex.IsMatch(noiDung, $@"\bdb\.{ds}\b")) continue;
+
+                        var khoa = $"{f.Name} → {heThongKhac}";
+                        if (!CauNoiDuocPhep.ContainsKey(khoa)) viPham.Add($"{khoa} (db.{ds})");
+                    }
+                }
+            }
+        }
+
+        Assert.True(
+            viPham.Count == 0,
+            "Đọc thẳng DbSet của hệ thống khác mà chưa khai cầu nối:\n"
+            + string.Join("\n", viPham.Distinct())
+            + "\n\nMọi DbSet nằm chung trong IAppDbContext nên compiler không chặn, và test "
+            + "namespace cũng không thấy. Nếu đây là cầu nối nghiệp vụ thật → thêm vào "
+            + "CauNoiDuocPhep kèm lý do.");
     }
 
     [Fact]
@@ -121,6 +183,13 @@ public class RanhGioiHeThongConTests
                     var noiDung = File.ReadAllText(f.FullName);
                     if (Regex.IsMatch(noiDung,
                         $@"(using\s+GiapTech\.LangCenter\.Application\.{khac}\b)|(\b{khac}\.[A-Z])"))
+                        thucTe.Add($"{f.Name} → {khac}");
+
+                    // Quét CẢ cầu nối kiểu đọc thẳng DbSet — nếu không thì cầu nối loại đó bị
+                    // báo "lạc hậu" ngay sau khi khai (12/09/2026).
+                    var tenHtKhac = ThuMucHeThong.First(x => x.Value == khac).Key;
+                    if (DbSetCuaHeThong.TryGetValue(tenHtKhac, out var dbSets)
+                        && dbSets.Any(ds => Regex.IsMatch(noiDung, $@"\bdb\.{ds}\b")))
                         thucTe.Add($"{f.Name} → {khac}");
                 }
             }

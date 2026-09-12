@@ -36,6 +36,11 @@ public class KhachHangConfig : IEntityTypeConfiguration<KhachHang>
         // họ). Khác Restrict ở chỗ đây chỉ là mối nối "cùng một người", không phải phụ thuộc.
         b.HasOne(x => x.NguoiDung).WithMany()
             .HasForeignKey(x => x.NguoiDungId).OnDelete(DeleteBehavior.SetNull);
+
+        // SetNull cùng lý lẽ: nhân viên kinh doanh nghỉ việc và bị xoá khỏi hệ thống thì hồ sơ
+        // khách hàng KHÔNG được biến mất theo — đó là tài sản của trung tâm, không của người bán.
+        b.HasOne(x => x.NguoiTao).WithMany()
+            .HasForeignKey(x => x.NguoiTaoId).OnDelete(DeleteBehavior.SetNull);
     }
 }
 

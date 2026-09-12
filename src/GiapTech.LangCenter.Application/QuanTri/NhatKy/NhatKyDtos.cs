@@ -65,18 +65,18 @@ public class LayNhatKyHandler(IAppDbContext db)
         if (request.HanhDong is { } hd) q = q.Where(n => n.HanhDong == hd);
         if (request.NguoiDungId is { } nd) q = q.Where(n => n.NguoiDungId == nd);
         if (request.ChiThatBai == true) q = q.Where(n => !n.ThanhCong);
-        if (request.TuNgay is { } tn) q = q.Where(n => n.NgayTao >= tn);
-        if (request.DenNgay is { } dn) q = q.Where(n => n.NgayTao <= dn);
+        if (request.TuNgay is { } tn) q = q.Where(n => n.CreatedAt >= tn);
+        if (request.DenNgay is { } dn) q = q.Where(n => n.CreatedAt <= dn);
 
         var tong = await q.CountAsync(ct);
 
         var duLieu = await q
             // Mới nhất trước: người tra nhật ký gần như luôn muốn biết "vừa rồi ai làm gì".
-            .OrderByDescending(n => n.NgayTao)
+            .OrderByDescending(n => n.CreatedAt)
             .Skip(trang.BoQua)
             .Take(trang.SoDongHopLe)
             .Select(n => new NhatKyDto(
-                n.Id, n.NgayTao, n.TenLenh, n.ChucNang, n.HanhDong,
+                n.Id, n.CreatedAt, n.TenLenh, n.ChucNang, n.HanhDong,
                 n.NguoiDungId, n.Username, n.HoTen,
                 n.ThanhCong, n.MaLoi, n.ThamSo, n.ChiTiet,
                 n.SoBanGhiAnhHuong, n.DiaChiIp, n.SoMiliGiay))

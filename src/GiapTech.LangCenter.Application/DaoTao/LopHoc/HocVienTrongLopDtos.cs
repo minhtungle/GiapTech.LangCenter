@@ -1,6 +1,7 @@
 using FluentValidation;
 using GiapTech.LangCenter.Application.Common.Exceptions;
 using GiapTech.LangCenter.Application.Common.Interfaces;
+using GiapTech.LangCenter.Domain.Common;
 using GiapTech.LangCenter.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -24,14 +25,27 @@ public record HocVienTrongLopDto(
     /// viên chỉ thấy số của chính mình. Xem <c>IPhamViHocPhi.DuocXemTienCuaLop</c>.
     /// </summary>
     decimal? HocPhiApDung,
-    string? GhiChu);
+    string? GhiChu,
+    /// <summary>
+    /// Nhân viên kinh doanh đã tạo hồ sơ khách hàng của học viên này (12/09/2026).
+    ///
+    /// **null có BA nghĩa** — UI đừng hiểu thành một: người gọi không được xem (thiếu
+    /// `KhachHang.Xem`), học viên không đến từ CRM (thêm tay), hoặc khách tạo trước 12/09/2026.
+    ///
+    /// Gác bằng `KhachHang.Xem` chứ không để lộ theo `LopHoc.Xem`: đây là dữ liệu CRM đi nhờ
+    /// DTO của LMS — đúng cái bẫy đã làm rò rỉ học phí 07/09/2026, khi giáo viên và học viên
+    /// đọc được mức miễn giảm qua `HocVienTrongLopDto`. Ai bán khách nào là thông tin nội bộ
+    /// của bộ phận kinh doanh.
+    /// </summary>
+    string? TenNhanVienKinhDoanh);
 
 // ---------- Queries ----------
 
 public record LayHocVienTrongLopQuery(Guid LopHocId) : IRequest<List<HocVienTrongLopDto>>;
 
 public class LayHocVienTrongLopHandler(
-    IAppDbContext db, IPhamViLopHoc phamVi, IPhamViHocPhi phamViTien, ICurrentUser currentUser)
+    IAppDbContext db, IPhamViLopHoc phamVi, IPhamViHocPhi phamViTien, ICurrentUser currentUser,
+    IQuyenService quyenService, ICurrentTenant tenant)
     : IRequestHandler<LayHocVienTrongLopQuery, List<HocVienTrongLopDto>>
 {
     public async Task<List<HocVienTrongLopDto>> Handle(
@@ -46,6 +60,14 @@ public class LayHocVienTrongLopHandler(
         var xemTien = await phamViTien.DuocXemTienCuaLop(ct);
         var toi = currentUser.UserId;
 
+        // Tên nhân viên kinh doanh là dữ liệu CRM đi nhờ DTO của LMS — gác riêng bằng
+        // `KhachHang.Xem` (12/09/2026). Endpoint này gác bằng `LopHoc.Xem`, quyền mà GIÁO VIÊN
+        // và HỌC VIÊN đều có; không gác riêng thì họ đọc được ai bán khách nào. Cùng cái bẫy
+        // đã làm rò rỉ học phí 07/09/2026.
+        var xemNvkd = tenant.TenantId is { } tid && currentUser.TaiKhoanId is { } tkId
+                      && await quyenService.CoQuyenAsync(
+                          tid, tkId, ChucNang.KhachHang, HanhDong.Xem, ct);
+
         return await db.LopHocHocViens
             .Where(hv => hv.LopHocId == request.LopHocId)
             .OrderBy(hv => hv.HocVien.HoTen)
@@ -53,7 +75,15 @@ public class LayHocVienTrongLopHandler(
                 hv.Id, hv.HocVienId, hv.HocVien.HoTen, hv.HocVien.Email,
                 hv.HocVien.SoDienThoai, hv.NgayVaoLop, hv.TrangThai,
                 xemTien || hv.HocVienId == toi ? hv.HocPhiApDung : null,
-                hv.GhiChu))
+                hv.GhiChu,
+                // Nối qua KHACH_HANG: học viên thêm TAY (không qua CRM) không có hồ sơ khách
+                // nào trỏ tới nên trả null — đúng, họ không do ai bán.
+                xemNvkd
+                    ? db.KhachHangs
+                        .Where(k => k.NguoiDungId == hv.HocVienId && k.NguoiTao != null)
+                        .Select(k => k.NguoiTao!.HoTen)
+                        .FirstOrDefault()
+                    : null))
             .ToListAsync(ct);
     }
 

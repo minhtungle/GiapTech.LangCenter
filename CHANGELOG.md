@@ -8,6 +8,72 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — Bốn cột audit trên mọi bảng + ADR-0006 đặt tên tiếng Anh (12/09/2026)
+
+Theo yêu cầu chủ sản phẩm: *"cần cột người tạo, người sửa, ngày tạo, ngày sửa để check lịch sử
+dữ liệu khi cần"*, và *"nhất quán tiếng Anh cho tên bảng, hàm, biến"*.
+
+**[ADR-0006](./docs/kien-truc/adr/0006-dat-ten-tieng-anh-va-cot-audit.md)** chốt cả hai quyết
+định, thay thế quy ước *"tiếng Việt không dấu"* cũ. Ranh giới: **mã nguồn tiếng Anh, giao diện và
+URL tiếng Việt** — route `/lms/hoc-vien` giữ nguyên vì đó là thứ người dùng Việt thấy, đổi sang
+`/lms/students` không phục vụ mục tiêu open-source mà lại phá bookmark.
+
+Trạng thái trước: `ngay_tao`/`ngay_cap_nhat` có ở 37/37 bảng, `nguoi_tao_id` chỉ **4/37** (thêm
+lẻ tẻ), người sửa **0/37**.
+
+- **`BaseEntity` nay có 4 cột**: `CreatedAt` · `UpdatedAt` · `CreatedById` · `UpdatedById` —
+  đủ **37/37 bảng**. Đổi tên hai cột cũ sang tiếng Anh cùng lúc (bước đầu của ADR-0006).
+- `AppDbContext.SaveChangesAsync` **tự gán cả bốn**, cùng cách đã dùng cho `TenantId`: chỗ nào
+  để handler tự điền là chỗ sẽ có người quên.
+- **`CreatedById` KHÔNG đổi khi cập nhật** (`IsModified = false`). Gán ở nhánh chung thì người
+  sửa âm thầm trở thành "người tạo" — không có gì báo vì cả hai đều là `Guid` hợp lệ.
+- Nullable + FK `SetNull`: hàng có từ trước không truy ngược được; lệnh chạy bởi hệ thống
+  (seeder, job nền, endpoint ẩn danh) không có người dùng; nhân viên nghỉ việc bị xoá thì dữ
+  liệu nghiệp vụ **không** biến mất theo.
+- **Không thay `AUDIT_LOG`** (FR-16) — hai cơ chế trả lời hai câu khác nhau: cột cho *"ai sửa
+  lần cuối"* (1 truy vấn, hiện được trên UI), log cho *"toàn bộ lịch sử sửa"* kèm trường nào đổi.
+- Migration `ThemCotAudit`: `Up` chỉ `AddColumn` + `RenameColumn` — **không mất dữ liệu** (quy
+  tắc #1). 74 `DropColumn` nằm ở `Down`, đúng vai trò hoàn tác.
+
+**Test suýt xanh sai.** Bản đầu tạo và sửa bằng **cùng một người**, nên đột biến (bỏ hẳn chốt
+giữ `CreatedById`) vẫn qua — giá trị ghi đè bằng đúng giá trị cũ. Phải tạo người thứ hai và
+assert `NotEqual(taoBoi, suaBoi)` thì đột biến mới đỏ.
+
+### Changed — Tab Học viên của lớp: gọn lại + modal thông tin kèm nhân viên kinh doanh (12/09/2026)
+
+Theo yêu cầu chủ sản phẩm.
+
+- **Ô "Thêm học viên" và khối "Đang chờ xếp lớp" vào MODAL**, không bày sẵn trên bảng. Trước đó
+  mỗi lần chỉ muốn xem danh sách đều phải cuộn qua hai khối không dùng tới — mà xem danh sách
+  mới là việc làm thường xuyên, thêm người chỉ thỉnh thoảng. Cùng hướng với form sửa lớp đã
+  chuyển vào modal 09/09.
+- Modal giữ **hai đường riêng biệt**, không gộp: "Đang chờ xếp lớp" (học phí từ **đơn CRM**, gồm
+  miễn giảm đã chốt) và "Thêm trực tiếp" (học phí từ **lớp**). Gộp thì người dùng không biết
+  mình đang áp mức nào — lỗi tiền bạc. Badge số người chờ hiện ngay trên nút mở modal.
+- **Cột mới `KHACH_HANG.nguoi_tao_id`** (migration `ThemNguoiTaoKhachHang`) — nhân viên kinh
+  doanh đã tạo hồ sơ khách. Handler tự gán từ `ICurrentUser.UserId`, **chỉ ở nhánh TẠO MỚI**:
+  gán ở phần ghi trường chung sẽ biến người sửa thành người tạo mà không có gì báo.
+- Nullable + `SetNull`: khách tạo trước 12/09 không truy ngược được ai tạo, và nhân viên nghỉ
+  việc bị xoá thì hồ sơ khách **không** được biến mất theo — đó là tài sản của trung tâm.
+- **`HocVienTrongLopDto.TenNhanVienKinhDoanh` gác riêng bằng `KhachHang.Xem`**, không để lộ theo
+  `LopHoc.Xem`. Endpoint này gác `LopHoc.Xem` — quyền mà giáo viên và học viên đều có; đúng cái
+  bẫy đã làm rò rỉ học phí 07/09/2026. Học viên **không** thấy kể cả dòng của chính mình: ai bán
+  mình không phải thông tin của mình.
+- **Modal thông tin học viên** (menu ⋯ → Xem thông tin): email, điện thoại, ngày vào lớp, học
+  phí, NVKD, ghi chú. Bảng bỏ cột email (dài, hiếm khi đọc lướt), số điện thoại xuống dưới tên.
+- `tenNhanVienKinhDoanh` null có **ba nghĩa** (không đủ quyền · thêm tay không qua CRM · khách
+  cũ) nên UI **ẩn hẳn dòng** thay vì hiện "—" — dấu gạch làm người dùng tưởng dữ liệu mất.
+
+### Added — Test canh ranh giới hệ thống con qua DbSet (12/09/2026)
+
+`RanhGioiHeThongConTests` chỉ bắt tham chiếu **namespace** (`using ...Application.Crm`), **không
+bắt** `db.KhachHangs` vì mọi `DbSet` nằm chung trong `IAppDbContext`. Phát hiện khi thêm tên NVKD:
+cầu nối mới lọt qua lưới cũ mà test vẫn xanh.
+
+Thêm `Khong_doc_thang_DbSet_cua_he_thong_khac_ngoai_cau_noi_da_khai` + sửa test chiều ngược để
+nhận ra cầu nối kiểu này (nếu không, cầu nối vừa khai bị báo "lạc hậu" ngay). Đột biến (bỏ khai
+cầu nối) → đỏ kèm tên file và `db.KhachHangs`.
+
 ### Changed — Hàng chờ xếp lớp: phân trang, tìm kiếm, bảng gọn hơn (12/09/2026)
 
 Theo yêu cầu chủ sản phẩm *"làm gọn hơn, vì sau có thể có nhiều học viên"*.

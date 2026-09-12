@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Trash2, UserPlus } from 'lucide-react'
+import { Info, Trash2, UserPlus } from 'lucide-react'
 import { api, layDuLieuLoi, layMaLoi, type KetQuaTrang } from '@/lib/api'
 import {
-  Badge, Button, CanhBaoLoi, Card, CardContent, Label, Table, Td, Th, TrangTrong,
+  Badge, Button, CanhBaoLoi, Label, Table, Td, Th, TrangTrong,
 } from '@/components/ui'
 import { KhungNoiDung } from '@/components/ui/KhungNoiDung'
+import { Modal, ModalChan } from '@/components/ui/Modal'
 import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import { SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
@@ -40,6 +41,8 @@ export function HocVienCuaLop({
   const duocSuaLop = coQuyen('LopHoc', 'Sua')
   const [chon, setChon] = useState<string[]>([])
   const [maLoi, setMaLoi] = useState<string | null>(null)
+  const [moThem, setMoThem] = useState(false)
+  const [xemHv, setXemHv] = useState<HocVienTrongLop | null>(null)
 
   const { data: hocViens = [] } = useQuery({
     queryKey: ['lop-hoc', lop.id, 'hoc-vien'],
@@ -140,15 +143,177 @@ export function HocVienCuaLop({
     <KhungNoiDung nhung={nhung} onDong={onDong} tieuDe={`${t('lopHoc.hocVien')} — ${lop.ten}`}>
       <div className="grid gap-4">
         {/*
-          CÁCH 2 của FR-21 — danh sách học viên đã mua khoá, chờ xếp lớp.
-          Đặt TRÊN ô thêm học viên thường: người đã trả tiền phải được xếp trước, và học phí của
-          họ lấy từ đơn CRM nên không được thêm bằng ô bên dưới (ô đó dùng học phí của lớp).
+          THANH ĐẦU: sĩ số bên trái, nút mở modal bên phải (12/09/2026).
 
-          Ẩn hẳn khi không có ai chờ — một khung rỗng thường trực chỉ làm màn hình dài thêm.
+          Trước đó ô "Thêm học viên" và khối "Đang chờ xếp lớp" bày sẵn TRÊN bảng, nên mỗi lần
+          chỉ muốn xem danh sách đều phải cuộn qua hai khối không dùng tới. Việc thêm người là
+          thao tác thỉnh thoảng; việc XEM danh sách mới là thứ làm thường xuyên.
+
+          Cùng hướng với form sửa lớp đã chuyển vào modal 09/09/2026.
         */}
-        {duocSuaLop && dsCho.length > 0 && (
-          <Card>
-            <CardContent className="grid gap-2 pt-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm text-muted-foreground">
+            {lop.sucChuaToiDa === null
+              ? t('lopHoc.daChon', { soLuong: hocViens.length })
+              : t('lopHoc.sucChuaConLai', {
+                  daChon: hocViens.length,
+                  toiDa: lop.sucChuaToiDa,
+                })}
+          </p>
+
+          {duocSuaLop && (
+            <Button className="ml-auto" onClick={() => { setMaLoi(null); setMoThem(true) }}>
+              <UserPlus className="h-4 w-4" />
+              {t('lopHoc.themHocVien')}
+              {/* Badge số người chờ ngay trên nút: người điều phối biết có việc cần làm mà
+                  không phải mở modal ra xem. */}
+              {dsCho.length > 0 && (
+                <Badge variant="cho" className="ml-1">{dsCho.length}</Badge>
+              )}
+            </Button>
+          )}
+        </div>
+
+        {maLoi && (
+          <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>
+        )}
+
+        {hocViens.length === 0 ? (
+          <TrangTrong thongDiep={t('chung.khongCoDuLieu')} />
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <Th>{t('taiKhoan.hoTen')}</Th>
+                {/* Email bỏ khỏi bảng, vào modal thông tin (12/09/2026): nó dài, hiếm khi cần
+                    đọc lướt, và đẩy các cột đáng quan tâm hơn ra rìa màn hình. */}
+                <Th>{t('lopHoc.ngayVaoLop')}</Th>
+                {hienCotTien && <Th>{t('lopHoc.hocPhiApDung')}</Th>}
+                <Th className="w-16" />
+              </tr>
+            </thead>
+            <tbody>
+              {hocViens.map((h) => (
+                <tr key={h.id} className="hover:bg-muted/40">
+                  <Td className="font-medium">
+                    {h.hoTen}
+                    {/* Số điện thoại dưới tên: thứ hay cần nhất khi phải liên hệ gấp, không
+                        đáng một cột riêng nhưng cũng không nên chôn hết vào modal. */}
+                    {h.soDienThoai && (
+                      <div className="text-xs font-normal text-muted-foreground">
+                        {h.soDienThoai}
+                      </div>
+                    )}
+                  </Td>
+                  <Td className="whitespace-nowrap text-muted-foreground">
+                    {ngayVN(h.ngayVaoLop)}
+                  </Td>
+                  {hienCotTien && (
+                    <Td className="text-muted-foreground">{tienVN(h.hocPhiApDung)}</Td>
+                  )}
+                  <Td>
+                    <div className="flex justify-end">
+                      <MenuThaoTac
+                        nhanMo={t('chung.thaoTac')}
+                        muc={[
+                          {
+                            nhan: t('lopHoc.xemThongTin'),
+                            icon: Info,
+                            onChon: () => setXemHv(h),
+                          },
+                          {
+                            nhan: t('lopHoc.goHocVien'),
+                            ngatNhom: true,
+                            icon: Trash2,
+                            nguyHiem: true,
+                            an: !duocSuaLop,
+                            onChon: () =>
+                              hoi({
+                                tieuDe: t('lopHoc.goHocVien'),
+                                thongDiep: t('lopHoc.hoiGoHocVien', { ten: h.hoTen }),
+                                nhanDongY: t('lopHoc.goHocVien'),
+                                nguyHiem: true,
+                                onDongY: () => go.mutate(h.hocVienId),
+                              }),
+                          },
+                        ]}
+                      />
+                    </div>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </div>
+      {/*
+        MODAL THÔNG TIN HỌC VIÊN (12/09/2026).
+
+        Chủ sản phẩm: "nếu nhiều thông tin đang hiện gây rối thì cho ấn mở modal thông tin".
+        Bảng giữ 3 cột đọc lướt (tên · ngày vào lớp · học phí); phần còn lại — email, điện
+        thoại, nhân viên kinh doanh — vào đây.
+
+        `tenNhanVienKinhDoanh` null có BA nghĩa nên KHÔNG hiện dấu "—" trơn: người dùng sẽ
+        tưởng dữ liệu mất. Ẩn hẳn dòng khi không có.
+      */}
+      <Modal
+        mo={xemHv !== null}
+        onDong={() => setXemHv(null)}
+        tieuDe={xemHv?.hoTen ?? ''}
+        moTa={t('lopHoc.hocVienCuaLop', { lop: lop.ten })}
+        rong="sm"
+      >
+        {xemHv && (
+          <dl className="grid gap-3">
+            <ThongTinDong nhan={t('taiKhoan.email')} giaTri={xemHv.email} />
+            <ThongTinDong nhan={t('taiKhoan.soDienThoai')} giaTri={xemHv.soDienThoai} />
+            <ThongTinDong
+              nhan={t('lopHoc.ngayVaoLop')}
+              giaTri={ngayVN(xemHv.ngayVaoLop)}
+            />
+            {xemHv.hocPhiApDung !== null && (
+              <ThongTinDong
+                nhan={t('lopHoc.hocPhiApDung')}
+                giaTri={tienVN(xemHv.hocPhiApDung)}
+              />
+            )}
+            {/* Chỉ hiện khi CÓ — xem chú thích đầu modal. */}
+            {xemHv.tenNhanVienKinhDoanh && (
+              <ThongTinDong
+                nhan={t('lopHoc.nhanVienKinhDoanh')}
+                giaTri={xemHv.tenNhanVienKinhDoanh}
+              />
+            )}
+            {xemHv.ghiChu && (
+              <ThongTinDong nhan={t('lopHoc.ghiChu')} giaTri={xemHv.ghiChu} />
+            )}
+          </dl>
+        )}
+      </Modal>
+
+      {/*
+        MODAL THÊM HỌC VIÊN — gom hai đường vào một chỗ (12/09/2026).
+
+        Hai đường KHÁC NHAU về tiền, nên không gộp thành một danh sách:
+        - "Đang chờ xếp lớp" (FR-21): học phí lấy từ ĐƠN CRM, gồm miễn giảm đã chốt với khách.
+        - "Thêm trực tiếp": học phí lấy từ LỚP.
+        Gộp lại thì người dùng không biết mình đang áp mức nào — đó là lỗi tiền bạc.
+
+        Người đã trả tiền đặt TRƯỚC: họ phải được xếp trước người thêm tay.
+      */}
+      <Modal
+        mo={moThem}
+        onDong={() => setMoThem(false)}
+        chanDoiKhiXuLy={them.isPending || duyet.isPending}
+        tieuDe={t('lopHoc.themHocVien')}
+        moTa={lop.ten}
+        rong="lg"
+      >
+        <div className="grid gap-4">
+          {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
+
+          {dsCho.length > 0 && (
+            <div className="grid gap-2">
               <div className="flex flex-wrap items-center gap-2">
                 <h4 className="text-sm font-semibold">{t('xepLop.dangCho')}</h4>
                 <Badge variant="cho">{dsCho.length}</Badge>
@@ -197,13 +362,13 @@ export function HocVienCuaLop({
                   </li>
                 ))}
               </ul>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          )}
 
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="flex min-w-64 flex-1 flex-col gap-1.5">
-            <Label htmlFor="themHocVien">{t('lopHoc.themHocVien')}</Label>
+          <div className="grid gap-1.5">
+            <Label htmlFor="themHocVien">
+              {dsCho.length > 0 ? t('lopHoc.themTrucTiep') : t('lopHoc.themHocVien')}
+            </Label>
             <SelectTimKiemNhieu
               id="themHocVien"
               luaChon={luaChon}
@@ -212,8 +377,14 @@ export function HocVienCuaLop({
               placeholder={t('lopHoc.timHocVien')}
               placeholderTimKiem={t('lopHoc.timHocVien')}
             />
+            {/* Nói rõ mức học phí sẽ áp — đường này KHÁC đường duyệt ở trên. */}
+            <p className="text-xs text-muted-foreground">{t('lopHoc.themTrucTiepGiaLop')}</p>
           </div>
-          {duocSuaLop && (
+
+          <ModalChan>
+            <Button type="button" variant="outline" onClick={() => setMoThem(false)}>
+              {t('chung.huy')}
+            </Button>
             <Button
               disabled={chon.length === 0 || them.isPending}
               onClick={() =>
@@ -226,73 +397,10 @@ export function HocVienCuaLop({
             >
               {t('chung.them')}
             </Button>
-          )}
+          </ModalChan>
         </div>
+      </Modal>
 
-        <p className="text-xs text-muted-foreground">
-          {lop.sucChuaToiDa === null
-            ? t('lopHoc.daChon', { soLuong: hocViens.length })
-            : t('lopHoc.sucChuaConLai', {
-                daChon: hocViens.length,
-                toiDa: lop.sucChuaToiDa,
-              })}
-        </p>
-
-        {maLoi && (
-          <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>
-        )}
-
-        {hocViens.length === 0 ? (
-          <TrangTrong thongDiep={t('chung.khongCoDuLieu')} />
-        ) : (
-          <Table>
-            <thead>
-              <tr>
-                <Th>{t('taiKhoan.hoTen')}</Th>
-                <Th>{t('taiKhoan.email')}</Th>
-                <Th>{t('lopHoc.ngayVaoLop')}</Th>
-                {hienCotTien && <Th>{t('lopHoc.hocPhiApDung')}</Th>}
-                <Th className="w-16" />
-              </tr>
-            </thead>
-            <tbody>
-              {hocViens.map((h) => (
-                <tr key={h.id} className="hover:bg-muted/40">
-                  <Td className="font-medium">{h.hoTen}</Td>
-                  <Td className="text-muted-foreground">{h.email ?? '—'}</Td>
-                  <Td className="text-muted-foreground">{ngayVN(h.ngayVaoLop)}</Td>
-                  {hienCotTien && (
-                    <Td className="text-muted-foreground">{tienVN(h.hocPhiApDung)}</Td>
-                  )}
-                  <Td>
-                    <div className="flex justify-end">
-                      <MenuThaoTac
-                        nhanMo={t('chung.thaoTac')}
-                        muc={[
-                          {
-                            nhan: t('lopHoc.goHocVien'),
-                            icon: Trash2,
-                            nguyHiem: true,
-                            an: !duocSuaLop,
-                            onChon: () =>
-                              hoi({
-                                tieuDe: t('lopHoc.goHocVien'),
-                                thongDiep: t('lopHoc.hoiGoHocVien', { ten: h.hoTen }),
-                                nhanDongY: t('lopHoc.goHocVien'),
-                                nguyHiem: true,
-                                onDongY: () => go.mutate(h.hocVienId),
-                              }),
-                          },
-                        ]}
-                      />
-                    </div>
-                  </Td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        )}
-      </div>
       {/* Cảnh báo lệch khoá học — thông báo để lưu ý, vẫn cho phép nếu đồng ý (12/09/2026). */}
       <HopXacNhan
         mo={canhBaoKhoa !== null}
@@ -317,5 +425,16 @@ export function HocVienCuaLop({
 
       {hop}
     </KhungNoiDung>
+  )
+}
+
+/** Một dòng nhãn — giá trị trong modal thông tin. Ẩn khi không có giá trị. */
+function ThongTinDong({ nhan, giaTri }: { nhan: string; giaTri: string | null }) {
+  if (!giaTri) return null
+  return (
+    <div>
+      <dt className="text-sm text-muted-foreground">{nhan}</dt>
+      <dd className="text-sm font-medium">{giaTri}</dd>
+    </div>
   )
 }

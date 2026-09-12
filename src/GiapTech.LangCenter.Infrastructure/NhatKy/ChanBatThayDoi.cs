@@ -71,7 +71,7 @@ public class ChanBatThayDoi(BoDemThayDoi boDem) : SaveChangesInterceptor
                     var ten = p.Metadata.Name;
 
                     // Dấu vết thời gian đổi ở MỌI lệnh sửa nên không nói lên điều gì.
-                    if (ten is nameof(BaseEntity.NgayCapNhat) or nameof(BaseEntity.NgayTao))
+                    if (ten is nameof(BaseEntity.UpdatedAt) or nameof(BaseEntity.CreatedAt))
                         continue;
 
                     if (LaNhayCam(ten)) continue;

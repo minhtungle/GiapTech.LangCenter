@@ -82,6 +82,17 @@ Thêm / gỡ học viên, xem danh sách.
   quy tắc #8, chống bấm hai lần và import trùng).
 - **Sức chứa đếm người đang học**, không đếm người đã nghỉ: lớp 20 chỗ có 5 người nghỉ thì vẫn
   nhận thêm được.
+- **Tên nhân viên kinh doanh** (`KHACH_HANG.nguoi_tao_id`) hiện trong modal thông tin học viên
+  (12/09/2026), gác riêng bằng `KhachHang.Xem`.
+
+  Endpoint danh sách học viên gác bằng `LopHoc.Xem` — quyền mà **giáo viên và học viên đều có**.
+  Không gác riêng thì họ đọc được ai bán khách nào; đúng cái bẫy đã làm rò rỉ học phí 07/09/2026.
+  Học viên **không** thấy kể cả dòng của chính mình (khác học phí): ai bán mình không phải thông
+  tin của mình. Canh bởi `RoRiHocPhiTests.Giao_vien_va_hoc_vien_khong_thay_ten_nhan_vien_kinh_doanh`
+  — có cả chiều ngược (admin PHẢI thấy).
+
+  `null` có **ba nghĩa**: không đủ quyền · học viên thêm tay không qua CRM · khách tạo trước
+  12/09/2026. UI ẩn hẳn dòng thay vì hiện "—".
 - **`hoc_phi_ap_dung` là snapshot** chốt lúc vào lớp, mặc định bằng học phí lớp. Cho phép miễn
   giảm cá nhân, và quan trọng hơn: **sửa học phí lớp không đổi hồi tố công nợ** của người đã
   đóng theo giá cũ.

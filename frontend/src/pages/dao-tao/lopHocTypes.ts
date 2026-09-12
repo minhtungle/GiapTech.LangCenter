@@ -54,6 +54,15 @@ export interface HocVienTrongLop {
   trangThai: string
   /** null = người đang xem không được phép biết mức này (xem IPhamViHocPhi). */
   hocPhiApDung: number | null
+  /** Ghi chú riêng cho học viên này trong lớp. Backend vốn đã trả, type cũ thiếu. */
+  ghiChu: string | null
+  /**
+   * Nhân viên kinh doanh đã tạo hồ sơ khách hàng (12/09/2026).
+   *
+   * null có BA nghĩa — đừng hiển thị thành một: không đủ quyền xem (thiếu `KhachHang.Xem`),
+   * học viên thêm tay không qua CRM, hoặc khách tạo trước 12/09/2026.
+   */
+  tenNhanVienKinhDoanh: string | null
 }
 
 export const tienVN = (n: number | null) =>

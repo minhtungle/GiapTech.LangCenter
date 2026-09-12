@@ -48,7 +48,7 @@ public class MoiEntityPhaiCoConfigTests
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(nameof(MoiEntityPhaiCoConfigTests))
             .Options;
-        using var db = new AppDbContext(options, new TenantGia());
+        using var db = new AppDbContext(options, new TenantGia(), new NguoiDungGia());
         return db.Model;
     }
 

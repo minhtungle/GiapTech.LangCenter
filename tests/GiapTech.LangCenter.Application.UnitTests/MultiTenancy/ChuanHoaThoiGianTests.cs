@@ -26,7 +26,7 @@ public class ChuanHoaThoiGianTests
         new(new DbContextOptionsBuilder<AppDbContext>()
                 .UseInMemoryDatabase($"tz-{Guid.NewGuid()}")
                 .Options,
-            new TenantGia());
+            new TenantGia(), new NguoiDungGia());
 
     /// <summary>
     /// MỌI property DateTimeOffset trong model phải có value converter. Thiếu một cái là

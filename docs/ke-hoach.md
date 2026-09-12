@@ -133,9 +133,9 @@ VPS → domain + HTTPS → backup. Xem
 
 ## Kiểm chứng hiện tại
 
-- **439 test backend xanh** (65 unit + 374 integration), build 0 warning — đo `dotnet test` 12/09/2026.
+- **442 test backend xanh** (66 unit + 376 integration), build 0 warning — đo `dotnet test` 12/09/2026.
 - **20 test E2E / 8 spec**; 16 xanh, **4 đỏ là nợ N16** (test lạc hậu thời dự án bóng đá, không
   phải lỗi nghiệp vụ). Chạy cả bộ phải `GIOI_HAN_TAN_SUAT=false` — xem nợ N15.
 - Frontend `tsc -b` + `vite build` sạch, `oxlint` không lỗi.
-- **PostgreSQL + MinIO thật**: 37 bảng, 20 migration áp sạch, luồng đầu-cuối chạy tay đủ từ tạo
+- **PostgreSQL + MinIO thật**: 37 bảng, 22 migration áp sạch, luồng đầu-cuối chạy tay đủ từ tạo
   trung tâm tới thu học phí.

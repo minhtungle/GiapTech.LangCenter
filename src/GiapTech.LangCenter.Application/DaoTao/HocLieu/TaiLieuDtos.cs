@@ -15,7 +15,7 @@ public record TaiLieuDto(
     string? MoTa,
     LoaiTaiLieu Loai,
     string? NguoiTaiLen,
-    DateTimeOffset NgayTao,
+    DateTimeOffset CreatedAt,
     List<TepDto> Teps,
     List<Guid> LopHocIds,
     List<string> TenLopHocs);
@@ -58,13 +58,13 @@ public class LayDanhSachTaiLieuHandler(IAppDbContext db, IPhamViLopHoc phamVi)
         var tong = await q.CountAsync(ct);
 
         var duLieu = await q
-            .OrderByDescending(tl => tl.NgayTao)
+            .OrderByDescending(tl => tl.CreatedAt)
             .Skip(trang.BoQua)
             .Take(trang.SoDongHopLe)
             .Select(tl => new TaiLieuDto(
                 tl.Id, tl.TieuDe, tl.MoTa, tl.Loai,
                 tl.NguoiTaiLen != null ? tl.NguoiTaiLen.HoTen : null,
-                tl.NgayTao,
+                tl.CreatedAt,
                 tl.Teps.Select(t => new TepDto(t.Id, t.TenGoc, t.LoaiNoiDung, t.KichThuoc))
                     .ToList(),
                 tl.LopHocs.Select(x => x.LopHocId).ToList(),

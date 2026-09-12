@@ -65,7 +65,7 @@ public record TepHoSoDto(
     string KhoaLuuTru,
     string LoaiNoiDung,
     long KichThuoc,
-    DateTimeOffset NgayTao);
+    DateTimeOffset CreatedAt);
 
 // ---------- Queries ----------
 
@@ -157,9 +157,9 @@ public class LayDanhSachNguoiDungHandler(IAppDbContext db)
                     .ToList(),
                 u.TepDinhKems
                     // Mới nhất trước: tệp vừa tải lên là thứ người dùng đang tìm.
-                    .OrderByDescending(t => t.NgayTao)
+                    .OrderByDescending(t => t.CreatedAt)
                     .Select(t => new TepHoSoDto(
-                        t.Id, t.TenGoc, t.KhoaLuuTru, t.LoaiNoiDung, t.KichThuoc, t.NgayTao))
+                        t.Id, t.TenGoc, t.KhoaLuuTru, t.LoaiNoiDung, t.KichThuoc, t.CreatedAt))
                     .ToList()))
             .ToListAsync(ct);
 
