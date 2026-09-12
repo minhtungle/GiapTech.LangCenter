@@ -8,6 +8,37 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — FR-25: nối hồ sơ học viên với khách hàng CRM (13/09/2026)
+
+Bước 1/4 của học tập trực tuyến. Người mua khoá online là `KHACH_HANG` ở CRM, chưa phải học
+viên; quản trị tạo tài khoản học viên và **nối lại** để một con người không thành hai hồ sơ.
+
+- `TaoNguoiDungCommand.KhachHangId` **tuỳ chọn** — học viên học thử hay được tặng khoá thì
+  không có đơn nào ở CRM; bắt buộc nối sẽ biến ca hợp lệ thành ca không nhập được.
+- Ghi vào `KHACH_HANG.nguoi_dung_id` — cột đã có, FR-21 dùng khi duyệt vào lớp. **Không copy**
+  họ tên/email sang `NGUOI_DUNG`.
+- Chặn khách đã nối hồ sơ khác (`KHACH_HANG_DA_NOI_HO_SO_KHAC`): quan hệ một-một, ghi đè sẽ âm
+  thầm cắt hồ sơ cũ khỏi lịch sử mua hàng của chính họ (quy tắc #1).
+- Ô chọn chỉ hiện ở màn Học viên (LMS), khi TẠO MỚI, và khi người dùng có `KhachHang.Xem` —
+  thiếu điều kiện cuối thì giáo vụ chỉ có quyền LMS nhận 403 ở một ô họ không cần dùng.
+
+### Fixed — lỗ hổng thứ hai trong lưới canh ranh giới hệ thống con (13/09/2026)
+
+`RanhGioiHeThongConTests` chỉ quét ba thư mục `Crm/`, `DaoTao/`, `NhanSu/` — nên `QuanTri/`,
+`DangNhap/`, `Common/` **hoàn toàn ngoài lưới**. Thêm `db.KhachHangs` vào
+`QuanTri/NguoiDung/NguoiDungDtos.cs` mà cả bộ test vẫn xanh.
+
+Hôm qua vá lỗ hổng *"namespace không thấy `db.X`"*; hôm nay là *"lưới không phủ hết thư mục"* —
+cùng một bài học: **danh sách những-chỗ-được-kiểm phải là danh sách đóng**.
+
+Nay mọi thư mục phải rơi vào một trong ba nhóm khai tường minh: `ThuMucHeThong` ·
+`ThuMucDungChung` (vẫn quét) · `ThuMucMienTru` (không quét, có lý do). Thêm
+`Moi_thu_muc_phai_nam_trong_luoi_hoac_duoc_khai_mien_tru` canh chiều ngược.
+
+> Bản đầu của chính test chiều ngược đó **không thể đỏ** — nó hỏi "thư mục có được quét không",
+> mà câu trả lời luôn là có. Phát hiện khi tiêm đột biến tạo thư mục mới.
+
+
 ### Fixed — gộp hai cột trùng nghĩa + thêm khoá ngoại cho cột audit (13/09/2026)
 
 Hai sót của lần thêm 4 cột audit hôm qua, lộ ra khi bàn về khách vãng lai.

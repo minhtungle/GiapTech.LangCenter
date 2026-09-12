@@ -205,7 +205,20 @@ public record TaoNguoiDungCommand(
     /// Tạo luôn tài khoản trong cùng một giao dịch. Hai lượt gọi riêng sẽ để lại người dùng
     /// không tài khoản nếu lượt thứ hai hỏng — việc thường gặp nhất không nên là việc dễ làm dở.
     /// </summary>
-    TaiKhoanKemTheo? TaiKhoan = null) : IRequest<Guid>;
+    TaiKhoanKemTheo? TaiKhoan = null,
+    /// <summary>
+    /// FR-25 — nối hồ sơ này với một `KHACH_HANG` đã có ở CRM (13/09/2026).
+    ///
+    /// **Tuỳ chọn.** Người mua khoá online ở CRM rồi được quản trị tạo tài khoản học viên —
+    /// nối lại để một con người không thành hai hồ sơ ở hai hệ thống. Học viên học thử hay
+    /// được tặng khoá thì không có đơn nào ở CRM, nên bắt buộc sẽ biến ca hợp lệ thành ca
+    /// không nhập được.
+    ///
+    /// Ghi vào `KHACH_HANG.nguoi_dung_id` — cột đã có sẵn, FR-21 dùng khi duyệt vào lớp.
+    /// KHÔNG copy họ tên/email sang `NGUOI_DUNG`: copy thì hai bên trôi khỏi nhau và không
+    /// biết bên nào đúng (lỗi 07/09/2026).
+    /// </summary>
+    Guid? KhachHangId = null) : IRequest<Guid>;
 
 public class TaoNguoiDungValidator : AbstractValidator<TaoNguoiDungCommand>
 {
@@ -228,6 +241,28 @@ public class TaoNguoiDungValidator : AbstractValidator<TaoNguoiDungCommand>
 public class TaoNguoiDungHandler(IAppDbContext db, IPasswordHasher hasher)
     : IRequestHandler<TaoNguoiDungCommand, Guid>
 {
+    /// <summary>
+    /// FR-25 — nối hồ sơ vừa tạo với một khách hàng CRM.
+    ///
+    /// **Cầu nối chéo LMS → CRM thứ hai** sau FR-21, khai trong `RanhGioiHeThongConTests`.
+    ///
+    /// Chặn khách đã nối người khác: `KHACH_HANG.nguoi_dung_id` là quan hệ **một-một**, ghi đè
+    /// sẽ âm thầm cắt đứt hồ sơ cũ khỏi lịch sử mua hàng của họ — quy tắc #1.
+    /// </summary>
+    internal static async Task NoiKhachHang(
+        IAppDbContext db, Guid nguoiDungId, Guid? khachHangId, CancellationToken ct)
+    {
+        if (khachHangId is not { } khId) return;
+
+        var khach = await db.KhachHangs.FirstOrDefaultAsync(k => k.Id == khId, ct)
+                    ?? throw new AppException("KHACH_HANG_KHONG_HOP_LE");
+
+        if (khach.NguoiDungId is { } daNoi && daNoi != nguoiDungId)
+            throw new AppException("KHACH_HANG_DA_NOI_HO_SO_KHAC");
+
+        khach.NguoiDungId = nguoiDungId;
+    }
+
     public async Task<Guid> Handle(TaoNguoiDungCommand request, CancellationToken ct)
     {
         // Học viên KHÔNG vào cơ cấu tổ chức: họ là khách, không phải nhân sự. Kiểm ở đây vì
@@ -260,6 +295,8 @@ public class TaoNguoiDungHandler(IAppDbContext db, IPasswordHasher hasher)
         GhiHoSo(db, nd, request.LoaiNguoiDung,
             request.HoSoGiaoVien, request.HoSoHocVien, taoMoiNeuThieu: true);
         GhiLienKetMxh(db, nd, request.LienKetMxhs);
+
+        await NoiKhachHang(db, nd.Id, request.KhachHangId, ct);
 
         if (request.TaiKhoan is { } tk)
         {

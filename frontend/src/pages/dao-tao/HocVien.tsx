@@ -14,6 +14,9 @@ const PHAM_VI: PhamViNguoiDung = {
   vaiTro: ['HocVien'],
   can: 'TaiKhoan',
   khoaTieuDe: 'menu.hocVien',
+  // FR-25 — người mua khoá online là KHACH_HANG ở CRM; nối lại để một con người không
+  // thành hai hồ sơ. Màn Nhân sự (HRM) không bật: nhân viên không phải khách hàng.
+  chonKhachHang: true,
 }
 
 export default function HocVien() {

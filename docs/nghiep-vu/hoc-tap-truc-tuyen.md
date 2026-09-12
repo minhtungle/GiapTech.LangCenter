@@ -1,6 +1,6 @@
 # FR-25 → FR-27 — Học tập trực tuyến (E-learning)
 
-> **Trạng thái: ĐẶC TẢ, chưa code.** Viết 13/09/2026 theo yêu cầu chủ sản phẩm, chờ duyệt trước
+> **Trạng thái: bước 1 XONG, bước 2-4 còn là đặc tả.** Viết 13/09/2026 theo yêu cầu chủ sản phẩm, chờ duyệt trước
 > khi làm (quy ước: mô tả FR trước khi viết dòng code nào — CLAUDE.md mục 5).
 >
 > Ba câu hỏi mở đã được chốt cùng ngày — xem [mục cuối](#ba-câu-đã-chốt-13092026).
@@ -248,7 +248,7 @@ khoá online không có giáo viên phụ trách, nên **ai chấm** phải nói
 
 | Bước | Nội dung | Rủi ro |
 |---|---|---|
-| 1 | FR-25: ô chọn khách hàng CRM khi tạo học viên | Thấp — dùng cột đã có |
+| 1 | ~~FR-25: ô chọn khách hàng CRM khi tạo học viên~~ **✅ XONG 13/09/2026** | Thấp — dùng cột đã có |
 | 2 | FR-26 schema + soạn khoá/bài học + cấp quyền + `IPhamViKhoaOnline` | Trung bình — tầng phạm vi mới |
 | 3 | FR-26 tiến độ học + màn học viên | Thấp |
 | 4 | FR-27 nới `BAI_TAP` + chấm bài | **Cao — đụng FR-11/12 đang chạy** |

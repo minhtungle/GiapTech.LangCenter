@@ -39,6 +39,12 @@ public class RanhGioiHeThongConTests
             + "Handler duyệt phải gọi BaoDamThayLop của LMS để tôn trọng IPhamViLopHoc — viết "
             + "lại phép kiểm phạm vi ở CRM là hai bản sẽ trôi khỏi nhau. Xem ADR-0005.",
 
+        ["NguoiDungDtos.cs → Crm"] =
+            "FR-25 (13/09/2026): quản trị tạo hồ sơ học viên cho người đã mua khoá online ở "
+            + "CRM, nối `KHACH_HANG.nguoi_dung_id` để một con người không thành hai hồ sơ. "
+            + "Chỉ ĐỌC để kiểm tồn tại rồi GHI cột nối — không gọi handler nào của CRM, không "
+            + "đọc số tiền (chốt 12/09: chỉ CRM nắm tiền).",
+
         ["HocVienTrongLopDtos.cs → Crm"] =
             "Chiều NGƯỢC của FR-21 (12/09/2026): danh sách học viên trong lớp hiện tên nhân "
             + "viên kinh doanh đã tạo hồ sơ khách, theo yêu cầu chủ sản phẩm. Chỉ ĐỌC "
@@ -59,6 +65,97 @@ public class RanhGioiHeThongConTests
     {
         ["Crm"] = ["KhachHangs", "DangKyKhoaHocs", "ThuTienDangKys", "LichSuChamSocs"],
     };
+
+    /// <summary>
+    /// Thư mục KHÔNG thuộc hệ thống con nào — quét chúng bằng lưới nào, và vì sao.
+    ///
+    /// **Lỗ hổng thứ hai cùng loại, vá 13/09/2026.** Bản trước chỉ quét ba thư mục trong
+    /// <see cref="ThuMucHeThong"/>, nên `QuanTri/`, `DangNhap/`, `Common/` **hoàn toàn ngoài
+    /// lưới**: thêm `db.KhachHangs` vào `QuanTri/NguoiDung/NguoiDungDtos.cs` mà test vẫn xanh.
+    ///
+    /// Hôm qua vá lỗ hổng "namespace không thấy `db.X`"; hôm nay là "lưới không phủ hết thư
+    /// mục". Cùng một bài học: **danh sách những-chỗ-được-kiểm phải là danh sách đóng**, tức
+    /// mọi thư mục phải rơi vào một trong hai nhóm, và nhóm miễn trừ phải khai lý do.
+    /// Canh bởi <see cref="Moi_thu_muc_phai_nam_trong_luoi_hoac_duoc_khai_mien_tru"/>.
+    /// </summary>
+    /// <summary>
+    /// Thư mục **dùng chung nhiều hệ thống** — vẫn bị quét cầu nối như thư mục hệ thống con.
+    ///
+    /// Khác <see cref="ThuMucMienTru"/>: ở đây đọc DbSet của hệ thống khác vẫn phải khai cầu
+    /// nối. `QuanTri/` chứa hồ sơ con người mà cả ba hệ thống dùng, nhưng nối sang `KHACH_HANG`
+    /// của CRM là quyết định kiến trúc, không phải chuyện thường ngày.
+    /// </summary>
+    private static readonly Dictionary<string, string> ThuMucDungChung = new()
+    {
+        ["QuanTri"] =
+            "Hồ sơ con người, tài khoản, phân quyền — cả ba hệ thống dùng. Nhưng đọc DbSet của "
+            + "hệ thống khác ở đây VẪN phải khai cầu nối (FR-25 đã khai).",
+    };
+
+    private static readonly Dictionary<string, string> ThuMucMienTru = new()
+    {
+        ["Common"] =
+            "Hạ tầng dùng chung (behavior, model, interface, ảnh) — không thuộc hệ thống nào "
+            + "và mọi hệ thống đều dùng. Đọc DbSet ở đây là chuyện bình thường.",
+        ["DangNhap"] =
+            "Xác thực dùng chung cho cả ba hệ thống, đứng trước mọi phân nhóm chức năng.",
+    };
+
+    /// <summary>Mọi thư mục con của `Application/` trừ những cái đã khai miễn trừ.</summary>
+    private static IEnumerable<DirectoryInfo> ThuMucCanQuet(DirectoryInfo app)
+        => app.GetDirectories()
+            .Where(d => d.Name is not ("bin" or "obj"))
+            .Where(d => !ThuMucMienTru.ContainsKey(d.Name));
+
+    /// <summary>
+    /// CHIỀU NGƯỢC — mỗi thư mục con của `Application/` phải được **PHÂN LOẠI TƯỜNG MINH**:
+    /// hệ thống con (`ThuMucHeThong`), hoặc miễn trừ có khai lý do (`ThuMucMienTru`).
+    ///
+    /// Thư mục dùng chung như `QuanTri/` vẫn bị quét cầu nối, nhưng phải khai để người thêm thư
+    /// mục mới **dừng lại một nhịp** mà quyết định nó thuộc loại nào — thay vì mặc định rơi vào
+    /// nhóm "quét mọi thứ" rồi bất ngờ thấy test đỏ ở chỗ không liên quan.
+    ///
+    /// Bản đầu của test này (13/09/2026) **không thể đỏ**: nó hỏi "thư mục có được quét không",
+    /// mà `ThuMucCanQuet` = mọi thư mục trừ miễn trừ, nên câu trả lời luôn là có. Phát hiện khi
+    /// tiêm đột biến — tạo thư mục `HocTapTrucTuyen/` mới, test vẫn xanh.
+    /// </summary>
+    [Fact]
+    public void Moi_thu_muc_phai_nam_trong_luoi_hoac_duoc_khai_mien_tru()
+    {
+        var app = GocApplication();
+
+        var daPhanLoai = ThuMucHeThong.Values
+            .Concat(ThuMucMienTru.Keys)
+            .Concat(ThuMucDungChung.Keys)
+            .ToHashSet();
+
+        var chuaPhanLoai = app.GetDirectories()
+            .Where(d => d.Name is not ("bin" or "obj"))
+            // Thư mục không có file .cs nào thì không có gì để kiểm.
+            .Where(d => d.GetFiles("*.cs", SearchOption.AllDirectories).Length > 0)
+            .Where(d => !daPhanLoai.Contains(d.Name))
+            .Select(d => d.Name)
+            .ToList();
+
+        Assert.True(
+            chuaPhanLoai.Count == 0,
+            "Thư mục sau chưa được phân loại:\n"
+            + string.Join("\n", chuaPhanLoai)
+            + "\n\nKhai vào MỘT trong ba danh sách kèm lý do:\n"
+            + "  ThuMucHeThong  — là một hệ thống con (Crm/Lms/Hrm)\n"
+            + "  ThuMucDungChung — nhiều hệ thống dùng, VẪN bị quét cầu nối\n"
+            + "  ThuMucMienTru  — hạ tầng, không quét\n"
+            + "Để trống là tạo một vùng mù trong lưới.");
+
+        // Miễn trừ phải TRỎ TỚI thư mục có thật — đổi tên thư mục mà quên sửa danh sách thì
+        // miễn trừ thành vô nghĩa, và thư mục mới lặng lẽ ra ngoài lưới.
+        var mienTruMa = ThuMucMienTru.Keys
+            .Where(t => !app.GetDirectories().Any(d => d.Name == t)).ToList();
+
+        Assert.True(
+            mienTruMa.Count == 0,
+            $"Miễn trừ trỏ tới thư mục không tồn tại: {string.Join(", ", mienTruMa)}");
+    }
 
     private static DirectoryInfo GocApplication()
     {
@@ -82,10 +179,13 @@ public class RanhGioiHeThongConTests
         var app = GocApplication();
         var viPham = new List<string>();
 
-        foreach (var (tenHeThong, thuMuc) in ThuMucHeThong)
+        // Quét MỌI thư mục không miễn trừ, không chỉ ba thư mục hệ thống con: `QuanTri/` từng
+        // lọt hoàn toàn khỏi lưới (13/09/2026). Thư mục dùng chung thì `tenHeThong` là null nên
+        // mọi DbSet của mọi hệ thống đều bị soi.
+        foreach (var dir in ThuMucCanQuet(app))
         {
-            var dir = new DirectoryInfo(Path.Combine(app.FullName, thuMuc));
-            if (!dir.Exists) continue;
+            var tenHeThong = ThuMucHeThong
+                .FirstOrDefault(x => x.Value == dir.Name).Key;
 
             foreach (var (heThongKhac, dbSets) in DbSetCuaHeThong)
             {
@@ -171,10 +271,11 @@ public class RanhGioiHeThongConTests
         var app = GocApplication();
         var thucTe = new HashSet<string>();
 
-        foreach (var (tenHeThong, thuMuc) in ThuMucHeThong)
+        // Quét CÙNG phạm vi với test chính. Lệch phạm vi thì cầu nối khai ở thư mục dùng chung
+        // (`QuanTri/`) bị báo "lạc hậu" ngay sau khi khai — đã xảy ra 13/09/2026 với FR-25.
+        foreach (var dir in ThuMucCanQuet(app))
         {
-            var dir = new DirectoryInfo(Path.Combine(app.FullName, thuMuc));
-            if (!dir.Exists) continue;
+            var tenHeThong = ThuMucHeThong.FirstOrDefault(x => x.Value == dir.Name).Key;
 
             foreach (var khac in ThuMucHeThong.Where(x => x.Key != tenHeThong).Select(x => x.Value))
             {

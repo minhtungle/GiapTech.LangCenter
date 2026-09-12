@@ -167,6 +167,10 @@ const vi = {
     chuyenMon: 'Chuyên môn',
     ngayVaoLam: 'Ngày vào làm',
     truongLop: 'Trường / lớp',
+    khachHangCrm: 'Khách hàng (CRM)',
+    khachHangCrmChon: 'Chọn khách hàng đã có…',
+    khachHangCrmGoiY:
+      'Tuỳ chọn — nối hồ sơ này với khách đã mua hàng ở CRM để không tạo trùng một người.',
     tenPhuHuynh: 'Tên phụ huynh',
     sdtPhuHuynh: 'SĐT phụ huynh',
     chucVu: 'Chức vụ',
@@ -971,6 +975,8 @@ const vi = {
     KHACH_HANG_DA_CO_DANG_KY:
       'Khách hàng này đã có đăng ký khoá học — đây là dữ liệu doanh thu, không xoá được.',
     KHACH_HANG_KHONG_HOP_LE: 'Khách hàng không hợp lệ',
+    KHACH_HANG_DA_NOI_HO_SO_KHAC:
+      'Khách hàng này đã được nối với một hồ sơ khác. Hãy mở hồ sơ đó thay vì tạo hồ sơ mới.',
     KHOA_HOC_TRUNG_TEN: 'Tên khoá học đã tồn tại',
     KHOA_HOC_DA_CO_DANG_KY:
       'Khoá học này đã có đăng ký, không xoá được. Bỏ tích "Còn bán khoá này" để ngừng bán mà '
