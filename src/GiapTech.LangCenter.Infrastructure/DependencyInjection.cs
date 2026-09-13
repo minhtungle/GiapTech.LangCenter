@@ -58,6 +58,9 @@ public static class DependencyInjection
         services.AddScoped<IPhamViLopHoc, PhamViLopHoc>();
         services.AddScoped<IPhamViHocPhi, PhamViHocPhi>();
         services.AddScoped<IPhamViKhoaOnline, PhamViKhoaOnline>();
+        // FR-28 — CRM lấy số liệu elearning qua interface, không đọc thẳng bảng của LMS.
+        services.AddScoped<IThongKeHocTrucTuyen,
+            Application.DaoTao.HocTapTrucTuyen.ThongKeHocTrucTuyen>();
         services.AddScoped<IGhiNhatKy, NhatKy.GhiNhatKy>();
         services.AddScoped<IMuiGioTrungTam, MuiGioTrungTam>();
         services.AddSingleton<IPasswordHasher, AppPasswordHasher>();

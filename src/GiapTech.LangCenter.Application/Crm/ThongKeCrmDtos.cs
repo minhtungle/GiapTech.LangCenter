@@ -1,4 +1,5 @@
 using GiapTech.LangCenter.Application.Common.Interfaces;
+using GiapTech.LangCenter.Application.Common.Models;
 using GiapTech.LangCenter.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -39,7 +40,25 @@ public record ThongKeCrmDto(
     List<PhanBoDto> TheoDoiNhom,
     List<PhanBoDto> TheoSanPham,
     List<PhanBoDto> TheoNguon,
-    List<BuocPheuDto> Pheu);
+    List<BuocPheuDto> Pheu,
+    /// <summary>
+    /// Phân bổ theo loại đang chọn — **đây mới là danh sách chính** của màn. `TheoCaNhan`…
+    /// giữ nguyên để hàng tóm tắt vẫn đủ ngữ cảnh.
+    /// </summary>
+    List<PhanBoDto> TheoLoai,
+    /// <summary>
+    /// Mục để dựng ô lọc: mọi khoá học / sản phẩm / phòng ban / khoá online của loại đang chọn,
+    /// **kể cả mục chưa phát sinh giao dịch** — người dùng cần chọn được cả khoá bán chưa chạy.
+    /// </summary>
+    List<MucLocDto> DanhMucLoc,
+    /// <summary>
+    /// Elearning đo SỐ LƯỢNG, không đo tiền. Null với ba loại còn lại — xem
+    /// <see cref="LoaiThongKe.Elearning"/>.
+    /// </summary>
+    SoLieuElearningDto? Elearning);
+
+/// <summary>Một mục trong ô lọc.</summary>
+public record MucLocDto(Guid Id, string Ten);
 
 /// <summary>Một mốc thời gian trên đường doanh thu.</summary>
 public record DiemTheoThoiGian(string Nhan, DateTimeOffset Moc, decimal DoanhThu, int SoDon);
@@ -55,11 +74,48 @@ public record PhanBoDto(Guid? Id, string? Ten, decimal DoanhThu, int SoDon);
 /// <summary>Một bước trong phễu bán hàng, kèm tỷ lệ chuyển đổi từ bước trước.</summary>
 public record BuocPheuDto(TrangThaiKhachHang TrangThai, int SoKhach);
 
+/// <summary>
+/// Loại thống kê người dùng đang xem (14/09/2026).
+///
+/// Bốn loại này **không phải bốn màn** — cùng một khung, đổi phần chia nhỏ bên dưới. Bộ lọc
+/// thời gian và hàng ô số dùng chung, nên so sánh giữa các loại vẫn cùng một kỳ.
+/// </summary>
+public enum LoaiThongKe
+{
+    /// <summary>Doanh thu chia theo khoá học bán ra (CRM).</summary>
+    KhoaHoc = 0,
+
+    /// <summary>Doanh thu chia theo sản phẩm (sách, học cụ).</summary>
+    SanPham = 1,
+
+    /// <summary>
+    /// Học tập trực tuyến — **chỉ đo SỐ LƯỢNG, không đo tiền**.
+    ///
+    /// Elearning không có đường nối nào sang đơn hàng (chốt 13/09/2026: quản trị cấp quyền học
+    /// bằng tay, LMS không trỏ sang CRM). Nên ở đây không có doanh thu để chia — bịa ra một
+    /// con số tiền cho nó là nói dối về chính thiết kế.
+    /// </summary>
+    Elearning = 2,
+
+    /// <summary>Doanh thu chia theo phòng ban của người tạo hồ sơ khách.</summary>
+    DoiNhom = 3
+}
+
 public record LayThongKeCrmQuery(
     DateTimeOffset? TuNgay = null,
-    DateTimeOffset? DenNgay = null) : IRequest<ThongKeCrmDto>;
+    DateTimeOffset? DenNgay = null,
+    LoaiThongKe Loai = LoaiThongKe.KhoaHoc,
+    /// <summary>
+    /// Chỉ tính các mục này (khoá học / sản phẩm / phòng ban / khoá online cụ thể).
+    ///
+    /// Rỗng = tính tất cả. Lọc **thu hẹp** cả hàng ô số lẫn đường tăng trưởng, không chỉ lọc
+    /// danh sách bên dưới — nếu không thì "tổng doanh thu" và "top 5 khoá" nói về hai tập dữ
+    /// liệu khác nhau trên cùng một màn.
+    /// </summary>
+    List<Guid>? ChiMuc = null) : IRequest<ThongKeCrmDto>;
 
-public class LayThongKeCrmHandler(IAppDbContext db, IMuiGioTrungTam muiGio)
+public class LayThongKeCrmHandler(
+    IAppDbContext db, IMuiGioTrungTam muiGio, IThongKeHocTrucTuyen thongKeHoc)
     : IRequestHandler<LayThongKeCrmQuery, ThongKeCrmDto>
 {
     public async Task<ThongKeCrmDto> Handle(LayThongKeCrmQuery request, CancellationToken ct)
@@ -83,6 +139,31 @@ public class LayThongKeCrmHandler(IAppDbContext db, IMuiGioTrungTam muiGio)
 
         var donTrongKy = db.DangKyKhoaHocs
             .Where(d => d.NgayDangKy >= tu && d.NgayDangKy < den);
+
+        /*
+          Bộ lọc "chỉ các mục này" áp vào TRUY VẤN GỐC, nên nó thu hẹp cả hàng ô số lẫn đường
+          tăng trưởng — không chỉ lọc danh sách bên dưới. Lọc nửa vời thì "tổng doanh thu" và
+          "top 5 khoá" trên cùng một màn lại nói về hai tập dữ liệu khác nhau.
+
+          Ý nghĩa của `ChiMuc` đổi theo loại đang xem: id khoá học, id sản phẩm, hay id phòng
+          ban. Elearning không lọc ở đây vì nó không đụng tới đơn hàng.
+        */
+        var loc = request.ChiMuc is { Count: > 0 } ? request.ChiMuc : null;
+
+        if (loc is not null)
+        {
+            donTrongKy = request.Loai switch
+            {
+                LoaiThongKe.KhoaHoc => donTrongKy.Where(d =>
+                    d.KhoaHocId != null && loc.Contains(d.KhoaHocId.Value)),
+                LoaiThongKe.SanPham => donTrongKy.Where(d =>
+                    d.SanPhamId != null && loc.Contains(d.SanPhamId.Value)),
+                LoaiThongKe.DoiNhom => donTrongKy.Where(d =>
+                    d.KhachHang.CreatedBy!.PhongBanId != null
+                    && loc.Contains(d.KhachHang.CreatedBy!.PhongBanId!.Value)),
+                _ => donTrongKy
+            };
+        }
 
         // `SoTien * TyGiaVeVnd` — quy về VND bằng tỷ giá CHỤP LÚC ĐĂNG KÝ, không đọc động.
         // Đọc động thì báo cáo quý trước tự đổi số mỗi lần tỷ giá nhảy.
@@ -196,6 +277,33 @@ public class LayThongKeCrmHandler(IAppDbContext db, IMuiGioTrungTam muiGio)
             .Select(t => new BuocPheuDto(t, dem.GetValueOrDefault(t)))
             .ToList();
 
+        // ---------- Phân bổ theo LOẠI đang chọn + danh mục cho ô lọc ----------
+        var (theoLoai, danhMucLoc) = request.Loai switch
+        {
+            LoaiThongKe.KhoaHoc => (
+                theoKhoa.OrderByDescending(x => x.DoanhThu).ToList(),
+                await db.KhoaHocs.OrderBy(k => k.Ten)
+                    .Select(k => new MucLocDto(k.Id, k.Ten)).ToListAsync(ct)),
+
+            LoaiThongKe.SanPham => (
+                theoSp.OrderByDescending(x => x.DoanhThu).ToList(),
+                await db.SanPhams.OrderBy(x => x.Ten)
+                    .Select(x => new MucLocDto(x.Id, x.Ten)).ToListAsync(ct)),
+
+            LoaiThongKe.DoiNhom => (
+                theoDoiNhom,
+                await db.PhongBans.OrderBy(x => x.Ten)
+                    .Select(x => new MucLocDto(x.Id, x.Ten)).ToListAsync(ct)),
+
+            // Elearning không chia doanh thu — danh sách để rỗng, số liệu nằm ở `Elearning`.
+            _ => (new List<PhanBoDto>(), new List<MucLocDto>())
+        };
+
+        // ---------- Elearning: chỉ SỐ LƯỢNG ----------
+        SoLieuElearningDto? elearning = null;
+        if (request.Loai == LoaiThongKe.Elearning)
+            elearning = await thongKeHoc.Lay(ct);
+
         return new ThongKeCrmDto(
             tongDoanhThu,
             doanhThuKyTruoc,
@@ -207,6 +315,9 @@ public class LayThongKeCrmHandler(IAppDbContext db, IMuiGioTrungTam muiGio)
             theoDoiNhom,
             theoSanPham,
             theoNguon,
-            pheu);
+            pheu,
+            theoLoai,
+            danhMucLoc,
+            elearning);
     }
 }

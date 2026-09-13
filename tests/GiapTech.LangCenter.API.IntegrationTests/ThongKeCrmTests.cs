@@ -206,6 +206,69 @@ public class ThongKeCrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
             (await admin.GetAsync("/api/v1/thong-ke-crm")).StatusCode);
     }
 
+    /// <summary>
+    /// Bộ lọc "chỉ những mục này" phải thu hẹp **cả hàng ô số**, không chỉ danh sách bên dưới.
+    ///
+    /// Lọc nửa vời thì "tổng doanh thu" và "top khoá học" trên cùng một màn lại nói về hai tập
+    /// dữ liệu khác nhau — người đọc không có cách nào biết.
+    /// </summary>
+    [Fact]
+    public async Task Loc_theo_muc_thu_hep_ca_tong_doanh_thu()
+    {
+        var c = await Client();
+        var khach = await TaoKhach(c, "Khách lọc mục", "0933000007");
+        var khoaA = await TaoKhoa(c, "Khoá LỌC A", 4_000_000m);
+        var khoaB = await TaoKhoa(c, "Khoá LỌC B", 6_000_000m);
+
+        (await Ban(c, khach, khoaA, 4_000_000m)).EnsureSuccessStatusCode();
+        (await Ban(c, khach, khoaB, 6_000_000m)).EnsureSuccessStatusCode();
+
+        var chiA = await c.GetFromJsonAsync<JsonElement>(
+            $"/api/v1/thong-ke-crm?loai=KhoaHoc&chiMuc={khoaA}");
+
+        Assert.Equal(4_000_000m, chiA.GetProperty("tongDoanhThu").GetDecimal());
+        Assert.Equal(1, chiA.GetProperty("soDon").GetInt32());
+
+        var ten = chiA.GetProperty("theoLoai").EnumerateArray()
+            .Select(x => x.GetProperty("ten").GetString()).ToList();
+        Assert.Contains("Khoá LỌC A", ten);
+        Assert.DoesNotContain("Khoá LỌC B", ten);
+
+        // CHIỀU NGƯỢC — không lọc thì thấy cả hai, nếu không thì test xanh cả khi bộ lọc chặn sạch.
+        var khong = await c.GetFromJsonAsync<JsonElement>("/api/v1/thong-ke-crm?loai=KhoaHoc");
+        var tenHet = khong.GetProperty("theoLoai").EnumerateArray()
+            .Select(x => x.GetProperty("ten").GetString()).ToList();
+        Assert.Contains("Khoá LỌC A", tenHet);
+        Assert.Contains("Khoá LỌC B", tenHet);
+    }
+
+    /// <summary>
+    /// **Elearning không có trường tiền nào** — chốt 13/09/2026: khoá trực tuyến không nối với
+    /// đơn hàng. Trả về một con số doanh thu cho nó là nói dối về chính thiết kế.
+    /// </summary>
+    [Fact]
+    public async Task Elearning_chi_do_so_luong_khong_do_tien()
+    {
+        var c = await Client();
+        var tk = await c.GetFromJsonAsync<JsonElement>("/api/v1/thong-ke-crm?loai=Elearning");
+
+        var el = tk.GetProperty("elearning");
+        Assert.NotEqual(JsonValueKind.Null, el.ValueKind);
+
+        var truongTien = new[] { "doanhthu", "sotien", "tien", "gia", "vnd" };
+        foreach (var truong in el.EnumerateObject())
+        {
+            var ten = truong.Name.ToLowerInvariant();
+            Assert.False(
+                truongTien.Any(t => ten.Contains(t)),
+                $"`SoLieuElearningDto.{truong.Name}` nghe như trường tiền. Elearning không nối "
+                + "với đơn hàng nên không có doanh thu để báo.");
+        }
+
+        // Danh sách chia theo loại phải RỖNG — không có doanh thu nào để chia.
+        Assert.Empty(tk.GetProperty("theoLoai").EnumerateArray());
+    }
+
     /// <summary>Cách ly tenant: doanh thu trung tâm khác không lọt vào thống kê của mình.</summary>
     [Fact]
     public async Task Khong_cong_doanh_thu_cua_tenant_khac()

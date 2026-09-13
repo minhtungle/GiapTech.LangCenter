@@ -234,6 +234,39 @@ const vi = {
   },
   thongKe: {
     khoangThoiGian: 'Khoảng thời gian',
+    loaiThongKe: 'Thống kê theo',
+    loai: {
+      KhoaHoc: 'Khoá học',
+      SanPham: 'Sản phẩm',
+      Elearning: 'Học trực tuyến',
+      DoiNhom: 'Đội nhóm',
+    },
+    loaiMoTa: {
+      KhoaHoc: 'Doanh thu từng khoá học bán ra.',
+      SanPham: 'Doanh thu từng sản phẩm — sách, học cụ.',
+      Elearning: '',
+      DoiNhom: 'Doanh thu từng phòng ban, theo người tạo hồ sơ khách.',
+    },
+    locTheo: {
+      KhoaHoc: 'Chỉ những khoá học',
+      SanPham: 'Chỉ những sản phẩm',
+      Elearning: '',
+      DoiNhom: 'Chỉ những đội nhóm',
+    },
+    boLoc: 'Bỏ lọc',
+    dangLoc: 'Đang lọc {{so}} mục — mọi số trên màn này chỉ tính phần đã chọn.',
+    elearningMoTa:
+      'Chỉ đo số lượng, không đo tiền: khoá trực tuyến không nối với đơn hàng — quản trị cấp '
+      + 'quyền học bằng tay.',
+    chuaCoKhoaMo:
+      'Chưa có khoá trực tuyến nào đang mở. Khoá ở trạng thái Nháp không tính vào đây — '
+      + 'soạn xong bài thì chuyển sang “Đang mở”.',
+    elearningGoiY: 'Số liệu học tập nằm ở hàng trên. Doanh thu elearning không tồn tại theo thiết kế.',
+    soKhoaOnline: 'Khoá đang mở',
+    soNguoiHoc: 'Người đang học',
+    soLuotGhiDanh: 'Lượt ghi danh',
+    tyLeHoanThanh: 'Tỷ lệ hoàn thành',
+    baiTrenTong: '{{da}}/{{tong}} bài',
     khoang: {
       '12thang': '12 tháng gần nhất',
       '6thang': '6 tháng gần nhất',

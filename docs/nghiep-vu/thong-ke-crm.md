@@ -19,6 +19,44 @@ Cột thứ ba là cái bẫy đáng nói: nó phản ánh đúng thực tế b�
 Chốt với chủ sản phẩm: **người tạo hồ sơ khách**. Ổn định, không đổi theo thời gian, và khớp
 với quy ước đã có từ 12/09 (*"nhân viên kinh doanh = người tạo khách hàng"*).
 
+## Bốn loại thống kê (14/09/2026)
+
+Ô chọn **"Thống kê theo"** đổi phần chia nhỏ; bộ lọc thời gian và phần bối cảnh dùng chung nên
+so sánh giữa các loại vẫn cùng một kỳ.
+
+| Loại | Chia theo | Lọc danh sách |
+|---|---|---|
+| Khoá học | từng khoá bán ra | chọn nhiều khoá |
+| Sản phẩm | từng sản phẩm | chọn nhiều sản phẩm |
+| **Học trực tuyến** | **không chia doanh thu** — xem dưới | không có |
+| Đội nhóm | từng phòng ban | chọn nhiều phòng ban |
+
+### Elearning chỉ đo SỐ LƯỢNG
+
+Khoá trực tuyến **không có đường nối nào sang đơn hàng** (chốt 13/09/2026: quản trị cấp quyền
+học bằng tay, LMS không trỏ sang CRM). Nên ở đây không có doanh thu để chia — trả về một con số
+tiền cho nó là **nói dối về chính thiết kế**.
+
+Đo được: khoá đang mở · người đang học · lượt ghi danh · tỷ lệ hoàn thành bài.
+
+Khi chọn loại này, **hàng ô số và đường doanh thu cũng đổi theo**: hiện "17 triệu tổng doanh
+thu" ngay trên dòng chữ *"không đo tiền"* là tự mâu thuẫn, và người đọc sẽ tưởng số đó là doanh
+thu của khoá trực tuyến. Thấy được khi chụp màn hình thật, không thấy khi đọc code.
+
+> **Ranh giới hệ thống**: CRM lấy số liệu này qua `IThongKeHocTrucTuyen`, không đọc thẳng
+> `db.KhoaOnlines`. Đọc thẳng là gọi chéo hệ thống con và `RanhGioiHeThongConTests` bắt ngay.
+> DTO dùng chung đặt ở `Common/Models` — để ở `Crm/` hay `DaoTao/` thì bên kia phải `using`
+> sang, tức lại gọi chéo.
+
+### Bộ lọc thu hẹp CẢ hàng ô số
+
+Chọn "chỉ khoá A" thì tổng doanh thu, số đơn, và đường tăng trưởng đều chỉ tính khoá A. Lọc nửa
+vời thì *"tổng doanh thu"* và *"top khoá học"* trên cùng một màn lại nói về hai tập dữ liệu khác
+nhau — người đọc không có cách nào biết. Canh bởi `Loc_theo_muc_thu_hep_ca_tong_doanh_thu`.
+
+Đổi loại thì **bỏ lọc cũ**: id khoá học không có nghĩa gì trong danh sách sản phẩm, giữ lại sẽ
+lọc ra rỗng mà người dùng không hiểu vì sao.
+
 ## Sáu nhóm số liệu
 
 | Nhóm | Dạng hiển thị | Vì sao dạng đó |

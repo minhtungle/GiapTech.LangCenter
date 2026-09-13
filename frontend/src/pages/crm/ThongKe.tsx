@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api } from '@/lib/api'
-import { Card, CardContent, Label, TrangTrong } from '@/components/ui'
-import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
+import { Button, Card, CardContent, Label, TrangTrong } from '@/components/ui'
+import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 import {
   DuongThoiGian, KhungBieuDo, OSo, Pheu, ThanhNgang, tienDayDu, tienGon,
 } from '@/components/bieu-do'
@@ -13,6 +13,36 @@ interface PhanBo {
   ten: string | null
   doanhThu: number
   soDon: number
+}
+
+type LoaiThongKe = 'KhoaHoc' | 'SanPham' | 'Elearning' | 'DoiNhom'
+
+const CAC_LOAI: LoaiThongKe[] = ['KhoaHoc', 'SanPham', 'Elearning', 'DoiNhom']
+
+/**
+ * Màu gắn với TỪNG LOẠI, cố định — không đổi theo thứ hạng hay số lượng.
+ *
+ * Người dùng học được "khoá học màu xanh lá" thì nó phải xanh lá ở mọi kỳ, mọi bộ lọc. Đổi màu
+ * theo thứ hạng là cách chắc chắn làm người đọc hiểu sai.
+ */
+const MAU_LOAI: Record<LoaiThongKe, string> = {
+  KhoaHoc: 'hsl(var(--chart-1))',
+  SanPham: 'hsl(var(--chart-2))',
+  Elearning: 'hsl(var(--chart-3))',
+  DoiNhom: 'hsl(var(--chart-4))',
+}
+
+interface MucLoc {
+  id: string
+  ten: string
+}
+
+interface SoLieuElearning {
+  soKhoa: number
+  soNguoiHoc: number
+  soLuotGhiDanh: number
+  soBaiHoanThanh: number
+  tongLuotCanHoc: number
 }
 
 interface ThongKeCrmDto {
@@ -27,6 +57,9 @@ interface ThongKeCrmDto {
   theoSanPham: PhanBo[]
   theoNguon: PhanBo[]
   pheu: { trangThai: string; soKhach: number }[]
+  theoLoai: PhanBo[]
+  danhMucLoc: MucLoc[]
+  elearning: SoLieuElearning | null
 }
 
 /** Khoảng thời gian — tính ở client rồi gửi mốc tuyệt đối, backend không đoán ý. */
@@ -56,6 +89,8 @@ type MaKhoang = (typeof KHOANG)[number]['ma']
 export default function ThongKe() {
   const { t } = useTranslation()
   const [khoang, setKhoang] = useState<MaKhoang>('12thang')
+  const [loai, setLoai] = useState<LoaiThongKe>('KhoaHoc')
+  const [chiMuc, setChiMuc] = useState<string[]>([])
 
   const { tuNgay, denNgay } = (() => {
     const nay = new Date()
@@ -69,9 +104,13 @@ export default function ThongKe() {
   })()
 
   const { data: tk, isLoading } = useQuery({
-    queryKey: ['thong-ke-crm', tuNgay, denNgay],
+    queryKey: ['thong-ke-crm', tuNgay, denNgay, loai, chiMuc],
     queryFn: async () =>
-      (await api.get<ThongKeCrmDto>('/thong-ke-crm', { params: { tuNgay, denNgay } })).data,
+      (await api.get<ThongKeCrmDto>('/thong-ke-crm', {
+        params: { tuNgay, denNgay, loai, chiMuc },
+        // Mảng id gửi thành `chiMuc=a&chiMuc=b` — ASP.NET bind `List<Guid>` theo dạng này.
+        paramsSerializer: { indexes: null },
+      })).data,
   })
 
   if (isLoading) return <TrangTrong thongDiep={t('chung.dangTai')} />
@@ -96,7 +135,22 @@ export default function ThongKe() {
 
   return (
     <div className="grid gap-4">
+      {/* Bộ lọc trên MỘT hàng, ngay trên các biểu đồ — đổi bộ lọc là đổi mọi số bên dưới. */}
       <div className="flex flex-wrap items-end gap-3">
+        <div className="w-48">
+          <Label>{t('thongKe.loaiThongKe')}</Label>
+          <SelectTimKiem
+            giaTri={loai}
+            luaChon={CAC_LOAI.map((l) => ({ giaTri: l, nhan: t(`thongKe.loai.${l}`) }))}
+            onDoi={(v) => {
+              setLoai((v as LoaiThongKe) ?? 'KhoaHoc')
+              // Đổi loại thì bỏ lọc cũ: id khoá học không có nghĩa gì ở danh sách sản phẩm,
+              // giữ lại sẽ lọc ra rỗng mà người dùng không hiểu vì sao.
+              setChiMuc([])
+            }}
+          />
+        </div>
+
         <div className="w-48">
           <Label>{t('thongKe.khoangThoiGian')}</Label>
           <SelectTimKiem
@@ -105,30 +159,93 @@ export default function ThongKe() {
             onDoi={(v) => setKhoang((v as MaKhoang) ?? '12thang')}
           />
         </div>
+
+        {/* Elearning không lọc theo danh sách: nó không đụng tới đơn hàng. */}
+        {loai !== 'Elearning' && (tk?.danhMucLoc.length ?? 0) > 0 && (
+          <div className="min-w-64 flex-1">
+            <Label>{t(`thongKe.locTheo.${loai}`)}</Label>
+            <SelectTimKiemNhieu
+              giaTri={chiMuc}
+              luaChon={(tk?.danhMucLoc ?? []).map((m) => ({ giaTri: m.id, nhan: m.ten }))}
+              onDoi={setChiMuc}
+            />
+          </div>
+        )}
+
+        {chiMuc.length > 0 && (
+          <Button variant="outline" size="sm" onClick={() => setChiMuc([])}>
+            {t('thongKe.boLoc')}
+          </Button>
+        )}
       </div>
 
-      {/* Hàng ô số — bốn con số dẫn, không phải biểu đồ. */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <OSo
-          nhan={t('thongKe.tongDoanhThu')}
-          giaTri={tienGon(tk.tongDoanhThu)}
-          phu={delta !== undefined ? t('thongKe.soKyTruoc') : t('thongKe.chuaCoKyTruoc')}
-          deltaPhanTram={delta}
-          nhanMau="hsl(var(--chart-1))"
-        />
-        <OSo nhan={t('thongKe.soDon')} giaTri={String(tk.soDon)} />
-        <OSo nhan={t('thongKe.giaTriDonTb')} giaTri={tienGon(tk.giaTriDonTb)} />
-        <OSo
-          nhan={t('thongKe.daThu')}
-          giaTri={tienGon(tk.daThu)}
-          phu={
-            conThieu > 0
-              ? t('thongKe.conThieu', { so: tienGon(conThieu) })
-              : t('thongKe.thuDu')
-          }
-        />
-      </div>
+      {chiMuc.length > 0 && (
+        <p className="text-xs text-muted-foreground">
+          {t('thongKe.dangLoc', { so: chiMuc.length })}
+        </p>
+      )}
 
+      {/*
+        Hàng ô số đổi theo loại. Elearning KHÔNG hiện số tiền — hiện "tổng doanh thu" ngay trên
+        dòng chữ "không đo tiền" là tự mâu thuẫn, và người đọc sẽ tưởng 17 triệu kia là doanh
+        thu của khoá trực tuyến (thấy được khi chụp màn hình thật 14/09/2026).
+      */}
+      {loai === 'Elearning' ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <OSo
+            nhan={t('thongKe.soKhoaOnline')}
+            giaTri={String(tk.elearning?.soKhoa ?? 0)}
+            nhanMau={MAU_LOAI.Elearning}
+          />
+          <OSo nhan={t('thongKe.soNguoiHoc')} giaTri={String(tk.elearning?.soNguoiHoc ?? 0)} />
+          <OSo
+            nhan={t('thongKe.soLuotGhiDanh')}
+            giaTri={String(tk.elearning?.soLuotGhiDanh ?? 0)}
+          />
+          <OSo
+            nhan={t('thongKe.tyLeHoanThanh')}
+            giaTri={
+              !tk.elearning || tk.elearning.tongLuotCanHoc === 0
+                ? '—'
+                : `${Math.round(
+                    (tk.elearning.soBaiHoanThanh / tk.elearning.tongLuotCanHoc) * 100,
+                  )}%`
+            }
+            phu={
+              tk.elearning && tk.elearning.tongLuotCanHoc > 0
+                ? t('thongKe.baiTrenTong', {
+                    da: tk.elearning.soBaiHoanThanh,
+                    tong: tk.elearning.tongLuotCanHoc,
+                  })
+                : undefined
+            }
+          />
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <OSo
+            nhan={t('thongKe.tongDoanhThu')}
+            giaTri={tienGon(tk.tongDoanhThu)}
+            phu={delta !== undefined ? t('thongKe.soKyTruoc') : t('thongKe.chuaCoKyTruoc')}
+            deltaPhanTram={delta}
+            nhanMau={MAU_LOAI[loai]}
+          />
+          <OSo nhan={t('thongKe.soDon')} giaTri={String(tk.soDon)} />
+          <OSo nhan={t('thongKe.giaTriDonTb')} giaTri={tienGon(tk.giaTriDonTb)} />
+          <OSo
+            nhan={t('thongKe.daThu')}
+            giaTri={tienGon(tk.daThu)}
+            phu={
+              conThieu > 0
+                ? t('thongKe.conThieu', { so: tienGon(conThieu) })
+                : t('thongKe.thuDu')
+            }
+          />
+        </div>
+      )}
+
+      {/* Đường doanh thu cũng ẩn với Elearning — cùng lẽ với hàng ô số. */}
+      {loai !== 'Elearning' && (
       <Card>
         <CardContent className="pt-4">
           <KhungBieuDo
@@ -147,30 +264,39 @@ export default function ThongKe() {
           </KhungBieuDo>
         </CardContent>
       </Card>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
+        {/* Khối CHÍNH — đổi theo loại đang chọn. */}
+        {loai === 'Elearning' ? (
+          <KhungBieuDo
+            tieuDe={t('thongKe.loai.Elearning')}
+            moTa={t('thongKe.elearningMoTa')}
+            trong={
+              (tk.elearning?.soKhoa ?? 0) === 0 ? t('thongKe.chuaCoKhoaMo') : null
+            }
+            className="lg:col-span-2"
+          >
+            <p className="text-sm text-muted-foreground">
+              {t('thongKe.elearningGoiY')}
+            </p>
+          </KhungBieuDo>
+        ) : (
+          <KhungBieuDo
+            tieuDe={t(`thongKe.loai.${loai}`)}
+            moTa={t(`thongKe.loaiMoTa.${loai}`)}
+            trong={tk.theoLoai.length === 0 ? t('thongKe.chuaCoDon') : null}
+          >
+            <ThanhNgang hang={hang(tk.theoLoai)} mau={MAU_LOAI[loai]} />
+          </KhungBieuDo>
+        )}
+
         <KhungBieuDo
           tieuDe={t('thongKe.theoCaNhan')}
           moTa={t('thongKe.theoCaNhanMoTa')}
           trong={tk.theoCaNhan.length === 0 ? t('thongKe.chuaCoDon') : null}
         >
           <ThanhNgang hang={hang(tk.theoCaNhan)} />
-        </KhungBieuDo>
-
-        <KhungBieuDo
-          tieuDe={t('thongKe.theoDoiNhom')}
-          moTa={t('thongKe.theoDoiNhomMoTa')}
-          trong={tk.theoDoiNhom.length === 0 ? t('thongKe.chuaCoDon') : null}
-        >
-          <ThanhNgang hang={hang(tk.theoDoiNhom)} mau="hsl(var(--chart-3))" />
-        </KhungBieuDo>
-
-        <KhungBieuDo
-          tieuDe={t('thongKe.theoSanPham')}
-          moTa={t('thongKe.theoSanPhamMoTa')}
-          trong={tk.theoSanPham.length === 0 ? t('thongKe.chuaCoDon') : null}
-        >
-          <ThanhNgang hang={hang(tk.theoSanPham)} mau="hsl(var(--chart-2))" />
         </KhungBieuDo>
 
         <KhungBieuDo

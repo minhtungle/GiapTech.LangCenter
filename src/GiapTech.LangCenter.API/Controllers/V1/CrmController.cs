@@ -299,6 +299,8 @@ public class DoanhThuController(ISender sender) : ControllerBase
     public async Task<ActionResult<ThongKeCrmDto>> ThongKe(
         [FromQuery] DateTimeOffset? tuNgay,
         [FromQuery] DateTimeOffset? denNgay,
+        [FromQuery] LoaiThongKe loai = LoaiThongKe.KhoaHoc,
+        [FromQuery] List<Guid>? chiMuc = null,
         CancellationToken ct = default)
-        => Ok(await sender.Send(new LayThongKeCrmQuery(tuNgay, denNgay), ct));
+        => Ok(await sender.Send(new LayThongKeCrmQuery(tuNgay, denNgay, loai, chiMuc), ct));
 }
