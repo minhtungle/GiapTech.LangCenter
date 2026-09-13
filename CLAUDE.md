@@ -39,7 +39,7 @@ LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 | **Ba hệ thống con** HRM/CRM/LMS: bộ chuyển, sidebar lọc, tab phân quyền · URL `/hrm` `/crm` `/lms` | Số **đã thu** ở CRM chưa chảy sang sổ học phí LMS |
 | **CRM** (FR-17 → FR-20): khách hàng + view 3 tab · doanh thu đa tiền tệ · **khoá học + sản phẩm** | Hộp thoại chọn lớp chưa **sắp** lớp cùng khoá lên đầu (nợ N19, còn phần nhỏ) |
 | **HRM** đủ nghiệp vụ (FR-22 → FR-24): cơ cấu tổ chức · chức vụ · hồ sơ mở rộng (CCCD, số TK, MXH, tệp) | Đăng ký trung tâm an toàn production (nợ N3) |
-| Hồ sơ con người tách theo hệ thống: Nhân sự (HRM) · Học viên (LMS) | Nhắc nợ / thông báo qua email |
+| Hồ sơ con người: Nhân sự (HRM) · **Học viên quản lý tập trung ở CRM** (13/09) | Nhắc nợ / thông báo qua email |
 | Lớp học: vòng đời, phân công, ghi danh, học phí riêng từng người, **gán tối đa 3 khoá** | Import Excel học viên |
 | Buổi học: sinh lịch tự động; điểm danh hai nguồn | Dọn nhật ký cũ theo chính sách lưu giữ |
 | Bài tập, bài nộp nhiều lần, tài liệu, tệp đính kèm | Danh mục ngày nghỉ khi sinh lịch |

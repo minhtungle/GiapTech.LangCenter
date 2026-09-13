@@ -114,17 +114,6 @@ export interface PhamViNguoiDung {
    * là route frontend.
    */
   duongChiTiet?: string
-  /**
-   * FR-25 — hiện ô chọn khách hàng CRM khi TẠO MỚI (13/09/2026).
-   *
-   * Chỉ bật ở màn Học viên (LMS): người mua khoá online là `KHACH_HANG` ở CRM, nối lại để một
-   * con người không thành hai hồ sơ. Màn Nhân sự (HRM) không có khái niệm này — nhân viên
-   * không phải khách hàng.
-   *
-   * Đọc `KHACH_HANG` từ LMS là **cầu nối chéo**, đã khai trong `RanhGioiHeThongConTests`.
-   * Chỉ lấy họ tên + số điện thoại để chọn đúng người, KHÔNG đọc số tiền (chốt 12/09).
-   */
-  chonKhachHang?: boolean
 }
 
 /**
@@ -154,7 +143,6 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
   const [loai, setLoai] = useState<LoaiNguoiDung>(phamVi.vaiTro[0])
   const [nhanSu, setNhanSu] = useState<TrangThaiNhanSu>('DangLamViec')
   const [taoTaiKhoan, setTaoTaiKhoan] = useState(false)
-  const [khachHang, setKhachHang] = useState<string | null>(null)
   const [quyenChon, setQuyenChon] = useState<string[]>([])
   const [buocDoiMk, setBuocDoiMk] = useState(true)
   const [maLoi, setMaLoi] = useState<string | null>(null)
@@ -203,25 +191,6 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
     enabled: moForm,
   })
 
-  /**
-   * FR-25 — khách hàng CRM để nối hồ sơ (13/09/2026).
-   *
-   * `enabled` có BA điều kiện, thiếu cái nào cũng hỏng:
-   * - `moForm` — không tải khi chưa mở form.
-   * - `phamVi.chonKhachHang` — màn Nhân sự (HRM) không có khái niệm khách hàng.
-   * - `coQuyen('KhachHang', 'Xem')` — endpoint gác bằng quyền đó. Giáo vụ chỉ có quyền LMS sẽ
-   *   nhận 403 và thấy thông báo lỗi đỏ ở một ô họ không cần dùng.
-   *
-   * Không có quyền thì ô chọn không hiện, và hồ sơ tạo ra vẫn hợp lệ — chỉ là chưa nối. Nối
-   * sau được, vì `KHACH_HANG.nguoi_dung_id` sửa từ phía CRM.
-   */
-  const { data: dsKhach } = useQuery({
-    queryKey: ['khach-hang', 'chon-noi-ho-so'],
-    queryFn: async () =>
-      (await api.get<{ duLieu: { id: string; hoTen: string; soDienThoai: string | null }[] }>(
-        '/khach-hang', { params: { soDong: 200 } })).data.duLieu,
-    enabled: moForm && !!phamVi.chonKhachHang && coQuyen('KhachHang', 'Xem'),
-  })
 
   /** Danh mục chức vụ (FR-24) — chỉ lấy chức vụ CÒN DÙNG cho form chọn. */
   const { data: chucVus = [] } = useQuery({
@@ -261,7 +230,6 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
     setMoForm(false)
     setDangSua(null)
     setTaoTaiKhoan(false)
-    setKhachHang(null)
     setQuyenChon([])
     setMaLoi(null)
   }
@@ -323,9 +291,6 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
         than.doiChucVu = true
         await api.put(`${phamVi.duong}/${dangSua.id}`, { ...than, id: dangSua.id })
       } else {
-        // FR-25 — chỉ gửi khi TẠO MỚI. Sửa hồ sơ không đổi được liên kết khách hàng: gỡ hay
-        // đổi liên kết là thao tác riêng, cần biết rõ hồ sơ cũ sẽ ra sao.
-        than.khachHangId = khachHang
 
         if (taoTaiKhoan) {
           than.taiKhoan = {
@@ -422,7 +387,6 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
               setLoai(phamVi.vaiTro[0])
               setNhanSu('DangLamViec')
               setTaoTaiKhoan(false)
-              setKhachHang(null)
               setQuyenChon([])
               setBuocDoiMk(true)
               setMaLoi(null)
@@ -673,29 +637,6 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
               </div>
             )}
 
-            {/*
-              FR-25 — nối với khách hàng CRM. Chỉ khi TẠO MỚI: sửa hồ sơ không đổi được liên
-              kết, vì đổi hay gỡ là thao tác riêng cần biết rõ hồ sơ cũ sẽ ra sao.
-            */}
-            {phamVi.chonKhachHang && !dangSua && loai === 'HocVien'
-              && coQuyen('KhachHang', 'Xem') && (
-              <div>
-                <Label>{t('nguoiDung.khachHangCrm')}</Label>
-                <SelectTimKiem
-                  giaTri={khachHang}
-                  luaChon={(dsKhach ?? []).map((k) => ({
-                    giaTri: k.id,
-                    nhan: k.hoTen,
-                    phu: k.soDienThoai ?? undefined,
-                  }))}
-                  onDoi={setKhachHang}
-                  placeholder={t('nguoiDung.khachHangCrmChon')}
-                />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {t('nguoiDung.khachHangCrmGoiY')}
-                </p>
-              </div>
-            )}
 
             {loai === 'HocVien' && (
               <div className="grid gap-4 sm:grid-cols-3">

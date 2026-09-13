@@ -17,7 +17,7 @@ Còn lại    ████░░░░░░░░░░░░  Bài kiểm tra 
 |---|---|:---:|:---:|---|
 | FR-01 | Đăng nhập | ✅ | ✅ | Bộ ba {mã trung tâm, username, mật khẩu}; refresh token xoay vòng |
 | FR-02 | Quên mật khẩu | ✅ | ✅ | Chưa cấu hình SMTP thật — email ghi log |
-| FR-03 | Người dùng (hồ sơ con người) | ✅ | ✅ | Tách khỏi tài khoản (07/09). Ba bảng hồ sơ theo vai trò. Từ 08/09 chia hai màn: **Nhân sự** (HRM) và **Học viên** (LMS) |
+| FR-03 | Người dùng (hồ sơ con người) | ✅ | ✅ | Tách khỏi tài khoản (07/09). Ba bảng hồ sơ theo vai trò. Từ 08/09 chia hai màn: **Nhân sự** (HRM) và **Học viên** (LMS). **Từ 13/09 bỏ màn Học viên** — học viên quản lý tập trung ở CRM, cấp tài khoản từ màn Khách hàng |
 | FR-04 | Tài khoản đăng nhập | ✅ | ✅ | Màn riêng ở cụm Quản trị dùng chung; gán được cho cả bốn vai trò |
 | FR-05 | Phân quyền truy cập | ✅ | ✅ | Ma trận **24 chức năng** × 4 thao tác, 4 nhóm dựng sẵn. Từ 08/09 có **tab theo hệ thống** HRM/CRM/LMS |
 | FR-06 | Thiết lập chung | ✅ | ✅ | Gồm múi giờ và ngưỡng cảnh báo nợ học phí |

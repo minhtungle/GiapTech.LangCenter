@@ -708,6 +708,13 @@ const vi = {
     soKhoa: 'Số khoá',
     tongMua: 'Tổng đã mua',
     hocVien: 'Hồ sơ học viên',
+    capTaiKhoan: 'Cấp tài khoản học viên',
+    hoiCapTaiKhoan:
+      'Tạo hồ sơ học viên và tài khoản đăng nhập cho {{ten}}? Hồ sơ sẽ nối cứng với khách hàng này.',
+    capTaiKhoanGoiY:
+      'Tạo hồ sơ học viên và tài khoản đăng nhập cho {{ten}}. Hồ sơ tự nối với khách hàng này '
+      + 'nên không tạo trùng một người.',
+    matKhauGoiY: 'Đọc mật khẩu này cho học viên — hệ thống buộc họ đổi ở lần đăng nhập đầu.',
     chuaVaoHoc: 'Chưa vào học',
     noiHocVien: 'Nối với hồ sơ học viên',
     noiHocVienGoiY:

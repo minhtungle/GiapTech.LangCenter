@@ -8,6 +8,28 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — bỏ module Học viên khỏi LMS, quản lý tập trung ở CRM (13/09/2026)
+
+Theo yêu cầu chủ sản phẩm: *"module này không cần vì học viên giờ quản lý tập trung tại CRM"*.
+
+- **Xoá** `frontend/src/pages/dao-tao/HocVien.tsx`, route `/lms/hoc-vien`, mục menu, và redirect
+  từ đường cũ `/hoc-vien`.
+- **Thêm** "Cấp tài khoản học viên" vào menu thao tác màn Khách hàng (CRM). Tạo từ đây thì hồ
+  sơ **tự nối** `KHACH_HANG.nguoi_dung_id` — một con người không thể thành hai hồ sơ ở hai hệ
+  thống, đúng rủi ro khiến việc tạo hồ sơ được gom về một chỗ.
+- Mục chỉ hiện khi khách **chưa** có hồ sơ học viên, và người dùng có cả `TaiKhoan.Them` lẫn
+  `KhachHang.Sua`.
+- Cờ `PhamViNguoiDung.chonKhachHang` (FR-25, thêm hôm qua) **bỏ luôn**: hướng nối nay đảo
+  ngược — CRM tạo hồ sơ chứ không phải LMS chọn khách. Để lại là mã chết.
+
+**Endpoint `/hoc-vien` GIỮ NGUYÊN** — 2 chỗ khác vẫn dùng: chọn người khi cấp quyền khoá online,
+và danh sách nối hồ sơ ở CRM. Bỏ màn hình không có nghĩa là bỏ API.
+
+Sửa kèm: form cấp tài khoản ban đầu **thiếu hộp xác nhận lưu** — mọi thao tác ghi khác trong dự
+án đều có từ 07/09. Ở đây đáng giá hơn bình thường: nó tạo một con người mới và nối cứng với
+khách hàng, mà giao diện không có đường gỡ.
+
+
 ### Added — FR-26 giao diện: soạn và học khoá trực tuyến (13/09/2026)
 
 Bước 3/4. Elearning **dùng được đầu-cuối** từ đây (bài tập chấm điểm ở bước 4).

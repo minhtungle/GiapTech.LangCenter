@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ExternalLink, Eye, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ExternalLink, Eye, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
@@ -73,6 +73,50 @@ export default function KhachHang() {
       (await api.get<KetQuaTrang<HocVienNgan>>('/hoc-vien', { params: { soDong: 200 } }))
         .data.duLieu,
     enabled: coQuyen('TaiKhoan'),
+  })
+
+  /**
+   * Khách đang được cấp tài khoản học viên (13/09/2026).
+   *
+   * Thay cho màn `/lms/hoc-vien` đã bỏ: học viên nay quản lý tập trung ở CRM. Tạo từ đây thì
+   * hồ sơ **tự nối** `nguoi_dung_id`, nên không bao giờ có chuyện một con người thành hai hồ
+   * sơ ở hai hệ thống — rủi ro lớn nhất khi tạo hồ sơ ở hai chỗ khác nhau.
+   */
+  const [capTkCho, setCapTkCho] = useState<KhachHangDto | null>(null)
+
+  /** Nhóm quyền để gán cho tài khoản mới. Chỉ tải khi thật sự mở hộp cấp tài khoản. */
+  const { data: quyens = [] } = useQuery({
+    queryKey: ['quyen-ngan'],
+    queryFn: async () =>
+      (await api.get<{ id: string; tenQuyen: string }[]>('/quyen')).data,
+    enabled: !!capTkCho,
+  })
+
+  const capTaiKhoan = useMutation({
+    mutationFn: async (fd: FormData) => {
+      const quyenHv = quyens.find((q) => q.tenQuyen === 'Học viên')
+      return api.post('/nguoi-dung', {
+        hoTen: capTkCho!.hoTen,
+        email: capTkCho!.email,
+        soDienThoai: capTkCho!.soDienThoai,
+        loaiNguoiDung: 'HocVien',
+        // Nối ngay khi tạo — đây là lý do cấp tài khoản từ CRM chứ không từ màn khác.
+        khachHangId: capTkCho!.id,
+        taiKhoan: {
+          username: String(fd.get('username')).trim(),
+          matKhau: String(fd.get('matKhau')),
+          quyenIds: quyenHv ? [quyenHv.id] : [],
+          // Mật khẩu do người điều phối đặt rồi đọc cho khách — buộc đổi ở lần đăng nhập đầu.
+          phaiDoiMatKhau: true,
+        },
+      })
+    },
+    onSuccess: () => {
+      lamMoi()
+      void qc.invalidateQueries({ queryKey: ['hoc-vien-ngan'] })
+      setCapTkCho(null)
+    },
+    onError: (e) => setMaLoi(layMaLoi(e)),
   })
 
   const lamMoi = () => {
@@ -269,6 +313,21 @@ export default function KhachHang() {
                                 onChon: () => moSua(k),
                               },
                               {
+                                nhan: t('khachHang.capTaiKhoan'),
+                                icon: KeyRound,
+                                ngatNhom: true,
+                                // Ẩn khi khách ĐÃ có hồ sơ học viên: nối rồi thì cấp tài khoản
+                                // là việc của màn Quản trị › Tài khoản, không nhân đôi ở đây.
+                                an:
+                                  !!k.nguoiDungId
+                                  || !coQuyen('TaiKhoan', 'Them')
+                                  || !coQuyen('KhachHang', 'Sua'),
+                                onChon: () => {
+                                  setMaLoi(null)
+                                  setCapTkCho(k)
+                                },
+                              },
+                              {
                                 nhan: t('chung.xoa'),
                                 icon: Trash2,
                                 nguyHiem: true,
@@ -406,6 +465,108 @@ export default function KhachHang() {
           </div>
         </form>
       </Modal>
+
+      {/* ---------- Cấp tài khoản học viên (13/09/2026) ---------- */}
+
+      <Modal
+
+        mo={!!capTkCho}
+
+        onDong={() => setCapTkCho(null)}
+
+        tieuDe={t('khachHang.capTaiKhoan')}
+
+      >
+
+        <form
+
+          /* `key` để form dựng lại theo từng khách — Modal giữ children khi đóng nên
+
+             `defaultValue` chỉ áp lần mount đầu (lỗi đã gặp ở màn khoá online 13/09). */
+
+          key={capTkCho?.id ?? 'none'}
+
+          onSubmit={(e) => {
+            e.preventDefault()
+            const fd = new FormData(e.currentTarget)
+            // Xác nhận như MỌI thao tác ghi khác (quy tắc từ 07/09/2026). Ở đây đáng giá hơn
+            // bình thường: cấp tài khoản tạo một con người mới trong hệ thống và nối cứng nó
+            // với khách hàng — gỡ ra không có đường nào trên giao diện.
+            hoi({
+              tieuDe: t('chung.xacNhanLuu'),
+              thongDiep: t('khachHang.hoiCapTaiKhoan', { ten: capTkCho?.hoTen ?? '' }),
+              onDongY: () => capTaiKhoan.mutate(fd),
+            })
+          }}
+
+          className="grid gap-4"
+
+        >
+
+          {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
+
+          <p className="text-sm text-muted-foreground">
+
+            {t('khachHang.capTaiKhoanGoiY', { ten: capTkCho?.hoTen ?? '' })}
+
+          </p>
+
+          <div>
+
+            <Label htmlFor="username">{t('taiKhoan.username')}</Label>
+
+            <Input id="username" name="username" required maxLength={100} autoComplete="off" />
+
+          </div>
+
+          <div>
+
+            <Label htmlFor="matKhau">{t('taiKhoan.matKhau')}</Label>
+
+            <Input
+
+              id="matKhau"
+
+              name="matKhau"
+
+              type="text"
+
+              required
+
+              minLength={6}
+
+              autoComplete="off"
+
+            />
+
+            <p className="mt-1 text-xs text-muted-foreground">
+
+              {t('khachHang.matKhauGoiY')}
+
+            </p>
+
+          </div>
+
+          <div className="flex justify-end gap-2">
+
+            <Button type="button" variant="outline" onClick={() => setCapTkCho(null)}>
+
+              {t('chung.huy')}
+
+            </Button>
+
+            <Button type="submit" disabled={capTaiKhoan.isPending}>
+
+              {t('chung.luu')}
+
+            </Button>
+
+          </div>
+
+        </form>
+
+      </Modal>
+
 
       {hop}
     </div>

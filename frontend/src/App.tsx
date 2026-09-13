@@ -25,7 +25,6 @@ import NhanSu from '@/pages/hrm/NhanSu'
 import CoCauToChuc from '@/pages/hrm/CoCauToChuc'
 import ChucVu from '@/pages/hrm/ChucVu'
 import ChiTietNhanSu from '@/pages/hrm/ChiTietNhanSu'
-import HocVien from '@/pages/dao-tao/HocVien'
 import PhanQuyen from '@/pages/quan-tri/PhanQuyen'
 import ThietLap from '@/pages/quan-tri/ThietLap'
 import NhatKy from '@/pages/quan-tri/NhatKy'
@@ -98,7 +97,6 @@ export default function App() {
               <Route path="/crm/san-pham" element={<SanPham />} />
 
               {/* LMS — tiền tố `/lms` cho đồng nhất với `/hrm`, `/crm` (10/09/2026). */}
-              <Route path="/lms/hoc-vien" element={<HocVien />} />
               <Route path="/lms/lop-hoc" element={<LopHoc />} />
               <Route path="/lms/lop-hoc/cho-xep-lop" element={<ChoXepLop />} />
               <Route path="/lms/lop-hoc/:id" element={<ChiTietLopHoc />} />
@@ -125,7 +123,7 @@ export default function App() {
                 `:id` và query (`?tab=lich`), tức link tới đúng một lớp/buổi cụ thể sẽ rơi về
                 danh sách.
               */}
-              {['/hoc-vien', '/lop-hoc', '/buoi-hoc', '/tai-lieu', '/hoc-phi'].map((cu) => (
+              {['/lop-hoc', '/buoi-hoc', '/tai-lieu', '/hoc-phi'].map((cu) => (
                 <Route key={cu} path={`${cu}/*`} element={<DoiSangLms />} />
               ))}
               <Route path="/quan-tri/tai-khoan" element={<TaiKhoan />} />

@@ -4,7 +4,7 @@ import { vaoHeThong } from './tro-giup'
 /**
  * Ba hệ thống con phải có URL cùng khuôn: `/hrm/...`, `/crm/...`, `/lms/...` (10/09/2026).
  *
- * Trước đó route LMS không có tiền tố (`/lop-hoc`, `/hoc-vien`…) nên `Layout.tsx` phải giữ một
+ * Trước đó route LMS không có tiền tố (`/lop-hoc`, `/tai-lieu`…) nên `Layout.tsx` phải giữ một
  * **danh sách 5 đường hardcode** để suy ra đang ở hệ thống con nào — thêm màn LMS mới mà quên
  * khai thì sidebar hiện sai hệ thống, một lỗi im lặng không có lỗi biên dịch. Nay chỉ còn một
  * bảng tra tiền tố.
@@ -31,7 +31,6 @@ test('URL LMS có tiền tố /lms, đường cũ redirect giữ id + query', as
   // --- Đường CŨ → redirect sang /lms/... (bookmark cũ không chết).
   for (const [cu, moi] of [
     ['/lop-hoc', '/lms/lop-hoc'],
-    ['/hoc-vien', '/lms/hoc-vien'],
     ['/tai-lieu', '/lms/tai-lieu'],
     ['/hoc-phi', '/lms/hoc-phi'],
     ['/lop-hoc/cho-xep-lop', '/lms/lop-hoc/cho-xep-lop'],
