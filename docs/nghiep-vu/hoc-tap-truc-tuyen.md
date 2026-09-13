@@ -81,9 +81,12 @@ Hiện FR-21 tạo `NGUOI_DUNG` khi **duyệt vào lớp** (`YeuCauXepLopDtos.cs
 Đúng bước 3 của luồng — **quản trị viên LMS tạo tài khoản học viên**. Không đổi schema
 `TAI_KHOAN`, không thêm nhánh tự động nào.
 
-Màn Học viên (`/lms/hoc-vien`) đã có sẵn nút tạo người dùng + cấp tài khoản. Việc duy nhất phải
-thêm: khi tạo học viên, cho **chọn một `KHACH_HANG` đã có** để nối `nguoi_dung_id` — tránh một
-người thành hai hồ sơ ở hai hệ thống.
+**Cập nhật 13/09/2026 — làm ở CRM, không ở LMS.** Bản đầu thêm ô chọn khách hàng vào màn
+`/lms/hoc-vien`; sau đó chủ sản phẩm chốt *"học viên giờ quản lý tập trung tại CRM"* nên màn đó
+**đã bỏ hẳn**.
+
+Nay cấp tài khoản từ **menu thao tác ở màn Khách hàng (CRM)**. Hướng nối đảo ngược: CRM tạo hồ
+sơ và nối luôn, thay vì LMS đi tìm khách để nối. Gọn hơn và đúng một chỗ duy nhất.
 
 ```
 Quản trị vào /lms/hoc-vien → Thêm học viên

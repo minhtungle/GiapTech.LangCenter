@@ -1,8 +1,7 @@
 # GiapTech.LangCenter — Hệ thống Quản lý Trung tâm Ngoại ngữ
 
-> **20/24 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật · 387 test backend xanh.
-> Còn lại: FR-15 Thống kê/Dashboard, FR-23/24 (hồ sơ nhân sự mở rộng · danh mục chức vụ), và
-> Bài kiểm tra (có schema, chưa có API/UI).
+> **27/28 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật · 464 test backend · 23 E2E xanh.
+> Còn lại: FR-27 (bài tập cho khoá trực tuyến) và Bài kiểm tra (có schema, chưa có API/UI).
 >
 > Hệ thống multi-tenant — mỗi trung tâm là một tenant độc lập — gồm **ba hệ thống con** chia theo
 > nhóm quyền: **HRM** (nhân sự) · **CRM** (khách hàng) · **LMS** (đào tạo). Đây là cách nhóm chức

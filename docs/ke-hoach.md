@@ -5,10 +5,10 @@
 ## Tiến độ tổng
 
 ```
-Nghiệp vụ  ████████████████  24/24 FR chạy đầu-cuối
+Nghiệp vụ  ████████████████  27/28 FR chạy đầu-cuối (FR-27 bài tập online chưa)
 Ba hệ thống ████████████████  Cả ba hệ thống đủ nghiệp vụ
 Hạ tầng    ████████████░░░░  CI/CD sẵn sàng, chờ VPS thật
-Còn lại    ████░░░░░░░░░░░░  Bài kiểm tra + 15 nợ kỹ thuật (rà lại toàn bộ 12/09)
+Còn lại    ███░░░░░░░░░░░░░  Bài kiểm tra · bài tập online · 16 nợ kỹ thuật
 ```
 
 ## Trạng thái mã FR
@@ -19,7 +19,7 @@ Còn lại    ████░░░░░░░░░░░░  Bài kiểm tra 
 | FR-02 | Quên mật khẩu | ✅ | ✅ | Chưa cấu hình SMTP thật — email ghi log |
 | FR-03 | Người dùng (hồ sơ con người) | ✅ | ✅ | Tách khỏi tài khoản (07/09). Ba bảng hồ sơ theo vai trò. Từ 08/09 chia hai màn: **Nhân sự** (HRM) và **Học viên** (LMS). **Từ 13/09 bỏ màn Học viên** — học viên quản lý tập trung ở CRM, cấp tài khoản từ màn Khách hàng |
 | FR-04 | Tài khoản đăng nhập | ✅ | ✅ | Màn riêng ở cụm Quản trị dùng chung; gán được cho cả bốn vai trò |
-| FR-05 | Phân quyền truy cập | ✅ | ✅ | Ma trận **24 chức năng** × 4 thao tác, 4 nhóm dựng sẵn. Từ 08/09 có **tab theo hệ thống** HRM/CRM/LMS |
+| FR-05 | Phân quyền truy cập | ✅ | ✅ | Ma trận **27 chức năng** × 4 thao tác, 4 nhóm dựng sẵn. Từ 08/09 có **tab theo hệ thống** HRM/CRM/LMS |
 | FR-06 | Thiết lập chung | ✅ | ✅ | Gồm múi giờ và ngưỡng cảnh báo nợ học phí |
 | FR-07 | Lớp học | ✅ | ✅ | Vòng đời nháp → sắp khai giảng → đang học → kết thúc (bước **kết thúc chưa có endpoint** — nợ N26); tên nháp không chiếm chỗ. Từ 12/09 gán được **tối đa 3 khoá học** |
 | FR-08 | Học viên trong lớp | ✅ | ✅ | Học phí riêng từng người (snapshot lúc ghi danh) |
@@ -39,6 +39,10 @@ Còn lại    ████░░░░░░░░░░░░  Bài kiểm tra 
 | FR-22 | Cơ cấu tổ chức (HRM) | ✅ | ✅ | Cây `PHONG_BAN` tự tham chiếu + người quản lý, màn `/hrm/co-cau` (thư viện `@headless-tree`). **Mọi vai trò nhân sự** xếp được vào phòng (giáo viên cũng là nhân viên). Hai cách xếp; chống chu trình ở handler |
 | FR-23 | Hồ sơ nhân sự mở rộng (HRM) | ✅ | ✅ | CCCD (không unique), số tài khoản, **liên kết MXH nhiều dòng** (bảng riêng), tệp hồ sơ dùng `TEP_DINH_KEM` cột FK thứ sáu. Áp cho mọi vai trò nhân sự |
 | FR-24 | Danh mục chức vụ (HRM) | ✅ | ✅ | Bảng `CHUC_VU` do admin quản, seeder dựng sẵn 5 chức vụ gồm **Ban quản lý**. Áp cho **mọi vai trò nhân sự**; ngừng dùng thay vì xoá. Migration sinh danh mục từ 40 hàng dữ liệu cũ |
+| FR-25 | Tài khoản học viên cho khách CRM | ✅ | ✅ | Cấp tài khoản **từ màn Khách hàng (CRM)**; hồ sơ tự nối `KHACH_HANG.nguoi_dung_id` nên một người không thành hai hồ sơ. Màn `/lms/hoc-vien` đã **bỏ** 13/09 — học viên quản lý tập trung ở CRM |
+| FR-26 | Khoá học trực tuyến | ✅ | ✅ | 4 bảng, **không bảng nào trỏ sang CRM**. Quản trị cấp quyền học bằng tay. `IPhamViKhoaOnline` — tầng phạm vi **thứ tư**, ba nhánh: ghi danh còn hạn · bài công khai · người soạn |
+| FR-27 | Bài tập cho khoá online | ⬜ | ⬜ | Bước 4/4 của elearning. Phải nới `BAI_TAP.buoi_hoc_id` thành 2 FK loại trừ — **đụng FR-11/FR-12 đang chạy**, nên tách riêng làm cuối |
+| FR-28 | Thống kê CRM | ✅ | ✅ | 4 loại (khoá học · sản phẩm · elearning · đội nhóm), lọc theo danh sách, biểu đồ tăng trưởng. **Doanh số tính cho người tạo hồ sơ khách**. Elearning **chỉ đo số lượng** — không nối đơn hàng nên không có tiền để chia |
 
 Ngoài bảng: **Bài kiểm tra** (`BAI_KIEM_TRA`, `BAI_LAM`) đã có schema và cách ly tenant, nhưng
 **chưa có API và UI** — xem nợ N1.
@@ -94,7 +98,7 @@ phải đồng bộ giữa ba DB nếu tách. Quyết định giữ một source
 Đã chạy: bộ chuyển hệ thống, sidebar lọc theo hệ thống, tab phân quyền, hồ sơ con người tách
 đôi (Nhân sự → HRM · Học viên → LMS), **URL theo tiền tố** `/hrm` `/crm` `/lms` (10/09).
 
-Nghiệp vụ ba hệ thống nay **đủ**: HRM có FR-22 → FR-24, CRM có FR-17 → FR-21, LMS có FR-07 →
+Nghiệp vụ ba hệ thống nay **đủ**: HRM có FR-22 → FR-24, CRM có FR-17 → FR-21 + FR-28, LMS có FR-07 →
 FR-14.
 
 **Hai màn từng dự kiến đã BỎ** (10/09, theo yêu cầu chủ sản phẩm): "Nhân viên kinh doanh" và
@@ -151,9 +155,9 @@ VPS → domain + HTTPS → backup. Xem
 
 ## Kiểm chứng hiện tại
 
-- **444 test backend xanh** (66 unit + 378 integration), build 0 warning — đo `dotnet test` 12/09/2026.
-- **20 test E2E / 8 spec — XANH HẾT** (12/09/2026, đóng nợ N16). Chạy cả bộ phải
+- **464 test backend xanh** (67 unit + 397 integration), build 0 warning — đo `dotnet test` 14/09/2026.
+- **23 test E2E / 10 spec — XANH HẾT** (14/09/2026). Chạy cả bộ phải
   `GIOI_HAN_TAN_SUAT=false` — xem nợ N15.
 - Frontend `tsc -b` + `vite build` sạch, `oxlint` không lỗi.
-- **PostgreSQL + MinIO thật**: 37 bảng, 22 migration áp sạch, luồng đầu-cuối chạy tay đủ từ tạo
+- **PostgreSQL + MinIO thật**: 42 bảng, 24 migration áp sạch, luồng đầu-cuối chạy tay đủ từ tạo
   trung tâm tới thu học phí.

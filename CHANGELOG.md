@@ -8,6 +8,29 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — đồng bộ tài liệu sau bốn ngày làm việc (14/09/2026)
+
+Số liệu trong tài liệu lạc hậu tới 4 ngày. Rà và cập nhật:
+
+| Chỗ | Cũ | Nay |
+|---|---|---|
+| `README.md` | 20/24 FR · 387 test | **27/28 FR · 464 test · 23 E2E** |
+| `CLAUDE.md` | 23/24 FR · 440 test · 37 bảng | **27 FR · 464 test · 42 bảng** |
+| `docs/ke-hoach.md` | 444 test · 22 migration | **464 test · 24 migration** |
+| `docs/database/erd.md` | 37 bảng | **42 bảng** |
+
+Sửa ba chỗ mô tả sai hiện trạng:
+
+- **"Ba tầng bảo vệ"** → **bốn**: thêm `IPhamViKhoaOnline` (13/09). Cần riêng vì
+  `IPhamViLopHoc` bám vào `LOP_HOC`, mà khoá trực tuyến không có lớp nào.
+- `hoc-tap-truc-tuyen.md` còn mô tả cấp tài khoản ở màn `/lms/hoc-vien` — **màn đó đã bỏ** 13/09.
+  Nay hướng nối đảo ngược: CRM tạo hồ sơ và nối luôn.
+- Bảng FR thiếu **FR-25 → FR-28**.
+
+Thêm hai nhật ký: [13/09 elearning](./docs/nhat-ky/2026-09-13-elearning.md) ·
+[14/09 thống kê CRM](./docs/nhat-ky/2026-09-14-thong-ke-crm.md).
+
+
 ### Added — FR-28: thống kê CRM với biểu đồ (14/09/2026)
 
 Màn `/crm/thong-ke`, gác bằng `DoanhThu.Xem` — số tiền toàn trung tâm, người trực tổng đài
