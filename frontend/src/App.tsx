@@ -12,6 +12,7 @@ import ChiTietLopHoc from '@/pages/dao-tao/ChiTietLopHoc'
 import ChoXepLop from '@/pages/dao-tao/ChoXepLop'
 import ChiTietBuoiHoc from '@/pages/dao-tao/ChiTietBuoiHoc'
 import DoanhThu from '@/pages/crm/DoanhThu'
+import ThongKeCrm from '@/pages/crm/ThongKe'
 import KhachHang from '@/pages/crm/KhachHang'
 import ChiTietKhachHang from '@/pages/crm/ChiTietKhachHang'
 import KhoaHoc from '@/pages/crm/KhoaHoc'
@@ -91,6 +92,7 @@ export default function App() {
               <Route path="/hrm/nhan-su/:id" element={<ChiTietNhanSu />} />
               <Route path="/hrm/chuc-vu" element={<ChucVu />} />
               <Route path="/crm/khach-hang" element={<KhachHang />} />
+              <Route path="/crm/thong-ke" element={<ThongKeCrm />} />
               <Route path="/crm/khach-hang/:id" element={<ChiTietKhachHang />} />
               <Route path="/crm/doanh-thu" element={<DoanhThu />} />
               <Route path="/crm/khoa-hoc" element={<KhoaHoc />} />

@@ -8,6 +8,29 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — FR-28: thống kê CRM với biểu đồ (14/09/2026)
+
+Màn `/crm/thong-ke`, gác bằng `DoanhThu.Xem` — số tiền toàn trung tâm, người trực tổng đài
+không nên thấy doanh số cả đội.
+
+**Doanh số của một đơn tính cho người TẠO HỒ SƠ KHÁCH** (`KHACH_HANG.created_by_id`). Không
+dùng "người nhập đơn" (lệch khi kế toán nhập hộ) và không dùng "người đang chăm" — cái sau làm
+**báo cáo tháng trước tự đổi số** mỗi lần bàn giao khách.
+
+Sáu nhóm: 4 ô số dẫn · doanh thu theo tháng · theo cá nhân · theo đội nhóm · theo mặt hàng ·
+theo nguồn khách · phễu bán hàng.
+
+**Bảng màu kiểm bằng script, không ước lượng bằng mắt.** Bản đầu tôi tự chọn bị báo ba lỗi
+không nhìn ra được: xanh lá đọc thành xám (chroma 0.083), tím lẫn xanh dương khi mù màu đỏ
+(ΔE 4.3), cam thiếu tương phản (2.76:1). Bản cuối **ALL CHECKS PASS** cả light lẫn dark.
+
+Biểu đồ dựng bằng **SVG thuần, không thêm thư viện** — bốn dạng cần dùng đều là vài chục dòng,
+trong khi recharts kéo theo 100-300KB.
+
+> Dự án **chưa có công tắc nền tối** — CSS `.dark` viết sẵn từ trước nhưng chưa mã nào bật được.
+> Token biểu đồ dark đã đặt đúng chỗ, sẽ tự chạy khi có công tắc.
+
+
 ### Changed — bỏ module Học viên khỏi LMS, quản lý tập trung ở CRM (13/09/2026)
 
 Theo yêu cầu chủ sản phẩm: *"module này không cần vì học viên giờ quản lý tập trung tại CRM"*.

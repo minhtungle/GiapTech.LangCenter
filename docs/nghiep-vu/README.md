@@ -77,6 +77,7 @@ Hai điều dễ nhầm:
 | FR-22 | Cơ cấu tổ chức (HRM) | [HRM](./hrm.md#fr-22--cơ-cấu-tổ-chức) |
 | FR-23 | Hồ sơ nhân sự mở rộng (HRM) | [HRM](./hrm.md#fr-23--hồ-sơ-nhân-sự-mở-rộng) |
 | FR-24 | Danh mục chức vụ (HRM) | [HRM](./hrm.md#fr-24--danh-mục-chức-vụ) |
+| FR-28 | Thống kê CRM — doanh thu, phễu, công nợ | [Thống kê CRM](./thong-ke-crm.md) |
 | FR-25 | Tài khoản cho khách hàng — cầu CRM → LMS | [Học tập trực tuyến](./hoc-tap-truc-tuyen.md#fr-25--tài-khoản-gán-cho-khách-hàng) *(đặc tả)* |
 | FR-26 | Khoá học trực tuyến + tiến độ | [Học tập trực tuyến](./hoc-tap-truc-tuyen.md#fr-26--khoá-học-trực-tuyến) *(đặc tả)* |
 | FR-27 | Bài tập cho khoá online | [Học tập trực tuyến](./hoc-tap-truc-tuyen.md#fr-27--bài-tập-cho-khoá-online) *(đặc tả)* |

@@ -39,6 +39,21 @@
       Màu trạng thái — nghĩa CỐ ĐỊNH ở mọi module, không dùng để trang trí:
       thắng/đã đóng đủ · thua/quá hạn · hòa/đang chờ
     */
+    /* --- Biểu đồ (FR-28) ---
+       5 màu categorical, dựng từ `--primary` (152) và `--accent` (28) của dự án rồi
+       KIỂM BẰNG SCRIPT, không ước lượng bằng mắt: ALL CHECKS PASS ở cả light và dark
+       (dải sáng · sàn chroma · tách màu khi mù màu · tương phản nền).
+       Bản đầu tôi tự chọn bị báo 3 lỗi không nhìn ra được: xanh lá đọc thành xám,
+       tím lẫn xanh dương khi mù màu đỏ (ΔE 4.3), cam thiếu tương phản.
+       Cặp cam↔lá còn ΔE 6.9 — hợp lệ nhưng BẮT BUỘC có nhãn trực tiếp kèm theo. */
+    --chart-1: 152 60% 35%;
+    --chart-2: 28 85% 45%;
+    --chart-3: 214 70% 48%;
+    --chart-4: 330 55% 48%;
+    --chart-5: 48 75% 38%;
+    /* Lưới và trục — lùi hẳn về sau, 1px đặc, không nét đứt. */
+    --chart-grid: 214 20% 90%;
+
     --status-ok: 152 55% 34%;
     --status-loi: 0 72% 45%;
     --status-cho: 38 92% 45%;
@@ -58,6 +73,15 @@
 
     --secondary: 217 18% 20%;
     --secondary-foreground: 210 20% 96%;
+
+    /* Dark mode phải DÒ RIÊNG, không đảo màu sáng: màu tươi trên nền tối luôn vượt
+       trần sáng của tiêu chuẩn. Mấy bản đầu đều trượt cho tới khi hạ độ sáng đúng mức. */
+    --chart-1: 152 50% 44%;
+    --chart-2: 28 80% 46%;
+    --chart-3: 214 70% 60%;
+    --chart-4: 330 55% 62%;
+    --chart-5: 48 70% 40%;
+    --chart-grid: 217 18% 26%;
 
     --muted: 217 18% 20%;
     --muted-foreground: 215 16% 62%;

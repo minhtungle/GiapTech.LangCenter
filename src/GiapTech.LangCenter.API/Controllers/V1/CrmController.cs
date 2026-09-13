@@ -287,4 +287,18 @@ public class DoanhThuController(ISender sender) : ControllerBase
     public async Task<ActionResult<Guid>> GuiYeuCauXepLop(
         Guid id, [FromBody] GuiYeuCauXepLopCommand command, CancellationToken ct)
         => Ok(await sender.Send(command with { DangKyId = id }, ct));
+    /// <summary>
+    /// FR-28 — thống kê CRM: doanh thu theo thời gian · cá nhân · đội nhóm · mặt hàng · nguồn,
+    /// kèm phễu bán hàng và công nợ.
+    ///
+    /// Gác bằng `DoanhThu.Xem` chứ không `KhachHang.Xem`: đây là **số tiền toàn trung tâm**, và
+    /// người trực tổng đài có quyền khách hàng nhưng không nên thấy doanh số của cả đội.
+    /// </summary>
+    [HttpGet("~/api/v{version:apiVersion}/thong-ke-crm")]
+    [RequirePermission(ChucNang.DoanhThu, HanhDong.Xem)]
+    public async Task<ActionResult<ThongKeCrmDto>> ThongKe(
+        [FromQuery] DateTimeOffset? tuNgay,
+        [FromQuery] DateTimeOffset? denNgay,
+        CancellationToken ct = default)
+        => Ok(await sender.Send(new LayThongKeCrmQuery(tuNgay, denNgay), ct));
 }
