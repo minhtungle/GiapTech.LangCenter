@@ -332,7 +332,16 @@ export function ThanhNgang({
 }
 
 /**
- * Phễu bán hàng — các bước CÓ thứ tự, nên dùng dải một màu đậm dần, không phải 4 màu khác nhau.
+ * Phân bố khách theo bước bán hàng — các bước CÓ thứ tự nên dùng dải một màu đậm dần, không
+ * phải 4 màu khác nhau.
+ *
+ * **Tỷ lệ tính trên TỔNG, không phải trên bước trước** (sửa 14/09/2026). `TrangThaiKhachHang`
+ * là trạng thái **hiện tại**, các bước **loại trừ nhau**: khách đã mua thì không còn nằm ở
+ * "đang tư vấn". Chia cho bước trước ra những con số vô lý — thấy trên dữ liệu mẫu:
+ * *"Đã mua 25 · 417%"* vì 25/6.
+ *
+ * Phễu tích luỹ thật (mỗi bước là tập con của bước trước) mới dùng được "% so bước trước" —
+ * dữ liệu ở đây không phải loại đó.
  *
  * Giữ đủ mọi bước kể cả bước 0 khách: phễu thiếu bước là phễu đọc sai, và "0 khách ở bước Tư
  * vấn" tự nó đã là thông tin.
@@ -344,20 +353,20 @@ export function Pheu({
 }) {
   if (buoc.length === 0) return null
   const max = Math.max(...buoc.map((b) => b.soLuong), 1)
+  const tong = buoc.reduce((s, b) => s + b.soLuong, 0)
 
   return (
     <ul className="grid gap-2">
       {buoc.map((b, i) => {
-        const truoc = i > 0 ? buoc[i - 1].soLuong : null
-        // Tỷ lệ chuyển đổi từ bước trước — con số người ta thật sự muốn biết ở phễu.
-        const tyLe = truoc && truoc > 0 ? (b.soLuong / truoc) * 100 : null
+        // Phần trăm trên TỔNG số khách — xem chú thích ở đầu component.
+        const tyLe = tong > 0 ? (b.soLuong / tong) * 100 : null
         return (
           <li key={b.nhan} className="grid gap-1">
             <div className="flex items-baseline justify-between gap-3 text-sm">
               <span>{b.nhan}</span>
               <span className="shrink-0 tabular-nums">
                 {b.soLuong}
-                {tyLe !== null && (
+                {tyLe !== null && b.soLuong > 0 && (
                   <span className="ml-2 text-xs text-muted-foreground">
                     {tyLe.toFixed(0)}%
                   </span>

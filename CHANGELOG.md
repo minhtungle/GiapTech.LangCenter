@@ -8,6 +8,31 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — script dựng dữ liệu demo (14/09/2026)
+
+`scripts/tao-du-lieu-mau.py` dựng một trung tâm demo đầy đủ **qua API thật**, không `INSERT`
+thẳng DB: dữ liệu phải đi qua đúng mọi quy tắc nghiệp vụ — tự gán `tenant_id`, bốn cột audit,
+validator, mã hoá mật khẩu, ghi nhật ký. `INSERT` thẳng tạo ra dữ liệu mà chính hệ thống không
+bao giờ tạo được, nên test trên đó không nói lên gì.
+
+Quy mô: 4 phòng ban · 6 nhân sự · 50 học viên · 32 khách · ~80 đơn rải 13 tháng · 8 lớp ·
+3 khoá trực tuyến (19 bài, 41 lượt ghi danh) · 69 lần thu tiền · lịch sử chăm sóc đủ 4 bước phễu.
+
+Hạt giống ngẫu nhiên **cố định** nên chạy lại cho ra cùng bộ số — ảnh chụp và con số đối chiếu
+được giữa các lần.
+
+### Fixed — phễu bán hàng tính % sai bản chất (14/09/2026)
+
+Phễu tính tỷ lệ **so với bước liền trước**, nhưng `TrangThaiKhachHang` là trạng thái **hiện
+tại** và các bước **loại trừ nhau** — khách đã mua thì không còn ở "đang tư vấn". Chia cho bước
+trước ra những con số vô lý: dữ liệu demo hiện *"Đã mua 25 · **417%**"* vì 25/6.
+
+Đổi sang **% trên tổng**; nay ba bước cộng lại đúng 100%. Phễu tích luỹ thật (mỗi bước là tập
+con của bước trước) mới dùng được "% so bước trước" — dữ liệu ở đây không phải loại đó.
+
+Lỗi này chỉ lộ ra khi có **dữ liệu đủ nhiều**: với 2-3 khách thì mọi tỷ lệ đều dưới 100%.
+
+
 ### Fixed — N14: giáo viên đọc được hồ sơ mọi học viên trung tâm (14/09/2026)
 
 Nợ đáng lo nhất còn lại. Endpoint `/hoc-vien` gác bằng `TaiKhoan.Xem` — quyền nhóm Giáo viên có

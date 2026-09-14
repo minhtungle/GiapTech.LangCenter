@@ -296,7 +296,7 @@ const vi = {
     theoNguon: 'Doanh thu theo nguồn khách',
     theoNguonMoTa: 'Khách tự đăng ký không tính vào doanh số cá nhân của ai.',
     pheu: 'Phễu bán hàng',
-    pheuMoTa: 'Số khách ở từng bước và tỷ lệ chuyển đổi từ bước trước.',
+    pheuMoTa: 'Số khách đang ở từng bước, và tỷ lệ trên tổng số khách.',
   },
   nguonKhachHang: {
     NhanVienTao: 'Nhân viên tạo',
