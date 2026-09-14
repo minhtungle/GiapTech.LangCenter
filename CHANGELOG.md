@@ -8,6 +8,28 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — cảnh báo trùng số điện thoại ngay khi gõ (14/09/2026)
+
+Yêu cầu: *"nếu tên và số điện thoại cùng đã tồn tại thì báo khách hàng đã tồn tại và cho phép
+mở xem chi tiết"*.
+
+**Giữ tiêu chí chặt hơn yêu cầu.** Hệ thống đang chặn trùng **chỉ theo số điện thoại** —
+UNIQUE partial index ở tầng DB. Đổi sang "tên **và** sđt" sẽ **nới lỏng** ràng buộc: hai người
+cùng số điện thoại khác tên sẽ tạo được, trong khi số điện thoại là thứ định danh một người.
+Chủ sản phẩm chốt giữ nguyên SĐT là duy nhất.
+
+**Cảnh báo ngay khi gõ, không đợi bấm Lưu.** Trước đây người dùng bấm Lưu mới biết trùng, rồi
+phải đóng form đi tìm khách đó bằng tay. Nay gõ xong số là hiện *"Số này đã là của Lê Ngọc An"*
+kèm nút **Mở hồ sơ khách này →** đi thẳng tới view chi tiết.
+
+- Thêm tham số `soDienThoaiChinhXac` cho `GET /khach-hang` — khớp **chính xác**, khác `timKiem`
+  khớp một phần (`0901` khớp một phần trả về cả chục khách, không trả lời được "số này đã có ai").
+- Chỉ gọi API khi số dài ≥ 9 ký tự; sửa chính khách đó thì không coi là trùng.
+
+Test: 1 backend + 1 E2E. Đột biến đầu **không bắt được** vì hai số thử không phải tiền tố của
+nhau nên `Contains` và `==` cho cùng kết quả — sửa thành cặp `0988111` / `09881112222`.
+
+
 ### Changed — dữ liệu mẫu dựng thẳng vào trung tâm đang test (14/09/2026)
 
 Bản trước tạo trung tâm mới mỗi lần chạy, nên **mã đổi liên tục** (`TAJZDEC` → `GJX4Z77` →

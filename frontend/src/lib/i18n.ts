@@ -780,6 +780,8 @@ const vi = {
     tongMua: 'Tổng đã mua',
     hocVien: 'Hồ sơ học viên',
     capTaiKhoan: 'Cấp tài khoản học viên',
+    sdtDaCo: 'Số này đã là của {{ten}}.',
+    moHoSoNay: 'Mở hồ sơ khách này',
     hoiCapTaiKhoan:
       'Tạo hồ sơ học viên và tài khoản đăng nhập cho {{ten}}? Hồ sơ sẽ nối cứng với khách hàng này.',
     capTaiKhoanGoiY:

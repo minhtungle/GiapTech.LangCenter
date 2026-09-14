@@ -36,7 +36,15 @@ public record LayDanhSachKhachHangQuery(
     string? TimKiem = null,
     /// <summary>true = chỉ khách ĐÃ mua; false = chỉ khách chưa mua; null = tất cả.</summary>
     bool? DaMua = null,
-    ThamSoTrang? Trang = null) : IRequest<KetQuaTrang<KhachHangDto>>;
+    ThamSoTrang? Trang = null,
+    /// <summary>
+    /// Tìm ĐÚNG số điện thoại này (14/09/2026) — dùng cho form thêm khách: gõ xong số là biết
+    /// ngay đã có ai dùng chưa, thay vì bấm Lưu rồi mới nhận lỗi.
+    ///
+    /// Khác <see cref="TimKiem"/> ở chỗ khớp **chính xác**: `0901` khớp một phần sẽ trả về cả
+    /// chục khách và không trả lời được câu "số này đã có ai chưa".
+    /// </summary>
+    string? SoDienThoaiChinhXac = null) : IRequest<KetQuaTrang<KhachHangDto>>;
 
 public class LayDanhSachKhachHangHandler(IAppDbContext db)
     : IRequestHandler<LayDanhSachKhachHangQuery, KetQuaTrang<KhachHangDto>>
@@ -46,6 +54,12 @@ public class LayDanhSachKhachHangHandler(IAppDbContext db)
     {
         var trang = request.Trang ?? new ThamSoTrang();
         var q = db.KhachHangs.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(request.SoDienThoaiChinhXac))
+        {
+            var so = request.SoDienThoaiChinhXac.Trim();
+            q = q.Where(k => k.SoDienThoai == so);
+        }
 
         if (!string.IsNullOrWhiteSpace(request.TimKiem))
         {

@@ -119,6 +119,30 @@ export default function KhachHang() {
     onError: (e) => setMaLoi(layMaLoi(e)),
   })
 
+  /**
+   * Số điện thoại đang gõ trong form, để tra trùng NGAY (14/09/2026).
+   *
+   * Trước đây người dùng phải bấm Lưu mới biết trùng, rồi tự đóng form đi tìm khách đó bằng
+   * tay. Nay gõ xong số là hiện cảnh báo kèm nút mở thẳng hồ sơ.
+   */
+  const [sdtDangGo, setSdtDangGo] = useState('')
+
+  /**
+   * Khách đã dùng số này. `enabled` chỉ bật khi số đủ dài — gõ tới ký tự thứ hai đã gọi API là
+   * gửi một loạt request vô ích, và chưa ký tự nào đủ để nói "trùng".
+   */
+  const { data: khachTrung } = useQuery({
+    queryKey: ['khach-hang', 'tra-sdt', sdtDangGo],
+    queryFn: async () =>
+      (await api.get<KetQuaTrang<KhachHangDto>>('/khach-hang', {
+        params: { soDienThoaiChinhXac: sdtDangGo, soDong: 1 },
+      })).data.duLieu[0] ?? null,
+    enabled: moForm && sdtDangGo.length >= 9,
+  })
+
+  // Sửa chính khách này thì số của họ không phải là "trùng".
+  const canhBaoTrung = khachTrung && khachTrung.id !== dangSua?.id ? khachTrung : null
+
   const lamMoi = () => {
     void qc.invalidateQueries({ queryKey: ['khach-hang'] })
     void qc.invalidateQueries({ queryKey: ['khach-hang-ngan'] })
@@ -130,6 +154,7 @@ export default function KhachHang() {
     setMoForm(false)
     setDangSua(null)
     setMaLoi(null)
+    setSdtDangGo('')
   }
 
   const luu = useMutation({
@@ -400,7 +425,30 @@ export default function KhachHang() {
                 id="soDienThoai"
                 name="soDienThoai"
                 defaultValue={dangSua?.soDienThoai ?? ''}
+                onChange={(e) => setSdtDangGo(e.target.value.trim())}
               />
+
+              {/*
+                Cảnh báo NGAY dưới ô, không đợi bấm Lưu. Kèm nút mở hồ sơ: người dùng đang định
+                thêm một người mà hoá ra đã có — việc tiếp theo của họ luôn là xem người đó.
+              */}
+              {canhBaoTrung && (
+                <div className="mt-1.5 rounded-md border border-status-warn/40 bg-status-warn/10 px-2.5 py-2 text-xs">
+                  <div className="text-foreground">
+                    {t('khachHang.sdtDaCo', { ten: canhBaoTrung.hoTen })}
+                  </div>
+                  <button
+                    type="button"
+                    className="mt-1 font-medium text-[hsl(var(--primary))] hover:underline"
+                    onClick={() => {
+                      dong()
+                      navigate(`/crm/khach-hang/${canhBaoTrung.id}`)
+                    }}
+                  >
+                    {t('khachHang.moHoSoNay')} →
+                  </button>
+                </div>
+              )}
             </div>
             <div>
               <Label htmlFor="email">{t('khachHang.email')}</Label>

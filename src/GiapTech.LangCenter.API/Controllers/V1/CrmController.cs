@@ -22,9 +22,10 @@ public class KhachHangController(ISender sender) : ControllerBase
         [FromQuery] bool? daMua,
         [FromQuery] int trang = 1,
         [FromQuery] int soDong = 20,
+        [FromQuery] string? soDienThoaiChinhXac = null,
         CancellationToken ct = default)
         => Ok(await sender.Send(new LayDanhSachKhachHangQuery(
-            timKiem, daMua, new ThamSoTrang(trang, soDong)), ct));
+            timKiem, daMua, new ThamSoTrang(trang, soDong), soDienThoaiChinhXac), ct));
 
     [HttpPost]
     [RequirePermission(ChucNang.KhachHang, HanhDong.Them)]

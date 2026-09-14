@@ -815,4 +815,41 @@ public class CrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
             new { HoTen = "Khách tenant B", SoDienThoai = "0999888777" }))
             .EnsureSuccessStatusCode();
     }
+
+    /// <summary>
+    /// Tra ĐÚNG số điện thoại — cho form thêm khách cảnh báo trùng ngay khi gõ (14/09/2026).
+    ///
+    /// Khác `timKiem` ở chỗ khớp **chính xác**: `timKiem=0901` khớp một phần sẽ trả về cả chục
+    /// khách và không trả lời được câu "số này đã có ai chưa".
+    /// </summary>
+    [Fact]
+    public async Task Tra_dung_so_dien_thoai_chi_tra_ve_dung_nguoi_do()
+    {
+        var c = await Client();
+
+        // Số thứ hai CHỨA số thứ nhất làm tiền tố. Không có cặp như vậy thì `Contains` và `==`
+        // cho cùng kết quả, và đột biến đổi sang khớp-một-phần vẫn xanh (kiểm 14/09/2026).
+        await TaoKhach(c, "Khách số ngắn", "0988111");
+        await TaoKhach(c, "Khách số dài hơn", "09881112222");
+
+        var dung = await c.GetFromJsonAsync<JsonElement>(
+            "/api/v1/khach-hang?soDienThoaiChinhXac=0988111");
+
+        Assert.Equal(1, dung.GetProperty("tongSoDong").GetInt32());
+        Assert.Equal("Khách số ngắn",
+            dung.GetProperty("duLieu")[0].GetProperty("hoTen").GetString());
+
+        // CHIỀU NGƯỢC — `timKiem` khớp một phần vẫn trả về CẢ HAI. Không có ca này thì test
+        // xanh cả khi `soDienThoaiChinhXac` chỉ là bí danh của `timKiem`.
+        var motPhan = await c.GetFromJsonAsync<JsonElement>(
+            "/api/v1/khach-hang?timKiem=0988111");
+        Assert.True(motPhan.GetProperty("tongSoDong").GetInt32() >= 2,
+            "`timKiem` phải khớp một phần — nếu nó cũng khớp chính xác thì hai tham số trùng "
+            + "chức năng và tham số mới là thừa.");
+
+        // Số chưa ai dùng → rỗng, không phải lỗi.
+        var chuaCo = await c.GetFromJsonAsync<JsonElement>(
+            "/api/v1/khach-hang?soDienThoaiChinhXac=0988999888");
+        Assert.Equal(0, chuaCo.GetProperty("tongSoDong").GetInt32());
+    }
 }
