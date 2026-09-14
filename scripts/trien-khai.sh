@@ -31,9 +31,9 @@ docker info >/dev/null 2>&1 || loi "Docker không chạy. Khởi động Docker 
 # `set -a` để export mọi biến cho docker compose đọc được.
 set -a; . ./.env; set +a
 
-[ -n "${DOMAIN:-}" ] || loi "Thiếu DOMAIN trong .env — Caddy sẽ dựng site tên rỗng"
+[ -n "${DOMAIN:-}" ] || loi "Thiếu DOMAIN trong .env — cần nó để kiểm site sau khi triển khai"
 [ -n "${POSTGRES_PASSWORD:-}" ] || loi "Thiếu POSTGRES_PASSWORD trong .env"
-# JWT_SECRET ngắn thì token ký được nhưng dễ bị dò — API cũng ném lỗi khi khởi động.
+# JWT_SECRET ngắn thì token ký được nhưng dễ bị dò — compose cũng từ chối khởi động.
 [ -n "${JWT_SECRET:-}" ] || loi "Thiếu JWT_SECRET trong .env"
 [ "${#JWT_SECRET}" -ge 32 ] || loi "JWT_SECRET phải ít nhất 32 ký tự (hiện ${#JWT_SECRET})"
 
@@ -70,8 +70,8 @@ fi
 # ---------- Frontend ----------
 #
 # `frontend/dist` nằm trong .gitignore nên VPS KHÔNG nhận nó qua git pull — phải build tại chỗ.
-# Caddy mount thẳng thư mục này (docker-compose.yml), nên build xong là có ngay, không cần
-# khởi động lại Caddy.
+# Nginx trỏ `root` thẳng vào thư mục này (deploy/nginx/langcenter.conf), nên build xong là có
+# ngay, không cần reload Nginx.
 
 mau "Build frontend"
 cd "$GOC/frontend"
@@ -106,11 +106,11 @@ done
 mau "Trạng thái"
 docker compose ps --format 'table {{.Service}}\t{{.Status}}'
 
-mau "Kiểm từ ngoài vào (qua Caddy)"
+mau "Kiểm từ ngoài vào (qua Nginx)"
 # `|| echo 000` là SAI: curl vẫn in `%{http_code}` (là `000`) rồi shell nối thêm `000` nữa →
 # `000000`. Gặp thật 22/08. Dùng `||:` để bỏ qua mã thoát, curl đã tự in `000` khi không nối được.
 #
-# `-k` chỉ khi DOMAIN là localhost: máy dev dùng chứng chỉ tự ký của Caddy nên curl từ chối, mà
+# `-k` chỉ khi DOMAIN là localhost: máy dev dùng chứng chỉ tự ký nên curl từ chối, mà
 # trên VPS thì chứng chỉ Let's Encrypt là thật — bỏ qua xác thực ở đó sẽ che mất lỗi cert.
 CO_CURL=(-s -o /dev/null)
 [ "$DOMAIN" = "localhost" ] && CO_CURL+=(-k)
@@ -118,7 +118,7 @@ CO_CURL=(-s -o /dev/null)
 for duong in /health /api/v1/tinh-nang /; do
   ma="$(curl "${CO_CURL[@]}" -w '%{http_code}' "https://$DOMAIN$duong" ||:)"
   printf '  %-22s %s\n' "$duong" "$ma"
-  [ "$ma" = "200" ] || printf '\033[1;33m    ⚠ không phải 200 — xem docker compose logs caddy\033[0m\n'
+  [ "$ma" = "200" ] || printf '\033[1;33m    ⚠ không phải 200 — xem sudo journalctl -u nginx -n 50\033[0m\n'
 done
 
 # Dọn image cũ: mỗi lần build để lại một image không tag, vài lần deploy là hết đĩa.

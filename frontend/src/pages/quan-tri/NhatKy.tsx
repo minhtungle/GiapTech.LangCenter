@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { ChevronDown, ChevronRight } from 'lucide-react'
@@ -192,8 +192,13 @@ export default function NhatKy() {
                 const coChiTiet = chiTiet.length > 0 || !!n.thamSo
 
                 return (
-                  <>
-                    <tr key={n.id} className="hover:bg-muted/40">
+                  // `Fragment` CÓ key, không phải `<>`: cú pháp ngắn không nhận key, nên key
+                  // đặt trên `<tr>` bên trong là vô dụng — React coi mỗi phần tử danh sách là
+                  // không có khoá. Hệ quả không chỉ là cảnh báo: khi lọc hay sang trang, React
+                  // tái dùng DOM theo thứ tự nên hàng đang MỞ RỘNG có thể giữ lại phần chi
+                  // tiết của hàng khác (cùng loại lỗi với modal giữ nội dung cũ, 13/09/2026).
+                  <Fragment key={n.id}>
+                    <tr className="hover:bg-muted/40">
                       <Td>
                         {coChiTiet && (
                           <button
@@ -245,7 +250,7 @@ export default function NhatKy() {
                     </tr>
 
                     {mo && (
-                      <tr key={`${n.id}-ct`} className="bg-muted/30">
+                      <tr className="bg-muted/30">
                         <Td />
                         <Td colSpan={7} className="py-3">
                           <div className="space-y-3 text-xs">
@@ -294,7 +299,7 @@ export default function NhatKy() {
                         </Td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 )
               })}
             </tbody>

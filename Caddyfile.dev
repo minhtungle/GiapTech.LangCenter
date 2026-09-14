@@ -1,5 +1,12 @@
+# CHỈ dùng cho máy dev (docker-compose.dev.yml) — production KHÔNG dùng Caddy.
+#
+# VPS dùng **Nginx + certbot** có sẵn; cấu hình production nằm ở
+# `deploy/nginx/langcenter.conf`. Đừng suy hành vi production từ file này: bản `Caddyfile`
+# production đã bị xoá 15/09/2026 vì nó mô tả một kiến trúc không còn dùng, mà lại có đủ bộ
+# header bảo mật — nên đọc repo tưởng production đã an toàn trong khi thực tế thiếu HSTS,
+# X-Frame-Options và nosniff suốt một thời gian dài mà không ai phát hiện.
+
 # Caddyfile cho máy dev — HTTP trên localhost, không xin chứng chỉ.
-# Bản production dùng ./Caddyfile với domain thật + HTTPS tự động.
 
 :80 {
     handle /api/* {

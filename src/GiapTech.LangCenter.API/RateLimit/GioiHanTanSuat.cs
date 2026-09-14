@@ -32,6 +32,17 @@ public static class GioiHanTanSuat
     /// <summary>Đăng nhập và quên mật khẩu — chống dò mật khẩu.</summary>
     public const string XacThuc = "xac-thuc";
 
+    /// <summary>
+    /// Làm mới token — chống lạm dụng, KHÔNG chống dò.
+    ///
+    /// Tách khỏi <see cref="XacThuc"/> có chủ ý (15/09/2026). Refresh token là chuỗi RNG 64
+    /// byte nên dò là không thực tế; rủi ro thật chỉ là mỗi request tốn một truy vấn DB không
+    /// giới hạn. Nhưng dùng chung hạn mức 10/phút của `XacThuc` thì **đăng xuất oan người
+    /// dùng thật**: một văn phòng sau NAT chia nhau một IP công cộng, mỗi người mở vài tab, và
+    /// interceptor của frontend tự làm mới token — 10/phút cho cả toà nhà là quá chặt.
+    /// </summary>
+    public const string LamMoiToken = "lam-moi-token";
+
     /// <summary>Độ dài một đoạn của cửa sổ trượt, tính bằng giây (1 phút / 6 đoạn).</summary>
     private const int GiaySauMotDoan = 10;
 
@@ -40,6 +51,12 @@ public static class GioiHanTanSuat
     // vẫn xanh. Con số phải kiểm được, không chỉ cái tên.
     public const int HanMucTraCuu = 30;
     public const int HanMucXacThuc = 10;
+
+    /// <summary>
+    /// 60/phút mỗi IP. Rộng để không đăng xuất oan văn phòng dùng chung IP (xem
+    /// <see cref="LamMoiToken"/>), nhưng vẫn chặn được vòng lặp gọi vô hạn.
+    /// </summary>
+    public const int HanMucLamMoiToken = 60;
 
     /// <summary>
     /// Bật/tắt qua cấu hình <c>GIOI_HAN_TAN_SUAT</c> (mặc định BẬT).
@@ -89,6 +106,8 @@ public static class GioiHanTanSuat
             // đã rất rộng, còn người dò cần hàng nghìn lần mới có hy vọng.
 
             options.AddPolicy(XacThuc, KhoaTheoIp(HanMucXacThuc, phut: 1));
+
+            options.AddPolicy(LamMoiToken, KhoaTheoIp(HanMucLamMoiToken, phut: 1));
         });
 
         return services;

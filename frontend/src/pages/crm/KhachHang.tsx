@@ -433,7 +433,7 @@ export default function KhachHang() {
                 thêm một người mà hoá ra đã có — việc tiếp theo của họ luôn là xem người đó.
               */}
               {canhBaoTrung && (
-                <div className="mt-1.5 rounded-md border border-status-warn/40 bg-status-warn/10 px-2.5 py-2 text-xs">
+                <div className="mt-1.5 rounded-md border border-status-cho/40 bg-status-cho/10 px-2.5 py-2 text-xs">
                   <div className="text-foreground">
                     {t('khachHang.sdtDaCo', { ten: canhBaoTrung.hoTen })}
                   </div>

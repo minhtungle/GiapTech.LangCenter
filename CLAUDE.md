@@ -276,6 +276,9 @@ python3 scripts/check-i18n-keys.py
 # --- Kiểm nhãn phân quyền (khoá động, check-i18n-keys.py không quét tới) ---
 python3 scripts/check-nhan-phan-quyen.py
 
+# --- Kiểm token màu (Tailwind IM LẶNG bỏ qua class sai ⇒ mất màu, không lỗi nào) ---
+python3 scripts/check-token-mau.py
+
 # --- Frontend ---
 cd frontend && npm install
 npm run dev     # http://localhost:5173, proxy /api -> :5229

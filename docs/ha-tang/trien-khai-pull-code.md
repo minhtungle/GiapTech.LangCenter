@@ -31,10 +31,28 @@ node -v   # phải ≥ 20
 
 **Bỏ qua mục 9** (secrets cho CI/CD) — đường này không cần.
 
-### Kiểm DNS TRƯỚC khi khởi động Caddy
+### Dựng server-block Nginx (bắt buộc, làm một lần)
 
-Caddy xin chứng chỉ Let's Encrypt ngay lần khởi động đầu. DNS chưa trỏ đúng thì nó thất bại, và
-Let's Encrypt **rate-limit 5 lần thất bại/giờ cho mỗi domain** — chờ cả tiếng mới thử lại được.
+VPS dùng **Nginx + certbot có sẵn** làm reverse proxy chung cho mọi domain — không dùng Caddy,
+để tránh xung đột port 80/443 với các dự án khác đang chạy trên cùng máy.
+
+Cấu hình nằm **trong repo** tại [`deploy/nginx/langcenter.conf`](../../deploy/nginx/langcenter.conf),
+không phải chỉ trên VPS. Lý do: trước 15/09/2026 nó chỉ sống trên VPS, còn trong repo là
+`Caddyfile` của kiến trúc cũ — nên đọc repo tưởng đã có đủ header bảo mật, trong khi production
+**không có HSTS, không có X-Frame-Options, không có nosniff** và không ai phát hiện.
+
+```bash
+sudo cp deploy/nginx/langcenter.conf /etc/nginx/sites-available/langcenter.conf
+sudo ln -s /etc/nginx/sites-available/langcenter.conf /etc/nginx/sites-enabled/
+sudo nano /etc/nginx/sites-available/langcenter.conf   # đổi server_name + API_PORT
+# khai zone hạn mức ở http-block (xem ghi chú cuối file conf)
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### Kiểm DNS TRƯỚC khi xin chứng chỉ
+
+`certbot --nginx -d <domain>` xin chứng chỉ Let's Encrypt ngay. DNS chưa trỏ đúng thì thất bại,
+và Let's Encrypt **rate-limit 5 lần thất bại/giờ cho mỗi domain** — chờ cả tiếng mới thử lại.
 
 ```bash
 # Trên VPS: phải trả về đúng IP của VPS này
@@ -57,8 +75,8 @@ Script làm sáu việc, theo đúng thứ tự đó:
 2. **`pg_dump` trước khi migration chạy.** API tự chạy migration khi khởi động (`Program.cs`), nên
    đây là thứ duy nhất cứu được dữ liệu nếu migration mới có lỗi. Giữ 14 bản gần nhất.
 3. **Build frontend** (`npm ci && npm run build`). `frontend/dist` nằm trong `.gitignore` nên VPS
-   không nhận nó qua `git pull` — phải build tại chỗ. Caddy mount thẳng thư mục đó nên build xong
-   là có ngay, không cần khởi động lại Caddy.
+   không nhận nó qua `git pull` — phải build tại chỗ. Nginx trỏ `root` thẳng vào thư mục đó nên
+   build xong là có ngay, không cần reload Nginx.
 4. **`docker compose up -d --build`** — build image API từ mã nguồn vừa pull.
 5. **Chờ API `healthy`**, tối đa 120s. Không khoẻ thì dừng kèm lệnh xem log.
 6. **Kiểm từ ngoài vào** qua HTTPS thật (`/health`, `/api/v1/tinh-nang`, `/`) rồi dọn image cũ.
@@ -161,7 +179,9 @@ trong [`ke-hoach.md`](../ke-hoach.md).
 - [ ] `.env` trên VPS có `DOMAIN`, `POSTGRES_PASSWORD`, `JWT_SECRET` ≥32 ký tự, và
       `ASPNETCORE_ENVIRONMENT=Production`.
 - [ ] `git pull && ./scripts/trien-khai.sh` chạy hết, ba dòng kiểm cuối đều `200`.
-- [ ] `docker compose logs caddy | grep -i certificate` cho thấy đã cấp chứng chỉ.
+- [ ] `sudo nginx -t` xanh và `sudo certbot certificates` cho thấy chứng chỉ còn hạn.
+- [ ] `curl -sI https://<domain>/health | grep -i strict-transport` có trả về HSTS — nếu
+      không thì server-block chưa được áp, và **toàn bộ header bảo mật đang thiếu**.
 - [ ] Mở `https://<domain>` trên máy khác (không phải VPS) — thấy trang đăng nhập, ổ khoá xanh.
 - [ ] Tạo một trung tâm thử, đăng nhập, đổi mật khẩu lần đầu.
 - [ ] `crontab -l` có dòng `pg_dump` hằng ngày (xem [cai-dat-vps.md mục 8](./cai-dat-vps.md)).

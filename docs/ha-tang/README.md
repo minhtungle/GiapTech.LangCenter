@@ -79,7 +79,8 @@ docker compose --profile quan-sat up -d
 | [`docker-compose.yml`](../../docker-compose.yml) | Định nghĩa toàn bộ service (production) |
 | [`docker-compose.dev.yml`](../../docker-compose.dev.yml) | Lớp phủ cho máy dev |
 | [`src/GiapTech.LangCenter.API/Dockerfile`](../../src/GiapTech.LangCenter.API/Dockerfile) | Image API, 2 giai đoạn build/runtime |
-| [`Caddyfile`](../../Caddyfile) | Reverse proxy + HTTPS tự động (production) |
+| [`deploy/nginx/langcenter.conf`](../../deploy/nginx/langcenter.conf) | Server-block Nginx production: proxy, **header bảo mật**, hạn mức tầng proxy, static SPA |
+| [`Caddyfile.dev`](../../Caddyfile.dev) | Reverse proxy cho máy dev (`docker-compose.dev.yml`) — production dùng Nginx |
 | [`Caddyfile.dev`](../../Caddyfile.dev) | HTTP localhost cho dev |
 | [`.env.example`](../../.env.example) | Mẫu biến môi trường — copy thành `.env`, **không commit** |
 | [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml) | Pipeline CI/CD |

@@ -18,7 +18,9 @@ namespace GiapTech.LangCenter.API.Controllers.V1;
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/dang-ky-trung-tam")]
-public class DangKyTrungTamController(ITenantSeeder seeder) : ControllerBase
+public class DangKyTrungTamController(
+    ITenantSeeder seeder,
+    ILogger<DangKyTrungTamController> logger) : ControllerBase
 {
     /// <summary>Chỉ cần tên trung tâm — mã trung tâm do hệ thống sinh (7 ký tự).</summary>
     public record DangKyRequest(string TenTrungTam);
@@ -50,7 +52,13 @@ public class DangKyTrungTamController(ITenantSeeder seeder) : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { errorCode = "LOI_HE_THONG", chiTiet = ex.Message });
+            // KHÔNG trả `ex.Message` ra client (sửa 15/09/2026): đây là endpoint ẩn danh mở ra
+            // Internet, và message nội bộ tiết lộ chi tiết cấu trúc hệ thống cho người gọi vô
+            // danh. Cũng vi phạm quy tắc #3 — client phải nhận MÃ LỖI để tự dịch, không nhận
+            // câu tiếng Việt hard-code. Chi tiết đi vào log phía server, nơi người vận hành
+            // đọc được mà người ngoài thì không.
+            logger.LogError(ex, "Tạo tenant mới thất bại cho tên {Ten}", body.TenTrungTam);
+            return BadRequest(new { errorCode = "LOI_HE_THONG" });
         }
     }
 }

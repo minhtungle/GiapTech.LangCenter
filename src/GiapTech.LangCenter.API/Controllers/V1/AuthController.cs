@@ -97,6 +97,10 @@ public class AuthController(ISender sender) : ControllerBase
     /// <summary>FR-01 — đổi refresh token lấy cặp token mới (token cũ bị thu hồi ngay).</summary>
     [HttpPost("lam-moi-token")]
     [AllowAnonymous]
+    // Endpoint ẩn danh DUY NHẤT từng thiếu hạn mức (thêm 15/09/2026): mỗi request tốn một
+    // truy vấn DB, nên là kênh gây tải rẻ nhất hệ thống. Dùng policy RIÊNG rộng hơn `XacThuc`
+    // — xem `GioiHanTanSuat.LamMoiToken` để biết vì sao không dùng chung.
+    [EnableRateLimiting(GioiHanTanSuat.LamMoiToken)]
     [ProducesResponseType<DangNhapResult>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<DangNhapResult>> LamMoiToken(

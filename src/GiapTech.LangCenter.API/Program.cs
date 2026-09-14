@@ -54,7 +54,31 @@ builder.Services
 var jwtSecret = builder.Configuration["JWT_SECRET"];
 var jwtIssuer = builder.Configuration["JWT_ISSUER"] ?? "langcenter-api";
 
-if (!string.IsNullOrEmpty(jwtSecret))
+// FAIL-FAST, không bọc trong `if` im lặng (sửa 15/09/2026).
+//
+// Bản cũ: thiếu `JWT_SECRET` thì bỏ qua cả khối này — app vẫn `Run()`, `/health` vẫn trả 200,
+// deploy vẫn xanh, rồi **mọi lần đăng nhập là 500**. Kiểm độ dài chỉ có ở `TokenService` tức
+// lúc PHÁT HÀNH token, quá muộn để cứu. Triệu chứng khó chẩn nhất có thể: hạ tầng báo khoẻ
+// nhưng không ai đăng nhập được.
+//
+// Compose (`JWT_SECRET:?...`) và `scripts/trien-khai.sh` đã chắn, nhưng chỉ chắn đường deploy
+// chuẩn — chạy `dotnet run` tay hoặc orchestrator khác thì lọt. Chặn ngay tại ứng dụng.
+//
+// `IsDevelopment` không được miễn: dev thiếu khoá cũng gặp đúng lỗi 500 khó hiểu đó, và thông
+// báo rõ ràng lúc khởi động là thứ giúp người mới vào dự án nhiều nhất.
+if (string.IsNullOrWhiteSpace(jwtSecret))
+{
+    throw new InvalidOperationException(
+        "Thiếu JWT_SECRET. Đặt biến môi trường này (tối thiểu 32 ký tự) trước khi chạy API — "
+        + "xem docs/ha-tang/bien-moi-truong.md.");
+}
+
+if (jwtSecret.Length < 32)
+{
+    throw new InvalidOperationException(
+        $"JWT_SECRET chỉ có {jwtSecret.Length} ký tự, cần tối thiểu 32 để chữ ký HS256 đủ mạnh.");
+}
+
 {
     builder.Services
         .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

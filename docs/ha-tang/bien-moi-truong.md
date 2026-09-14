@@ -78,5 +78,7 @@ Dấu `__` (hai gạch dưới) là quy ước của ASP.NET Core để biểu d
 - [ ] Mọi giá trị `doi-gia-tri-nay` trong `.env` đã được thay bằng giá trị thật, sinh ngẫu nhiên.
 - [ ] `chmod 600 .env` trên VPS.
 - [ ] `.env` nằm trong `.gitignore`.
-- [ ] Domain thật đã thay `langcenter.example.com` trong [`Caddyfile`](../../Caddyfile).
+- [ ] Domain thật đã thay `lms.example.com` trong
+      [`deploy/nginx/langcenter.conf`](../../deploy/nginx/langcenter.conf) (`server_name`), và
+      `API_PORT` khớp `.env`.
 - [ ] Secrets CI đã cấu hình trên GitHub: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`.

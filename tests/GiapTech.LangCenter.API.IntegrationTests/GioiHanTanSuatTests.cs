@@ -88,8 +88,12 @@ public class GioiHanTanSuatTests(GioiHanTanSuatTests.ApiFactoryCoGioiHan factory
             // trừ cũ ghi "chỉ bật ở Development" nhưng controller nói rõ **MỞ Ở MỌI MÔI
             // TRƯỜNG** — miễn trừ dựa trên tiền đề sai, và nợ N3 chép lại đúng tiền đề đó.
             // Nay endpoint có [EnableRateLimiting(XacThuc)] như các endpoint ẩn danh khác.
-            // Làm mới token: có cơ chế phát hiện tái sử dụng riêng, chặt hơn rate limit.
-            "LamMoiToken",
+            // `LamMoiToken` ĐÃ BỊ GỠ khỏi danh sách này 15/09/2026. Lý do miễn trừ cũ — "có
+            // cơ chế phát hiện tái sử dụng riêng, chặt hơn rate limit" — lẫn hai mối đe doạ
+            // khác nhau: phát hiện tái sử dụng chống ĐÁNH CẮP token, không chống GÂY TẢI. Mỗi
+            // request vẫn tốn một truy vấn DB, và đây là endpoint ẩn danh duy nhất còn thiếu
+            // hạn mức. Nay dùng policy riêng `LamMoiToken` (60/phút) — rộng hơn `XacThuc` để
+            // không đăng xuất oan văn phòng dùng chung một IP.
         };
 
         var thieu = new List<string>();

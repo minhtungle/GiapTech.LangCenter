@@ -8,6 +8,59 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Security — rà soát chuẩn bị bản v1 (15/09/2026)
+
+Rà theo luồng thao tác thật để chốt bản đóng gói chính thức. Bốn lỗi **chặn phát hành**, tất cả
+nằm ở tầng hạ tầng/cấu hình — không phải logic nghiệp vụ.
+
+**1. Production thiếu HOÀN TOÀN header bảo mật.** `Caddyfile` trong repo có đủ HSTS,
+`X-Frame-Options`, `nosniff` — nhưng **Caddy không còn được dùng** (VPS dùng Nginx + certbot có
+sẵn, xem `docker-compose.yml`), và cấu hình Nginx thì chỉ sống trên VPS, không có trong repo.
+Đọc repo tưởng đã an toàn, thực tế không có header nào. Đây chính là cách một lỗ hổng biến mất
+khỏi tầm mắt: cấu hình bảo mật không nằm cùng chỗ với mã.
+
+Nay có [`deploy/nginx/langcenter.conf`](./deploy/nginx/langcenter.conf) trong repo, **đã dựng
+Nginx thật để kiểm**: 6 header ra đủ, hạn mức chặn đúng (bắn 8 request → 4 cái sau nhận 429),
+và `X-Forwarded-For` client tự đặt bị **ghi đè** bằng IP thật — điểm sống còn vì
+`GioiHanTanSuat.LayIp` đọc phần tử cuối, nếu Nginx *append* thì ai cũng vượt được hạn mức.
+Xoá `Caddyfile` production (mồ côi, gây hiểu lầm), giữ `Caddyfile.dev` vì dev thật dùng.
+
+**2. Rò chi tiết nội bộ ra endpoint ẩn danh.** `/dang-ky-trung-tam` trả
+`chiTiet = ex.Message` — chỗ duy nhất trong `src/` làm vậy, và đúng trên endpoint mở ra
+Internet. Nay chỉ trả mã lỗi, chi tiết vào log (quy tắc #3).
+
+**3. Thiếu `JWT_SECRET` thì app khởi động IM LẶNG rồi 500 lúc đăng nhập.** Khối cấu hình JWT
+bọc trong `if (!string.IsNullOrEmpty(...))`, nên thiếu khoá là không đăng ký authentication nào
+— mà `/health` vẫn trả 200, deploy vẫn xanh. Kiểm độ dài chỉ có lúc *phát hành* token, quá
+muộn. Nay fail-fast lúc khởi động, kèm kiểm ≥32 ký tự; đã thử thật cả hai ca (thiếu / 8 ký tự).
+
+**4. `/auth/lam-moi-token` là endpoint ẩn danh duy nhất không có hạn mức.** Lý do miễn trừ cũ
+("có phát hiện tái sử dụng, chặt hơn rate limit") lẫn hai mối đe doạ: phát hiện tái sử dụng
+chống **đánh cắp token**, không chống **gây tải** — mỗi request vẫn tốn một truy vấn DB. Nay có
+policy riêng 60/phút, **rộng hơn** `XacThuc` (10/phút) có chủ ý: dùng chung sẽ đăng xuất oan cả
+văn phòng sau NAT dùng một IP. Đã gỡ khỏi danh sách miễn trừ của `GioiHanTanSuatTests`.
+
+### Fixed — ba lỗi tìm được khi rà theo luồng
+
+- **Cảnh báo trùng số điện thoại mất màu**: `border-status-warn` / `bg-status-warn` — token
+  **không tồn tại** (thật là `status-cho`). Tailwind im lặng bỏ qua nên nền trong suốt hoàn
+  toàn: cảnh báo cần nổi bật nhất lại hiện như văn bản thường. Cùng lỗi ở FR-15 Tổng quan.
+- **`NhatKy` thiếu `key`**: `.map` trả về hai `<tr>` bọc trong `<>` — cú pháp Fragment ngắn
+  **không nhận `key`**, nên `key` trên `<tr>` bên trong là vô dụng. Không chỉ là cảnh báo:
+  React tái dùng DOM theo thứ tự nên hàng đang mở rộng có thể giữ chi tiết của hàng khác. Nay
+  dùng `<Fragment key>`, và **bật luật `react/jsx-key`** trong oxlint để lần sau build đỏ.
+- **Bật `react/jsx-key`** — lint trước đó chỉ bật 2 luật, nên cả lớp lỗi này lọt.
+
+### Added — hai chốt chặn tự động mới
+
+- `scripts/check-token-mau.py`: mọi class `status-*` và `var(--*)` phải tồn tại thật trong
+  `tailwind.config.js` / `index.css`. Cần script riêng vì tên token là **chuỗi** — `tsc` không
+  kiểm, lint không biết Tailwind config, và Tailwind im lặng bỏ qua class sai. Đây là lỗi thứ
+  **ba** cùng loại trong dự án (`--cho`, `status-warn` ×2), tất cả chỉ ảnh chụp mới bắt được.
+  Đã kiểm ngược: tiêm lại cả ba lỗi thật thì script đỏ, kèm gợi ý token đúng.
+- Luật lint `react/jsx-key`.
+
+
 ### Changed — thiết kế lại màn phân quyền: bảng → lưới thẻ, modal → trang riêng (14/09/2026)
 
 Phản hồi của chủ sản phẩm: *"thiết kế form phân quyền quá xấu"*. Đúng — bản trước là giải pháp

@@ -136,7 +136,7 @@ export default function TongQuan() {
                           <Icon
                             className={
                               'h-4 w-4 shrink-0 ' +
-                              (canhBao ? 'text-status-warn' : 'text-muted-foreground')
+                              (canhBao ? 'text-status-cho' : 'text-muted-foreground')
                             }
                           />
                           <span className="flex-1">{nhan}</span>

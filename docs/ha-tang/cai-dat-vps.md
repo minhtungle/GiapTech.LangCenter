@@ -71,7 +71,7 @@ sudo mkdir -p /opt/langcenter
 sudo chown deploy:deploy /opt/langcenter
 cd /opt/langcenter
 
-# Clone repo — cần `docker-compose.yml` và `Caddyfile` bản mới nhất mỗi lần đổi hạ tầng.
+# Clone repo — cần `docker-compose.yml` và `deploy/nginx/langcenter.conf` mới nhất mỗi lần đổi hạ tầng.
 # Chép tay hai file đó sẽ trôi lệch khỏi repo ngay lần sửa đầu tiên.
 git clone --depth 1 https://github.com/<chu-repo>/GiapTech.LangCenter.git .
 
@@ -84,7 +84,9 @@ người có thể đặt ở chỗ khác nhau.
 
 ## 6. Cấu hình
 
-**Domain đọc từ biến `DOMAIN`, không sửa `Caddyfile`.** Ghim domain trong file thì mỗi lần đổi
+**Domain: sửa `server_name` trong server-block Nginx.** (Trước đây Caddy đọc từ biến `DOMAIN`;
+Nginx không nội suy biến môi trường nên phải sửa file — đổi một chỗ, `nginx -t` rồi reload.)
+Ghim domain trong ứng dụng thì mỗi lần đổi
 phải commit vào repo, mà CI/CD không nên biết domain của môi trường nào.
 
 - Trỏ bản ghi DNS A của domain về IP VPS **trước khi** khởi động Caddy — Let's Encrypt cần
