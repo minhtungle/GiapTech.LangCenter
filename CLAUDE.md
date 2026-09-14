@@ -224,7 +224,7 @@ Tầng hệ thống hiện có, đặt ở đâu:
   |---|---|
   | `[RequirePermission]` | Có gọi được endpoint không |
   | Global Query Filter | Cách ly **tenant** |
-  | `IPhamViLopHoc` / `IPhamViHocPhi` | Phạm vi **bên trong** tenant: "lớp mình dạy", "sổ của mình" |
+  | `IPhamViLopHoc` / `IPhamViHocPhi` | Phạm vi **bên trong** tenant: "lớp mình dạy", "sổ của mình", **"học viên lớp mình"** (14/09) |
   | `IPhamViKhoaOnline` (13/09) | Khoá trực tuyến — cần riêng vì nó **không có lớp** để `IPhamViLopHoc` bám vào |
 
   Ba tầng này lọc **hàng nào** được thấy, **không** lọc **cột nào**. Nên **trường nhạy cảm

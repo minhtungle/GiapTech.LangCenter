@@ -8,6 +8,30 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Fixed — N14: giáo viên đọc được hồ sơ mọi học viên trung tâm (14/09/2026)
+
+Nợ đáng lo nhất còn lại. Endpoint `/hoc-vien` gác bằng `TaiKhoan.Xem` — quyền nhóm Giáo viên có
+sẵn kèm chú thích *"xem học viên lớp mình"* — nhưng handler **không lọc gì**. Ý định của quyền
+và hành vi thật lệch nhau: giáo viên đọc được số điện thoại, địa chỉ, ngày sinh, tên và điện
+thoại phụ huynh của **mọi** học viên.
+
+Không tầng nào hiện có bắt được: `[RequirePermission]` cho qua vì họ đúng là có quyền, Query
+Filter chỉ lọc tenant, và `IPhamViLopHoc.LocTheoPhamVi` chỉ nhận `IQueryable<LopHoc>`.
+
+Thêm `LocHocVienTheoPhamVi` — tầng phạm vi nay áp cả cho **hồ sơ con người**, không chỉ lớp.
+
+**Chỉ áp khi tập vai trò đúng bằng `{HocVien}`.** Màn lớp học gọi cùng query đó để chọn người
+thêm vào lớp; lọc ở đó thì giáo viên chỉ thấy học viên **đã ở trong lớp** — tức không bao giờ
+thêm được ai mới. Vá lỗ hổng xong chặn oan người đang dùng là đúng thứ quy tắc #1 cấm.
+
+4 test mới, **hai đột biến kiểm đỏ ở hai chiều ngược nhau**: bỏ lọc (rò rỉ trở lại) và lọc quá
+tay (chặn oan màn lớp học).
+
+> Một nhánh tôi suýt viết là **mã chết**: "học viên chỉ thấy chính mình". Nhóm Học viên không có
+> `ChucNang.TaiKhoan` nào nên họ nhận 403 ngay ở cổng, không bao giờ chạm tới phép lọc. Test đổi
+> thành khẳng định đúng điều đó.
+
+
 ### Changed — đồng bộ tài liệu sau bốn ngày làm việc (14/09/2026)
 
 Số liệu trong tài liệu lạc hậu tới 4 ngày. Rà và cập nhật:

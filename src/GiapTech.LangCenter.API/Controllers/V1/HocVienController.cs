@@ -32,9 +32,12 @@ namespace GiapTech.LangCenter.API.Controllers.V1;
 /// Không thêm hằng `ChucNang` mới: mỗi hằng mới lại làm admin của trung tâm đã tồn tại bị 403
 /// cho tới khi chạy bổ khuyết quyền (bẫy đã gặp ở giai đoạn 0).
 ///
-/// Lưu ý phạm vi: quyền này cho đọc danh sách học viên **toàn trung tâm**, không giới hạn "học
-/// viên lớp mình". Thu hẹp được thì tốt hơn, nhưng cần `IPhamViLopHoc` cho hồ sơ con người —
-/// ghi vào nợ kỹ thuật, chưa làm trong lượt này.
+/// **Phạm vi (vá N14, 14/09/2026):** quyền này cho đọc danh sách học viên, nhưng handler lọc
+/// thêm về **lớp mình phụ trách** qua `IPhamViLopHoc.LocHocVienTheoPhamVi`. Trước đó nó trả về
+/// toàn trung tâm — ý định của quyền ("xem học viên lớp mình") và hành vi thật lệch nhau, và
+/// giáo viên đọc được điện thoại, địa chỉ, thông tin phụ huynh của mọi học viên.
+///
+/// Người có `LopHocToanTrungTam` vẫn thấy tất cả. Canh bởi `PhamViHocVienTests`.
 /// </summary>
 [ApiController]
 [ApiVersion("1.0")]

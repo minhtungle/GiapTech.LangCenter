@@ -13,7 +13,11 @@ namespace GiapTech.LangCenter.Infrastructure.Identity;
 /// hiệu" không được phép làm mất quyền quản trị. Hỏi qua `IQuyenService` nên dùng lại cache
 /// 5 phút đã có, không thêm truy vấn nào.
 /// </summary>
-public class PhamViLopHoc(IQuyenService quyenService, ICurrentTenant tenant, ICurrentUser currentUser)
+public class PhamViLopHoc(
+    IQuyenService quyenService,
+    ICurrentTenant tenant,
+    ICurrentUser currentUser,
+    IAppDbContext db)
     : IPhamViLopHoc
 {
     public async Task<bool> ThayMoiLop(HanhDong hanhDong, CancellationToken ct)
@@ -43,5 +47,27 @@ public class PhamViLopHoc(IQuyenService quyenService, ICurrentTenant tenant, ICu
                 || l.CreatedById == uid
                 || l.TroGiangs.Any(tg => tg.TroGiangId == uid)
                 || l.HocViens.Any(hv => hv.HocVienId == uid)));
+    }
+
+    public async Task<IQueryable<NguoiDung>> LocHocVienTheoPhamVi(
+        IQueryable<NguoiDung> nguon, CancellationToken ct)
+    {
+        // Người xem được MỌI lớp thì cũng xem được mọi học viên — cùng một loại người điều
+        // hành, và họ đã thấy toàn bộ danh sách lớp kèm sĩ số rồi.
+        if (await ThayMoiLop(HanhDong.Xem, ct)) return nguon;
+
+        if (currentUser.UserId is not { } uid) return nguon.Where(_ => false);
+
+        // Đi từ bảng GHI DANH chứ không từ `NguoiDung`: entity người dùng cố ý không có
+        // navigation ngược về lớp (nó là hồ sơ con người, không phải thực thể của LMS).
+        var hocVienCuaLopMinh = db.LopHocHocViens
+            .Where(lh => lh.LopHoc.GiaoVienChinhId == uid
+                         || lh.LopHoc.TroGiangs.Any(tg => tg.TroGiangId == uid))
+            .Select(lh => lh.HocVienId);
+
+        return nguon.Where(n =>
+            // Chính mình — học viên có `TaiKhoan.Xem` để xem hồ sơ của bản thân.
+            n.Id == uid
+            || hocVienCuaLopMinh.Contains(n.Id));
     }
 }

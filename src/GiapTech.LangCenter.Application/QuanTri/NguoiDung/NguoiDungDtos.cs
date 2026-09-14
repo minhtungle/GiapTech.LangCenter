@@ -95,7 +95,7 @@ public record LayDanhSachNguoiDungQuery(
     Guid? Id = null)
     : IRequest<KetQuaTrang<NguoiDungDto>>;
 
-public class LayDanhSachNguoiDungHandler(IAppDbContext db)
+public class LayDanhSachNguoiDungHandler(IAppDbContext db, IPhamViLopHoc phamVi)
     : IRequestHandler<LayDanhSachNguoiDungQuery, KetQuaTrang<NguoiDungDto>>
 {
     public async Task<KetQuaTrang<NguoiDungDto>> Handle(
@@ -113,7 +113,23 @@ public class LayDanhSachNguoiDungHandler(IAppDbContext db)
         }
 
         if (request.TrongCacLoai is { Count: > 0 } pham)
+        {
             q = q.Where(u => pham.Contains(u.LoaiNguoiDung));
+
+            /*
+              N14 (14/09/2026) — màn chỉ xem HỌC VIÊN thì lọc thêm về phạm vi lớp.
+
+              Endpoint `/hoc-vien` gác bằng `TaiKhoan.Xem`, quyền mà nhóm Giáo viên có sẵn kèm
+              chú thích "xem học viên lớp mình". Nhưng trước đây handler không lọc gì, nên ý
+              định của quyền và hành vi thật lệch nhau: giáo viên đọc được hồ sơ MỌI học viên
+              trung tâm — điện thoại, địa chỉ, ngày sinh, thông tin phụ huynh.
+
+              Chỉ áp khi tập vai trò đúng bằng {HocVien}. Màn lớp học gọi cùng query này để
+              chọn giáo viên phân công — lọc ở đó sẽ chặn oan (quy tắc #1).
+            */
+            if (pham.Count == 1 && pham.Contains(LoaiNguoiDung.HocVien))
+                q = await phamVi.LocHocVienTheoPhamVi(q, ct);
+        }
 
         // Lọc theo id SAU phạm vi vai trò — thứ tự này là điểm chính: id của học viên đã bị
         // `TrongCacLoai` loại trước khi tới đây.
