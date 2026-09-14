@@ -57,7 +57,19 @@ public record LayDoanhThuQuery(
     ThamSoTrang? Trang = null,
     Guid? SanPhamId = null,
     /// <summary>null = cả hai loại; dùng để xem riêng doanh thu khoá học hoặc bán sản phẩm.</summary>
-    LoaiDonHang? Loai = null) : IRequest<KetQuaTrang<DangKyDto>>;
+    LoaiDonHang? Loai = null,
+    /// <summary>
+    /// Lọc theo **đội nhóm** của người mang khách về (`KhachHang.CreatedBy.PhongBanId`).
+    ///
+    /// Mốc doanh số = NGƯỜI MANG KHÁCH VỀ, không phải người nhập đơn — đúng mốc màn Thống kê
+    /// CRM dùng (xem `ThongKeCrmDtos`). Chọn khác đi thì hai màn ra hai con số cho cùng một
+    /// đội và không ai biết số nào đúng.
+    /// </summary>
+    Guid? PhongBanId = null,
+    /// <summary>Lọc theo **nhân viên** mang khách về (`KhachHang.CreatedById`).</summary>
+    Guid? NhanVienId = null,
+    /// <summary>Lọc theo hình thức thanh toán — để đối chiếu tiền mặt với sao kê.</summary>
+    PhuongThucThanhToan? PhuongThuc = null) : IRequest<KetQuaTrang<DangKyDto>>;
 
 public class LayDoanhThuHandler(IAppDbContext db)
     : IRequestHandler<LayDoanhThuQuery, KetQuaTrang<DangKyDto>>
@@ -107,7 +119,10 @@ public record LayTongHopDoanhThuQuery(
     DateTimeOffset? TuNgay = null,
     DateTimeOffset? DenNgay = null,
     Guid? SanPhamId = null,
-    LoaiDonHang? Loai = null) : IRequest<TongHopDoanhThuDto>;
+    LoaiDonHang? Loai = null,
+    Guid? PhongBanId = null,
+    Guid? NhanVienId = null,
+    PhuongThucThanhToan? PhuongThuc = null) : IRequest<TongHopDoanhThuDto>;
 
 public class LayTongHopDoanhThuHandler(IAppDbContext db)
     : IRequestHandler<LayTongHopDoanhThuQuery, TongHopDoanhThuDto>
@@ -115,9 +130,21 @@ public class LayTongHopDoanhThuHandler(IAppDbContext db)
     public async Task<TongHopDoanhThuDto> Handle(
         LayTongHopDoanhThuQuery request, CancellationToken ct)
     {
+        // Truyền ĐỦ mọi bộ lọc xuống: thiếu một cái là con số tổng không khớp danh sách bên
+        // dưới nó — người dùng thấy "12 đơn" mà bảng chỉ có 3 dòng, và tin con số 12.
+        // Dùng tham số CÓ TÊN để thêm bộ lọc sau này không lệch thứ tự một cách im lặng.
         var q = DoanhThuChung.Loc(db, new LayDoanhThuQuery(
-            request.TimKiem, request.KhachHangId, request.KhoaHocId,
-            request.TuNgay, request.DenNgay, null, request.SanPhamId, request.Loai));
+            TimKiem: request.TimKiem,
+            KhachHangId: request.KhachHangId,
+            KhoaHocId: request.KhoaHocId,
+            TuNgay: request.TuNgay,
+            DenNgay: request.DenNgay,
+            Trang: null,
+            SanPhamId: request.SanPhamId,
+            Loai: request.Loai,
+            PhongBanId: request.PhongBanId,
+            NhanVienId: request.NhanVienId,
+            PhuongThuc: request.PhuongThuc));
 
         var theoDonVi = await q
             .GroupBy(d => d.DonViTien)
@@ -162,6 +189,17 @@ internal static class DoanhThuChung
             q = loai == LoaiDonHang.KhoaHoc
                 ? q.Where(d => d.KhoaHocId != null)
                 : q.Where(d => d.SanPhamId != null);
+        // Đội nhóm / nhân viên: theo NGƯỜI MANG KHÁCH VỀ (`KhachHang.CreatedById`), cùng mốc
+        // với màn Thống kê CRM. Khách `TuDangKy` không có ai phụ trách nên tự nhiên rơi ra
+        // khỏi mọi bộ lọc đội/nhân viên — đúng ý: không tính vào doanh số của ai.
+        if (r.PhongBanId is { } pb)
+            q = q.Where(d => d.KhachHang.CreatedBy != null
+                             && d.KhachHang.CreatedBy.PhongBanId == pb);
+
+        if (r.NhanVienId is { } nv) q = q.Where(d => d.KhachHang.CreatedById == nv);
+
+        if (r.PhuongThuc is { } pt) q = q.Where(d => d.PhuongThuc == pt);
+
         if (r.TuNgay is { } tuN) q = q.Where(d => d.NgayDangKy >= tuN);
         // `<=` chứ không `<`: người dùng chọn "đến 30/09" là có ý bao gồm ngày 30.
         if (r.DenNgay is { } denN) q = q.Where(d => d.NgayDangKy <= denN);

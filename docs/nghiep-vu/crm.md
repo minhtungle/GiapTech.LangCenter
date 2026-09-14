@@ -105,6 +105,55 @@ Khách chưa có lần chăm sóc nào → coi là **Mới**.
   cùng nhập một khách. Số điện thoại rỗng thì không chặn (khách chỉ để lại Facebook).
 - Xoá khách **đã có đăng ký** bị chặn — đăng ký là dữ liệu tiền.
 
+### Bộ lọc (15/09/2026)
+
+Cả hai màn **Khách hàng** và **Doanh thu** lọc được theo sáu chiều. Bộ lọc nâng cao ẩn sau nút
+**Lọc thêm** kèm badge số bộ lọc đang bật.
+
+| Chiều | Khách hàng | Doanh thu | Ghi chú |
+|---|---|---|---|
+| Tìm kiếm (tên · sđt · email) | ✅ | ✅ | |
+| Tình trạng đã/chưa mua | ✅ | — | |
+| **Đội nhóm** | ✅ | ✅ | Phòng ban của người mang khách về |
+| **Nhân viên** | ✅ | ✅ | Người mang khách về |
+| **Nguồn khách** | ✅ | — | `NhanVienTao` / `TuDangKy` |
+| **Khoảng ngày** | ✅ ngày **tạo hồ sơ** | ✅ ngày **đăng ký** | Hai mốc khác nhau, nhãn nói rõ |
+| Khoá học | — | ✅ | |
+| **Sản phẩm** | — | ✅ | Đơn hàng chứa cả khoá và sản phẩm (FR-20) |
+| **Hình thức thanh toán** | — | ✅ | Đối chiếu tiền mặt với sao kê |
+
+#### Mốc quy doanh số: NGƯỜI MANG KHÁCH VỀ
+
+Lọc theo đội nhóm / nhân viên quy đơn cho **`KHACH_HANG.created_by_id`** — người tạo hồ sơ
+khách, không phải người nhập đơn (`DANG_KY_KHOA_HOC.created_by_id`).
+
+Đây là **cùng một mốc** với màn [Thống kê CRM](./thong-ke-crm.md). Chọn khác đi thì cùng một đội
+ra hai con số ở hai màn và không ai biết số nào đúng. Hệ quả kèm theo: khách **tự đăng ký**
+không có ai phụ trách nên tự rơi ra khỏi mọi bộ lọc đội/nhân viên — đúng ý, đơn của họ không
+tính vào doanh số cá nhân của ai.
+
+> Hai màn vẫn ra số khác nhau khi **không lọc ngày**, và đó là đúng: Thống kê mặc định
+> **12 tháng gần nhất** (nó là báo cáo theo kỳ), còn danh sách tra cứu **toàn bộ**. Đã kiểm trên
+> W686AE9: 85 đơn tổng / 79 đơn trong 12 tháng.
+
+#### Ô số tổng phải KHỚP danh sách
+
+Màn Doanh thu có ba ô KPI ở đầu trang, gọi endpoint `/doanh-thu/tong-hop` **riêng** với danh
+sách (cộng trên trang đang xem là số vô nghĩa — 20 dòng đầu của 500 đơn). Nên thêm một bộ lọc
+mà quên truyền xuống endpoint tổng hợp là người dùng thấy "85 đơn / 671 triệu" trong khi bảng
+có 4 dòng — và họ tin ba ô số to, không tin bảng. Không có lỗi nào hiện ra.
+
+Canh bởi `LocCrmTests.Tong_hop_luon_khop_danh_sach` (`[Theory]` cho từng bộ lọc: thêm bộ lọc mới
+thì thêm một `InlineData`) và E2E `loc-crm.spec.ts` (kiểm ô KPI **đổi** khi lọc, không giữ số cũ).
+
+#### Khoảng ngày: cắt theo múi giờ TRUNG TÂM
+
+Client gửi ngày thuần (`2026-09-14`) → .NET hiểu `00:00+00:00`. Bản đầu làm
+`denNgay.Date.AddDays(1)`, mà `.Date` bỏ mất offset nên mốc thành `00:00` giờ **máy chủ**
+(UTC+7) = `17:00 UTC` cùng ngày — cắt mất 7 giờ cuối ngày, khách tạo lúc 17:16 UTC biến mất khỏi
+kết quả "hôm nay". Nay quy mốc từ múi giờ trung tâm rồi mới so với `CreatedAt`. Cùng bài học
+với FR-15 và Thống kê CRM.
+
 ## FR-18 — Doanh thu (đăng ký khoá học)
 
 Bảng `DANG_KY_KHOA_HOC`: một khách × một khoá × một mức giá. **Một khách đăng ký nhiều khoá** →

@@ -880,6 +880,28 @@ const vi = {
     EUR: 'EUR — Euro',
     CAD: 'CAD — Đô la Canada',
   },
+  /**
+   * Nhãn bộ lọc CRM — dùng chung màn Khách hàng và Doanh thu.
+   *
+   * Namespace riêng ở cấp một (không lồng trong `khachHang`) vì `check-i18n-keys.py` không
+   * quét namespace lồng, và hai màn cùng dùng nên không thuộc riêng màn nào.
+   */
+  crmLoc: {
+    locThem: 'Lọc thêm',
+    xoaLoc: 'Xóa lọc',
+    doiNhom: 'Đội nhóm',
+    nhanVien: 'Nhân viên phụ trách',
+    nguon: 'Nguồn khách',
+    nguonNhanVien: 'Nhân viên tạo',
+    nguonTuDangKy: 'Khách tự đăng ký',
+    taoTuNgay: 'Tạo hồ sơ từ',
+    denNgay: 'Đến ngày',
+    hinhThuc: 'Hình thức thanh toán',
+    sanPham: 'Sản phẩm',
+    theoNguoiMangKhach:
+      'Đội nhóm và nhân viên tính theo NGƯỜI MANG KHÁCH VỀ — cùng mốc với màn Thống kê. '
+      + 'Khách tự đăng ký không thuộc đội nào.',
+  },
   khachHang: {
     them: 'Thêm khách hàng',
     sua: 'Sửa khách hàng',

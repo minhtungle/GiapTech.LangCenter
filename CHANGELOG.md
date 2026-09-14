@@ -8,6 +8,48 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — lọc khách hàng & doanh thu theo đội nhóm · nhân viên · và 4 chiều nữa (15/09/2026)
+
+Yêu cầu: *"thêm lọc khách hàng, doanh thu theo (đội nhóm, nhân viên…)"* — kèm đề xuất thêm.
+
+**Mốc quy doanh số: NGƯỜI MANG KHÁCH VỀ** (`KHACH_HANG.created_by_id`), không phải người nhập
+đơn. Đúng mốc màn Thống kê CRM đã chốt: lệch mốc thì cùng một đội ra hai con số ở hai màn và
+không ai biết số nào đúng. Khách **tự đăng ký** không có ai phụ trách nên tự rơi ra khỏi mọi bộ
+lọc đội/nhân viên — đúng ý, đơn của họ không tính vào doanh số cá nhân.
+
+Bốn bộ lọc bổ sung, đều từ dữ liệu **đã có sẵn** (không migration):
+
+| Màn | Thêm | Vì sao |
+|---|---|---|
+| Khách hàng | đội nhóm · nhân viên · **nguồn khách** · **khoảng ngày tạo hồ sơ** | `nguon` đã có dữ liệu nhưng chưa lọc được, mà nó phân biệt khách tự đến với khách sale mang về |
+| Doanh thu | đội nhóm · nhân viên · **hình thức thanh toán** · **sản phẩm** | Hình thức để đối chiếu tiền mặt với sao kê; sản phẩm vì đơn hàng chứa cả khoá và sản phẩm từ FR-20 mà chỉ lọc được khoá |
+
+**Bộ lọc nâng cao ẩn sau nút "Lọc thêm"** kèm badge số bộ lọc đang bật (nguyên tắc UI/UX mục
+1). Sáu ô bày hết ra một hàng thì vỡ bố cục, và đóng panel mà còn lọc thì bảng ít dòng một cách
+không giải thích được. `LocDoiNhom` là component dùng chung hai màn — chọn đội thì danh sách
+nhân viên thu hẹp theo, và bỏ nhân viên đang chọn để không thành "đội A + người đội B" (ra rỗng
+mà không có lời giải thích nào trên màn).
+
+**Một lỗi múi giờ tìm được khi viết test.** Lọc khách "đến ngày X" dùng `denNgay.Date.AddDays(1)`
+— `.Date` bỏ mất offset nên mốc thành `00:00 giờ MÁY CHỦ` (UTC+7), cắt mất 7 giờ cuối ngày:
+khách tạo lúc 17:16 UTC biến mất khỏi kết quả "hôm nay". Nay quy mốc theo **múi giờ trung tâm**
+rồi mới so với `CreatedAt` — cùng bài học với FR-15 và Thống kê CRM.
+
+Test: +7 backend (`LocCrmTests`) · +2 E2E (`loc-crm.spec.ts`). **Sáu đột biến**, trong đó ba
+cái lọt lần đầu và phải viết lại test:
+
+- "quên truyền bộ lọc xuống endpoint tổng hợp" → bị bắt ngay (`[Theory]` cho từng bộ lọc).
+- "lọc đội theo người NHẬP ĐƠN" → **lọt**, vì test cho mỗi nhân viên tự tạo khách rồi tự nhập
+  đơn nên hai mốc trùng nhau. Sửa: một đơn do người khác nhập hộ (ca thật: kế toán nhập).
+- "bỏ hẳn lọc nguồn" → **lọt**, vì dữ liệu toàn `NhanVienTao` nên phép cộng vô tình đúng. Sửa:
+  kiểm cả chiều LOẠI, không chỉ chiều giữ.
+- Hai E2E ban đầu chạy trên tenant rỗng nên **xanh cả khi bỏ bộ lọc**. Sửa: dựng dữ liệu phân
+  biệt được (2 đơn khác hình thức; 2 khách khác đội).
+
+**Sửa kèm:** hai E2E dùng `getByRole('button', {name: /thêm/i}).first()` — regex đó giờ khớp cả
+nút "Lọc thêm" đứng trước trong DOM, nên mở panel lọc thay vì modal. Đổi sang tên nút chính xác.
+
+
 ### Fixed — rà soát v1, đợt 2 (15/09/2026)
 
 **Lỗi validation lộ cấu trúc nội bộ.** Gửi body sai kiểu thì ASP.NET trả nguyên văn

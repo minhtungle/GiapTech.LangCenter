@@ -32,7 +32,9 @@ test('FR-26: giáo vụ soạn khoá, học viên thấy đúng phạm vi', asyn
     .catch(() => {})
 
   // Tạo khoá
-  await page.getByRole('button', { name: /thêm/i }).first().click()
+  // Nút CHÍNH xác, không `/thêm/i` + `.first()`: màn này còn nút "Thêm bài" và sẽ còn nút
+  // "Lọc thêm" nếu thêm lọc sau này — regex mơ hồ thì test đỏ ở chỗ chẳng liên quan.
+  await page.getByRole('button', { name: 'Thêm', exact: true }).click()
   await page.locator('#ten').fill('Khoá IELTS Online')
   await page.locator('#moTa').fill('Tự học có lộ trình')
   await luuVaDongY(page)

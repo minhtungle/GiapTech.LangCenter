@@ -44,9 +44,24 @@ public record LayDanhSachKhachHangQuery(
     /// Khác <see cref="TimKiem"/> ở chỗ khớp **chính xác**: `0901` khớp một phần sẽ trả về cả
     /// chục khách và không trả lời được câu "số này đã có ai chưa".
     /// </summary>
-    string? SoDienThoaiChinhXac = null) : IRequest<KetQuaTrang<KhachHangDto>>;
+    string? SoDienThoaiChinhXac = null,
+    /// <summary>
+    /// Lọc theo **đội nhóm** của người mang khách về (`KhachHang.CreatedBy.PhongBanId`).
+    ///
+    /// Dùng ĐÚNG mốc mà màn Thống kê CRM dùng — xem `ThongKeCrmDtos`. Nếu lọc theo người NHẬP
+    /// đơn thì hai màn ra số khác nhau cho cùng một đội, và không ai biết số nào đúng.
+    /// </summary>
+    Guid? PhongBanId = null,
+    /// <summary>Lọc theo **nhân viên** mang khách về (`KhachHang.CreatedById`).</summary>
+    Guid? NhanVienId = null,
+    /// <summary>Nguồn khách. Khách `TuDangKy` không tính vào doanh số cá nhân của ai.</summary>
+    NguonKhachHang? Nguon = null,
+    /// <summary>Lọc theo ngày TẠO HỒ SƠ khách (`CreatedAt`), không phải ngày mua.</summary>
+    DateTimeOffset? TuNgay = null,
+    /// <summary>Hết ngày này (bao gồm cả ngày `DenNgay`).</summary>
+    DateTimeOffset? DenNgay = null) : IRequest<KetQuaTrang<KhachHangDto>>;
 
-public class LayDanhSachKhachHangHandler(IAppDbContext db)
+public class LayDanhSachKhachHangHandler(IAppDbContext db, IMuiGioTrungTam muiGio)
     : IRequestHandler<LayDanhSachKhachHangQuery, KetQuaTrang<KhachHangDto>>
 {
     public async Task<KetQuaTrang<KhachHangDto>> Handle(
@@ -71,6 +86,49 @@ public class LayDanhSachKhachHangHandler(IAppDbContext db)
 
         if (request.DaMua is { } daMua)
             q = daMua ? q.Where(k => k.DangKys.Any()) : q.Where(k => !k.DangKys.Any());
+
+        // Đội nhóm / nhân viên: theo NGƯỜI MANG KHÁCH VỀ (`CreatedById`) — cùng mốc với màn
+        // Thống kê CRM, để hai màn không ra hai con số khác nhau cho cùng một đội.
+        if (request.PhongBanId is { } pbId)
+            q = q.Where(k => k.CreatedBy != null && k.CreatedBy.PhongBanId == pbId);
+
+        if (request.NhanVienId is { } nvId)
+            q = q.Where(k => k.CreatedById == nvId);
+
+        if (request.Nguon is { } nguon)
+            q = q.Where(k => k.Nguon == nguon);
+
+        /*
+          Cắt kỳ theo MÚI GIỜ TRUNG TÂM, không theo UTC cũng không theo giờ máy chủ.
+
+          Client gửi `denNgay=2026-09-14` (ngày thuần) → .NET hiểu là `00:00+00:00`. Bản đầu
+          của tôi làm `denNgay.Date.AddDays(1)`, mà `.Date` bỏ mất offset nên kết quả là
+          `2026-09-15 00:00` theo giờ MÁY CHỦ (UTC+7) = `2026-09-14 17:00 UTC` — cắt mất 7 giờ
+          cuối ngày. Hồ sơ tạo lúc 17:16 UTC cùng ngày biến mất khỏi kết quả, đúng ca
+          `LocCrmTests.Loc_khach_theo_ngay_tao_bao_gom_ca_ngay_cuoi` bắt được.
+
+          Cùng một bài học với FR-15 và Thống kê CRM: mốc ngày phải quy từ múi giờ trung tâm
+          rồi mới so với `CreatedAt` (tuyệt đối).
+        */
+        if (request.TuNgay is { } tuNgay || request.DenNgay is { })
+        {
+            var tz = await muiGio.LayMuiGio(ct);
+
+            if (request.TuNgay is { } tu)
+            {
+                var mocTu = new DateTimeOffset(tu.Date, tz.GetUtcOffset(tu.Date));
+                q = q.Where(k => k.CreatedAt >= mocTu);
+            }
+
+            // `< ngày cuối + 1` chứ không `<=`: người dùng chọn "đến 30/09" là có ý bao gồm cả
+            // ngày 30, mà `CreatedAt` mang cả giờ.
+            if (request.DenNgay is { } den)
+            {
+                var ngayCuoi = den.Date.AddDays(1);
+                var mocDen = new DateTimeOffset(ngayCuoi, tz.GetUtcOffset(ngayCuoi));
+                q = q.Where(k => k.CreatedAt < mocDen);
+            }
+        }
 
         var tong = await q.CountAsync(ct);
 

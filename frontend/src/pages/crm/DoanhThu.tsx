@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ExternalLink, Pencil, Plus, SlidersHorizontal, Trash2 } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
@@ -16,8 +16,9 @@ import { useXacNhan } from '@/lib/xacNhan'
 import {
   CAC_DON_VI, CAC_PHUONG_THUC, mauPhanTram, ngayChoInput, ngayVN, phanTram, tien,
   type DangKyDto, type DonViTien, type KhachHangDto, type KhoaHocDto,
-  type PhuongThucThanhToan, type TongHopDoanhThuDto,
+  type PhuongThucThanhToan, type SanPhamDto, type TongHopDoanhThuDto,
 } from './crmTypes'
+import { LocDoiNhom } from '@/components/crm/LocDoiNhom'
 
 /**
  * FR-18 — doanh thu: đăng ký khoá học (CRM).
@@ -35,6 +36,11 @@ export default function DoanhThu() {
   const [soDong, setSoDong] = useState(20)
   const [timKiem, setTimKiem] = useState('')
   const [locKhoa, setLocKhoa] = useState<string | null>(null)
+  const [locSanPham, setLocSanPham] = useState<string | null>(null)
+  const [phongBanId, setPhongBanId] = useState<string | null>(null)
+  const [nhanVienId, setNhanVienId] = useState<string | null>(null)
+  const [locPhuongThuc, setLocPhuongThuc] = useState<string | null>(null)
+  const [moLocThem, setMoLocThem] = useState(false)
   const [tuNgay, setTuNgay] = useState('')
   const [denNgay, setDenNgay] = useState('')
 
@@ -49,9 +55,15 @@ export default function DoanhThu() {
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
 
+  // MỘT chỗ khai tham số cho cả danh sách và tổng hợp. Tách ra hai chỗ là con số tổng sẽ
+  // không khớp bảng bên dưới nó, mà người dùng lại tin con số tổng.
   const thamSo = {
     timKiem: timKiem || undefined,
     khoaHocId: locKhoa || undefined,
+    sanPhamId: locSanPham || undefined,
+    phongBanId: phongBanId || undefined,
+    nhanVienId: nhanVienId || undefined,
+    phuongThuc: locPhuongThuc || undefined,
     tuNgay: tuNgay || undefined,
     denNgay: denNgay ? `${denNgay}T23:59:59Z` : undefined,
   }
@@ -89,6 +101,16 @@ export default function DoanhThu() {
       (await api.get<KetQuaTrang<KhoaHocDto>>('/khoa-hoc', { params: { soDong: 200 } }))
         .data.duLieu,
     enabled: coQuyen('KhoaHoc'),
+  })
+
+  // Danh sách sản phẩm để LỌC. Màn này trước chỉ lọc được theo khoá học, dù đơn hàng chứa cả
+  // hai loại (khoá và sản phẩm) từ FR-20 — nên doanh thu bán sách không tra cứu riêng được.
+  const { data: sanPhams = [] } = useQuery({
+    queryKey: ['san-pham-ngan'],
+    queryFn: async () =>
+      (await api.get<KetQuaTrang<SanPhamDto>>('/san-pham', { params: { soDong: 200 } }))
+        .data.duLieu,
+    enabled: coQuyen('SanPham'),
   })
 
   const khoaChon = khoas.find((k) => k.id === khoaId)
@@ -182,6 +204,20 @@ export default function DoanhThu() {
     setMoForm(true)
   }
 
+  /**
+   * Số bộ lọc NÂNG CAO đang bật. Không đếm các ô luôn hiện trên hàng đầu (tìm kiếm, khoá học,
+   * khoảng ngày) — người dùng tự thấy chúng, đếm vào làm số trên nút không khớp panel.
+   */
+  const soLocDangBat = [phongBanId, nhanVienId, locSanPham, locPhuongThuc].filter(Boolean).length
+
+  const xoaLoc = () => {
+    setPhongBanId(null)
+    setNhanVienId(null)
+    setLocSanPham(null)
+    setLocPhuongThuc(null)
+    setTrang(1)
+  }
+
   return (
     <div className="space-y-4">
       {/* Tổng hợp: con số duy nhất cộng được khi có nhiều đơn vị tiền là VND đã quy đổi. */}
@@ -222,7 +258,10 @@ export default function DoanhThu() {
       )}
 
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-wrap items-end gap-3">
+        {/* `min-w-0 flex-1`: hàng lọc co giãn theo chỗ còn lại, nên nút hành động chính bám
+            bên phải cùng hàng thay vì bị đẩy xuống dòng riêng — ở đó nó trông như một phần
+            của panel lọc. */}
+        <div className="flex min-w-0 flex-1 flex-wrap items-end gap-3">
           <div className="w-56">
             <Label htmlFor="tim">{t('chung.timKiem')}</Label>
             <Input
@@ -272,6 +311,28 @@ export default function DoanhThu() {
               }}
             />
           </div>
+
+          {/* Bốn ô lọc nữa bày hết ra hàng này thì vỡ bố cục — ẩn sau nút (nguyên tắc UI/UX
+              mục 1). Số trên nút cho biết còn bộ lọc đang bật khi panel đã đóng. */}
+          <Button
+            variant="outline"
+            onClick={() => setMoLocThem((x) => !x)}
+            aria-expanded={moLocThem}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            {t('crmLoc.locThem')}
+            {soLocDangBat > 0 && (
+              <span className="ml-1 rounded-full bg-primary px-1.5 text-xs text-primary-foreground">
+                {soLocDangBat}
+              </span>
+            )}
+          </Button>
+
+          {soLocDangBat > 0 && (
+            <Button variant="ghost" onClick={xoaLoc}>
+              {t('crmLoc.xoaLoc')}
+            </Button>
+          )}
         </div>
 
         {coQuyen('DoanhThu', 'Them') && (
@@ -281,6 +342,49 @@ export default function DoanhThu() {
           </Button>
         )}
       </div>
+
+      {moLocThem && (
+        <div className="rounded-lg border border-border bg-muted/30 p-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <LocDoiNhom
+              phongBanId={phongBanId}
+              nhanVienId={nhanVienId}
+              onDoiPhongBan={(v) => { setPhongBanId(v); setTrang(1) }}
+              onDoiNhanVien={(v) => { setNhanVienId(v); setTrang(1) }}
+            />
+
+            <div className="w-52">
+              <Label htmlFor="loc-sp">{t('crmLoc.sanPham')}</Label>
+              <SelectTimKiem
+                id="loc-sp"
+                luaChon={sanPhams.map((x) => ({ giaTri: x.id, nhan: x.ten }))}
+                giaTri={locSanPham}
+                onDoi={(v) => { setLocSanPham(v); setTrang(1) }}
+                placeholder={t('chung.tatCa')}
+              />
+            </div>
+
+            <div className="w-44">
+              <Label htmlFor="loc-pt">{t('crmLoc.hinhThuc')}</Label>
+              <SelectTimKiem
+                id="loc-pt"
+                luaChon={CAC_PHUONG_THUC.map((x) => ({
+                  giaTri: x, nhan: t(`phuongThucThanhToan.${x}`),
+                }))}
+                giaTri={locPhuongThuc}
+                onDoi={(v) => { setLocPhuongThuc(v); setTrang(1) }}
+                placeholder={t('chung.tatCa')}
+              />
+            </div>
+          </div>
+
+          {/* Nói rõ mốc quy đơn: người đọc cần biết "đội nhóm" nghĩa là đội của người MANG
+              KHÁCH VỀ, không phải người nhập đơn — nếu không họ sẽ đối chiếu sai với sổ tay. */}
+          <p className="mt-2.5 text-xs text-muted-foreground">
+            {t('crmLoc.theoNguoiMangKhach')}
+          </p>
+        </div>
+      )}
 
       {maLoiBang && <CanhBaoLoi>{t(`loi.${maLoiBang}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 

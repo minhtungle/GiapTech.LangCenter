@@ -20,7 +20,9 @@ test('FR-25: cấp tài khoản học viên từ màn Khách hàng, hồ sơ t�
 
   // Tạo khách hàng
   await page.goto('/crm/khach-hang')
-  await page.getByRole('button', { name: /thêm/i }).first().click()
+  // `name: /thêm/i` + `.first()` là bẫy: từ 15/09/2026 màn này còn nút "Lọc thêm" đứng TRƯỚC
+  // trong DOM, nên regex mơ hồ sẽ mở panel lọc thay vì modal thêm khách.
+  await page.getByRole('button', { name: 'Thêm khách hàng' }).click()
   await page.locator('#hoTen').fill('Khách mua khoá online')
   await page.locator('#soDienThoai').fill('0911222333')
   await luuVaXacNhan(page)

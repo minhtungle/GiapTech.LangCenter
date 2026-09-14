@@ -23,9 +23,22 @@ public class KhachHangController(ISender sender) : ControllerBase
         [FromQuery] int trang = 1,
         [FromQuery] int soDong = 20,
         [FromQuery] string? soDienThoaiChinhXac = null,
+        [FromQuery] Guid? phongBanId = null,
+        [FromQuery] Guid? nhanVienId = null,
+        [FromQuery] NguonKhachHang? nguon = null,
+        [FromQuery] DateTimeOffset? tuNgay = null,
+        [FromQuery] DateTimeOffset? denNgay = null,
         CancellationToken ct = default)
         => Ok(await sender.Send(new LayDanhSachKhachHangQuery(
-            timKiem, daMua, new ThamSoTrang(trang, soDong), soDienThoaiChinhXac), ct));
+            TimKiem: timKiem,
+            DaMua: daMua,
+            Trang: new ThamSoTrang(trang, soDong),
+            SoDienThoaiChinhXac: soDienThoaiChinhXac,
+            PhongBanId: phongBanId,
+            NhanVienId: nhanVienId,
+            Nguon: nguon,
+            TuNgay: tuNgay,
+            DenNgay: denNgay), ct));
 
     [HttpPost]
     [RequirePermission(ChucNang.KhachHang, HanhDong.Them)]
@@ -204,12 +217,27 @@ public class DoanhThuController(ISender sender) : ControllerBase
         [FromQuery] DateTimeOffset? denNgay,
         [FromQuery] Guid? sanPhamId,
         [FromQuery] LoaiDonHang? loai,
+        [FromQuery] Guid? phongBanId,
+        [FromQuery] Guid? nhanVienId,
+        [FromQuery] PhuongThucThanhToan? phuongThuc,
         [FromQuery] int trang = 1,
         [FromQuery] int soDong = 20,
         CancellationToken ct = default)
+        // Tham số CÓ TÊN: `LayDoanhThuQuery` có 11 tham số cùng kiểu `Guid?`, truyền theo vị
+        // trí thì thêm một bộ lọc vào giữa là lệch im lặng — lọc theo khoá học hoá ra lọc theo
+        // sản phẩm, không lỗi biên dịch nào.
         => Ok(await sender.Send(new LayDoanhThuQuery(
-            timKiem, khachHangId, khoaHocId, tuNgay, denNgay,
-            new ThamSoTrang(trang, soDong), sanPhamId, loai), ct));
+            TimKiem: timKiem,
+            KhachHangId: khachHangId,
+            KhoaHocId: khoaHocId,
+            TuNgay: tuNgay,
+            DenNgay: denNgay,
+            Trang: new ThamSoTrang(trang, soDong),
+            SanPhamId: sanPhamId,
+            Loai: loai,
+            PhongBanId: phongBanId,
+            NhanVienId: nhanVienId,
+            PhuongThuc: phuongThuc), ct));
 
     /// <summary>
     /// Tổng hợp trên TOÀN BỘ tập đã lọc, không chỉ trang đang xem — endpoint riêng vì cộng
@@ -225,9 +253,21 @@ public class DoanhThuController(ISender sender) : ControllerBase
         [FromQuery] DateTimeOffset? denNgay,
         [FromQuery] Guid? sanPhamId,
         [FromQuery] LoaiDonHang? loai,
+        [FromQuery] Guid? phongBanId,
+        [FromQuery] Guid? nhanVienId,
+        [FromQuery] PhuongThucThanhToan? phuongThuc,
         CancellationToken ct = default)
         => Ok(await sender.Send(new LayTongHopDoanhThuQuery(
-            timKiem, khachHangId, khoaHocId, tuNgay, denNgay, sanPhamId, loai), ct));
+            TimKiem: timKiem,
+            KhachHangId: khachHangId,
+            KhoaHocId: khoaHocId,
+            TuNgay: tuNgay,
+            DenNgay: denNgay,
+            SanPhamId: sanPhamId,
+            Loai: loai,
+            PhongBanId: phongBanId,
+            NhanVienId: nhanVienId,
+            PhuongThuc: phuongThuc), ct));
 
     [HttpPost]
     [RequirePermission(ChucNang.DoanhThu, HanhDong.Them)]
