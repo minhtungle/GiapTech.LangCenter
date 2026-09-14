@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Dựng một trung tâm DEMO đầy đủ dữ liệu, qua API thật.
+Dựng bộ dữ liệu mẫu đầy đủ vào trung tâm đang test, qua API thật.
 
 Vì sao qua API chứ không INSERT thẳng DB: dữ liệu phải đi qua đúng mọi quy tắc nghiệp vụ —
 tự gán `tenant_id`, bốn cột audit, validator, mã hoá mật khẩu, ghi nhật ký. INSERT thẳng sẽ
@@ -10,15 +10,23 @@ Quy mô (đủ để thấy phân trang và hình dạng biểu đồ thật):
   4 phòng ban · 6 nhân sự · 50 học viên · 30 khách hàng
   ~110 đơn hàng rải 12 tháng · 8 lớp học · 3 khoá trực tuyến có bài và người học
 
+Dựng vào **chính trung tâm đang test** (`W686AE9`), không tạo trung tâm mới mỗi lần: mã trung
+tâm mới sinh ngẫu nhiên nên lần nào cũng phải nhớ mã khác — phiền khi test tay.
+
 Chạy:
-    GIOI_HAN_TAN_SUAT=false dotnet run --project src/GiapTech.LangCenter.API   # terminal khác
+    # 1. API ở terminal khác
+    dotnet run --project src/GiapTech.LangCenter.API
+
+    # 2. Xoá dữ liệu nghiệp vụ cũ, GIỮ tài khoản đăng nhập
+    docker exec -i lms-pg psql -U langcenter -d langcenter < scripts/xoa-du-lieu-nghiep-vu.sql
+
+    # 3. Dựng lại
     python3 scripts/tao-du-lieu-mau.py
 
-Xoá sau khi xem:
-    docker exec -i lms-pg psql -U langcenter -d langcenter < scripts/don-tenant-test.sql
-    (script đó giữ lại đúng tenant đang dùng thật — sửa biến TENANT_GIU nếu cần)
+Chạy lại nhiều lần được — bước 2 dọn sạch trước, nên không chồng dữ liệu.
 """
 import json
+import os
 import random
 import sys
 import urllib.error
@@ -26,6 +34,17 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 
 API = "http://localhost:5229/api/v1"
+
+# Trung tâm đang test — dựng thẳng vào đây thay vì tạo mới mỗi lần (chốt 14/09/2026).
+MA_TRUNG_TAM = "W686AE9"
+USER_QUAN_TRI = "admin"
+
+# Mật khẩu quản trị của trung tâm trên. Đọc từ biến môi trường trước — mật khẩu thật không
+# nên nằm trong mã nguồn, kể cả mã chỉ chạy trên máy local.
+MK_QUAN_TRI = os.environ.get("MK_QUAN_TRI", "Admin@12345")
+
+# Mật khẩu đặt cho mọi tài khoản script TẠO RA (nv1..nv6). Tách khỏi mật khẩu quản trị: đổi
+# mật khẩu admin không được làm hỏng script, và ngược lại.
 MAT_KHAU = "demo-matkhau-123"
 
 # Hạt giống cố định — chạy lại cho ra cùng một bộ số, nên ảnh chụp và con số đối chiếu được.
@@ -98,22 +117,37 @@ def dien_thoai(i: int) -> str:
 def main():
     global _token
 
-    print("\n=== Dựng trung tâm demo ===\n")
+    print(f"\n=== Dựng dữ liệu mẫu vào {MA_TRUNG_TAM} ===\n")
 
-    buoc("tạo trung tâm")
-    tt = goi("/dang-ky-trung-tam", {"tenTrungTam": f"Trung tâm DEMO {datetime.now():%d/%m %H:%M}"})
-    ma, user, mk_dau = tt["maTrungTam"], tt["username"], tt["matKhau"]
-    xong(ma)
+    ma, user = MA_TRUNG_TAM, USER_QUAN_TRI
 
-    # Trung tâm mới buộc đổi mật khẩu ở lần đăng nhập đầu. Đăng nhập vẫn trả token (kèm cờ
-    # `phaiDoiMatKhau`), nhưng middleware chặn mọi endpoint khác cho tới khi đổi xong.
-    buoc("đổi mật khẩu lần đầu")
-    _token = goi("/auth/dang-nhap",
-                 {"maTrungTam": ma, "username": user, "matKhau": mk_dau})["accessToken"]
-    goi("/auth/doi-mat-khau", {"matKhauCu": mk_dau, "matKhauMoi": MAT_KHAU})
-    _token = goi("/auth/dang-nhap",
-                 {"maTrungTam": ma, "username": user, "matKhau": MAT_KHAU})["accessToken"]
+    buoc("đăng nhập")
+    try:
+        _token = goi("/auth/dang-nhap",
+                     {"maTrungTam": ma, "username": user, "matKhau": MK_QUAN_TRI})["accessToken"]
+    except urllib.error.HTTPError:
+        print(f"""
+✗ Không đăng nhập được {user}@{ma} với mật khẩu đã đặt trong script.
+
+  Đặt mật khẩu qua biến môi trường:
+    MK_QUAN_TRI='mat-khau-that' python3 scripts/tao-du-lieu-mau.py
+
+  Hoặc đổi MA_TRUNG_TAM / USER_QUAN_TRI ở đầu file nếu đang dùng trung tâm khác.
+""", file=sys.stderr)
+        raise SystemExit(1)
     xong()
+
+    # Dọn trước cho chắc: chạy lại script mà chưa xoá thì dữ liệu chồng lên nhau (khách trùng
+    # số điện thoại sẽ bị chặn, nhưng đơn hàng và lớp thì nhân đôi).
+    con = goi("/khach-hang?soDong=1")
+    if con and con.get("tongSoDong", 0) > 0:
+        print(f"""
+✗ Trung tâm {ma} còn {con['tongSoDong']} khách hàng.
+
+  Xoá dữ liệu nghiệp vụ cũ trước (tài khoản đăng nhập được giữ nguyên):
+    docker exec -i lms-pg psql -U langcenter -d langcenter < scripts/xoa-du-lieu-nghiep-vu.sql
+""", file=sys.stderr)
+        raise SystemExit(1)
 
     quyen = {q["tenQuyen"]: q["id"] for q in goi("/quyen")}
 
@@ -305,7 +339,7 @@ def main():
 
     # Về lại admin cho phần LMS
     _token = goi("/auth/dang-nhap",
-                 {"maTrungTam": ma, "username": user, "matKhau": MAT_KHAU})["accessToken"]
+                 {"maTrungTam": ma, "username": user, "matKhau": MK_QUAN_TRI})["accessToken"]
 
     # ---------- Lớp học ----------
     buoc("lớp học + ghi danh")
@@ -366,7 +400,7 @@ def main():
 === XONG ===
 
   Mã trung tâm : {ma}
-  Quản trị     : {user} / {MAT_KHAU}
+  Quản trị     : {user} / (mật khẩu sẵn có của bạn)
   Sale         : nv1..nv4 / {MAT_KHAU}   (mỗi người một phòng ban)
   Giáo viên    : nv5, nv6 / {MAT_KHAU}
 
@@ -378,8 +412,9 @@ def main():
 
   Đăng nhập bằng nv5 (giáo viên) để thấy phạm vi: chỉ học viên lớp mình.
 
-  Xoá khi xong:
-    docker exec -i lms-pg psql -U langcenter -d langcenter < scripts/don-tenant-test.sql
+  Dựng lại từ đầu (xoá dữ liệu nghiệp vụ, GIỮ tài khoản đăng nhập):
+    docker exec -i lms-pg psql -U langcenter -d langcenter < scripts/xoa-du-lieu-nghiep-vu.sql
+    python3 scripts/tao-du-lieu-mau.py
 """)
 
 

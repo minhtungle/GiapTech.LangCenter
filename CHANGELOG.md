@@ -8,6 +8,21 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — dữ liệu mẫu dựng thẳng vào trung tâm đang test (14/09/2026)
+
+Bản trước tạo trung tâm mới mỗi lần chạy, nên **mã đổi liên tục** (`TAJZDEC` → `GJX4Z77` →
+`87ET3SF` → `MMP89QG`) và lần nào cũng phải nhớ mã khác — phiền khi test tay. Chủ sản phẩm chốt:
+*"dùng luôn cổng thật W686AE9, không cần xoá mỗi lần nữa"*.
+
+- `scripts/tao-du-lieu-mau.py` dựng thẳng vào `W686AE9`, đăng nhập bằng tài khoản sẵn có.
+- Thêm `scripts/xoa-du-lieu-nghiep-vu.sql` — xoá dữ liệu nghiệp vụ nhưng **giữ hạ tầng đăng
+  nhập** (tài khoản · nhóm quyền · thiết lập · phòng ban · chức vụ). Chạy lại bộ dữ liệu không
+  làm mất đường vào hệ thống.
+- Script **dừng lại và báo** nếu trung tâm còn khách hàng, thay vì chồng dữ liệu lên nhau.
+- Mật khẩu quản trị đọc từ biến môi trường `MK_QUAN_TRI`, tách khỏi mật khẩu của các tài khoản
+  script tạo — đổi cái này không làm hỏng cái kia.
+
+
 ### Added — vitest: test frontend đầu tiên của dự án (14/09/2026)
 
 Vá **triệt để** lỗi 417% (phễu tính % sai bản chất). Sửa công thức thôi chưa đủ: nó nằm trong
