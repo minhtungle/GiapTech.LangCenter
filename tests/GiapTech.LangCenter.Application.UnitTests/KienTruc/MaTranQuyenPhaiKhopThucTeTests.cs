@@ -167,8 +167,9 @@ public class MaTranQuyenPhaiKhopThucTeTests
     /// đúng loại quyền ẩn mà cả đợt dọn 14/09/2026 nhắm tới. Nhóm quản trị không mắc vì nó
     /// sinh từ `ThaoTacCua`; ba nhóm kia khai tay nên phải có test canh.
     ///
-    /// Đọc bằng cách phân tích mã nguồn, không tham chiếu assembly: `Application.UnitTests`
-    /// không được phụ thuộc `Infrastructure` (quy tắc #10) — xem `LuatPhuThuocTests`.
+    /// Đọc bằng phân tích mã nguồn chứ không tham chiếu kiểu: bảng khai nằm trong ba mảng
+    /// riêng (`CuaGiaoVien`, `CuaTroGiang`, `CuaHocVien`) nên quét văn bản bắt được cả ba mà
+    /// không phải liệt kê tay — thêm nhóm mặc định thứ tư cũng tự được canh.
     /// </summary>
     [Fact]
     public void Nhom_quyen_mac_dinh_khong_cap_o_khong_hien_tren_man_phan_quyen()
@@ -178,8 +179,8 @@ public class MaTranQuyenPhaiKhopThucTeTests
         Assert.NotNull(d);
 
         var f = new FileInfo(Path.Combine(
-            d!.FullName, "src", "GiapTech.LangCenter.Infrastructure",
-            "Persistence", "Seed", "NhomQuyenMacDinh.cs"));
+            d!.FullName, "src", "GiapTech.LangCenter.Domain",
+            "Common", "NhomQuyenMacDinh.cs"));
         Assert.True(f.Exists, $"Không thấy {f.FullName}");
 
         // Chỉ lấy dòng khai quyền `(ChucNang.X, ...)`, bỏ chú thích để không ăn tên trong văn bản.

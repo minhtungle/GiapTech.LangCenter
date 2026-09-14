@@ -27,6 +27,7 @@ import CoCauToChuc from '@/pages/hrm/CoCauToChuc'
 import ChucVu from '@/pages/hrm/ChucVu'
 import ChiTietNhanSu from '@/pages/hrm/ChiTietNhanSu'
 import PhanQuyen from '@/pages/quan-tri/PhanQuyen'
+import ChiTietQuyen from '@/pages/quan-tri/phan-quyen/ChiTietQuyen'
 import ThietLap from '@/pages/quan-tri/ThietLap'
 import NhatKy from '@/pages/quan-tri/NhatKy'
 
@@ -130,6 +131,7 @@ export default function App() {
               ))}
               <Route path="/quan-tri/tai-khoan" element={<TaiKhoan />} />
               <Route path="/quan-tri/phan-quyen" element={<PhanQuyen />} />
+              <Route path="/quan-tri/phan-quyen/:id" element={<ChiTietQuyen />} />
               <Route path="/quan-tri/thiet-lap" element={<ThietLap />} />
               <Route path="/quan-tri/nhat-ky" element={<NhatKy />} />
             </Route>

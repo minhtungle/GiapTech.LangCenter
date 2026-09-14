@@ -121,10 +121,44 @@ Sao lưu, dựng một database bản sao, chạy thử trên đó: 211 → 154 
 106 ô** — không mất khả năng nào. Rồi mới chạy trên DB thật, và khởi động lại API để chắc chắn
 seeder không cấp lại những hàng vừa xoá. Nó không cấp lại.
 
+## Hậu truyện: "thiết kế form phân quyền quá xấu"
+
+Chủ sản phẩm xem xong bản vừa làm và nói thẳng như vậy. Đúng.
+
+Tôi đã sửa cái bảng đó ba lần trong ngày — nới modal, xoay nhãn cột, rồi đổi `rotate-90` sang
+`writing-mode` cho chữ khỏi bị cắt. Mỗi lần đều là một cách **cứu cái bảng**, không lần nào
+hỏi cái bảng có còn đúng không.
+
+Đếm lại thì rõ: tab LMS có **15 cột** cho một ma trận mà **49 ô có nghĩa rải trên 300 vị trí**.
+Cột `Sinh lịch học` tồn tại suốt chiều cao bảng vì đúng một chức năng cần tới nó. Bảng đúng khi
+ma trận **đặc** và nhãn **ngắn**; ở đây cả hai đều sai từ lúc tách 18 thao tác, mà tôi cứ chỉnh
+cách vẽ.
+
+Đổi trục: mỗi chức năng một thẻ, thao tác nằm trong thẻ. Nhãn nằm ngang. Không còn ô trống nào
+vì thẻ chỉ hiện thao tác của chính nó. Mỗi thẻ mang được số đếm `4/7` — thông tin mà bảng
+không có chỗ nào đặt. Mobile tự xuống một cột, việc bảng 15 cột không bao giờ làm được.
+
+Và vì đã bỏ bảng thì cũng bỏ luôn modal: ma trận lên trang riêng `/quan-tri/phan-quyen/:id`,
+gửi được link, F5 không mất chỗ. Quy ước UI/UX của chính dự án đã ghi *"bản ghi có nhiều mặt →
+trang riêng có tab, không phải nhiều modal"* — tôi đọc nó buổi sáng và vẫn nhồi mọi thứ vào một
+modal buổi chiều.
+
+Hai thứ thêm vào khi đã có chỗ để thở:
+
+- **Mô tả hệ quả ngay cạnh ô cần cân nhắc.** "Chốt sổ" một mình không nói được rằng nó khoá sổ
+  và sinh "Vắng mặc định" cho mọi người chưa khai. Nay câu đó nằm ngay dưới nhãn.
+- **Mẫu vai trò.** Ba nút áp bộ quyền dựng sẵn rồi tinh chỉnh. Muốn vậy phải chuyển
+  `NhomQuyenMacDinh` từ `Infrastructure/Seed` lên `Domain/Common` — nếu không `Application`
+  không đọc được (quy tắc #10) và tôi sẽ phải chép bảng đó lần thứ hai ở tầng API.
+
+Lại một lỗi màu: tôi viết `hsl(var(--cho))`, mà token thật tên `--status-cho` và dự án dùng lớp
+Tailwind `status-cho`. Biến không tồn tại nên ô cần cân nhắc khi **bật** mất hẳn màu lẫn dấu
+tích — vẫn là ảnh chụp bắt được, không phải `tsc`.
+
 ## Số cuối ngày
 
 540 ô nếu hiện đủ 18 thao tác × 30 chức năng → **106 ô thật sự có tác dụng**. 33 chức năng
-(30 có API + 3 giữ chỗ), 18 thao tác. 490 test backend + 24 E2E xanh.
+(30 có API + 3 giữ chỗ), 18 thao tác. 490 test backend + 28 vitest + 26 E2E xanh.
 
 Ba thứ bắt lỗi hôm nay, không cái nào là mắt tôi đọc code: một phép đếm (31/108 ô chết), một
 ảnh chụp màn hình (bảng tràn, nhãn cắt còn 3 ký tự), và một test E2E (quyền phạm vi bị xoá

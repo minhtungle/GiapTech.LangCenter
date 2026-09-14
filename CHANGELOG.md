@@ -8,6 +8,46 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — thiết kế lại màn phân quyền: bảng → lưới thẻ, modal → trang riêng (14/09/2026)
+
+Phản hồi của chủ sản phẩm: *"thiết kế form phân quyền quá xấu"*. Đúng — bản trước là giải pháp
+kỹ thuật cho một bảng quá rộng, không phải giải pháp thiết kế.
+
+**Chẩn đoán.** Sau khi tách thành 18 thao tác, tab LMS thành bảng **15 cột**; nhãn dài ("Cấu
+hình ma trận quyền") phải **xoay dọc** mới vừa. Tệ hơn, ma trận rất **thưa** — 49 ô có nghĩa
+rải trên 300 vị trí — nên mắt không lần được hàng nào ứng với cột nào, và `Sinh lịch học` chiếm
+một cột suốt chiều cao bảng dù chỉ đúng một chức năng cần.
+
+**Đổi trục.** Mỗi chức năng một **thẻ**, thao tác nằm trong thẻ: nhãn nằm ngang, không còn ô
+trống, mỗi thẻ mang số đếm riêng (`4/7`). Trong thẻ chia hai nhóm — `Xem · Thêm · Sửa · Xóa`
+trước, thao tác đặc thù sau một đường kẻ. Ô là **nhãn bấm được** (`<label>` bọc `<input
+sr-only>`), không phải checkbox trần: mang luôn tên thao tác, vùng bấm rộng, vẫn giữ Tab/Space
+và trình đọc màn hình.
+
+**Modal → trang riêng** `/quan-tri/phan-quyen/:id`: gửi được link tới đúng nhóm quyền, F5 không
+mất chỗ, nút Back hoạt động. Đúng quy ước đã chốt *"bản ghi có nhiều mặt → trang riêng"*. Thanh
+Lưu dính đáy. Trang danh sách giữ modal cho việc tạo nhóm (một ô tên) rồi chuyển sang trang
+cấu hình.
+
+**Mô tả hệ quả ngay cạnh ô cần cân nhắc.** `ChucNang.CanCanNhac` (13 cặp) đánh dấu quyền không
+đảo ngược được, leo thang đặc quyền, dính tiền, hoặc mở rộng phạm vi dữ liệu; UI hiện câu giải
+thích: *"Chốt sổ — khoá sổ điểm danh, và ghi Vắng cho mọi người chưa khai. Không sửa lại được."*
+Backend chỉ trả **dấu hiệu**, câu chữ nằm ở `i18n.ts` (quy tắc #3).
+
+**Mẫu vai trò.** Ba nút Giáo viên · Trợ giảng · Học viên áp bộ quyền dựng sẵn rồi tinh chỉnh,
+thay vì tick hai chục ô từ số không. `NhomQuyenMacDinh` chuyển từ `Infrastructure/Seed` lên
+`Domain/Common` để UI và seeder dùng **chung một nguồn** — không sinh bản sao thứ hai sẽ trôi
+khỏi nhau. Mẫu **thay** chứ không cộng dồn, nhưng **giữ** ô lạc hậu (quy tắc #1).
+
+Sửa kèm: `hsl(var(--cho))` là token **không tồn tại** (tên thật `--status-cho`, và dự án dùng
+lớp Tailwind `status-cho`) nên ô cần cân nhắc khi bật mất hẳn màu lẫn dấu tích. Bỏ màu nhấn
+khỏi số đếm và số tài khoản — dùng màu cảnh báo cho thông tin bình thường làm mất giá trị của
+nó ở chỗ thật sự cần.
+
+Test: +16 vitest cho phép tính (28 tổng) · +2 E2E (26 tổng). Ba đột biến trên hàm thuần và hai
+trên E2E đều bị bắt, gồm đột biến "mẫu cộng dồn thay vì thay" và "tab giữ state riêng".
+
+
 ### Changed — ma trận phân quyền theo thao tác THẬT (14/09/2026)
 
 Yêu cầu: *"tôi cần đầy đủ danh sách chức năng kèm thao tác thực tế trong chức năng đó chứ

@@ -40,7 +40,31 @@ public record DanhMucChucNangDto(
     /// Trả **nhóm sẵn từ backend** chứ không để frontend tự khai lại bản đồ: hai bản đồ ở hai
     /// nơi sẽ trôi khỏi nhau, và thêm module mới thì phải sửa hai chỗ mới thấy nó xuất hiện.
     /// </summary>
-    IReadOnlyList<NhomHeThongDto> HeThongs);
+    IReadOnlyList<NhomHeThongDto> HeThongs,
+    /// <summary>
+    /// Cặp (chức năng, thao tác) **cần cân nhắc trước khi cấp** — không đảo ngược được, leo
+    /// thang đặc quyền, dính tới tiền, hoặc mở rộng phạm vi dữ liệu.
+    ///
+    /// Trả **dấu hiệu** chứ không trả câu mô tả: mô tả là chuỗi hiển thị, phải đi qua
+    /// `react-i18next` (quy tắc #3). Frontend tra `quyen.canNhac.<ChucNang>.<HanhDong>`.
+    /// </summary>
+    IReadOnlyList<CapQuyenDto> CanCanNhac,
+    /// <summary>
+    /// **Mẫu vai trò** — bộ quyền của ba nhóm dựng sẵn, để người tạo nhóm mới bấm một nút là
+    /// có điểm khởi đầu hợp lý rồi tinh chỉnh, thay vì tick hai chục ô từ số không.
+    ///
+    /// Đọc thẳng từ `NhomQuyenMacDinh` ở `Domain` (chuyển lên đó 14/09/2026) — cùng một nguồn
+    /// với `TenantSeeder`, nên mẫu trên UI không bao giờ lệch khỏi nhóm thật được tạo ra.
+    /// </summary>
+    IReadOnlyList<MauVaiTroDto> MauVaiTro);
+
+/// <summary>Một cặp (chức năng, thao tác).</summary>
+public record CapQuyenDto(string ChucNang, HanhDong HanhDong);
+
+/// <summary>Bộ quyền mẫu của một vai trò dựng sẵn.</summary>
+public record MauVaiTroDto(
+    string Ten,
+    IReadOnlyList<CapQuyenDto> Quyens);
 
 /// <summary>Một hệ thống con và các chức năng của nó.</summary>
 public record NhomHeThongDto(
@@ -78,7 +102,23 @@ public class LayDanhMucChucNangHandler : IRequestHandler<LayDanhMucChucNangQuery
                     "DungChung",
                     ChucNang.DungChung.Where(cn => ChucNang.ThaoTacCua(cn).Count > 0).ToList(),
                     DungChung: true)
+            ],
+            ChucNang.CanCanNhac.Select(x => new CapQuyenDto(x.ChucNang, x.HanhDong)).ToList(),
+            [
+                // Lọc qua `ThaoTacCua`: mẫu có thể còn cặp đã bỏ khỏi bảng khai, áp dụng
+                // nguyên xi sẽ tick một ô UI không hiện — người dùng thấy số đếm không khớp.
+                new MauVaiTroDto(NhomQuyenMacDinh.GiaoVien, CapHopLe(NhomQuyenMacDinh.CuaGiaoVien)),
+                new MauVaiTroDto(NhomQuyenMacDinh.TroGiang, CapHopLe(NhomQuyenMacDinh.CuaTroGiang)),
+                new MauVaiTroDto(NhomQuyenMacDinh.HocVien, CapHopLe(NhomQuyenMacDinh.CuaHocVien)),
             ]));
+
+    private static List<CapQuyenDto> CapHopLe(
+        (string ChucNang, HanhDong[] HanhDongs)[] mau)
+        => mau
+            .SelectMany(x => x.HanhDongs
+                .Where(hd => ChucNang.ThaoTacCua(x.ChucNang).Contains(hd))
+                .Select(hd => new CapQuyenDto(x.ChucNang, hd)))
+            .ToList();
 }
 
 public record LayDanhSachQuyenQuery : IRequest<List<QuyenDto>>;

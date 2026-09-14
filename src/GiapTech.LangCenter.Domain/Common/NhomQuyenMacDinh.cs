@@ -1,7 +1,6 @@
-using GiapTech.LangCenter.Domain.Common;
 using GiapTech.LangCenter.Domain.Enums;
 
-namespace GiapTech.LangCenter.Infrastructure.Persistence.Seed;
+namespace GiapTech.LangCenter.Domain.Common;
 
 /// <summary>
 /// Bốn nhóm quyền dựng sẵn khi tạo trung tâm mới, theo ma trận phân quyền ở
@@ -11,16 +10,22 @@ namespace GiapTech.LangCenter.Infrastructure.Persistence.Seed;
 /// từng ô, hoặc tạo nhóm hoàn toàn khác. Hệ thống không có chỗ nào hard-code "nếu là giáo
 /// viên thì…" — mọi quyết định truy cập đọc từ `QUYEN_CHUC_NANG` (quy tắc #9).
 ///
+/// **Vì sao ở `Domain` chứ không ở `Infrastructure/Seed`** (chuyển 14/09/2026): ngoài seeder,
+/// màn Phân quyền cũng đọc bảng này để hiện **mẫu vai trò** — người tạo nhóm quyền mới bấm
+/// "Giáo viên" là có ngay bộ quyền hợp lý rồi tinh chỉnh, không phải tick 20 ô từ số không.
+/// Để ở `Infrastructure` thì `Application` không đọc được (quy tắc #10) và sẽ sinh ra một bản
+/// sao thứ hai ở tầng API — hai bản sao rồi sẽ trôi khỏi nhau.
+///
 /// Vì sao khai tường minh thay vì suy từ vai trò: ma trận trong đặc tả có những ô không suy
 /// được bằng quy luật nào (trợ giảng toàn quyền với bài tập nhưng chỉ xem được bài kiểm tra).
 /// Viết ra hết thì đọc là hiểu, sửa một ô không sợ vỡ ô khác.
 /// </summary>
-internal static class NhomQuyenMacDinh
+public static class NhomQuyenMacDinh
 {
-    internal const string QuanTri = "Quản trị viên";
-    internal const string GiaoVien = "Giáo viên";
-    internal const string TroGiang = "Trợ giảng";
-    internal const string HocVien = "Học viên";
+    public const string QuanTri = "Quản trị viên";
+    public const string GiaoVien = "Giáo viên";
+    public const string TroGiang = "Trợ giảng";
+    public const string HocVien = "Học viên";
 
     private static readonly HanhDong[] DocThoi = [HanhDong.Xem];
     private static readonly HanhDong[] DocGhi = [HanhDong.Xem, HanhDong.Them, HanhDong.Sua];
@@ -34,7 +39,7 @@ internal static class NhomQuyenMacDinh
     /// phạm vi lớp được phân công. Có <c>LopHoc.Xem</c> nhưng không có <c>Sua</c> — lớp do
     /// admin lập, giáo viên chỉ dạy.
     /// </summary>
-    internal static readonly (string ChucNang, HanhDong[] HanhDongs)[] CuaGiaoVien =
+    public static readonly (string ChucNang, HanhDong[] HanhDongs)[] CuaGiaoVien =
     [
         (ChucNang.LopHoc, DocThoi),
         // Ghi danh: xem + thêm/gỡ học viên lớp mình. KHÔNG có `LopHoc.Sua` nên không sửa được
@@ -69,7 +74,7 @@ internal static class NhomQuyenMacDinh
     /// Hai khác biệt đó là lý do không gộp <c>BaiTap</c> với <c>BaiKiemTra</c> thành một
     /// chức năng: gộp rồi thì không nói được "toàn quyền bài tập, chỉ xem bài kiểm tra".
     /// </summary>
-    internal static readonly (string ChucNang, HanhDong[] HanhDongs)[] CuaTroGiang =
+    public static readonly (string ChucNang, HanhDong[] HanhDongs)[] CuaTroGiang =
     [
         (ChucNang.LopHoc, DocThoi),
         (ChucNang.GhiDanhLop, DocThoi),                          // xem, không thêm/gỡ
@@ -100,7 +105,7 @@ internal static class NhomQuyenMacDinh
     ///
     /// <c>HocPhi.Xem</c> để họ tự tra công nợ; handler lọc theo chính họ.
     /// </summary>
-    internal static readonly (string ChucNang, HanhDong[] HanhDongs)[] CuaHocVien =
+    public static readonly (string ChucNang, HanhDong[] HanhDongs)[] CuaHocVien =
     [
         (ChucNang.LopHoc, DocThoi),
         // Xem danh sách bạn cùng lớp — DTO đã che số tiền (`RoRiHocPhiTests` canh).

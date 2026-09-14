@@ -104,8 +104,40 @@ làm mới kế tiếp.
 
 | Nhóm thao tác | Ưu tiên | Lý do |
 |---|---|---|
-| Ma trận phân quyền (FR-05), bảng điểm danh, bảng chấm điểm | **Desktop** | Bảng nhiều chiều, nhập liệu hàng loạt |
+| Bảng điểm danh, bảng chấm điểm | **Desktop** | Bảng nhiều chiều, nhập liệu hàng loạt |
+| Ma trận phân quyền (FR-05) | Desktop trước, **mobile vẫn đọc được** | Từ 14/09/2026 là lưới thẻ, tự xuống một cột |
 | Xem lịch học, điểm danh, nộp bài, tra công nợ (giáo viên · học viên) | **Responsive tốt** | Nhóm dùng nhiều nhất, và sẽ tái dùng cho mobile app qua cùng API |
+
+### Bảng chỉ đúng khi ma trận ĐẶC và nhãn NGẮN
+
+Bài học từ ma trận phân quyền (14/09/2026). Nó là bảng chức năng × thao tác, và hỏng dần khi
+dữ liệu đổi hình:
+
+| Triệu chứng | Ngưỡng |
+|---|---|
+| Nhãn cột phải **xoay dọc** mới vừa | Đã quá muộn — người đọc nghiêng đầu |
+| Ma trận **thưa** | 49 ô có nghĩa trên 300 vị trí: mắt không lần được hàng nào ứng với cột nào |
+| Một cột chỉ dùng cho **một hàng** | `Sinh lịch học` chiếm cột suốt chiều cao bảng vì đúng một chức năng cần |
+
+Khi gặp những dấu hiệu đó, **đổi trục**: mỗi bản ghi một thẻ, thuộc tính nằm *trong* thẻ. Nhãn
+nằm ngang đọc bình thường, không còn ô trống, và mỗi thẻ mang được số đếm riêng — thông tin
+bảng không có chỗ nào đặt. Đánh đổi: mất khả năng so sánh theo cột, nên chỉ đổi khi việc chính
+là **cấu hình từng bản ghi**, không phải **so sánh giữa các bản ghi**.
+
+Đừng dùng `rotate-90` để cứu nhãn cột dài: `transform` không đổi ô mà phần tử chiếm, nên chữ
+tràn ra rồi bị cắt (nhãn còn 3 ký tự — "Xen", "Thê"). Cần chữ dọc thật thì dùng `writing-mode`.
+
+### Checkbox trần vs nhãn bấm được
+
+Checkbox 16px không mang chữ, nên trong lưới thưa người dùng phải đối chiếu với đầu cột mới
+biết mình đang bật gì. Nhãn bấm được (`<label>` bọc `<input class="sr-only">`) mang luôn tên
+thao tác, vùng bấm rộng cả nhãn, trạng thái đọc bằng màu nền thay vì một dấu tích 4px — mà vẫn
+giữ Tab, phím Space và trình đọc màn hình. Đừng thay bằng `<div onClick>`.
+
+### Ô trống ≠ checkbox mờ
+
+Tổ hợp không áp dụng thì để **trống**, không hiện checkbox `disabled`. Checkbox mờ vẫn là
+checkbox: người đọc phải thử mới biết nó không bấm được.
 
 ## 5. Quy ước màu trạng thái
 
@@ -116,6 +148,11 @@ Dùng **thống nhất** ở mọi module, không đổi nghĩa theo ngữ cản
 | 🟢 Xanh | `ok` | **Xong · đạt · đủ**: lớp đang học, buổi đã chốt, bài đã chấm, học phí đã đủ, thao tác thành công |
 | 🔴 Đỏ | `loi` | **Hỏng · quá hạn · bị từ chối**: lớp đã huỷ, nộp muộn, học phí quá hạn, vắng khác lời khai |
 | 🟡 Vàng | `cho` | **Đang chờ · cần chú ý**: lớp nháp, còn nợ học phí, buộc đổi mật khẩu, giáo viên riêng |
+
+**Đừng dùng màu trạng thái cho thông tin bình thường.** Bản đầu của trang phân quyền tô màu
+nhấn cho mọi số đếm đã cấp (`3/3`) và cho số tài khoản đang dùng — không cái nào "cần chú ý",
+và khi mọi thứ đều sáng màu nhấn thì ô **thật sự** cần cân nhắc (quyền leo thang đặc quyền,
+quyền dính tiền) chìm lẫn vào. Phân biệt bằng đậm/nhạt trước; để dành màu cho thứ đáng dừng lại.
 
 Đổi tên từ `win`/`lose`/`draw` ngày 08/09/2026 (nợ N8 — đã xong): tên cũ là di sản của dự án
 tiền thân, và "thắng/thua/hoà" không có nghĩa gì trong nghiệp vụ đào tạo.

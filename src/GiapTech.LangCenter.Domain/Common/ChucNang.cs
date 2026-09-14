@@ -382,6 +382,45 @@ public static class ChucNang
         ThaoTacTheoChucNang.TryGetValue(chucNang, out var ds) ? ds : Crud;
 
     /// <summary>
+    /// Cặp (chức năng, thao tác) **cần cân nhắc trước khi cấp** — màn phân quyền đánh dấu
+    /// riêng và hiện mô tả hệ quả.
+    ///
+    /// Tiêu chí vào danh sách này, không phải "cảm giác nguy hiểm":
+    /// 1. **Không đảo ngược được** — `DiemDanh.Chot` khoá sổ và sinh "Vắng mặc định";
+    ///    `XepLop.Duyet` ảnh hưởng tới bên bán.
+    /// 2. **Leo thang đặc quyền** — `PhanQuyen.CauHinhQuyen` cho phép tự cấp mọi quyền khác.
+    /// 3. **Dính tới tiền** — `DoanhThu.ThuTien`, `HocPhi.ThuTien`, `ThietLapChung.CauHinhTien`.
+    /// 4. **Mở rộng phạm vi dữ liệu** — `LopHocToanTrungTam.*` (xem <see cref="PhamViDuLieu"/>).
+    ///
+    /// Cố ý KHÔNG gồm `Xoa` chung chung: xoá một bài tập không cùng hạng với chốt sổ điểm danh,
+    /// và đánh dấu mọi ô `Xoa` sẽ làm dấu hiệu này mất giá trị (cảnh báo đại trà = không ai đọc).
+    ///
+    /// Đây chỉ là **dấu hiệu cho người cấu hình**, không phải tầng bảo vệ: backend vẫn gác
+    /// bằng `[RequirePermission]` như mọi ô khác.
+    /// </summary>
+    public static readonly IReadOnlyList<(string ChucNang, HanhDong HanhDong)> CanCanNhac =
+    [
+        // Không đảo ngược được
+        (DiemDanh, HanhDong.Chot),
+        (XepLop, HanhDong.Duyet),
+        (LopHoc, HanhDong.HoanTat),
+        (LopHoc, HanhDong.Huy),
+        (BuoiHoc, HanhDong.Huy),
+        // Leo thang đặc quyền
+        (PhanQuyen, HanhDong.CauHinhQuyen),
+        (DoiMatKhauNguoiKhac, HanhDong.Sua),
+        // Dính tới tiền
+        (DoanhThu, HanhDong.ThuTien),
+        (HocPhi, HanhDong.ThuTien),
+        (ThietLapChung, HanhDong.CauHinhTien),
+        // Mở rộng phạm vi dữ liệu
+        (LopHocToanTrungTam, HanhDong.Xem),
+        (LopHocToanTrungTam, HanhDong.Sua),
+        // Đọc dữ liệu cá nhân của người khác — xem chú thích cặp Xem/TuLam
+        (NhanXetBuoiHoc, HanhDong.Xem),
+    ];
+
+    /// <summary>
     /// Chức năng thuộc loại **quyền phạm vi dữ liệu**, không phải quyền gọi endpoint.
     ///
     /// Khác biệt quan trọng với mọi ô còn lại: `[RequirePermission]` không bao giờ đọc chúng.

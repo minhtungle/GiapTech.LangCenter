@@ -701,6 +701,73 @@ const vi = {
     suaTieuDe: 'Sửa nhóm quyền',
     maTran: 'Ma trận quyền',
     chucNang: 'Chức năng',
+    soO: 'Số ô quyền',
+    cauHinh: 'Cấu hình quyền',
+    taoVaCauHinh: 'Tạo và cấu hình quyền',
+    themMoiGoiY: 'Đặt tên nhóm trước; bước sau chọn quyền, có mẫu vai trò để không phải tick từ đầu.',
+    batDauTuMau: 'Bắt đầu từ mẫu vai trò',
+    apMauTieuDe: 'Áp dụng mẫu vai trò',
+    apMauHoi:
+      'Thay toàn bộ quyền đang chọn bằng bộ quyền của "{{ten}}" ({{so}} ô)? '
+      + 'Sau đó vẫn tinh chỉnh được từng ô.',
+    dangDung: '{{so}} tài khoản đang dùng',
+    tongDaChon: 'Đã chọn {{so}} ô',
+    chiXem:
+      'Bạn không có quyền Cấu hình ma trận quyền nên chỉ xem được. Liên hệ quản trị hệ thống '
+      + 'nếu cần sửa.',
+    khongThayNhom: 'Không tìm thấy nhóm quyền này. Có thể nó đã bị xoá.',
+    veDanhSach: 'Về danh sách nhóm quyền',
+    /**
+     * Mô tả HỆ QUẢ của ô cần cân nhắc, hiện ngay cạnh thao tác.
+     *
+     * Tra theo cặp cụ thể trước (`canNhac.DiemDanh.Chot`), không có thì lùi về mô tả chung của
+     * thao tác (`canNhac.chung.Chot`). Nhờ vậy thêm một cặp vào `ChucNang.CanCanNhac` là có mô
+     * tả dùng được ngay; muốn nói cụ thể hơn thì thêm khoá riêng, không phải sửa code.
+     */
+    canNhac: {
+      DiemDanh: {
+        Chot: 'Khoá sổ điểm danh, và ghi Vắng cho mọi người chưa khai. Không sửa lại được.',
+      },
+      XepLop: {
+        Duyet: 'Quyết định thay bên bán, ảnh hưởng tới đơn của họ. Không đảo ngược được.',
+      },
+      LopHoc: {
+        HoanTat: 'Lớp rời trạng thái nháp và hiện với mọi người liên quan. Một chiều.',
+        Huy: 'Huỷ lớp và toàn bộ buổi học của nó. Dữ liệu còn nhưng lớp ngừng hoạt động.',
+      },
+      BuoiHoc: {
+        Huy: 'Huỷ buổi, học viên thấy buổi bị huỷ trên lịch.',
+      },
+      PhanQuyen: {
+        CauHinhQuyen:
+          'Người có quyền này tự cấp được MỌI quyền khác cho nhóm của mình. Chỉ cấp cho quản trị.',
+      },
+      DoiMatKhauNguoiKhac: {
+        Sua: 'Đặt lại mật khẩu người khác, tức đăng nhập được vào tài khoản của họ.',
+      },
+      DoanhThu: {
+        ThuTien: 'Xác nhận đã nhận tiền của khách. Nên tách khỏi người lên đơn.',
+      },
+      HocPhi: {
+        ThuTien: 'Ghi nhận học viên đã đóng tiền vào sổ học phí.',
+      },
+      ThietLapChung: {
+        CauHinhTien: 'Đổi thông tin nhận tiền (QR chuyển khoản) mà khách sẽ chuyển vào.',
+      },
+      NhanXetBuoiHoc: {
+        Xem: 'Đọc nhận xét của MỌI người trong buổi. Không cấp cho học viên — họ sẽ đọc được phản hồi riêng của bạn cùng lớp.',
+      },
+      LopHocToanTrungTam: {
+        Xem: 'Thấy mọi lớp của trung tâm, kèm hồ sơ và liên hệ của học viên trong đó — không chỉ lớp mình phụ trách.',
+        Sua: 'Sửa được cả lớp không do mình phụ trách.',
+      },
+      chung: {
+        Chot: 'Chốt sổ — sau đó không sửa lại được.',
+        Duyet: 'Quyết định không đảo ngược được.',
+        ThuTien: 'Thao tác liên quan tới tiền.',
+        Huy: 'Huỷ nhưng giữ bản ghi.',
+      },
+    },
     phamViDuLieu: 'Phạm vi dữ liệu',
     phamViGoiY:
       'Những quyền này không mở thêm chức năng, mà mở rộng phần dữ liệu người dùng thấy '
