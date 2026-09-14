@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
+import { gopDuoi, tinhPhanBo, tinhRongThanh } from './tinh-toan'
 
 /**
  * Biểu đồ dựng bằng SVG thuần — **không thêm thư viện** (FR-28, 14/09/2026).
@@ -292,16 +293,7 @@ export function ThanhNgang({
 }) {
   if (hang.length === 0) return null
 
-  const sap = [...hang].sort((a, b) => b.giaTri - a.giaTri)
-  const hienThi = sap.slice(0, toiDa)
-  const con = sap.slice(toiDa)
-  if (con.length > 0) {
-    hienThi.push({
-      nhan: `Khác (${con.length})`,
-      giaTri: con.reduce((s, x) => s + x.giaTri, 0),
-    })
-  }
-
+  const hienThi = gopDuoi(hang, toiDa, (n) => `Khác (${n})`)
   const max = Math.max(...hienThi.map((h) => h.giaTri), 1)
 
   return (
@@ -319,10 +311,7 @@ export function ThanhNgang({
           <div className="h-2.5 overflow-hidden rounded-sm bg-muted">
             <div
               className="h-full rounded-r-[4px]"
-              style={{
-                width: h.giaTri === 0 ? 0 : `${Math.max((h.giaTri / max) * 100, 2)}%`,
-                background: mau,
-              }}
+              style={{ width: `${tinhRongThanh(h.giaTri, max)}%`, background: mau }}
             />
           </div>
         </li>
@@ -352,21 +341,18 @@ export function Pheu({
   buoc: { nhan: string; soLuong: number }[]
 }) {
   if (buoc.length === 0) return null
-  const max = Math.max(...buoc.map((b) => b.soLuong), 1)
-  const tong = buoc.reduce((s, b) => s + b.soLuong, 0)
 
   return (
     <ul className="grid gap-2">
-      {buoc.map((b, i) => {
-        // Phần trăm trên TỔNG số khách — xem chú thích ở đầu component.
-        const tyLe = tong > 0 ? (b.soLuong / tong) * 100 : null
+      {tinhPhanBo(buoc).map((b, i) => {
+        const tyLe = b.tyLe
         return (
           <li key={b.nhan} className="grid gap-1">
             <div className="flex items-baseline justify-between gap-3 text-sm">
               <span>{b.nhan}</span>
               <span className="shrink-0 tabular-nums">
                 {b.soLuong}
-                {tyLe !== null && b.soLuong > 0 && (
+                {tyLe !== null && (
                   <span className="ml-2 text-xs text-muted-foreground">
                     {tyLe.toFixed(0)}%
                   </span>
@@ -377,9 +363,7 @@ export function Pheu({
               <div
                 className="h-full rounded-r-[4px]"
                 style={{
-                  // 0 khách thì KHÔNG vẽ vạch: một vạch tối thiểu ở bước rỗng trông như có
-                  // dữ liệu, mà "0 khách ở bước này" chính là điều cần thấy rõ.
-                  width: b.soLuong === 0 ? 0 : `${Math.max((b.soLuong / max) * 100, 2)}%`,
+                  width: `${b.rong}%`,
                   // Dải MỘT màu đậm dần theo bước — thứ tự có nghĩa nên màu phải có thứ tự.
                   background: `hsl(var(--chart-3) / ${1 - i * 0.18})`,
                 }}

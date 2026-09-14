@@ -211,3 +211,33 @@ Rút từ lần thất bại 12/09/2026 ([ADR-0006](./kien-truc/adr/0006-dat-ten
 3. **Đổi property = đổi cột DB = đổi tên trường JSON.** Ba việc này là một.
 4. **Làm theo module nhỏ**, commit sau mỗi module, hệ thống luôn chạy được.
 5. **Backup DB và diễn tập trên bản sao** trước khi chạy migration đụng dữ liệu.
+
+
+## 10. Phép tính hiển thị — tách ra hàm thuần, có test
+
+Thêm 14/09/2026 sau lỗi **417%**: phễu bán hàng tính tỷ lệ so với bước liền trước, cho ra một
+con số lớn hơn 100% trên dữ liệu thật. Công thức nằm trong biểu thức nhúng giữa JSX nên **không
+gì canh được** — `tsc` xanh, 468 test backend xanh, và nó chỉ lộ khi có đủ dữ liệu để tỷ lệ vượt
+100%. Với 2-3 bản ghi thì mọi tỷ lệ đều dưới 100% và trông bình thường.
+
+**Quy ước:** phép tính có thể sai về *ý nghĩa* (không chỉ sai kiểu) thì tách ra hàm thuần kèm
+test — đừng nhúng thẳng vào component.
+
+Thuộc loại này: phần trăm · tỷ lệ · phép chia · gộp nhóm · quy đổi đơn vị. Không thuộc: ghép
+chuỗi, chọn màu theo enum, định dạng ngày.
+
+```
+frontend/src/components/bieu-do/tinh-toan.ts        ← hàm thuần
+frontend/src/components/bieu-do/tinh-toan.test.ts   ← test
+npm test                                             # vitest run, ~0.5s
+```
+
+Hai câu hỏi bắt buộc cho mọi phép chia hiển thị:
+
+| Hỏi | Vì sao |
+|---|---|
+| Mẫu số bằng 0 thì sao? | `Infinity`/`NaN` hiện lên màn hình |
+| Kết quả có thể vượt 100% không? | Nếu có mà không nên có → **công thức sai bản chất**, không phải sai số |
+
+Câu thứ hai là câu bắt được lỗi 417%: mẫu số chọn sai (bước trước thay vì tổng) trong khi các
+bước **loại trừ nhau**.

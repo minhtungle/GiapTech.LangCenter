@@ -30,7 +30,7 @@ là đường frontend, API vẫn là `/api/v1/hoc-vien`.
 Tách ra từ một ứng dụng quản lý CLB đá bóng (04/09/2026), giữ toàn bộ tầng hệ thống. Nghiệp vụ
 LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 
-**27 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 464 test backend · 23 E2E xanh.
+**27 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 468 test backend · 12 frontend · 23 E2E xanh.
 
 | Đã chạy đầu-cuối | Chưa có |
 |---|---|
@@ -251,7 +251,7 @@ Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 ```bash
 # --- Backend ---
 dotnet build          # 0 warning — TreatWarningsAsErrors đang bật
-dotnet test           # 464 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
+dotnet test           # 468 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
                       #           quản trị, lớp học, điểm danh, học liệu, học phí
 
 # Chạy API cần 2 biến bắt buộc (thiếu là 500 lúc đăng nhập / tải ảnh, không phải lúc khởi động):
@@ -270,6 +270,7 @@ python3 scripts/check-i18n-keys.py
 cd frontend && npm install
 npm run dev     # http://localhost:5173, proxy /api -> :5229
 npm run build   # tsc -b && vite build
+npm test        # vitest run — 12 test cho PHÉP TÍNH của biểu đồ (src/**/*.test.ts)
 npx oxlint src e2e
 
 # --- E2E (Playwright) ---

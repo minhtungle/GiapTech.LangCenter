@@ -8,6 +8,29 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — vitest: test frontend đầu tiên của dự án (14/09/2026)
+
+Vá **triệt để** lỗi 417% (phễu tính % sai bản chất). Sửa công thức thôi chưa đủ: nó nằm trong
+biểu thức nhúng giữa JSX nên **không gì canh được** và có thể tái diễn.
+
+- Tách phép tính ra `components/bieu-do/tinh-toan.ts` — hàm thuần, không JSX, không hook.
+- 12 test trong `tinh-toan.test.ts`, chạy ~0.5s bằng `npm test`.
+- Vitest dùng chung `vite.config.ts`, `include` giới hạn `src/**/*.test.ts` — không thì nó quét
+  cả `e2e/` của Playwright và cố chạy test trình duyệt trong Node.
+- Component **gọi chính hàm đó**, không giữ bản sao — nếu không thì test canh một thứ và màn
+  hình chạy một thứ khác.
+
+**Bốn đột biến kiểm đỏ**, trong đó có đúng công thức cũ gây ra 417%.
+
+Quét thêm 14 phép tính % khác trong frontend: ba chỗ chia cho biến có thể bằng 0 (`% so kỳ
+trước`, `tỷ lệ đã thu`, `tỷ lệ hoàn thành`) đều **đã chặn đúng** từ trước. Lỗi phễu là duy nhất
+thuộc loại "công thức sai bản chất", không phải lỗi kỹ thuật lặp lại.
+
+Quy ước mới ở [`docs/quy-uoc-code.md`](./docs/quy-uoc-code.md) mục 10, với hai câu hỏi bắt buộc
+cho mọi phép chia hiển thị — câu thứ hai (*"kết quả có thể vượt 100% không?"*) là câu bắt được
+lỗi này.
+
+
 ### Added — script dựng dữ liệu demo (14/09/2026)
 
 `scripts/tao-du-lieu-mau.py` dựng một trung tâm demo đầy đủ **qua API thật**, không `INSERT`
