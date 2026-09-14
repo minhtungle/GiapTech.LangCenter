@@ -46,7 +46,7 @@ public class HocPhiController(ISender sender) : ControllerBase
         => Ok(await sender.Send(new LayCongNoQuery(lopHocId, chiConNo), ct));
 
     [HttpPost]
-    [RequirePermission(ChucNang.HocPhi, HanhDong.Them)]
+    [RequirePermission(ChucNang.HocPhi, HanhDong.ThuTien)]
     public async Task<ActionResult<Guid>> Thu(
         [FromBody] ThuHocPhiCommand command, CancellationToken ct)
         => Ok(await sender.Send(command, ct));

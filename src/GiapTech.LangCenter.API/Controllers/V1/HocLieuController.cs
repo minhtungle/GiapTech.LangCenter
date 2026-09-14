@@ -58,7 +58,7 @@ public class BaiTapController(ISender sender) : ControllerBase
     /// Học viên nộp bài. Không nhận id học viên — lấy từ token, nên không nộp hộ được.
     /// </summary>
     [HttpPost("{id:guid}/nop")]
-    [RequirePermission(ChucNang.BaiNopBaiTap, HanhDong.Them)]
+    [RequirePermission(ChucNang.BaiNopBaiTap, HanhDong.TuLam)]
     public async Task<ActionResult<Guid>> Nop(
         Guid id, [FromBody] NopBaiBody body, CancellationToken ct)
         => Ok(await sender.Send(new NopBaiCommand(id, body.NoiDung), ct));
@@ -77,7 +77,7 @@ public class BaiNopController(ISender sender) : ControllerBase
     /// là để chấm, không phải để sửa bài của học viên.
     /// </summary>
     [HttpPost("{id:guid}/cham")]
-    [RequirePermission(ChucNang.BaiNopBaiTap, HanhDong.Sua)]
+    [RequirePermission(ChucNang.BaiNopBaiTap, HanhDong.Cham)]
     public async Task<IActionResult> Cham(
         Guid id, [FromBody] ChamBody body, CancellationToken ct)
     {

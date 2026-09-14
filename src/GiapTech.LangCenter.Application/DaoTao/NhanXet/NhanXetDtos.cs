@@ -64,7 +64,10 @@ public class LayNhanXetBuoiHocHandler(
         if (tenant.TenantId is not { } tid || currentUser.TaiKhoanId is not { } tkId)
             return false;
 
-        return await quyenService.CoQuyenAsync(tid, tkId, ChucNang.DiemDanh, HanhDong.Sua, ct)
+        // `NhanXetBuoiHoc.Xem` chứ không `DiemDanh.Sua` (14/09/2026): nhận xét nay là chức
+        // năng riêng, không còn đi nhờ quyền điểm danh.
+        return await quyenService.CoQuyenAsync(
+                   tid, tkId, ChucNang.NhanXetBuoiHoc, HanhDong.Xem, ct)
                || await quyenService.CoQuyenAsync(
                    tid, tkId, ChucNang.LopHocToanTrungTam, HanhDong.Xem, ct);
     }

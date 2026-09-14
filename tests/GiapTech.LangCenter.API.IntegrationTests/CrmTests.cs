@@ -715,7 +715,10 @@ public class CrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
             TenQuyen = "Chỉ khách hàng (tab tiền)", MoTa = "test",
             ChucNangs = new[]
             {
-                new { TenChucNang = ChucNang.KhachHang, HanhDongs = new[] { "Xem", "Them" } }
+                new { TenChucNang = ChucNang.KhachHang, HanhDongs = new[] { "Xem", "Them" } },
+                // `ChamSocKhachHang` tách khỏi `KhachHang` 14/09/2026 — người trực tổng đài
+                // vẫn cần đọc lịch sử chăm sóc, nên nhóm test phải có cả hai.
+                new { TenChucNang = ChucNang.ChamSocKhachHang, HanhDongs = new[] { "Xem" } }
             }
         });
         res.EnsureSuccessStatusCode();

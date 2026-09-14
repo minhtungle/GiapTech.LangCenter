@@ -53,7 +53,10 @@ public class BoKhuyetQuyenQuanTri(AppDbContext db, ILogger<BoKhuyetQuyenQuanTri>
         {
             foreach (var chucNang in ChucNang.TatCa)
             {
-                foreach (var hanhDong in Enum.GetValues<HanhDong>())
+                // `ThaoTacCua` chứ không mọi giá trị enum (14/09/2026): cấp ô không endpoint
+                // nào đọc chỉ làm ma trận của admin rối thêm, và với 14 thao tác thì số ô chết
+                // tăng gấp ba so với hồi 4 thao tác.
+                foreach (var hanhDong in ChucNang.ThaoTacCua(chucNang))
                 {
                     if (daCo.Contains((nhom.Id, chucNang, hanhDong))) continue;
 

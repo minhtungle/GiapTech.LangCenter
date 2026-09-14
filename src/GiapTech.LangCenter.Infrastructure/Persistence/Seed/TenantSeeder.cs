@@ -34,7 +34,14 @@ public class TenantSeeder(AppDbContext db, IPasswordHasher hasher, ICurrentTenan
         // nhờ vậy module thêm sau này tự thuộc về admin của trung tâm mới.
         var quyenQuanTri = ThemNhomQuyen(
             tenant.Id, NhomQuyenMacDinh.QuanTri, "Toàn quyền trên mọi chức năng",
-            ChucNang.TatCa.Select(cn => (cn, Enum.GetValues<HanhDong>())).ToArray());
+            // `ThaoTacCua` chứ không `Enum.GetValues<HanhDong>()` (sửa 14/09/2026): bản cũ cấp
+            // MỌI thao tác cho MỌI chức năng, kể cả những ô không endpoint nào đọc —
+            // `NhatKyHeThong.Xoa`, `HocOnline.Sua`… Admin trông như toàn quyền nhưng một phần
+            // quyền đó là ô chết, và người đọc ma trận không phân biệt được.
+            ChucNang.TatCa
+                .Select(cn => (cn, ChucNang.ThaoTacCua(cn).ToArray()))
+                .Where(x => x.Item2.Length > 0)
+                .ToArray());
 
         // Ba nhóm còn lại khai TƯỜNG MINH ma trận — xem NhomQuyenMacDinh.
         ThemNhomQuyen(tenant.Id, NhomQuyenMacDinh.GiaoVien,

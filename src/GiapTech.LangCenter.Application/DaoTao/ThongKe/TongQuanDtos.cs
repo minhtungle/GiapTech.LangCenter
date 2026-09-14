@@ -109,8 +109,11 @@ public class LayTongQuanHandler(
 
         // Hàng chờ chỉ có nghĩa với người ĐIỀU PHỐI được. Xem chú thích ở `ChoXepLop`.
         var duocXepLop = tenant.TenantId is { } tid && currentUser.TaiKhoanId is { } tkId
+                         // `XepLop.Duyet` chứ không `LopHoc.Sua` (14/09/2026): hàng chờ nay
+                         // là chức năng riêng. Dùng quyền cũ thì người có quyền sửa lớp nhưng
+                         // không được duyệt đơn vẫn thấy số chờ — rồi bấm vào nhận 403.
                          && await quyenService.CoQuyenAsync(
-                             tid, tkId, ChucNang.LopHoc, HanhDong.Sua, ct);
+                             tid, tkId, ChucNang.XepLop, HanhDong.Duyet, ct);
 
         var choXepLop = duocXepLop
             ? await db.YeuCauXepLops.CountAsync(

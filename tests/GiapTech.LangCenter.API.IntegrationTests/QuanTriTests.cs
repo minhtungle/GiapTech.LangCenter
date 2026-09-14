@@ -87,11 +87,31 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var quanTri = quyens.Single(q => q.GetProperty("tenQuyen").GetString() == "Quản trị viên");
 
-        // Nhóm quản trị phải phủ mọi chức năng, mỗi chức năng đủ 4 thao tác.
+        /*
+          Nhóm quản trị phủ mọi chức năng, mỗi chức năng đủ thao tác ĐƯỢC KHAI cho nó.
+
+          Từ 14/09/2026 ma trận là THƯA: mỗi chức năng có danh sách thao tác riêng
+          (`NhatKyHeThong` chỉ `Xem`, `LopHoc` có 7, `DoanhThu` có 6). Đòi mọi chức năng đủ
+          `soHanhDong` như bản cũ là đòi cấp cả những ô không endpoint nào đọc.
+        */
+        var thaoTacKhai = danhMuc.GetProperty("thaoTacTheoChucNang");
         var chucNangs = quanTri.GetProperty("chucNangs");
+
         Assert.Equal(soChucNang, chucNangs.GetArrayLength());
+
         foreach (var cn in chucNangs.EnumerateArray())
-            Assert.Equal(soHanhDong, cn.GetProperty("hanhDongs").GetArrayLength());
+        {
+            var ten = cn.GetProperty("tenChucNang").GetString()!;
+            var khai = thaoTacKhai.GetProperty(ten).GetArrayLength();
+            Assert.Equal(khai, cn.GetProperty("hanhDongs").GetArrayLength());
+        }
+
+        // `soHanhDong` vẫn là tổng số thao tác tồn tại — dùng để khẳng định ma trận THƯA thật:
+        // nếu mọi chức năng đều đủ mọi thao tác thì ta đã quay về bản cũ.
+        Assert.True(
+            chucNangs.EnumerateArray().Any(
+                cn => cn.GetProperty("hanhDongs").GetArrayLength() < soHanhDong),
+            "Mọi chức năng đều có đủ mọi thao tác — ma trận không còn thưa, ô chết quay lại.");
     }
 
     [Fact]

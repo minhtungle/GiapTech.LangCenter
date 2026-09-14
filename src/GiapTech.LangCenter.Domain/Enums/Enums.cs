@@ -30,12 +30,97 @@ public enum TrangThaiNhanSu
 /// Thao tác trong hệ phân quyền động (FR-05).
 /// Quyền hiệu lực = hợp của mọi nhóm quyền gán cho tài khoản.
 /// </summary>
+/// <summary>
+/// Thao tác trên một chức năng. Lưu vào `QUYEN_CHUC_NANG.hanh_dong` dưới dạng **số nguyên**.
+///
+/// ⚠️ **KHÔNG đổi giá trị số của mục đã có, không chèn giữa.** Quyền đang lưu trong DB trỏ tới
+/// con số, nên đổi 2 thành 3 là âm thầm biến quyền "Sửa" của mọi nhóm thành "Xoá". Thêm mục mới
+/// thì lấy số kế tiếp ở cuối dải của nó.
+///
+/// **Bốn thao tác cơ bản (0-3)** áp cho mọi chức năng kiểu CRUD.
+/// **Thao tác đặc thù (10+)** chỉ áp cho chức năng thật sự có việc đó — xem
+/// <see cref="Common.ChucNang.ThaoTacCua"/>. Mỗi cái sinh ra vì gộp vào 4 thao tác cơ bản sẽ
+/// buộc cấp chung hai việc khác hẳn nhau về mức nguy hiểm.
+/// </summary>
 public enum HanhDong
 {
+    // ---------- Cơ bản: 0-3, KHÔNG được đổi ----------
     Xem = 0,
     Them = 1,
     Sua = 2,
-    Xoa = 3
+    Xoa = 3,
+
+    // ---------- Đặc thù: 10+ ----------
+
+    /// <summary>
+    /// Duyệt / từ chối đơn từ hệ thống khác. Tách khỏi `Sua` vì duyệt một đơn xếp lớp là quyết
+    /// định **không đảo ngược được** và ảnh hưởng tới bên bán, khác hẳn sửa tên lớp.
+    /// </summary>
+    Duyet = 10,
+
+    /// <summary>
+    /// Chốt sổ — sau đó dữ liệu không sửa được nữa. Chốt buổi học sinh bản ghi **Vắng mặc
+    /// định** cho mọi người chưa điểm danh, hệ quả lan sang học phí và thống kê.
+    /// </summary>
+    Chot = 11,
+
+    /// <summary>
+    /// Vô hiệu hoá nhưng **giữ lịch sử** — khác `Xoa` (mất hẳn) và khác `Sua` (vẫn dùng được).
+    /// Huỷ lớp, huỷ buổi học. Ma trận 4 thao tác không diễn đạt được khái niệm này.
+    /// </summary>
+    Huy = 12,
+
+    /// <summary>Sinh hàng loạt bản ghi — sinh lịch tạo tới 500 buổi và xoá lịch cũ.</summary>
+    SinhLich = 13,
+
+    /// <summary>
+    /// Ghi nhận **tiền thật đã nhận**. Tách khỏi `Them` vì tạo một đơn hàng (cam kết) khác hẳn
+    /// ghi một phiếu thu (tiền đã vào) — việc thứ hai cần đối soát kế toán.
+    /// </summary>
+    ThuTien = 14,
+
+    /// <summary>Chấm điểm bài làm. Tách khỏi `Sua` vì điểm là thứ học viên nhìn vào.</summary>
+    Cham = 15,
+
+    /// <summary>
+    /// Thao tác trên dữ liệu **của chính mình** — tự điểm danh, nộp bài, đánh dấu đã học, gửi
+    /// nhận xét. Handler luôn lấy id người dùng **từ token**, không nhận từ client.
+    ///
+    /// Đây là thao tác của HỌC VIÊN. Trước đây nó chiếm ô `Them` trống của chức năng, nên
+    /// `DiemDanh.Them` (học viên tự điểm danh) nằm cùng chức năng với `DiemDanh.Sua` (giáo viên
+    /// ghi điểm danh cả lớp) — hai vai trò khác nhau trong một dòng ma trận.
+    /// </summary>
+    TuLam = 16,
+
+    /// <summary>
+    /// Đọc tệp nhạy cảm: hợp đồng, CCCD scan, sao kê. Tách khỏi `Xem` vì xem danh sách nhân sự
+    /// không đồng nghĩa được đọc hợp đồng của họ.
+    /// </summary>
+    DocTep = 17,
+
+    /// <summary>Tải lên / xoá tệp đính kèm. Tách khỏi `Sua` (sửa thông tin) và `Xoa` (xoá bản ghi).</summary>
+    QuanLyTep = 18,
+
+    /// <summary>
+    /// Sửa thứ liên quan trực tiếp tới dòng tiền: giá niêm yết, mã QR chuyển khoản. Tách vì đổi
+    /// QR nhận tiền không được cùng quyền với đổi logo.
+    /// </summary>
+    CauHinhTien = 19,
+
+    /// <summary>
+    /// Sửa **ma trận quyền** của một nhóm — leo thang đặc quyền không giới hạn. Tách khỏi `Sua`
+    /// (đổi tên nhóm) vì một endpoint duy nhất cho phép tự cấp mọi quyền cho nhóm của mình.
+    /// </summary>
+    CauHinhQuyen = 20,
+
+    /// <summary>Hoàn tất wizard — lớp rời trạng thái nháp, hiện với mọi người. Một chiều.</summary>
+    HoanTat = 21,
+
+    /// <summary>Xếp / gỡ nhân sự khỏi cơ cấu tổ chức. Tách khỏi `Sua` (đổi tên phòng ban).</summary>
+    XepNhanSu = 22,
+
+    /// <summary>Gửi yêu cầu xếp lớp từ CRM sang LMS (FR-21) — tách khỏi `Sua` đơn hàng.</summary>
+    GuiXepLop = 23
 }
 
 /// <summary>

@@ -701,34 +701,80 @@ const vi = {
     suaTieuDe: 'Sửa nhóm quyền',
     maTran: 'Ma trận quyền',
     chucNang: 'Chức năng',
+    phamViDuLieu: 'Phạm vi dữ liệu',
+    phamViGoiY:
+      'Những quyền này không mở thêm chức năng, mà mở rộng phần dữ liệu người dùng thấy '
+      + 'được. Không cấp: chỉ thấy lớp mình phụ trách. Cấp: thấy mọi lớp của trung tâm, kèm '
+      + 'hồ sơ và liên hệ của học viên trong đó.',
+    oCu:
+      'Nhóm này còn giữ quyền cũ không còn trong danh mục: {{ds}}. Lưu lại vẫn giữ nguyên, '
+      + 'nhưng chúng không có tác dụng — liên hệ quản trị hệ thống nếu cần dọn.',
   },
+  /**
+   * Nhãn thao tác trong ma trận phân quyền.
+   *
+   * Đây là chữ người quản trị đọc để quyết định tick hay không, nên đặt tên theo **việc thật
+   * trong nghiệp vụ**, không theo tên enum. `TuLam` dịch là "Tự làm (của mình)" chứ không
+   * "Tự làm" trần: cặp `Xem` / `TuLam` chính là chỗ dễ cấp sai nhất — `Xem` của
+   * `NhanXetBuoiHoc` nghĩa là đọc nhận xét của MỌI người.
+   *
+   * Thêm giá trị `HanhDong` mới ở backend thì PHẢI thêm khoá ở đây, nếu không màn phân quyền
+   * hiện tên enum thô (`check-i18n-keys.py` không quét được khoá động).
+   */
   hanhDong: {
     Xem: 'Xem',
     Them: 'Thêm',
     Sua: 'Sửa',
     Xoa: 'Xóa',
+    Duyet: 'Duyệt / từ chối',
+    Chot: 'Chốt sổ',
+    Huy: 'Hủy',
+    SinhLich: 'Sinh lịch học',
+    ThuTien: 'Thu tiền',
+    Cham: 'Chấm điểm',
+    TuLam: 'Tự làm (của mình)',
+    DocTep: 'Đọc tệp đính kèm',
+    QuanLyTep: 'Tải lên / xóa tệp',
+    CauHinhTien: 'Cấu hình thanh toán',
+    CauHinhQuyen: 'Cấu hình ma trận quyền',
+    HoanTat: 'Hoàn tất tạo lớp',
+    XepNhanSu: 'Xếp nhân sự vào phòng',
+    GuiXepLop: 'Gửi yêu cầu xếp lớp',
   },
   chucNang: {
-    TaiKhoan: 'Tài khoản',
+    TaiKhoan: 'Tài khoản đăng nhập',
+    HoSoNguoiDung: 'Hồ sơ người dùng',
     LopHoc: 'Lớp học',
+    GhiDanhLop: 'Ghi danh học viên vào lớp',
+    XepLop: 'Xếp lớp từ CRM',
     BuoiHoc: 'Buổi học',
     DiemDanh: 'Điểm danh',
+    NhanXetBuoiHoc: 'Nhận xét buổi học',
     BaiTap: 'Bài tập',
     BaiNopBaiTap: 'Bài nộp của học viên',
     BaiKiemTra: 'Bài kiểm tra',
     BaiLamKiemTra: 'Bài làm của học viên',
+    KhoaOnline: 'Khóa học trực tuyến (soạn nội dung)',
+    GhiDanhKhoaOnline: 'Cấp quyền học khóa trực tuyến',
+    HocOnline: 'Học trực tuyến',
     TaiLieu: 'Tài liệu',
     HocPhi: 'Học phí',
     ThongKe: 'Thống kê',
-    LopHocToanTrungTam: 'Xem mọi lớp của trung tâm',
+    LopHocToanTrungTam: 'Mọi lớp của trung tâm',
     NhatKyHeThong: 'Nhật ký hệ thống',
     PhanQuyen: 'Phân quyền',
     ThietLapChung: 'Thiết lập chung',
     Anh: 'Ảnh (logo, ảnh bìa, QR)',
     DoiMatKhauNguoiKhac: 'Đổi mật khẩu người khác',
-    NhanVienKinhDoanh: 'Nhân viên kinh doanh',
-    GiaoVienNhanSu: 'Giáo viên (nhân sự)',
+    NhanSu: 'Nhân sự',
+    ChucVu: 'Chức vụ',
+    PhongBan: 'Phòng ban',
     DoanhThu: 'Doanh thu',
+    ThongKeDoanhThu: 'Thống kê doanh thu',
+    KhachHang: 'Khách hàng',
+    ChamSocKhachHang: 'Chăm sóc khách hàng',
+    KhoaHoc: 'Khóa học',
+    SanPham: 'Sản phẩm',
   },
   heThong: {
     Hrm: 'HRM — Nhân sự',

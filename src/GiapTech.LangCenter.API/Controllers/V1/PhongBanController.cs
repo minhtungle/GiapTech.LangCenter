@@ -56,7 +56,7 @@ public class PhongBanController(ISender sender) : ControllerBase
     /// tạo ra bản ghi mới nào, chỉ đổi chỗ người đã có.
     /// </summary>
     [HttpPost("xep-nhan-su")]
-    [RequirePermission(ChucNang.PhongBan, HanhDong.Sua)]
+    [RequirePermission(ChucNang.PhongBan, HanhDong.XepNhanSu)]
     public async Task<IActionResult> XepNhanSu(
         [FromBody] XepNhanSuVaoPhongBanCommand command, CancellationToken ct)
     {

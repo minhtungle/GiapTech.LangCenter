@@ -19,6 +19,22 @@ public record DanhMucChucNangDto(
     IReadOnlyList<string> ChucNangs,
     IReadOnlyList<string> HanhDongs,
     /// <summary>
+    /// **Thao tác áp dụng cho từng chức năng** (14/09/2026) — `{ "LopHoc": ["Xem","Them",…] }`.
+    ///
+    /// Trước đây API chỉ trả danh sách thao tác CHUNG và màn phân quyền hiện đủ 4 ô cho mọi
+    /// chức năng, nên 31/108 ô bật cũng không làm gì. Nay UI dựng ma trận THƯA từ bảng này.
+    /// Chức năng có danh sách rỗng (chưa có API) không hiện.
+    /// </summary>
+    IReadOnlyDictionary<string, IReadOnlyList<HanhDong>> ThaoTacTheoChucNang,
+    /// <summary>
+    /// Chức năng thuộc loại **quyền phạm vi dữ liệu** — `[RequirePermission]` không đọc chúng.
+    ///
+    /// Tách để UI hiện thành nhóm riêng: cấp thiếu thì người dùng vào được màn nhưng thấy danh
+    /// sách rỗng, cấp thừa thì rò rỉ dữ liệu. Gộp chung với quyền gọi endpoint làm người cấu
+    /// hình không phân biệt được hai thứ hành xử khác nhau.
+    /// </summary>
+    IReadOnlyList<string> PhamViDuLieu,
+    /// <summary>
     /// Chức năng nhóm theo hệ thống, để màn phân quyền dựng tab HRM · CRM · LMS.
     ///
     /// Trả **nhóm sẵn từ backend** chứ không để frontend tự khai lại bản đồ: hai bản đồ ở hai
@@ -44,12 +60,24 @@ public class LayDanhMucChucNangHandler : IRequestHandler<LayDanhMucChucNangQuery
 {
     public Task<DanhMucChucNangDto> Handle(LayDanhMucChucNangQuery request, CancellationToken ct)
         => Task.FromResult(new DanhMucChucNangDto(
-            ChucNang.TatCa,
+            // Chỉ chức năng CÓ thao tác: cái nào chưa có API thì không hiện để không ai tick
+            // một ô vô nghĩa.
+            ChucNang.TatCa.Where(cn => ChucNang.ThaoTacCua(cn).Count > 0).ToList(),
             Enum.GetNames<HanhDong>(),
+            ChucNang.TatCa
+                .Where(cn => ChucNang.ThaoTacCua(cn).Count > 0)
+                .ToDictionary(cn => cn, ChucNang.ThaoTacCua),
+            ChucNang.PhamViDuLieu,
             [
                 ..Enum.GetValues<HeThong>()
-                    .Select(ht => new NhomHeThongDto(ht.ToString(), ChucNang.ChucNangCua(ht))),
-                new NhomHeThongDto("DungChung", ChucNang.DungChung, DungChung: true)
+                    .Select(ht => new NhomHeThongDto(
+                        ht.ToString(),
+                        ChucNang.ChucNangCua(ht)
+                            .Where(cn => ChucNang.ThaoTacCua(cn).Count > 0).ToList())),
+                new NhomHeThongDto(
+                    "DungChung",
+                    ChucNang.DungChung.Where(cn => ChucNang.ThaoTacCua(cn).Count > 0).ToList(),
+                    DungChung: true)
             ]));
 }
 

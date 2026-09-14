@@ -137,6 +137,11 @@ public class PhamViHocVienTests(ApiFactory factory) : IClassFixture<ApiFactory>
     ///
     /// `pham.Count == 1` trong handler là chốt chặn: `/nguoi-dung` không truyền `TrongCacLoai`
     /// nên không đi qua phép lọc, còn `/hoc-vien` truyền đúng `{HocVien}` nên có lọc.
+    ///
+    /// **Cập nhật 14/09/2026:** tách `HoSoNguoiDung` khỏi `TaiKhoan` nên `/nguoi-dung` nay gác
+    /// bằng `HoSoNguoiDung.Xem`. Giáo viên được cấp quyền đó trong nhóm mặc định — màn lớp học
+    /// cần liệt kê người để phân công và để thêm học viên MỚI vào lớp. Bỏ quyền này đi là giáo
+    /// viên không bao giờ thêm được ai chưa học lớp mình.
     /// </summary>
     [Fact]
     public async Task Giao_vien_van_chon_duoc_hoc_vien_moi_de_them_vao_lop()

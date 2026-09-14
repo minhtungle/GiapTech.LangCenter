@@ -1,3 +1,5 @@
+using GiapTech.LangCenter.Domain.Enums;
+
 namespace GiapTech.LangCenter.Domain.Common;
 
 /// <summary>
@@ -178,11 +180,67 @@ public static class ChucNang
     /// </summary>
     public const string NhatKyHeThong = nameof(NhatKyHeThong);
 
+    // ==================== Chức năng tách mới (14/09/2026) ====================
+    // Mỗi cái sinh ra vì một chức năng cũ đang gộp hai nhóm màn hình khác nhau, khiến không
+    // cấp được quyền cho một nhóm mà không cấp luôn cho nhóm kia.
+
+    /// <summary>
+    /// Hồ sơ con người ở màn Quản trị (`/nguoi-dung`) — **mọi vai trò**, không riêng học viên.
+    ///
+    /// Tách khỏi <see cref="TaiKhoan"/> (14/09/2026): trước đây cùng một quyền gác ba màn rất
+    /// khác nhau — hồ sơ học viên (LMS), hồ sơ mọi vai trò (Quản trị), và tài khoản đăng nhập.
+    /// Hệ quả: cấp `TaiKhoan.Them` cho người tuyển sinh để họ thêm học viên thì đồng thời cho
+    /// họ **tạo tài khoản đăng nhập** và **tạo người dùng vai trò bất kỳ** — `POST /nguoi-dung`
+    /// không có chốt `BaoDamLaHocVien` như `/hoc-vien`.
+    /// </summary>
+    public const string HoSoNguoiDung = nameof(HoSoNguoiDung);
+
+    /// <summary>
+    /// Lịch sử chăm sóc khách hàng (phễu bán hàng). Tách khỏi <see cref="KhachHang"/>: ghi một
+    /// lần gọi điện không cùng mức với sửa/xoá hồ sơ khách.
+    /// </summary>
+    public const string ChamSocKhachHang = nameof(ChamSocKhachHang);
+
+    /// <summary>
+    /// Thống kê doanh thu toàn trung tâm (FR-28) — theo cá nhân, đội nhóm, mặt hàng.
+    ///
+    /// Tách khỏi <see cref="DoanhThu"/>: `DoanhThu.Xem` cho xem đơn của một khách, còn đây là
+    /// **doanh số của cả đội**. Sale xem đơn khách mình không nên đồng nghĩa xem doanh số đồng
+    /// nghiệp. Thay cho <see cref="ThongKe"/> vốn không gác endpoint nào.
+    /// </summary>
+    public const string ThongKeDoanhThu = nameof(ThongKeDoanhThu);
+
+    /// <summary>
+    /// Ghi danh học viên vào lớp, kèm **học phí riêng từng người**. Tách khỏi
+    /// <see cref="LopHoc"/>: thêm người vào lớp là ghi dữ liệu tiền, khác sửa tên lớp.
+    /// </summary>
+    public const string GhiDanhLop = nameof(GhiDanhLop);
+
+    /// <summary>
+    /// Hàng chờ xếp lớp từ CRM (FR-21) — duyệt, từ chối, huỷ yêu cầu.
+    ///
+    /// Tách khỏi <see cref="LopHoc"/>: trước đây `GET /lop-hoc/cho-xep-lop` phải gác bằng
+    /// `LopHoc.Sua` vì DTO mang số tiền của đơn — một endpoint CHỈ ĐỌC buộc dùng quyền ghi,
+    /// làm trục `Xem` mất nghĩa. Nay `XepLop.Xem` cho xem hàng chờ, `XepLop.Duyet` cho quyết.
+    /// </summary>
+    public const string XepLop = nameof(XepLop);
+
+    /// <summary>
+    /// Nhận xét buổi học — học viên đánh giá buổi, giáo viên đọc.
+    ///
+    /// Tách khỏi <see cref="DiemDanh"/>: trước đây gửi nhận xét gác bằng `DiemDanh.Them`, một
+    /// quyền **vay mượn** vì nhóm Học viên tình cờ có nó. Không thể tắt tính năng nhận xét mà
+    /// vẫn cho tự điểm danh.
+    /// </summary>
+    public const string NhanXetBuoiHoc = nameof(NhanXetBuoiHoc);
+
     public static readonly IReadOnlyList<string> TatCa =
     [
-        TaiKhoan, PhanQuyen, ThietLapChung, Anh, DoiMatKhauNguoiKhac,
-        NhanSu, ChucVu, PhongBan, DoanhThu, KhachHang, KhoaHoc, SanPham,
-        LopHoc, BuoiHoc, DiemDanh, BaiTap, BaiNopBaiTap, BaiKiemTra, BaiLamKiemTra,
+        TaiKhoan, HoSoNguoiDung, PhanQuyen, ThietLapChung, Anh, DoiMatKhauNguoiKhac,
+        NhanSu, ChucVu, PhongBan,
+        DoanhThu, ThongKeDoanhThu, KhachHang, ChamSocKhachHang, KhoaHoc, SanPham,
+        LopHoc, GhiDanhLop, XepLop, BuoiHoc, DiemDanh, NhanXetBuoiHoc,
+        BaiTap, BaiNopBaiTap, BaiKiemTra, BaiLamKiemTra,
         KhoaOnline, GhiDanhKhoaOnline, HocOnline,
         TaiLieu, HocPhi, ThongKe, LopHocToanTrungTam, NhatKyHeThong
     ];
@@ -204,11 +262,16 @@ public static class ChucNang
         [PhongBan] = HeThong.Hrm,
 
         [DoanhThu] = HeThong.Crm,
+        [ThongKeDoanhThu] = HeThong.Crm,
+        [ChamSocKhachHang] = HeThong.Crm,
         [KhachHang] = HeThong.Crm,
         [KhoaHoc] = HeThong.Crm,
         [SanPham] = HeThong.Crm,
 
         [LopHoc] = HeThong.Lms,
+        [GhiDanhLop] = HeThong.Lms,
+        [XepLop] = HeThong.Lms,
+        [NhanXetBuoiHoc] = HeThong.Lms,
         [BuoiHoc] = HeThong.Lms,
         [DiemDanh] = HeThong.Lms,
         [BaiTap] = HeThong.Lms,
@@ -224,13 +287,120 @@ public static class ChucNang
         [LopHocToanTrungTam] = HeThong.Lms
     };
 
+    /// <summary>Bốn thao tác cơ bản — phần lớn chức năng CRUD dùng nguyên bộ này.</summary>
+    private static readonly HanhDong[] Crud =
+        [HanhDong.Xem, HanhDong.Them, HanhDong.Sua, HanhDong.Xoa];
+
+    /// <summary>
+    /// **Thao tác nào áp cho chức năng nào** — nguồn sự thật DUY NHẤT cho ma trận phân quyền
+    /// (14/09/2026).
+    ///
+    /// Trước đây màn phân quyền hiện **mọi thao tác cho mọi chức năng** (`Enum.GetNames`), nên
+    /// 31/108 ô bật cũng không làm gì: `NhatKyHeThong.Xoa` (nhật ký không xoá được),
+    /// `ChucVu.Xem` (bị `NhanSu.Xem` thay), `HocOnline.Sua`… Người cấu hình quyền không có cách
+    /// nào biết ô nào có tác dụng.
+    ///
+    /// **Quy tắc khi thêm chức năng mới:** khai ở đây danh sách thao tác nó THẬT SỰ có endpoint
+    /// dùng. Thiếu khai thì `MoiChucNangPhaiKhaiThaoTacTests` đỏ ngay.
+    /// </summary>
+    private static readonly Dictionary<string, HanhDong[]> ThaoTacTheoChucNang = new()
+    {
+        // ---------- Dùng chung ----------
+        [TaiKhoan] = Crud,
+        [HoSoNguoiDung] = Crud,
+        // `Sua` bỏ: endpoint PUT duy nhất của nhóm quyền vừa đổi tên vừa ghi lại ma trận, nên
+        // nó phải là `CauHinhQuyen` — thao tác nguy hiểm hơn. Giữ `Sua` là khai một ô chết.
+        [PhanQuyen] = [HanhDong.Xem, HanhDong.Them, HanhDong.CauHinhQuyen, HanhDong.Xoa],
+        [ThietLapChung] = [HanhDong.Xem, HanhDong.Sua, HanhDong.CauHinhTien],
+        // `Anh` không có `Sua`: ảnh và tệp đính kèm chỉ tải lên mới hoặc xoá, không sửa tại chỗ.
+        [Anh] = [HanhDong.Xem, HanhDong.Them, HanhDong.Xoa],
+        [DoiMatKhauNguoiKhac] = [HanhDong.Sua],
+        // Nhật ký do hệ thống tự ghi và KHÔNG BAO GIỜ sửa/xoá — sửa được thì không còn là nhật ký.
+        [NhatKyHeThong] = [HanhDong.Xem],
+
+        // ---------- HRM ----------
+        [NhanSu] = [HanhDong.Xem, HanhDong.Them, HanhDong.Sua, HanhDong.Xoa,
+                    HanhDong.DocTep, HanhDong.QuanLyTep],
+        // `ChucVu` không có `Xem`: danh mục chức vụ đọc kèm màn nhân sự, gác bằng `NhanSu.Xem`.
+        [ChucVu] = [HanhDong.Them, HanhDong.Sua, HanhDong.Xoa],
+        [PhongBan] = [HanhDong.Xem, HanhDong.Them, HanhDong.Sua, HanhDong.Xoa,
+                      HanhDong.XepNhanSu],
+
+        // ---------- CRM ----------
+        [DoanhThu] = [HanhDong.Xem, HanhDong.Them, HanhDong.Sua, HanhDong.Xoa,
+                      HanhDong.ThuTien, HanhDong.GuiXepLop],
+        [ThongKeDoanhThu] = [HanhDong.Xem],
+        [KhachHang] = Crud,
+        [ChamSocKhachHang] = Crud,
+        // KHÔNG tách `CauHinhTien` ở đây dù giá là dữ liệu tiền: `LuuKhoaHocCommand` ghi tên,
+        // ghi chú và giá trong MỘT lệnh, nên attribute không tách được hai việc đó. Muốn tách
+        // thật thì phải tách lệnh trước — ghi vào nợ kỹ thuật, đừng khai một ô không gác gì.
+        [KhoaHoc] = Crud,
+        [SanPham] = Crud,
+
+        // ---------- LMS ----------
+        [LopHoc] = [HanhDong.Xem, HanhDong.Them, HanhDong.Sua, HanhDong.Xoa,
+                    HanhDong.HoanTat, HanhDong.Huy, HanhDong.SinhLich],
+        // Ghi danh không có `Sua`: đổi học phí áp dụng là gỡ rồi thêm lại để còn dấu vết.
+        [GhiDanhLop] = [HanhDong.Xem, HanhDong.Them, HanhDong.Xoa],
+        [XepLop] = [HanhDong.Xem, HanhDong.Duyet],
+        [BuoiHoc] = [HanhDong.Xem, HanhDong.Them, HanhDong.Sua, HanhDong.Xoa, HanhDong.Huy],
+        // `DiemDanh` không có `Them`/`Xoa`: bản ghi điểm danh sinh ra cùng buổi học, và xoá
+        // điểm danh không phải nghiệp vụ — sai thì ghi lại.
+        [DiemDanh] = [HanhDong.Xem, HanhDong.Sua, HanhDong.Chot, HanhDong.TuLam],
+        // `Xem` = đọc nhận xét của MỌI người trong buổi (quyền giáo viên).
+        // `TuLam` = gửi và đọc lại nhận xét của CHÍNH MÌNH (quyền học viên).
+        // Cấp `Xem` cho học viên là cho họ đọc phản hồi của bạn cùng lớp.
+        [NhanXetBuoiHoc] = [HanhDong.Xem, HanhDong.TuLam],
+        [BaiTap] = Crud,
+        [BaiNopBaiTap] = [HanhDong.Xem, HanhDong.TuLam, HanhDong.Cham],
+        // `Xem` ở đây KHÔNG gác endpoint nào (endpoint đọc gác bằng `HocOnline.Xem` để học
+        // viên đọc được mà không soạn được) — nó là quyền PHẠM VI: `PhamViKhoaOnline.LocKhoa`
+        // đọc nó để quyết định thấy MỌI khoá (kể cả nháp của người khác) hay chỉ khoá mình
+        // được ghi danh. Bỏ nó đi thì không ai là người soạn nội dung nữa, và khoá vừa tạo
+        // biến mất khỏi màn của chính người tạo (E2E `khoa-online.spec.ts` bắt được).
+        [KhoaOnline] = [HanhDong.Xem, HanhDong.Them, HanhDong.Sua, HanhDong.Xoa],
+        [GhiDanhKhoaOnline] = Crud,
+        [HocOnline] = [HanhDong.Xem, HanhDong.TuLam],
+        [TaiLieu] = Crud,
+        [HocPhi] = [HanhDong.Xem, HanhDong.ThuTien, HanhDong.Sua, HanhDong.Xoa],
+
+        // Chưa có API — giữ hằng để seeder cũ không vỡ, nhưng KHÔNG hiện trên màn phân quyền.
+        [BaiKiemTra] = [],
+        [BaiLamKiemTra] = [],
+        [ThongKe] = [],
+
+        // Quyền PHẠM VI, không phải quyền gọi endpoint — xem `PhamViDuLieu`.
+        [LopHocToanTrungTam] = [HanhDong.Xem, HanhDong.Sua]
+    };
+
+    /// <summary>
+    /// Thao tác áp dụng cho một chức năng. Rỗng = chức năng chưa có API, không hiện trên màn
+    /// phân quyền.
+    /// </summary>
+    public static IReadOnlyList<HanhDong> ThaoTacCua(string chucNang) =>
+        ThaoTacTheoChucNang.TryGetValue(chucNang, out var ds) ? ds : Crud;
+
+    /// <summary>
+    /// Chức năng thuộc loại **quyền phạm vi dữ liệu**, không phải quyền gọi endpoint.
+    ///
+    /// Khác biệt quan trọng với mọi ô còn lại: `[RequirePermission]` không bao giờ đọc chúng.
+    /// Chúng được `IPhamViLopHoc` / `IPhamViHocVien` đọc để quyết định **thấy bao nhiêu hàng**
+    /// — "lớp mình dạy" hay "toàn trung tâm". Cấp thiếu thì người dùng vào được màn nhưng thấy
+    /// danh sách rỗng; cấp thừa thì rò rỉ dữ liệu (đúng nợ N14).
+    ///
+    /// Màn phân quyền hiện chúng thành nhóm riêng để người cấu hình không nhầm với quyền gọi.
+    /// </summary>
+    public static readonly IReadOnlyList<string> PhamViDuLieu = [LopHocToanTrungTam];
+
     /// <summary>
     /// Chức năng quản trị dùng chung cho cả ba hệ thống — hiện ở sidebar của hệ thống nào cũng
     /// được, miễn người dùng có quyền.
     /// </summary>
     public static readonly IReadOnlyList<string> DungChung =
     [
-        TaiKhoan, PhanQuyen, ThietLapChung, Anh, DoiMatKhauNguoiKhac, NhatKyHeThong
+        TaiKhoan, HoSoNguoiDung, PhanQuyen, ThietLapChung, Anh, DoiMatKhauNguoiKhac,
+        NhatKyHeThong
     ];
 
     /// <summary>

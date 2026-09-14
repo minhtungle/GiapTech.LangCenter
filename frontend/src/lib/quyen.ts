@@ -2,8 +2,35 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from './api'
 import { useAuth } from './auth'
 
-/** Bốn thao tác của hệ phân quyền động — khớp enum `HanhDong` ở backend. */
-export type HanhDong = 'Xem' | 'Them' | 'Sua' | 'Xoa'
+/**
+ * Thao tác của hệ phân quyền động — khớp enum `HanhDong` ở backend.
+ *
+ * Khai tường minh (không dùng `string`) là có chủ ý: `coQuyen('LopHoc', 'HoanTat')` viết sai
+ * thành `'HoanThanh'` sẽ chỉ trả false — **ẩn nút thay vì mở nút**, nên không phải lỗ bảo mật,
+ * nhưng là lỗi rất khó thấy (nút biến mất mà không ai báo gì). Kiểu này chặn ngay lúc biên dịch.
+ *
+ * Thêm giá trị ở `Domain/Enums/Enums.cs` thì thêm cả ở đây và ở nhãn `hanhDong` trong
+ * `i18n.ts` — canh bởi `scripts/check-nhan-phan-quyen.py`.
+ */
+export type HanhDong =
+  | 'Xem'
+  | 'Them'
+  | 'Sua'
+  | 'Xoa'
+  | 'Duyet'
+  | 'Chot'
+  | 'Huy'
+  | 'SinhLich'
+  | 'ThuTien'
+  | 'Cham'
+  | 'TuLam'
+  | 'DocTep'
+  | 'QuanLyTep'
+  | 'CauHinhTien'
+  | 'CauHinhQuyen'
+  | 'HoanTat'
+  | 'XepNhanSu'
+  | 'GuiXepLop'
 
 /**
  * Tên chức năng. Không khai enum đầy đủ 16 giá trị: danh sách này thay đổi theo backend, và

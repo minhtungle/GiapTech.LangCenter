@@ -57,7 +57,7 @@ public class LopHocController(ISender sender) : ControllerBase
 
     /// <summary>Hoàn tất wizard: lớp rời trạng thái nháp và hiện với mọi người liên quan.</summary>
     [HttpPost("{id:guid}/hoan-tat")]
-    [RequirePermission(ChucNang.LopHoc, HanhDong.Sua)]
+    [RequirePermission(ChucNang.LopHoc, HanhDong.HoanTat)]
     public async Task<IActionResult> HoanTat(
         Guid id, [FromBody] HoanTatBody body, CancellationToken ct)
     {
@@ -69,7 +69,7 @@ public class LopHocController(ISender sender) : ControllerBase
 
     /// <summary>Huỷ lớp — giữ toàn bộ lịch sử, khác hẳn xoá.</summary>
     [HttpPost("{id:guid}/huy")]
-    [RequirePermission(ChucNang.LopHoc, HanhDong.Sua)]
+    [RequirePermission(ChucNang.LopHoc, HanhDong.Huy)]
     public async Task<IActionResult> Huy(Guid id, CancellationToken ct)
     {
         await sender.Send(new HuyLopHocCommand(id), ct);
@@ -102,7 +102,7 @@ public class LopHocController(ISender sender) : ControllerBase
     /// wizard — tạo được lớp nhưng không sinh được lịch.
     /// </summary>
     [HttpPost("{id:guid}/sinh-lich")]
-    [RequirePermission(ChucNang.LopHoc, HanhDong.Sua)]
+    [RequirePermission(ChucNang.LopHoc, HanhDong.SinhLich)]
     public async Task<ActionResult<List<Application.DaoTao.BuoiHoc.BuoiHocDto>>> SinhLich(
         Guid id, [FromBody] SinhLichBody body, CancellationToken ct)
         => Ok(await sender.Send(new Application.DaoTao.BuoiHoc.SinhLichChoLopCommand(
@@ -141,13 +141,13 @@ public class LopHocController(ISender sender) : ControllerBase
         string? PhongHoc = null, string? LinkHoc = null, string? GhiChu = null);
 
     [HttpGet("{id:guid}/hoc-vien")]
-    [RequirePermission(ChucNang.LopHoc, HanhDong.Xem)]
+    [RequirePermission(ChucNang.GhiDanhLop, HanhDong.Xem)]
     public async Task<ActionResult<List<HocVienTrongLopDto>>> HocVien(
         Guid id, CancellationToken ct)
         => Ok(await sender.Send(new LayHocVienTrongLopQuery(id), ct));
 
     [HttpPost("{id:guid}/hoc-vien")]
-    [RequirePermission(ChucNang.LopHoc, HanhDong.Sua)]
+    [RequirePermission(ChucNang.GhiDanhLop, HanhDong.Them)]
     public async Task<IActionResult> ThemHocVien(
         Guid id, [FromBody] ThemHocVienBody body, CancellationToken ct)
     {
@@ -159,7 +159,7 @@ public class LopHocController(ISender sender) : ControllerBase
     public record ThemHocVienBody(List<Guid> HocVienIds, decimal? HocPhiApDung = null);
 
     [HttpDelete("{id:guid}/hoc-vien/{hocVienId:guid}")]
-    [RequirePermission(ChucNang.LopHoc, HanhDong.Sua)]
+    [RequirePermission(ChucNang.GhiDanhLop, HanhDong.Xoa)]
     public async Task<IActionResult> GoHocVien(Guid id, Guid hocVienId, CancellationToken ct)
     {
         await sender.Send(new GoHocVienKhoiLopCommand(id, hocVienId), ct);
@@ -176,7 +176,7 @@ public class LopHocController(ISender sender) : ControllerBase
     /// <see cref="ChucNang.LopHoc"/> sửa, tức đã được xem học phí lớp.
     /// </summary>
     [HttpGet("cho-xep-lop")]
-    [RequirePermission(ChucNang.LopHoc, HanhDong.Sua)]
+    [RequirePermission(ChucNang.XepLop, HanhDong.Xem)]
     public async Task<ActionResult<KetQuaTrang<YeuCauXepLopDto>>> ChoXepLop(
         [FromQuery] TrangThaiYeuCauXepLop? trangThai,
         [FromQuery] Guid? khoaHocId,
@@ -192,7 +192,7 @@ public class LopHocController(ISender sender) : ControllerBase
     /// chọn lớp, hoặc từ trong lớp chọn người chờ.
     /// </summary>
     [HttpPost("{id:guid}/duyet-cho-xep-lop")]
-    [RequirePermission(ChucNang.LopHoc, HanhDong.Sua)]
+    [RequirePermission(ChucNang.XepLop, HanhDong.Duyet)]
     public async Task<IActionResult> DuyetVaoLop(
         Guid id, [FromBody] DuyetVaoLopBody body, CancellationToken ct)
     {
@@ -212,7 +212,7 @@ public class LopHocController(ISender sender) : ControllerBase
     /// Từ chối rồi thì người bán bổ sung thông tin và gửi lại (lần gửi mới).
     /// </summary>
     [HttpPost("cho-xep-lop/{yeuCauId:guid}/tu-choi")]
-    [RequirePermission(ChucNang.LopHoc, HanhDong.Sua)]
+    [RequirePermission(ChucNang.XepLop, HanhDong.Duyet)]
     public async Task<IActionResult> TuChoiXepLop(
         Guid yeuCauId, [FromBody] TuChoiBody body, CancellationToken ct)
     {
@@ -223,7 +223,7 @@ public class LopHocController(ISender sender) : ControllerBase
     public record TuChoiBody(string LyDo);
 
     [HttpDelete("cho-xep-lop/{yeuCauId:guid}")]
-    [RequirePermission(ChucNang.LopHoc, HanhDong.Sua)]
+    [RequirePermission(ChucNang.XepLop, HanhDong.Duyet)]
     public async Task<IActionResult> HuyYeuCauXepLop(Guid yeuCauId, CancellationToken ct)
     {
         await sender.Send(new HuyYeuCauXepLopCommand(yeuCauId), ct);

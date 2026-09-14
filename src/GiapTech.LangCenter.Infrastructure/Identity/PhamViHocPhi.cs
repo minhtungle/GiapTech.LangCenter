@@ -39,7 +39,11 @@ public class PhamViHocPhi(IQuyenService quyenService, ICurrentTenant tenant, ICu
     public Task<bool> DuocXemTienCuaLop(CancellationToken ct)
         => ThayToanBoSo(HanhDong.Xem, ct);
 
-    public Task<bool> DuocGhiSo(CancellationToken ct) => ThayToanBoSo(HanhDong.Them, ct);
+    // `ThuTien` chứ không `Them` (14/09/2026): endpoint POST /hoc-phi nay gác bằng
+    // `HocPhi.ThuTien`, và `Them` đã bỏ khỏi bảng khai. Để `Them` ở đây thì hai tầng lệch
+    // nhau — attribute cho qua nhưng tầng phạm vi chặn, và người dùng nhận lỗi "không đủ
+    // quyền" cho một quyền không tồn tại trên màn phân quyền.
+    public Task<bool> DuocGhiSo(CancellationToken ct) => ThayToanBoSo(HanhDong.ThuTien, ct);
 
     public async Task<IQueryable<LopHocHocVien>> LocHocVienTrongLop(
         IQueryable<LopHocHocVien> nguon, CancellationToken ct)

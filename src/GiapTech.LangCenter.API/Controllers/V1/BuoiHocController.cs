@@ -34,8 +34,17 @@ public class BuoiHocController(ISender sender) : ControllerBase
     /// Nhận xét học viên gửi về buổi này. Học viên chỉ thấy nhận xét CỦA MÌNH — lọc trong
     /// handler, xem `LayNhanXetBuoiHocHandler`.
     /// </summary>
+    /// <summary>
+    /// Nhận xét về buổi học. Gác bằng thao tác HẸP NHẤT (`TuLam` — ai gửi được thì đọc lại
+    /// được), còn "đọc nhận xét của MỌI người" do handler quyết bằng `NhanXetBuoiHoc.Xem`.
+    ///
+    /// Vì sao không gác bằng `Xem`: endpoint phục vụ cả hai vai trò, mà `[RequirePermission]`
+    /// chỉ nhận MỘT quyền. Gác bằng quyền rộng thì học viên nhận 403; gác bằng quyền hẹp rồi
+    /// lọc ở handler thì cả hai vào được và mỗi người thấy đúng phần của mình — cùng khuôn đã
+    /// dùng cho sổ học phí (`IPhamViHocPhi`).
+    /// </summary>
     [HttpGet("{id:guid}/nhan-xet")]
-    [RequirePermission(ChucNang.BuoiHoc, HanhDong.Xem)]
+    [RequirePermission(ChucNang.NhanXetBuoiHoc, HanhDong.TuLam)]
     public async Task<ActionResult<List<Application.DaoTao.NhanXet.NhanXetBuoiHocDto>>> NhanXet(
         Guid id, CancellationToken ct)
         => Ok(await sender.Send(
@@ -49,7 +58,7 @@ public class BuoiHocController(ISender sender) : ControllerBase
     /// thì bị chặn ở handler vì họ không phải học viên đang học của lớp.
     /// </summary>
     [HttpPost("{id:guid}/nhan-xet")]
-    [RequirePermission(ChucNang.DiemDanh, HanhDong.Them)]
+    [RequirePermission(ChucNang.NhanXetBuoiHoc, HanhDong.TuLam)]
     public async Task<ActionResult<Guid>> GuiNhanXet(
         Guid id, [FromBody] GuiNhanXetBody body, CancellationToken ct)
         => Ok(await sender.Send(new Application.DaoTao.NhanXet.GuiNhanXetBuoiHocCommand(
@@ -80,7 +89,7 @@ public class BuoiHocController(ISender sender) : ControllerBase
     }
 
     [HttpPost("{id:guid}/huy")]
-    [RequirePermission(ChucNang.BuoiHoc, HanhDong.Sua)]
+    [RequirePermission(ChucNang.BuoiHoc, HanhDong.Huy)]
     public async Task<IActionResult> Huy(Guid id, CancellationToken ct)
     {
         await sender.Send(new HuyBuoiHocCommand(id), ct);
@@ -107,7 +116,7 @@ public class BuoiHocController(ISender sender) : ControllerBase
 
     /// <summary>Chốt buổi: sinh đủ bản ghi cho người chưa điểm danh, mặc định Vắng.</summary>
     [HttpPost("{id:guid}/chot")]
-    [RequirePermission(ChucNang.DiemDanh, HanhDong.Sua)]
+    [RequirePermission(ChucNang.DiemDanh, HanhDong.Chot)]
     public async Task<IActionResult> Chot(Guid id, CancellationToken ct)
     {
         await sender.Send(new ChotBuoiHocCommand(id), ct);
@@ -119,7 +128,7 @@ public class BuoiHocController(ISender sender) : ControllerBase
     /// danh hộ người khác dù có quyền.
     /// </summary>
     [HttpPost("{id:guid}/tu-diem-danh")]
-    [RequirePermission(ChucNang.DiemDanh, HanhDong.Them)]
+    [RequirePermission(ChucNang.DiemDanh, HanhDong.TuLam)]
     public async Task<IActionResult> TuDiemDanh(Guid id, CancellationToken ct)
     {
         await sender.Send(new TuDiemDanhCommand(id), ct);

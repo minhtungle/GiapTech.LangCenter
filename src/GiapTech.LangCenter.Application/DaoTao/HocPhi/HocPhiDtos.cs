@@ -162,7 +162,7 @@ public class ThuHocPhiHandler(IAppDbContext db, IPhamViHocPhi phamVi, ICurrentUs
         // Ghi sổ thu đi qua ĐÚNG cổng với sửa/xoá sổ. Không dùng phạm vi lớp ở đây: giáo viên
         // sửa được lớp mình dạy, nhưng học phí là quan hệ giữa học viên và trung tâm.
         if (!await phamVi.DuocGhiSo(ct))
-            throw new KhongDuQuyenException(ChucNang.HocPhi, HanhDong.Them.ToString());
+            throw new KhongDuQuyenException(ChucNang.HocPhi, HanhDong.ThuTien.ToString());
 
         // Lớp phải tồn tại trong tenant — Query Filter lo phần chéo trung tâm.
         if (!await db.LopHocs.AnyAsync(l => l.Id == request.LopHocId, ct))

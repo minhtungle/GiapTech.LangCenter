@@ -80,7 +80,9 @@ public class QuyenCuaToiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Contains("HocPhi:Xem", q);
         Assert.Contains("LopHocToanTrungTam:Xem", q);
         Assert.Contains("TaiKhoan:Them", q);
-        Assert.Contains("PhanQuyen:Sua", q);
+        // `CauHinhQuyen` chứ không `Sua` (14/09/2026): endpoint PUT nhóm quyền vừa đổi tên
+        // vừa ghi lại ma trận, nên nó phải là thao tác nguy hiểm hơn — leo thang đặc quyền.
+        Assert.Contains("PhanQuyen:CauHinhQuyen", q);
     }
 
     /// <summary>

@@ -111,7 +111,7 @@ public class NhanSuController(ISender sender) : ControllerBase
     /// Gác bằng `Sua` chứ không `Them`: không tạo hồ sơ mới, chỉ bổ sung vào hồ sơ đã có.
     /// </summary>
     [HttpPost("{id:guid}/tep")]
-    [RequirePermission(ChucNang.NhanSu, HanhDong.Sua)]
+    [RequirePermission(ChucNang.NhanSu, HanhDong.QuanLyTep)]
     [RequestSizeLimit(25 * 1024 * 1024)]
     public async Task<ActionResult<TepHoSoDaTaiDto>> TaiTep(
         Guid id, IFormFile tep, CancellationToken ct)
@@ -136,7 +136,7 @@ public class NhanSuController(ISender sender) : ControllerBase
     /// nhánh nào chạy script; `X-Content-Type-Options: nosniff` chặn trình duyệt tự đoán lại.
     /// </summary>
     [HttpGet("tep/{tepId:guid}")]
-    [RequirePermission(ChucNang.NhanSu, HanhDong.Xem)]
+    [RequirePermission(ChucNang.NhanSu, HanhDong.DocTep)]
     public async Task<IActionResult> XemTep(
         Guid tepId, [FromQuery] bool taiVe, CancellationToken ct)
     {
@@ -152,7 +152,7 @@ public class NhanSuController(ISender sender) : ControllerBase
     }
 
     [HttpDelete("tep/{tepId:guid}")]
-    [RequirePermission(ChucNang.NhanSu, HanhDong.Sua)]
+    [RequirePermission(ChucNang.NhanSu, HanhDong.QuanLyTep)]
     public async Task<IActionResult> XoaTep(Guid tepId, CancellationToken ct)
     {
         await sender.Send(new XoaTepHoSoCommand(tepId), ct);

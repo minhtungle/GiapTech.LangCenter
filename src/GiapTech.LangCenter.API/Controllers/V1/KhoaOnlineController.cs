@@ -103,7 +103,7 @@ public class KhoaOnlineController(ISender sender) : ControllerBase
     /// độ của chính mình, cùng khuôn với tự điểm danh (FR-10).
     /// </summary>
     [HttpPost("bai-hoc/{baiHocId:guid}/da-hoc")]
-    [RequirePermission(ChucNang.HocOnline, HanhDong.Them)]
+    [RequirePermission(ChucNang.HocOnline, HanhDong.TuLam)]
     public async Task<IActionResult> DanhDauDaHoc(Guid baiHocId, CancellationToken ct)
     {
         await sender.Send(new DanhDauDaHocCommand(baiHocId), ct);

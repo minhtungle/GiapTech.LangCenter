@@ -8,6 +8,62 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — ma trận phân quyền theo thao tác THẬT (14/09/2026)
+
+Yêu cầu: *"tôi cần đầy đủ danh sách chức năng kèm thao tác thực tế trong chức năng đó chứ
+không chỉ thêm sửa xóa xem cơ bản, các quyền cần thực tế, chính xác để phân quyền chặt chẽ"*.
+
+**Vấn đề:** màn phân quyền hiện đủ bốn ô `Xem · Thêm · Sửa · Xoá` cho mọi chức năng, nên **31
+trên 108 ô tick cũng không làm gì** (`NhatKyHeThong.Xoa` — nhật ký chỉ ghi thêm; `ChucVu.Xem` —
+bị `NhanSu.Xem` thay; `HocOnline.Sua`…). Người cấu hình không biết ô nào có tác dụng nên tick
+bừa cho chắc. Đồng thời bốn ô CRUD không diễn đạt nổi nghiệp vụ: "chốt buổi học" và "sửa điểm
+danh" đều mượn `Sua`, nên không tách được quyền giáo viên chính với trợ giảng.
+
+**14 thao tác đặc thù mới** (`enum HanhDong`, số ≥ 10 — giá trị 0–3 giữ nguyên vì DB lưu số
+nguyên): `Duyet` `Chot` `Huy` `SinhLich` `ThuTien` `Cham` `TuLam` `DocTep` `QuanLyTep`
+`CauHinhTien` `CauHinhQuyen` `HoanTat` `XepNhanSu` `GuiXepLop`.
+
+**6 chức năng mới** tách từ chức năng đang bị dùng chung: `HoSoNguoiDung` (tách khỏi
+`TaiKhoan` — người sống lâu hơn tài khoản), `GhiDanhLop`, `XepLop`, `NhanXetBuoiHoc`,
+`ChamSocKhachHang`, `ThongKeDoanhThu`.
+
+**Ma trận nay THƯA:** `ChucNang.ThaoTacTheoChucNang` khai từng chức năng có đúng thao tác nào;
+UI chỉ hiện bấy nhiêu ô, ô không áp dụng để **trống** (không phải checkbox mờ). **540 → 106 ô.**
+
+**Sửa lỗi rò rỉ kèm theo:** học viên trước đây có `NhanXetBuoiHoc.Xem`, nhưng handler dùng
+quyền đó với nghĩa "đọc nhận xét của MỌI người" — tức học viên đọc được phản hồi riêng của bạn
+cùng lớp. Nay học viên chỉ có `TuLam`; endpoint `GET /buoi-hoc/{id}/nhan-xet` gác bằng `TuLam`
+(thao tác hẹp nhất) và handler đọc thêm `Xem` để quyết định phạm vi.
+
+**`PhanQuyen.Sua` → `CauHinhQuyen`:** frontend còn kiểm quyền `Sua` không còn tồn tại, nên nút
+Sửa nhóm quyền bị ẩn với mọi người.
+
+**Quyền phạm vi dữ liệu tách thành nhóm riêng** trên UI (`ChucNang.PhamViDuLieu`): nó không
+chặn endpoint mà mở rộng tập dữ liệu thấy được — cấp thừa thì rò rỉ **mà không có lỗi nào
+hiện ra**. Trộn chung một bảng làm người cấu hình không phân biệt được hai hành xử.
+
+**Dọn 57 hàng quyền chết** trong `QUYEN_CHUC_NANG` bằng `scripts/don-quyen-o-chet.sql` — chạy
+tay, không tự động lúc khởi động (xoá dữ liệu đang có, quy tắc #1). Nhóm quản trị vẫn đủ 106 ô.
+
+**Từ nay chức năng mới phải khai quyền trong cùng PR** (quy tắc #9 mở rộng, mục 11 của
+`quy-uoc-code.md`). Bốn chốt chặn tự động:
+
+| Canh gì | Ở đâu |
+|---|---|
+| Endpoint gác bằng quyền chưa khai → 403 cho cả quản trị | `MaTranQuyenPhaiKhopThucTeTests` |
+| Quyền đã khai mà không endpoint nào dùng (ô chết) | *(chiều ngược, cùng file)* |
+| Nhóm mặc định cấp ô màn phân quyền không hiện | *(cùng file)* |
+| Thiếu nhãn tiếng Việt / thiếu giá trị trong kiểu TS | `scripts/check-nhan-phan-quyen.py` |
+
+**Một lỗi tự gây ra và đã vá:** tôi xoá `KhoaOnline.Xem` vì test "ô chết" báo không endpoint
+nào dùng — nhưng nó là quyền **phạm vi**, `PhamViKhoaOnline.LocKhoa` đọc để phân biệt người
+soạn với người học. Mất nó thì khoá vừa tạo biến mất khỏi màn của chính người tạo. 489 test
+backend xanh hết, chỉ E2E bắt được; nay có test canh riêng quét `CoQuyenAsync` ở tầng phạm vi.
+
+Test: +11 backend (490 tổng), 24 E2E xanh. Mọi test mới đều thử đột biến, kể cả đột biến làm
+hỏng chính regex đọc mã nguồn — test đọc mã nguồn mà regex sai thì xanh một cách vô nghĩa.
+
+
 ### Added — cảnh báo trùng số điện thoại ngay khi gõ (14/09/2026)
 
 Yêu cầu: *"nếu tên và số điện thoại cùng đã tồn tại thì báo khách hàng đã tồn tại và cho phép

@@ -241,3 +241,46 @@ Hai câu hỏi bắt buộc cho mọi phép chia hiển thị:
 
 Câu thứ hai là câu bắt được lỗi 417%: mẫu số chọn sai (bước trước thay vì tổng) trong khi các
 bước **loại trừ nhau**.
+
+---
+
+## 11. Chức năng mới phải khai quyền trong cùng PR
+
+Từ 14/09/2026, thêm một màn hình hay một endpoint mà **chưa khai quyền** là chưa xong việc —
+ngang với chưa viết test. Lý do rất cụ thể: quyền khai thiếu thì ô không hiện trên màn phân
+quyền, **không ai cấp được**, và endpoint trả 403 cho mọi người **kể cả quản trị**. Triệu
+chứng khó chẩn: đăng nhập bình thường, mọi màn cũ chạy bình thường, chỉ đúng một màn hỏng.
+
+Sáu bước, chi tiết ở
+[phan-quyen-dong.md](./backend/phan-quyen-dong.md#-thêm-chức-năng-mới-bắt-buộc-khai-quyền-trong-cùng-pr):
+
+1. Hằng vào `ChucNang` + phân loại trong `HeThongCua`.
+2. **Thao tác vào `ChucNang.ThaoTacTheoChucNang`** — thao tác THẬT của nghiệp vụ, không mặc
+   định bốn ô CRUD.
+3. Gác endpoint bằng đúng cặp vừa khai.
+4. Nhãn tiếng Việt vào `i18n.ts` (`chucNang` + `hanhDong`) và giá trị vào `export type
+   HanhDong` trong `quyen.ts`.
+5. Cân nhắc cấp cho nhóm mặc định.
+6. Cập nhật bảng chức năng × thao tác trong tài liệu.
+
+### Đặt tên thao tác: mô tả VIỆC, không mô tả thao tác CRUD gần nhất
+
+Bốn ô CRUD không diễn đạt nổi nghiệp vụ thật. "Chốt buổi học" và "sửa điểm danh" đều phải mượn
+`Sua` — nên không tách được quyền giáo viên chính với trợ giảng, dù đó chính là khác biệt cần
+phân quyền. Thấy mình định viết "thao tác này gần giống `Sua`" là dấu hiệu cần thao tác mới.
+
+Thêm giá trị vào `enum HanhDong` với **số ≥ 10**. **Không bao giờ** chèn vào giữa hay đổi số
+0–3: `QUYEN_CHUC_NANG.hanh_dong` lưu số nguyên, đổi `Sua` từ 2 thành 3 là âm thầm biến quyền
+"Sửa" của mọi nhóm thành "Xoá".
+
+### Ba câu hỏi trước khi khai một ô quyền
+
+| Hỏi | Vì sao |
+|---|---|
+| Có endpoint nào đọc ô này không? | Không có = **ô chết**, người cấu hình tick mà không có tác dụng |
+| Đây là quyền gọi endpoint hay quyền **phạm vi dữ liệu**? | Phạm vi cấp thừa thì **rò rỉ dữ liệu mà không báo gì** — phải khai vào `ChucNang.PhamViDuLieu` để UI hiện thành nhóm riêng |
+| `Xem` ở đây nghĩa là "của mình" hay "của mọi người"? | Nếu là "của mọi người" thì việc-của-mình phải là `TuLam` riêng. Cấp nhầm `NhanXetBuoiHoc.Xem` cho học viên = cho họ đọc phản hồi riêng của bạn cùng lớp |
+
+Bốn chốt chặn tự động bắt cả hai chiều (endpoint dùng quyền chưa khai **và** quyền khai không
+ai dùng) — xem bảng ở
+[phan-quyen-dong.md](./backend/phan-quyen-dong.md#-thêm-chức-năng-mới-bắt-buộc-khai-quyền-trong-cùng-pr).

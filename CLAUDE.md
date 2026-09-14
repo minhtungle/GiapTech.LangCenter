@@ -87,7 +87,11 @@ Chi tiết và nợ kỹ thuật: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
    `UNIQUE(tenant_id, username)` — làm `UNIQUE(username)` toàn cục sẽ chặn hai trung tâm cùng có
    tài khoản `admin`.
 9. **Phân quyền đọc động từ bảng `QUYEN_CHUC_NANG`** — không hard-code `[Authorize(Roles=...)]`.
-   → [phan-quyen-dong.md](./docs/backend/phan-quyen-dong.md)
+   Chức năng mới **phải khai thao tác** vào `ChucNang.ThaoTacTheoChucNang` trong cùng PR: thao
+   tác THẬT của nghiệp vụ (`Chot`, `Duyet`, `ThuTien`…), không mặc định bốn ô CRUD. Khai thiếu
+   thì ô không hiện trên màn phân quyền ⇒ không ai cấp được ⇒ endpoint 403 với **cả quản trị**.
+   Kèm theo: nhãn tiếng Việt ở `i18n.ts` và giá trị ở `export type HanhDong` trong `quyen.ts`.
+   → [phan-quyen-dong.md](./docs/backend/phan-quyen-dong.md#-thêm-chức-năng-mới-bắt-buộc-khai-quyền-trong-cùng-pr)
 10. **`Domain` không phụ thuộc EF Core / ASP.NET Core** — cấu hình EF đặt ở `Infrastructure`.
    → [clean-architecture.md](./docs/backend/clean-architecture.md)
 11. **Tăng version API chỉ khi breaking change** — thêm field/endpoint mới hoặc sửa bug thì không.
@@ -170,12 +174,15 @@ Tầng hệ thống hiện có, đặt ở đâu:
 1. Viết mô tả **FR-xx** vào [`docs/nghiep-vu/`](./docs/nghiep-vu/README.md) trước khi code.
 2. Cập nhật [ERD](./docs/database/erd.md) + migration nếu đổi dữ liệu.
 3. Viết code: **Domain → Application → Infrastructure → API**. Entity mới **bắt buộc** kế thừa
-   `TenantEntity` (quy tắc #2) và thêm hằng vào `ChucNang.TatCa` nếu là module mới (quy tắc #9).
+   `TenantEntity` (quy tắc #2). Module mới: thêm hằng vào `ChucNang.TatCa`, phân loại trong
+   `HeThongCua`, **và khai thao tác vào `ChucNang.ThaoTacTheoChucNang`** (quy tắc #9).
 4. Cập nhật Swagger/OpenAPI + tài liệu API.
 5. Viết test — unit cho `Application`, integration cho endpoint (**bắt buộc có test cách ly tenant**).
    Ràng buộc "chỉ một" → thêm `InlineData` vào `DongThoiTests` (quy tắc #8).
 6. Thêm mã lỗi mới vào **cả** `MaLoi.cs` **và** `i18n.ts` — thiếu bản dịch thì người dùng thấy
-   chuỗi mã lỗi trên màn hình (quy tắc #3).
+   chuỗi mã lỗi trên màn hình (quy tắc #3). Chức năng/thao tác quyền mới: thêm nhãn vào khối
+   `chucNang` + `hanhDong` của `i18n.ts` và giá trị vào `export type HanhDong` ở `quyen.ts` —
+   kiểm bằng `python3 scripts/check-nhan-phan-quyen.py`.
 7. Cập nhật [`CHANGELOG.md`](./CHANGELOG.md) + ghi [nhật ký ngày](./docs/nhat-ky/README.md) —
    làm ngay sau khi commit, không dồn lại.
 
@@ -266,6 +273,9 @@ python3 scripts/check-doc-links.py
 # --- Kiểm khoá i18n (thiếu bản dịch KHÔNG làm build đỏ, người dùng thấy chuỗi khoá) ---
 python3 scripts/check-i18n-keys.py
 
+# --- Kiểm nhãn phân quyền (khoá động, check-i18n-keys.py không quét tới) ---
+python3 scripts/check-nhan-phan-quyen.py
+
 # --- Frontend ---
 cd frontend && npm install
 npm run dev     # http://localhost:5173, proxy /api -> :5229
@@ -312,7 +322,7 @@ khỏi chỗ các migration hiện tại đang nằm.
 > `TreatWarningsAsErrors=true` trong `Directory.Build.props` — cảnh báo làm build đỏ. Sửa cảnh báo,
 > đừng tắt cờ.
 
-### Sáu test canh kiến trúc, đáng biết trước khi sửa code
+### Bảy test canh kiến trúc, đáng biết trước khi sửa code
 
 | Test | Canh gì |
 |---|---|
@@ -322,6 +332,7 @@ khỏi chỗ các migration hiện tại đang nằm.
 | `KienTruc/MoiEndpointPhaiDuocGacTests.cs` | Quy tắc #9: mọi endpoint phải có `[RequirePermission]` **hoặc** `[AllowAnonymous]` **hoặc** khai lý do. Chốt luôn số endpoint ẩn danh (6) để thêm cái mới phải có ý thức. |
 | `KienTruc/RanhGioiHeThongConTests.cs` | ADR-0005: HRM · CRM · LMS không gọi chéo nhau ngoài cầu nối đã khai (nay đúng một: FR-21). Giữ đường lui rẻ nếu sau này cần tách. |
 | `KienTruc/MoiEntityPhaiCoConfigTests.cs` | Quy tắc #10: mọi entity có `IEntityTypeConfiguration` (kiểm qua tên bảng `SNAKE_CASE`), và mọi cột chuỗi có `HasMaxLength` — thiếu thì EF âm thầm cho `text` vô hạn và Cascade mặc định. |
+| `KienTruc/MaTranQuyenPhaiKhopThucTeTests.cs` | Quy tắc #9, **cả hai chiều**: endpoint không được gác bằng quyền chưa khai (403 cho cả quản trị), và quyền đã khai phải có endpoint dùng hoặc khai lý do (ô chết). Chốt luôn giá trị số của `HanhDong` 0–3 vì DB lưu số nguyên. |
 
-Cả sáu đều theo cùng khuôn: **danh sách ngoại lệ có khai lý do** + **test chiều ngược** để danh
+Cả bảy đều theo cùng khuôn: **danh sách ngoại lệ có khai lý do** + **test chiều ngược** để danh
 sách không lạc hậu. Ai vi phạm sẽ phải dừng lại viết ra lý do, hoặc nhận ra mình quên.

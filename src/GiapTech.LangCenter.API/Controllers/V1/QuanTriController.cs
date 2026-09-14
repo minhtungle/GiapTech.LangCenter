@@ -27,7 +27,7 @@ namespace GiapTech.LangCenter.API.Controllers.V1;
 public class NguoiDungController(ISender sender) : ControllerBase
 {
     [HttpGet]
-    [RequirePermission(ChucNang.TaiKhoan, HanhDong.Xem)]
+    [RequirePermission(ChucNang.HoSoNguoiDung, HanhDong.Xem)]
     public async Task<ActionResult<KetQuaTrang<NguoiDungDto>>> DanhSach(
         [FromQuery] string? timKiem,
         [FromQuery] LoaiNguoiDung? loaiNguoiDung,
@@ -39,13 +39,13 @@ public class NguoiDungController(ISender sender) : ControllerBase
             timKiem, loaiNguoiDung, trangThaiNhanSu, new ThamSoTrang(trang, soDong)), ct));
 
     [HttpPost]
-    [RequirePermission(ChucNang.TaiKhoan, HanhDong.Them)]
+    [RequirePermission(ChucNang.HoSoNguoiDung, HanhDong.Them)]
     public async Task<ActionResult<Guid>> Tao(
         [FromBody] TaoNguoiDungCommand command, CancellationToken ct)
         => Ok(await sender.Send(command, ct));
 
     [HttpPut("{id:guid}")]
-    [RequirePermission(ChucNang.TaiKhoan, HanhDong.Sua)]
+    [RequirePermission(ChucNang.HoSoNguoiDung, HanhDong.Sua)]
     public async Task<IActionResult> CapNhat(
         Guid id, [FromBody] CapNhatNguoiDungCommand command, CancellationToken ct)
     {
@@ -55,7 +55,7 @@ public class NguoiDungController(ISender sender) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [RequirePermission(ChucNang.TaiKhoan, HanhDong.Xoa)]
+    [RequirePermission(ChucNang.HoSoNguoiDung, HanhDong.Xoa)]
     public async Task<IActionResult> Xoa(Guid id, CancellationToken ct)
     {
         await sender.Send(new XoaNguoiDungCommand(id), ct);
@@ -173,7 +173,7 @@ public class QuyenController(ISender sender) : ControllerBase
         => Ok(await sender.Send(command with { Id = null }, ct));
 
     [HttpPut("{id:guid}")]
-    [RequirePermission(ChucNang.PhanQuyen, HanhDong.Sua)]
+    [RequirePermission(ChucNang.PhanQuyen, HanhDong.CauHinhQuyen)]
     public async Task<ActionResult<Guid>> CapNhat(
         Guid id, [FromBody] LuuQuyenCommand command, CancellationToken ct)
         => Ok(await sender.Send(command with { Id = id }, ct));

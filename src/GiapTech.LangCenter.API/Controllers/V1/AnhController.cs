@@ -61,13 +61,13 @@ public class AnhController(ISender sender, ILuuTruAnh luuTru) : ControllerBase
     /// Mã QR chuyển khoản. Quyền `ThietLapChung.Sua` như logo — nó là thông tin trung tâm.
     /// </summary>
     [HttpPost("trung-tam/qr-chuyen-khoan")]
-    [RequirePermission(ChucNang.ThietLapChung, HanhDong.Sua)]
+    [RequirePermission(ChucNang.ThietLapChung, HanhDong.CauHinhTien)]
     public async Task<ActionResult<string>> TaiAnhQr(IFormFile tep, CancellationToken ct)
         => Ok(await sender.Send(
             new TaiAnhLenCommand(LoaiAnh.AnhQr, tep.OpenReadStream(), tep.ContentType), ct));
 
     [HttpDelete("trung-tam/qr-chuyen-khoan")]
-    [RequirePermission(ChucNang.ThietLapChung, HanhDong.Sua)]
+    [RequirePermission(ChucNang.ThietLapChung, HanhDong.CauHinhTien)]
     public async Task<IActionResult> XoaAnhQr(CancellationToken ct)
     {
         await sender.Send(new XoaAnhCommand(LoaiAnh.AnhQr), ct);

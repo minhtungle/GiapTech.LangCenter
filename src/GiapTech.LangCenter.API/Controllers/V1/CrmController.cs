@@ -57,25 +57,25 @@ public class KhachHangController(ISender sender) : ControllerBase
 
     /// <summary>Tab Lịch sử chăm sóc.</summary>
     [HttpGet("{id:guid}/cham-soc")]
-    [RequirePermission(ChucNang.KhachHang, HanhDong.Xem)]
+    [RequirePermission(ChucNang.ChamSocKhachHang, HanhDong.Xem)]
     public async Task<ActionResult<List<LichSuChamSocDto>>> ChamSoc(
         Guid id, CancellationToken ct)
         => Ok(await sender.Send(new LayLichSuChamSocQuery(id), ct));
 
     [HttpPost("{id:guid}/cham-soc")]
-    [RequirePermission(ChucNang.KhachHang, HanhDong.Them)]
+    [RequirePermission(ChucNang.ChamSocKhachHang, HanhDong.Them)]
     public async Task<ActionResult<Guid>> ThemChamSoc(
         Guid id, [FromBody] LuuChamSocCommand command, CancellationToken ct)
         => Ok(await sender.Send(command with { Id = null, KhachHangId = id }, ct));
 
     [HttpPut("cham-soc/{chamSocId:guid}")]
-    [RequirePermission(ChucNang.KhachHang, HanhDong.Sua)]
+    [RequirePermission(ChucNang.ChamSocKhachHang, HanhDong.Sua)]
     public async Task<ActionResult<Guid>> SuaChamSoc(
         Guid chamSocId, [FromBody] LuuChamSocCommand command, CancellationToken ct)
         => Ok(await sender.Send(command with { Id = chamSocId }, ct));
 
     [HttpDelete("cham-soc/{chamSocId:guid}")]
-    [RequirePermission(ChucNang.KhachHang, HanhDong.Xoa)]
+    [RequirePermission(ChucNang.ChamSocKhachHang, HanhDong.Xoa)]
     public async Task<IActionResult> XoaChamSoc(Guid chamSocId, CancellationToken ct)
     {
         await sender.Send(new XoaChamSocCommand(chamSocId), ct);
@@ -255,19 +255,19 @@ public class DoanhThuController(ISender sender) : ControllerBase
     /// Ghi một lần khách đóng tiền. Đăng ký là **cam kết**; đây là tiền thật đã nhận.
     /// </summary>
     [HttpPost("{id:guid}/thu-tien")]
-    [RequirePermission(ChucNang.DoanhThu, HanhDong.Them)]
+    [RequirePermission(ChucNang.DoanhThu, HanhDong.ThuTien)]
     public async Task<ActionResult<Guid>> ThuTien(
         Guid id, [FromBody] LuuThuTienCommand command, CancellationToken ct)
         => Ok(await sender.Send(command with { Id = null, DangKyId = id }, ct));
 
     [HttpPut("thu-tien/{thuId:guid}")]
-    [RequirePermission(ChucNang.DoanhThu, HanhDong.Sua)]
+    [RequirePermission(ChucNang.DoanhThu, HanhDong.ThuTien)]
     public async Task<ActionResult<Guid>> SuaThuTien(
         Guid thuId, [FromBody] LuuThuTienCommand command, CancellationToken ct)
         => Ok(await sender.Send(command with { Id = thuId }, ct));
 
     [HttpDelete("thu-tien/{thuId:guid}")]
-    [RequirePermission(ChucNang.DoanhThu, HanhDong.Xoa)]
+    [RequirePermission(ChucNang.DoanhThu, HanhDong.ThuTien)]
     public async Task<IActionResult> XoaThuTien(Guid thuId, CancellationToken ct)
     {
         await sender.Send(new XoaThuTienCommand(thuId), ct);
@@ -284,7 +284,7 @@ public class DoanhThuController(ISender sender) : ControllerBase
     /// cần và không nên có quyền vào module lớp học.
     /// </summary>
     [HttpPost("{id:guid}/yeu-cau-xep-lop")]
-    [RequirePermission(ChucNang.DoanhThu, HanhDong.Sua)]
+    [RequirePermission(ChucNang.DoanhThu, HanhDong.GuiXepLop)]
     public async Task<ActionResult<Guid>> GuiYeuCauXepLop(
         Guid id, [FromBody] GuiYeuCauXepLopCommand command, CancellationToken ct)
         => Ok(await sender.Send(command with { DangKyId = id }, ct));
@@ -296,7 +296,7 @@ public class DoanhThuController(ISender sender) : ControllerBase
     /// người trực tổng đài có quyền khách hàng nhưng không nên thấy doanh số của cả đội.
     /// </summary>
     [HttpGet("~/api/v{version:apiVersion}/thong-ke-crm")]
-    [RequirePermission(ChucNang.DoanhThu, HanhDong.Xem)]
+    [RequirePermission(ChucNang.ThongKeDoanhThu, HanhDong.Xem)]
     public async Task<ActionResult<ThongKeCrmDto>> ThongKe(
         [FromQuery] DateTimeOffset? tuNgay,
         [FromQuery] DateTimeOffset? denNgay,
