@@ -8,6 +8,44 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Fixed — rà soát v1, đợt 2 (15/09/2026)
+
+**Lỗi validation lộ cấu trúc nội bộ.** Gửi body sai kiểu thì ASP.NET trả nguyên văn
+*"The JSON value could not be converted to
+GiapTech.LangCenter.API.Controllers.V1.LopHocController+SinhLichBody. Path: $.ngayKhaiGiang |
+LineNumber: 0 | BytePositionInLine: 27"* kèm `traceId`. Ba thứ sai cùng lúc: lộ namespace +
+tên class, lộ chi tiết chỉ người vận hành cần, và trả câu tiếng Anh thay vì mã lỗi (quy tắc
+#3). `ExceptionMiddleware` không cứu được vì model binding thất bại **trước khi** vào action.
+
+Nay tuỳ biến `InvalidModelStateResponseFactory`: trả `DU_LIEU_KHONG_HOP_LE` kèm **tên trường**
+sai (dữ liệu của client, form cần để tô đỏ đúng ô) và lọc tên tham số kỹ thuật (`body`, `$.`).
+Canh bởi `KhongRoChiTietNoiBoTests` (7 test) — có cả **chiều ngược** để không ai lách bằng
+cách trả body rỗng; hai đột biến đều bị bắt.
+
+**Nợ N27 — form khoá trực tuyến thiếu hộp xác nhận.** Bốn form ghi (tạo khoá, sửa khoá, thêm
+bài, cấp quyền học) là ngoại lệ duy nhất trong dự án từ 13/09. Nay đã theo đúng quy ước; E2E
+`khoa-online.spec.ts` cập nhật theo (nó vốn phải viết khác đi vì chính lỗi này).
+
+**Quyền module mới không tới ba nhóm mặc định.** `TenantSeeder` chỉ chạy lúc tạo trung tâm,
+nên trung tâm tạo trước FR-26 có nhóm Giáo viên / Trợ giảng / Học viên **không có quyền Học
+trực tuyến nào** — giáo viên không soạn được khoá, học viên không mở được bài, dù chức năng
+đã xong. Kiểm thật trên W686AE9: cả ba nhóm đều 0 ô quyền online.
+
+`scripts/bo-khuyet-quyen-nhom-mac-dinh.sql` (68 cặp, sinh tự động từ `NhomQuyenMacDinh` rồi
+lọc qua `ThaoTacTheoChucNang`) — chạy **tay**, `ON CONFLICT DO NOTHING`, chỉ thêm không xoá,
+in ra những gì sắp thêm trước khi thêm. Không tự động lúc khởi động vì đó là ghi vào dữ liệu
+đang có (quy tắc #1): admin đã cố ý bỏ một ô thì lần khởi động sau không được cấp lại.
+
+Chạy thử trên DB bản sao trước đã cứu một lỗi: script thiếu cột `created_at` (NOT NULL, thêm
+12/09) nên INSERT đỏ — transaction rollback, bản sao không hỏng. Sau khi vá: Giáo viên 18→32,
+Trợ giảng 15→21, Học viên 10→16, Quản trị viên giữ nguyên 107; chạy lần hai không thêm gì.
+
+**Script dữ liệu mẫu tạo hồ sơ TRÙNG TÊN.** `tao-du-lieu-mau.py` tạo nhân sự mù quáng, nên
+chạy trên tenant đã có người là sinh hồ sơ thứ hai cùng tên. Hậu quả thật trong W686AE9: hai
+hồ sơ "Cô Lan" — tài khoản `co.lan` nối hồ sơ dạy **0 lớp**, còn 4 lớp gán cho hồ sơ của
+`nv5`. Đăng nhập bằng `co.lan` thấy 0 lớp, trông y như lỗi phân quyền. Nay script dùng lại hồ
+sơ cùng tên nếu đã có.
+
 ### Security — rà soát chuẩn bị bản v1 (15/09/2026)
 
 Rà theo luồng thao tác thật để chốt bản đóng gói chính thức. Bốn lỗi **chặn phát hành**, tất cả

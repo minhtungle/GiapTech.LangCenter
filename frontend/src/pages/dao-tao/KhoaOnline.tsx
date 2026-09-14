@@ -11,6 +11,7 @@ import {
 import { Modal } from '@/components/ui/Modal'
 import { PhanTrang } from '@/components/ui/PhanTrang'
 import { useQuyen } from '@/lib/quyen'
+import { useXacNhan } from '@/lib/xacNhan'
 
 export type TrangThaiKhoaOnline = 'Nhap' | 'DangMo' | 'NgungCapMoi'
 
@@ -51,6 +52,7 @@ export default function KhoaOnline() {
   const qc = useQueryClient()
   const navigate = useNavigate()
   const { coQuyen } = useQuyen()
+  const { hoi, hop } = useXacNhan()
 
   const soanDuoc = coQuyen('KhoaOnline', 'Sua')
 
@@ -176,7 +178,12 @@ export default function KhoaOnline() {
         <form
           onSubmit={(e) => {
             e.preventDefault()
-            tao.mutate(new FormData(e.currentTarget))
+            const fd = new FormData(e.currentTarget)
+            hoi({
+              tieuDe: t('chung.xacNhanThem'),
+              thongDiep: t('khoaOnline.hoiTaoKhoa'),
+              onDongY: () => tao.mutate(fd),
+            })
           }}
           className="grid gap-4"
         >
@@ -201,6 +208,7 @@ export default function KhoaOnline() {
           </div>
         </form>
       </Modal>
+      {hop}
     </div>
   )
 }

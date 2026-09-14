@@ -163,11 +163,29 @@ def main():
     buoc("nhân sự")
     ten_phong = list(phong)
     nhan_su = []
+
+    # DÙNG LẠI hồ sơ đã có cùng tên, không tạo mới (sửa 15/09/2026).
+    #
+    # Bản cũ tạo mù quáng, nên chạy trên tenant đã có người là sinh hồ sơ TRÙNG TÊN. Hậu quả
+    # thật đã gặp khi rà v1: tenant W686AE9 có hai hồ sơ "Cô Lan" — tài khoản `co.lan` (cũ) nối
+    # hồ sơ dạy 0 lớp, còn 4 lớp thì gán cho hồ sơ mới của `nv5`. Cô Lan đăng nhập và thấy
+    # **0 lớp**, trông y như lỗi phân quyền: mất gần một giờ mới truy ra là dữ liệu trùng.
+    da_co = {}
+    for trang in range(1, 6):
+        kq = goi(f"/nguoi-dung?trang={trang}&soDong=100") or {}
+        for x in kq.get("duLieu", []):
+            da_co.setdefault(x["hoTen"], x["id"])
+        if len(kq.get("duLieu", [])) < 100:
+            break
+
     for i, (ho, vai) in enumerate([
         ("Sale Hà Nội", "NhanVien"), ("Sale Sài Gòn", "NhanVien"),
         ("Sale Online A", "NhanVien"), ("Sale Online B", "NhanVien"),
         ("Cô Lan", "GiaoVien"), ("Thầy Hoà", "GiaoVien"),
     ]):
+        if ho in da_co:
+            nhan_su.append({"id": da_co[ho], "ten": ho, "vai": vai, "user": None})
+            continue
         nd = goi("/nguoi-dung", {
             "hoTen": ho,
             "loaiNguoiDung": vai,

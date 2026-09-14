@@ -5,6 +5,7 @@ using GiapTech.LangCenter.API.Middleware;
 using GiapTech.LangCenter.API.RateLimit;
 using GiapTech.LangCenter.Application;
 using GiapTech.LangCenter.API.Services;
+using GiapTech.LangCenter.Application.Common.Exceptions;
 using GiapTech.LangCenter.Application.Common.Interfaces;
 using GiapTech.LangCenter.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -12,6 +13,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +28,43 @@ builder.Services
         o.JsonSerializerOptions.Converters.Add(
             new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
+// Phản hồi lỗi model state: trả MÃ LỖI, không trả chi tiết .NET (thêm 15/09/2026).
+//
+// Mặc định ASP.NET trả `ValidationProblemDetails` với message tiếng Anh của
+// `System.Text.Json`, và message đó chứa **tên namespace + class nội bộ**:
+//
+//   "The JSON value could not be converted to
+//    GiapTech.LangCenter.API.Controllers.V1.LopHocController+SinhLichBody.
+//    Path: $.ngayKhaiGiang | LineNumber: 0 | BytePositionInLine: 27"
+//
+// Hai vấn đề: lộ cấu trúc nội bộ cho client (và `traceId`, `LineNumber` — thông tin chỉ người
+// vận hành cần), và vi phạm quy tắc #3 — API phải trả mã lỗi để frontend tự dịch, không trả
+// câu tiếng Anh. `ExceptionMiddleware` không cứu được vì đây không phải exception: model
+// binding thất bại trước khi vào action.
+//
+// Giữ `truong` (tên trường) vì nó là dữ liệu của client, không phải của hệ thống — form cần
+// biết ô nào sai. Nhưng bỏ message: frontend đã có bản dịch theo mã lỗi.
+builder.Services.Configure<ApiBehaviorOptions>(o =>
+{
+    o.InvalidModelStateResponseFactory = ctx =>
+    {
+        var truong = ctx.ModelState
+            .Where(x => x.Value?.Errors.Count > 0)
+            .Select(x => x.Key)
+            // Bỏ tiền tố `$.` mà System.Text.Json thêm vào, và tên tham số kỹ thuật như `body`.
+            .Select(x => x.TrimStart('$', '.'))
+            .Where(x => x.Length > 0 && x != "body")
+            .Distinct()
+            .ToArray();
+
+        return new BadRequestObjectResult(new
+        {
+            errorCode = MaLoi.DuLieuKhongHopLe,
+            duLieu = truong.Length > 0 ? new { truong } : null
+        });
+    };
+});
+
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddHttpContextAccessor();

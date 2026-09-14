@@ -459,7 +459,12 @@ export default function ChiTietKhoaOnline() {
         <form
           onSubmit={(e) => {
             e.preventDefault()
-            luuKhoa.mutate(new FormData(e.currentTarget))
+            const fd = new FormData(e.currentTarget)
+            hoi({
+              tieuDe: t('chung.xacNhanLuu'),
+              thongDiep: t('khoaOnline.hoiLuuKhoa'),
+              onDongY: () => luuKhoa.mutate(fd),
+            })
           }}
           className="grid gap-4"
         >
@@ -511,7 +516,12 @@ export default function ChiTietKhoaOnline() {
           key={formBai?.id ?? 'moi'}
           onSubmit={(e) => {
             e.preventDefault()
-            luuBai.mutate(new FormData(e.currentTarget))
+            const fd = new FormData(e.currentTarget)
+            hoi({
+              tieuDe: t('chung.xacNhanLuu'),
+              thongDiep: t('khoaOnline.hoiLuuBai'),
+              onDongY: () => luuBai.mutate(fd),
+            })
           }}
           className="grid gap-4"
         >
@@ -572,7 +582,12 @@ export default function ChiTietKhoaOnline() {
         <form
           onSubmit={(e) => {
             e.preventDefault()
-            capQuyen.mutate(new FormData(e.currentTarget))
+            const fd = new FormData(e.currentTarget)
+            hoi({
+              tieuDe: t('khoaOnline.capQuyen'),
+              thongDiep: t('khoaOnline.hoiCapQuyen'),
+              onDongY: () => capQuyen.mutate(fd),
+            })
           }}
           className="grid gap-4"
         >

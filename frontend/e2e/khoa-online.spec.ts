@@ -12,6 +12,17 @@ import { vaoHeThong } from './tro-giup'
  * Đó là lý do test này kiểm bằng HAI bài có nội dung khác nhau: một bài thì không phân biệt
  * được "nạp đúng" với "giữ lại của lần trước".
  */
+/**
+ * Bấm Lưu rồi ĐỒNG Ý ở hộp xác nhận.
+ *
+ * Từ 15/09/2026 các form khoá trực tuyến hỏi xác nhận như mọi form ghi khác trong dự án (vá
+ * nợ N27 — trước đó chúng là ngoại lệ duy nhất, và chính test này phải viết khác đi vì thế).
+ */
+async function luuVaDongY(page: import('@playwright/test').Page) {
+  await page.getByRole('button', { name: /^lưu$/i }).click()
+  await page.getByRole('button', { name: /đồng ý/i }).click()
+}
+
 test('FR-26: giáo vụ soạn khoá, học viên thấy đúng phạm vi', async ({ page, request }) => {
   await vaoHeThong(page, request, 'khoa-online')
 
@@ -24,7 +35,7 @@ test('FR-26: giáo vụ soạn khoá, học viên thấy đúng phạm vi', asyn
   await page.getByRole('button', { name: /thêm/i }).first().click()
   await page.locator('#ten').fill('Khoá IELTS Online')
   await page.locator('#moTa').fill('Tự học có lộ trình')
-  await page.getByRole('button', { name: /lưu/i }).click()
+  await luuVaDongY(page)
 
   // Tạo xong phải nhảy vào chi tiết khoá
   await expect(page).toHaveURL(/\/lms\/khoa-online\/[0-9a-f-]{36}/, { timeout: 10000 })
@@ -37,7 +48,7 @@ test('FR-26: giáo vụ soạn khoá, học viên thấy đúng phạm vi', asyn
   await page.getByRole('button', { name: /thêm bài/i }).click()
   await page.locator('#tieuDe').fill('Bài 1 — Giới thiệu')
   await page.locator('#noiDung').fill('NOI DUNG BAI MOT')
-  await page.getByRole('button', { name: /lưu/i }).click()
+  await luuVaDongY(page)
   await expect(page.getByText('Bài 1 — Giới thiệu')).toBeVisible({ timeout: 10000 })
 
   // SỬA bài: nội dung cũ phải được nạp sẵn — nếu rỗng thì lưu sẽ xoá mất bài (quy tắc #1)
@@ -45,7 +56,7 @@ test('FR-26: giáo vụ soạn khoá, học viên thấy đúng phạm vi', asyn
   await page.getByRole('button', { name: /thêm bài/i }).click()
   await page.locator('#tieuDe').fill('Bài 2 — Ngữ pháp')
   await page.locator('#noiDung').fill('NOI DUNG BAI HAI')
-  await page.getByRole('button', { name: /lưu/i }).click()
+  await luuVaDongY(page)
   await expect(page.getByText('Bài 2 — Ngữ pháp')).toBeVisible({ timeout: 10000 })
 
   // Sửa bài MỘT: ô nội dung phải là của bài một, không phải bài hai vừa soạn.
