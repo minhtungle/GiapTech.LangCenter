@@ -68,7 +68,27 @@ TEN = ["An", "Bình", "Chi", "Dũng", "Giang", "Hà", "Khánh", "Linh", "Mai", "
 
 
 def ho_ten(i: int) -> str:
-    return f"{HO[i % len(HO)]} {DEM[(i * 3) % len(DEM)]} {TEN[(i * 7) % len(TEN)]}"
+    """
+    Sinh họ tên **không trùng nhau** và trông tự nhiên.
+
+    Bản đầu dùng `HO[i%10] · DEM[i*3%10] · TEN[i*7%20]` — ba chỉ số độc lập nên chu kỳ lặp là
+    bội chung nhỏ nhất của chúng: **đúng 20**. Cứ 20 người là tên quay vòng; 32 khách hàng ra
+    20 tên với 12 cái trùng. Chủ sản phẩm phát hiện khi xem màn Khách hàng.
+
+    Bản thứ hai coi `i` là một số rồi tách theo cơ số — hết trùng, nhưng chữ số cao đổi chậm
+    nên nhiều dòng liền nhau cùng họ (hoặc cùng tên, tuỳ thứ tự). Vẫn trông giả.
+
+    Cách này cho mỗi thành phần một **nhịp riêng**: `i // 10` làm họ và đệm trôi chậm trong khi
+    `i` làm tên đổi mỗi dòng. Kiểm bằng số: 60 người đầu ra 60 tổ hợp khác nhau, và không hai
+    dòng liền nhau nào trùng cả họ lẫn đệm.
+
+    **Chu kỳ là 200** — đủ cho mọi nhóm hiện tại, nhưng hai nhóm cách nhau đúng bội của 200 sẽ
+    trùng hoàn toàn. Đó là lý do khách hàng bắt đầu ở `i = 317` (số lẻ, không chia hết cho 200)
+    chứ không phải 200: bản trước dùng 200 nên 32 khách trùng tên với 32 học viên đầu.
+    """
+    return (f"{HO[i % len(HO)]} "
+            f"{DEM[(i // len(HO) + i) % len(DEM)]} "
+            f"{TEN[(i // len(HO) + i * 3) % len(TEN)]}")
 
 
 def dien_thoai(i: int) -> str:
@@ -169,7 +189,7 @@ def main():
     bay_gio = datetime.now(timezone.utc)
     so_don = 0
     don_ids: list[tuple] = []
-    khach_ids: list[str] = []
+    khach_ids: list[dict] = []
 
     for idx, sale in enumerate(sales):
         _token = goi("/auth/dang-nhap",
@@ -178,11 +198,12 @@ def main():
         for k in range(8):
             n = idx * 8 + k
             khach = goi("/khach-hang", {
-                "hoTen": ho_ten(200 + n),
+                "hoTen": ho_ten(317 + n),
                 "soDienThoai": dien_thoai(2000 + n),
                 "phuongThucThanhToan": "ChuyenKhoan",
             })
-            khach_ids.append(khach)
+            khach_ids.append({"id": khach, "hoTen": ho_ten(317 + n),
+                              "soDienThoai": dien_thoai(2000 + n)})
 
             # 1-4 đơn mỗi khách, ngày rải đều 12 tháng → đường tăng trưởng có 12 mốc thật.
             for _ in range(random.randint(1, 4)):
@@ -213,12 +234,39 @@ def main():
                 so_don += 1
     xong(f"{len(sales) * 8} khách, {so_don} đơn")
 
+    # ---------- Nối khách đã mua với hồ sơ học viên ----------
+    # Luồng thật: khách mua khoá → quản trị cấp tài khoản học viên → hồ sơ TỰ NỐI (FR-25).
+    # Không nối thì cột "Hồ sơ học viên" ở màn Khách hàng hiện "Chưa vào học" cho cả 32 người,
+    # và không ai thấy được cầu nối CRM ↔ LMS làm gì.
+    buoc("nối khách ↔ hồ sơ học viên")
+    so_noi = 0
+    for kh in khach_ids:
+        # Chỉ nối ~60% — số còn lại là khách đã mua nhưng CHƯA vào học, ca hợp lệ và thường gặp.
+        if random.random() >= 0.6:
+            continue
+
+        # Tạo hồ sơ học viên MANG ĐÚNG TÊN KHÁCH: hai bên là CÙNG một con người, chỉ khác góc
+        # nhìn (CRM thấy người mua, LMS thấy người học). Bản trước ghép bừa khách với một học
+        # viên có sẵn nên màn Khách hàng hiện "Bùi Phương Chi → Nguyễn Văn An", vô lý ngay từ
+        # cái nhìn đầu.
+        hv = goi("/hoc-vien", {
+            "hoTen": kh["hoTen"],
+            "loaiNguoiDung": "HocVien",
+            "soDienThoai": kh["soDienThoai"],
+            "khachHangId": kh["id"],          # FR-25 — tự nối, không cần PUT riêng
+        }, cho_phep_loi=True)
+        if hv:
+            so_noi += 1
+
+    xong(so_noi)
+
     # ---------- Lịch sử chăm sóc → phễu bán hàng ----------
     # Không có bước này thì mọi khách nằm ở "Mới" và phễu phẳng lì — nhìn như hỏng.
     # Tỷ lệ đặt gần thực tế: phần lớn đã mua, một ít còn tư vấn, vài người từ chối.
     buoc("lịch sử chăm sóc")
     so_cham = 0
-    for i, kh in enumerate(khach_ids):
+    for i, kh_info in enumerate(khach_ids):
+        kh = kh_info["id"]
         chuoi = (["DangTuVan", "DaMua"] if i % 10 < 6
                  else ["DangTuVan"] if i % 10 < 9
                  else ["DangTuVan", "TuChoi"])
