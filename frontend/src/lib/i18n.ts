@@ -560,6 +560,10 @@ const vi = {
     theoLop: '(theo lớp)',
     khongCoTroGiang: 'Lớp chưa có trợ giảng',
     hocBu: 'Học bù',
+    nhom: {
+      sapToi: 'Sắp tới',
+      daQua: 'Đã qua',
+    },
     trangThai: 'Trạng thái',
     diemDanh: 'Điểm danh',
     chuaCoLich: 'Lớp chưa có lịch học',

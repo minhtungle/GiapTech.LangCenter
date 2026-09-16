@@ -8,6 +8,21 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — lịch học ưu tiên buổi sắp tới lên đầu (16/09/2026)
+
+Theo yêu cầu chủ sản phẩm. Bảng buổi học ở tab *Lịch & điểm danh* chia hai nhóm có tiêu đề:
+**SẮP TỚI** (gần nhất trước) rồi **ĐÃ QUA** (mới nhất trước). Buổi đã huỷ xuống nhóm "đã qua" dù
+ngày còn ở tương lai; dòng đã qua hiện mờ hơn; số buổi vẫn hiện nên không mất ngữ cảnh giáo trình.
+
+**Sắp ở frontend, KHÔNG sửa `OrderBy` của API** — endpoint `/lop-hoc/{id}/buoi-hoc` có bốn màn
+khác dùng, trong đó `ChiTietBuoiHoc` suy "buổi trước/sau" từ **vị trí trong mảng**: đổi thứ tự ở
+API thì nút "buổi sau" nhảy về quá khứ, lỗi im lặng. E2E canh cả hai chiều — đột biến đổi `OrderBy`
+ở backend làm đỏ đúng assert "API phải giữ thứ tự theo số buổi".
+
+Kèm theo: vá `e2e/trung-sdt.spec.ts` và `scripts/tao-du-lieu-mau.py` còn **cắm cứng**
+`Admin@12345`. Đợt đồng bộ mật khẩu dev hôm nay làm test này đỏ mà tôi không phát hiện ngay — nay
+cả hai đọc từ `MK_QUAN_TRI`, mặc định `123456`.
+
 ### Changed — đồng bộ mật khẩu tài khoản dev về `123456` (16/09/2026)
 
 Yêu cầu chủ sản phẩm để thử nghiệm nhiều vai trò: 11 tài khoản của tenant dev `W686AE9` nay dùng

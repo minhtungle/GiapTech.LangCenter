@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { Fragment, lazy, Suspense, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -63,6 +63,35 @@ export function LichVaDiemDanh({
     queryKey: ['lop-hoc', lopHocId, 'buoi-hoc'],
     queryFn: async () => (await api.get<BuoiHocDto[]>(`/lop-hoc/${lopHocId}/buoi-hoc`)).data,
   })
+
+  /*
+    Ưu tiên BUỔI SẮP TỚI lên đầu (yêu cầu chủ sản phẩm 16/09/2026).
+
+    API trả theo `ThuTu` (1→N) nên buổi đã dạy nằm trên; lớp 30 buổi thì buổi tới phải cuộn gần
+    hết bảng mới thấy — mà "buổi tới dạy gì, ở đâu, phòng nào" mới là việc thường ngày.
+
+    **Sắp ở ĐÂY, không sửa `OrderBy` của API**: cùng endpoint `/lop-hoc/{id}/buoi-hoc` còn bốn màn
+    khác dùng, và `ChiTietBuoiHoc` suy "buổi trước / buổi sau" từ **vị trí trong mảng** — đổi thứ
+    tự ở API thì nút "buổi sau" nhảy về quá khứ, một lỗi im lặng. Thứ tự theo `ThuTu` vẫn là hợp
+    đồng của API; đây chỉ là cách MÀN NÀY trình bày.
+
+    Mốc so sánh là thời điểm tuyệt đối hai bên nên KHÔNG phụ thuộc múi giờ — khác các phép cắt
+    kỳ theo ngày (chỗ đó phải dùng múi giờ trung tâm, xem `ThongKeCrmDtos`).
+
+    Buổi đã huỷ xuống nhóm "đã qua" dù ngày còn ở tương lai: nó không còn là việc phải làm.
+  */
+  const bayGio = Date.now()
+  const laSapToi = (b: BuoiHocDto) =>
+    b.trangThai !== 'DaHuy' && new Date(b.batDau).getTime() >= bayGio
+
+  const sapToi = buoiHocs
+    .filter(laSapToi)
+    // Gần nhất trước — buổi kế tiếp phải là DÒNG ĐẦU.
+    .sort((a, b) => +new Date(a.batDau) - +new Date(b.batDau))
+  const daQua = buoiHocs
+    .filter((b) => !laSapToi(b))
+    // Mới nhất trước: buổi vừa dạy xong hay được xem lại nhất (điểm danh, nhận xét).
+    .sort((a, b) => +new Date(b.batDau) - +new Date(a.batDau))
 
   const lamMoi = () => {
     void qc.invalidateQueries({ queryKey: ['lop-hoc', lopHocId, 'buoi-hoc'] })
@@ -199,10 +228,29 @@ export function LichVaDiemDanh({
                 </tr>
               </thead>
               <tbody>
-                {buoiHocs.map((b) => (
+                {/*
+                  Hai NHÓM, mỗi nhóm một hàng tiêu đề: đổi thứ tự mà không nói gì thì người dùng
+                  tưởng dữ liệu lẫn lộn. Nhóm rỗng thì bỏ luôn cả tiêu đề (lớp chưa dạy buổi nào,
+                  hoặc đã dạy hết).
+                */}
+                {([
+                  ['sapToi', sapToi],
+                  ['daQua', daQua],
+                ] as const).map(([nhom, ds]) => ds.length === 0 ? null : (
+                  <Fragment key={nhom}>
+                    <tr className="bg-muted/30">
+                      <Td colSpan={6} className="py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {t(`buoiHoc.nhom.${nhom}`)} ({ds.length})
+                      </Td>
+                    </tr>
+                    {ds.map((b) => (
                   <tr
                     key={b.id}
-                    className="cursor-pointer hover:bg-muted/40"
+                    // Dòng đã qua mờ hơn: tiêu đề nhóm cuộn khỏi tầm mắt thì vẫn phân biệt được.
+                    className={
+                      'cursor-pointer hover:bg-muted/40 '
+                      + (nhom === 'daQua' ? 'text-muted-foreground' : '')
+                    }
                     onClick={() => navigate(`/lms/buoi-hoc/${b.id}`)}
                   >
                     <Td className="font-medium">{b.thuTu}</Td>
@@ -276,6 +324,8 @@ export function LichVaDiemDanh({
                       </div>
                     </Td>
                   </tr>
+                    ))}
+                  </Fragment>
                 ))}
               </tbody>
             </Table>

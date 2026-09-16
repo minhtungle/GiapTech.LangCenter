@@ -103,6 +103,34 @@ vẫn đọc được trạng thái.
 Trục giờ giới hạn **6h–22h**: trung tâm ngoại ngữ không dạy đêm, để trục 24 tiếng thì buổi tối
 bị nén thành một dải mỏng.
 
+### Ưu tiên buổi SẮP TỚI lên đầu (16/09/2026)
+
+Yêu cầu chủ sản phẩm: *"phần lịch học hãy ưu tiên buổi sắp tới lên đầu"*.
+
+Bảng chia **hai nhóm có tiêu đề**, không chỉ đảo thứ tự:
+
+| Nhóm | Xếp thế nào | Vì sao |
+|---|---|---|
+| **SẮP TỚI** | gần nhất trước | "buổi tới dạy gì, phòng nào" là việc thường ngày — phải là dòng đầu |
+| **ĐÃ QUA** | mới nhất trước | buổi vừa dạy hay được xem lại nhất (điểm danh, nhận xét) |
+
+Buổi **đã huỷ** xuống nhóm "đã qua" dù ngày còn ở tương lai: nó không còn là việc phải làm. Dòng
+nhóm "đã qua" hiện mờ hơn để phân biệt được cả khi tiêu đề nhóm đã cuộn khỏi tầm mắt. **Số buổi
+vẫn hiện** ở cột đầu nên không mất ngữ cảnh giáo trình.
+
+> **Sắp ở FRONTEND, KHÔNG sửa `OrderBy` của API.** Endpoint `/lop-hoc/{id}/buoi-hoc` có **bốn màn
+> khác** dùng, trong đó `ChiTietBuoiHoc` suy *"buổi trước / buổi sau"* từ **vị trí trong mảng** —
+> đổi thứ tự ở API thì nút "buổi sau" nhảy về quá khứ, một lỗi im lặng không có gì báo. Thứ tự
+> theo `ThuTu` vẫn là **hợp đồng của API**; nhóm/sắp lại chỉ là cách *màn lịch* trình bày.
+>
+> `e2e/lich-uu-tien-buoi-sap-toi.spec.ts` canh **cả hai chiều**: màn lịch sắp đúng, VÀ API giữ thứ
+> tự theo số buổi. Đột biến đổi `OrderBy` ở backend làm đỏ đúng assert thứ hai.
+
+Mốc so sánh là hai thời điểm tuyệt đối nên **không phụ thuộc múi giờ** — khác các phép cắt kỳ theo
+ngày, chỗ đó bắt buộc dùng múi giờ trung tâm (xem `ThongKeCrmDtos`).
+
+Khung **Lịch** không đổi: FullCalendar mở ở tháng hiện tại nên buổi sắp tới đã nằm trong tầm mắt.
+
 ### Huỷ khác xoá
 
 | | Giữ bản ghi | Dùng khi |

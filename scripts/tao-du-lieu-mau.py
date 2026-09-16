@@ -41,7 +41,10 @@ USER_QUAN_TRI = "admin"
 
 # Mật khẩu quản trị của trung tâm trên. Đọc từ biến môi trường trước — mật khẩu thật không
 # nên nằm trong mã nguồn, kể cả mã chỉ chạy trên máy local.
-MK_QUAN_TRI = os.environ.get("MK_QUAN_TRI", "Admin@12345")
+# Mặc định `123456` từ 16/09/2026: mọi nick của tenant dev đã đồng bộ về giá trị này
+# (xem `scripts/dong-bo-mat-khau-dev.sh`). Đổi mật khẩu dev mà quên chỗ này thì script chết ở
+# bước đăng nhập với lỗi 400 khó lần ra.
+MK_QUAN_TRI = os.environ.get("MK_QUAN_TRI", "123456")
 
 # Mật khẩu đặt cho mọi tài khoản script TẠO RA (nv1..nv6). Tách khỏi mật khẩu quản trị: đổi
 # mật khẩu admin không được làm hỏng script, và ngược lại.

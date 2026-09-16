@@ -8,12 +8,17 @@ import { expect, test } from '@playwright/test'
  * người đã có ấy.
  *
  * Chạy trên dữ liệu mẫu của `W686AE9`; cần `scripts/tao-du-lieu-mau.py` đã chạy.
+ *
+ * **Test DUY NHẤT dùng tenant thật** thay vì tự tạo trung tâm riêng — nó cần dữ liệu khách hàng
+ * có sẵn để thử trùng số. Nên nó cũng là test duy nhất phụ thuộc mật khẩu của `admin`: đọc từ
+ * `MK_QUAN_TRI` để đổi mật khẩu dev không làm đỏ test (đã xảy ra 16/09/2026 khi đồng bộ mọi nick
+ * về `123456` mà quên chỗ cắm cứng này).
  */
 test('cảnh báo trùng sđt ngay khi gõ', async ({ page }) => {
   await page.goto('/dang-nhap')
   await page.fill('#maTrungTam', 'W686AE9')
   await page.fill('#username', 'admin')
-  await page.fill('#matKhau', 'Admin@12345')
+  await page.fill('#matKhau', process.env.MK_QUAN_TRI ?? '123456')
   await page.click('button[type=submit]')
   await page.waitForURL((u) => u.pathname === '/', { timeout: 15000 })
 
