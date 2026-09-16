@@ -42,7 +42,7 @@ Nằm ở `ToiController` cùng `/toi/lich`, `/toi/quyen` — cụm "dữ liệu
 `[RequirePermission]`**: mọi người đăng nhập đều thấy màn chủ, và phạm vi đã lọc theo người.
 Lý do này khai trong danh sách ngoại lệ của `MoiEndpointPhaiDuocGacTests`.
 
-## Năm con số
+## Năm con số + danh sách buổi sắp tới
 
 | Trường | Nghĩa | Loại | Dẫn tới |
 |---|---|---|---|
@@ -55,6 +55,43 @@ Lý do này khai trong danh sách ngoại lệ của `MoiEndpointPhaiDuocGacTest
 Dòng việc **chỉ hiện khi > 0**. Hết việc thì hiện đúng một câu, không phải danh sách toàn số 0:
 người dùng vào đây để biết **phải làm gì**, và một danh sách số 0 bắt họ đọc để nhận ra không
 có gì.
+
+### Danh sách BUỔI SẮP TỚI (17/09/2026)
+
+Yêu cầu chủ sản phẩm: *"ở phần tổng quan của học viên và giáo viên, đối với buổi sắp tới hãy hiện
+đủ tên lớp, số buổi, thời gian và khi ấn thì chuyển thẳng tới xem chi tiết buổi học đó"*.
+
+`buoiSapToi` — **ba buổi gần nhất** trong phạm vi người đang đăng nhập, mỗi dòng có:
+
+| Hiện gì | Vì sao cần |
+|---|---|
+| Tên lớp | giáo viên dạy 4 lớp, con số "buổi hôm nay" không nói được lớp nào |
+| Số buổi (`thuTu`) | người dạy và người học đều nói theo số này |
+| Thời gian | quyết định có phải chuẩn bị ngay không |
+| Phòng học / link online | thứ cần **ngay trước giờ học** |
+
+Bấm cả dòng → `/lms/buoi-hoc/{id}`, **thẳng chi tiết buổi**, không phải màn lớp rồi tự tìm.
+
+Trước đó Tổng quan chỉ có con số `buoiHomNay`: không nói được lớp nào, mấy giờ, và **không bấm
+được** — trái đúng nguyên tắc số 1 của màn này (*"mỗi con số phải dẫn tới một màn xử lý"*). Con số
+đó vẫn giữ làm bối cảnh.
+
+**Ba chốt của truy vấn**, mỗi cái sai một kiểu khác nhau:
+
+- **Gồm cả hôm nay**, không chỉ "từ ngày mai": buổi 18h tối nay vẫn là việc sắp tới lúc 8h sáng.
+- **Mốc là `KetThuc >= bây giờ`, không phải `BatDau`**: buổi đang diễn ra dở vẫn là buổi người dùng
+  cần mở (điểm danh, xem tài liệu) — lấy `BatDau` thì nó biến mất ngay khi chuông reo.
+- **Bỏ buổi `DaHuy`**: không còn là việc phải làm.
+
+Ba buổi chứ không phải toàn bộ: Tổng quan là chỗ liếc nhanh, danh sách dài thuộc về màn lịch. Khối
+này **ẩn hẳn** khi không có buổi nào — khối rỗng chỉ làm loãng màn.
+
+Phép so dùng **thời điểm tuyệt đối hai bên** nên không phụ thuộc múi giờ; chỉ `buoiHomNay` mới cần
+cắt theo ngày của múi giờ trung tâm (mục dưới).
+
+Canh bởi `e2e/tong-quan-buoi-sap-toi.spec.ts` — kiểm **đủ ba mẩu thông tin** trên một dòng và
+**bấm tới đúng chi tiết buổi**. Ba đột biến kiểm đỏ: link tới màn lớp, bỏ số buổi, backend lấy buổi
+đã qua.
 
 ### `choXepLop` trả 0 với người không xếp được lớp
 

@@ -359,6 +359,8 @@ const vi = {
     viecCanLam: 'Việc cần làm',
     khongCoViec: 'Không có việc nào cần xử lý',
     buoiHomNay: 'Buổi học hôm nay',
+    buoiSapToi: 'Buổi sắp tới',
+    buoiThu: 'Buổi {{so}}',
     lopDangHoatDong: 'Lớp đang hoạt động',
     buoiQuaHan: 'Buổi đã qua chưa chốt điểm danh',
     baiChuaCham: 'Bài nộp chưa chấm',
@@ -560,6 +562,7 @@ const vi = {
     theoLop: '(theo lớp)',
     khongCoTroGiang: 'Lớp chưa có trợ giảng',
     hocBu: 'Học bù',
+    hocOnline: 'Học online',
     nhom: {
       sapToi: 'Sắp tới',
       daQua: 'Đã qua',

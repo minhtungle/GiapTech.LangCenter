@@ -49,7 +49,42 @@ public record TongQuanDto(
     int ChoXepLop,
 
     /// <summary>Lớp đang hoạt động trong phạm vi — bối cảnh cho các số trên.</summary>
-    int LopDangHoatDong);
+    int LopDangHoatDong,
+
+    /// <summary>
+    /// Ba buổi SẮP TỚI gần nhất trong phạm vi người này (17/09/2026).
+    ///
+    /// Yêu cầu chủ sản phẩm: học viên và giáo viên mở Tổng quan phải thấy **đủ tên lớp, số buổi,
+    /// thời gian** và bấm vào là tới thẳng chi tiết buổi — trước đó chỉ có con số "buổi học hôm
+    /// nay", mà con số không nói được lớp nào, mấy giờ, và không bấm được.
+    ///
+    /// **Gồm cả hôm nay**, không chỉ "từ ngày mai": buổi 18h tối nay vẫn là việc sắp tới lúc 8h
+    /// sáng. Mốc là `KetThuc >= bây giờ` chứ không `BatDau`: buổi đang diễn ra dở vẫn là buổi
+    /// người dùng cần mở (điểm danh, xem tài liệu), lấy `BatDau` sẽ làm nó biến mất ngay khi
+    /// chuông reo.
+    ///
+    /// Ba buổi, không phải toàn bộ: Tổng quan là chỗ liếc nhanh, danh sách dài thuộc về màn lịch.
+    /// </summary>
+    List<BuoiSapToiDto> BuoiSapToi);
+
+/// <summary>
+/// Một buổi sắp tới trên màn Tổng quan (FR-15, 17/09/2026).
+///
+/// Đủ thông tin để người dùng quyết định có mở hay không **mà không phải bấm vào**: lớp nào,
+/// buổi thứ mấy, khi nào, ở đâu.
+/// </summary>
+public record BuoiSapToiDto(
+    Guid Id,
+    Guid LopHocId,
+    string TenLopHoc,
+    /// <summary>Số buổi trong khoá (1, 2, 3…) — người dạy và người học đều nói theo số này.</summary>
+    int ThuTu,
+    DateTimeOffset BatDau,
+    DateTimeOffset KetThuc,
+    /// <summary>Phòng học hoặc link học online — null khi chưa xếp phòng.</summary>
+    string? PhongHoc,
+    string? LinkHoc,
+    bool LaHocBu);
 
 public record LayTongQuanQuery : IRequest<TongQuanDto>;
 
@@ -120,7 +155,25 @@ public class LayTongQuanHandler(
                 y => y.TrangThai == TrangThaiYeuCauXepLop.DangCho, ct)
             : 0;
 
+        /*
+          Ba buổi sắp tới — mốc `KetThuc >= bayGio`, xem chú thích ở `BuoiSapToi`.
+
+          Dùng `bayGio` (thời điểm tuyệt đối) chứ không `dauNgay`: hai bên đều là mốc tuyệt đối
+          nên phép so không phụ thuộc múi giờ. Chỉ các phép cắt theo NGÀY ở trên mới cần
+          `tz` — và chúng đã dùng rồi.
+        */
+        var buoiSapToi = await db.BuoiHocs
+            .Where(b => idLop.Contains(b.LopHocId)
+                        && b.TrangThai != TrangThaiBuoiHoc.DaHuy
+                        && b.KetThuc >= bayGio)
+            .OrderBy(b => b.BatDau)
+            .Take(3)
+            .Select(b => new BuoiSapToiDto(
+                b.Id, b.LopHocId, b.LopHoc.Ten, b.ThuTu, b.BatDau, b.KetThuc,
+                b.PhongHoc, b.LinkHoc, b.LaHocBu))
+            .ToListAsync(ct);
+
         return new TongQuanDto(
-            buoiHomNay, buoiQuaHan, baiNopChuaCham, choXepLop, lopHoatDong);
+            buoiHomNay, buoiQuaHan, baiNopChuaCham, choXepLop, lopHoatDong, buoiSapToi);
     }
 }

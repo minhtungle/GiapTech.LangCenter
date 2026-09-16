@@ -8,6 +8,24 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — Tổng quan hiện buổi sắp tới, bấm tới thẳng chi tiết (17/09/2026)
+
+Theo yêu cầu chủ sản phẩm. Màn Tổng quan (học viên · giáo viên · quản trị đều dùng chung) nay có
+khối **Buổi sắp tới**: ba buổi gần nhất trong phạm vi người đang đăng nhập, mỗi dòng đủ **tên lớp ·
+số buổi · thời gian** (kèm phòng học / link online nếu có), bấm cả dòng là tới thẳng
+`/lms/buoi-hoc/{id}`.
+
+Trước đó chỉ có con số `buoiHomNay` — không nói được lớp nào, mấy giờ, và **không bấm được**, trái
+đúng nguyên tắc số 1 của màn này: *"mỗi con số phải dẫn tới một màn xử lý"*. Con số đó vẫn giữ làm
+bối cảnh.
+
+Ba chốt của truy vấn, mỗi cái sai một kiểu: **gồm cả hôm nay** (buổi 18h tối nay vẫn là việc sắp
+tới lúc 8h sáng); mốc **`KetThuc >= bây giờ`** chứ không `BatDau` (buổi đang dạy dở vẫn cần mở để
+điểm danh — lấy `BatDau` thì nó biến mất ngay khi chuông reo); **bỏ buổi đã huỷ**.
+
+Test: +1 E2E. Ba đột biến kiểm đỏ — link tới màn lớp thay vì chi tiết buổi, bỏ số buổi khỏi dòng,
+backend lấy buổi đã qua.
+
 ### Changed — lịch học ưu tiên buổi sắp tới lên đầu (16/09/2026)
 
 Theo yêu cầu chủ sản phẩm. Bảng buổi học ở tab *Lịch & điểm danh* chia hai nhóm có tiêu đề:

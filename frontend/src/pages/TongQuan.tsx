@@ -1,14 +1,17 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import {
-  AlertTriangle, CalendarDays, ChevronRight, ClipboardCheck, GraduationCap, Settings,
-  ShieldCheck, UserPlus, Users,
+  AlertTriangle, CalendarDays, ChevronRight, ClipboardCheck, GraduationCap, MapPin, Settings,
+  ShieldCheck, UserPlus, Users, Video,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import { Card, CardContent, CardHeader, CardTitle, TrangTrong } from '@/components/ui'
+import {
+  Badge, Card, CardContent, CardHeader, CardTitle, TrangTrong,
+} from '@/components/ui'
 import { useAuth } from '@/lib/auth'
 import { useQuyen } from '@/lib/quyen'
+import { gioVN } from '@/pages/dao-tao/buoiHocTypes'
 
 /** FR-15 — số liệu màn Tổng quan, đã lọc theo phạm vi người đang đăng nhập. */
 interface TongQuanDto {
@@ -18,6 +21,20 @@ interface TongQuanDto {
   /** 0 với người không có `LopHoc.Sua` — backend tự gác. */
   choXepLop: number
   lopDangHoatDong: number
+  buoiSapToi: BuoiSapToi[]
+}
+
+/** Một buổi sắp tới — đủ thông tin để quyết định có mở hay không mà không phải bấm vào. */
+interface BuoiSapToi {
+  id: string
+  lopHocId: string
+  tenLopHoc: string
+  thuTu: number
+  batDau: string
+  ketThuc: string
+  phongHoc: string | null
+  linkHoc: string | null
+  laHocBu: boolean
 }
 
 /**
@@ -119,6 +136,63 @@ export default function TongQuan() {
                   </div>
                 ))}
               </div>
+
+              {/*
+                BUỔI SẮP TỚI (17/09/2026) — đủ tên lớp, số buổi, thời gian, và bấm được tới
+                thẳng chi tiết buổi.
+
+                Trước đó Tổng quan chỉ có con số "buổi học hôm nay": không nói được lớp nào,
+                mấy giờ, và không bấm được — người dùng biết có việc mà vẫn phải đi tìm.
+
+                Ẩn hẳn khi không có buổi nào, không hiện khối rỗng: Tổng quan chỉ nêu việc CÓ
+                THẬT (nguyên tắc của màn này), khối trống chỉ làm loãng.
+              */}
+              {(tq?.buoiSapToi.length ?? 0) > 0 && (
+                <div className="grid gap-1.5">
+                  <h3 className="text-sm font-semibold">{t('tongQuan.buoiSapToi')}</h3>
+                  <ul className="divide-y divide-border">
+                    {tq!.buoiSapToi.map((b) => (
+                      <li key={b.id}>
+                        {/* Cả dòng là link tới CHI TIẾT BUỔI, không phải màn lớp. */}
+                        <Link
+                          to={`/lms/buoi-hoc/${b.id}`}
+                          className="flex items-center gap-3 py-2.5 text-sm hover:text-[hsl(var(--primary))]"
+                        >
+                          <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-baseline gap-x-2">
+                              <span className="truncate font-medium">{b.tenLopHoc}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {t('tongQuan.buoiThu', { so: b.thuTu })}
+                              </span>
+                              {b.laHocBu && (
+                                <Badge variant="accent">{t('buoiHoc.hocBu')}</Badge>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
+                              <span>{gioVN(b.batDau)}</span>
+                              {/* Phòng/link: thứ người dùng cần NGAY trước giờ học. */}
+                              {b.phongHoc && (
+                                <span className="inline-flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {b.phongHoc}
+                                </span>
+                              )}
+                              {b.linkHoc && (
+                                <span className="inline-flex items-center gap-1">
+                                  <Video className="h-3 w-3" />
+                                  {t('buoiHoc.hocOnline')}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {viec.length === 0 ? (
                 <TrangTrong thongDiep={t('tongQuan.khongCoViec')} />
