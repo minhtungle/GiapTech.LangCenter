@@ -191,6 +191,49 @@ Kiểm trước khi chạy: `Sale%` chỉ khớp W686AE9 (192 tenant E2E trong D
 không khớp). Backup 6.9 MB → dry-run trên DB bản sao → chạy thật: `UPDATE 4`. Admin và Chị Mai giữ
 nguyên `NhanVien`. Ảnh chụp tenant thật xác nhận không ai bị gắn nhãn sai.
 
+## Việc thứ tư: thống kê lọc từ ngày → đến ngày
+
+Yêu cầu: *"phần khoảng thời gian lọc hãy đổi thành từ ngày tới ngày giống khách hàng và doanh
+thu"*. Rõ ràng, và phần UI đúng là đổi một khối JSX. Hai thứ ngầm bên dưới mới đáng kể.
+
+### Lệch một ngày, không có gì báo
+
+Đọc handler trước khi sửa. Hai màn so ngày **khác nhau**:
+
+| Màn | So sánh | Frontend gửi gì |
+|---|---|---|
+| Doanh thu | `NgayDangKy <= denNgay` | gắn `T23:59:59Z` |
+| **Thống kê** | `NgayDangKy < den` | phải gửi **ngày hôm sau** |
+
+Nếu tôi copy y nguyên cách của màn Doanh thu — hoặc gửi thẳng ngày người dùng chọn — thì **mất
+trọn ngày cuối kỳ**. Chọn "đến 30/09" mà đơn ngày 30/09 không được tính, và không có ngoại lệ nào
+ném ra: chỉ là con số nhỏ hơn thực tế. Loại lỗi mà kế toán phát hiện hộ sau vài tuần.
+
+Cũng không gắn `Z`: handler cắt kỳ theo **múi giờ trung tâm** (bài học FR-15 đã ghi sẵn trong
+`ThongKeCrmDtos`), gắn `Z` là cắt theo UTC và đẩy đơn sáng sớm sang kỳ trước.
+
+### Lỗi tự gây: bộ lọc biến mất
+
+Màn này có `if (!tk) return <TrangTrong/>`. Hợp lý **hồi bộ lọc là ô chọn sẵn** — luôn có giá trị
+hợp lệ nên `tk` hầu như không rỗng. Nhưng khi cho nhập tay, một kỳ rỗng làm cả trang **kể cả bộ
+lọc** thành "Không tìm thấy dữ liệu": người dùng không còn ô nào để sửa lại và phải F5.
+
+Thấy được nhờ chụp ảnh lúc kiểm chứng, không nhờ tsc hay lint. Đây là lần thứ ba trong ngày ảnh
+chụp bắt lỗi mà validator không bắt được.
+
+### Đột biến sống, và vì sao
+
+Đột biến "khôi phục `return` sớm" lúc đầu **không làm đỏ** test nào — dù nó chính là lỗi tôi vừa
+sửa. Lý do: ca tôi viết là "khoảng đảo đầu", mà lúc đó query bị `enabled: false` và **TanStack
+Query giữ lại dữ liệu của lần gọi trước**, nên `tk` vẫn có và `return` không bao giờ chạy.
+
+Đã kiểm bằng probe riêng (đặt khoảng sai rồi reload) chứ không suy đoán: hai ô ngày là state của
+component, không nằm trong URL, nên khoảng sai không sống qua F5. Thêm ca **kỳ rỗng** (ngày hợp lệ
+nhưng không có đơn — tái hiện chắc chắn) thì đột biến đỏ ngay.
+
+Bài học: một đột biến sống không mặc nhiên là "test yếu"; phải hiểu **vì sao** nó sống rồi mới biết
+nên thêm test hay chấp nhận.
+
 ## Kết quả
 
-536 test backend · 28 frontend · 34 E2E — xanh hết.
+536 test backend · 28 frontend · 35 E2E — xanh hết.

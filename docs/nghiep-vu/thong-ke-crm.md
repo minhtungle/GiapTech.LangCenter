@@ -57,6 +57,41 @@ nhau — người đọc không có cách nào biết. Canh bởi `Loc_theo_muc_
 Đổi loại thì **bỏ lọc cũ**: id khoá học không có nghĩa gì trong danh sách sản phẩm, giữ lại sẽ
 lọc ra rỗng mà người dùng không hiểu vì sao.
 
+### Lọc thời gian: từ ngày → đến ngày (16/09/2026)
+
+Yêu cầu chủ sản phẩm: *"phần khoảng thời gian lọc hãy đổi thành từ ngày tới ngày giống khách hàng
+và doanh thu"*. Thay ô chọn sẵn (*12 tháng / 6 tháng / 3 tháng / tháng này*) bằng **hai ô ngày**,
+cùng nhãn và cùng kiểu với màn Khách hàng và Doanh thu.
+
+Dùng nhãn của màn **Doanh thu** ("Từ ngày" / "Đến ngày"), không của màn Khách hàng ("Tạo hồ sơ
+từ"): thống kê lọc theo **ngày đăng ký đơn**, không theo ngày tạo hồ sơ khách.
+
+**Vẫn giữ mặc định 12 tháng gần nhất** — mở trang phải có số ngay, và ô *"so kỳ trước"* suy độ dài
+kỳ từ chính khoảng này nên để trống hai đầu thì không so được với gì. Có nút **"Kỳ mặc định"** để
+về lại, vì ô chọn sẵn cũ làm việc đó bằng một cú bấm.
+
+> **Lệch một ngày ở `denNgay` — cái bẫy của màn này.**
+>
+> Handler thống kê so `NgayDangKy < den`, **khác** màn Doanh thu (`<= denNgay`, nên bên đó gắn
+> `T23:59:59Z`). Nên frontend phải gửi **ngày HÔM SAU** ngày người dùng chọn. Gửi thẳng thì **mất
+> trọn ngày cuối kỳ**: chọn "đến 30/09" mà đơn ngày 30/09 không được tính — không có gì báo lỗi,
+> chỉ là con số nhỏ hơn thực tế.
+>
+> Gửi dạng `yyyy-MM-dd` **không kèm `Z`**: để backend diễn giải theo **múi giờ trung tâm** như nó
+> vẫn làm với giá trị mặc định. Gắn `Z` sẽ cắt kỳ theo UTC và đẩy đơn sáng sớm sang kỳ trước (bài
+> học FR-15, ghi trong `ThongKeCrmDtos`).
+>
+> Canh bởi `e2e/thong-ke-tu-den-ngay.spec.ts` — test tạo một đơn **đúng ngày** được chọn làm
+> `denNgay`; đột biến bỏ `+1 ngày` làm đỏ ngay.
+
+**Bộ lọc phải sống khi không có dữ liệu.** Màn này từng `return <TrangTrong/>` sớm khi `tk` rỗng —
+hợp lý hồi bộ lọc là ô chọn sẵn (luôn hợp lệ). Với ô nhập tay, một kỳ rỗng hoặc khoảng đảo đầu làm
+cả trang **kể cả bộ lọc** thành "Không tìm thấy dữ liệu": người dùng không còn ô nào để sửa và
+phải F5. Gặp thật lúc kiểm chứng tính năng này. Nay chỉ **phần thân** phụ thuộc `tk`.
+
+Khoảng đảo đầu (`tuNgay > denNgay`) thì **không gọi API**, hiện cảnh báo tại chỗ — gọi rồi hiện
+"không có dữ liệu" khiến người dùng tưởng kỳ đó thật sự rỗng.
+
 ## Sáu nhóm số liệu
 
 | Nhóm | Dạng hiển thị | Vì sao dạng đó |

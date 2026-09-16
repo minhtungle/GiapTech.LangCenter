@@ -8,6 +8,25 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — Thống kê CRM lọc từ ngày → đến ngày (16/09/2026)
+
+Theo yêu cầu chủ sản phẩm: *"phần khoảng thời gian lọc hãy đổi thành từ ngày tới ngày giống khách
+hàng và doanh thu"*. Bỏ ô chọn sẵn *12 tháng / 6 tháng / 3 tháng / tháng này*; ba màn CRM nay cùng
+một cách lọc thời gian. Vẫn giữ mặc định 12 tháng gần nhất, thêm nút **"Kỳ mặc định"**.
+
+**Lệch một ngày — cái bẫy của màn này.** Handler thống kê so `NgayDangKy < den`, khác màn Doanh thu
+(`<= denNgay`). Nên frontend gửi **ngày hôm sau**; gửi thẳng thì mất trọn ngày cuối kỳ (chọn "đến
+30/09" mà đơn 30/09 không được tính) — không có gì báo lỗi, chỉ là con số nhỏ hơn thực tế.
+
+**Một lỗi tự gây, tự bắt:** màn này `return` sớm khi không có dữ liệu — hợp lý hồi bộ lọc là ô chọn
+sẵn (luôn hợp lệ), nhưng với ô nhập tay thì một kỳ rỗng làm cả trang **kể cả bộ lọc** thành "Không
+tìm thấy dữ liệu", người dùng không còn ô nào để sửa và phải F5. Nay chỉ phần thân phụ thuộc dữ
+liệu.
+
+Test: +1 E2E. Cả hai mệnh đề kiểm bằng đột biến — bỏ `+1 ngày`, và khôi phục `return` sớm.
+Đột biến thứ hai lúc đầu **sống**: ca "khoảng đảo đầu" không bắt được nó vì TanStack Query giữ dữ
+liệu của lần gọi trước khi query bị tắt; đã thêm ca **kỳ rỗng** (tái hiện chắc chắn) thì bắt được.
+
 ### Added — vai trò Nhân viên kinh doanh (16/09/2026)
 
 Theo yêu cầu chủ sản phẩm: *"vai trò nhân viên => nhân viên kinh doanh. tránh nhầm lẫn"*.

@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api } from '@/lib/api'
-import { Button, Card, CardContent, Label, TrangTrong } from '@/components/ui'
+import {
+  Button, CanhBaoLoi, Card, CardContent, Input, Label, TrangTrong,
+} from '@/components/ui'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 import {
   DuongThoiGian, KhungBieuDo, OSo, Pheu, ThanhNgang, tienDayDu, tienGon,
@@ -62,15 +64,22 @@ interface ThongKeCrmDto {
   elearning: SoLieuElearning | null
 }
 
-/** Khoảng thời gian — tính ở client rồi gửi mốc tuyệt đối, backend không đoán ý. */
-const KHOANG = [
-  { ma: '12thang', thang: 12 },
-  { ma: '6thang', thang: 6 },
-  { ma: '3thang', thang: 3 },
-  { ma: 'thangNay', thang: 0 },
-] as const
+/** `yyyy-MM-dd` theo giờ ĐỊA PHƯƠNG — `toISOString()` quy về UTC nên lùi một ngày ở UTC+7. */
+const ngayISO = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
-type MaKhoang = (typeof KHOANG)[number]['ma']
+/**
+ * Mặc định: 12 tháng gần nhất, tính từ ngày 1 của tháng đầu kỳ.
+ *
+ * Vẫn cần mặc định dù đã cho chọn tay (16/09/2026): mở trang ra phải có số ngay, và **ô số
+ * "so kỳ trước" suy độ dài kỳ từ chính khoảng này** — để trống hai đầu thì không so được với
+ * gì cả.
+ */
+const KHOANG_MAC_DINH = () => {
+  const nay = new Date()
+  const tu = new Date(nay.getFullYear(), nay.getMonth() - 11, 1)
+  return { tuNgay: ngayISO(tu), denNgay: ngayISO(nay) }
+}
 
 /**
  * FR-28 — thống kê CRM (14/09/2026).
@@ -88,40 +97,61 @@ type MaKhoang = (typeof KHOANG)[number]['ma']
  */
 export default function ThongKe() {
   const { t } = useTranslation()
-  const [khoang, setKhoang] = useState<MaKhoang>('12thang')
+  const macDinh = KHOANG_MAC_DINH()
+  const [tuNgay, setTuNgay] = useState(macDinh.tuNgay)
+  const [denNgay, setDenNgay] = useState(macDinh.denNgay)
   const [loai, setLoai] = useState<LoaiThongKe>('KhoaHoc')
   const [chiMuc, setChiMuc] = useState<string[]>([])
 
-  const { tuNgay, denNgay } = (() => {
-    const nay = new Date()
-    const den = new Date(nay.getFullYear(), nay.getMonth(), nay.getDate() + 1)
-    const cau = KHOANG.find((k) => k.ma === khoang)!
-    const tu =
-      cau.thang === 0
-        ? new Date(nay.getFullYear(), nay.getMonth(), 1)
-        : new Date(nay.getFullYear(), nay.getMonth() - (cau.thang - 1), 1)
-    return { tuNgay: tu.toISOString(), denNgay: den.toISOString() }
+  /*
+    Mốc gửi lên API.
+
+    `denNgay` phải là **NGÀY HÔM SAU**, không phải chính ngày người dùng chọn: handler thống kê
+    so `NgayDangKy < den` (khác màn Doanh thu dùng `<= denNgay`, nên bên đó gắn `T23:59:59Z`).
+    Gửi thẳng ngày đã chọn thì **mất trọn ngày cuối kỳ** — chọn "đến 16/09" mà đơn ngày 16/09
+    không được tính, một lỗi lệch một ngày không có gì báo.
+
+    Gửi dạng `yyyy-MM-dd` (không kèm giờ/offset) để backend diễn giải theo **múi giờ trung tâm**
+    — nó đã làm đúng việc đó cho giá trị mặc định. Gắn `Z` vào đây sẽ cắt kỳ theo UTC và đẩy đơn
+    sáng sớm sang kỳ trước (đúng bài học FR-15 ghi trong `ThongKeCrmDtos`).
+  */
+  const denGuiLen = (() => {
+    if (!denNgay) return undefined
+    const d = new Date(`${denNgay}T00:00:00`)
+    d.setDate(d.getDate() + 1)
+    return ngayISO(d)
   })()
 
+  /** Người dùng đảo hai đầu thì không gọi API với khoảng âm — báo ngay trên màn. */
+  const khoangSai = !!tuNgay && !!denNgay && tuNgay > denNgay
+
   const { data: tk, isLoading } = useQuery({
-    queryKey: ['thong-ke-crm', tuNgay, denNgay, loai, chiMuc],
+    queryKey: ['thong-ke-crm', tuNgay, denGuiLen, loai, chiMuc],
+    enabled: !khoangSai,
     queryFn: async () =>
       (await api.get<ThongKeCrmDto>('/thong-ke-crm', {
-        params: { tuNgay, denNgay, loai, chiMuc },
+        params: { tuNgay: tuNgay || undefined, denNgay: denGuiLen, loai, chiMuc },
         // Mảng id gửi thành `chiMuc=a&chiMuc=b` — ASP.NET bind `List<Guid>` theo dạng này.
         paramsSerializer: { indexes: null },
       })).data,
   })
 
-  if (isLoading) return <TrangTrong thongDiep={t('chung.dangTai')} />
-  if (!tk) return <TrangTrong thongDiep={t('loi.KHONG_TIM_THAY')} />
+  /*
+    KHÔNG `return` sớm khi chưa có dữ liệu.
 
+    Trước 16/09/2026 màn này `return <TrangTrong/>` khi `tk` rỗng — hợp lý hồi bộ lọc thời gian
+    là ô chọn sẵn (luôn có giá trị hợp lệ). Nhưng từ khi cho **nhập tay từ ngày / đến ngày**, một
+    khoảng sai sẽ làm cả trang biến thành "Không tìm thấy dữ liệu" — **kể cả bộ lọc**, nên người
+    dùng không còn ô nào để sửa lại và phải F5. Đã gặp thật lúc kiểm chứng.
+
+    Nay bộ lọc LUÔN render; chỉ phần thân mới phụ thuộc `tk`.
+  */
   const delta =
-    tk.doanhThuKyTruoc && tk.doanhThuKyTruoc > 0
+    tk?.doanhThuKyTruoc && tk.doanhThuKyTruoc > 0
       ? ((tk.tongDoanhThu - tk.doanhThuKyTruoc) / tk.doanhThuKyTruoc) * 100
       : undefined
 
-  const conThieu = tk.tongDoanhThu - tk.daThu
+  const conThieu = tk ? tk.tongDoanhThu - tk.daThu : 0
 
   /** Tên hiển thị của một lát; null = nhóm chưa xác định (đơn cũ, người chưa gán phòng ban). */
   /**
@@ -159,12 +189,36 @@ export default function ThongKe() {
           />
         </div>
 
-        <div className="w-48">
-          <Label>{t('thongKe.khoangThoiGian')}</Label>
-          <SelectTimKiem
-            giaTri={khoang}
-            luaChon={KHOANG.map((k) => ({ giaTri: k.ma, nhan: t(`thongKe.khoang.${k.ma}`) }))}
-            onDoi={(v) => setKhoang((v as MaKhoang) ?? '12thang')}
+        {/*
+          Từ ngày / đến ngày — giống màn Khách hàng và Doanh thu (yêu cầu 16/09/2026).
+
+          Thay cho ô chọn sẵn "12 tháng / 6 tháng / 3 tháng / tháng này": người dùng cần xem
+          đúng một kỳ kế toán hay một đợt tuyển sinh, mà không preset nào khớp. Ba màn CRM giờ
+          cùng một cách lọc thời gian — cùng nhãn, cùng kiểu ô, cùng bề rộng.
+
+          Dùng nhãn của màn Doanh thu ("Từ ngày"/"Đến ngày"), KHÔNG của màn Khách hàng
+          ("Tạo hồ sơ từ"): thống kê lọc theo **ngày đăng ký đơn**, không theo ngày tạo hồ sơ
+          khách — hai mốc khác nhau, mượn nhãn sai sẽ nói sai về con số bên dưới.
+        */}
+        <div className="w-40">
+          <Label htmlFor="tk-tu-ngay">{t('doanhThu.tuNgay')}</Label>
+          <Input
+            id="tk-tu-ngay"
+            type="date"
+            value={tuNgay}
+            max={denNgay || undefined}
+            onChange={(e) => setTuNgay(e.target.value)}
+          />
+        </div>
+
+        <div className="w-40">
+          <Label htmlFor="tk-den-ngay">{t('doanhThu.denNgay')}</Label>
+          <Input
+            id="tk-den-ngay"
+            type="date"
+            value={denNgay}
+            min={tuNgay || undefined}
+            onChange={(e) => setDenNgay(e.target.value)}
           />
         </div>
 
@@ -180,6 +234,21 @@ export default function ThongKe() {
           </div>
         )}
 
+        {/*
+          Đặt lại kỳ mặc định. Ô chọn sẵn cũ làm việc này bằng một cú bấm, nên bỏ nó đi mà không
+          có đường về "12 tháng gần nhất" là khiến việc thường gặp nhất thành việc phải gõ tay.
+          Chỉ hiện khi đang lệch khỏi mặc định.
+        */}
+        {(tuNgay !== macDinh.tuNgay || denNgay !== macDinh.denNgay) && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => { setTuNgay(macDinh.tuNgay); setDenNgay(macDinh.denNgay) }}
+          >
+            {t('thongKe.kyMacDinh')}
+          </Button>
+        )}
+
         {chiMuc.length > 0 && (
           <Button variant="outline" size="sm" onClick={() => setChiMuc([])}>
             {t('thongKe.boLoc')}
@@ -187,12 +256,22 @@ export default function ThongKe() {
         )}
       </div>
 
+      {/* Khoảng đảo đầu: nói ngay, không gọi API rồi hiện "không có dữ liệu" gây hiểu sai. */}
+      {khoangSai && <CanhBaoLoi>{t('thongKe.khoangSai')}</CanhBaoLoi>}
+
       {chiMuc.length > 0 && (
         <p className="text-xs text-muted-foreground">
           {t('thongKe.dangLoc', { so: chiMuc.length })}
         </p>
       )}
 
+      {isLoading && <TrangTrong thongDiep={t('chung.dangTai')} />}
+      {!isLoading && !tk && !khoangSai && (
+        <TrangTrong thongDiep={t('loi.KHONG_TIM_THAY')} />
+      )}
+
+      {tk && (
+        <>
       {/*
         Hàng ô số đổi theo loại. Elearning KHÔNG hiện số tiền — hiện "tổng doanh thu" ngay trên
         dòng chữ "không đo tiền" là tự mâu thuẫn, và người đọc sẽ tưởng 17 triệu kia là doanh
@@ -336,6 +415,8 @@ export default function ThongKe() {
           />
         </KhungBieuDo>
       </div>
+        </>
+      )}
     </div>
   )
 }

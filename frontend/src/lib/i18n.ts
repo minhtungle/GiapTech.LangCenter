@@ -240,8 +240,9 @@ const vi = {
     Khac: 'Khác',
   },
   thongKe: {
-    khoangThoiGian: 'Khoảng thời gian',
     loaiThongKe: 'Thống kê theo',
+    kyMacDinh: 'Kỳ mặc định',
+    khoangSai: 'Từ ngày phải trước hoặc bằng đến ngày.',
     loai: {
       KhoaHoc: 'Khoá học',
       SanPham: 'Sản phẩm',
@@ -274,12 +275,6 @@ const vi = {
     soLuotGhiDanh: 'Lượt ghi danh',
     tyLeHoanThanh: 'Tỷ lệ hoàn thành',
     baiTrenTong: '{{da}}/{{tong}} bài',
-    khoang: {
-      '12thang': '12 tháng gần nhất',
-      '6thang': '6 tháng gần nhất',
-      '3thang': '3 tháng gần nhất',
-      thangNay: 'Tháng này',
-    },
     tongDoanhThu: 'Tổng doanh thu',
     soDon: 'Số đơn',
     giaTriDonTb: 'Giá trị đơn trung bình',
