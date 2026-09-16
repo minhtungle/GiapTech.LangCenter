@@ -43,6 +43,7 @@ Còn lại    ███░░░░░░░░░░░░░  Bài kiểm tra 
 | FR-26 | Khoá học trực tuyến | ✅ | ✅ | 4 bảng, **không bảng nào trỏ sang CRM**. Quản trị cấp quyền học bằng tay. `IPhamViKhoaOnline` — tầng phạm vi **thứ tư**, ba nhánh: ghi danh còn hạn · bài công khai · người soạn |
 | FR-27 | Bài tập cho khoá online | ⬜ | ⬜ | Bước 4/4 của elearning. Phải nới `BAI_TAP.buoi_hoc_id` thành 2 FK loại trừ — **đụng FR-11/FR-12 đang chạy**, nên tách riêng làm cuối |
 | FR-28 | Thống kê CRM | ✅ | ✅ | 4 loại (khoá học · sản phẩm · elearning · đội nhóm), lọc theo danh sách, biểu đồ tăng trưởng. **Doanh số tính cho người tạo hồ sơ khách**. Elearning **chỉ đo số lượng** — không nối đơn hàng nên không có tiền để chia |
+| FR-29 | Thống kê nhân sự | ✅ | ✅ | Ba bảng xếp hạng (kinh doanh · giáo viên · trợ giảng) + **module tiêu chí chấm thang 5** do trung tâm tự cấu hình. Quản lý chấm nhân viên kinh doanh theo kỳ tháng; học viên chấm giảng dạy trên từng buổi. Cầu nối HRM → CRM + LMS, khai ở ADR-0005 |
 
 Ngoài bảng: **Bài kiểm tra** (`BAI_KIEM_TRA`, `BAI_LAM`) đã có schema và cách ly tenant, nhưng
 **chưa có API và UI** — xem nợ N1.
@@ -98,7 +99,7 @@ phải đồng bộ giữa ba DB nếu tách. Quyết định giữ một source
 Đã chạy: bộ chuyển hệ thống, sidebar lọc theo hệ thống, tab phân quyền, hồ sơ con người tách
 đôi (Nhân sự → HRM · Học viên → LMS), **URL theo tiền tố** `/hrm` `/crm` `/lms` (10/09).
 
-Nghiệp vụ ba hệ thống nay **đủ**: HRM có FR-22 → FR-24, CRM có FR-17 → FR-21 + FR-28, LMS có FR-07 →
+Nghiệp vụ ba hệ thống nay **đủ**: HRM có FR-22 → FR-24 + FR-29, CRM có FR-17 → FR-21 + FR-28, LMS có FR-07 →
 FR-14.
 
 **Hai màn từng dự kiến đã BỎ** (10/09, theo yêu cầu chủ sản phẩm): "Nhân viên kinh doanh" và

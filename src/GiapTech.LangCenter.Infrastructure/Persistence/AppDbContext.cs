@@ -40,6 +40,11 @@ public class AppDbContext(
     public DbSet<DiemDanh> DiemDanhs => Set<DiemDanh>();
     public DbSet<NhanXetBuoiHoc> NhanXetBuoiHocs => Set<NhanXetBuoiHoc>();
 
+    // ---------- FR-29: đánh giá chất lượng (16/09/2026) ----------
+    public DbSet<TieuChiDanhGia> TieuChiDanhGias => Set<TieuChiDanhGia>();
+    public DbSet<DiemTieuChi> DiemTieuChis => Set<DiemTieuChi>();
+    public DbSet<PhieuDanhGiaNhanVien> PhieuDanhGiaNhanViens => Set<PhieuDanhGiaNhanVien>();
+
     public DbSet<TepDinhKem> TepDinhKems => Set<TepDinhKem>();
     public DbSet<BaiTap> BaiTaps => Set<BaiTap>();
     public DbSet<BaiNop> BaiNops => Set<BaiNop>();

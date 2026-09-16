@@ -1,6 +1,6 @@
 # ERD — Mô hình dữ liệu
 
-**42 bảng**, PostgreSQL. Mọi cột chuỗi có `HasMaxLength` (canh bởi
+**45 bảng**, PostgreSQL. Mọi cột chuỗi có `HasMaxLength` (canh bởi
 `MoiEntityPhaiCoConfigTests`); ngoại lệ duy nhất là hai cột JSON của `NHAT_KY_HE_THONG`. Nội dung dưới đây khớp với schema thật (kiểm bằng
 `information_schema` sau khi áp toàn bộ migration), không phải bản thiết kế trên giấy.
 
@@ -179,6 +179,18 @@ không phân công được họ vào lớp cũ nữa.
 | Bảng | Cột đáng chú ý |
 |---|---|
 | `KHOAN_THU_HOC_PHI` | `so_tien numeric(18,2)` + `CHECK (so_tien > 0)`, `phuong_thuc`, `so_phieu` (đối chiếu phiếu giấy), `nguoi_thu_id`. **Không có cột `da_thu` ở đâu cả** — công nợ tính động bằng `SUM` |
+
+### Nhóm đánh giá chất lượng (3 bảng — FR-29, 16/09/2026)
+
+| Bảng | Cột đáng chú ý |
+|---|---|
+| `TIEU_CHI_DANH_GIA` | `nhom` (0=KinhDoanh, 1=GiangDay), `thu_tu`, `dang_dung`. `UNIQUE(tenant_id, nhom, ten)` — trùng tên trong cùng nhóm thì người chấm không biết chấm cái nào |
+| `DIEM_TIEU_CHI` | `diem` + `CHECK (diem BETWEEN 1 AND 5)`; **đúng một** trong `nhan_xet_buoi_hoc_id` / `phieu_danh_gia_nhan_vien_id` (`CHECK` cùng khuôn `TEP_DINH_KEM`). FK tới tiêu chí là `RESTRICT` — xoá tiêu chí đang có điểm sẽ làm mọi kỳ đã chấm đổi số |
+| `PHIEU_DANH_GIA_NHAN_VIEN` | `ky varchar(7)` dạng `yyyy-MM` (chuỗi để so và sắp xếp đúng thứ tự thời gian mà không cần chuẩn hoá mốc), `UNIQUE(tenant_id, nhan_vien_id, ky)` |
+
+`NHAN_XET_BUOI_HOC` **giữ nguyên** cột `muc_hai_long` (1–5, hài lòng chung) — không bị điểm tiêu
+chí thay thế. Thống kê ưu tiên điểm tiêu chí, thiếu thì rơi về `muc_hai_long`, nên dữ liệu cũ
+không mất ý nghĩa (quy tắc #1).
 
 ## Ràng buộc nghiệp vụ quan trọng
 

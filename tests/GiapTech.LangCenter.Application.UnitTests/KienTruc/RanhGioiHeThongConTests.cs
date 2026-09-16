@@ -51,6 +51,23 @@ public class RanhGioiHeThongConTests
             + "`KHACH_HANG.NguoiTao` qua IAppDbContext, không gọi handler nào của CRM. "
             + "Gác riêng bằng `KhachHang.Xem` vì endpoint này gác `LopHoc.Xem` — quyền mà giáo "
             + "viên và học viên cũng có.",
+
+        ["ThongKeNhanSuDtos.cs → Crm"] =
+            "FR-29 (16/09/2026): xếp hạng nhân viên kinh doanh theo DOANH THU và SỐ HỌC VIÊN "
+            + "mang về — chủ sản phẩm yêu cầu tường minh, và hai chỉ số đó chỉ CRM có. Chỉ ĐỌC "
+            + "`DANG_KY_KHOA_HOC` và `KHACH_HANG` qua IAppDbContext, dùng ĐÚNG cách quy doanh số "
+            + "của FR-28 (`KhachHang.CreatedById`, `SoTien * TyGiaVeVnd`) — lấy mốc khác thì cùng "
+            + "một người ra hai con số ở hai màn. Không gọi handler nào của CRM. Gác bằng "
+            + "`ThongKeNhanSu.Xem`, tách khỏi `NhanSu.Xem`: đây là doanh số của cả đội.",
+
+        ["ThongKeNhanSuDtos.cs → DaoTao"] =
+            "FR-29 (16/09/2026): xếp hạng giáo viên / trợ giảng theo SỐ LỚP, SỐ BUỔI DẠY ĐỦ và "
+            + "CHẤT LƯỢNG GIẢNG DẠY do học viên chấm — cả ba chỉ số chỉ LMS có. Chỉ ĐỌC "
+            + "`LOP_HOC`, `LOP_HOC_TRO_GIANG`, `BUOI_HOC`, `NHAN_XET_BUOI_HOC`; không gọi handler "
+            + "nào của LMS và KHÔNG đọc cột tiền nào (chốt 12/09: chỉ CRM nắm tiền). "
+            + "Lưu ý khi sửa: `BUOI_HOC.giao_vien_id = null` nghĩa là *giáo viên chính của lớp*, "
+            + "nên phải rơi về `LOP_HOC.giao_vien_chinh_id` — đếm thẳng cột đó thì mọi giáo viên "
+            + "ra 0 buổi.",
     };
 
     /// <summary>

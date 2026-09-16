@@ -30,7 +30,7 @@ là đường frontend, API vẫn là `/api/v1/hoc-vien`.
 Tách ra từ một ứng dụng quản lý CLB đá bóng (04/09/2026), giữ toàn bộ tầng hệ thống. Nghiệp vụ
 LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 
-**28 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 536 test backend · 28 frontend · 35 E2E xanh.
+**29 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 554 test backend · 28 frontend · 36 E2E xanh.
 
 | Đã chạy đầu-cuối | Chưa có |
 |---|---|
@@ -49,6 +49,7 @@ LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 | **FR-15 Tổng quan**: một màn cho mọi vai trò, chỉ hiện việc tồn đọng, không có số tiền | |
 | **FR-25 → FR-27 Học trực tuyến**: soạn khoá · cấp quyền học · tiến độ (bài tập chấm điểm chưa) | |
 | **FR-28 Thống kê CRM**: doanh thu theo khoá/sản phẩm/đội, phễu, công nợ, biểu đồ tăng trưởng | |
+| **FR-29 Thống kê nhân sự**: xếp hạng kinh doanh/giáo viên/trợ giảng + module tiêu chí chấm thang 5 | |
 
 Chi tiết và nợ kỹ thuật: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
@@ -105,8 +106,8 @@ Chi tiết và nợ kỹ thuật: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 |---|---|
 | **Tiến độ, lộ trình, nợ kỹ thuật** | [`docs/ke-hoach.md`](./docs/ke-hoach.md) |
 | Tổng quan nghiệp vụ, đọc 1 mạch | [`docs/tong-thuat.md`](./docs/tong-thuat.md) |
-| **28 mã FR** theo module | [`docs/nghiep-vu/`](./docs/nghiep-vu/README.md) |
-| **ERD 42 bảng** + ràng buộc + hành vi xoá | [`docs/database/erd.md`](./docs/database/erd.md) |
+| **29 mã FR** theo module | [`docs/nghiep-vu/`](./docs/nghiep-vu/README.md) |
+| **ERD 45 bảng** + ràng buộc + hành vi xoá | [`docs/database/erd.md`](./docs/database/erd.md) |
 | **Nhật ký theo ngày** (bối cảnh git log không có) | [`docs/nhat-ky/`](./docs/nhat-ky/README.md) |
 | Clean Architecture, luật phụ thuộc | [`docs/backend/clean-architecture.md`](./docs/backend/clean-architecture.md) |
 | **Quy ước viết mã** (đặt tên, null, chú thích, test) | [`docs/quy-uoc-code.md`](./docs/quy-uoc-code.md) |
@@ -258,7 +259,7 @@ Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 ```bash
 # --- Backend ---
 dotnet build          # 0 warning — TreatWarningsAsErrors đang bật
-dotnet test           # 536 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
+dotnet test           # 554 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
                       #           quản trị, lớp học, điểm danh, học liệu, học phí
 
 # Chạy API cần 2 biến bắt buộc (thiếu là 500 lúc đăng nhập / tải ảnh, không phải lúc khởi động):
@@ -301,7 +302,7 @@ docker run -d --name lms-pg -e POSTGRES_PASSWORD=devpass -e POSTGRES_USER=langce
 export ConnectionStrings__Default="Host=localhost;Port=55432;Database=langcenter;Username=langcenter;Password=devpass"
 dotnet ef database update --project src/GiapTech.LangCenter.Infrastructure \
   --startup-project src/GiapTech.LangCenter.API
-# → 42 bảng (15 hệ thống + 27 nghiệp vụ) — xem docs/database/erd.md
+# → 45 bảng (15 hệ thống + 30 nghiệp vụ) — xem docs/database/erd.md
 
 # Tạo trung tâm thử — endpoint ẩn danh, mã 7 ký tự do hệ thống sinh:
 curl -X POST localhost:5229/api/v1/dang-ky-trung-tam \

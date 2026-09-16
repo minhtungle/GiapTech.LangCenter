@@ -62,9 +62,19 @@ public class BuoiHocController(ISender sender) : ControllerBase
     public async Task<ActionResult<Guid>> GuiNhanXet(
         Guid id, [FromBody] GuiNhanXetBody body, CancellationToken ct)
         => Ok(await sender.Send(new Application.DaoTao.NhanXet.GuiNhanXetBuoiHocCommand(
-            id, body.NoiDung, body.MucHaiLong), ct));
+            id, body.NoiDung, body.MucHaiLong, body.DiemTieuChis), ct));
 
-    public record GuiNhanXetBody(string NoiDung, int? MucHaiLong = null);
+    /// <summary>
+    /// Thân của lệnh gửi nhận xét.
+    ///
+    /// **Thêm trường mới ở đây PHẢI chuyển tiếp vào command ở trên.** DTO riêng cho thân request
+    /// (để `id` lấy từ route) nghĩa là trường nào không khai ở đây sẽ **bị rơi âm thầm**: command
+    /// nhận `null`, handler chạy đúng theo `null` và không có lỗi nào. Đã xảy ra 16/09/2026 với
+    /// `DiemTieuChis` — chỉ integration test bắt được.
+    /// </summary>
+    public record GuiNhanXetBody(
+        string NoiDung, int? MucHaiLong = null,
+        List<Application.DaoTao.NhanXet.LuuDiemTieuChi>? DiemTieuChis = null);
 
     [HttpPut("{id:guid}")]
     [RequirePermission(ChucNang.BuoiHoc, HanhDong.Sua)]

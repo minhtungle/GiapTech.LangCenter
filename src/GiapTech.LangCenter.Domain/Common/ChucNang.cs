@@ -234,10 +234,32 @@ public static class ChucNang
     /// </summary>
     public const string NhanXetBuoiHoc = nameof(NhanXetBuoiHoc);
 
+    /// <summary>
+    /// Danh mục **tiêu chí đánh giá** thang 5 (FR-29, 16/09/2026) — module cấu hình trong HRM.
+    ///
+    /// Tách khỏi <see cref="NhanSu"/>: đây là cấu hình ảnh hưởng tới **cách cả trung tâm được
+    /// đánh giá**, không phải việc sửa một hồ sơ. Người quản lý nhân sự xem hồ sơ không đồng
+    /// nghĩa được đổi bộ tiêu chí mà mọi người bị chấm theo.
+    /// </summary>
+    public const string TieuChiDanhGia = nameof(TieuChiDanhGia);
+
+    /// <summary>
+    /// Thống kê nhân sự (FR-29) — xếp hạng nhân viên kinh doanh · giáo viên · trợ giảng, và
+    /// **chấm điểm nhân viên kinh doanh theo kỳ**.
+    ///
+    /// Tách khỏi <see cref="NhanSu"/> cùng lý do như `ThongKeDoanhThu` tách khỏi `DoanhThu`:
+    /// `NhanSu.Xem` cho xem hồ sơ một người, còn đây là **bảng xếp hạng cả trung tâm** — kèm
+    /// doanh số và điểm chất lượng của từng đồng nghiệp.
+    ///
+    /// `Cham` = ghi phiếu đánh giá nhân viên kinh doanh; tách khỏi `Xem` vì xem bảng xếp hạng
+    /// là việc của nhiều người, còn chấm điểm là việc của quản lý.
+    /// </summary>
+    public const string ThongKeNhanSu = nameof(ThongKeNhanSu);
+
     public static readonly IReadOnlyList<string> TatCa =
     [
         TaiKhoan, HoSoNguoiDung, PhanQuyen, ThietLapChung, Anh, DoiMatKhauNguoiKhac,
-        NhanSu, ChucVu, PhongBan,
+        NhanSu, ChucVu, PhongBan, TieuChiDanhGia, ThongKeNhanSu,
         DoanhThu, ThongKeDoanhThu, KhachHang, ChamSocKhachHang, KhoaHoc, SanPham,
         LopHoc, GhiDanhLop, XepLop, BuoiHoc, DiemDanh, NhanXetBuoiHoc,
         BaiTap, BaiNopBaiTap, BaiKiemTra, BaiLamKiemTra,
@@ -260,6 +282,8 @@ public static class ChucNang
         [NhanSu] = HeThong.Hrm,
         [ChucVu] = HeThong.Hrm,
         [PhongBan] = HeThong.Hrm,
+        [TieuChiDanhGia] = HeThong.Hrm,
+        [ThongKeNhanSu] = HeThong.Hrm,
 
         [DoanhThu] = HeThong.Crm,
         [ThongKeDoanhThu] = HeThong.Crm,
@@ -330,6 +354,11 @@ public static class ChucNang
         [DoanhThu] = [HanhDong.Xem, HanhDong.Them, HanhDong.Sua, HanhDong.Xoa,
                       HanhDong.ThuTien, HanhDong.GuiXepLop],
         [ThongKeDoanhThu] = [HanhDong.Xem],
+        // Danh mục cấu hình: đủ CRUD, nhưng KHÔNG `Xoa` — tiêu chí đã có điểm thì
+        // chỉ ngừng dùng (`DangDung=false`), xoá sẽ làm mọi kỳ đã chấm đổi số.
+        [TieuChiDanhGia] = [HanhDong.Xem, HanhDong.Them, HanhDong.Sua],
+        // `Cham` = ghi phiếu đánh giá nhân viên kinh doanh theo kỳ.
+        [ThongKeNhanSu] = [HanhDong.Xem, HanhDong.Cham],
         [KhachHang] = Crud,
         [ChamSocKhachHang] = Crud,
         // KHÔNG tách `CauHinhTien` ở đây dù giá là dữ liệu tiền: `LuuKhoaHocCommand` ghi tên,

@@ -165,6 +165,26 @@ public enum LoaiNguoiDung
     NhanVienKinhDoanh = 4
 }
 
+/// <summary>
+/// Nhóm tiêu chí đánh giá (FR-29, 16/09/2026) — quyết định **ai chấm và chấm ở đâu**.
+///
+/// Không gộp một danh mục chung: tiêu chí "Chủ động tìm khách" không có nghĩa với giáo viên, và
+/// hiện nó trên phiếu chấm buổi học chỉ làm học viên bỏ trống.
+/// </summary>
+public enum NhomTieuChi
+{
+    /// <summary>Chấm nhân viên kinh doanh — do QUẢN LÝ chấm theo kỳ tháng.</summary>
+    KinhDoanh = 0,
+
+    /// <summary>
+    /// Chấm chất lượng giảng dạy — do HỌC VIÊN chấm trên từng buổi học.
+    ///
+    /// Dùng chung cho giáo viên và trợ giảng: chủ sản phẩm chốt "trợ giảng tương tự giáo viên",
+    /// và học viên chấm *buổi học* chứ không chấm riêng từng người đứng lớp.
+    /// </summary>
+    GiangDay = 1
+}
+
 /// <summary>Hình thức tổ chức lớp học.</summary>
 public enum HinhThucHoc
 {

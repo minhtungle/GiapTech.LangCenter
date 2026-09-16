@@ -8,6 +8,41 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — FR-29: thống kê nhân sự + module tiêu chí đánh giá (16/09/2026)
+
+Theo yêu cầu chủ sản phẩm: thống kê ở HRM *"tương tự thống kê tại CRM nhưng chỉ cho nhân viên kinh
+doanh, giáo viên và trợ giảng"*, kèm *"các tiêu chí để học viên chấm theo thang 5 thay vì chỉ nhận
+xét"*.
+
+**Ba bảng xếp hạng** (`/hrm?tab=thong-ke`), mỗi vai trò một bộ chỉ số:
+
+| Vai trò | Chỉ số |
+|---|---|
+| Nhân viên kinh doanh | doanh thu · số học viên · chất lượng chăm sóc |
+| Giáo viên | số lớp · số buổi dạy đủ · chất lượng giảng dạy |
+| Trợ giảng | như giáo viên |
+
+**Module tiêu chí** (`/hrm?tab=tieu-chi`): danh mục do trung tâm tự cấu hình, chia hai nhóm —
+`KinhDoanh` (quản lý chấm theo kỳ tháng) và `GiangDay` (học viên chấm từng buổi học). Ba bảng mới:
+`TIEU_CHI_DANH_GIA`, `DIEM_TIEU_CHI`, `PHIEU_DANH_GIA_NHAN_VIEN`; migration **chỉ thêm**, không
+đụng dữ liệu cũ (đã dry-run trên DB bản sao rồi mới chạy thật).
+
+Quyền mới: `TieuChiDanhGia` [Xem, Them, Sua] · `ThongKeNhanSu` [Xem, Cham].
+
+**Chỗ tính sai mà không có gì báo:** `BUOI_HOC.giao_vien_id = null` nghĩa là *giáo viên chính của
+lớp*, không phải "không có giáo viên" — đếm thẳng cột đó thì mọi giáo viên ra 0 buổi (dữ liệu thật
+W686AE9: 12/12 buổi đều null). Đột biến bỏ fallback làm đỏ 3 test.
+
+**Một bug tự gây, chỉ test đầu-cuối bắt được:** `BuoiHocController.GuiNhanXetBody` là DTO riêng cho
+thân request; thêm `DiemTieuChis` vào command mà quên khai ở DTO đó thì điểm học viên chấm **rơi âm
+thầm** — command nhận `null`, handler chạy đúng theo `null`, không lỗi nào.
+
+FR-29 là **cầu nối chéo rộng nhất tới nay** (HRM → CRM + LMS) — đã khai vào `CauNoiDuocPhep` và ghi
+vào ADR-0005 kèm giới hạn: chỉ ĐỌC, không gọi handler hệ thống khác, không đọc cột tiền của LMS.
+
+Test: +18 integration · +1 E2E. Bốn đột biến kiểm đỏ (fallback giáo viên, chỉ đếm buổi hoàn thành,
+null≠0, frontend không gửi điểm).
+
 ### Changed — Thống kê CRM lọc từ ngày → đến ngày (16/09/2026)
 
 Theo yêu cầu chủ sản phẩm: *"phần khoảng thời gian lọc hãy đổi thành từ ngày tới ngày giống khách

@@ -321,6 +321,77 @@ UI: nút *Tải tệp lên* **bị gỡ hẳn `<input>`** khi đủ 10 tệp, kh
 input không có thuộc tính `disabled`, để nguyên thì vẫn bấm chọn được tệp rồi mới nhận lỗi từ
 server. Dòng dưới luôn hiện `đã dùng n/10 tệp`.
 
+## FR-29 — Thống kê nhân sự + tiêu chí đánh giá (16/09/2026)
+
+Yêu cầu chủ sản phẩm: *"thêm phần thống kê, tương tự thống kê tại CRM nhưng chỉ cho nhân viên
+kinh doanh, giáo viên và trợ giảng"*, kèm bộ chỉ số cho từng vai trò và *"thêm các tiêu chí để
+học viên chấm theo thang 5 thay vì chỉ nhận xét"*.
+
+### Ba bảng xếp hạng
+
+| Vai trò | Chỉ số | Nguồn dữ liệu |
+|---|---|---|
+| Nhân viên kinh doanh | doanh thu · số học viên · chất lượng chăm sóc | CRM (`DANG_KY_KHOA_HOC`, `KHACH_HANG`) + phiếu đánh giá |
+| Giáo viên | số lớp · số buổi dạy đủ · chất lượng giảng dạy | LMS (`LOP_HOC`, `BUOI_HOC`, `NHAN_XET_BUOI_HOC`) |
+| Trợ giảng | như giáo viên | `LOP_HOC_TRO_GIANG` + buổi của lớp đó |
+
+`NhanVien` (hành chính, nhân sự, IT) **không có bảng** — chủ sản phẩm chốt đúng ba vai trò.
+
+### Ba chỗ tính sai mà không có gì báo
+
+1. **`BUOI_HOC.giao_vien_id = null` nghĩa là *giáo viên chính của lớp***, không phải "không có
+   giáo viên". Đếm thẳng cột đó thì **mọi giáo viên ra 0 buổi** — trên dữ liệu thật W686AE9 cả
+   12/12 buổi đều null. Phải rơi về `LOP_HOC.giao_vien_chinh_id`. Đột biến bỏ fallback này làm đỏ
+   3 test.
+2. **Chỉ buổi `DaHoanThanh` là "dạy đủ"** — buổi mới lên lịch chưa phải công.
+3. **Doanh thu quy cho người TẠO HỒ SƠ KHÁCH** (`KHACH_HANG.CreatedById`), đúng cách của FR-28.
+   Lấy mốc khác thì cùng một người ra hai con số ở hai màn.
+
+Thêm một quy ước hiển thị: **chưa ai chấm thì trả `null`, không phải `0`** — "chưa có đánh giá"
+khác "bị 0 điểm", mà trên bảng xếp hạng hai thứ đó dẫn tới hai kết luận trái ngược về một người.
+
+### Module tiêu chí đánh giá
+
+`TIEU_CHI_DANH_GIA` — danh mục **do trung tâm tự cấu hình**, chia hai nhóm (`NhomTieuChi`):
+
+| Nhóm | Ai chấm | Ở đâu |
+|---|---|---|
+| `KinhDoanh` | **quản lý** | tab Thống kê nhân sự, theo kỳ `yyyy-MM` |
+| `GiangDay` | **học viên** | ô nhận xét trong từng buổi học |
+
+Người chấm nhân viên kinh doanh là **quản lý**, chốt sau khi cân nhắc hai phương án khác: khách
+hàng chấm (nhưng chính nhân viên ghi hộ ⇒ tự chấm mình) và học viên chấm (nhưng 63/65 học viên
+chưa có tài khoản ⇒ gần như không có phiếu).
+
+Điểm lưu ở `DIEM_TIEU_CHI` — bảng riêng, không phải các cột `diem_1`, `diem_2`…: số tiêu chí do
+người dùng quyết định nên không cột nào đủ. Mỗi hàng thuộc **đúng một** phiếu
+(`nhan_xet_buoi_hoc_id` hoặc `phieu_danh_gia_nhan_vien_id`), canh bằng `CHECK` cùng khuôn
+`TEP_DINH_KEM`. Thang 5 cũng ép bằng `CHECK` ở DB, không chỉ validator.
+
+**Không có endpoint xoá tiêu chí** — xoá tiêu chí đã có điểm sẽ làm mọi kỳ đã chấm đổi số một cách
+im lặng (quy tắc #1). Ngừng dùng bằng `DangDung = false`: phiếu mới không hiện nữa, phiếu cũ vẫn
+đọc được. Cũng **không đổi nhóm** được nếu đã có điểm — đổi nhóm là đổi ý nghĩa của mọi điểm đã
+chấm (điểm "Truyền đạt dễ hiểu" bỗng tính vào xếp hạng kinh doanh).
+
+`MucHaiLong` (1–5, hài lòng chung) **giữ nguyên**, không bị thay thế: nó vẫn là một con số để xếp
+hạng nhanh. Thống kê ưu tiên điểm tiêu chí, thiếu thì rơi về `MucHaiLong` — nên dữ liệu cũ không
+mất ý nghĩa.
+
+### Cầu nối chéo hệ thống — rộng nhất tới nay
+
+FR-29 là cầu nối HRM → **CRM + LMS**, đã khai vào `CauNoiDuocPhep` và ghi vào
+[ADR-0005](../kien-truc/adr/0005-mot-source-va-doi-ten-langcenter.md). Bản chất yêu cầu là *"đánh giá
+con người bằng kết quả công việc"*, mà công việc nằm ở CRM (bán hàng) và LMS (giảng dạy) — HRM chỉ
+giữ hồ sơ con người. Giới hạn tự đặt: **chỉ ĐỌC qua `IAppDbContext`, không gọi handler của hệ
+thống khác**, và không đọc cột tiền nào của LMS (chốt 12/09: chỉ CRM nắm tiền).
+
+### Một bug đáng ghi lại
+
+`BuoiHocController.GuiNhanXetBody` là DTO riêng cho thân request (để `id` lấy từ route). Thêm
+`DiemTieuChis` vào command mà **quên khai ở DTO đó** thì điểm học viên chấm **rơi âm thầm**:
+command nhận `null`, handler chạy đúng theo `null`, không lỗi nào. Chỉ integration test đầu-cuối
+bắt được. Đã ghi chú cảnh báo ngay tại DTO.
+
 ## FR-24 — Danh mục chức vụ
 
 Bảng `CHUC_VU` do admin tự quản: `ten`, `mo_ta`, `thu_tu`, `dang_dung`. Thay cột chuỗi

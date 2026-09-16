@@ -17,7 +17,15 @@ public record NhanXetBuoiHocDto(
     int? MucHaiLong,
     DateTimeOffset ThoiDiem,
     /// <summary>true = nhận xét của chính người đang xem, để UI cho sửa.</summary>
-    bool CuaToi);
+    bool CuaToi,
+    /// <summary>Điểm theo từng tiêu chí (FR-29) — rỗng với nhận xét cũ chỉ có `MucHaiLong`.</summary>
+    List<DiemTieuChiDto> DiemTieuChis);
+
+/// <summary>Một điểm tiêu chí trong phiếu (FR-29, 16/09/2026).</summary>
+public record DiemTieuChiDto(Guid TieuChiId, string TenTieuChi, int Diem);
+
+/// <summary>Một điểm khi GHI — chỉ cần id tiêu chí và điểm.</summary>
+public record LuuDiemTieuChi(Guid TieuChiId, int Diem);
 
 // ---------- Queries ----------
 
@@ -47,7 +55,11 @@ public class LayNhanXetBuoiHocHandler(
             .OrderByDescending(n => n.CreatedAt)
             .Select(n => new NhanXetBuoiHocDto(
                 n.Id, n.HocVienId, n.HocVien.HoTen, n.NoiDung, n.MucHaiLong,
-                n.CreatedAt, n.HocVienId == toi))
+                n.CreatedAt, n.HocVienId == toi,
+                n.DiemTieuChis
+                    .OrderBy(d => d.TieuChi.ThuTu).ThenBy(d => d.TieuChi.Ten)
+                    .Select(d => new DiemTieuChiDto(d.TieuChiId, d.TieuChi.Ten, d.Diem))
+                    .ToList()))
             .ToListAsync(ct);
     }
 
@@ -82,7 +94,15 @@ public class LayNhanXetBuoiHocHandler(
 /// số để lạm dụng thì không cần handler nhớ kiểm.
 /// </summary>
 public record GuiNhanXetBuoiHocCommand(
-    Guid BuoiHocId, string NoiDung, int? MucHaiLong = null) : IRequest<Guid>;
+    Guid BuoiHocId, string NoiDung, int? MucHaiLong = null,
+    /// <summary>
+    /// Điểm theo tiêu chí nhóm `GiangDay` (FR-29, 16/09/2026).
+    ///
+    /// **Danh sách này THAY THẾ toàn bộ** điểm cũ khi gửi lại — cùng quy ước với `LienKetMxhs`
+    /// của hồ sơ nhân sự. Gửi `null`/không gửi = **giữ nguyên** điểm đang có: client cũ không
+    /// biết trường này, gửi lệnh sửa nhận xét không được âm thầm xoá điểm đã chấm (quy tắc #1).
+    /// </summary>
+    List<LuuDiemTieuChi>? DiemTieuChis = null) : IRequest<Guid>;
 
 public class GuiNhanXetBuoiHocValidator : AbstractValidator<GuiNhanXetBuoiHocCommand>
 {
@@ -93,6 +113,14 @@ public class GuiNhanXetBuoiHocValidator : AbstractValidator<GuiNhanXetBuoiHocCom
         RuleFor(x => x.MucHaiLong).InclusiveBetween(1, 5)
             .When(x => x.MucHaiLong.HasValue)
             .WithErrorCode("MUC_HAI_LONG_KHONG_HOP_LE");
+
+        // Thang 5 — DB cũng có CHECK `ck_diem_tieu_chi_thang_5` làm chốt cuối.
+        RuleForEach(x => x.DiemTieuChis!).ChildRules(d =>
+        {
+            d.RuleFor(x => x.Diem).InclusiveBetween(1, 5)
+                .WithErrorCode("DIEM_TIEU_CHI_KHONG_HOP_LE");
+            d.RuleFor(x => x.TieuChiId).NotEmpty();
+        }).When(x => x.DiemTieuChis is not null);
     }
 }
 
@@ -127,6 +155,7 @@ public class GuiNhanXetBuoiHocHandler(
         {
             daCo.NoiDung = noiDung;
             daCo.MucHaiLong = request.MucHaiLong;
+            await GhiDiemTieuChi(db, daCo.Id, null, request.DiemTieuChis, ct);
             await db.SaveChangesAsync(ct);
             return daCo.Id;
         }
@@ -139,8 +168,46 @@ public class GuiNhanXetBuoiHocHandler(
             MucHaiLong = request.MucHaiLong
         };
         db.NhanXetBuoiHocs.Add(moi);
+        // SaveChanges trước để `moi.Id` có giá trị thật, rồi mới gắn điểm vào nó.
+        await db.SaveChangesAsync(ct);
 
+        await GhiDiemTieuChi(db, moi.Id, null, request.DiemTieuChis, ct);
         await db.SaveChangesAsync(ct);
         return moi.Id;
+    }
+
+    /// <summary>
+    /// Ghi lại điểm tiêu chí cho MỘT phiếu — dùng chung cho nhận xét buổi học và phiếu đánh giá
+    /// nhân viên (FR-29). `internal static` để hai handler không trôi khỏi nhau.
+    ///
+    /// `null` = **giữ nguyên** điểm đang có (client cũ không biết trường này). Danh sách rỗng =
+    /// người dùng chủ động xoá hết điểm.
+    /// </summary>
+    internal static async Task GhiDiemTieuChi(
+        IAppDbContext db, Guid? nhanXetId, Guid? phieuId,
+        List<LuuDiemTieuChi>? diems, CancellationToken ct)
+    {
+        if (diems is null) return;
+
+        var cu = await db.DiemTieuChis
+            .Where(d => (nhanXetId != null && d.NhanXetBuoiHocId == nhanXetId)
+                        || (phieuId != null && d.PhieuDanhGiaNhanVienId == phieuId))
+            .ToListAsync(ct);
+
+        // Thay thế toàn bộ: xoá rồi thêm lại. Cách này đơn giản và đúng cả khi người dùng bỏ
+        // bớt tiêu chí — so khớp từng dòng thì phải xử ba nhánh (thêm/sửa/xoá) cho một bảng
+        // chỉ có hai cột dữ liệu.
+        db.DiemTieuChis.RemoveRange(cu);
+
+        // Bỏ trùng id tiêu chí: client gửi hai điểm cho cùng tiêu chí thì UNIQUE ở DB sẽ chặn
+        // cả lệnh, mà lỗi đó người dùng không hiểu. Lấy điểm cuối cùng.
+        foreach (var d in diems.GroupBy(x => x.TieuChiId).Select(g => g.Last()))
+            db.DiemTieuChis.Add(new Domain.Entities.DiemTieuChi
+            {
+                TieuChiId = d.TieuChiId,
+                Diem = d.Diem,
+                NhanXetBuoiHocId = nhanXetId,
+                PhieuDanhGiaNhanVienId = phieuId
+            });
     }
 }

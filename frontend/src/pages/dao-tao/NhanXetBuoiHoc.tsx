@@ -12,6 +12,7 @@ interface NhanXetDto {
   hoTen: string
   noiDung: string
   mucHaiLong: number | null
+  diemTieuChis: { tieuChiId: string; tenTieuChi: string; diem: number }[]
   thoiDiem: string
   /** true = nhận xét của chính người đang xem — backend tự xác định từ token. */
   cuaToi: boolean
@@ -70,10 +71,36 @@ export function NhanXetBuoiHoc({
   // HỌC VIÊN vào form của GIÁO VIÊN, và bấm Gửi là ghi đè nhầm chủ.
   const cuaToi = ds.find((n) => n.cuaToi) ?? null
 
+  /*
+    Tiêu chí nhóm GiangDay (FR-29, 16/09/2026) — `chiDangDung` để phiếu mới không hiện tiêu chí
+    đã ngừng dùng.
+
+    Gọi endpoint gác bằng `TieuChiDanhGia.Xem`, quyền mà HỌC VIÊN không có — nên lỗi 403 ở đây
+    là bình thường và KHÔNG được làm sập ô nhận xét: `catch` trả danh sách rỗng, học viên vẫn
+    chấm được mức hài lòng chung như trước. Danh mục tiêu chí không phải thông tin bí mật, nhưng
+    mở quyền cho học viên chỉ để đọc nó thì lại là một ô quyền mới phải giải thích.
+  */
+  const { data: tieuChis = [] } = useQuery({
+    queryKey: ['tieu-chi-danh-gia', 'GiangDay'],
+    queryFn: async () => {
+      try {
+        return (await api.get<{ id: string; ten: string; moTa: string | null }[]>(
+          '/tieu-chi-danh-gia', { params: { nhom: 'GiangDay', chiDangDung: true } })).data
+      } catch {
+        return []
+      }
+    },
+  })
+
+  /** Điểm đang chọn theo từng tiêu chí. */
+  const [diems, setDiems] = useState<Record<string, number>>({})
+
   useEffect(() => {
     if (cuaToi) {
       setNoiDung(cuaToi.noiDung)
       setMuc(cuaToi.mucHaiLong)
+      setDiems(Object.fromEntries(
+        (cuaToi.diemTieuChis ?? []).map((d) => [d.tieuChiId, d.diem])))
     }
   }, [cuaToi])
 
@@ -82,6 +109,11 @@ export function NhanXetBuoiHoc({
       api.post(`/buoi-hoc/${buoiHocId}/nhan-xet`, {
         noiDung: noiDung.trim(),
         mucHaiLong: muc,
+        // Chỉ gửi khi màn này CÓ tiêu chí: gửi `[]` là lệnh xoá hết điểm, mà học viên không
+        // đọc được danh mục (403) thì họ sẽ vô tình xoá điểm mình đã chấm ở lần trước.
+        diemTieuChis: tieuChis.length > 0
+          ? Object.entries(diems).map(([tieuChiId, diem]) => ({ tieuChiId, diem }))
+          : undefined,
       }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['buoi-hoc', buoiHocId, 'nhan-xet'] })
@@ -132,6 +164,49 @@ export function NhanXetBuoiHoc({
               placeholder={t('nhanXetBuoi.noiDungGoiY')}
             />
           </div>
+
+          {/*
+            Chấm theo TỪNG TIÊU CHÍ (FR-29) — chỉ hiện khi trung tâm đã cấu hình tiêu chí nhóm
+            Giảng dạy. Chưa cấu hình thì màn này y như trước: một ô nhận xét + mức hài lòng chung.
+          */}
+          {tieuChis.length > 0 && (
+            <div className="grid gap-2">
+              <Label>{t('nhanXetBuoi.theoTieuChi')}</Label>
+              {tieuChis.map((tc) => (
+                <div key={tc.id} className="rounded-md border border-border p-2">
+                  <div className="text-sm font-medium">{tc.ten}</div>
+                  {tc.moTa && <div className="text-xs text-muted-foreground">{tc.moTa}</div>}
+                  <div className="mt-1.5 flex gap-1">
+                    {MUC.map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        aria-label={`${tc.ten} ${d}`}
+                        // Bấm lại mức đang chọn = bỏ chấm tiêu chí đó, cùng quy ước với ô mức
+                        // hài lòng chung bên dưới.
+                        onClick={() => setDiems((cu) => {
+                          const moi = { ...cu }
+                          if (moi[tc.id] === d) delete moi[tc.id]
+                          else moi[tc.id] = d
+                          return moi
+                        })}
+                        className="rounded p-0.5 transition-transform hover:scale-110"
+                      >
+                        <Star
+                          className={
+                            'h-5 w-5 '
+                            + ((diems[tc.id] ?? 0) >= d
+                              ? 'fill-[hsl(var(--chart-3))] text-[hsl(var(--chart-3))]'
+                              : 'text-muted-foreground')
+                          }
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="grid gap-1.5">
             <Label>{t('nhanXetBuoi.mucHaiLong')}</Label>

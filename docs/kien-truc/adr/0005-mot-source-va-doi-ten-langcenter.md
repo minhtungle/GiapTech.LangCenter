@@ -61,6 +61,27 @@ ADR-0004 chốt 1 VPS + Docker Compose. Tách 3 service trên cùng một máy c
 3 lần deploy, **không** được lợi ích thật của microservice (scale độc lập, cách ly sự cố) — tất cả
 vẫn chết cùng nhau khi VPS chết.
 
+## Danh sách cầu nối chéo đã khai (cập nhật khi thêm)
+
+Mỗi cầu nối là **một sợi dây phải cắt** nếu sau này tách source, nên phải đếm được. Canh bởi
+`RanhGioiHeThongConTests` — thêm cầu nối mà không khai vào `CauNoiDuocPhep` là test đỏ.
+
+| Cầu nối | Chiều | Vì sao cần |
+|---|---|---|
+| FR-21 xếp lớp | CRM → LMS | Bán khoá xong xếp học viên vào lớp; phải gọi `BaoDamThayLop` của LMS để tôn trọng `IPhamViLopHoc` |
+| FR-25 nối hồ sơ | QuanTri → CRM | Tạo hồ sơ học viên cho người đã mua khoá online, nối `KHACH_HANG.nguoi_dung_id` |
+| Tên NVKD trong lớp | LMS → CRM | Danh sách học viên hiện tên nhân viên kinh doanh đã tạo hồ sơ khách |
+| **FR-29 thống kê nhân sự** | **HRM → CRM + LMS** | Xếp hạng nhân viên kinh doanh theo doanh thu/số học viên (chỉ CRM có), và giáo viên/trợ giảng theo số lớp/số buổi/điểm giảng dạy (chỉ LMS có) |
+
+FR-29 (16/09/2026) là cầu nối **rộng nhất** tới nay vì nó đọc dữ liệu của cả hai hệ thống kia.
+Chấp nhận được vì bản chất yêu cầu là *"đánh giá con người bằng kết quả công việc của họ"*, mà
+công việc nằm ở CRM (bán hàng) và LMS (giảng dạy) — HRM chỉ giữ hồ sơ con người. Giới hạn tự đặt:
+**chỉ ĐỌC qua `IAppDbContext`, không gọi handler của hệ thống khác**, và HRM không đọc cột tiền nào
+của LMS (chốt 12/09: chỉ CRM nắm tiền).
+
+Nếu sau này tách source, FR-29 sẽ phải đổi thành gọi API đọc báo cáo của CRM/LMS — không phải
+viết lại phép tính.
+
 ## Khi nào xét lại
 
 Ba dấu hiệu thật, không phải cảm giác:

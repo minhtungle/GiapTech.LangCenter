@@ -32,4 +32,13 @@ public class NhanXetBuoiHoc : TenantEntity
     /// buộc chấm điểm sẽ khiến họ chọn bừa để gửi được.
     /// </summary>
     public int? MucHaiLong { get; set; }
+
+    /// <summary>
+    /// Điểm theo từng TIÊU CHÍ (FR-29, 16/09/2026) — thang 5, nhóm `GiangDay`.
+    ///
+    /// **Giữ <see cref="MucHaiLong"/> chứ không thay thế** (quy tắc #1): cột đó có thể đã có dữ
+    /// liệu, và nó vẫn là câu hỏi "hài lòng chung" — một con số để xếp hạng nhanh, khác với điểm
+    /// từng mặt. Thống kê ưu tiên điểm tiêu chí, thiếu thì rơi về `MucHaiLong`.
+    /// </summary>
+    public ICollection<DiemTieuChi> DiemTieuChis { get; set; } = [];
 }

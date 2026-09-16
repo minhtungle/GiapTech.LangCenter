@@ -38,6 +38,11 @@ public interface IAppDbContext
     DbSet<DiemDanh> DiemDanhs { get; }
     DbSet<NhanXetBuoiHoc> NhanXetBuoiHocs { get; }
 
+    // ---------- FR-29: đánh giá chất lượng (16/09/2026) ----------
+    DbSet<TieuChiDanhGia> TieuChiDanhGias { get; }
+    DbSet<DiemTieuChi> DiemTieuChis { get; }
+    DbSet<PhieuDanhGiaNhanVien> PhieuDanhGiaNhanViens { get; }
+
     DbSet<TepDinhKem> TepDinhKems { get; }
     DbSet<BaiTap> BaiTaps { get; }
     DbSet<BaiNop> BaiNops { get; }
