@@ -31,8 +31,10 @@ test('Tạo tiêu chí, chấm điểm, điểm lên bảng xếp hạng', async
   await api('/nhan-su', { hoTen: 'GV UI', loaiNguoiDung: 'GiaoVien' })
 
   // --- Tab Tiêu chí: tạo một tiêu chí nhóm Kinh doanh qua UI ---
-  await page.goto('/hrm?tab=tieu-chi')
+  await page.goto('/hrm/tieu-chi-danh-gia')
   await expect(page.getByRole('button', { name: 'Thêm tiêu chí' })).toBeVisible({ timeout: 15000 })
+  // Module RIÊNG (tách 16/09/2026): có mục sidebar của mình, không còn là tab của `/hrm`.
+  await expect(page.getByRole('link', { name: 'Tiêu chí đánh giá' })).toBeVisible()
 
   // Hai nhóm luôn hiện, kèm chú thích ai chấm ở đâu — đó là thứ dễ nhầm nhất của module này.
   // `exact` vì cùng câu này còn nằm trong đoạn giới thiệu đầu màn.
@@ -47,7 +49,7 @@ test('Tạo tiêu chí, chấm điểm, điểm lên bảng xếp hạng', async
   await expect(page.getByText('Thái độ phục vụ')).toBeVisible({ timeout: 10000 })
 
   // --- Tab Thống kê: ba bảng theo vai trò ---
-  await page.goto('/hrm?tab=thong-ke')
+  await page.goto('/hrm/thong-ke')
   await expect(page.getByRole('button', { name: 'Kinh doanh' })).toBeVisible({ timeout: 15000 })
 
   const dong = (ten: string) => page.locator('tbody tr').filter({ hasText: ten })
@@ -80,6 +82,22 @@ test('Tạo tiêu chí, chấm điểm, điểm lên bảng xếp hạng', async
     page.getByRole('columnheader', { name: 'Buổi dạy đủ' })).toBeVisible()
   await expect(dong('GV UI')).toHaveCount(1)
   await expect(dong('Sale UI')).toHaveCount(0)
+
+  // --- Link `?tab=` CŨ vẫn mở được: rơi về tab đầu thì người dùng tưởng tính năng bị xoá ---
+  for (const [cu, moi] of [
+    ['/hrm?tab=thong-ke', '/hrm/thong-ke'],
+    ['/hrm?tab=tieu-chi', '/hrm/tieu-chi-danh-gia'],
+  ]) {
+    await page.goto(cu)
+    await expect(page, `${cu} phải chuyển hướng sang ${moi}`)
+      .toHaveURL(new RegExp(`${moi.replace(/\//g, '\\/')}$`), { timeout: 15000 })
+  }
+
+  // Ba tab còn lại của `/hrm` KHÔNG mất đi — chúng nói về cùng một tập người nên vẫn gộp.
+  await page.goto('/hrm')
+  for (const nhan of ['Cơ cấu tổ chức', 'Hồ sơ nhân sự', 'Chức vụ'])
+    await expect(page.getByRole('button', { name: nhan })).toBeVisible({ timeout: 15000 })
+  await expect(page.getByRole('button', { name: 'Thống kê nhân sự' })).toHaveCount(0)
 
   expect(loiJs, 'có lỗi JS chưa xử lý').toEqual([])
 })

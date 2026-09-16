@@ -14,7 +14,7 @@ Theo yêu cầu chủ sản phẩm: thống kê ở HRM *"tương tự thống k
 doanh, giáo viên và trợ giảng"*, kèm *"các tiêu chí để học viên chấm theo thang 5 thay vì chỉ nhận
 xét"*.
 
-**Ba bảng xếp hạng** (`/hrm?tab=thong-ke`), mỗi vai trò một bộ chỉ số:
+**Ba bảng xếp hạng** (`/hrm/thong-ke`), mỗi vai trò một bộ chỉ số:
 
 | Vai trò | Chỉ số |
 |---|---|
@@ -22,7 +22,7 @@ xét"*.
 | Giáo viên | số lớp · số buổi dạy đủ · chất lượng giảng dạy |
 | Trợ giảng | như giáo viên |
 
-**Module tiêu chí** (`/hrm?tab=tieu-chi`): danh mục do trung tâm tự cấu hình, chia hai nhóm —
+**Module tiêu chí** (`/hrm/tieu-chi-danh-gia`): danh mục do trung tâm tự cấu hình, chia hai nhóm —
 `KinhDoanh` (quản lý chấm theo kỳ tháng) và `GiangDay` (học viên chấm từng buổi học). Ba bảng mới:
 `TIEU_CHI_DANH_GIA`, `DIEM_TIEU_CHI`, `PHIEU_DANH_GIA_NHAN_VIEN`; migration **chỉ thêm**, không
 đụng dữ liệu cũ (đã dry-run trên DB bản sao rồi mới chạy thật).
@@ -39,6 +39,14 @@ thầm** — command nhận `null`, handler chạy đúng theo `null`, không l�
 
 FR-29 là **cầu nối chéo rộng nhất tới nay** (HRM → CRM + LMS) — đã khai vào `CauNoiDuocPhep` và ghi
 vào ADR-0005 kèm giới hạn: chỉ ĐỌC, không gọi handler hệ thống khác, không đọc cột tiền của LMS.
+
+**Hai module RIÊNG, không phải tab của `/hrm`** (theo yêu cầu chủ sản phẩm ngay sau bản đầu). Lý do
+quan trọng hơn thẩm mỹ: mỗi module gác bằng **quyền riêng**, nên nhồi vào `/hrm` (gác `NhanSu`) thì
+trưởng phòng có `ThongKeNhanSu.Xem` mà không có `NhanSu.Xem` sẽ không thấy mục nào để vào. Ba tab
+còn lại vẫn gộp — chúng nói về cùng một tập người. Link `?tab=` cũ vẫn chuyển hướng.
+
+Bẫy khi tách: mục sidebar `/hrm` phải giữ `cuoi: true`, thiếu nó thì `startsWith('/hrm')` khớp luôn
+`/hrm/thong-ke` và tiêu đề thanh trên hiện sai. Đã bỏ một nhịp và phải trả lại.
 
 Test: +18 integration · +1 E2E. Bốn đột biến kiểm đỏ (fallback giáo viên, chỉ đếm buổi hoàn thành,
 null≠0, frontend không gửi điểm).

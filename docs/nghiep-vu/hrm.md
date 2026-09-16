@@ -327,7 +327,7 @@ Yêu cầu chủ sản phẩm: *"thêm phần thống kê, tương tự thống 
 kinh doanh, giáo viên và trợ giảng"*, kèm bộ chỉ số cho từng vai trò và *"thêm các tiêu chí để
 học viên chấm theo thang 5 thay vì chỉ nhận xét"*.
 
-### Ba bảng xếp hạng
+### Ba bảng xếp hạng (`/hrm/thong-ke`)
 
 | Vai trò | Chỉ số | Nguồn dữ liệu |
 |---|---|---|
@@ -350,7 +350,7 @@ học viên chấm theo thang 5 thay vì chỉ nhận xét"*.
 Thêm một quy ước hiển thị: **chưa ai chấm thì trả `null`, không phải `0`** — "chưa có đánh giá"
 khác "bị 0 điểm", mà trên bảng xếp hạng hai thứ đó dẫn tới hai kết luận trái ngược về một người.
 
-### Module tiêu chí đánh giá
+### Module tiêu chí đánh giá (`/hrm/tieu-chi-danh-gia`)
 
 `TIEU_CHI_DANH_GIA` — danh mục **do trung tâm tự cấu hình**, chia hai nhóm (`NhomTieuChi`):
 
@@ -376,6 +376,35 @@ chấm (điểm "Truyền đạt dễ hiểu" bỗng tính vào xếp hạng kin
 `MucHaiLong` (1–5, hài lòng chung) **giữ nguyên**, không bị thay thế: nó vẫn là một con số để xếp
 hạng nhanh. Thống kê ưu tiên điểm tiêu chí, thiếu thì rơi về `MucHaiLong` — nên dữ liệu cũ không
 mất ý nghĩa.
+
+### Hai module RIÊNG, không phải tab của `/hrm` (tách 16/09/2026)
+
+Ban đầu làm thành hai tab thứ tư và thứ năm của `/hrm`; chủ sản phẩm yêu cầu tách riêng ngay sau
+đó. Tách là đúng, và lý do quan trọng hơn thẩm mỹ:
+
+**Mỗi module gác bằng quyền riêng.** Trang `/hrm` gác `NhanSu`, nên nhồi hai màn này vào đó thì
+trưởng phòng có `ThongKeNhanSu.Xem` mà không có `NhanSu.Xem` sẽ **không thấy mục nào để vào** — và
+cũng không hiểu vì sao. Nay mỗi mục sidebar gác đúng quyền của nó.
+
+Ba tab còn lại ở `/hrm` **vẫn gộp**: sơ đồ tổ chức, hồ sơ nhân sự và chức vụ nói về *cùng một tập
+người*. Còn hai màn mới khác hẳn — một là báo cáo toàn trung tâm, một là cấu hình danh mục.
+
+| Đường | Màn |
+|---|---|
+| `/hrm` | ba tab: cơ cấu · hồ sơ · chức vụ |
+| `/hrm/thong-ke` | Thống kê nhân sự |
+| `/hrm/tieu-chi-danh-gia` | Tiêu chí đánh giá |
+
+Link `?tab=thong-ke` và `?tab=tieu-chi` **cũ vẫn chuyển hướng** sang đường mới — rơi về tab đầu thì
+người dùng tưởng tính năng bị xoá. Canh bởi `e2e/thong-ke-nhan-su.spec.ts`.
+
+> **Bẫy của `cuoi: true` khi tách.** Mục sidebar `/hrm` **phải** giữ `cuoi: true`: thiếu nó thì
+> `startsWith('/hrm')` khớp luôn `/hrm/thong-ke`, nên mục "Nhân sự" sáng lên và **tiêu đề thanh
+> trên hiện sai** khi đang ở hai module mới. Tôi đã bỏ cờ này một nhịp trong lúc tách và phải trả
+> lại. Hai module mới cũng `cuoi: true` vì chúng không có route con.
+
+Kéo theo: `TieuChiDanhGia.tsx` **bỏ `<h2>` tên màn** — `Layout` đã hiện tiêu đề ở thanh trên (suy
+từ mục sidebar), giữ lại là hiện hai lần cùng một chữ. Đúng quy ước các màn đứng riêng của CRM.
 
 ### Cầu nối chéo hệ thống — rộng nhất tới nay
 

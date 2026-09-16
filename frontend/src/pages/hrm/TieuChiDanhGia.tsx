@@ -100,17 +100,20 @@ export default function TieuChiDanhGia() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-lg font-semibold">{t('chucNang.TieuChiDanhGia')}</h2>
+      {/*
+        KHÔNG có `<h2>` tên màn: từ 16/09/2026 đây là module riêng, tiêu đề do `Layout` hiện ở
+        thanh trên (suy từ mục sidebar) — thêm nữa là hiện hai lần cùng một chữ. Cùng quy ước với
+        các màn đứng riêng của CRM (Khách hàng, Sản phẩm).
+      */}
+      <div className="flex flex-wrap items-start gap-3">
+        <p className="flex-1 text-sm text-muted-foreground">{t('tieuChi.giaiThich')}</p>
         {coQuyen('TieuChiDanhGia', 'Them') && (
-          <Button className="ml-auto" onClick={() => mo(null)}>
+          <Button onClick={() => mo(null)}>
             <Plus className="h-4 w-4" />
             {t('tieuChi.them')}
           </Button>
         )}
       </div>
-
-      <p className="text-sm text-muted-foreground">{t('tieuChi.giaiThich')}</p>
 
       {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 

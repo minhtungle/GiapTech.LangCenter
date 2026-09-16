@@ -24,6 +24,8 @@ import HocPhi from '@/pages/dao-tao/HocPhi'
 import TaiKhoan from '@/pages/quan-tri/TaiKhoan'
 import Hrm from '@/pages/hrm/Hrm'
 import ChiTietNhanSu from '@/pages/hrm/ChiTietNhanSu'
+import ThongKeNhanSu from '@/pages/hrm/ThongKeNhanSu'
+import TieuChiDanhGia from '@/pages/hrm/TieuChiDanhGia'
 import PhanQuyen from '@/pages/quan-tri/PhanQuyen'
 import ChiTietQuyen from '@/pages/quan-tri/phan-quyen/ChiTietQuyen'
 import ThietLap from '@/pages/quan-tri/ThietLap'
@@ -107,6 +109,20 @@ export default function App() {
                 path="/hrm/chuc-vu"
                 element={<Navigate to="/hrm?tab=chuc-vu" replace />}
               />
+
+              {/*
+                Thống kê nhân sự và Tiêu chí đánh giá là MODULE RIÊNG, không phải tab của `/hrm`
+                (tách 16/09/2026 theo yêu cầu chủ sản phẩm).
+
+                Ba tab còn lại ở `/hrm` nói về **cùng một tập người** nên gộp là đúng; còn hai
+                màn này khác hẳn: một là báo cáo toàn trung tâm, một là cấu hình danh mục — và
+                mỗi cái gác bằng **quyền riêng**, nên nhồi vào `/hrm` (gác `NhanSu`) thì người có
+                quyền xem thống kê mà không có quyền hồ sơ nhân sự sẽ không thấy mục nào để vào.
+
+                Đường `?tab=` cũ vẫn chuyển hướng tới đây — link đã lưu phải mở được.
+              */}
+              <Route path="/hrm/thong-ke" element={<ThongKeNhanSu />} />
+              <Route path="/hrm/tieu-chi-danh-gia" element={<TieuChiDanhGia />} />
               <Route path="/crm/khach-hang" element={<KhachHang />} />
               <Route path="/crm/thong-ke" element={<ThongKeCrm />} />
               <Route path="/crm/khach-hang/:id" element={<ChiTietKhachHang />} />

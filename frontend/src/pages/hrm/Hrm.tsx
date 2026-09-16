@@ -1,12 +1,10 @@
 import { useTranslation } from 'react-i18next'
-import { useSearchParams } from 'react-router-dom'
-import { BarChart3, Briefcase, Network, Star, UserCog } from 'lucide-react'
+import { Navigate, useSearchParams } from 'react-router-dom'
+import { Briefcase, Network, UserCog } from 'lucide-react'
 import { useQuyen } from '@/lib/quyen'
 import CoCauToChuc from './CoCauToChuc'
 import NhanSu from './NhanSu'
 import ChucVu from './ChucVu'
-import TieuChiDanhGia from './TieuChiDanhGia'
-import ThongKeNhanSu from './ThongKeNhanSu'
 
 /**
  * HRM — một trang, ba tab (gộp 16/09/2026).
@@ -33,17 +31,23 @@ import ThongKeNhanSu from './ThongKeNhanSu'
  * và `/hrm/nhan-su` vẫn chạy được (đường cũ, link đã lưu), và sửa một tab không đụng hai tab kia.
  */
 
-type Tab = 'so-do' | 'nhan-su' | 'chuc-vu' | 'thong-ke' | 'tieu-chi'
+type Tab = 'so-do' | 'nhan-su' | 'chuc-vu'
 
 const CAC_TAB: { ma: Tab; khoa: string; icon: typeof Network; can: string }[] = [
   { ma: 'so-do', khoa: 'menu.coCauToChuc', icon: Network, can: 'PhongBan' },
   { ma: 'nhan-su', khoa: 'menu.nhanSuNguoiDung', icon: UserCog, can: 'NhanSu' },
   { ma: 'chuc-vu', khoa: 'menu.chucVu', icon: Briefcase, can: 'NhanSu' },
-  // FR-29 (16/09/2026) — gác bằng quyền RIÊNG, không phải `NhanSu`: bảng xếp hạng kèm doanh số
-  // và điểm chất lượng của từng đồng nghiệp, khác hẳn việc xem một hồ sơ.
-  { ma: 'thong-ke', khoa: 'chucNang.ThongKeNhanSu', icon: BarChart3, can: 'ThongKeNhanSu' },
-  { ma: 'tieu-chi', khoa: 'chucNang.TieuChiDanhGia', icon: Star, can: 'TieuChiDanhGia' },
 ]
+
+/**
+ * Tab CŨ đã tách thành module riêng (16/09/2026) → chuyển hướng, không bỏ im lặng.
+ *
+ * Link `?tab=thong-ke` đã lưu mà rơi về tab đầu thì người dùng tưởng tính năng bị xoá.
+ */
+const TAB_DA_TACH: Record<string, string> = {
+  'thong-ke': '/hrm/thong-ke',
+  'tieu-chi': '/hrm/tieu-chi-danh-gia',
+}
 
 export default function Hrm() {
   const { t } = useTranslation()
@@ -53,11 +57,16 @@ export default function Hrm() {
   // Trong lúc chưa biết quyền thì hiện đủ tab — ẩn rồi hiện lại làm nhấp nháy mỗi lần tải.
   const tabHienThi = dangTai ? CAC_TAB : CAC_TAB.filter((x) => coQuyen(x.can))
 
-  const tabQuery = sp.get('tab') as Tab | null
+  const tabQuery = sp.get('tab')
+
+  // Link cũ tới tab đã tách: chuyển hướng TRƯỚC khi tính tab, không render gì ở đây.
+  if (tabQuery && TAB_DA_TACH[tabQuery])
+    return <Navigate to={TAB_DA_TACH[tabQuery]} replace />
+
   // Gõ thẳng `?tab=chuc-vu` khi không có quyền thì rơi về tab đầu, không phải tab trắng.
   const tab: Tab =
     tabQuery && tabHienThi.some((x) => x.ma === tabQuery)
-      ? tabQuery
+      ? (tabQuery as Tab)
       : (tabHienThi[0]?.ma ?? 'so-do')
 
   const doiTab = (x: Tab) => {
@@ -104,8 +113,6 @@ export default function Hrm() {
         {tab === 'so-do' && <CoCauToChuc />}
         {tab === 'nhan-su' && <NhanSu />}
         {tab === 'chuc-vu' && <ChucVu />}
-        {tab === 'thong-ke' && <ThongKeNhanSu />}
-        {tab === 'tieu-chi' && <TieuChiDanhGia />}
       </div>
     </div>
   )

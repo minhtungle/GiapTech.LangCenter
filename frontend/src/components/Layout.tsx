@@ -5,7 +5,8 @@ import {
   ShieldCheck,
   BarChart3, Settings, LogOut, Home, GraduationCap, BookOpen, MonitorPlay,
   PanelLeftClose, PanelLeft, Menu, X, ScrollText, UserCog, TrendingUp,
-  LayoutGrid, Check, KeyRound, Contact, PackageOpen, BookMarked, } from 'lucide-react'
+  LayoutGrid, Check, KeyRound, Contact, PackageOpen, BookMarked, Star,
+} from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useQuyen } from '@/lib/quyen'
 import { useHeThong, type MaHeThong } from '@/lib/heThong'
@@ -109,7 +110,26 @@ export default function Layout() {
         // `can: 'NhanSu'` — ai vào được một trong ba tab đều thấy mục này; trang tự ẩn tab
         // người dùng không có quyền.
         {
+          // `cuoi: true` là BẮT BUỘC từ khi có `/hrm/thong-ke` và `/hrm/tieu-chi-danh-gia`
+          // (16/09/2026): thiếu nó thì `startsWith('/hrm')` khớp luôn hai đường kia, nên mục
+          // "Nhân sự" sáng lên và tiêu đề trang hiện sai khi đang ở hai module mới.
           to: '/hrm', nhan: t('menu.nhanSu'), icon: UserCog, can: 'NhanSu', cuoi: true,
+        },
+        /*
+          FR-29 — hai MODULE RIÊNG, không phải tab của `/hrm` (tách 16/09/2026 theo yêu cầu
+          chủ sản phẩm).
+
+          Mỗi mục gác bằng **quyền riêng của nó**, và đó là lý do phải tách: nhồi vào `/hrm`
+          (gác `NhanSu`) thì trưởng phòng có quyền xem thống kê mà không có quyền hồ sơ nhân sự
+          sẽ **không thấy mục nào để vào** — mà cũng không hiểu vì sao.
+        */
+        {
+          to: '/hrm/thong-ke', nhan: t('chucNang.ThongKeNhanSu'), icon: BarChart3,
+          can: 'ThongKeNhanSu', cuoi: true,
+        },
+        {
+          to: '/hrm/tieu-chi-danh-gia', nhan: t('chucNang.TieuChiDanhGia'), icon: Star,
+          can: 'TieuChiDanhGia', cuoi: true,
         },
       ],
     },

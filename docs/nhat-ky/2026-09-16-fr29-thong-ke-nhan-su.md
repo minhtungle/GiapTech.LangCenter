@@ -100,6 +100,32 @@ hiện câu giải thích thay vì con số 0 trơ.
 Migration **chỉ thêm 3 bảng**, không đụng cột nào đang có: đã backup, dry-run trên DB bản sao
 (kiểm cả hai chiều của `CHECK` thang 5: điểm 9 bị chặn, điểm 4 vào được) rồi mới chạy thật.
 
+## Tách thành hai module riêng (cùng ngày)
+
+Bản đầu tôi làm hai tab thứ tư và thứ năm của `/hrm`. Chủ sản phẩm yêu cầu tách riêng ngay sau đó —
+và khi làm mới thấy lý do mạnh hơn thẩm mỹ:
+
+**Mỗi module gác bằng quyền riêng của nó.** `/hrm` gác `NhanSu`, nên trưởng phòng có
+`ThongKeNhanSu.Xem` mà không có `NhanSu.Xem` sẽ **không thấy mục nào để vào**. Làm tab là vô tình
+buộc hai quyền phải đi cùng nhau.
+
+Ba tab còn lại vẫn gộp: cơ cấu · hồ sơ · chức vụ nói về *cùng một tập người*, đó là lý do gộp chúng
+từ đầu. Hai màn mới khác hẳn — một là báo cáo toàn trung tâm, một là cấu hình danh mục.
+
+### Một bẫy tôi mắc trong lúc tách
+
+Mục sidebar `/hrm` có `cuoi: true` (chỉ khớp đúng đường dẫn, không khớp route con). Tôi bỏ cờ này
+khi thêm hai mục mới — và `startsWith('/hrm')` lập tức khớp luôn `/hrm/thong-ke`, làm mục "Nhân sự"
+sáng lên và **tiêu đề thanh trên hiện sai**. May là tôi đọc lại định nghĩa `MucMenu` trước khi
+chạy, chứ ảnh chụp cũng khó thấy: cả hai mục đều thuộc nhóm "NHÂN SỰ".
+
+Kéo theo một chi tiết nhỏ: `TieuChiDanhGia.tsx` phải bỏ `<h2>` tên màn, vì `Layout` đã hiện tiêu đề
+ở thanh trên — giữ lại là hiện hai lần cùng một chữ. Kiểm bằng cách so với các màn đứng riêng của
+CRM (Khách hàng, Sản phẩm đều không có `<h2>`), không đoán.
+
+Link `?tab=thong-ke` / `?tab=tieu-chi` cũ **vẫn chuyển hướng** sang đường mới, có test canh: rơi về
+tab đầu thì người dùng tưởng tính năng bị xoá.
+
 ## Kết quả
 
 554 test backend · 28 frontend · 36 E2E — xanh hết.
