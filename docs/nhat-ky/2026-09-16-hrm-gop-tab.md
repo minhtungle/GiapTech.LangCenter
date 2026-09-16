@@ -78,6 +78,63 @@ của HRM là `/hrm` (không có đoạn sau) nên đỏ. Đây là **assert l�
 ý định của test là "URL đi theo bộ chuyển hệ thống", mà `Layout` suy hệ thống con bằng
 `startsWith('/hrm')` nên `/hrm` nhận đúng. Đã nới thành `/^\/hrm(\/|$)/` kèm lý do.
 
+## Việc thứ hai trong ngày: đặt tên tệp hồ sơ + hạn mức 10 tệp
+
+Yêu cầu: *"khi tải tệp hồ sơ nhân sự lên, cho phép đặt tên file để dễ theo dõi, giới hạn tổng số
+lượng file là 10"*.
+
+Hỏi chủ sản phẩm hai điểm trước khi code — đặt tên ở những lúc nào (chốt: cả lúc tải lên **và**
+đổi tên sau), và hạn mức tính theo phạm vi nào (chốt: **từng hồ sơ**, không phải toàn trung tâm).
+Cả hai đều là thứ đoán sai thì phải làm lại, nên hỏi rẻ hơn.
+
+### Chỗ đáng cẩn thận nhất: đuôi tệp
+
+Người dùng gõ "Hợp đồng lao động 2026", không ai gõ `.pdf`. Nếu lấy đuôi từ tên họ gõ thì:
+
+- tên không có đuôi ⇒ tải về ra tệp Windows không biết mở bằng gì;
+- tên có đuôi lạ (`Hợp đồng.exe`) ⇒ một PDF tải về mang tên `.exe`, đi trong
+  `Content-Disposition` — đường lừa người dùng từ chính hệ thống nội bộ.
+
+Nên đuôi **luôn** lấy từ tệp thật. Đột biến đổi một dòng (`Path.GetExtension(tenGoc)` thành
+`(ten)`) làm đỏ 4 test, trong đó có hai ca `.exe`/`.html`.
+
+### Hai thứ sai được mà không ai thấy ngay
+
+- **Off-by-one hạn mức**: chặn ở 9 thay vì 10. Test kiểm **cả hai chiều** — tệp thứ 10 phải vào
+  được, tệp thứ 11 bị từ chối kèm mã lỗi.
+- **Đếm sai cái gì**: đếm *số lần đã tải* thay vì *tệp hiện có* thì xoá tệp không mở lại chỗ, và
+  hồ sơ dùng lâu sẽ khoá cứng dù đang trống. Có test riêng.
+
+Hạn mức **không** nâng lên ràng buộc DB: quy tắc #8 nói về "chỉ một" (UNIQUE giải quyết được),
+còn "nhiều nhất N" thì Postgres cần trigger. Hai request song song đều thấy 9 thì thành 11 tệp —
+chấp nhận, vì hậu quả là thừa một tệp, không mất dữ liệu.
+
+### Lỗi tự gây, lần thứ hai cùng một kiểu trong một ngày
+
+Hộp thoại đặt tên dùng chung `maLoi` với trang. `<Modal>` dựng bằng `<dialog>` nên **luôn nằm
+trong DOM**, chỉ đóng lại — nên điều kiện bao ngoài không ngăn được khối lỗi bên trong, và thông
+báo hiện ở **cả hai** chỗ.
+
+Đây đúng là lỗi tôi đã sửa ở `CoCauToChuc.tsx` sáng cùng ngày (tách `maLoi` / `maLoiTrang`). Biết
+rồi vẫn mắc lại ở file khác. Lần này E2E bắt —
+`strict mode violation: resolved to 2 elements` — thay vì người dùng.
+
+Cùng tính chất của `<dialog>` còn làm test của tôi sai một lần nữa: helper dùng
+`toHaveCount(0)` để chờ hộp thoại đóng, mà nó không bao giờ về 0. Phải là `toBeHidden`.
+
+### Một giới hạn của framework, đã đo chứ không đoán
+
+MVC đổi chuỗi rỗng **và chuỗi toàn dấu cách** của `[FromForm] string?` thành `null`. Nên lệnh tải
+lên không phân biệt được "gửi một tên vô dụng" với "không gửi trường này" (client cũ).
+
+Điều kiện gác đầu tiên tôi viết còn tự phủ định: `!IsNullOrWhiteSpace(ten) && tenDat is null` —
+mà `"   "` chính là chuỗi cần báo lỗi, và nó làm điều kiện sai. Sau khi probe thật, chốt: tải lên
+quay về tên gốc (nhẹ, sửa lại được ngay bằng nút Sửa), còn **đổi tên** đi qua JSON nên vẫn báo
+lỗi tử tế.
+
+Ba test cũ của `chi-tiet-nhan-su.spec.ts` phải sửa: chúng chọn tệp rồi chờ tải xong, nay có hộp
+thoại ở giữa. Đây là **thay đổi luồng có chủ ý**, không phải hồi quy.
+
 ## Kết quả
 
-514 test backend · 28 frontend · 32 E2E — xanh hết.
+529 test backend · 28 frontend · 33 E2E — xanh hết.

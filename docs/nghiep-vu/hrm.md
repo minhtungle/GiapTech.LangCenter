@@ -234,6 +234,44 @@ excel)"*.
   gốc hiện ở **tiêu đề modal** ngay phía trên khung xem; không đáng kéo `pdf.js` (~300 KB) chỉ để
   sửa một dòng chữ.
 
+### Đặt tên tệp + hạn mức 10 tệp (16/09/2026)
+
+Yêu cầu: *"khi tải tệp hồ sơ nhân sự lên, cho phép đặt tên file để dễ theo dõi, giới hạn tổng số
+lượng file là 10"*.
+
+| Hạng mục | Chốt |
+|---|---|
+| Đặt tên | Lúc **tải lên** (hộp thoại trước khi gửi) **và** đổi tên tệp đã có (`PUT /nhan-su/tep/{id}/ten`) |
+| Hạn mức | **10 tệp mỗi hồ sơ nhân sự** — không phải toàn trung tâm |
+
+**Đuôi tệp luôn lấy từ tệp thật, không từ tên người dùng gõ.** Người dùng gõ "Hợp đồng lao động
+2026" chứ không gõ `.pdf`; và nếu lấy đuôi họ gõ thì một PDF tải về thành `.exe`/`.html` —
+`Content-Disposition` mang tên đó, là đường lừa người dùng từ một hệ thống nội bộ. Canh bởi
+`Ten_nguoi_dung_go_khong_doi_duoc_duoi_that` (2 ca).
+
+**Đổi tên chỉ đụng cột `TEN_GOC`** — khoá lưu trữ và object trong MinIO giữ nguyên. Đổi cả khoá
+thì mọi tệp đang có phải di chuyển trong kho: việc rủi ro, không đảo lại được, cho một thứ thuần
+hiển thị. Canh bởi `Doi_ten_khong_lam_mat_noi_dung_tep` (quy tắc #1).
+
+**Hạn mức theo TỪNG hồ sơ**, và đếm *tệp hiện có* chứ không *số lần đã tải*: xoá một tệp thì mở
+lại một chỗ, nếu không hồ sơ dùng lâu sẽ khoá cứng dù đang trống. Hai điều này có test riêng vì
+cả hai đều sai được mà không ai thấy ngay.
+
+> **Không nâng hạn mức lên ràng buộc DB.** Quy tắc #8 nói về "chỉ một" (UNIQUE giải quyết được),
+> còn "nhiều nhất N" thì PostgreSQL không có ràng buộc khai báo tương đương — phải dùng trigger.
+> Hai request song song đều thấy 9 thì hồ sơ thành 11 tệp; chấp nhận được vì hậu quả là **thừa
+> một tệp**, không mất dữ liệu, và người dùng xoá bớt được.
+
+**Giới hạn của model binder, đã đo không đoán**: MVC đổi chuỗi rỗng và chuỗi toàn dấu cách của
+`[FromForm] string?` thành `null`, nên lệnh **tải lên** không phân biệt được "gửi tên vô dụng" với
+"không gửi trường này" (client cũ) ⇒ quay về tên gốc của tệp. Lệnh **đổi tên** đi qua JSON nên
+nhận được `"   "` nguyên vẹn và **có** báo `TEN_TEP_KHONG_HOP_LE` — ở đó im lặng bỏ qua mới là
+tệ, vì người dùng bấm Lưu, hộp thoại đóng, tên không đổi và không có gì giải thích.
+
+UI: nút *Tải tệp lên* **bị gỡ hẳn `<input>`** khi đủ 10 tệp, không chỉ làm mờ — `<label>` bọc
+input không có thuộc tính `disabled`, để nguyên thì vẫn bấm chọn được tệp rồi mới nhận lỗi từ
+server. Dòng dưới luôn hiện `đã dùng n/10 tệp`.
+
 ## FR-24 — Danh mục chức vụ
 
 Bảng `CHUC_VU` do admin tự quản: `ten`, `mo_ta`, `thu_tu`, `dang_dung`. Thay cột chuỗi

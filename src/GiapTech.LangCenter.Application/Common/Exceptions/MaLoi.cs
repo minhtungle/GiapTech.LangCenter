@@ -34,6 +34,22 @@ public static class MaLoi
     /// </summary>
     public const string LoaiTepHoSoKhongHoTro = "LOAI_TEP_HO_SO_KHONG_HO_TRO";
 
+    /// <summary>
+    /// Mỗi hồ sơ nhân sự tối đa <see cref="NhanSu.TepHoSo.SoTepToiDa"/> tệp (yêu cầu
+    /// 16/09/2026).
+    ///
+    /// Hạn mức tính **theo từng hồ sơ**, không phải toàn trung tâm: người này tải nhiều không
+    /// được làm người kia hết chỗ.
+    /// </summary>
+    public const string VuotSoTepHoSo = "VUOT_SO_TEP_HO_SO";
+
+    /// <summary>
+    /// Tên hiển thị người dùng đặt bị rỗng sau khi làm sạch (chỉ gồm dấu cách, ký tự điều
+    /// khiển…). Không im lặng quay về tên máy quét: người dùng chủ động gõ tên thì họ cần biết
+    /// tên đó không dùng được.
+    /// </summary>
+    public const string TenTepKhongHopLe = "TEN_TEP_KHONG_HOP_LE";
+
     // --- Chung ---
     public const string KhongTimThay = "KHONG_TIM_THAY";
     public const string DuLieuKhongHopLe = "DU_LIEU_KHONG_HOP_LE";

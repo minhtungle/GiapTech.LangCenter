@@ -21,7 +21,15 @@ public record TaiTepHoSoCommand(
     Guid NguoiDungId,
     Stream NoiDung,
     string LoaiNoiDung,
-    string TenGoc) : IRequest<TepHoSoDaTaiDto>;
+    string TenGoc,
+    /// <summary>
+    /// Tên người dùng tự đặt để dễ theo dõi (16/09/2026) — null/rỗng = giữ tên gốc của tệp.
+    ///
+    /// Hồ sơ thật toàn tên máy quét (`SCAN_0012.pdf`, `IMG_20260916.pdf`), nhìn danh sách 8 tệp
+    /// không biết cái nào là hợp đồng. **Chỉ đổi tên HIỂN THỊ**, nội dung và khoá lưu trữ giữ
+    /// nguyên.
+    /// </summary>
+    string? TenHienThi = null) : IRequest<TepHoSoDaTaiDto>;
 
 public record TepHoSoDaTaiDto(Guid Id, string TenGoc, string LoaiNoiDung, long KichThuoc);
 
@@ -62,6 +70,59 @@ public static class LoaiTepHoSo
         => loaiNoiDung.Equals("application/pdf", StringComparison.OrdinalIgnoreCase);
 }
 
+/// <summary>
+/// Quy tắc của tệp hồ sơ nhân sự (16/09/2026) — đặt chung một chỗ vì **lệnh tải lên và lệnh đổi
+/// tên phải hiểu giống hệt nhau**. Tách đôi là hai nơi sẽ trôi khỏi nhau: đổi tên lách được giới
+/// hạn độ dài mà tải lên chặn, chẳng hạn.
+/// </summary>
+public static class TepHoSo
+{
+    /// <summary>
+    /// Tối đa 10 tệp **mỗi hồ sơ** (yêu cầu chủ sản phẩm 16/09/2026).
+    ///
+    /// Theo từng hồ sơ chứ không theo trung tâm: một người tải nhiều không được làm người khác
+    /// hết chỗ. Hồ sơ nhân sự thực tế là hợp đồng + phụ lục + bằng cấp + CCCD — 10 là rộng rãi.
+    /// </summary>
+    public const int SoTepToiDa = 10;
+
+    /// <summary>Khớp `HasMaxLength(200)` của cột `TEN_GOC` — dài hơn là EF ném lúc lưu.</summary>
+    public const int DoDaiTenToiDa = 200;
+
+    /// <summary>
+    /// Ghép tên người dùng đặt với **phần mở rộng thật của tệp**.
+    ///
+    /// Người dùng gõ "Hợp đồng lao động 2026", không ai gõ đuôi file. Bỏ đuôi đi thì tải về ra
+    /// một tệp Windows không biết mở bằng gì — nên đuôi luôn lấy từ tên gốc, không lấy từ tên
+    /// người dùng gõ (họ gõ ".exe" cũng không đổi được gì).
+    ///
+    /// Trả về null nếu tên sau khi làm sạch không còn gì.
+    /// </summary>
+    public static string? GhepTen(string? tenHienThi, string tenGoc)
+    {
+        if (string.IsNullOrWhiteSpace(tenHienThi)) return null;
+
+        // Bỏ đường dẫn và ký tự nguy hiểm — cùng luật với `MinioLuuTruTep.LamSachTenGoc`, vì
+        // tên này cũng đi vào header `Content-Disposition` lúc tải về.
+        var ten = Path.GetFileName(tenHienThi.Trim());
+        ten = new string(ten.Where(c => !char.IsControl(c) && c != '"' && c != '\\').ToArray())
+            .Trim();
+
+        if (ten.Length == 0) return null;
+
+        var duoi = Path.GetExtension(tenGoc);
+
+        // Người dùng gõ sẵn đúng đuôi thì đừng thành "Hợp đồng.pdf.pdf".
+        if (duoi.Length > 0 && ten.EndsWith(duoi, StringComparison.OrdinalIgnoreCase))
+            duoi = string.Empty;
+
+        // Cắt PHẦN TÊN, giữ nguyên đuôi: cắt cả chuỗi sẽ ăn mất đuôi của tên dài.
+        var conLai = DoDaiTenToiDa - duoi.Length;
+        if (ten.Length > conLai) ten = ten[..conLai];
+
+        return ten + duoi;
+    }
+}
+
 public class TaiTepHoSoHandler(
     IAppDbContext db, ILuuTruTep luuTru, ICurrentUser currentUser)
     : IRequestHandler<TaiTepHoSoCommand, TepHoSoDaTaiDto>
@@ -80,6 +141,32 @@ public class TaiTepHoSoHandler(
         if (!LoaiTepHoSo.ChoPhep.Contains(request.LoaiNoiDung.ToLowerInvariant()))
             throw new AppException(MaLoi.LoaiTepHoSoKhongHoTro);
 
+        /*
+          Tên người dùng đặt: làm sạch TRƯỚC khi đụng tới kho, cùng lý do như kiểm loại tệp —
+          gõ tên không dùng được thì đừng để lại một tệp mồ côi trong MinIO rồi mới báo lỗi.
+
+          Phân biệt "KHÔNG gửi trường này" (null — giữ tên gốc, đúng cho client cũ) với "gửi
+          một tên nhưng tên đó rỗng sau khi làm sạch" (báo lỗi). Dùng `IsNullOrWhiteSpace` để
+          gác ở đây là bẫy: `"   "` chính là chuỗi cần báo lỗi, mà nó lại làm điều kiện sai ⇒
+          tệp âm thầm giữ tên máy quét, đúng thứ người dùng muốn tránh.
+        */
+        var tenDat = TepHoSo.GhepTen(request.TenHienThi, request.TenGoc);
+        if (request.TenHienThi is not null && tenDat is null)
+            throw new AppException(MaLoi.TenTepKhongHopLe);
+
+        /*
+          Hạn mức 10 tệp mỗi hồ sơ (16/09/2026).
+
+          Kiểm ở đây là "chốt mềm": hai request song song đều thấy 9 thì cả hai cùng ghi và hồ
+          sơ thành 11 tệp. KHÔNG nâng lên UNIQUE ở DB được — quy tắc #8 nói về ràng buộc "chỉ
+          một", còn "nhiều nhất N" thì Postgres không có ràng buộc khai báo nào tương đương
+          (phải dùng trigger). Chấp nhận được vì hậu quả của đua là thừa một tệp, không mất dữ
+          liệu và người dùng xoá bớt được — khác hẳn việc hai trung tâm cùng có `admin`.
+        */
+        var soTepHienCo = await db.TepDinhKems.CountAsync(
+            t => t.NguoiDungId == request.NguoiDungId, ct);
+        if (soTepHienCo >= TepHoSo.SoTepToiDa) throw new AppException(MaLoi.VuotSoTepHoSo);
+
         var daTai = await luuTru.TaiLen(
             request.NoiDung, request.LoaiNoiDung, request.TenGoc, "ho-so-nhan-su", ct);
 
@@ -87,7 +174,8 @@ public class TaiTepHoSoHandler(
         {
             NguoiDungId = request.NguoiDungId,
             KhoaLuuTru = daTai.Khoa,
-            TenGoc = daTai.TenGoc,
+            // Tên người dùng đặt thắng tên gốc; không đặt thì giữ tên tệp đã qua `LamSachTenGoc`.
+            TenGoc = tenDat ?? daTai.TenGoc,
             LoaiNoiDung = daTai.LoaiNoiDung,
             KichThuoc = daTai.KichThuoc,
             NguoiTaiLenId = currentUser.UserId
@@ -129,6 +217,38 @@ public class XemTepHoSoHandler(IAppDbContext db, ILuuTruTep luuTru)
         // Tên/loại lấy từ DB, không từ metadata của kho: DB là nguồn sự thật và đã qua
         // `LamSachTenGoc` lúc tải lên.
         return new TepTaiVe(noiDung.NoiDung, tep.LoaiNoiDung, tep.TenGoc);
+    }
+}
+
+/// <summary>
+/// Đổi tên hiển thị của một tệp đã có (16/09/2026).
+///
+/// Cần riêng với lệnh tải lên vì phần lớn hồ sơ **đã nằm sẵn trong hệ thống** mang tên máy quét
+/// — không ai đi xoá rồi tải lại chỉ để sửa tên.
+///
+/// **Chỉ đụng cột `TEN_GOC`**: khoá lưu trữ, nội dung và object trong MinIO giữ nguyên. Đổi cả
+/// khoá thì mọi tệp đang có sẽ phải di chuyển trong kho — việc rủi ro, không đổi lại được, cho
+/// một thứ thuần hiển thị.
+/// </summary>
+public record DoiTenTepHoSoCommand(Guid Id, string TenMoi) : IRequest;
+
+public class DoiTenTepHoSoHandler(IAppDbContext db) : IRequestHandler<DoiTenTepHoSoCommand>
+{
+    public async Task Handle(DoiTenTepHoSoCommand request, CancellationToken ct)
+    {
+        // `NguoiDungId != null` cùng lý do như lệnh xoá và lệnh xem: chặn dùng endpoint HRM để
+        // đổi tên tệp bài nộp / tài liệu của LMS, những tệp có cột FK khác.
+        var tep = await db.TepDinhKems.FirstOrDefaultAsync(
+                      t => t.Id == request.Id && t.NguoiDungId != null, ct)
+                  ?? throw new KhongTimThayException($"TepHoSo {request.Id}");
+
+        // Đuôi lấy từ TÊN ĐANG LƯU, không từ tên người dùng gõ: đổi tên không được phép biến
+        // một PDF thành ".exe" trên đường tải về.
+        var tenMoi = TepHoSo.GhepTen(request.TenMoi, tep.TenGoc)
+                     ?? throw new AppException(MaLoi.TenTepKhongHopLe);
+
+        tep.TenGoc = tenMoi;
+        await db.SaveChangesAsync(ct);
     }
 }
 

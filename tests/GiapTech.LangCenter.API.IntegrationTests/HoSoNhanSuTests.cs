@@ -429,4 +429,300 @@ public class HoSoNhanSuTests(ApiFactory factory) : IClassFixture<ApiFactory>
             HttpStatusCode.NotFound,
             (await c.GetAsync($"/api/v1/nhan-su/tep/{tepId}")).StatusCode);
     }
+
+    // ---------- Đặt tên tệp + hạn mức 10 tệp (16/09/2026) ----------
+
+    private static MultipartFormDataContent TepCoTen(
+        string ten, string? tenHienThi, string loai = "application/pdf")
+    {
+        var form = Tep(ten, loai: loai);
+        if (tenHienThi is not null) form.Add(new StringContent(tenHienThi), "tenHienThi");
+        return form;
+    }
+
+    private static async Task<List<string>> TenCacTep(HttpClient c, Guid id)
+        => (await Doc(c, id)).GetProperty("tepHoSos").EnumerateArray()
+            .Select(x => x.GetProperty("tenGoc").GetString()!).ToList();
+
+    /// <summary>
+    /// Đặt tên lúc tải lên — yêu cầu chủ sản phẩm: *"cho phép đặt tên file để dễ theo dõi"*.
+    ///
+    /// Chốt quan trọng nhất: **đuôi tệp phải còn**. Người dùng gõ "Hợp đồng lao động 2026" chứ
+    /// không gõ `.pdf`; mất đuôi thì tải về ra tệp Windows không biết mở bằng gì.
+    /// </summary>
+    [Fact]
+    public async Task Dat_ten_tep_luc_tai_len_va_giu_duoi_tep()
+    {
+        var c = await Client();
+        var id = await Tao(c, new { HoTen = "NV đặt tên tệp", LoaiNguoiDung = "NhanVien" });
+
+        (await c.PostAsync($"/api/v1/nhan-su/{id}/tep",
+            TepCoTen("SCAN_0012.pdf", "Hợp đồng lao động 2026"))).EnsureSuccessStatusCode();
+
+        Assert.Equal(["Hợp đồng lao động 2026.pdf"], await TenCacTep(c, id));
+    }
+
+    /// <summary>Không đặt tên thì giữ tên gốc — không được âm thầm đổi thành chuỗi rỗng.</summary>
+    [Fact]
+    public async Task Khong_dat_ten_thi_giu_ten_goc()
+    {
+        var c = await Client();
+        var id = await Tao(c, new { HoTen = "NV giữ tên gốc", LoaiNguoiDung = "NhanVien" });
+
+        (await c.PostAsync($"/api/v1/nhan-su/{id}/tep",
+            TepCoTen("bang-cap.pdf", null))).EnsureSuccessStatusCode();
+
+        Assert.Equal(["bang-cap.pdf"], await TenCacTep(c, id));
+    }
+
+    /// <summary>
+    /// Gõ sẵn đuôi thì đừng thành "Hợp đồng.pdf.pdf" — lỗi trông rất nghiệp dư trên danh sách.
+    /// </summary>
+    [Fact]
+    public async Task Go_san_duoi_thi_khong_nhan_doi_duoi()
+    {
+        var c = await Client();
+        var id = await Tao(c, new { HoTen = "NV đuôi kép", LoaiNguoiDung = "NhanVien" });
+
+        (await c.PostAsync($"/api/v1/nhan-su/{id}/tep",
+            TepCoTen("x.pdf", "Hợp đồng.pdf"))).EnsureSuccessStatusCode();
+
+        Assert.Equal(["Hợp đồng.pdf"], await TenCacTep(c, id));
+    }
+
+    /// <summary>
+    /// Tên người dùng gõ **không đổi được đuôi thật của tệp**.
+    ///
+    /// Đây là chỗ đáng canh nhất về an toàn: cho đặt tên tự do mà lấy luôn đuôi họ gõ thì một
+    /// PDF tải về thành `.exe`/`.html` — `Content-Disposition` mang tên đó, và tệp `.html` tải
+    /// từ hệ thống nội bộ là đường XSS/lừa người dùng.
+    /// </summary>
+    [Theory]
+    [InlineData("Hợp đồng.exe")]
+    [InlineData("Hợp đồng.html")]
+    public async Task Ten_nguoi_dung_go_khong_doi_duoc_duoi_that(string tenGo)
+    {
+        var c = await Client();
+        var id = await Tao(c, new { HoTen = $"NV {Guid.NewGuid():N}", LoaiNguoiDung = "NhanVien" });
+
+        (await c.PostAsync($"/api/v1/nhan-su/{id}/tep",
+            TepCoTen("that.pdf", tenGo))).EnsureSuccessStatusCode();
+
+        var ten = (await TenCacTep(c, id)).Single();
+        Assert.EndsWith(".pdf", ten, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Tên rỗng / chỉ gồm dấu cách lúc TẢI LÊN thì **quay về tên gốc của tệp**, không báo lỗi.
+    ///
+    /// Không phải lựa chọn thiết kế mà là **giới hạn của model binder**: MVC chuyển chuỗi rỗng
+    /// và chuỗi toàn dấu cách của `[FromForm] string?` thành `null`, nên handler **không phân
+    /// biệt được** "gửi một tên vô dụng" với "không gửi trường này" (client cũ). Đã đo bằng
+    /// probe, không suy đoán.
+    ///
+    /// Chọn cách này thay vì thêm binder riêng: hậu quả nhẹ (tệp giữ tên máy quét, người dùng
+    /// đổi tên lại được ngay bằng nút Sửa), còn form trên UI đã `trim()` và không gửi khi rỗng.
+    /// Lệnh **đổi tên** thì đi qua JSON nên vẫn nhận được `"   "` và **có** báo lỗi — xem
+    /// <see cref="Doi_ten_thanh_chuoi_rong_bi_tu_choi"/>.
+    /// </summary>
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task Ten_rong_luc_tai_len_thi_quay_ve_ten_goc(string tenGo)
+    {
+        var c = await Client();
+        var id = await Tao(c, new { HoTen = $"NV {Guid.NewGuid():N}", LoaiNguoiDung = "NhanVien" });
+
+        var res = await c.PostAsync($"/api/v1/nhan-su/{id}/tep",
+            TepCoTen("scan-goc.pdf", tenGo));
+        res.EnsureSuccessStatusCode();
+
+        Assert.Equal(["scan-goc.pdf"], await TenCacTep(c, id));
+    }
+
+    /// <summary>
+    /// Đổi tên thành chuỗi rỗng **bị từ chối kèm mã lỗi**.
+    ///
+    /// Khác lệnh tải lên: lệnh này nhận JSON nên `"   "` tới được handler nguyên vẹn. Và ở đây
+    /// im lặng bỏ qua là tệ hơn nhiều — người dùng bấm Lưu, hộp thoại đóng, tên không đổi, và
+    /// không có gì nói vì sao.
+    /// </summary>
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task Doi_ten_thanh_chuoi_rong_bi_tu_choi(string tenMoi)
+    {
+        var c = await Client();
+        var id = await Tao(c, new { HoTen = $"NV {Guid.NewGuid():N}", LoaiNguoiDung = "NhanVien" });
+
+        var tai = await c.PostAsync($"/api/v1/nhan-su/{id}/tep", Tep("giu-nguyen.pdf"));
+        tai.EnsureSuccessStatusCode();
+        var tepId = (await tai.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id").GetGuid();
+
+        var res = await c.PutAsJsonAsync(
+            $"/api/v1/nhan-su/tep/{tepId}/ten", new { TenMoi = tenMoi });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        Assert.Contains("TEN_TEP_KHONG_HOP_LE", await res.Content.ReadAsStringAsync());
+        // Tên cũ còn nguyên — từ chối không được làm hỏng dữ liệu đang có (quy tắc #1).
+        Assert.Equal(["giu-nguyen.pdf"], await TenCacTep(c, id));
+    }
+
+    /// <summary>
+    /// Đổi tên tệp **đã có** — phần lớn hồ sơ đã nằm sẵn trong hệ thống mang tên máy quét, nên
+    /// đây mới là đường dùng nhiều nhất.
+    /// </summary>
+    [Fact]
+    public async Task Doi_ten_tep_da_co()
+    {
+        var c = await Client();
+        var id = await Tao(c, new { HoTen = "NV đổi tên", LoaiNguoiDung = "NhanVien" });
+
+        var tai = await c.PostAsync($"/api/v1/nhan-su/{id}/tep", Tep("IMG_20260916.pdf"));
+        tai.EnsureSuccessStatusCode();
+        var tepId = (await tai.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id").GetGuid();
+
+        (await c.PutAsJsonAsync($"/api/v1/nhan-su/tep/{tepId}/ten",
+            new { TenMoi = "Bằng đại học" })).EnsureSuccessStatusCode();
+
+        Assert.Equal(["Bằng đại học.pdf"], await TenCacTep(c, id));
+    }
+
+    /// <summary>
+    /// Quy tắc #1 — đổi tên **không được làm mất** nội dung tệp: vẫn tải về đọc lại được.
+    ///
+    /// Đúng loại lỗi 16/08: sửa một trường làm mất trường khác. Nếu lệnh đổi tên lỡ ghi cả
+    /// `KhoaLuuTru` (hoặc xoá object trong kho) thì danh sách vẫn đẹp mà tệp tải về 404.
+    /// </summary>
+    [Fact]
+    public async Task Doi_ten_khong_lam_mat_noi_dung_tep()
+    {
+        var c = await Client();
+        var id = await Tao(c, new { HoTen = "NV giữ nội dung", LoaiNguoiDung = "NhanVien" });
+
+        var tai = await c.PostAsync($"/api/v1/nhan-su/{id}/tep",
+            Tep("goc.pdf", noiDung: "noi dung rat rieng"));
+        tai.EnsureSuccessStatusCode();
+        var tepId = (await tai.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id").GetGuid();
+
+        (await c.PutAsJsonAsync($"/api/v1/nhan-su/tep/{tepId}/ten",
+            new { TenMoi = "Tên mới" })).EnsureSuccessStatusCode();
+
+        var taiVe = await c.GetAsync($"/api/v1/nhan-su/tep/{tepId}");
+        taiVe.EnsureSuccessStatusCode();
+        Assert.Equal("noi dung rat rieng", await taiVe.Content.ReadAsStringAsync());
+    }
+
+    /// <summary>
+    /// Endpoint đổi tên của HRM **không** đổi được tên tệp học liệu LMS.
+    ///
+    /// Cùng lỗ hổng mà lệnh xoá và lệnh xem đã phải bịt (`NguoiDungId != null`): quyền
+    /// `NhanSu.QuanLyTep` nói "quản lý tệp hồ sơ nhân sự", không nói "được sửa mọi hàng trong
+    /// bảng `TEP_DINH_KEM`" — chỉ cần đoán đúng id là lọt.
+    /// </summary>
+    [Fact]
+    public async Task Endpoint_HRM_khong_doi_duoc_ten_tep_hoc_lieu()
+    {
+        var c = await Client();
+
+        // Cùng khuôn với `Endpoint_HRM_khong_xoa_duoc_tep_cua_hoc_lieu`: `LopHocIds` bắt buộc.
+        var tl = await c.PostAsJsonAsync("/api/v1/tai-lieu", new
+        {
+            TieuDe = $"TL đổi tên {Guid.NewGuid():N}", Loai = "GiaoTrinh",
+            LopHocIds = Array.Empty<Guid>()
+        });
+        tl.EnsureSuccessStatusCode();
+        var tlId = await tl.Content.ReadFromJsonAsync<Guid>();
+
+        var tai = await c.PostAsync(
+            $"/api/v1/tep?loai=TaiLieu&doiTuongId={tlId}", Tep("giao-trinh.pdf"));
+        tai.EnsureSuccessStatusCode();
+        var tepId = (await tai.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id").GetGuid();
+
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await c.PutAsJsonAsync($"/api/v1/nhan-su/tep/{tepId}/ten",
+                new { TenMoi = "Đổi trái phép" })).StatusCode);
+    }
+
+    /// <summary>
+    /// Hạn mức **10 tệp mỗi hồ sơ** (yêu cầu chủ sản phẩm 16/09/2026).
+    ///
+    /// Kiểm cả hai chiều: tệp thứ 10 phải VÀO ĐƯỢC (chặn ở 9 là sai off-by-one, và người dùng
+    /// không có cách nào biết), tệp thứ 11 bị từ chối kèm mã lỗi.
+    /// </summary>
+    [Fact]
+    public async Task Toi_da_10_tep_moi_ho_so()
+    {
+        var c = await Client();
+        var id = await Tao(c, new { HoTen = "NV nhiều tệp", LoaiNguoiDung = "NhanVien" });
+
+        for (var i = 1; i <= 10; i++)
+        {
+            var res = await c.PostAsync($"/api/v1/nhan-su/{id}/tep", Tep($"tep-{i}.pdf"));
+            Assert.True(res.IsSuccessStatusCode,
+                $"tệp thứ {i} phải vào được, nhận {res.StatusCode}");
+        }
+
+        var thu11 = await c.PostAsync($"/api/v1/nhan-su/{id}/tep", Tep("tep-11.pdf"));
+        Assert.Equal(HttpStatusCode.BadRequest, thu11.StatusCode);
+        Assert.Contains("VUOT_SO_TEP_HO_SO", await thu11.Content.ReadAsStringAsync());
+
+        Assert.Equal(10, (await TenCacTep(c, id)).Count);
+    }
+
+    /// <summary>
+    /// Hạn mức tính **theo từng hồ sơ**, không phải toàn trung tâm — người này đầy 10 tệp không
+    /// được làm người kia hết chỗ (chốt của chủ sản phẩm khi tôi hỏi phạm vi).
+    /// </summary>
+    [Fact]
+    public async Task Han_muc_tinh_rieng_tung_ho_so_khong_phai_toan_trung_tam()
+    {
+        var c = await Client();
+        var day = await Tao(c, new { HoTen = "NV đã đầy", LoaiNguoiDung = "NhanVien" });
+        var moi = await Tao(c, new { HoTen = "NV mới", LoaiNguoiDung = "NhanVien" });
+
+        for (var i = 1; i <= 10; i++)
+            (await c.PostAsync($"/api/v1/nhan-su/{day}/tep", Tep($"d-{i}.pdf")))
+                .EnsureSuccessStatusCode();
+
+        // Người thứ hai vẫn tải được dù trung tâm đã có 10 tệp.
+        (await c.PostAsync($"/api/v1/nhan-su/{moi}/tep", Tep("m-1.pdf")))
+            .EnsureSuccessStatusCode();
+
+        Assert.Single(await TenCacTep(c, moi));
+    }
+
+    /// <summary>
+    /// Xoá một tệp thì **mở lại một chỗ** — hạn mức đếm tệp hiện có, không đếm tổng số lần đã
+    /// tải. Đếm sai kiểu đó thì hồ sơ dùng lâu sẽ khoá cứng dù đang trống.
+    /// </summary>
+    [Fact]
+    public async Task Xoa_tep_mo_lai_mot_cho_trong_han_muc()
+    {
+        var c = await Client();
+        var id = await Tao(c, new { HoTen = "NV xoá rồi thêm", LoaiNguoiDung = "NhanVien" });
+
+        Guid tepDau = default;
+        for (var i = 1; i <= 10; i++)
+        {
+            var res = await c.PostAsync($"/api/v1/nhan-su/{id}/tep", Tep($"t-{i}.pdf"));
+            res.EnsureSuccessStatusCode();
+            if (i == 1)
+                tepDau = (await res.Content.ReadFromJsonAsync<JsonElement>())
+                    .GetProperty("id").GetGuid();
+        }
+
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await c.PostAsync($"/api/v1/nhan-su/{id}/tep", Tep("qua.pdf"))).StatusCode);
+
+        (await c.DeleteAsync($"/api/v1/nhan-su/tep/{tepDau}")).EnsureSuccessStatusCode();
+
+        (await c.PostAsync($"/api/v1/nhan-su/{id}/tep", Tep("sau-khi-xoa.pdf")))
+            .EnsureSuccessStatusCode();
+        Assert.Equal(10, (await TenCacTep(c, id)).Count);
+    }
 }

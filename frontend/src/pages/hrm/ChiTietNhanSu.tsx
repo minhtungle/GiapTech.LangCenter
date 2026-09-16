@@ -4,8 +4,10 @@ import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Download, Eye, FileText, Pencil, Trash2, Upload } from 'lucide-react'
 import { api, layMaLoi } from '@/lib/api'
-import { Badge, Button, CanhBaoLoi, Card, CardContent, TrangTrong } from '@/components/ui'
-import { Modal } from '@/components/ui/Modal'
+import {
+  Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, TrangTrong,
+} from '@/components/ui'
+import { Modal, ModalChan } from '@/components/ui/Modal'
 import { useXacNhan } from '@/lib/xacNhan'
 import { useQuyen } from '@/lib/quyen'
 import type { NguoiDungDto } from '@/pages/quan-tri/NguoiDung'
@@ -47,12 +49,29 @@ const DINH_DANG_CHO_PHEP =
 const KICH_THUOC_TOI_DA = 20 * 1024 * 1024
 
 /**
+ * Tối đa 10 tệp mỗi hồ sơ — khớp `TepHoSo.SoTepToiDa` ở backend (16/09/2026).
+ *
+ * Lặp hằng số ở hai tầng là có chủ ý, cùng lý do như `DINH_DANG_CHO_PHEP`: backend mới là chốt
+ * (có test canh), còn ở đây chỉ để **khoá nút trước** thay vì để người dùng chọn xong tệp rồi
+ * mới nhận lỗi.
+ */
+const SO_TEP_TOI_DA = 10
+
+/**
  * Trình duyệt chỉ render được PDF. Word/Excel thì **không** — mở trong iframe chỉ ra khung
  * trắng hoặc bật hộp thoại tải về, nên UI phải biết trước để hiện nút "Tải về" thay vì mở modal
  * xem rồi trống trơn.
  */
 const xemDuocTrenTrinhDuyet = (loaiNoiDung: string) =>
   loaiNoiDung.toLowerCase() === 'application/pdf'
+
+/**
+ * Bỏ phần mở rộng để gợi ý vào ô đặt tên — backend tự ghép lại đuôi thật của tệp.
+ *
+ * Chỉ cắt đuôi đã biết: tên như "Hợp đồng 2026.v2" không có đuôi hợp lệ nào, cắt mù quáng từ
+ * dấu chấm cuối sẽ ăn mất ".v2" của người dùng.
+ */
+const boDuoi = (ten: string) => ten.replace(/\.(pdf|docx?|xlsx?)$/i, '')
 
 /** Suy từ DTO chứ không khai lại: thêm/đổi trường ở `NguoiDungDto` là tự động theo. */
 type TepHoSo = NguoiDungDto['tepHoSos'][number]
@@ -78,6 +97,26 @@ export default function ChiTietNhanSu() {
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [dangXem, setDangXem] = useState<{ tep: TepHoSo; url: string } | null>(null)
 
+  /**
+   * Tệp vừa chọn, đang chờ người dùng đặt tên (16/09/2026).
+   *
+   * Hỏi tên TRƯỚC khi tải lên chứ không tải xong rồi mới hỏi: tải xong mới hỏi thì người dùng
+   * bấm Huỷ sẽ để lại một tệp tên máy quét trong hồ sơ — đúng thứ tính năng này muốn tránh.
+   */
+  const [choDatTen, setChoDatTen] = useState<File | null>(null)
+  /** Tệp đang đổi tên (null = không mở hộp thoại). */
+  const [dangDoiTen, setDangDoiTen] = useState<TepHoSo | null>(null)
+  /** Ô nhập tên, dùng chung cho cả hai hộp thoại trên. */
+  const [tenNhap, setTenNhap] = useState('')
+  /**
+   * Lỗi của HỘP THOẠI đặt tên — tách khỏi `maLoi` của trang.
+   *
+   * Dùng chung một state thì lỗi hiện ở **cả hai** chỗ, vì `<Modal>` luôn nằm trong DOM nên
+   * điều kiện bao ngoài không ngăn được khối lỗi bên trong. Đúng lỗi đã gặp ở `CoCauToChuc.tsx`
+   * (16/09/2026) và E2E bắt lại lần nữa ở đây: `strict mode violation: resolved to 2 elements`.
+   */
+  const [maLoiTen, setMaLoiTen] = useState<string | null>(null)
+
   const tabQuery = sp.get('tab') as Tab | null
   const tab: Tab = tabQuery && CAC_TAB.some((x) => x.ma === tabQuery) ? tabQuery : 'thong-tin'
   // `replace` để bấm qua lại giữa hai tab không sinh một mục lịch sử mỗi lần — nút Back phải
@@ -93,13 +132,24 @@ export default function ChiTietNhanSu() {
   const lamMoi = () => void qc.invalidateQueries({ queryKey: ['nhan-su'] })
 
   const taiTep = useMutation({
-    mutationFn: async (tep: File) => {
+    mutationFn: async ({ tep, ten }: { tep: File; ten: string }) => {
       const fd = new FormData()
       fd.append('tep', tep)
+      // Chỉ gửi khi có tên: chuỗi rỗng bị model binder đổi thành null, nên gửi cũng vô nghĩa —
+      // và không gửi thì backend giữ tên gốc, đúng ý người dùng bỏ trống.
+      if (ten.trim()) fd.append('tenHienThi', ten.trim())
       await api.post(`/nhan-su/${id}/tep`, fd)
     },
-    onSuccess: () => { lamMoi(); setMaLoi(null) },
-    onError: (e) => setMaLoi(layMaLoi(e)),
+    // Lỗi báo TRONG hộp thoại: người dùng đang ở đó, và hộp thoại phải mở tiếp để họ sửa tên.
+    onSuccess: () => { lamMoi(); dongDatTen() },
+    onError: (e) => setMaLoiTen(layMaLoi(e)),
+  })
+
+  const doiTenTep = useMutation({
+    mutationFn: ({ tepId, ten }: { tepId: string; ten: string }) =>
+      api.put(`/nhan-su/tep/${tepId}/ten`, { tenMoi: ten.trim() }),
+    onSuccess: () => { lamMoi(); dongDatTen() },
+    onError: (e) => setMaLoiTen(layMaLoi(e)),
   })
 
   const xoaTep = useMutation({
@@ -124,7 +174,30 @@ export default function ChiTietNhanSu() {
     if (f.type && !DINH_DANG_CHO_PHEP.includes(f.type.toLowerCase()) && !duoiHopLe)
       return setMaLoi('LOAI_TEP_HO_SO_KHONG_HO_TRO')
 
-    taiTep.mutate(f)
+    // Mở hộp thoại đặt tên; tải lên xảy ra khi người dùng bấm Lưu.
+    setMaLoi(null)
+    setMaLoiTen(null)
+    setTenNhap(boDuoi(f.name))
+    setChoDatTen(f)
+  }
+
+  const dongDatTen = () =>
+    { setChoDatTen(null); setDangDoiTen(null); setTenNhap(''); setMaLoiTen(null) }
+
+  /** Đã chạm hạn mức — khoá ô chọn tệp thay vì để người dùng bấm rồi nhận lỗi. */
+  const daDayTep = (u?.tepHoSos.length ?? 0) >= SO_TEP_TOI_DA
+
+  /**
+   * Gợi ý sẵn tên hiện tại **đã bỏ đuôi** vào ô nhập.
+   *
+   * Người dùng thường sửa nhẹ tên có sẵn hơn là gõ lại từ đầu. Bỏ đuôi vì backend tự ghép đuôi
+   * thật của tệp — để nguyên thì họ thấy "hop-dong.pdf" rồi sửa thành "Hợp đồng.pdf", vẫn ra
+   * đúng nhưng ô nhập nói sai về thứ cần gõ.
+   */
+  const luuTen = () => {
+    if (!tenNhap.trim()) return setMaLoiTen('TEN_TEP_KHONG_HOP_LE')
+    if (dangDoiTen) doiTenTep.mutate({ tepId: dangDoiTen.id, ten: tenNhap })
+    else if (choDatTen) taiTep.mutate({ tep: choDatTen, ten: tenNhap })
   }
 
   /**
@@ -334,19 +407,34 @@ export default function ChiTietNhanSu() {
               {/* Số tệp đã hiện trên nhãn tab — không đếm lại lần thứ hai ngay dưới nó. */}
               <h3 className="font-semibold">{t('nguoiDung.tepHoSo')}</h3>
               {coQuyen('NhanSu', 'Sua') && (
-                <label className="ml-auto">
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept={DINH_DANG_CHO_PHEP}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0]
-                      if (f) chonTep(f)
-                      // Reset để chọn lại CÙNG một tệp vẫn kích hoạt onChange.
-                      e.target.value = ''
-                    }}
-                  />
-                  <span className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-4 text-sm font-medium hover:bg-muted">
+                /*
+                  Đủ 10 tệp thì KHOÁ hẳn ô chọn tệp, không để bấm rồi mới báo lỗi. `<label>` bọc
+                  input không có thuộc tính `disabled`, nên phải bỏ luôn input và đổi lớp CSS —
+                  để nguyên mà chỉ làm mờ thì vẫn bấm được.
+                */
+                <label className={`ml-auto ${daDayTep ? 'pointer-events-none' : ''}`}>
+                  {!daDayTep && (
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept={DINH_DANG_CHO_PHEP}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0]
+                        if (f) chonTep(f)
+                        // Reset để chọn lại CÙNG một tệp vẫn kích hoạt onChange.
+                        e.target.value = ''
+                      }}
+                    />
+                  )}
+                  <span
+                    className={
+                      'inline-flex h-9 items-center gap-2 rounded-md border border-input '
+                      + 'bg-background px-4 text-sm font-medium '
+                      + (daDayTep
+                        ? 'cursor-not-allowed opacity-50'
+                        : 'cursor-pointer hover:bg-muted')
+                    }
+                  >
                     <Upload className="h-4 w-4" />
                     {t('nguoiDung.taiTep')}
                   </span>
@@ -356,7 +444,13 @@ export default function ChiTietNhanSu() {
 
             {/* Nói trước giới hạn thay vì để người dùng chọn xong mới bị từ chối. */}
             {coQuyen('NhanSu', 'Sua') && (
-              <p className="text-xs text-muted-foreground">{t('nguoiDung.gioiHanTep')}</p>
+              <p className="text-xs text-muted-foreground">
+                {t('nguoiDung.gioiHanTep')}
+                {' · '}
+                {t('nguoiDung.soTepDaDung', {
+                  so: u.tepHoSos.length, toiDa: SO_TEP_TOI_DA,
+                })}
+              </p>
             )}
 
             {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
@@ -401,6 +495,22 @@ export default function ChiTietNhanSu() {
                     >
                       <Download className="h-4 w-4" />
                     </Button>
+
+                    {/* Đổi tên tệp đã có — phần lớn hồ sơ cũ mang tên máy quét. */}
+                    {coQuyen('NhanSu', 'Sua') && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        title={t('nguoiDung.doiTenTep')}
+                        onClick={() => {
+                          setMaLoiTen(null)
+                          setDangDoiTen(tep)
+                          setTenNhap(boDuoi(tep.tenGoc))
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
 
                     {coQuyen('NhanSu', 'Sua') && (
                       <Button
@@ -454,6 +564,49 @@ export default function ChiTietNhanSu() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/*
+        Hộp thoại đặt tên — dùng CHUNG cho "đặt tên lúc tải lên" và "đổi tên tệp đã có".
+
+        Một hộp thoại chứ không hai: hai việc chỉ khác nhau ở chỗ có tệp mới hay không, còn ô
+        nhập, luật hợp lệ và thông điệp lỗi đều giống hệt. Tách đôi là hai chỗ để quên sửa.
+      */}
+      <Modal
+        mo={!!choDatTen || !!dangDoiTen}
+        onDong={dongDatTen}
+        tieuDe={t(dangDoiTen ? 'nguoiDung.doiTenTep' : 'nguoiDung.datTenTep')}
+        moTa={choDatTen?.name ?? dangDoiTen?.tenGoc}
+      >
+        <div className="grid gap-3">
+          <div className="grid gap-1.5">
+            <Label htmlFor="ten-tep">{t('nguoiDung.tenHienThi')}</Label>
+            <Input
+              id="ten-tep"
+              value={tenNhap}
+              autoFocus
+              maxLength={190}
+              placeholder={t('nguoiDung.viDuTenTep')}
+              onChange={(e) => setTenNhap(e.target.value)}
+              // Enter để lưu: hộp thoại một ô nhập mà bắt rê chuột xuống nút là phiền.
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); luuTen() } }}
+            />
+            {/* Đuôi tệp do hệ thống giữ — nói rõ để không ai gõ ".pdf" vào đây. */}
+            <p className="text-xs text-muted-foreground">{t('nguoiDung.giuDuoiTep')}</p>
+          </div>
+
+          {maLoiTen && <CanhBaoLoi>{t(`loi.${maLoiTen}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
+
+          <ModalChan>
+            <Button variant="outline" onClick={dongDatTen}>{t('chung.huy')}</Button>
+            <Button
+              onClick={luuTen}
+              disabled={!tenNhap.trim() || taiTep.isPending || doiTenTep.isPending}
+            >
+              {taiTep.isPending || doiTenTep.isPending ? t('chung.dangTai') : t('chung.luu')}
+            </Button>
+          </ModalChan>
+        </div>
       </Modal>
 
       {hop}

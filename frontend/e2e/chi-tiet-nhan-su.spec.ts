@@ -11,6 +11,22 @@ import { vaoHeThong } from './tro-giup'
  * Kiểm cả `?tab=` round-trip qua F5: mã tab nằm trong URL để gửi link được, mà nếu chỉ giữ
  * trong `useState` thì F5 sẽ âm thầm quay về tab đầu.
  */
+
+/**
+ * Xác nhận hộp thoại "Đặt tên tệp" — bước MỚI từ 16/09/2026.
+ *
+ * Trước đó chọn tệp là tải lên luôn. Nay có hộp thoại đặt tên ở giữa (ô nhập đã gợi ý sẵn tên
+ * tệp), nên mọi bước tải lên trong bộ test này phải bấm Lưu. Giữ nguyên tên gợi ý để các assert
+ * cũ (`hop-dong.pdf`…) vẫn nói đúng chuyện.
+ */
+async function xacNhanDatTen(page: import('@playwright/test').Page) {
+  await expect(page.getByText('Đặt tên tệp')).toBeVisible({ timeout: 10_000 })
+  await page.getByRole('button', { name: 'Lưu' }).click()
+  // `toBeHidden`, KHÔNG `toHaveCount(0)`: `<Modal>` dựng bằng `<dialog>` nên nó luôn nằm trong
+  // DOM, chỉ đóng lại — cùng lý do khiến khối lỗi từng hiện ở hai chỗ.
+  await expect(page.getByText('Đặt tên tệp')).toBeHidden({ timeout: 10_000 })
+}
+
 test.describe('Chi tiết hồ sơ nhân sự', () => {
   test('hai tab loại trừ nhau, ?tab= sống qua F5, badge đếm tệp', async ({ page, request }) => {
     await vaoHeThong(page, request, 'tab-nhan-su')
@@ -52,6 +68,7 @@ test.describe('Chi tiết hồ sơ nhân sự', () => {
       mimeType: 'application/pdf',
       buffer: Buffer.from('%PDF-1.4 test'),
     })
+    await xacNhanDatTen(page)
     await page.waitForTimeout(2500)
     await expect(page.getByText('hop-dong.pdf')).toBeVisible()
     await expect(page.getByRole('button', { name: /Tệp hồ sơ\s*1/ })).toBeVisible()
@@ -115,6 +132,7 @@ test.describe('Chi tiết hồ sơ nhân sự', () => {
       mimeType: 'application/pdf',
       buffer: Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>'),
     })
+    await xacNhanDatTen(page)
     await page.waitForTimeout(2500)
     await expect(page.getByText('hop-dong-lao-dong.pdf')).toBeVisible()
 
@@ -171,6 +189,7 @@ test.describe('Chi tiết hồ sơ nhân sự', () => {
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       buffer: Buffer.from('PK fake docx'),
     })
+    await xacNhanDatTen(page)
     await page.waitForTimeout(2500)
 
     await expect(page.getByText('ly-lich.docx')).toBeVisible()

@@ -125,12 +125,31 @@ public class NhanSuController(ISender sender) : ControllerBase
     [RequirePermission(ChucNang.NhanSu, HanhDong.QuanLyTep)]
     [RequestSizeLimit(25 * 1024 * 1024)]
     public async Task<ActionResult<TepHoSoDaTaiDto>> TaiTep(
-        Guid id, IFormFile tep, CancellationToken ct)
+        Guid id, IFormFile tep, CancellationToken ct, [FromForm] string? tenHienThi = null)
     {
         await using var s = tep.OpenReadStream();
         return Ok(await sender.Send(new TaiTepHoSoCommand(
-            id, s, tep.ContentType, tep.FileName), ct));
+            id, s, tep.ContentType, tep.FileName, tenHienThi), ct));
     }
+
+    /// <summary>
+    /// Đổi tên hiển thị của một tệp đã có (16/09/2026).
+    ///
+    /// Gác bằng `QuanLyTep` — cùng quyền với tải lên và xoá: ba việc này là một nhóm "quản lý
+    /// tệp hồ sơ", tách ra thành quyền riêng chỉ làm ma trận phân quyền rậm thêm mà không ai
+    /// cấu hình khác đi.
+    /// </summary>
+    [HttpPut("tep/{tepId:guid}/ten")]
+    [RequirePermission(ChucNang.NhanSu, HanhDong.QuanLyTep)]
+    public async Task<IActionResult> DoiTenTep(
+        Guid tepId, [FromBody] DoiTenTepBody than, CancellationToken ct)
+    {
+        await sender.Send(new DoiTenTepHoSoCommand(tepId, than.TenMoi), ct);
+        return NoContent();
+    }
+
+    /// <summary>Thân của lệnh đổi tên — record riêng để Swagger sinh schema đúng.</summary>
+    public record DoiTenTepBody(string TenMoi);
 
     /// <summary>
     /// Xem tệp online hoặc tải về (10/09/2026).

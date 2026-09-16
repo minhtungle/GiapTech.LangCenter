@@ -8,6 +8,29 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — đặt tên tệp hồ sơ nhân sự + hạn mức 10 tệp (16/09/2026)
+
+Theo yêu cầu chủ sản phẩm: *"khi tải tệp hồ sơ nhân sự lên, cho phép đặt tên file để dễ theo
+dõi, giới hạn tổng số lượng file là 10"*.
+
+- **Đặt tên lúc tải lên**: chọn tệp mở hộp thoại đặt tên (gợi ý sẵn tên tệp đã bỏ đuôi), tải lên
+  xảy ra khi bấm Lưu — huỷ thì không để lại tệp tên máy quét nào trong hồ sơ.
+- **Đổi tên tệp đã có**: `PUT /nhan-su/tep/{id}/ten`. Phần lớn hồ sơ đã nằm sẵn trong hệ thống
+  mang tên `SCAN_0012.pdf`, không ai xoá rồi tải lại chỉ để sửa tên.
+- **Hạn mức 10 tệp mỗi hồ sơ** (không phải toàn trung tâm). Nút tải lên bị khoá hẳn khi đủ, kèm
+  dòng `đã dùng n/10 tệp`.
+
+**Đuôi tệp luôn lấy từ tệp thật, không từ tên người dùng gõ** — lấy đuôi họ gõ thì một PDF tải
+về thành `.exe`/`.html`, là đường lừa người dùng từ hệ thống nội bộ.
+
+**Một lỗi tự bắt trong lúc làm:** hộp thoại mới dùng chung state lỗi với trang, mà `<Modal>`
+dựng bằng `<dialog>` nên luôn ở trong DOM ⇒ thông báo lỗi hiện ở **cả hai** chỗ. Đúng lỗi đã gặp
+ở `CoCauToChuc.tsx` hôm nay; lần này E2E bắt (`strict mode violation: resolved to 2 elements`)
+thay vì người dùng.
+
+Test: +15 integration (`HoSoNhanSuTests`) · +1 E2E (`tep-ho-so-nhan-su.spec.ts`), kiểm bằng đột
+biến cả 5 mệnh đề chính (off-by-one hạn mức, đuôi tệp, phạm vi hạn mức, gửi tên, khoá nút).
+
 ### Added — HRM gộp một trang ba tab, bấm sĩ số ra danh sách người (16/09/2026)
 
 Theo yêu cầu chủ sản phẩm: *"cơ cấu tổ chức đang chưa xem được chi tiết danh sách nhân sự"* và
