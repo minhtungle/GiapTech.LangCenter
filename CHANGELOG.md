@@ -8,6 +8,23 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — đồng bộ mật khẩu tài khoản dev về `123456` (16/09/2026)
+
+Yêu cầu chủ sản phẩm để thử nghiệm nhiều vai trò: 11 tài khoản của tenant dev `W686AE9` nay dùng
+chung mật khẩu `123456`, và **tắt cờ buộc đổi mật khẩu** để đăng nhập là vào thẳng.
+
+Thêm `scripts/dong-bo-mat-khau-dev.sh`. Hai điều script làm đúng, đáng ghi lại:
+
+- **Gọi API để băm**, không ghi hash trực tiếp vào DB — ghi tay là tự cài một thuật toán băm thứ
+  hai, lệch với `IPasswordHasher` là mọi nick hỏng cùng lúc.
+- **Đổi tài khoản đang gọi API SAU CÙNG.** Dry-run lần đầu lộ ra: đổi `admin` trước thì token đang
+  cầm hết hiệu lực ngay, 10 nick còn lại nhận **403** — mà script vẫn chạy tới cuối và in ra như
+  thành công. Nay có kiểm mã trả về và `exit 1` nếu nick nào không đổi được.
+
+Chỉ đụng 11 tài khoản của `W686AE9`; **378 tài khoản trong 337 tenant rác E2E giữ nguyên** (chúng
+sẽ bị xoá khi dọn tenant test, đổi mật khẩu cho chúng là vô ích). Đã backup và dry-run trên DB bản
+sao — kiểm cả 11 nick đăng nhập được — rồi mới chạy thật.
+
 ### Added — FR-29: thống kê nhân sự + module tiêu chí đánh giá (16/09/2026)
 
 Theo yêu cầu chủ sản phẩm: thống kê ở HRM *"tương tự thống kê tại CRM nhưng chỉ cho nhân viên kinh

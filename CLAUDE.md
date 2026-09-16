@@ -309,7 +309,32 @@ curl -X POST localhost:5229/api/v1/dang-ky-trung-tam \
   -H 'Content-Type: application/json' -d '{"tenTrungTam":"Trung tâm Ngoại ngữ Dev"}'
 # → { maTrungTam: "A3K9M2P", username: "admin", matKhau: "123456" }
 #   Bắt buộc đổi mật khẩu ở lần đăng nhập đầu.
+
+# --- Đồng bộ mật khẩu mọi nick của MỘT trung tâm (CHỈ DEV) ---
+# Khi phải đăng nhập lần lượt nhiều vai trò để xem mỗi người thấy gì.
+MA_TRUNG_TAM=W686AE9 MAT_KHAU_MOI=123456 ADMIN_PASS='...' \
+  ./scripts/dong-bo-mat-khau-dev.sh
+# Script gọi API để BĂM (không ghi hash tay), rồi tắt cờ `phai_doi_mat_khau`.
+# Nó đổi tài khoản đang gọi API SAU CÙNG — đổi trước thì token hết hiệu lực
+# và mọi nick còn lại nhận 403 trong khi script vẫn chạy tới cuối.
 ```
+
+### Tài khoản dev của tenant W686AE9
+
+Mọi nick dùng chung mật khẩu **`123456`** (đồng bộ 16/09/2026, xem script ở trên).
+
+| Nick | Vai trò | Người |
+|---|---|---|
+| `admin` | Nhân viên khác | Quản trị viên |
+| `ns.mai` | Nhân viên khác | Chị Mai (nhân sự) |
+| `nv1` … `nv4` | NV kinh doanh | Sale Hà Nội · Sài Gòn · Online A · Online B |
+| `co.lan`, `nv6` | Giáo viên | Cô Lan · Thầy Hoà |
+| `tg.hoa` | Trợ giảng | Thầy Hoà (trợ giảng) |
+| `hv1`, `hv2` | Học viên | `hv1` đang học lớp *IELTS 6.5 cấp tốc — K1* |
+
+`hv1` là học viên **duy nhất** có tài khoản **và** đang trong lớp — dùng nó để thử luồng học viên
+(tự điểm danh, nhận xét buổi học, chấm tiêu chí giảng dạy). 49 học viên còn lại là dữ liệu demo,
+chưa có tài khoản.
 
 ### Thêm migration
 
