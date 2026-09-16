@@ -119,7 +119,10 @@ test.describe('Sidebar', () => {
     await doi('HRM')
     await expect(nutChuyen).toContainText('HRM')
     expect(await page.evaluate(() => localStorage.getItem('lms_he_thong'))).toBe('Hrm')
-    expect(new URL(page.url()).pathname).toMatch(/^\/hrm\//)
+    // `/hrm` (không có đoạn sau) cũng hợp lệ: từ 16/09/2026 HRM có trang đích gộp ba tab, nên
+    // bộ chuyển điều hướng thẳng tới đó. `Layout` suy hệ thống con bằng `startsWith('/hrm')`
+    // nên cả hai dạng đều nhận đúng.
+    expect(new URL(page.url()).pathname).toMatch(/^\/hrm(\/|$)/)
 
     // Và chuyển tiếp được — lỗi cũ kẹt luôn từ lần thứ hai.
     await doi('LMS')

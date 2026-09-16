@@ -15,6 +15,9 @@ const PHAM_VI: PhamViNguoiDung = {
   can: 'NhanSu',
   khoaTieuDe: 'menu.nhanSuNguoiDung',
   duongChiTiet: '/hrm/nhan-su',
+  // Bộ lọc phòng ban + chức vụ (16/09/2026): hai chiều tra cứu chính của quản lý nhân sự.
+  // Học viên không vào cơ cấu nên màn Học viên KHÔNG bật cờ này.
+  locCoCau: true,
 }
 
 export default function NhanSu() {

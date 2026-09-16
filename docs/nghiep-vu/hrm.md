@@ -125,7 +125,7 @@ Cả hai cùng ghi một cột `NGUOI_DUNG.phong_ban_id`:
 | 1 | Form tạo/sửa hồ sơ → chọn phòng ban | Tuyển người mới, biết trước họ vào phòng nào |
 | 2 | Cây cơ cấu → node phòng ban → *Thêm nhân sự* → chọn người đã có | Sắp xếp lại tổ chức, hoặc lấp phòng mới lập |
 
-Màn cây ở `/hrm/co-cau`, dùng `@headless-tree` (MIT, ~13.5 KB gzip, 0 dependency): thu/mở nhánh,
+Màn cây ở `/hrm?tab=so-do` (đường cũ `/hrm/co-cau` vẫn chuyển hướng tới đây), dùng `@headless-tree` (MIT, ~13.5 KB gzip, 0 dependency): thu/mở nhánh,
 sĩ số riêng/cả nhánh, menu thao tác mỗi dòng. Chọn thư viện *headless* để dùng lại `MenuThaoTac`
 và `Badge` sẵn có, và để có sẵn điều hướng bàn phím + ARIA `tree`/`treeitem`.
 
@@ -284,6 +284,50 @@ Migration đổi cả **dữ liệu** trong `QUYEN_CHUC_NANG`, không chỉ code
 **cả hai** thì bỏ trùng trước khi đổi, nếu không sẽ đụng `UNIQUE(quyen_id, ten_chuc_nang,
 hanh_dong)` — đo thật: 42/43 nhóm có cả hai, nên 170 hàng bị bỏ và không nhóm nào mất quyền nhân
 sự.
+
+## Một trang ba tab + bấm sĩ số ra danh sách người (16/09/2026)
+
+Chủ sản phẩm nêu hai việc: *"cơ cấu tổ chức đang chưa xem được chi tiết danh sách nhân sự"* và
+*"hồ sơ nhân viên, cơ cấu, chức vụ đang bị tách biệt"*.
+
+Ba màn này nói về **cùng một tập người** — `NGUOI_DUNG` mang cả `phong_ban_id` lẫn `chuc_vu_id` —
+nhưng trước đây là ba mục sidebar riêng, nên một việc thường ngày ("ai trong phòng Kinh doanh?")
+phải đi qua sidebar hai ba lần.
+
+| | Trước | Nay |
+|---|---|---|
+| Sidebar | 3 mục | **1 mục** `/hrm` |
+| Đường cũ | `/hrm/co-cau`, `/hrm/nhan-su`, `/hrm/chuc-vu` | vẫn vào được — chuyển hướng sang `?tab=` tương ứng |
+| Từ sĩ số trên cây | không bấm được | bấm là sang tab Nhân sự **đã lọc sẵn phòng đó** |
+
+Tab lưu ở `?tab=` (không phải state) để gửi link được và F5 không mất chỗ; `replace: true` để bấm
+qua lại ba tab không sinh ba mục lịch sử. Chuyển tab **giữ nguyên `phongBanId`** — mất nó là người
+dùng phải chọn lại phòng bằng tay.
+
+### Bộ lọc mới của `/nhan-su`
+
+| Tham số | Nghĩa |
+|---|---|
+| `phongBanId` | Chỉ người thuộc **chính** phòng đó |
+| `gomPhongBanCon` | Thêm người của **mọi cấp dưới**, không chỉ một cấp |
+| `chucVuId` | Lọc theo chức vụ — "cho tôi xem mọi trưởng phòng" |
+
+`gomPhongBanCon` dựng tập id **trong bộ nhớ** (BFS, có chặn số vòng chống dữ liệu lỗi tạo chu
+trình), không recursive CTE: EF Core không sinh được CTE mà không viết SQL thô, và SQL thô sẽ **mất
+Global Query Filter** của multi-tenant (quy tắc #2) — rủi ro không đáng đổi cho một cây cỡ vài chục
+dòng.
+
+### Bẫy: cây đếm khác danh sách đếm
+
+Cây **chỉ đếm người `DangLamViec`**, còn `/nhan-su` mặc định trả cả người đã nghỉ. Nên link từ sĩ số
+phải mang theo `trangThaiNhanSu=DangLamViec`, và màn Nhân sự phải **đọc tham số đó từ URL**.
+
+Thiếu một trong hai thì bấm vào số `1` lại ra `2` dòng — hai màn nói hai chuyện về cùng một phòng,
+mà **không có ngoại lệ nào ném ra**: người dùng chỉ thấy hai con số khác nhau và không biết tin cái
+nào. Cả hai mắt đều đã đứt thật trong lúc làm, và **không** làm đỏ test backend nào — chỉ E2E bắt
+được, vì chuỗi này bắc qua ba lớp (link → router → state → tham số API → số dòng).
+
+Canh bởi `LocNhanSuTheoCoCauTests` (4 test) và `e2e/hrm-mot-trang-ba-tab.spec.ts`.
 
 ## View chi tiết hồ sơ nhân sự
 

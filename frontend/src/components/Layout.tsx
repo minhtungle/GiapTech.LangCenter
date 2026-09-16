@@ -4,9 +4,8 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   ShieldCheck,
   BarChart3, Settings, LogOut, Home, GraduationCap, BookOpen, MonitorPlay,
-  PanelLeftClose, PanelLeft, Menu, X, ScrollText, Briefcase, UserCog, TrendingUp,
-  LayoutGrid, Check, KeyRound, Contact, PackageOpen, BookMarked, Network,
-} from 'lucide-react'
+  PanelLeftClose, PanelLeft, Menu, X, ScrollText, UserCog, TrendingUp,
+  LayoutGrid, Check, KeyRound, Contact, PackageOpen, BookMarked, } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useQuyen } from '@/lib/quyen'
 import { useHeThong, type MaHeThong } from '@/lib/heThong'
@@ -103,16 +102,14 @@ export default function Layout() {
       heThong: 'Hrm',
       muc: [
         // Hồ sơ con người của BA vai trò nhân sự. Học viên ở LMS — xem pages/hrm/NhanSu.tsx.
+        // MỘT mục cho cả ba tab (gộp 16/09/2026): sơ đồ tổ chức, hồ sơ nhân sự và chức vụ
+        // nói về cùng một tập người, tách ba mục làm một việc thường ngày phải đi qua sidebar
+        // hai ba lần. Xem `pages/hrm/Hrm.tsx`.
+        //
+        // `can: 'NhanSu'` — ai vào được một trong ba tab đều thấy mục này; trang tự ẩn tab
+        // người dùng không có quyền.
         {
-          to: '/hrm/co-cau', nhan: t('menu.coCauToChuc'),
-          icon: Network, can: 'PhongBan',
-        },
-        {
-          to: '/hrm/nhan-su', nhan: t('menu.nhanSuNguoiDung'),
-          icon: UserCog, can: 'NhanSu',
-        },
-        {
-          to: '/hrm/chuc-vu', nhan: t('menu.chucVu'), icon: Briefcase, can: 'NhanSu',
+          to: '/hrm', nhan: t('menu.nhanSu'), icon: UserCog, can: 'NhanSu', cuoi: true,
         },
       ],
     },

@@ -54,6 +54,9 @@ public class NhanSuController(ISender sender) : ControllerBase
         [FromQuery] string? timKiem,
         [FromQuery] LoaiNguoiDung? loaiNguoiDung,
         [FromQuery] TrangThaiNhanSu? trangThaiNhanSu,
+        [FromQuery] Guid? phongBanId,
+        [FromQuery] bool gomPhongBanCon = false,
+        [FromQuery] Guid? chucVuId = null,
         [FromQuery] int trang = 1,
         [FromQuery] int soDong = 20,
         CancellationToken ct = default)
@@ -61,9 +64,17 @@ public class NhanSuController(ISender sender) : ControllerBase
         // Bộ lọc chọn ra học viên thì bỏ qua — phạm vi màn hình thắng bộ lọc.
         var loc = loaiNguoiDung is { } l && VaiTroNhanSu.Contains(l) ? l : (LoaiNguoiDung?)null;
 
+        // Tham số CÓ TÊN: query có 4 tham số `Guid?` liền nhau, truyền theo vị trí thì thêm
+        // một bộ lọc vào giữa là lệch im lặng — lọc theo phòng hoá ra lọc theo chức vụ.
         return Ok(await sender.Send(new LayDanhSachNguoiDungQuery(
-            timKiem, loc, trangThaiNhanSu, new ThamSoTrang(trang, soDong),
-            VaiTroNhanSu), ct));
+            TimKiem: timKiem,
+            LoaiNguoiDung: loc,
+            TrangThaiNhanSu: trangThaiNhanSu,
+            Trang: new ThamSoTrang(trang, soDong),
+            TrongCacLoai: VaiTroNhanSu,
+            PhongBanId: phongBanId,
+            GomPhongBanCon: gomPhongBanCon,
+            ChucVuId: chucVuId), ct));
     }
 
     /// <summary>

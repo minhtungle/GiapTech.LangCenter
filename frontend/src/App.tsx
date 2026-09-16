@@ -22,9 +22,7 @@ import ChiTietKhoaOnline from '@/pages/dao-tao/ChiTietKhoaOnline'
 import TaiLieu from '@/pages/dao-tao/TaiLieu'
 import HocPhi from '@/pages/dao-tao/HocPhi'
 import TaiKhoan from '@/pages/quan-tri/TaiKhoan'
-import NhanSu from '@/pages/hrm/NhanSu'
-import CoCauToChuc from '@/pages/hrm/CoCauToChuc'
-import ChucVu from '@/pages/hrm/ChucVu'
+import Hrm from '@/pages/hrm/Hrm'
 import ChiTietNhanSu from '@/pages/hrm/ChiTietNhanSu'
 import PhanQuyen from '@/pages/quan-tri/PhanQuyen'
 import ChiTietQuyen from '@/pages/quan-tri/phan-quyen/ChiTietQuyen'
@@ -88,10 +86,27 @@ export default function App() {
             >
               <Route path="/" element={<TongQuan />} />
               {/* HRM · CRM — hiện là khung trống, xem components/ui/DangPhatTrien.tsx */}
-              <Route path="/hrm/co-cau" element={<CoCauToChuc />} />
-              <Route path="/hrm/nhan-su" element={<NhanSu />} />
+              {/*
+                HRM gộp thành MỘT trang ba tab (16/09/2026) — xem `pages/hrm/Hrm.tsx`.
+
+                Hai đường cũ chuyển hướng sang tab tương ứng, KHÔNG xoá: link đã lưu, bookmark
+                và tài liệu cũ vẫn phải mở được (quy tắc #1 tinh thần — không làm hỏng thứ
+                người dùng đang có). `replace` để Back không kẹt ở đường cũ.
+              */}
+              <Route path="/hrm" element={<Hrm />} />
+              <Route
+                path="/hrm/co-cau"
+                element={<Navigate to="/hrm?tab=so-do" replace />}
+              />
+              <Route
+                path="/hrm/nhan-su"
+                element={<Navigate to="/hrm?tab=nhan-su" replace />}
+              />
               <Route path="/hrm/nhan-su/:id" element={<ChiTietNhanSu />} />
-              <Route path="/hrm/chuc-vu" element={<ChucVu />} />
+              <Route
+                path="/hrm/chuc-vu"
+                element={<Navigate to="/hrm?tab=chuc-vu" replace />}
+              />
               <Route path="/crm/khach-hang" element={<KhachHang />} />
               <Route path="/crm/thong-ke" element={<ThongKeCrm />} />
               <Route path="/crm/khach-hang/:id" element={<ChiTietKhachHang />} />

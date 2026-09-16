@@ -8,6 +8,28 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — HRM gộp một trang ba tab, bấm sĩ số ra danh sách người (16/09/2026)
+
+Theo yêu cầu chủ sản phẩm: *"cơ cấu tổ chức đang chưa xem được chi tiết danh sách nhân sự"* và
+*"hồ sơ nhân viên, cơ cấu, chức vụ đang bị tách biệt"*.
+
+- **Sidebar 3 mục → 1 mục** `/hrm`, ba màn thành ba tab lưu ở `?tab=`. Đường cũ
+  (`/hrm/co-cau`, `/hrm/nhan-su`, `/hrm/chuc-vu`) chuyển hướng sang tab tương ứng — link đã lưu
+  vẫn vào được. Đổi tab giữ nguyên `phongBanId`.
+- **Sĩ số trên cây cơ cấu bấm được** → sang tab Nhân sự đã lọc sẵn phòng đó. Trước đây cây hiện
+  sĩ số mà không có đường nào xem *ai*.
+- **`/nhan-su` thêm ba bộ lọc**: `phongBanId`, `gomPhongBanCon` (đi xuống **mọi** cấp, không chỉ
+  một cấp), `chucVuId`. Dựng tập id trong bộ nhớ thay vì recursive CTE để không mất Global Query
+  Filter của multi-tenant (quy tắc #2).
+
+**Một lỗi tự gây, tự bắt trong lúc làm:** cây chỉ đếm người `DangLamViec` còn `/nhan-su` mặc định
+trả cả người đã nghỉ, nên bấm vào số `1` ra `2` dòng. Đứt ở **hai** mắt (link không mang
+`trangThaiNhanSu`, và màn Nhân sự không đọc tham số đó từ URL) và **không làm đỏ test backend
+nào** — chỉ E2E bắt được, vì chuỗi bắc qua ba lớp.
+
+Test: +4 integration (`LocNhanSuTheoCoCauTests`) · +1 E2E (`hrm-mot-trang-ba-tab.spec.ts`).
+Cả 5 đều đã kiểm bằng đột biến — không có test rỗng.
+
 ### Fixed — dọn rác dữ liệu trong tenant dev (16/09/2026)
 
 Các lượt rà soát 14–16/09 chạy thẳng trên tenant thật `W686AE9` (chốt 12/09: không tạo tenant

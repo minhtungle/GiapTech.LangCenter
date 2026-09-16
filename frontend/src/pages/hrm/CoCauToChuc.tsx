@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { hotkeysCoreFeature, syncDataLoaderFeature } from '@headless-tree/core'
@@ -324,14 +325,35 @@ export default function CoCauToChuc() {
 
                     <span className="font-medium">{n.ten}</span>
 
-                    {/* Sĩ số: hiện "riêng / cả nhánh" khi hai số khác nhau — một số thôi thì
-                        người xem không biết nó gồm cấp dưới hay không. */}
-                    <Badge variant="muted">
-                      <Users className="mr-1 h-3 w-3" />
-                      {n.soNhanSu === n.soNhanSuCaNhanh
-                        ? n.soNhanSu
-                        : `${n.soNhanSu} / ${n.soNhanSuCaNhanh}`}
-                    </Badge>
+                    {/*
+                      Sĩ số: hiện "riêng / cả nhánh" khi hai số khác nhau — một số thôi thì
+                      người xem không biết nó gồm cấp dưới hay không.
+
+                      BẤM ĐƯỢC (16/09/2026): sang tab Nhân sự đã lọc sẵn phòng này. Trước đó
+                      sơ đồ tổ chức hiện sĩ số mà không có đường nào xem *ai* — muốn biết phải
+                      sang màn khác rồi tự tìm.
+
+                      Link mang theo `trangThaiNhanSu=DangLamViec` vì cây CHỈ đếm người đang
+                      làm việc: thiếu nó thì bấm vào số 1 lại ra 2 dòng (lẫn người đã nghỉ) —
+                      hai màn nói hai chuyện về cùng một phòng. Canh bởi
+                      `LocNhanSuTheoCoCauTests.Bam_vao_si_so_tren_so_do_ra_dung_chung_ay_nguoi`.
+                    */}
+                    <Link
+                      to={
+                        `/hrm?tab=nhan-su&phongBanId=${n.id}`
+                        + '&trangThaiNhanSu=DangLamViec'
+                      }
+                      title={t('coCau.xemNhanSuPhong')}
+                      className="rounded-full transition-colors hover:bg-muted"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Badge variant="muted">
+                        <Users className="mr-1 h-3 w-3" />
+                        {n.soNhanSu === n.soNhanSuCaNhanh
+                          ? n.soNhanSu
+                          : `${n.soNhanSu} / ${n.soNhanSuCaNhanh}`}
+                      </Badge>
+                    </Link>
 
                     {/*
                       Tag hiện NGAY trên cây: đây là thứ quyết định phòng có xuất hiện ở module

@@ -92,7 +92,24 @@ public record LayDanhSachNguoiDungQuery(
     /// Đi qua cùng query thay vì viết query riêng để `TrongCacLoai` (phạm vi màn hình) vẫn được
     /// ép: gõ id học viên vào `/nhan-su/{id}` sẽ ra rỗng, không phải hồ sơ học viên.
     /// </summary>
-    Guid? Id = null)
+    Guid? Id = null,
+    /// <summary>
+    /// Lọc theo **phòng ban** (FR-22, 16/09/2026) — bấm một phòng trên sơ đồ tổ chức thì thấy
+    /// ngay người thuộc phòng đó.
+    ///
+    /// Đi cùng <see cref="GomPhongBanCon"/>: mặc định chỉ người thuộc CHÍNH phòng này, để con
+    /// số khớp cột "sĩ số riêng" đã hiện trên cây (`5 / 12` = riêng / cả nhánh).
+    /// </summary>
+    Guid? PhongBanId = null,
+    /// <summary>
+    /// true = gồm cả người của mọi phòng CẤP DƯỚI của <see cref="PhongBanId"/>.
+    ///
+    /// Tách thành cờ riêng thay vì hai endpoint: người dùng đổi qua lại giữa hai cách xem trên
+    /// cùng một màn, và cây đã hiện sẵn cả hai con số nên họ biết mình đang xem cái nào.
+    /// </summary>
+    bool GomPhongBanCon = false,
+    /// <summary>Lọc theo **chức vụ** — "cho tôi xem mọi trưởng phòng".</summary>
+    Guid? ChucVuId = null)
     : IRequest<KetQuaTrang<NguoiDungDto>>;
 
 public class LayDanhSachNguoiDungHandler(IAppDbContext db, IPhamViLopHoc phamVi)
@@ -137,6 +154,51 @@ public class LayDanhSachNguoiDungHandler(IAppDbContext db, IPhamViLopHoc phamVi)
 
         if (request.LoaiNguoiDung is { } loai) q = q.Where(u => u.LoaiNguoiDung == loai);
         if (request.TrangThaiNhanSu is { } tt) q = q.Where(u => u.TrangThaiNhanSu == tt);
+        if (request.ChucVuId is { } cvId) q = q.Where(u => u.ChucVuId == cvId);
+
+        if (request.PhongBanId is { } pbId)
+        {
+            if (request.GomPhongBanCon)
+            {
+                /*
+                  Gồm cả nhánh: dựng tập id trong BỘ NHỚ, không recursive CTE.
+
+                  Cây phòng ban của một trung tâm cỡ vài chục dòng, nên một truy vấn lấy hết
+                  rồi đi xuống trong bộ nhớ vừa rẻ hơn vừa dịch được sang SQL đơn giản
+                  (`WHERE phong_ban_id IN (...)`). Recursive CTE thì EF Core không sinh được
+                  mà không viết SQL thô, và SQL thô ở đây sẽ mất Global Query Filter của
+                  multi-tenant (quy tắc #2) — đúng loại rủi ro không đáng đổi.
+                */
+                var capCha = await db.PhongBans
+                    .Select(x => new { x.Id, x.PhongBanChaId })
+                    .ToListAsync(ct);
+
+                var theoCha = capCha
+                    .Where(x => x.PhongBanChaId != null)
+                    .GroupBy(x => x.PhongBanChaId!.Value)
+                    .ToDictionary(g => g.Key, g => g.Select(x => x.Id).ToList());
+
+                var trongNhanh = new HashSet<Guid> { pbId };
+                var canXet = new Queue<Guid>([pbId]);
+
+                // Chặn trên theo SỐ PHÒNG: `LuuPhongBanHandler` đã chống chu trình, nhưng dữ
+                // liệu sửa tay ở DB vẫn có thể tạo vòng lặp và ở đây nó sẽ treo cả request.
+                for (var buoc = 0; buoc <= capCha.Count && canXet.Count > 0; buoc++)
+                {
+                    var hienTai = canXet.Dequeue();
+                    if (!theoCha.TryGetValue(hienTai, out var cons)) continue;
+
+                    foreach (var con in cons)
+                        if (trongNhanh.Add(con)) canXet.Enqueue(con);
+                }
+
+                q = q.Where(u => u.PhongBanId != null && trongNhanh.Contains(u.PhongBanId.Value));
+            }
+            else
+            {
+                q = q.Where(u => u.PhongBanId == pbId);
+            }
+        }
 
         var tong = await q.CountAsync(ct);
 

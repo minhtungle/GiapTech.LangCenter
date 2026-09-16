@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Trash2, Pencil } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import { useQuyen } from '@/lib/quyen'
@@ -125,6 +125,13 @@ export interface PhamViNguoiDung {
    * là route frontend.
    */
   duongChiTiet?: string
+  /**
+   * true = hiện bộ lọc **phòng ban + chức vụ** (16/09/2026).
+   *
+   * Chỉ màn HRM cần: học viên không vào cơ cấu tổ chức (`HOC_VIEN_KHONG_VAO_CO_CAU`), nên bật
+   * ở màn Học viên là thêm hai ô lọc luôn rỗng.
+   */
+  locCoCau?: boolean
 }
 
 /**
@@ -145,9 +152,23 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
 
   const [trang, setTrang] = useState(1)
   const [soDong, setSoDong] = useState(20)
+  /**
+   * Bộ lọc nhận giá trị ban đầu từ query string, để **bấm một phòng trên sơ đồ tổ chức là
+   * sang đây đã lọc sẵn** — không phải chọn lại bằng tay.
+   *
+   * `trangThaiNhanSu` cũng đọc từ URL: link sĩ số trên sơ đồ mang theo `DangLamViec` vì cây
+   * chỉ đếm người đang làm việc. Bỏ qua tham số đó là bấm vào số 1 lại ra 2 dòng.
+   */
+  const [spLoc] = useSearchParams()
+
   const [timKiem, setTimKiem] = useState('')
   const [locVaiTro, setLocVaiTro] = useState<string | null>(null)
-  const [locNhanSu, setLocNhanSu] = useState<string | null>(null)
+  const [locNhanSu, setLocNhanSu] = useState<string | null>(
+    spLoc.get('trangThaiNhanSu'))
+  const [locPhongBan, setLocPhongBan] = useState<string | null>(
+    spLoc.get('phongBanId'))
+  const [gomPhongCon, setGomPhongCon] = useState(spLoc.get('gomCon') === 'true')
+  const [locChucVu, setLocChucVu] = useState<string | null>(null)
 
   const [moForm, setMoForm] = useState(false)
   const [dangSua, setDangSua] = useState<NguoiDungDto | null>(null)
@@ -169,13 +190,18 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
     setMxhs((cu) => cu.map((m, k) => (k === i ? { ...m, ...thayDoi } : m)))
 
   const { data: kq = trangRong<NguoiDungDto>(), isLoading } = useQuery({
-    queryKey: [phamVi.duong, timKiem, locVaiTro, locNhanSu, trang, soDong],
+    queryKey: [phamVi.duong, timKiem, locVaiTro, locNhanSu,
+               locPhongBan, gomPhongCon, locChucVu, trang, soDong],
     queryFn: async () =>
       (await api.get<KetQuaTrang<NguoiDungDto>>(phamVi.duong, {
         params: {
           timKiem: timKiem || undefined,
           loaiNguoiDung: locVaiTro || undefined,
           trangThaiNhanSu: locNhanSu || undefined,
+          phongBanId: locPhongBan || undefined,
+          // Chỉ gửi khi CÓ chọn phòng — cờ một mình không có nghĩa gì.
+          gomPhongBanCon: locPhongBan && gomPhongCon ? true : undefined,
+          chucVuId: locChucVu || undefined,
           trang,
           soDong,
         },
@@ -199,7 +225,10 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
   const { data: cayPhongBan = [] } = useQuery({
     queryKey: ['phong-ban'],
     queryFn: async () => (await api.get<PhongBanNode[]>('/phong-ban')).data,
-    enabled: moForm,
+    // Nạp khi mở form HOẶC khi màn có bộ lọc cơ cấu (16/09/2026) — ô lọc phòng ban cần danh
+    // sách này ngay lúc vào màn, không đợi mở form.
+    enabled: moForm || !!phamVi.locCoCau,
+    staleTime: 5 * 60_000,
   })
 
 
@@ -210,7 +239,8 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
       (await api.get<{ id: string; ten: string }[]>('/chuc-vu', {
         params: { chiDangDung: true },
       })).data,
-    enabled: moForm,
+    enabled: moForm || !!phamVi.locCoCau,
+    staleTime: 5 * 60_000,
   })
 
   const phongBanPhang = (() => {
@@ -341,7 +371,12 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-wrap items-end gap-3">
+        {/*
+          `items-start` chứ không `items-end`: ô "Phòng ban" cao hơn các ô khác vì có ô tích
+          "gồm cả phòng cấp dưới" bên dưới, mà căn đáy thì nó kéo NHÃN của chính nó lên lệch
+          hàng với các nhãn còn lại. Căn đầu giữ mọi nhãn thẳng hàng, phần dôi ra rơi xuống dưới.
+        */}
+        <div className="flex flex-wrap items-start gap-3">
           <div className="w-56">
             <Label htmlFor="tim">{t('chung.timKiem')}</Label>
             <Input
@@ -389,6 +424,63 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
               placeholder={t('chung.tatCa')}
             />
           </div>
+
+          {/*
+            Lọc theo CƠ CẤU — chỉ màn HRM (xem `PhamViNguoiDung.locCoCau`). Bày thẳng ra hàng
+            này, không ẩn sau nút "Lọc thêm": đây là hai chiều tra cứu chính của quản lý nhân
+            sự ("ai trong phòng này", "ai làm trưởng phòng"), không phải tuỳ chọn nâng cao.
+          */}
+          {phamVi.locCoCau && (
+            <>
+              <div className="w-52">
+                <Label htmlFor="loc-phong">{t('nguoiDung.phongBan')}</Label>
+                <SelectTimKiem
+                  id="loc-phong"
+                  luaChon={phongBanPhang}
+                  giaTri={locPhongBan}
+                  onDoi={(v) => {
+                    setLocPhongBan(v)
+                    setTrang(1)
+                  }}
+                  placeholder={t('chung.tatCa')}
+                />
+                {/*
+                  Ô tích chỉ có nghĩa khi ĐÃ chọn phòng — hiện nó lúc chưa chọn thì người dùng
+                  tích vào mà không thấy gì đổi. Nhãn nói rõ "cấp dưới" để khớp với sĩ số
+                  `riêng / cả nhánh` đã hiện trên sơ đồ tổ chức.
+                */}
+                {locPhongBan && (
+                  <label className="mt-1.5 flex cursor-pointer items-center gap-1.5 text-xs
+                                    text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      className="h-3.5 w-3.5 accent-[hsl(var(--primary))]"
+                      checked={gomPhongCon}
+                      onChange={(e) => {
+                        setGomPhongCon(e.target.checked)
+                        setTrang(1)
+                      }}
+                    />
+                    {t('nguoiDung.gomPhongCon')}
+                  </label>
+                )}
+              </div>
+
+              <div className="w-48">
+                <Label htmlFor="loc-chuc-vu">{t('nguoiDung.chucVu')}</Label>
+                <SelectTimKiem
+                  id="loc-chuc-vu"
+                  luaChon={(chucVus ?? []).map((c) => ({ giaTri: c.id, nhan: c.ten }))}
+                  giaTri={locChucVu}
+                  onDoi={(v) => {
+                    setLocChucVu(v)
+                    setTrang(1)
+                  }}
+                  placeholder={t('chung.tatCa')}
+                />
+              </div>
+            </>
+          )}
         </div>
 
         {coQuyen(phamVi.can, 'Them') && (

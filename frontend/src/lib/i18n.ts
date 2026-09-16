@@ -155,6 +155,7 @@ const vi = {
     },
   },
   nguoiDung: {
+    gomPhongCon: 'Gồm cả phòng cấp dưới',
     themNguoiDung: 'Thêm người dùng',
     suaNguoiDung: 'Sửa người dùng',
     timTheo: 'Họ tên, email, SĐT',
@@ -1103,6 +1104,7 @@ const vi = {
     KHAC: 'Khác (phòng chưa đánh tag)',
   },
   coCau: {
+    xemNhanSuPhong: 'Xem danh sách nhân sự của phòng này',
     tagVaiTro: 'Tag vai trò',
     khongTag: 'Không tag (chỉ mô tả cơ cấu)',
     khongTagGoiY:
