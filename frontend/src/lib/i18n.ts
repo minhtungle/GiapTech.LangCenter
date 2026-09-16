@@ -890,6 +890,8 @@ const vi = {
     locThem: 'Lọc thêm',
     xoaLoc: 'Xóa lọc',
     doiNhom: 'Đội nhóm',
+    chuaCoTag: 'Chưa phòng ban nào được đánh tag Kinh doanh.',
+    denCoCau: 'Đánh tag ở Cơ cấu tổ chức →',
     nhanVien: 'Nhân viên phụ trách',
     nguon: 'Nguồn khách',
     nguonNhanVien: 'Nhân viên tạo',
@@ -1086,7 +1088,25 @@ const vi = {
     hoiLuu: 'Lưu chức vụ? Thông tin hiện tại sẽ bị ghi đè.',
     hoiXoa: 'Xoá chức vụ "{{ten}}"? Chức vụ đang có người giữ thì không xoá được.',
   },
+  /**
+   * Tag vai trò phòng ban (FR-22, 16/09/2026).
+   *
+   * Namespace cấp một vì dùng ở cả HRM (form cơ cấu) và CRM (nhãn nhóm trong bộ lọc).
+   */
+  tagVaiTro: {
+    KinhDoanh: 'Nhóm kinh doanh',
+    GiaoVien: 'Nhóm giáo viên',
+    TroGiang: 'Nhóm trợ giảng',
+    goiYKinhDoanh: 'Phòng này sẽ hiện ở bộ lọc đội nhóm của Khách hàng, Doanh thu và Thống kê.',
+    goiYGiaoVien: 'Nhận diện nhóm giáo viên đứng lớp. Không hiện ở bộ lọc doanh số.',
+    goiYTroGiang: 'Nhận diện nhóm trợ giảng. Không hiện ở bộ lọc doanh số.',
+    KHAC: 'Khác (phòng chưa đánh tag)',
+  },
   coCau: {
+    tagVaiTro: 'Tag vai trò',
+    khongTag: 'Không tag (chỉ mô tả cơ cấu)',
+    khongTagGoiY:
+      'Phòng không tag chỉ hiện trong cây cơ cấu này — không xuất hiện ở bộ lọc của module nào.',
     themPhongGoc: 'Thêm phòng ban',
     themPhongBan: 'Thêm phòng ban',
     themPhongCon: 'Thêm phòng cấp dưới',

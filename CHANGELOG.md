@@ -8,6 +8,49 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — tag vai trò cho phòng ban: chỉ phòng đánh tag xuất hiện ở module khác (16/09/2026)
+
+Yêu cầu: *"bổ sung tag (nhóm kinh doanh, nhóm giáo viên, nhóm trợ giảng) để nhận diện đúng vai
+trò nhóm khi lọc dữ liệu… Không còn hiển thị cả các phòng ban khác, chỉ phòng nào đánh tag mới
+có thể xuất hiện, phòng nào không đánh thì chỉ mang tính chất diễn tả khi mở cơ cấu thôi."*
+
+`PHONG_BAN.tag_vai_tro` (nullable): `KinhDoanh` · `GiaoVien` · `TroGiang`. **`null` = phòng chỉ
+diễn tả cơ cấu** — hiện trong cây, xếp được nhân sự, nhưng không xuất hiện ở bộ lọc của module
+nào. Một tag mỗi phòng (chốt với chủ sản phẩm): nhiều tag thì phòng mang cả `KinhDoanh` và
+`GiaoVien` vẫn hiện trong danh sách đội bán hàng, không ai hiểu vì sao.
+
+**Nguồn duy nhất cho mọi bộ lọc:** `GET /phong-ban/nhom-theo-tag?tag=KinhDoanh`. Lọc ở backend,
+không để frontend tự lọc cây — "phòng nào xuất hiện ở module nào" là quy tắc nghiệp vụ, để
+frontend lọc thì mỗi màn lọc một kiểu và màn mới sẽ quên. Endpoint gác bằng **`DoanhThu.Xem`**,
+không `PhongBan.Xem`: nhóm "Nhân sự & Kế toán" xem được doanh thu mà **không** có quyền HRM (đo
+trên W686AE9) — gác bằng quyền HRM là bộ lọc của họ rỗng trắng, không lỗi nào hiện ra.
+
+Áp dụng: bộ lọc đội nhóm ở **Khách hàng · Doanh thu · Thống kê CRM** giờ chỉ liệt kê phòng tag
+`KinhDoanh`. Trước đó cả 8 phòng đều hiện, kể cả "Phòng đào tạo", "Tiếng Anh", "Tiếng Đức".
+
+**Biểu đồ Thống kê GOM phần còn lại vào mục "Khác", không ẩn.** Đơn của người thuộc phòng không
+tag vẫn được tính. Ẩn đi thì tổng biểu đồ nhỏ hơn ô "tổng doanh thu" ngay trên cùng màn và
+người đọc không biết tiền đi đâu — kiểm thật: 622.595.000 đ khớp tuyệt đối ở mọi trạng thái tag
+(0 phòng tag → toàn bộ vào `KHAC`; 3 phòng tag → 3 cột riêng + `KHAC`).
+
+**Lọc bằng id phòng không tag vẫn chạy**, không trả lỗi: tag quyết định phòng nào *hiện trong ô
+chọn*, không chặn truy vấn — link và bookmark cũ tiếp tục dùng được.
+
+**Migration không đoán tag** (quy tắc #1): `AddColumn` nullable + index partial, mọi phòng mặc
+định `null`. Đã chạy thử trên DB bản sao trước: 8 phòng / 32 khách / 85 đơn / 6 nhân sự nguyên
+vẹn. Chủ trung tâm tự đánh tag trên màn Cơ cấu tổ chức — form có ô chọn kèm gợi ý hệ quả đổi
+theo lựa chọn, và badge tag hiện ngay trên cây (xanh cho Kinh doanh, xám cho hai nhóm còn lại).
+
+Khi **chưa phòng nào có tag**, ô chọn đội nhóm hiện *"Chưa phòng ban nào được đánh tag Kinh
+doanh — Đánh tag ở Cơ cấu tổ chức →"* kèm link, thay vì rỗng im lặng (rỗng thì người dùng tưởng
+hệ thống hỏng).
+
+Test: +6 backend (`TagVaiTroPhongBanTests`) · +1 E2E. Bốn đột biến backend và một đột biến E2E
+đều bị bắt, gồm "nguồn bộ lọc trả cả phòng không tag" và "biểu đồ ẩn phần còn lại thay vì gom".
+Hai E2E lọc CRM cũ phải cập nhật — chúng tạo phòng rồi mong nó hiện trong ô lọc, đó là kỳ vọng
+của hành vi cũ.
+
+
 ### Added — lọc khách hàng & doanh thu theo đội nhóm · nhân viên · và 4 chiều nữa (15/09/2026)
 
 Yêu cầu: *"thêm lọc khách hàng, doanh thu theo (đội nhóm, nhân viên…)"* — kèm đề xuất thêm.

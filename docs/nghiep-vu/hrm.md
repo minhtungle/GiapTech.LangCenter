@@ -37,6 +37,43 @@ hai: `LoaiNguoiDung = GiaoVien` + `ChucVu = "Trưởng bộ môn Anh"`.
 Bảng `PHONG_BAN`: `ten`, `phong_ban_cha_id` (tự tham chiếu, null = cấp gốc),
 `nguoi_quan_ly_id`, `mo_ta`, `thu_tu`.
 
+### Tag vai trò (16/09/2026)
+
+Mỗi phòng ban mang **một** tag vai trò, hoặc không tag:
+
+| Tag | Nghĩa | Hệ quả ở module khác |
+|---|---|---|
+| `KinhDoanh` | Nhóm bán hàng | **Hiện** ở bộ lọc đội nhóm của Khách hàng · Doanh thu · Thống kê CRM |
+| `GiaoVien` | Nhóm giáo viên đứng lớp | Nhận diện nhóm; không hiện ở bộ lọc doanh số |
+| `TroGiang` | Nhóm trợ giảng | Nhận diện nhóm; không hiện ở bộ lọc doanh số |
+| *(không tag)* | Chỉ **diễn tả cơ cấu** | Hiện trong cây này, xếp được nhân sự, nhưng **không xuất hiện ở bộ lọc của module nào** |
+
+**Vì sao cần.** Trước đó bộ lọc "đội nhóm" ở CRM liệt kê *mọi* phòng ban, kể cả phòng Đào tạo
+và các phòng chỉ tồn tại để vẽ sơ đồ. Chọn phòng Đào tạo để xem doanh thu là câu hỏi vô nghĩa —
+nó không bán hàng — nhưng người dùng vẫn phải đọc qua nó mỗi lần lọc.
+
+**Một tag, không nhiều.** Nhiều tag thì khi lọc doanh thu theo "nhóm kinh doanh", phòng mang cả
+hai tag vẫn hiện, và người đọc không hiểu vì sao phòng Đào tạo nằm trong danh sách đội bán hàng.
+
+**Nguồn duy nhất cho mọi bộ lọc:** `GET /phong-ban/nhom-theo-tag?tag=KinhDoanh`. Lọc ở backend
+chứ không để frontend tự lọc cây — "phòng nào xuất hiện ở module nào" là quy tắc nghiệp vụ, để
+frontend lọc thì mỗi màn lọc một kiểu và màn mới sẽ quên lọc.
+
+Endpoint đó gác bằng **`DoanhThu.Xem`**, không phải `PhongBan.Xem`: nhóm "Nhân sự & Kế toán" xem
+được doanh thu mà không có quyền HRM (đo trên W686AE9) — gác bằng quyền HRM là bộ lọc của họ
+rỗng trắng, không lỗi nào hiện ra. `[RequirePermission]` chỉ nhận một quyền, không có OR.
+
+**Biểu đồ Thống kê gom phần còn lại vào "Khác", KHÔNG ẩn.** Đơn của người thuộc phòng không tag
+(hoặc tag khác) vẫn được tính, gộp thành một mục. Ẩn đi thì tổng biểu đồ nhỏ hơn ô "tổng doanh
+thu" ngay trên cùng màn, và người đọc không biết tiền đi đâu.
+
+**Lọc bằng id phòng không tag vẫn chạy**, không trả lỗi: tag quyết định phòng nào *hiện trong ô
+chọn*, không chặn truy vấn — link và bookmark cũ phải tiếp tục dùng được.
+
+Migration **không đoán tag** cho phòng đã có (quy tắc #1): mọi phòng mặc định `null`, chủ trung
+tâm tự đánh trên màn Cơ cấu tổ chức. Canh bởi `TagVaiTroPhongBanTests` (6 test, 4 đột biến đã
+kiểm đỏ).
+
 ### Quy tắc
 
 - **Cây, không phẳng**: `phong_ban_cha_id` tự tham chiếu. Không giới hạn cấp ở schema; thực tế

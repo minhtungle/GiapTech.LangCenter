@@ -125,6 +125,12 @@ public class PhongBanConfig : IEntityTypeConfiguration<PhongBan>
         // Dựng cây: truy vấn "các con của phòng X" chạy trên cột này.
         b.HasIndex(x => x.PhongBanChaId);
 
+        // Bộ lọc CRM truy vấn "phòng mang tag Kinh doanh" mỗi lần mở màn Khách hàng / Doanh
+        // thu / Thống kê. Index partial (chỉ hàng CÓ tag): phòng không tag không bao giờ nằm
+        // trong kết quả nên không cần đánh index, và số phòng có tag luôn nhỏ hơn nhiều.
+        b.HasIndex(x => new { x.TenantId, x.TagVaiTro })
+            .HasFilter("tag_vai_tro IS NOT NULL");
+
         // Trùng tên trong CÙNG MỘT CHA thì người dùng chọn sai phòng (quy tắc #8). Khác cha thì
         // cho trùng: "Bộ môn Anh" dưới hai chi nhánh là hợp lệ.
         //

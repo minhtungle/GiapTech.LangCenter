@@ -337,6 +337,40 @@ public enum NguonKhachHang
     TuDangKy = 1
 }
 
+/// <summary>
+/// **Tag vai trò của phòng ban** (FR-22, thêm 16/09/2026) — cho biết phòng đó làm việc gì, để
+/// module khác nhận diện đúng nhóm khi lọc dữ liệu.
+///
+/// ## Vì sao cần
+///
+/// Trước đây bộ lọc "đội nhóm" ở CRM liệt kê **mọi** phòng ban, kể cả phòng Đào tạo và các
+/// phòng chỉ mang tính mô tả trong sơ đồ tổ chức. Chọn phòng Đào tạo để xem doanh thu là câu
+/// hỏi vô nghĩa — nó không bán hàng — nhưng người dùng vẫn phải đọc qua nó mỗi lần lọc.
+///
+/// ## `null` KHÁC `KinhDoanh`
+///
+/// Phòng **không có tag** (`TagVaiTro == null`) chỉ tồn tại để diễn tả cơ cấu: nó hiện trong
+/// cây tổ chức, xếp được nhân sự, nhưng **không xuất hiện ở bộ lọc của module nào**. Đây là
+/// mặc định cho mọi phòng đã có khi thêm tính năng này (migration không đoán tag — quy tắc #1).
+///
+/// ## Một tag, không phải nhiều
+///
+/// Chốt 16/09/2026 với chủ sản phẩm: mỗi phòng đúng một vai trò. Nhiều tag thì khi lọc doanh
+/// thu theo "nhóm kinh doanh", phòng mang cả tag Kinh doanh và Giáo viên vẫn hiện — người đọc
+/// không hiểu vì sao phòng Đào tạo lại nằm trong danh sách đội bán hàng.
+/// </summary>
+public enum TagVaiTroPhongBan
+{
+    /// <summary>Nhóm bán hàng — phòng duy nhất xuất hiện ở bộ lọc đội nhóm của CRM.</summary>
+    KinhDoanh = 0,
+
+    /// <summary>Nhóm giáo viên đứng lớp.</summary>
+    GiaoVien = 1,
+
+    /// <summary>Nhóm trợ giảng.</summary>
+    TroGiang = 2
+}
+
 /// <summary>Trạng thái một khoá học trực tuyến (FR-26).</summary>
 public enum TrangThaiKhoaOnline
 {

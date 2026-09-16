@@ -15,6 +15,12 @@ import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 
 /** FR-22 — một node của cây cơ cấu tổ chức. */
+/** Tag vai trò phòng ban — khớp `TagVaiTroPhongBan` ở backend. */
+export type TagVaiTroPhongBan = 'KinhDoanh' | 'GiaoVien' | 'TroGiang'
+
+/** Thứ tự hiện trong ô chọn — theo giá trị số của enum backend. */
+export const CAC_TAG_VAI_TRO: TagVaiTroPhongBan[] = ['KinhDoanh', 'GiaoVien', 'TroGiang']
+
 export interface PhongBanNode {
   id: string
   ten: string
@@ -23,6 +29,11 @@ export interface PhongBanNode {
   tenNguoiQuanLy: string | null
   moTa: string | null
   thuTu: number
+  /**
+   * Tag vai trò — `null` = phòng chỉ mang tính **mô tả** trong cây cơ cấu, không xuất hiện ở
+   * bộ lọc của module nào (FR-22, 16/09/2026).
+   */
+  tagVaiTro: TagVaiTroPhongBan | null
   /** Số nhân sự thuộc CHÍNH phòng này, không gồm phòng con. */
   soNhanSu: number
   /** Số nhân sự cả nhánh (phòng này + mọi cấp dưới). */

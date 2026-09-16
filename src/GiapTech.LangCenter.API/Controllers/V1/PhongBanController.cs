@@ -29,6 +29,29 @@ public class PhongBanController(ISender sender) : ControllerBase
     public async Task<ActionResult<List<PhongBanDto>>> Cay(CancellationToken ct)
         => Ok(await sender.Send(new LayCayPhongBanQuery(), ct));
 
+    /// <summary>
+    /// Phòng ban **đã đánh tag vai trò** — nguồn duy nhất cho bộ lọc "đội nhóm" của mọi module
+    /// (FR-22, 16/09/2026). Phòng không tag chỉ hiện trong cây cơ cấu, không ở đây.
+    /// </summary>
+    /// <remarks>
+    /// **Gác bằng `DoanhThu.Xem`, KHÔNG `PhongBan.Xem`.**
+    ///
+    /// Đây là endpoint của HRM nhưng người dùng nó là CRM. Nhóm "Nhân sự &amp; Kế toán" xem
+    /// được doanh thu mà **không** có `PhongBan.Xem` (đo trên W686AE9, 16/09/2026) — gác bằng
+    /// quyền HRM là bộ lọc đội nhóm của họ rỗng trắng, không lỗi nào hiện ra.
+    ///
+    /// `[RequirePermission]` chỉ nhận MỘT quyền, không có ngữ nghĩa OR, nên không gác được
+    /// "`KhachHang.Xem` hoặc `DoanhThu.Xem`". Chọn `DoanhThu.Xem` vì nó là quyền hẹp hơn
+    /// trong hai màn dùng bộ lọc này, và ai xem được khách hàng ở CRM thì thực tế đều có nó.
+    ///
+    /// Dữ liệu trả về không nhạy cảm: tên phòng ban và tag, không có nhân sự hay tiền.
+    /// </remarks>
+    [HttpGet("nhom-theo-tag")]
+    [RequirePermission(ChucNang.DoanhThu, HanhDong.Xem)]
+    public async Task<ActionResult<List<NhomTheoTagDto>>> NhomTheoTag(
+        [FromQuery] TagVaiTroPhongBan? tag, CancellationToken ct)
+        => Ok(await sender.Send(new LayNhomTheoTagQuery(tag), ct));
+
     [HttpPost]
     [RequirePermission(ChucNang.PhongBan, HanhDong.Them)]
     public async Task<ActionResult<Guid>> Tao(

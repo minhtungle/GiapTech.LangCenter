@@ -13,7 +13,9 @@ import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 import { useQuyen } from '@/lib/quyen'
 import { useXacNhan } from '@/lib/xacNhan'
-import type { PhongBanNode } from '@/pages/quan-tri/NguoiDung'
+import {
+  CAC_TAG_VAI_TRO, type PhongBanNode, type TagVaiTroPhongBan,
+} from '@/pages/quan-tri/NguoiDung'
 
 /** Id gốc ảo — thư viện cần một node gốc, còn API trả thẳng mảng cấp 1. */
 const GOC = '__goc__'
@@ -54,6 +56,7 @@ export default function CoCauToChuc() {
   const [chaCuaMoi, setChaCuaMoi] = useState<string | null>(null)
   const [moForm, setMoForm] = useState(false)
   const [quanLy, setQuanLy] = useState<string | null>(null)
+  const [tag, setTag] = useState<TagVaiTroPhongBan | null>(null)
   /** Phòng đang mở hộp thoại "thêm nhân sự" (cách 2 của FR-22). */
   const [xepVao, setXepVao] = useState<PhongBanNode | null>(null)
   const [nhanSuChon, setNhanSuChon] = useState<string[]>([])
@@ -147,6 +150,8 @@ export default function CoCauToChuc() {
         nguoiQuanLyId: quanLy,
         moTa: String(fd.get('moTa') ?? '').trim() || null,
         thuTu: Number(fd.get('thuTu') ?? 0),
+        // Form LUÔN gửi tag (null = người dùng chủ động bỏ tag, không phải "không gửi").
+        tagVaiTro: tag,
       }
       if (dangSua) await api.put(`/phong-ban/${dangSua.id}`, { ...than, id: dangSua.id })
       else await api.post('/phong-ban', than)
@@ -184,6 +189,7 @@ export default function CoCauToChuc() {
     setDangSua(null)
     setChaCuaMoi(cha)
     setQuanLy(null)
+    setTag(null)
     setMaLoi(null)
     setMoForm(true)
   }
@@ -192,6 +198,7 @@ export default function CoCauToChuc() {
     setDangSua(n)
     setChaCuaMoi(null)
     setQuanLy(n.nguoiQuanLyId)
+    setTag(n.tagVaiTro)
     setMaLoi(null)
     setMoForm(true)
   }
@@ -270,6 +277,18 @@ export default function CoCauToChuc() {
                         ? n.soNhanSu
                         : `${n.soNhanSu} / ${n.soNhanSuCaNhanh}`}
                     </Badge>
+
+                    {/*
+                      Tag hiện NGAY trên cây: đây là thứ quyết định phòng có xuất hiện ở module
+                      khác hay không, nên phải thấy được mà không cần mở form từng phòng.
+                      Phòng không tag KHÔNG hiện badge nào — im lặng là trạng thái mặc định,
+                      thêm badge "không tag" cho 8 phòng chỉ làm cây rối.
+                    */}
+                    {n.tagVaiTro && (
+                      <Badge variant={n.tagVaiTro === 'KinhDoanh' ? 'ok' : 'muted'}>
+                        {t(`tagVaiTro.${n.tagVaiTro}`)}
+                      </Badge>
+                    )}
 
                     {n.tenNguoiQuanLy && (
                       <Badge variant="accent">
@@ -377,6 +396,27 @@ export default function CoCauToChuc() {
             />
             {/* Nói rõ ngay trên form: cột này KHÔNG cấp quyền gì (quy tắc #9). */}
             <p className="mt-1 text-xs text-muted-foreground">{t('coCau.quanLyChiLaThongTin')}</p>
+          </div>
+
+          {/*
+            Ô TAG đặt ngay sau người quản lý, TRƯỚC thứ tự và mô tả: nó quyết định phòng này có
+            xuất hiện ở module khác hay không — quan trọng hơn hai trường trình bày bên dưới.
+          */}
+          <div>
+            <Label htmlFor="tagVaiTro">{t('coCau.tagVaiTro')}</Label>
+            <SelectTimKiem
+              id="tagVaiTro"
+              luaChon={CAC_TAG_VAI_TRO.map((x) => ({
+                giaTri: x,
+                nhan: t(`tagVaiTro.${x}`),
+              }))}
+              giaTri={tag}
+              onDoi={(v) => setTag(v as TagVaiTroPhongBan | null)}
+              placeholder={t('coCau.khongTag')}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              {tag ? t(`tagVaiTro.goiY${tag}`) : t('coCau.khongTagGoiY')}
+            </p>
           </div>
 
           <div>

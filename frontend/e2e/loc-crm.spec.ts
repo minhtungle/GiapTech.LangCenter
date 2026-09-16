@@ -119,8 +119,11 @@ test('Khách hàng: lọc đội nhóm thu hẹp danh sách và hiện số bộ
     return res.json()
   }
 
-  const doiA = await api('/phong-ban', { ten: 'Đội Alpha' })
-  const doiB = await api('/phong-ban', { ten: 'Đội Beta' })
+  // `tagVaiTro: 'KinhDoanh'` là BẮT BUỘC từ 16/09/2026: bộ lọc đội nhóm ở CRM chỉ liệt kê
+  // phòng mang tag Kinh doanh. Phòng không tag chỉ tồn tại trong cây cơ cấu — tạo phòng rồi
+  // mong nó hiện trong ô lọc là kỳ vọng của hành vi CŨ.
+  const doiA = await api('/phong-ban', { ten: 'Đội Alpha', tagVaiTro: 'KinhDoanh' })
+  const doiB = await api('/phong-ban', { ten: 'Đội Beta', tagVaiTro: 'KinhDoanh' })
 
   const quyens = await (await page.request.get('http://localhost:5229/api/v1/quyen', {
     headers: { Authorization: `Bearer ${token}` },
@@ -170,4 +173,51 @@ test('Khách hàng: lọc đội nhóm thu hẹp danh sách và hiện số bộ
   // --- Xóa lọc: thấy lại cả hai ---
   await page.getByRole('button', { name: /Xóa lọc/ }).click()
   await expect(page.getByText('Khách của Beta')).toBeVisible()
+})
+
+/**
+ * Tag vai trò phòng ban (FR-22, 16/09/2026) — **phòng không tag không hiện ở bộ lọc**.
+ *
+ * `TagVaiTroPhongBanTests` đã canh backend. E2E ở đây canh thứ backend không thấy: ô chọn trên
+ * màn có thật sự bỏ phòng không tag, và khi CHƯA phòng nào có tag thì màn nói rõ phải làm gì
+ * thay vì để ô rỗng im lặng (người dùng sẽ tưởng hệ thống hỏng).
+ */
+test('Bộ lọc đội nhóm chỉ hiện phòng tag Kinh doanh', async ({ page, request }) => {
+  await vaoHeThong(page, request, 'loc-tag')
+
+  const token = await page.evaluate(() => localStorage.getItem('lms_access_token'))
+  const api = async (duong: string, than: unknown) => {
+    const res = await page.request.post(`http://localhost:5229/api/v1${duong}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: than,
+    })
+    expect(res.ok(), `${duong} → ${res.status()} ${await res.text()}`).toBeTruthy()
+    return res.json()
+  }
+
+  // --- Chưa phòng nào có tag: ô lọc rỗng, nhưng màn phải CHỈ DẪN ---
+  await api('/phong-ban', { ten: 'Phòng chỉ mô tả' })
+
+  await page.goto('/crm/khach-hang')
+  await page.getByRole('button', { name: /Lọc thêm/ }).click()
+
+  await expect(page.getByText(/Chưa phòng ban nào được đánh tag/)).toBeVisible()
+  await expect(page.getByRole('link', { name: /Đánh tag ở Cơ cấu tổ chức/ })).toBeVisible()
+
+  // --- Đánh tag một phòng: nó hiện, phòng không tag thì KHÔNG ---
+  await api('/phong-ban', { ten: 'Đội bán hàng', tagVaiTro: 'KinhDoanh' })
+  await api('/phong-ban', { ten: 'Đội giáo viên', tagVaiTro: 'GiaoVien' })
+
+  await page.reload()
+  await page.getByRole('button', { name: /Lọc thêm/ }).click()
+  await expect(page.getByText(/Chưa phòng ban nào được đánh tag/)).toHaveCount(0)
+
+  await page.locator('#loc-doi').click()
+  const muc = await page.evaluate(() =>
+    [...document.querySelectorAll('[role=option]')].map((e) => e.textContent?.trim()))
+
+  expect(muc).toContain('Đội bán hàng')
+  // Hai chiều LOẠI — đây là chốt của test: chỉ kiểm chiều "có" thì bỏ hẳn bộ lọc vẫn xanh.
+  expect(muc).not.toContain('Phòng chỉ mô tả')   // không tag
+  expect(muc).not.toContain('Đội giáo viên')     // tag khác, không phải Kinh doanh
 })

@@ -114,7 +114,7 @@ Cả hai màn **Khách hàng** và **Doanh thu** lọc được theo sáu chiề
 |---|---|---|---|
 | Tìm kiếm (tên · sđt · email) | ✅ | ✅ | |
 | Tình trạng đã/chưa mua | ✅ | — | |
-| **Đội nhóm** | ✅ | ✅ | Phòng ban của người mang khách về |
+| **Đội nhóm** | ✅ | ✅ | Phòng ban của người mang khách về — **chỉ phòng mang tag `KinhDoanh`** ([FR-22](./hrm.md#tag-vai-trò-16092026)) |
 | **Nhân viên** | ✅ | ✅ | Người mang khách về |
 | **Nguồn khách** | ✅ | — | `NhanVienTao` / `TuDangKy` |
 | **Khoảng ngày** | ✅ ngày **tạo hồ sơ** | ✅ ngày **đăng ký** | Hai mốc khác nhau, nhãn nói rõ |
@@ -135,6 +135,17 @@ tính vào doanh số cá nhân của ai.
 > Hai màn vẫn ra số khác nhau khi **không lọc ngày**, và đó là đúng: Thống kê mặc định
 > **12 tháng gần nhất** (nó là báo cáo theo kỳ), còn danh sách tra cứu **toàn bộ**. Đã kiểm trên
 > W686AE9: 85 đơn tổng / 79 đơn trong 12 tháng.
+
+#### Chỉ phòng tag Kinh doanh (16/09/2026)
+
+Ô chọn "Đội nhóm" ở cả ba màn CRM lấy từ `GET /phong-ban/nhom-theo-tag?tag=KinhDoanh` — **phòng
+không tag không xuất hiện**, dù nó vẫn nằm trong cây cơ cấu và vẫn xếp được nhân sự. Chi tiết
+và lý do: [FR-22 · Tag vai trò](./hrm.md#tag-vai-trò-16092026).
+
+Biểu đồ "doanh thu theo đội nhóm" ở màn Thống kê **gom** đơn của phòng không tag vào một mục
+`KHAC` thay vì ẩn — tổng biểu đồ luôn bằng ô "tổng doanh thu" ngay trên nó. Chưa phòng nào có
+tag thì toàn bộ doanh thu nằm trong `KHAC`, và ô chọn đội nhóm hiện chỉ dẫn "Đánh tag ở Cơ cấu
+tổ chức →" thay vì rỗng im lặng.
 
 #### Ô số tổng phải KHỚP danh sách
 

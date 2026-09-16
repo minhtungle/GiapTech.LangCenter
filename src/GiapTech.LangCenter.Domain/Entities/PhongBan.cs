@@ -1,4 +1,5 @@
 using GiapTech.LangCenter.Domain.Common;
+using GiapTech.LangCenter.Domain.Enums;
 
 namespace GiapTech.LangCenter.Domain.Entities;
 
@@ -38,6 +39,12 @@ public class PhongBan : TenantEntity
     /// trước "Phòng Đào tạo", trái với thứ tự tổ chức mà người dùng muốn thấy.
     /// </summary>
     public int ThuTu { get; set; }
+
+    /// <summary>
+    /// Tag vai trò — `null` = phòng **chỉ mang tính mô tả** trong cây cơ cấu, không xuất hiện ở
+    /// bộ lọc của module nào (FR-22, 16/09/2026). Xem <see cref="TagVaiTroPhongBan"/>.
+    /// </summary>
+    public TagVaiTroPhongBan? TagVaiTro { get; set; }
 
     /// <summary>Nhân sự thuộc phòng ban này.</summary>
     public ICollection<NguoiDung> NhanSus { get; set; } = [];

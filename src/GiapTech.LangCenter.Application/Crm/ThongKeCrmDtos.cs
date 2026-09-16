@@ -208,19 +208,57 @@ public class LayThongKeCrmHandler(
             .OrderByDescending(x => x.DoanhThu)
             .ToList();
 
-        // ---------- Theo đội nhóm: phòng ban của người đó ----------
-        var theoDoiNhom = (await donTrongKy
-                .GroupBy(d => new
-                {
-                    Id = d.KhachHang.CreatedBy!.PhongBanId,
-                    Ten = d.KhachHang.CreatedBy!.PhongBan!.Ten
-                })
-                .Select(g => new PhanBoDto(
-                    g.Key.Id, g.Key.Ten,
-                    g.Sum(d => d.SoTien * d.TyGiaVeVnd), g.Count()))
-                .ToListAsync(ct))
+        /*
+          ---------- Theo đội nhóm: CHỈ phòng mang tag Kinh doanh ----------
+
+          Từ 16/09/2026 phòng ban có tag vai trò, và biểu đồ này là "doanh thu theo đội bán
+          hàng" — nên chỉ phòng tag `KinhDoanh` được đứng tên. Phòng Đào tạo nằm trong biểu đồ
+          doanh số là câu trả lời cho một câu hỏi không ai đặt.
+
+          Phần còn lại GOM vào một mục "Khác", KHÔNG ẩn đi: ẩn thì tổng của biểu đồ nhỏ hơn ô
+          "tổng doanh thu" ngay trên cùng màn, và người đọc không biết tiền đi đâu. Gom lại thì
+          hai con số vẫn khớp, mà vẫn thấy rõ phần nào thuộc đội bán hàng.
+
+          `Id = null` cho mục "Khác" — nó không phải một phòng nên không bấm vào để lọc được.
+        */
+        var theoPhongThoDoiNhom = await donTrongKy
+            .GroupBy(d => new
+            {
+                Id = d.KhachHang.CreatedBy!.PhongBanId,
+                // `PhongBan` có thể null (người chưa xếp phòng) → `Ten` rỗng, xử lý ở dưới.
+                Ten = d.KhachHang.CreatedBy!.PhongBan == null
+                    ? null
+                    : d.KhachHang.CreatedBy!.PhongBan!.Ten,
+                Tag = d.KhachHang.CreatedBy!.PhongBan == null
+                    ? null
+                    : d.KhachHang.CreatedBy!.PhongBan!.TagVaiTro
+            })
+            .Select(g => new
+            {
+                g.Key.Id, g.Key.Ten, g.Key.Tag,
+                DoanhThu = g.Sum(d => d.SoTien * d.TyGiaVeVnd),
+                SoDon = g.Count()
+            })
+            .ToListAsync(ct);
+
+        var kinhDoanh = theoPhongThoDoiNhom
+            .Where(x => x.Tag == TagVaiTroPhongBan.KinhDoanh)
+            .Select(x => new PhanBoDto(x.Id, x.Ten!, x.DoanhThu, x.SoDon))
             .OrderByDescending(x => x.DoanhThu)
             .ToList();
+
+        var phanConLai = theoPhongThoDoiNhom
+            .Where(x => x.Tag != TagVaiTroPhongBan.KinhDoanh)
+            .ToList();
+
+        var theoDoiNhom = phanConLai.Count == 0
+            ? kinhDoanh
+            : [.. kinhDoanh, new PhanBoDto(
+                null,
+                // Nhãn là MÃ để frontend dịch (quy tắc #3), không phải chuỗi tiếng Việt.
+                "KHAC",
+                phanConLai.Sum(x => x.DoanhThu),
+                phanConLai.Sum(x => x.SoDon))];
 
         // ---------- Theo mặt hàng: khoá học HOẶC sản phẩm ----------
         // Hai FK loại trừ nhau nên gom hai lượt rồi nối, thay vì một GroupBy có điều kiện —
@@ -290,9 +328,13 @@ public class LayThongKeCrmHandler(
                 await db.SanPhams.OrderBy(x => x.Ten)
                     .Select(x => new MucLocDto(x.Id, x.Ten)).ToListAsync(ct)),
 
+            // Danh sách để lọc: CHỈ phòng tag Kinh doanh — cùng quy tắc với `/phong-ban/
+            // nhom-theo-tag` mà màn Khách hàng và Doanh thu dùng, để ba màn CRM không lệch nhau.
             LoaiThongKe.DoiNhom => (
                 theoDoiNhom,
-                await db.PhongBans.OrderBy(x => x.Ten)
+                await db.PhongBans
+                    .Where(x => x.TagVaiTro == TagVaiTroPhongBan.KinhDoanh)
+                    .OrderBy(x => x.ThuTu).ThenBy(x => x.Ten)
                     .Select(x => new MucLocDto(x.Id, x.Ten)).ToListAsync(ct)),
 
             // Elearning không chia doanh thu — danh sách để rỗng, số liệu nằm ở `Elearning`.

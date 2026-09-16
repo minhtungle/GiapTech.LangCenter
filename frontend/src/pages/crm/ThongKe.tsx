@@ -124,7 +124,15 @@ export default function ThongKe() {
   const conThieu = tk.tongDoanhThu - tk.daThu
 
   /** Tên hiển thị của một lát; null = nhóm chưa xác định (đơn cũ, người chưa gán phòng ban). */
-  const ten = (p: PhanBo) => p.ten ?? t('thongKe.khongXacDinh')
+  /**
+   * Nhãn một cột/lát của biểu đồ.
+   *
+   * `KHAC` là **mã**, không phải tên phòng: biểu đồ đội nhóm gom mọi đơn KHÔNG thuộc phòng tag
+   * Kinh doanh vào một mục (16/09/2026) — gom chứ không ẩn, để tổng biểu đồ vẫn khớp ô "tổng
+   * doanh thu" ngay trên nó. Backend trả mã để frontend dịch (quy tắc #3).
+   */
+  const ten = (p: PhanBo) =>
+    p.ten === 'KHAC' ? t('tagVaiTro.KHAC') : (p.ten ?? t('thongKe.khongXacDinh'))
 
   const hang = (ds: PhanBo[]) =>
     ds.map((p) => ({

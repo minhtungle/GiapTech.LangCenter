@@ -21,6 +21,11 @@ public record PhongBanDto(
     string? TenNguoiQuanLy,
     string? MoTa,
     int ThuTu,
+    /// <summary>
+    /// Tag vai trò — `null` = phòng chỉ mang tính **mô tả** trong cây cơ cấu, không xuất hiện
+    /// ở bộ lọc của module nào (FR-22, 16/09/2026).
+    /// </summary>
+    TagVaiTroPhongBan? TagVaiTro,
     /// <summary>Số nhân sự thuộc CHÍNH phòng này, không gồm phòng con.</summary>
     int SoNhanSu,
     /// <summary>Số nhân sự của cả nhánh (phòng này + mọi cấp dưới) — tính ở handler.</summary>
@@ -42,7 +47,7 @@ public class LayCayPhongBanHandler(IAppDbContext db)
             {
                 p.Id, p.Ten, p.PhongBanChaId, p.NguoiQuanLyId,
                 TenNguoiQuanLy = p.NguoiQuanLy == null ? null : p.NguoiQuanLy.HoTen,
-                p.MoTa, p.ThuTu,
+                p.MoTa, p.ThuTu, p.TagVaiTro,
                 // Đếm người ĐANG LÀM VIỆC và KHÔNG phải học viên. Lọc học viên ở cả tầng đọc
                 // chứ không chỉ tầng ghi: cách 1 (form hồ sơ) cũng đặt được `PhongBanId`, nên
                 // chặn một phía sẽ để lọt và sĩ số phòng đếm sai.
@@ -67,7 +72,7 @@ public class LayCayPhongBanHandler(IAppDbContext db)
                     var cacCon = Dung(x.Id);
                     return new PhongBanDto(
                         x.Id, x.Ten, x.PhongBanChaId, x.NguoiQuanLyId, x.TenNguoiQuanLy,
-                        x.MoTa, x.ThuTu, x.SoNhanSu,
+                        x.MoTa, x.ThuTu, x.TagVaiTro, x.SoNhanSu,
                         x.SoNhanSu + cacCon.Sum(c => c.SoNhanSuCaNhanh),
                         cacCon);
                 })
@@ -85,7 +90,16 @@ public record LuuPhongBanCommand(
     Guid? PhongBanChaId = null,
     Guid? NguoiQuanLyId = null,
     string? MoTa = null,
-    int ThuTu = 0) : IRequest<Guid>;
+    int ThuTu = 0,
+    /// <summary>
+    /// Tag vai trò của phòng. `null` = phòng chỉ mang tính mô tả, không hiện ở bộ lọc module
+    /// nào (FR-22, 16/09/2026).
+    ///
+    /// Đây là trường **luôn ghi** (không có cờ `DoiTag` kiểu `DoiPhongBan`): form Cơ cấu tổ
+    /// chức có ô chọn tag và luôn gửi giá trị hiện tại, nên `null` từ client là "người dùng
+    /// chủ động bỏ tag", không phải "client không gửi" (quy tắc #1).
+    /// </summary>
+    TagVaiTroPhongBan? TagVaiTro = null) : IRequest<Guid>;
 
 public class LuuPhongBanValidator : AbstractValidator<LuuPhongBanCommand>
 {
@@ -145,6 +159,7 @@ public class LuuPhongBanHandler(IAppDbContext db) : IRequestHandler<LuuPhongBanC
             pb.NguoiQuanLyId = request.NguoiQuanLyId;
             pb.MoTa = string.IsNullOrWhiteSpace(request.MoTa) ? null : request.MoTa.Trim();
             pb.ThuTu = request.ThuTu;
+            pb.TagVaiTro = request.TagVaiTro;
         }
         else
         {
@@ -154,7 +169,8 @@ public class LuuPhongBanHandler(IAppDbContext db) : IRequestHandler<LuuPhongBanC
                 PhongBanChaId = request.PhongBanChaId,
                 NguoiQuanLyId = request.NguoiQuanLyId,
                 MoTa = string.IsNullOrWhiteSpace(request.MoTa) ? null : request.MoTa.Trim(),
-                ThuTu = request.ThuTu
+                ThuTu = request.ThuTu,
+                TagVaiTro = request.TagVaiTro
             };
             db.PhongBans.Add(pb);
         }
@@ -261,5 +277,84 @@ public class XepNhanSuVaoPhongBanHandler(IAppDbContext db)
         foreach (var n in nguois) n.PhongBanId = request.PhongBanId;
 
         await db.SaveChangesAsync(ct);
+    }
+}
+
+// ---------- Nhóm theo tag, cho module khác dùng (16/09/2026) ----------
+
+/// <summary>Phòng ban đã đánh tag — dạng phẳng, đủ để đổ vào một ô select.</summary>
+public record NhomTheoTagDto(
+    Guid Id,
+    string Ten,
+    TagVaiTroPhongBan TagVaiTro,
+    /// <summary>
+    /// Đường dẫn đầy đủ trong cây, ví dụ `Kinh doanh › Miền Bắc › Hà Nội`.
+    ///
+    /// Cần nó vì danh sách này là **phẳng**: hai chi nhánh đều có phòng tên "Telesale" thì chỉ
+    /// riêng tên là không phân biệt được, mà `UNIQUE(tenant, cha, ten)` cho phép trùng tên
+    /// khác cha.
+    /// </summary>
+    string DuongDan);
+
+/// <summary>
+/// Phòng ban mang tag vai trò — **nguồn duy nhất** cho bộ lọc "đội nhóm" của mọi module.
+///
+/// ## Vì sao không dùng `LayCayPhongBanQuery`
+///
+/// Bộ lọc ở CRM trước đây gọi `GET /phong-ban` và liệt kê **mọi** phòng, kể cả phòng Đào tạo
+/// và các phòng chỉ mang tính mô tả trong sơ đồ. Chọn phòng Đào tạo để xem doanh thu là câu
+/// hỏi vô nghĩa — nó không bán hàng — nhưng người dùng vẫn phải đọc qua nó mỗi lần lọc.
+///
+/// Endpoint riêng thay vì để frontend tự lọc cây: quy tắc "phòng nào xuất hiện ở module nào"
+/// là **quy tắc nghiệp vụ**, không phải chi tiết hiển thị. Để frontend lọc thì mỗi màn lọc một
+/// kiểu, và màn mới sẽ quên lọc.
+///
+/// ## Vì sao ở `NhanSu`, không ở `Crm`
+///
+/// `PHONG_BAN` là dữ liệu của HRM. CRM gọi **endpoint** này, không gọi chéo namespace — giữ
+/// ranh giới hệ thống con theo ADR-0005 (canh bởi `RanhGioiHeThongConTests`).
+/// </summary>
+public record LayNhomTheoTagQuery(
+    /// <summary>null = mọi tag; truyền một tag để chỉ lấy nhóm đó (CRM truyền `KinhDoanh`).</summary>
+    TagVaiTroPhongBan? Tag = null) : IRequest<List<NhomTheoTagDto>>;
+
+public class LayNhomTheoTagHandler(IAppDbContext db)
+    : IRequestHandler<LayNhomTheoTagQuery, List<NhomTheoTagDto>>
+{
+    public async Task<List<NhomTheoTagDto>> Handle(
+        LayNhomTheoTagQuery request, CancellationToken ct)
+    {
+        // Lấy TOÀN BỘ phòng (kể cả không tag) vì cần dựng đường dẫn qua các cấp cha — phòng
+        // cha hoàn toàn có thể không có tag. Cỡ vài chục dòng mỗi trung tâm nên một truy vấn.
+        var phang = await db.PhongBans
+            .Select(p => new { p.Id, p.Ten, p.PhongBanChaId, p.TagVaiTro, p.ThuTu })
+            .ToListAsync(ct);
+
+        var theoId = phang.ToDictionary(x => x.Id);
+
+        string DuongDan(Guid id)
+        {
+            var phan = new List<string>();
+            var hienTai = id;
+
+            // Chặn trên theo SỐ PHÒNG, không `while (true)`: `LuuPhongBanHandler` đã chống chu
+            // trình nhưng dữ liệu cũ hoặc sửa tay ở DB vẫn có thể tạo vòng lặp, và ở đây nó sẽ
+            // treo cả request thay vì trả về thiếu một dấu ›.
+            for (var i = 0; i <= phang.Count && theoId.TryGetValue(hienTai, out var pb); i++)
+            {
+                phan.Insert(0, pb.Ten);
+                if (pb.PhongBanChaId is not { } cha) break;
+                hienTai = cha;
+            }
+
+            return string.Join(" › ", phan);
+        }
+
+        return phang
+            .Where(x => x.TagVaiTro != null)
+            .Where(x => request.Tag == null || x.TagVaiTro == request.Tag)
+            .OrderBy(x => x.TagVaiTro).ThenBy(x => x.ThuTu).ThenBy(x => x.Ten)
+            .Select(x => new NhomTheoTagDto(x.Id, x.Ten, x.TagVaiTro!.Value, DuongDan(x.Id)))
+            .ToList();
     }
 }

@@ -1,12 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { api, type KetQuaTrang } from '@/lib/api'
 import { Label } from '@/components/ui'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 
-interface PhongBanNgan {
+interface NhomTheoTag {
   id: string
   ten: string
+  tagVaiTro: 'KinhDoanh' | 'GiaoVien' | 'TroGiang'
+  /** Đường dẫn trong cây, ví dụ `Kinh doanh › Miền Bắc`. */
+  duongDan: string
 }
 
 interface NguoiDungNgan {
@@ -47,9 +51,23 @@ export function LocDoiNhom({
 }) {
   const { t } = useTranslation()
 
+  /**
+   * CHỈ phòng mang tag **Kinh doanh** (16/09/2026).
+   *
+   * Trước đây gọi `GET /phong-ban` và liệt kê MỌI phòng, kể cả phòng Đào tạo và các phòng chỉ
+   * mang tính mô tả trong sơ đồ tổ chức — chọn phòng Đào tạo để xem doanh thu là câu hỏi vô
+   * nghĩa, mà người dùng vẫn phải đọc qua nó mỗi lần lọc.
+   *
+   * Lọc ở BACKEND (`/phong-ban/nhom-theo-tag?tag=KinhDoanh`), không lọc ở đây: "phòng nào xuất
+   * hiện ở module nào" là quy tắc nghiệp vụ, để frontend tự lọc thì mỗi màn lọc một kiểu và
+   * màn mới sẽ quên lọc.
+   */
   const { data: phongBan } = useQuery({
-    queryKey: ['phong-ban-ngan'],
-    queryFn: async () => (await api.get<PhongBanNgan[]>('/phong-ban')).data,
+    queryKey: ['phong-ban-nhom-theo-tag', 'KinhDoanh'],
+    queryFn: async () =>
+      (await api.get<NhomTheoTag[]>('/phong-ban/nhom-theo-tag', {
+        params: { tag: 'KinhDoanh' },
+      })).data,
     staleTime: 5 * 60_000,
   })
 
@@ -89,7 +107,12 @@ export function LocDoiNhom({
         <Label htmlFor="loc-doi">{t('crmLoc.doiNhom')}</Label>
         <SelectTimKiem
           id="loc-doi"
-          luaChon={(phongBan ?? []).map((p) => ({ giaTri: p.id, nhan: p.ten }))}
+          luaChon={(phongBan ?? []).map((p) => ({
+            giaTri: p.id,
+            // Đường dẫn khi phòng có cấp cha: `UNIQUE(tenant, cha, ten)` cho phép hai chi
+            // nhánh đều có phòng "Telesale", nên chỉ riêng tên là không phân biệt được.
+            nhan: p.duongDan.includes(' › ') ? p.duongDan : p.ten,
+          }))}
           giaTri={phongBanId}
           onDoi={(v) => {
             onDoiPhongBan(v)
@@ -99,6 +122,23 @@ export function LocDoiNhom({
           }}
           placeholder={t('chung.tatCa')}
         />
+
+        {/*
+          Ô lọc rỗng vì CHƯA ai đánh tag là trạng thái hoàn toàn hợp lệ (mọi phòng mặc định
+          không tag từ 16/09/2026), nhưng rỗng im lặng thì người dùng tưởng hệ thống hỏng. Nói
+          rõ phải làm gì, kèm đường tới đúng chỗ làm việc đó.
+        */}
+        {phongBan !== undefined && phongBan.length === 0 && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t('crmLoc.chuaCoTag')}{' '}
+            <Link
+              to="/hrm/co-cau-to-chuc"
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              {t('crmLoc.denCoCau')}
+            </Link>
+          </p>
+        )}
       </div>
 
       <div className="w-48">
