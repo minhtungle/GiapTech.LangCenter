@@ -50,7 +50,20 @@ export default function CoCauToChuc() {
   const duocThem = coQuyen('PhongBan', 'Them')
   const duocXoa = coQuyen('PhongBan', 'Xoa')
 
+  /**
+   * Lỗi của FORM (thêm/sửa phòng, xếp nhân sự) — hiện bên trong modal tương ứng.
+   */
   const [maLoi, setMaLoi] = useState<string | null>(null)
+
+  /**
+   * Lỗi của thao tác trên TRANG (xoá phòng) — hiện trên màn, ngoài modal.
+   *
+   * Tách khỏi `maLoi` (16/09/2026): dùng chung một state thì lỗi xoá hiện ở **cả hai** chỗ, vì
+   * `<Modal>` luôn nằm trong DOM nên điều kiện `!moForm` ở khối trên không ngăn được khối lỗi
+   * bên trong form. Người dùng mở form thêm phòng sau đó sẽ thấy sẵn một lỗi của thao tác
+   * trước, không liên quan gì tới cái họ đang nhập.
+   */
+  const [maLoiTrang, setMaLoiTrang] = useState<string | null>(null)
   /** Phòng đang sửa (null = thêm mới), cùng với cha của nó khi thêm. */
   const [dangSua, setDangSua] = useState<PhongBanNode | null>(null)
   const [chaCuaMoi, setChaCuaMoi] = useState<string | null>(null)
@@ -88,12 +101,44 @@ export default function CoCauToChuc() {
     return m
   }, [cay])
 
-  const tree = useTree<PhongBanNode | null>({
+  /**
+   * Node giữ chỗ cho id KHÔNG còn trong dữ liệu.
+   *
+   * **`dataLoader.getItem` KHÔNG được trả về giá trị falsy** — `@headless-tree` 1.7 làm
+   * `if (!data) throw throwError('sync dataLoader returned undefined')`
+   * (`core/dist/index.js:1362`), nên `null` và `undefined` đều **ném lỗi và sập cả app**, không
+   * chỉ sập cây.
+   *
+   * Đã xảy ra thật (16/09/2026, người dùng báo): xoá một phòng ban thành công (`204`) → cây
+   * tải lại (`200`) → thư viện vẫn giữ id vừa xoá trong state nội bộ (`expandedItems`,
+   * `focusedItem`) và hỏi lại dữ liệu của nó → `getItem` trả `null` → **màn hình trắng tinh,
+   * phải F5**. Xoá thì đã xoá xong ở DB, nên người dùng reload xong thấy đúng — chỉ có cảm
+   * giác là hệ thống vỡ.
+   *
+   * Trả node giữ chỗ thay vì `null`: cây vẫn dựng được, node mồ côi (nếu kịp hiện một nhịp)
+   * mang tên rỗng và không có con, rồi biến mất ở lần `rebuildTree()` ngay sau đó.
+   */
+  const NODE_TRONG: PhongBanNode = useMemo(() => ({
+    id: '',
+    ten: '',
+    phongBanChaId: null,
+    nguoiQuanLyId: null,
+    tenNguoiQuanLy: null,
+    moTa: null,
+    thuTu: 0,
+    tagVaiTro: null,
+    soNhanSu: 0,
+    soNhanSuCaNhanh: 0,
+    phongBanCons: [],
+  }), [])
+
+  const tree = useTree<PhongBanNode>({
     rootItemId: GOC,
-    getItemName: (item) => item.getItemData()?.ten ?? '',
-    isItemFolder: (item) => (item.getItemData()?.phongBanCons.length ?? 0) > 0,
+    getItemName: (item) => item.getItemData().ten,
+    isItemFolder: (item) => item.getItemData().phongBanCons.length > 0,
     dataLoader: {
-      getItem: (id) => (id === GOC ? null : theoId.get(id) ?? null),
+      // Node gốc là ẢO (không có trong DB) nên cũng phải trả node giữ chỗ, không phải `null`.
+      getItem: (id) => (id === GOC ? NODE_TRONG : theoId.get(id) ?? NODE_TRONG),
       getChildren: (id) =>
         id === GOC
           ? cay.map((n) => n.id)
@@ -166,8 +211,11 @@ export default function CoCauToChuc() {
 
   const xoa = useMutation({
     mutationFn: (id: string) => api.delete(`/phong-ban/${id}`),
-    onSuccess: lamMoi,
-    onError: (e) => setMaLoi(layMaLoi(e)),
+    onSuccess: () => {
+      lamMoi()
+      setMaLoiTrang(null)
+    },
+    onError: (e) => setMaLoiTrang(layMaLoi(e)),
   })
 
   const xepNhanSu = useMutation({
@@ -186,6 +234,7 @@ export default function CoCauToChuc() {
   })
 
   const moThem = (cha: string | null) => {
+    setMaLoiTrang(null)
     setDangSua(null)
     setChaCuaMoi(cha)
     setQuanLy(null)
@@ -200,6 +249,7 @@ export default function CoCauToChuc() {
     setQuanLy(n.nguoiQuanLyId)
     setTag(n.tagVaiTro)
     setMaLoi(null)
+    setMaLoiTrang(null)
     setMoForm(true)
   }
 
@@ -225,8 +275,8 @@ export default function CoCauToChuc() {
         )}
       </div>
 
-      {maLoi && !moForm && !xepVao && (
-        <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>
+      {maLoiTrang && (
+        <CanhBaoLoi>{t(`loi.${maLoiTrang}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>
       )}
 
       <Card>
@@ -239,7 +289,12 @@ export default function CoCauToChuc() {
             <div {...tree.getContainerProps(t('menu.coCauToChuc'))} className="grid gap-1">
               {tree.getItems().map((item) => {
                 const n = item.getItemData()
-                if (!n) return null
+
+                // Bỏ NODE GIỮ CHỖ: `getItem` trả nó cho id không còn trong dữ liệu (xem
+                // `NODE_TRONG` — thư viện ném lỗi nếu trả `null`). Nhận ra bằng `id` rỗng.
+                // Không có dòng này thì sau khi xoá một phòng, cây hiện thêm một hàng trống
+                // cho tới lần rebuild kế tiếp.
+                if (!n.id) return null
                 const meta = item.getItemMeta()
                 const coCon = n.phongBanCons.length > 0
                 const mo = item.isExpanded()
@@ -317,6 +372,7 @@ export default function CoCauToChuc() {
                             onChon: () => {
                               setNhanSuChon([])
                               setMaLoi(null)
+                              setMaLoiTrang(null)
                               setXepVao(n)
                             },
                           },

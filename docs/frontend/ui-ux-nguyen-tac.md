@@ -108,6 +108,40 @@ làm mới kế tiếp.
 | Ma trận phân quyền (FR-05) | Desktop trước, **mobile vẫn đọc được** | Từ 14/09/2026 là lưới thẻ, tự xuống một cột |
 | Xem lịch học, điểm danh, nộp bài, tra công nợ (giáo viên · học viên) | **Responsive tốt** | Nhóm dùng nhiều nhất, và sẽ tái dùng cho mobile app qua cùng API |
 
+### Thư viện có state nội bộ: mỗi lần dữ liệu đổi là một đường sập app
+
+`@headless-tree` (màn Cơ cấu tổ chức) giữ state **ngoài React**: `expandedItems`,
+`focusedItem`, và cache cấu trúc cây. Sau khi xoá một node, state đó vẫn nhắc tới id đã mất —
+thư viện hỏi lại dữ liệu và **ném lỗi nếu `dataLoader` trả giá trị falsy**:
+
+```js
+// @headless-tree/core 1.7 — core/dist/index.js:1362
+if (!data) { throw throwError('sync dataLoader returned undefined') }
+```
+
+`!data` bắt cả `null`, nên `getItem: (id) => theoId.get(id) ?? null` là **sập cả app**, không
+chỉ sập cây: màn hình trắng tinh, phải F5. Đã xảy ra thật 16/09/2026 (người dùng báo) khi xoá
+một phòng ban — xoá thì thành công ở DB, nên reload xong thấy đúng, chỉ có cảm giác hệ thống vỡ.
+
+Quy tắc khi dùng loại thư viện này:
+
+- **`dataLoader` không bao giờ trả falsy.** Trả một *node giữ chỗ* (object thật, id rỗng) rồi
+  bỏ nó ở vòng render. Node gốc ảo cũng vậy — nó không có trong DB nhưng thư viện vẫn hỏi.
+- **Phải có E2E cho luồng xoá/thêm**, không chỉ cho luồng đọc. Lỗi kiểu này không hiện trong
+  unit test (không có DOM), không hiện khi `tsc` (kiểu vẫn đúng), và không hiện ở màn tải lần
+  đầu — chỉ hiện sau một thao tác làm dữ liệu đổi.
+- E2E phải kiểm **"màn còn sống"** (`#root` còn nội dung, không có lỗi `pageerror`), không chỉ
+  kiểm "bản ghi đã biến mất".
+
+### Một state lỗi cho mỗi VÙNG, không dùng chung cho trang và modal
+
+`<Modal>` luôn nằm trong DOM, nên `{maLoi && !moForm && ...}` ở thân trang **không** ngăn được
+khối lỗi bên trong form hiện cùng lúc: cùng một lỗi hiện hai chỗ. Tệ hơn, người dùng mở form
+thêm mới sau đó sẽ thấy sẵn lỗi của thao tác trước, không liên quan gì tới cái họ đang nhập.
+
+Tách `maLoi` (lỗi trong form) và `maLoiTrang` (lỗi thao tác trên trang), và dọn `maLoiTrang`
+mỗi khi mở form.
+
 ### Bảng chỉ đúng khi ma trận ĐẶC và nhãn NGẮN
 
 Bài học từ ma trận phân quyền (14/09/2026). Nó là bảng chức năng × thao tác, và hỏng dần khi

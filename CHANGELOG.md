@@ -8,6 +8,38 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Fixed — xoá phòng ban làm **trắng màn hình** (16/09/2026)
+
+Người dùng báo: *"lỗi khi xóa cơ cấu thì màn hình bị trắng tinh không hiện gì, phải reload lại"*.
+
+**Nguyên nhân.** Xoá thành công (`204`) → cây tải lại (`200`) → `@headless-tree` vẫn giữ id vừa
+xoá trong state nội bộ (`expandedItems`, `focusedItem`) và hỏi lại dữ liệu của nó →
+`dataLoader.getItem` trả `null` → thư viện làm `if (!data) throw` (`core/dist/index.js:1362`,
+bản 1.7) → **React sập, màn trắng tinh**. Xoá thì đã xong ở DB nên reload xong thấy đúng — chỉ
+có cảm giác là hệ thống vỡ.
+
+`!data` bắt cả `null` **và** `undefined`, nên trả `null` cho node không còn là sập app. Nay
+`getItem` luôn trả một **node giữ chỗ** (object thật, `id` rỗng) và vòng render bỏ nó qua. Node
+gốc ảo cũng dùng node giữ chỗ thay vì `null`.
+
+**Lỗi thứ hai tìm được khi vá:** cùng một mã lỗi hiện **hai chỗ** — `<Modal>` luôn nằm trong
+DOM, nên điều kiện `!moForm` ở thân trang không ngăn được khối lỗi bên trong form. Người dùng mở
+form thêm phòng sau đó còn thấy sẵn lỗi của thao tác trước. Tách `maLoi` (trong form) khỏi
+`maLoiTrang` (thao tác trên trang), và dọn lỗi trang mỗi khi mở form.
+
+**Màn Cơ cấu tổ chức trước đó KHÔNG có E2E nào** — đó là lý do lỗi lọt: nó không hiện trong
+unit test (không có DOM), không hiện khi `tsc` (kiểu vẫn đúng), và không hiện ở lần tải đầu. Nay
+có `co-cau-to-chuc.spec.ts` (2 test) kiểm **"màn còn sống sau khi xoá"** — `#root` còn nội dung,
+không `pageerror`, không hàng trống — cho bốn ca: xoá phòng con trong nhánh đang mở, xoá phòng
+gốc, xoá phòng con cuối rồi xoá phòng cha, và xoá bị chặn.
+
+Tiêm lại đúng lỗi gốc (`getItem` trả `null`) thì test đỏ với thông báo "MÀN TRẮNG — React đã
+sập"; hoàn nguyên state lỗi dùng chung thì test đỏ với "resolved to 2 elements".
+
+Dọn kèm: 17 phòng ban rác do các lần chạy thử tay để lại trong `W686AE9` (chạy thử trên DB bản
+sao trước — 6 phòng thật và tag nguyên vẹn, 32 khách / 85 đơn / 6 nhân sự không đổi).
+
+
 ### Added — tag vai trò cho phòng ban: chỉ phòng đánh tag xuất hiện ở module khác (16/09/2026)
 
 Yêu cầu: *"bổ sung tag (nhóm kinh doanh, nhóm giáo viên, nhóm trợ giảng) để nhận diện đúng vai

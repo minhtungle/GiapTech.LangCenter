@@ -30,7 +30,7 @@ là đường frontend, API vẫn là `/api/v1/hoc-vien`.
 Tách ra từ một ứng dụng quản lý CLB đá bóng (04/09/2026), giữ toàn bộ tầng hệ thống. Nghiệp vụ
 LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 
-**28 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 510 test backend · 28 frontend · 29 E2E xanh.
+**28 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 510 test backend · 28 frontend · 31 E2E xanh.
 
 | Đã chạy đầu-cuối | Chưa có |
 |---|---|
