@@ -33,12 +33,19 @@ namespace GiapTech.LangCenter.API.Controllers.V1;
 public class NhanSuController(ISender sender) : ControllerBase
 {
     /// <summary>
-    /// Ba vai trò nhân sự — phạm vi CỐ ĐỊNH của màn hình, người dùng không mở rộng được.
+    /// Các vai trò nhân sự — phạm vi CỐ ĐỊNH của màn hình, người dùng không mở rộng được.
     ///
     /// Trợ giảng đi cùng giáo viên vì họ dùng chung hồ sơ `HO_SO_GIAO_VIEN`.
+    ///
+    /// `NhanVienKinhDoanh` thêm 16/09/2026: về mặt quyền và hồ sơ nó giống `NhanVien`, nên vào
+    /// cùng màn này. Thiếu nó ở đây thì tạo được người nhưng **danh sách không hiện ra** và
+    /// `/nhan-su/{id}` trả 404 — lỗi im lặng, không có gì đỏ.
     /// </summary>
     private static readonly LoaiNguoiDung[] VaiTroNhanSu =
-        [LoaiNguoiDung.NhanVien, LoaiNguoiDung.GiaoVien, LoaiNguoiDung.TroGiang];
+    [
+        LoaiNguoiDung.NhanVien, LoaiNguoiDung.NhanVienKinhDoanh,
+        LoaiNguoiDung.GiaoVien, LoaiNguoiDung.TroGiang
+    ];
 
     /// <summary>
     /// Danh sách nhân sự. Lọc ba vai trò ở **server** — lọc trên trang đã tải thì phân trang

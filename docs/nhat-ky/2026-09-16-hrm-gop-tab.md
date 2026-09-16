@@ -135,6 +135,62 @@ lỗi tử tế.
 Ba test cũ của `chi-tiet-nhan-su.spec.ts` phải sửa: chúng chọn tệp rồi chờ tải xong, nay có hộp
 thoại ở giữa. Đây là **thay đổi luồng có chủ ý**, không phải hồi quy.
 
+## Việc thứ ba: vai trò "Nhân viên kinh doanh"
+
+Yêu cầu nguyên văn: *"vai trò nhân viên => nhân viên kinh doanh. tránh nhầm lẫn"*.
+
+Đọc thì tưởng là đổi một dòng nhãn. **Rà dữ liệu thật trước khi sửa** thì thấy không phải:
+
+```
+NhanVien (6 người):
+  Chị Mai (nhân sự)   | chức vụ: Trưởng phòng nhân sự
+  Quản trị viên       | chức vụ: Quản trị hệ thống
+  Sale Hà Nội / Sài Gòn / Online A / Online B
+```
+
+Chỉ 4/6 là sale. Và quan trọng hơn: `NhanVien` là **giá trị mặc định** của `NguoiDung`, đồng thời
+là vai trò mà `TenantSeeder` gán cho **tài khoản quản trị**. Đổi nhãn nó thành "Nhân viên kinh
+doanh" sẽ gọi chính người quản trị hệ thống là sale — ở mọi trung tâm mới, mãi mãi. Tức là **tạo
+ra một nhầm lẫn mới thay vì bỏ nhầm lẫn cũ**, ngược đúng mục đích của yêu cầu.
+
+Nên hỏi lại chủ sản phẩm kèm ba phương án, và chốt: **thêm vai trò riêng** `NhanVienKinhDoanh = 4`.
+
+Hỏi thêm một câu nữa về nhãn của `NhanVien`: để trần "Nhân viên" cạnh "Nhân viên kinh doanh" thì
+hai tùy chọn đọc như lồng nhau, người dùng vẫn phải đoán chọn cái nào cho sale. Chốt "Nhân viên
+**khác**".
+
+### Giá trị 4, không chen vào giữa
+
+DB lưu `int`. Đặt `NhanVienKinhDoanh = 1` cho "gọn" sẽ làm mọi hàng `GiaoVien` cũ đọc thành vai trò
+khác, im lặng. Có test chốt cả 5 giá trị số.
+
+### Chỗ dễ sai nhất, và là lý do viết file test riêng
+
+Vai trò mới phải khai vào `NhanSuController.VaiTroNhanSu` — phạm vi cố định của màn HRM. Thiếu chỗ
+đó thì **tạo người vẫn trả 200** nhưng danh sách không hiện ra và `/nhan-su/{id}` trả 404. Không
+ngoại lệ nào ném, không test cũ nào đỏ. Đột biến bỏ vai trò khỏi mảng này làm đỏ **5** test.
+
+### Một đột biến sống, và vì sao nó đúng là sống
+
+Đột biến "bảng `HO_SO_NHAN_VIEN` chỉ tạo cho `NhanVien`" **không** làm đỏ test nào lúc đầu. Không
+phải test yếu: bảng đó nay chỉ còn FK + `tenant_id` (cột `chuc_vu` đã sang `CHUC_VU` ở FR-24) nên
+**không xuất hiện trong DTO nào** — không API nào quan sát được sự khác biệt.
+
+Đã thêm test đọc **thẳng DB** thay vì bỏ qua: hàng thiếu chỉ lộ ra vào đúng lúc FR-23 ghi thêm
+trường vào bảng đó, khi dữ liệu thật đã tích lũy và phải backfill.
+
+### Chuyển dữ liệu
+
+Không làm trong EF migration: "ai là nhân viên kinh doanh" là quyết định nghiệp vụ **của từng trung
+tâm**, migration đoán hộ sẽ gán sai cho mọi tenant khác — mà đó là dữ liệu thật.
+
+Nhận diện theo tên (`Sale%`) chứ không theo phòng ban có tag Kinh doanh: "Sale Online B" đang nằm ở
+phòng **"Đào tạo"**, nên phòng ban của người này mới là thứ đặt sai. Chủ sản phẩm chốt chuyển cả 4.
+
+Kiểm trước khi chạy: `Sale%` chỉ khớp W686AE9 (192 tenant E2E trong DB dev dùng tên "Trần Sale",
+không khớp). Backup 6.9 MB → dry-run trên DB bản sao → chạy thật: `UPDATE 4`. Admin và Chị Mai giữ
+nguyên `NhanVien`. Ảnh chụp tenant thật xác nhận không ai bị gắn nhãn sai.
+
 ## Kết quả
 
-529 test backend · 28 frontend · 33 E2E — xanh hết.
+536 test backend · 28 frontend · 34 E2E — xanh hết.

@@ -134,6 +134,55 @@ và `Badge` sẵn có, và để có sẵn điều hướng bàn phím + ARIA `t
 > qua `item.expand()`, **không** phải `setState({ expandedItems })`: bản kia đổi state mà
 > `getItems()` vẫn không trả con. Đã đo bằng script độc lập chứ không đoán.
 
+## Vai trò Nhân viên kinh doanh (16/09/2026)
+
+Yêu cầu: *"vai trò nhân viên => nhân viên kinh doanh. tránh nhầm lẫn"*.
+
+**Làm thành vai trò RIÊNG, không đổi tên `NhanVien`.** Rà dữ liệu thật trước khi sửa: trong 6
+người mang vai trò `NhanVien` chỉ 4 là sale, còn lại là **nhân sự** và **quản trị hệ thống**. Thêm
+nữa `NhanVien` là giá trị mặc định của `NguoiDung` **và** là vai trò mà `TenantSeeder` gán cho tài
+khoản quản trị — đổi nhãn nó sẽ gọi chính người quản trị là nhân viên kinh doanh ở **mọi trung tâm
+mới**, tức tạo ra một nhầm lẫn mới thay vì bỏ nhầm lẫn cũ.
+
+| Giá trị | Nhãn | Nghĩa |
+|---|---|---|
+| `NhanVien = 0` | **Nhân viên khác** | Không dạy, không học, không thuộc kinh doanh: hành chính, nhân sự, kế toán, IT. Mặc định của `NguoiDung` + vai trò của admin |
+| `NhanVienKinhDoanh = 4` | **Nhân viên kinh doanh** | Sale / tư vấn tuyển sinh |
+
+Nhãn của `NhanVien` đổi thành "Nhân viên **khác**": để trần "Nhân viên" thì hai tùy chọn đọc như
+lồng nhau và người dùng phải đoán chọn cái nào cho sale — đúng sự nhầm lẫn mà vai trò mới sinh ra
+để bỏ.
+
+**Giá trị 4, không chen vào giữa**: DB lưu `int`, đổi số của giá trị đang có là làm sai toàn bộ dữ
+liệu cũ một cách im lặng (quy tắc #1). Canh bởi
+`VaiTroNhanVienKinhDoanhTests.Gia_tri_so_cua_vai_tro_khong_duoc_doi` — chốt cả 5 giá trị.
+
+### Chỗ dễ sai nhất khi thêm vai trò nhân sự
+
+Phải khai vào **`NhanSuController.VaiTroNhanSu`** (phạm vi cố định của màn HRM). Thiếu chỗ đó thì
+**tạo người vẫn thành công (200)** nhưng danh sách không hiện ra và `/nhan-su/{id}` trả 404 — không
+ngoại lệ nào ném, không test cũ nào đỏ. Đột biến bỏ vai trò mới khỏi mảng này làm đỏ **5** test.
+
+Hai vai trò **dùng chung `HO_SO_NHAN_VIEN`** (`LaNhanVienVanHanh`): khác nhau ở nghiệp vụ, không
+khác ở trường hồ sơ. Bảng đó nay chỉ còn FK + `tenant_id` nên **không xuất hiện trong DTO nào** ⇒
+phải canh ở **tầng DB**, test qua API không thấy được (đã thử: đột biến sống).
+
+Về phân quyền thì hai vai trò như nhau. Khác biệt nằm ở **lọc và thống kê**: giờ trả lời được "xem
+doanh thu theo từng nhân viên kinh doanh" mà không phải suy từ phòng ban. Bộ lọc CRM
+(`LocDoiNhom.tsx`) tự nhận vai trò mới vì nó liệt kê *mọi vai trò không phải học viên* — cố ý,
+vì giáo vụ cũng tạo được hồ sơ khách.
+
+### Chuyển dữ liệu đang có
+
+`scripts/chuyen-vai-tro-nhan-vien-kinh-doanh.sql` — **không** làm trong EF migration: ai là nhân
+viên kinh doanh là quyết định nghiệp vụ của từng trung tâm, migration đoán hộ sẽ gán sai cho mọi
+tenant khác.
+
+Nhận diện theo **tên** (`Sale%`), không theo phòng ban có tag Kinh doanh: chủ sản phẩm chốt sau khi
+thấy "Sale Online B" đang nằm ở phòng "Đào tạo" — tức phòng ban của người này mới là thứ đặt sai.
+Script có hai chốt an toàn (phải còn ít nhất một `NhanVien`; không hồ sơ học viên nào lọt sang) và
+đã dry-run trên DB bản sao trước khi chạy thật: `UPDATE 4`, đúng 4 người.
+
 ## FR-23 — Hồ sơ nhân sự (mở rộng)
 
 Bổ sung vào `NGUOI_DUNG`: `cccd`, `so_tai_khoan`, `ten_ngan_hang`, `ghi_chu`.

@@ -8,6 +8,31 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — vai trò Nhân viên kinh doanh (16/09/2026)
+
+Theo yêu cầu chủ sản phẩm: *"vai trò nhân viên => nhân viên kinh doanh. tránh nhầm lẫn"*.
+
+**Thêm vai trò riêng `NhanVienKinhDoanh = 4`, KHÔNG đổi tên `NhanVien`.** Rà dữ liệu thật trước
+khi sửa cho thấy trong 6 người `NhanVien` chỉ 4 là sale — còn lại là nhân sự và quản trị hệ thống;
+và `NhanVien` chính là vai trò mà seeder gán cho **tài khoản quản trị** của mọi tenant. Đổi nhãn nó
+sẽ gọi người quản trị là nhân viên kinh doanh ở mọi trung tâm mới.
+
+| Giá trị | Nhãn |
+|---|---|
+| `NhanVien = 0` | **Nhân viên khác** (hành chính, nhân sự, kế toán, IT) |
+| `NhanVienKinhDoanh = 4` | **Nhân viên kinh doanh** |
+
+- Giá trị **4**, không chen vào giữa: DB lưu `int`, đổi số của giá trị cũ là làm sai dữ liệu đang
+  có một cách im lặng (quy tắc #1).
+- Hai vai trò dùng chung `HO_SO_NHAN_VIEN` — khác nghiệp vụ, không khác trường hồ sơ.
+- Bộ lọc CRM tự nhận vai trò mới (nó liệt kê mọi vai trò không phải học viên).
+- `scripts/chuyen-vai-tro-nhan-vien-kinh-doanh.sql` chuyển 4 người sale đang có. Đã backup DB và
+  dry-run trên bản sao trước khi chạy thật — `UPDATE 4`, đúng 4 người, admin và nhân sự giữ nguyên.
+
+Test: +7 integration · +1 E2E. Đột biến "quên khai vai trò mới vào `VaiTroNhanSu`" (lỗi im lặng:
+tạo được nhưng danh sách không hiện) làm đỏ 5 test; đột biến "đổi nhãn thay vì thêm vai trò" làm đỏ
+E2E ở đúng dòng *Quản trị viên*.
+
 ### Added — đặt tên tệp hồ sơ nhân sự + hạn mức 10 tệp (16/09/2026)
 
 Theo yêu cầu chủ sản phẩm: *"khi tải tệp hồ sơ nhân sự lên, cho phép đặt tên file để dễ theo

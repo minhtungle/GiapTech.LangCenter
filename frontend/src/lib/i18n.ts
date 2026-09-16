@@ -385,7 +385,11 @@ const vi = {
     goiY: 'JPG, PNG, WebP hoặc GIF · tối đa 5 MB',
   },
   loaiNguoiDung: {
-    NhanVien: 'Nhân viên',
+    // "khác" = không dạy, không học, không thuộc kinh doanh (hành chính, nhân sự, IT…).
+    // Để trần "Nhân viên" thì hai tùy chọn đọc như lồng nhau và người dùng phải đoán chọn cái
+    // nào cho sale — đúng sự nhầm lẫn mà vai trò mới sinh ra để bỏ.
+    NhanVien: 'Nhân viên khác',
+    NhanVienKinhDoanh: 'Nhân viên kinh doanh',
     GiaoVien: 'Giáo viên',
     TroGiang: 'Trợ giảng',
     HocVien: 'Học viên',

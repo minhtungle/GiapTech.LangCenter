@@ -11,7 +11,7 @@ import NguoiDung, { type PhamViNguoiDung } from '@/pages/quan-tri/NguoiDung'
  */
 const PHAM_VI: PhamViNguoiDung = {
   duong: '/nhan-su',
-  vaiTro: ['NhanVien', 'GiaoVien', 'TroGiang'],
+  vaiTro: ['NhanVien', 'NhanVienKinhDoanh', 'GiaoVien', 'TroGiang'],
   can: 'NhanSu',
   khoaTieuDe: 'menu.nhanSuNguoiDung',
   duongChiTiet: '/hrm/nhan-su',

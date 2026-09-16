@@ -513,13 +513,26 @@ public class TaoNguoiDungHandler(IAppDbContext db, IPasswordHasher hasher)
         // HO_SO_NHAN_VIEN nay KHÔNG còn trường nào (cột `chuc_vu` chuyển thành
         // `NGUOI_DUNG.chuc_vu_id` → `CHUC_VU`, FR-24). Vẫn tạo hàng cho vai trò NhanVien để
         // FR-23 (CCCD, số tài khoản, MXH) có chỗ ghi mà không phải backfill sau.
-        if (taoMoiNeuThieu && loai == LoaiNguoiDung.NhanVien && nd.HoSoNhanVien is null)
+        //
+        // `NhanVienKinhDoanh` (16/09/2026) dùng CHUNG bảng hồ sơ này: hai vai trò khác nhau ở
+        // nghiệp vụ, không khác ở trường hồ sơ — thêm bảng thứ tư rỗng chỉ để phân biệt tên gọi
+        // là tự tạo việc.
+        if (taoMoiNeuThieu && LaNhanVienVanHanh(loai) && nd.HoSoNhanVien is null)
         {
             var ho = new Domain.Entities.HoSoNhanVien { NguoiDungId = nd.Id, NguoiDung = nd };
             db.HoSoNhanViens.Add(ho);
             nd.HoSoNhanVien = ho;
         }
     }
+
+    /// <summary>
+    /// Hai vai trò dùng chung bảng `HO_SO_NHAN_VIEN` — xem ghi chú ở chỗ gọi.
+    ///
+    /// Hàm riêng chứ không viết `||` tại chỗ: nếu sau này có vai trò nhân sự thứ ba thì chỉ phải
+    /// sửa một nơi, và chỗ nào quên sẽ lộ ra vì không gọi hàm này.
+    /// </summary>
+    internal static bool LaNhanVienVanHanh(LoaiNguoiDung loai)
+        => loai is LoaiNguoiDung.NhanVien or LoaiNguoiDung.NhanVienKinhDoanh;
 
     /// <summary>Cắt khoảng trắng, chuỗi rỗng → null. `internal` để handler cập nhật dùng chung.</summary>
     internal static string? Gon(string? s)

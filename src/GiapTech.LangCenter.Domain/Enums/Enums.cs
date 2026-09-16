@@ -133,11 +133,36 @@ public enum HanhDong
 /// </summary>
 public enum LoaiNguoiDung
 {
-    /// <summary>Nhân sự vận hành: không dạy, không học.</summary>
+    /// <summary>
+    /// Nhân sự vận hành **không thuộc kinh doanh**: hành chính, nhân sự, kế toán, IT…
+    ///
+    /// Đây là giá trị MẶC ĐỊNH của <see cref="Entities.NguoiDung"/> và là vai trò của tài khoản
+    /// quản trị do `TenantSeeder` tạo — nên nó phải giữ nghĩa RỘNG. Đã có lúc tính đổi nhãn nó
+    /// thành "Nhân viên kinh doanh" (yêu cầu 16/09/2026) nhưng làm vậy sẽ gọi chính người quản
+    /// trị hệ thống là nhân viên kinh doanh ở mọi trung tâm mới.
+    /// </summary>
     NhanVien = 0,
     GiaoVien = 1,
     TroGiang = 2,
-    HocVien = 3
+    HocVien = 3,
+
+    /// <summary>
+    /// Nhân viên kinh doanh / tư vấn tuyển sinh (thêm 16/09/2026 theo yêu cầu chủ sản phẩm:
+    /// *"vai trò nhân viên => nhân viên kinh doanh. tránh nhầm lẫn"*).
+    ///
+    /// **Vai trò RIÊNG, không phải đổi tên <see cref="NhanVien"/>.** Lúc rà dữ liệu thật thấy
+    /// `NhanVien` đang gồm cả người nhân sự và người quản trị hệ thống, nên đổi nhãn sẽ tạo ra
+    /// một nhầm lẫn mới thay vì bỏ nhầm lẫn cũ.
+    ///
+    /// Giá trị **4**, không chen vào giữa: DB lưu số nguyên, đổi số của giá trị đang có là làm
+    /// sai toàn bộ dữ liệu cũ một cách im lặng (quy tắc #1).
+    ///
+    /// Về phân quyền thì giống <see cref="NhanVien"/> — cả hai đều là "nhân sự", đều vào màn
+    /// HRM và đều xếp được vào cơ cấu tổ chức. Khác biệt nằm ở chỗ **lọc và thống kê**: giờ mới
+    /// trả lời được "cho tôi xem doanh thu theo từng nhân viên kinh doanh" mà không phải suy từ
+    /// phòng ban.
+    /// </summary>
+    NhanVienKinhDoanh = 4
 }
 
 /// <summary>Hình thức tổ chức lớp học.</summary>

@@ -46,7 +46,14 @@ export type LoaiMxh = 'Facebook' | 'Zalo' | 'LinkedIn' | 'Telegram' | 'Khac'
 
 export const CAC_LOAI_MXH: LoaiMxh[] = ['Facebook', 'Zalo', 'LinkedIn', 'Telegram', 'Khac']
 
-export type LoaiNguoiDung = 'NhanVien' | 'GiaoVien' | 'TroGiang' | 'HocVien'
+/**
+ * Vai trò con người — PHẢI khớp enum `LoaiNguoiDung` ở backend.
+ *
+ * `NhanVienKinhDoanh` thêm 16/09/2026 là vai trò RIÊNG, không phải đổi tên `NhanVien`:
+ * `NhanVien` còn gồm hành chính, nhân sự, IT và là vai trò của tài khoản quản trị.
+ */
+export type LoaiNguoiDung =
+  | 'NhanVien' | 'NhanVienKinhDoanh' | 'GiaoVien' | 'TroGiang' | 'HocVien'
 export type TrangThaiNhanSu = 'DangLamViec' | 'DaNghi'
 
 
@@ -99,6 +106,14 @@ interface QuyenNgan {
 
 /** Trợ giảng dùng chung hồ sơ giáo viên — cùng loại thông tin, không đáng tách bảng. */
 const laGiaoVien = (l: LoaiNguoiDung) => l === 'GiaoVien' || l === 'TroGiang'
+
+/**
+ * Nhân viên kinh doanh dùng chung `HO_SO_NHAN_VIEN` với nhân viên — khác nhau ở nghiệp vụ, không
+ * khác ở trường hồ sơ (khớp `LaNhanVienVanHanh` ở backend).
+ *
+ * Gộp ở đây để khối hồ sơ và tiêu đề của nó không phải khai thêm một nhãn `hoSo_*` thứ tư.
+ */
+const laNhanVien = (l: LoaiNguoiDung) => l === 'NhanVien' || l === 'NhanVienKinhDoanh'
 
 const ngayChoInput = (iso: string | null) => (iso ? iso.slice(0, 10) : '')
 
@@ -707,7 +722,9 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
           {/* Hồ sơ riêng theo vai trò — chỉ hiện khối của vai trò đang chọn. */}
           <fieldset className="space-y-3 rounded-lg border border-border p-3">
             <legend className="px-1 text-sm font-medium">
-              {t(`nguoiDung.hoSo_${laGiaoVien(loai) ? 'GiaoVien' : loai}`)}
+              {t(`nguoiDung.hoSo_${
+                laGiaoVien(loai) ? 'GiaoVien' : laNhanVien(loai) ? 'NhanVien' : loai
+              }`)}
             </legend>
 
             {laGiaoVien(loai) && (
