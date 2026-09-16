@@ -8,6 +8,37 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Fixed — dọn rác dữ liệu trong tenant dev (16/09/2026)
+
+Các lượt rà soát 14–16/09 chạy thẳng trên tenant thật `W686AE9` (chốt 12/09: không tạo tenant
+mới) nên mỗi lượt để lại một ít rác. Đã rà toàn bộ và dọn đúng năm nhóm, **giữ nguyên toàn bộ
+dữ liệu demo** — nó là thứ làm biểu đồ, bộ lọc, thống kê có hình dạng để xem.
+
+| Đã xoá | Vì sao là rác |
+|---|---|
+| 1 hồ sơ "Cô Lan" trùng tên | Script demo bản cũ tạo mù quáng (đã vá 15/09). Hồ sơ này 0 lớp, 0 hồ sơ giáo viên, không phòng ban — đăng nhập `co.lan` thấy 0 lớp, trông như lỗi phân quyền. Nay `nv5` (4 lớp, 12 buổi) đổi tên thành `co.lan` |
+| 3 học viên mồ côi | Không tài khoản, không lớp, không nối khách hàng, không ghi danh khoá online |
+| 109 refresh token | Từ ~30 lượt script đăng nhập; còn hạn nên nằm lại mãi |
+| 84 object MinIO mồ côi + bucket cũ `langcenter-lms-anh` | Tệp PDF của các tenant test đã xoá. DB không tham chiếu ảnh nào (nợ N5 + N23) |
+| 2 database bản sao `thu_gop`, `thu_rac` | Bản sao dựng để chạy thử migration, quên drop |
+
+**Một điều kiện an toàn đã cứu dữ liệu thật:** danh sách học viên mồ côi ban đầu có 4 người,
+nhưng script kiểm thêm `GHI_DANH_KHOA_ONLINE` / `BAI_NOP` / `DIEM_DANH` nên giữ lại "Ngô Thị
+Nam" — cô ấy **đang học một khoá online**. Xoá theo danh sách 4 người là mất dữ liệu ghi danh.
+
+**Không có bất nhất logic nào** trong dữ liệu nghiệp vụ: 0 học viên lọt vào cơ cấu tổ chức,
+0 quyền chức năng chết, 0 khoá ngoại treo. Nên không cần sửa gì thêm.
+
+`scripts/don-rac-du-lieu-thu.sql` — chạy tay, idempotent (mọi lệnh theo điều kiện, không theo
+id cứng), sao lưu + chạy thử trên DB bản sao trước. Sau khi dọn: người dùng 78→74, tài khoản
+12→11, **khách 32 · đơn 85 · lớp 8 · buổi 12 · ghi danh 48 · ghi danh online 34 · quyền 181 —
+không đổi**.
+
+Kiểm chứng sau dọn: 510 backend · 28 vitest · 31 E2E xanh; 11/11 màn không lỗi; tải ảnh vẫn
+chạy (bucket **tự tạo lại** qua `BaoDamBucket`, khoá mang `tenantId` đúng thiết kế cách ly);
+`co.lan` nối đúng hồ sơ dạy 4 lớp.
+
+
 ### Fixed — xoá phòng ban làm **trắng màn hình** (16/09/2026)
 
 Người dùng báo: *"lỗi khi xóa cơ cấu thì màn hình bị trắng tinh không hiện gì, phải reload lại"*.
