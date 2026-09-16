@@ -14,6 +14,7 @@ import { Modal } from '@/components/ui/Modal'
 import { KhungNoiDung } from '@/components/ui/KhungNoiDung'
 import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
+import { useQuyen } from '@/lib/quyen'
 import { useXacNhan } from '@/lib/xacNhan'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { BangDiemDanh } from './BangDiemDanh'
@@ -52,6 +53,31 @@ export function LichVaDiemDanh({
   const [maLoi, setMaLoi] = useState<string | null>(null)
   // Mặc định BẢNG: nó là chỗ điểm danh và xem số liệu từng buổi. Lịch để nhìn tổng quát.
   const [kieuXem, setKieuXem] = useState<'bang' | 'lich'>('bang')
+  const { coQuyen } = useQuyen()
+
+  /*
+    Gác nút theo QUYỀN THẬT (17/09/2026).
+
+    Trước đó màn này không gọi `coQuyen` một lần nào: học viên vào lớp mình học vẫn thấy đủ nút
+    "Sinh lịch", "Sinh lại lịch", "Điểm danh", "Huỷ buổi", "Xoá". Backend chặn hết (403 — đã thử
+    bằng tài khoản `hv1`), nên KHÔNG rò rỉ dữ liệu; nhưng người dùng bấm vào chỉ nhận lỗi đỏ mà
+    không hiểu vì sao — và tệ hơn, họ tưởng mình vừa làm hỏng thứ gì đó.
+
+    Quyền lấy ĐÚNG theo endpoint tương ứng, không gom một cờ "là giáo viên":
+      sinh lịch / sinh lại  → LopHoc.SinhLich
+      huỷ buổi              → BuoiHoc.Huy
+      xoá buổi              → BuoiHoc.Xoa
+      mở bảng điểm danh     → DiemDanh.Sua   (ghi điểm danh; `Xem` chỉ để đọc)
+  */
+  const duocSinhLich = coQuyen('LopHoc', 'SinhLich')
+  // "Thêm buổi" gọi `sinh-them-buoi` — gác bằng `BuoiHoc.Them`, KHÔNG phải `LopHoc.SinhLich`.
+  // Giáo viên có `BuoiHoc.Them` nhưng KHÔNG có `SinhLich` (sinh lịch là việc của điều phối),
+  // nên gộp hai nút vào một cờ sẽ giấu mất nút mà giáo viên vẫn dùng được.
+  const duocThemBuoi = coQuyen('BuoiHoc', 'Them')
+  const duocHuyBuoi = coQuyen('BuoiHoc', 'Huy')
+  const duocXoaBuoi = coQuyen('BuoiHoc', 'Xoa')
+  const duocDiemDanh = coQuyen('DiemDanh', 'Sua')
+
   const [moSinhLich, setMoSinhLich] = useState(false)
   const [moSinhThem, setMoSinhThem] = useState(false)
   const [xacNhanSinhLai, setXacNhanSinhLai] = useState(false)
@@ -163,9 +189,14 @@ export function LichVaDiemDanh({
 
           {/* Ba nút, ba việc khác nhau — trước đây chỉ có một nút vừa sinh vừa xoá.
               "Sinh lại" để cuối và viền đỏ vì nó là nút duy nhất xoá dữ liệu. */}
-          <div className="flex flex-wrap gap-2">
+          {/* Cụm nút ẩn hẳn với người không có quyền ghi nào — học viên chỉ xem. */}
+          <div className={duocSinhLich || duocThemBuoi ? 'flex flex-wrap gap-2' : 'hidden'}>
             {buoiHocs.length === 0 ? (
-              <Button size="sm" onClick={() => setMoSinhLich(true)}>
+              <Button
+                size="sm"
+                className={duocSinhLich ? '' : 'hidden'}
+                onClick={() => setMoSinhLich(true)}
+              >
                 <CalendarDays className="mr-1.5 h-4 w-4" />
                 {t('buoiHoc.sinhLich')}
               </Button>
@@ -174,14 +205,21 @@ export function LichVaDiemDanh({
                 {/* MỘT nút thêm buổi. Từng có hai nút ("Thêm buổi" cho buổi lẻ và "Sinh thêm
                     buổi" theo tần suất) — tên gần giống nhau nên gây nhầm, gộp 07/09/2026.
                     Thêm một buổi = để số buổi là 1. */}
-                <Button size="sm" onClick={() => setMoSinhThem(true)}>
+                <Button
+                  size="sm"
+                  className={duocThemBuoi ? '' : 'hidden'}
+                  onClick={() => setMoSinhThem(true)}
+                >
                   <CalendarPlus className="mr-1.5 h-4 w-4" />
                   {t('buoiHoc.sinhThemBuoi')}
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-destructive/40 text-destructive hover:bg-destructive/10"
+                  className={
+                    'border-destructive/40 text-destructive hover:bg-destructive/10 '
+                    + (duocSinhLich ? '' : 'hidden')
+                  }
                   onClick={() => setXacNhanSinhLai(true)}
                 >
                   <RotateCcw className="mr-1.5 h-4 w-4" />
@@ -300,6 +338,9 @@ export function LichVaDiemDanh({
                             {
                               nhan: t('buoiHoc.diemDanh'),
                               icon: ClipboardCheck,
+                              // Mở bảng điểm danh = GHI điểm danh, cần `DiemDanh.Sua`.
+                              // Học viên chỉ có `Xem` + `TuLam` (tự khai có mặt).
+                              an: !duocDiemDanh,
                               onChon: () => setBuoiDiemDanh(b),
                             },
                             {
@@ -309,14 +350,14 @@ export function LichVaDiemDanh({
                               ngatNhom: true,
                               // Buổi đã chốt là bằng chứng chuyên cần; buổi đã huỷ thì huỷ nữa
                               // cũng vô nghĩa. Backend chặn cả hai, đây chỉ là ẩn cho gọn.
-                              an: b.trangThai !== 'DaLenLich',
+                              an: !duocHuyBuoi || b.trangThai !== 'DaLenLich',
                               onChon: () => setHuyCho(b),
                             },
                             {
                               nhan: t('chung.xoa'),
                               icon: Trash2,
                               nguyHiem: true,
-                              an: b.trangThai === 'DaHoanThanh',
+                              an: !duocXoaBuoi || b.trangThai === 'DaHoanThanh',
                               onChon: () => setXoaCho(b),
                             },
                           ]}

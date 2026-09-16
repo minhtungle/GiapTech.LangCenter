@@ -599,6 +599,7 @@ const vi = {
     khacTuKhai: 'Khác lời khai',
     luu: 'Lưu điểm danh',
     daLuu: 'Đã lưu điểm danh',
+    chiXem: 'Bạn chỉ có quyền xem bảng điểm danh này.',
     nhanXetGv: 'Nhận xét của giáo viên',
     nhanXetGoiY: 'Phát âm, mức tham gia, bài về nhà…',
     buoiDaChot: 'Buổi đã chốt — vẫn sửa được điểm danh và nhận xét, nhưng không sửa được giờ buổi.',

@@ -8,6 +8,29 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Fixed — học viên thấy nút sinh lịch và sửa được bảng điểm danh (17/09/2026)
+
+Chủ sản phẩm báo: *"học viên vẫn có thể sinh lịch học và điểm danh trong buổi học. học viên chỉ có
+quyền xem thôi"*.
+
+**Không phải lỗ hổng bảo mật** — kiểm bằng tài khoản học viên thật, mọi endpoint ghi đều trả 403
+(`sinh-lich`, `chot`, `huy`). Lỗi ở **frontend**: `LichVaDiemDanh.tsx` và `BangDiemDanh.tsx` không
+gọi `coQuyen` một lần nào, nên học viên thấy đủ "Sinh lịch", "Sinh lại lịch", "Chốt buổi", "Lưu
+điểm danh" và **ô chọn trạng thái điểm danh của cả lớp**. Bấm vào chỉ nhận lỗi đỏ.
+
+Lối vào chính: tab *Điểm danh* gác bằng `DiemDanh` với thao tác mặc định `Xem` — quyền mà học viên
+**có**.
+
+Nay mỗi nút gác đúng thao tác của endpoint nó gọi: `LopHoc.SinhLich` (sinh/sinh lại lịch) ·
+`BuoiHoc.Them` (thêm buổi) · `BuoiHoc.Huy` · `BuoiHoc.Xoa` · `DiemDanh.Sua` (bảng điểm danh) ·
+`DiemDanh.Chot`. Người chỉ có quyền xem thấy bảng ở chế độ **chỉ đọc** kèm một dòng giải thích.
+
+**Suýt sửa hỏng**: bản đầu gom "Thêm buổi" chung cờ với "Sinh lịch" — hai nút gọi hai endpoint gác
+hai quyền khác nhau, giáo viên có `BuoiHoc.Them` nhưng **không** có `LopHoc.SinhLich`. Gom một cờ
+là giáo viên mất nút. Test kiểm **cả hai chiều** trong cùng một file nên bắt được.
+
+Test: +1 E2E. Ba đột biến tái hiện đúng bug gốc đều kiểm đỏ.
+
 ### Added — Tổng quan hiện buổi sắp tới, bấm tới thẳng chi tiết (17/09/2026)
 
 Theo yêu cầu chủ sản phẩm. Màn Tổng quan (học viên · giáo viên · quản trị đều dùng chung) nay có

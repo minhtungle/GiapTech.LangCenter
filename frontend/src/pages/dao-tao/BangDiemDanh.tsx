@@ -8,6 +8,7 @@ import {
 } from '@/components/ui'
 import { KhungNoiDung } from '@/components/ui/KhungNoiDung'
 import { useXacNhan } from '@/lib/xacNhan'
+import { useQuyen } from '@/lib/quyen'
 import { type BuoiHocDto, gioVN } from './buoiHocTypes'
 
 type TrangThaiDiemDanh = 'CoMat' | 'DiMuon' | 'Vang' | 'VangCoPhep'
@@ -50,6 +51,23 @@ export function BangDiemDanh({
   const { t } = useTranslation()
   const { hoi, hop } = useXacNhan()
   const qc = useQueryClient()
+  const { coQuyen } = useQuyen()
+
+  /*
+    CHỈ ĐỌC khi không có `DiemDanh.Sua` (17/09/2026).
+
+    Bảng này mở được từ hai chỗ: menu ở màn lịch, và tab "Điểm danh" của view chi tiết buổi. Tab
+    đó gác bằng `DiemDanh` với thao tác mặc định là `Xem` — quyền mà HỌC VIÊN CÓ — nên học viên
+    mở được bảng và thấy đủ ô chọn trạng thái của **cả lớp**, nút "Lưu điểm danh", "Chốt buổi".
+
+    Backend chặn hết (403, đã thử bằng `hv1`) nên không rò rỉ và không ghi được gì; nhưng người
+    dùng bấm vào chỉ nhận lỗi đỏ mà không hiểu vì sao — và tệ hơn, họ tưởng mình vừa làm hỏng
+    dữ liệu của lớp.
+
+    Gác ở ĐÂY chứ không chỉ ở chỗ gọi: bảng có hai lối vào, gác từng lối là hai chỗ để quên.
+  */
+  const duocSua = coQuyen('DiemDanh', 'Sua')
+  const duocChot = coQuyen('DiemDanh', 'Chot')
   const [sua, setSua] = useState<
     Record<string, { tt: TrangThaiDiemDanh; lyDo: string; nhanXet: string }>
   >({})
@@ -177,6 +195,7 @@ export function BangDiemDanh({
                           onChange={(e) =>
                             doi(d.hocVienId, { tt: e.target.value as TrangThaiDiemDanh })
                           }
+                          disabled={!duocSua}
                           className="h-8 w-full rounded-md border border-input bg-background px-2 text-sm"
                         >
                           {CAC_TRANG_THAI.map((tt) => (
@@ -191,7 +210,7 @@ export function BangDiemDanh({
                           aria-label={`${t('diemDanh.lyDoVang')} — ${d.hoTen}`}
                           value={v?.lyDo ?? ''}
                           onChange={(e) => doi(d.hocVienId, { lyDo: e.target.value })}
-                          disabled={!canLyDo}
+                          disabled={!duocSua || !canLyDo}
                           placeholder={canLyDo ? t('diemDanh.lyDoVang') : ''}
                           className="h-8"
                         />
@@ -203,6 +222,7 @@ export function BangDiemDanh({
                           aria-label={`${t('diemDanh.nhanXetGv')} — ${d.hoTen}`}
                           value={v?.nhanXet ?? ''}
                           onChange={(e) => doi(d.hocVienId, { nhanXet: e.target.value })}
+                          disabled={!duocSua}
                           placeholder={t('diemDanh.nhanXetGoiY')}
                           className="h-8"
                         />
@@ -224,8 +244,18 @@ export function BangDiemDanh({
               {t('diemDanh.daLuu')}
             </span>
           )}
+          {/*
+            Người chỉ có quyền XEM không thấy hai nút này — bấm vào chỉ nhận 403. Thay bằng một
+            dòng nói rõ vì sao, để họ không tưởng màn bị lỗi.
+          */}
+          {!duocSua && !duocChot && (
+            <span className="mr-auto text-sm text-muted-foreground">
+              {t('diemDanh.chiXem')}
+            </span>
+          )}
           <Button
             variant="outline"
+            className={duocChot ? '' : 'hidden'}
             disabled={chot.isPending || buoi.trangThai === 'DaHoanThanh'}
             onClick={() =>
               hoi({
@@ -239,6 +269,7 @@ export function BangDiemDanh({
             {t('buoiHoc.chotBuoi')}
           </Button>
           <Button
+            className={duocSua ? '' : 'hidden'}
             disabled={luu.isPending || ds.length === 0}
             onClick={() =>
               hoi({

@@ -324,6 +324,46 @@ viên của trung tâm cũ phải được admin cấp quyền bằng tay** ở 
 
 Thêm module mới → thêm hằng số **và** cập nhật bảng này trong cùng PR.
 
+## Frontend PHẢI gác nút, không phó mặc backend (17/09/2026)
+
+Backend chặn đủ thì dữ liệu vẫn an toàn — nhưng **nút hiện ra mà bấm vào nhận 403 vẫn là lỗi**:
+người dùng không hiểu vì sao, và tệ hơn, họ tưởng mình vừa làm hỏng dữ liệu.
+
+Chủ sản phẩm báo: *"học viên vẫn có thể sinh lịch học và điểm danh trong buổi học"*. Kiểm bằng tài
+khoản học viên thật: mọi endpoint ghi đều trả **403** (`sinh-lich`, `chot`, `huy`) — backend đúng.
+Lỗi nằm ở frontend: `LichVaDiemDanh.tsx` và `BangDiemDanh.tsx` **không gọi `coQuyen` một lần nào**,
+nên học viên thấy đủ "Sinh lịch", "Sinh lại lịch", "Chốt buổi", "Lưu điểm danh" và ô chọn trạng
+thái điểm danh của **cả lớp**.
+
+### Lối vào dễ sót nhất: tab gác bằng chức năng, không kèm thao tác
+
+```
+{ ma: 'diem-danh', khoa: '...', can: 'DiemDanh' }   // mặc định là `Xem`
+```
+
+`DiemDanh.Xem` là quyền **học viên CÓ** (để xem điểm danh của mình), nên tab mở được và bảng hiện
+ra với đủ ô sửa. Gác tab bằng chức năng thì phải hỏi tiếp: *bên trong tab có gì cần quyền GHI?*
+
+### Gác đúng thao tác của ĐÚNG endpoint, đừng gom một cờ
+
+Suýt sai ở bản sửa đầu: gom "Thêm buổi" chung cờ với "Sinh lịch". Hai nút gọi hai endpoint khác
+nhau, gác hai quyền khác nhau:
+
+| Nút | Endpoint | Quyền | Giáo viên có? |
+|---|---|---|---|
+| Sinh lịch / Sinh lại lịch | `sinh-lich` | `LopHoc.SinhLich` | ❌ (việc của điều phối) |
+| Thêm buổi | `sinh-them-buoi` | `BuoiHoc.Them` | ✅ |
+| Mở bảng điểm danh | `diem-danh` | `DiemDanh.Sua` | ✅ |
+| Chốt buổi | `chot` | `DiemDanh.Chot` | ✅ |
+
+Gom một cờ thì giáo viên mất nút "Thêm buổi" — sửa một lỗi, tạo một lỗi khác.
+
+### Test phải kiểm CẢ HAI CHIỀU
+
+"Ẩn hết cho chắc" cũng làm test học viên xanh. `e2e/hoc-vien-chi-xem-buoi-hoc.spec.ts` kiểm trong
+cùng một file: học viên **không** thấy nút ghi nào và bảng điểm danh bị khoá; giáo viên **vẫn**
+thấy "Thêm buổi", "Chốt buổi", "Lưu điểm danh" và sửa được bảng.
+
 ## Cache
 
 Truy vấn quyền chạy ở **mọi request** → cần cache **ngắn hạn** (in-memory hoặc Redis, TTL vài phút),
