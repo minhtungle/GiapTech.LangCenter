@@ -34,7 +34,7 @@ import {
 const CAC_TAB = [
   { ma: 'thong-tin', khoa: 'chiTietKhach.tabThongTin', can: undefined },
   { ma: 'cham-soc', khoa: 'chiTietKhach.tabChamSoc', can: undefined },
-  { ma: 'mua-hang', khoa: 'chiTietKhach.tabMuaHang', can: 'DoanhThu' },
+  { ma: 'mua-hang', khoa: 'donHang.lichSu', can: 'DoanhThu' },
 ] as const
 
 type Tab = (typeof CAC_TAB)[number]['ma']
@@ -668,7 +668,7 @@ function FormMuaHang({
       mo={mo}
       onDong={onDong}
       chanDoiKhiXuLy={mua.isPending}
-      tieuDe={t('chiTietKhach.ghiMuaHang')}
+      tieuDe={t('donHang.ghiDon')}
       moTa={t('chiTietKhach.ghiMuaHangMoTa')}
       rong="md"
     >
@@ -679,7 +679,7 @@ function FormMuaHang({
           const fd = new FormData(e.currentTarget)
           hoi({
             tieuDe: t('chung.xacNhanLuu'),
-            thongDiep: t('chiTietKhach.hoiMuaHang'),
+            thongDiep: t('donHang.hoiLuuKemChamSoc'),
             onDongY: () => mua.mutate(fd),
           })
         }}
@@ -687,7 +687,7 @@ function FormMuaHang({
         {/* Chọn LOẠI trước: hai danh mục khác nhau hoàn toàn, gộp một ô chọn thì người bán
             phải lọc bằng mắt giữa khoá học và sách. */}
         <div>
-          <Label>{t('chiTietKhach.loaiMuaHang')} *</Label>
+          <Label>{t('donHang.loaiMatHang')} *</Label>
           <div className="mt-1 flex gap-1 rounded-lg border border-border p-1">
             {(['KhoaHoc', 'SanPham'] as LoaiDonHang[]).map((x) => (
               <button
@@ -726,7 +726,7 @@ function FormMuaHang({
           {/* Số lượng chỉ có nghĩa với sản phẩm — khoá học không ai mua 2 suất trong một đơn. */}
           {loai === 'SanPham' && (
             <div>
-              <Label htmlFor="soLuong">{t('chiTietKhach.soLuong')} *</Label>
+              <Label htmlFor="soLuong">{t('donHang.soLuong')} *</Label>
               <Input
                 id="soLuong"
                 type="number"
@@ -982,7 +982,7 @@ function TabKhoaHoc({ khachHangId }: { khachHangId: string }) {
         <div className="flex justify-end">
           <Button onClick={() => setMoMuaHang(true)}>
             <ShoppingCart className="h-4 w-4" />
-            {t('chiTietKhach.ghiMuaHang')}
+            {t('donHang.ghiDon')}
           </Button>
         </div>
       )}

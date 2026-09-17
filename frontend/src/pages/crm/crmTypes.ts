@@ -55,9 +55,11 @@ export interface DangKyDto {
   tenKhachHang: string
   soDienThoai: string | null
   linkFacebook: string | null
-  khoaHocId: string | null
   /** Loại đơn: mua khoá học hay mua sản phẩm. */
   loai: LoaiDonHang
+  /** Id mặt hàng — đúng một trong hai có giá trị, theo `loai`. Cần để form sửa điền lại được. */
+  khoaHocId: string | null
+  sanPhamId: string | null
   /** Tên thứ đã mua — khoá học hoặc sản phẩm, tuỳ `loai`. */
   tenMatHang: string
   /** Số buổi — chỉ khoá học, null với sản phẩm. */

@@ -1036,7 +1036,6 @@ const vi = {
   chiTietKhach: {
     tabThongTin: 'Thông tin chung',
     tabChamSoc: 'Lịch sử chăm sóc',
-    tabMuaHang: 'Lịch sử mua hàng',
     soLanMua: '{{so}} lần mua',
     tongNhom: 'Tổng nhóm',
     tongTatCa: 'Tổng tất cả',
@@ -1065,9 +1064,7 @@ const vi = {
     tongDaThu: 'Tổng đã thu',
     conThieu: 'Còn thiếu {{so}}',
     themChamSoc: 'Ghi lần chăm sóc',
-    ghiMuaHang: 'Ghi mua hàng',
     ghiMuaHangMoTa: 'Ghi đơn hàng và tự thêm một dòng lịch sử chăm sóc',
-    loaiMuaHang: 'Khách mua gì',
     chonMatHang: 'Chọn mặt hàng…',
     soLuong: 'Số lượng',
     ngayMua: 'Ngày mua',
@@ -1262,6 +1259,27 @@ const vi = {
     hoiLuu: 'Lưu khoá học? Thông tin hiện tại sẽ bị ghi đè.',
     hoiXoa: 'Xoá khoá học "{{ten}}"? Không khôi phục được.',
   },
+  /**
+   * Từ vựng ĐƠN HÀNG dùng chung cho màn Doanh thu và tab Lịch sử đơn hàng ở chi tiết khách
+   * (thống nhất 17/09/2026).
+   *
+   * Trước đó cùng một việc mà hai màn gọi hai kiểu: "Ghi mua hàng" vs "Thêm đăng ký". Chọn
+   * "đơn hàng" vì nó đúng cho CẢ khoá học lẫn sản phẩm — "đăng ký" nghe như chỉ dành cho khoá,
+   * "mua hàng" nghe như chỉ dành cho sản phẩm.
+   */
+  donHang: {
+    ghiDon: 'Ghi đơn',
+    suaDon: 'Sửa đơn hàng',
+    lichSu: 'Lịch sử đơn hàng',
+    loaiMatHang: 'Khách mua gì',
+    soLuong: 'Số lượng',
+    chonSanPham: 'Chọn sản phẩm',
+    hoiLuu: 'Lưu đơn hàng này?',
+    hoiLuuKemChamSoc:
+      'Lưu đơn hàng này? Hệ thống sẽ thêm một dòng doanh thu và một dòng lịch sử chăm sóc.',
+    chuaCo: 'Chưa có đơn hàng nào',
+  },
+
   doanhThu: {
     them: 'Thêm đăng ký',
     sua: 'Sửa đăng ký',

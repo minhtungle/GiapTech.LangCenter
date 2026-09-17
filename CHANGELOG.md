@@ -8,6 +8,27 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Fixed — ghi đơn ở Doanh thu và Lịch sử đơn hàng chưa đồng nhất (17/09/2026)
+
+Chủ sản phẩm báo: *"phần ghi mua hàng tại lịch sử mua hàng và doanh thu đang chưa đồng nhất về cả
+tên và thao tác"*. Hai lỗi khác nhau:
+
+**1. Tên** — cùng một việc gọi hai kiểu: *"Ghi mua hàng"* (chi tiết khách) vs *"Thêm đăng ký"*
+(Doanh thu). Nay cả hai dùng chung khối từ vựng `donHang`: **Ghi đơn** · **Lịch sử đơn hàng** ·
+**Sửa đơn hàng**. Chọn "đơn hàng" vì đúng cho cả khoá học lẫn sản phẩm.
+
+**2. Thao tác** — màn Doanh thu chỉ gửi `khoaHocId`, nên **không ghi được đơn sản phẩm** và
+**sửa đơn sản phẩm thì 400** (`PHAI_CHON_DUNG_MOT_MAT_HANG`). Đã kiểm trên dữ liệu thật: **10/85
+đơn** hiện có không sửa nổi một lỗi gõ.
+
+Gốc rễ ở `DangKyDto` — nó chỉ trả `TenMatHang` (chuỗi), **không trả id**, nên form sửa không điền
+lại được mặt hàng đã chọn. Nay DTO trả `KhoaHocId` + `SanPhamId` (đúng một cái khác null), và màn
+Doanh thu có đủ ô chọn loại mặt hàng + số lượng, giống form ở chi tiết khách. Số lượng chỉ hiện
+với sản phẩm; đổi loại thì bỏ mặt hàng đang chọn.
+
+Test: +4 integration · +1 E2E. Bốn đột biến kiểm đỏ (DTO bỏ `SanPhamId`, nới luật "đúng một mặt
+hàng", đổi lại tên cũ, bỏ ô chọn loại ở màn Doanh thu).
+
 ### Fixed — học viên thấy nút sinh lịch và sửa được bảng điểm danh (17/09/2026)
 
 Chủ sản phẩm báo: *"học viên vẫn có thể sinh lịch học và điểm danh trong buổi học. học viên chỉ có

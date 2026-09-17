@@ -17,6 +17,16 @@ public record DangKyDto(
     string? LinkFacebook,
     /// <summary>Loại đơn: mua khoá học hay mua sản phẩm.</summary>
     LoaiDonHang Loai,
+    /// <summary>
+    /// Id mặt hàng — **đúng một trong hai có giá trị**, theo <see cref="Loai"/>.
+    ///
+    /// Thêm 17/09/2026: trước đó DTO chỉ trả `TenMatHang` (chuỗi), nên form sửa ở màn Doanh thu
+    /// không điền lại được mặt hàng đã chọn — sửa đơn SẢN PHẨM thì gửi lên `KhoaHocId = null`
+    /// và không có `SanPhamId`, nhận 400 `PHAI_CHON_DUNG_MOT_MAT_HANG`. Trên dữ liệu thật có
+    /// 10/85 đơn sản phẩm không sửa nổi.
+    /// </summary>
+    Guid? KhoaHocId,
+    Guid? SanPhamId,
     /// <summary>Tên thứ đã mua — khoá học hoặc sản phẩm, tuỳ `Loai`.</summary>
     string TenMatHang,
     /// <summary>Số buổi (chỉ khoá học) — null với sản phẩm.</summary>
@@ -91,6 +101,8 @@ public class LayDoanhThuHandler(IAppDbContext db)
                 d.KhachHangId, d.KhachHang.HoTen, d.KhachHang.SoDienThoai,
                 d.KhachHang.LinkFacebook,
                 d.KhoaHocId != null ? LoaiDonHang.KhoaHoc : LoaiDonHang.SanPham,
+                d.KhoaHocId,
+                d.SanPhamId,
                 // Tên lấy từ bên nào có giá trị. `??` chứ không `!`: đơn cũ đã có `CHECK` bảo
                 // đảm đúng một bên khác null, nhưng để chuỗi rỗng vẫn an toàn hơn là nổ.
                 d.KhoaHoc != null ? d.KhoaHoc.Ten : (d.SanPham != null ? d.SanPham.Ten : ""),

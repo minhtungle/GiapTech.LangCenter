@@ -17,6 +17,7 @@ import {
   CAC_DON_VI, CAC_PHUONG_THUC, mauPhanTram, ngayChoInput, ngayVN, phanTram, tien,
   type DangKyDto, type DonViTien, type KhachHangDto, type KhoaHocDto,
   type PhuongThucThanhToan, type SanPhamDto, type TongHopDoanhThuDto,
+  type LoaiDonHang,
 } from './crmTypes'
 import { LocDoiNhom } from '@/components/crm/LocDoiNhom'
 
@@ -47,7 +48,17 @@ export default function DoanhThu() {
   const [moForm, setMoForm] = useState(false)
   const [dangSua, setDangSua] = useState<DangKyDto | null>(null)
   const [khachId, setKhachId] = useState<string | null>(null)
-  const [khoaId, setKhoaId] = useState<string | null>(null)
+  /*
+    Đơn hàng có HAI loại mặt hàng (FR-20): khoá học và sản phẩm.
+
+    Trước 17/09/2026 màn này chỉ gửi `khoaHocId`, nên **không ghi được đơn sản phẩm** và
+    **sửa đơn sản phẩm thì 400** (`PHAI_CHON_DUNG_MOT_MAT_HANG`) — trên dữ liệu thật có 10/85
+    đơn như vậy, tức kế toán không sửa nổi một lỗi gõ trong đó. Màn Khách hàng thì làm được cả
+    hai, nên hai màn lệch nhau cả về việc làm được lẫn cách gọi tên.
+  */
+  const [loaiDon, setLoaiDon] = useState<LoaiDonHang>('KhoaHoc')
+  const [matHangId, setMatHangId] = useState<string | null>(null)
+  const [soLuong, setSoLuong] = useState('1')
   const [soTien, setSoTien] = useState('')
   const [donVi, setDonVi] = useState<DonViTien>('VND')
   const [tyGia, setTyGia] = useState('1')
@@ -113,19 +124,23 @@ export default function DoanhThu() {
     enabled: coQuyen('SanPham'),
   })
 
-  const khoaChon = khoas.find((k) => k.id === khoaId)
+  /** Danh mục theo loại đang chọn — hai danh mục hoàn toàn khác nhau, không gộp một ô. */
+  const dsMatHang = loaiDon === 'KhoaHoc' ? khoas : sanPhams
+  const matHangChon = dsMatHang.find((x) => x.id === matHangId)
 
   /**
-   * Chọn khoá → điền sẵn giá và đơn vị của khoá đó, người bán sửa được.
+   * Chọn mặt hàng → điền sẵn giá và đơn vị của nó, người bán sửa được.
    *
    * Chỉ làm khi TẠO MỚI: sửa đơn cũ mà tự điền lại giá hôm nay sẽ ghi đè mức đã chốt với khách.
    */
   useEffect(() => {
-    if (dangSua || !khoaChon) return
-    setSoTien(String(khoaChon.giaTien))
-    setDonVi(khoaChon.donViTien)
-    setTyGia(khoaChon.donViTien === 'VND' ? '1' : '')
-  }, [khoaId, dangSua, khoaChon])
+    if (dangSua || !matHangChon) return
+    // Sản phẩm: giá × số lượng. Khoá học luôn 1 suất nên nhân lên cũng không đổi.
+    const sl = loaiDon === 'SanPham' ? Math.max(1, Number(soLuong) || 1) : 1
+    setSoTien(String(matHangChon.giaTien * sl))
+    setDonVi(matHangChon.donViTien)
+    setTyGia(matHangChon.donViTien === 'VND' ? '1' : '')
+  }, [matHangId, soLuong, loaiDon, dangSua, matHangChon])
 
   // VND thì tỷ giá luôn 1 — backend cũng ép, đây chỉ để UI không hỏi một câu vô nghĩa.
   useEffect(() => {
@@ -133,7 +148,9 @@ export default function DoanhThu() {
   }, [donVi])
 
   /** Giá gốc để tính %: đơn đang sửa dùng giá đã chụp, đơn mới dùng giá niêm yết hiện tại. */
-  const giaGoc = dangSua ? dangSua.giaGoc : (khoaChon?.giaTien ?? 0)
+  const giaGoc = dangSua
+    ? dangSua.giaGoc
+    : (matHangChon?.giaTien ?? 0) * (loaiDon === 'SanPham' ? Math.max(1, Number(soLuong) || 1) : 1)
   const soTienSo = Number(soTien) || 0
   const ptXemTruoc = giaGoc === 0 ? null : (soTienSo / giaGoc) * 100
   const quyDoiXemTruoc = soTienSo * (Number(tyGia) || 0)
@@ -156,7 +173,10 @@ export default function DoanhThu() {
     mutationFn: async (fd: FormData) => {
       const than = {
         khachHangId: khachId,
-        khoaHocId: khoaId,
+        // ĐÚNG MỘT trong hai có giá trị — validator backend chặn cả "không có" lẫn "có cả hai".
+        khoaHocId: loaiDon === 'KhoaHoc' ? matHangId : null,
+        sanPhamId: loaiDon === 'SanPham' ? matHangId : null,
+        soLuong: loaiDon === 'SanPham' ? Math.max(1, Number(soLuong) || 1) : 1,
         soTien: soTienSo,
         donViTien: donVi,
         tyGiaVeVnd: donVi === 'VND' ? 1 : Number(tyGia),
@@ -183,7 +203,11 @@ export default function DoanhThu() {
   const moSua = (d: DangKyDto) => {
     setDangSua(d)
     setKhachId(d.khachHangId)
-    setKhoaId(d.khoaHocId)
+    // Điền lại ĐÚNG loại và mặt hàng của đơn — đơn sản phẩm trước đây rơi vào nhánh khoá học
+    // rồi gửi lên `khoaHocId = null`, nhận 400 và không sửa được.
+    setLoaiDon(d.loai)
+    setMatHangId(d.loai === 'KhoaHoc' ? d.khoaHocId : d.sanPhamId)
+    setSoLuong(String(d.soLuong))
     setSoTien(String(d.soTien))
     setDonVi(d.donViTien)
     setTyGia(String(d.tyGiaVeVnd))
@@ -195,7 +219,9 @@ export default function DoanhThu() {
   const moThem = () => {
     setDangSua(null)
     setKhachId(null)
-    setKhoaId(null)
+    setLoaiDon('KhoaHoc')
+    setMatHangId(null)
+    setSoLuong('1')
     setSoTien('')
     setDonVi('VND')
     setTyGia('1')
@@ -338,7 +364,7 @@ export default function DoanhThu() {
         {coQuyen('DoanhThu', 'Them') && (
           <Button onClick={moThem}>
             <Plus className="h-4 w-4" />
-            {t('doanhThu.them')}
+            {t('donHang.ghiDon')}
           </Button>
         )}
       </div>
@@ -393,7 +419,7 @@ export default function DoanhThu() {
           {isLoading ? (
             <TrangTrong thongDiep={t('chung.dangTai')} />
           ) : kq.duLieu.length === 0 ? (
-            <TrangTrong thongDiep={t('doanhThu.chuaCo')} />
+            <TrangTrong thongDiep={t('donHang.chuaCo')} />
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -524,7 +550,7 @@ export default function DoanhThu() {
         mo={moForm}
         onDong={dong}
         chanDoiKhiXuLy={luu.isPending}
-        tieuDe={dangSua ? t('doanhThu.sua') : t('doanhThu.them')}
+        tieuDe={dangSua ? t('donHang.suaDon') : t('donHang.ghiDon')}
         moTa={dangSua?.tenKhachHang}
         rong="md"
       >
@@ -535,7 +561,7 @@ export default function DoanhThu() {
             const fd = new FormData(e.currentTarget)
             hoi({
               tieuDe: t('chung.xacNhanLuu'),
-              thongDiep: t('doanhThu.hoiLuu'),
+              thongDiep: t('donHang.hoiLuu'),
               onDongY: () => luu.mutate(fd),
             })
           }}
@@ -554,30 +580,78 @@ export default function DoanhThu() {
             />
           </div>
 
+          {/* Chọn LOẠI trước — cùng bố cục với form ở màn Khách hàng để hai chỗ thao tác như nhau. */}
           <div>
-            <Label htmlFor="khoa">{t('doanhThu.khoaHoc')} *</Label>
-            <SelectTimKiem
-              id="khoa"
-              luaChon={khoas
-                // Khoá ngừng bán vẫn hiện khi SỬA đơn cũ đã dùng nó — ẩn đi thì ô trống trơn.
-                .filter((k) => k.dangBan || k.id === dangSua?.khoaHocId)
-                .map((k) => ({
-                  giaTri: k.id,
-                  nhan: `${k.ten} · ${tien(k.giaTien, k.donViTien)}`,
-                }))}
-              giaTri={khoaId}
-              onDoi={setKhoaId}
-              placeholder={t('doanhThu.chonKhoa')}
-            />
-            {khoaChon && !dangSua && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                {t('doanhThu.giaNiemYet', {
-                  gia: tien(khoaChon.giaTien, khoaChon.donViTien),
-                  so: khoaChon.soBuoi,
-                })}
-              </p>
-            )}
+            <Label>{t('donHang.loaiMatHang')} *</Label>
+            <div className="mt-1 flex gap-1 rounded-lg border border-border p-1">
+              {(['KhoaHoc', 'SanPham'] as LoaiDonHang[]).map((x) => (
+                <button
+                  key={x}
+                  type="button"
+                  // Đổi loại thì bỏ mặt hàng đang chọn: id khoá học không có nghĩa trong danh
+                  // mục sản phẩm, giữ lại sẽ gửi lên một id không thuộc loại đã khai.
+                  onClick={() => { setLoaiDon(x); setMatHangId(null) }}
+                  className={
+                    'flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors '
+                    + (loaiDon === x
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted')
+                  }
+                >
+                  {t(`loaiDonHang.${x}`)}
+                </button>
+              ))}
+            </div>
           </div>
+
+          <div>
+            <Label htmlFor="mat-hang">
+              {t(loaiDon === 'KhoaHoc' ? 'doanhThu.khoaHoc' : 'sanPham.tenSp')} *
+            </Label>
+            <SelectTimKiem
+              id="mat-hang"
+              luaChon={dsMatHang
+                // Mặt hàng ngừng bán vẫn hiện khi SỬA đơn cũ đã dùng nó — ẩn đi thì ô trống trơn.
+                .filter((x) => x.dangBan || x.id === matHangId)
+                .map((x) => ({
+                  giaTri: x.id,
+                  nhan: `${x.ten} · ${tien(x.giaTien, x.donViTien)}`,
+                }))}
+              giaTri={matHangId}
+              onDoi={setMatHangId}
+              placeholder={t(loaiDon === 'KhoaHoc' ? 'doanhThu.chonKhoa' : 'donHang.chonSanPham')}
+            />
+            {/*
+              Gợi ý giá niêm yết chỉ hiện với KHOÁ HỌC vì nó kèm số buổi — `SanPhamDto` không có
+              trường đó (tsc bắt được khi tôi dùng chung một nhánh). Thu hẹp kiểu bằng `find`
+              trên đúng danh mục, không ép kiểu.
+            */}
+            {!dangSua && loaiDon === 'KhoaHoc' && (() => {
+              const k = khoas.find((x) => x.id === matHangId)
+              return k ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('doanhThu.giaNiemYet', {
+                    gia: tien(k.giaTien, k.donViTien),
+                    so: k.soBuoi,
+                  })}
+                </p>
+              ) : null
+            })()}
+          </div>
+
+          {/* Số lượng chỉ có nghĩa với sản phẩm — khoá học không ai mua 2 suất trong một đơn. */}
+          {loaiDon === 'SanPham' && (
+            <div className="w-32">
+              <Label htmlFor="soLuong">{t('donHang.soLuong')} *</Label>
+              <Input
+                id="soLuong"
+                type="number"
+                min={1}
+                value={soLuong}
+                onChange={(e) => setSoLuong(e.target.value)}
+              />
+            </div>
+          )}
 
           <div className="grid gap-3 sm:grid-cols-3">
             <div>
@@ -676,7 +750,7 @@ export default function DoanhThu() {
             <Button type="button" variant="outline" onClick={dong}>
               {t('chung.huy')}
             </Button>
-            <Button type="submit" disabled={luu.isPending || !khachId || !khoaId}>
+            <Button type="submit" disabled={luu.isPending || !khachId || !matHangId}>
               {t('chung.luu')}
             </Button>
           </div>

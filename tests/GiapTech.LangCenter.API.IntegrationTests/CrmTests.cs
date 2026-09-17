@@ -855,4 +855,120 @@ public class CrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
             "/api/v1/khach-hang?soDienThoaiChinhXac=0988999888");
         Assert.Equal(0, chuaCo.GetProperty("tongSoDong").GetInt32());
     }
+
+    // ---------- Ghi đơn từ MÀN DOANH THU: khoá học và sản phẩm như nhau (17/09/2026) ----------
+
+    /// <summary>
+    /// `DangKyDto` phải trả **id mặt hàng**, không chỉ tên.
+    ///
+    /// Chủ sản phẩm báo hai màn ghi đơn "chưa đồng nhất". Gốc rễ ở đây: DTO chỉ có `TenMatHang`
+    /// (chuỗi), nên form sửa ở màn Doanh thu **không điền lại được** mặt hàng đã chọn — nó gửi
+    /// `KhoaHocId = null` và không có `SanPhamId`, nhận 400 `PHAI_CHON_DUNG_MOT_MAT_HANG`.
+    /// Trên dữ liệu thật W686AE9 có 10/85 đơn sản phẩm **không sửa nổi một lỗi gõ**.
+    /// </summary>
+    [Fact]
+    public async Task Dto_don_hang_tra_id_mat_hang_de_form_sua_dien_lai_duoc()
+    {
+        var c = await Client();
+        var moc = Guid.NewGuid().ToString("N")[..6];
+
+        var khach = await TaoKhach(c, $"Khách {moc}");
+        var khoa = await TaoKhoa(c, $"Khoá {moc}", 5_000_000m);
+        var sach = await TaoSanPham(c, $"Sách {moc}", 120_000m);
+
+        await GhiDon(c, khach, khoaHocId: khoa, soTien: 5_000_000m);
+        await GhiDon(c, khach, sanPhamId: sach, soLuong: 2, soTien: 240_000m);
+
+        var ds = (await c.GetFromJsonAsync<JsonElement>("/api/v1/doanh-thu?soDong=200"))
+            .GetProperty("duLieu").EnumerateArray()
+            .Where(x => x.GetProperty("tenKhachHang").GetString() == $"Khách {moc}")
+            .ToList();
+
+        var donKhoa = ds.Single(x => x.GetProperty("loai").GetString() == "KhoaHoc");
+        var donSach = ds.Single(x => x.GetProperty("loai").GetString() == "SanPham");
+
+        Assert.Equal(khoa, donKhoa.GetProperty("khoaHocId").GetGuid());
+        Assert.Equal(JsonValueKind.Null, donKhoa.GetProperty("sanPhamId").ValueKind);
+
+        Assert.Equal(sach, donSach.GetProperty("sanPhamId").GetGuid());
+        Assert.Equal(JsonValueKind.Null, donSach.GetProperty("khoaHocId").ValueKind);
+    }
+
+    /// <summary>
+    /// Sửa đơn SẢN PHẨM bằng đúng payload màn Doanh thu gửi — trước 17/09/2026 luôn 400.
+    ///
+    /// Đây là ca hồi quy của chính lỗi chủ sản phẩm báo: hai màn "chưa đồng nhất về thao tác".
+    /// </summary>
+    [Fact]
+    public async Task Sua_don_san_pham_tu_man_doanh_thu()
+    {
+        var c = await Client();
+        var moc = Guid.NewGuid().ToString("N")[..6];
+
+        var khach = await TaoKhach(c, $"Khách {moc}");
+        var sach = await TaoSanPham(c, $"Sách {moc}", 120_000m);
+        var don = await GhiDon(c, khach, sanPhamId: sach, soLuong: 2, soTien: 240_000m);
+
+        var sua = await c.PutAsJsonAsync($"/api/v1/doanh-thu/{don}", new
+        {
+            Id = don, KhachHangId = khach, KhoaHocId = (Guid?)null, SanPhamId = sach,
+            SoLuong = 3, SoTien = 360_000m, DonViTien = "VND", TyGiaVeVnd = 1m,
+            NgayDangKy = DateTimeOffset.UtcNow, PhuongThuc = "TienMat"
+        });
+        sua.EnsureSuccessStatusCode();
+
+        var d = (await c.GetFromJsonAsync<JsonElement>("/api/v1/doanh-thu?soDong=200"))
+            .GetProperty("duLieu").EnumerateArray()
+            .Single(x => x.GetProperty("id").GetGuid() == don);
+
+        // Vẫn là đơn SẢN PHẨM sau khi sửa — không âm thầm biến thành đơn khoá học.
+        Assert.Equal("SanPham", d.GetProperty("loai").GetString());
+        Assert.Equal(sach, d.GetProperty("sanPhamId").GetGuid());
+        Assert.Equal(3, d.GetProperty("soLuong").GetInt32());
+        Assert.Equal(360_000m, d.GetProperty("soTien").GetDecimal());
+    }
+
+    /// <summary>
+    /// Hai màn ghi đơn dùng **cùng một quy tắc**: đúng một loại mặt hàng.
+    ///
+    /// Kiểm cả hai chiều sai — không có mặt hàng nào, và có cả hai — để "nới cho dễ" ở một bên
+    /// không lọt qua.
+    /// </summary>
+    [Theory]
+    [InlineData(false, false)]   // không chọn gì
+    [InlineData(true, true)]     // chọn cả hai
+    public async Task Don_hang_phai_co_dung_mot_mat_hang(bool coKhoa, bool coSanPham)
+    {
+        var c = await Client();
+        var moc = Guid.NewGuid().ToString("N")[..6];
+
+        var khach = await TaoKhach(c, $"Khách {moc}");
+        var khoa = coKhoa ? await TaoKhoa(c, $"Khoá {moc}", 1_000_000m) : (Guid?)null;
+        var sach = coSanPham ? await TaoSanPham(c, $"Sách {moc}", 100_000m) : (Guid?)null;
+
+        var res = await c.PostAsJsonAsync("/api/v1/doanh-thu", new
+        {
+            KhachHangId = khach, KhoaHocId = khoa, SanPhamId = sach,
+            SoLuong = 1, SoTien = 100_000m, DonViTien = "VND", TyGiaVeVnd = 1m,
+            NgayDangKy = DateTimeOffset.UtcNow, PhuongThuc = "TienMat"
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        Assert.Contains("PHAI_CHON_DUNG_MOT_MAT_HANG", await res.Content.ReadAsStringAsync());
+    }
+
+    /// <summary>Ghi một đơn qua endpoint doanh thu — dùng chung cho các test ở trên.</summary>
+    private static async Task<Guid> GhiDon(
+        HttpClient c, Guid khachHangId, Guid? khoaHocId = null, Guid? sanPhamId = null,
+        int soLuong = 1, decimal soTien = 100_000m)
+    {
+        var res = await c.PostAsJsonAsync("/api/v1/doanh-thu", new
+        {
+            KhachHangId = khachHangId, KhoaHocId = khoaHocId, SanPhamId = sanPhamId,
+            SoLuong = soLuong, SoTien = soTien, DonViTien = "VND", TyGiaVeVnd = 1m,
+            NgayDangKy = DateTimeOffset.UtcNow, PhuongThuc = "TienMat"
+        });
+        res.EnsureSuccessStatusCode();
+        return await res.Content.ReadFromJsonAsync<Guid>();
+    }
 }

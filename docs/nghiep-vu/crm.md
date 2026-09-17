@@ -66,7 +66,7 @@ Tab Lịch sử chăm sóc có **hai nút**:
 | Nút | Ghi gì |
 |---|---|
 | **Ghi lần chăm sóc** | Một dòng `LICH_SU_CHAM_SOC` |
-| **Ghi mua hàng** | Một dòng `DANG_KY_KHOA_HOC` (đơn hàng) **VÀ** một dòng `LICH_SU_CHAM_SOC` |
+| **Ghi đơn** | Một dòng `DANG_KY_KHOA_HOC` (đơn hàng) **VÀ** một dòng `LICH_SU_CHAM_SOC` |
 
 Hai nút cạnh nhau chứ không phải hộp thoại "bạn muốn làm gì?": người bán biết trước mình đang
 ghi cuộc gọi hay ghi đơn hàng.
@@ -164,6 +164,43 @@ Client gửi ngày thuần (`2026-09-14`) → .NET hiểu `00:00+00:00`. Bản �
 (UTC+7) = `17:00 UTC` cùng ngày — cắt mất 7 giờ cuối ngày, khách tạo lúc 17:16 UTC biến mất khỏi
 kết quả "hôm nay". Nay quy mốc từ múi giờ trung tâm rồi mới so với `CreatedAt`. Cùng bài học
 với FR-15 và Thống kê CRM.
+
+### Hai màn ghi đơn phải ĐỒNG NHẤT (17/09/2026)
+
+Đơn hàng ghi được từ **hai chỗ**: tab *Lịch sử đơn hàng* ở chi tiết khách, và màn *Doanh thu*.
+Chủ sản phẩm báo hai chỗ đó *"chưa đồng nhất về cả tên và thao tác"*. Đúng, và là hai lỗi khác
+nhau:
+
+**1. Tên** — cùng một việc mà gọi hai kiểu: *"Ghi mua hàng"* vs *"Thêm đăng ký"*. Nay thống nhất
+một bộ từ vựng ở khối `donHang` của `i18n.ts`:
+
+| Trước | Nay |
+|---|---|
+| "Ghi mua hàng" / "Thêm đăng ký" | **Ghi đơn** |
+| "Lịch sử mua hàng" | **Lịch sử đơn hàng** |
+| "Sửa đăng ký" | **Sửa đơn hàng** |
+
+Chọn *"đơn hàng"* vì nó đúng cho **cả** khoá học lẫn sản phẩm — *"đăng ký"* nghe như chỉ dành cho
+khoá, *"mua hàng"* nghe như chỉ dành cho sản phẩm. Dùng chung một khối i18n chứ không chép nhãn
+sang hai nơi: chép là hai chỗ sẽ trôi khỏi nhau lần nữa.
+
+**2. Thao tác** — màn Doanh thu chỉ gửi `khoaHocId`, nên:
+
+- **không ghi được đơn sản phẩm** (dù danh sách vẫn *lọc* được theo sản phẩm);
+- **sửa đơn sản phẩm thì 400** `PHAI_CHON_DUNG_MOT_MAT_HANG` — nó gửi `khoaHocId = null` và không
+  có `sanPhamId`. Trên dữ liệu thật W686AE9 có **10/85 đơn** như vậy: kế toán không sửa nổi một
+  lỗi gõ trong đó.
+
+Gốc rễ nằm ở `DangKyDto`: nó chỉ trả `TenMatHang` (chuỗi), **không trả id**, nên form sửa không
+điền lại được mặt hàng. Nay DTO trả `KhoaHocId` + `SanPhamId` (đúng một cái khác null) và màn
+Doanh thu có đủ ô chọn loại + số lượng, giống hệt form ở chi tiết khách.
+
+> Số lượng **chỉ hiện với sản phẩm** — khoá học không ai mua 2 suất trong một đơn, và backend
+> luôn ép `SoLuong = 1` cho khoá. Đổi loại thì **bỏ mặt hàng đang chọn**: id khoá học không có
+> nghĩa trong danh mục sản phẩm.
+
+Canh bởi `CrmTests` (DTO trả id · sửa đơn sản phẩm · đúng một mặt hàng, kiểm **cả hai chiều sai**)
+và `e2e/ghi-don-dong-nhat.spec.ts` (hai màn cùng tên nút, cùng bộ ô nhập).
 
 ## FR-18 — Doanh thu (đăng ký khoá học)
 
