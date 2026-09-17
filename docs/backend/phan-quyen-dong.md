@@ -372,6 +372,29 @@ khóa theo `{tenant_id}:{nguoi_dung_id}`.
 **Bắt buộc invalidate cache khi:** sửa nhóm quyền (FR-05), gán/gỡ quyền khỏi tài khoản (FR-03), vô hiệu
 hóa tài khoản. Quyền bị thu hồi mà cache còn sống là lỗ hổng bảo mật, không phải chỉ là chuyện dữ liệu cũ.
 
+### Cache Ở FRONTEND: đổi phiên phải xoá sạch (17/09/2026)
+
+Cache phía trình duyệt là một **cái bẫy riêng**, không dính gì tới cache backend ở trên. Mọi
+`queryKey` của TanStack Query trong app đều là **hằng** — `['toi-quyen']`, `['toi-he-thong']`,
+`['nguoi-dung-ngan']`… — tức **không mang danh tính người đăng nhập**. Cộng với
+`staleTime: Infinity` ở `useQuyen`, đăng xuất rồi đăng nhập nick khác sẽ **dùng lại nguyên cache
+của nick cũ**: học viên nhìn thấy menu quản trị, phải Ctrl+Shift+R mới đúng.
+
+Chữa ở **một chỗ** — `queryClient.clear()` trong cả `dangNhap` và `dangXuat`
+(`frontend/src/lib/auth.tsx`) — chứ không thêm `username` vào từng khoá: ~20 chỗ phải nhớ, và
+chỗ thứ 21 thêm sau này sẽ quên. Hai lần gọi là **thừa có chủ ý**: `dangNhap` lo *đúng* (vào
+thẳng không qua `dangXuat` — phiên hết hạn ở tab khác), `dangXuat` lo *kín* (máy dùng chung,
+dữ liệu người trước không nằm lại trong RAM tab).
+
+> ⚠️ **Test cho lỗi này không được dùng `page.goto('/dang-nhap')`.** `goto` tải lại trang ⇒ cache
+> mất sạch ⇒ test xanh **kể cả khi gỡ hết bản sửa** — nó kiểm đúng cái đường đã lành. Phải **bấm
+> nút Đăng xuất** rồi điền form, đường người dùng thật đi. Xem
+> `frontend/e2e/doi-nick-khong-giu-quyen-cu.spec.ts`.
+
+Nhắc lại cho rõ: đây **không phải lỗ hổng bảo mật** — backend vẫn 403 mọi endpoint ngoài quyền.
+Nhưng menu bấm vào chỉ nhận lỗi là sai với người dùng, và dữ liệu nghiệp vụ đã tải sẵn thì đúng
+là của phiên trước.
+
 ## Quan hệ với multi-tenant
 
 Hai tầng độc lập, **cả hai đều phải đúng**:

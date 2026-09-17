@@ -116,6 +116,14 @@ test('Học viên chỉ xem; giáo viên vẫn thao tác được', async ({ pag
   await page.goto(`/lms/buoi-hoc/${buoi}?tab=diem-danh`)
   await expect(page.getByText(/chỉ có quyền xem/i)).toBeVisible({ timeout: 15000 })
 
+  // Ghi chú "chỉ có quyền xem" vẽ ra từ QUYỀN, còn các dòng điểm danh đến từ MỘT QUERY KHÁC —
+  // thấy ghi chú KHÔNG có nghĩa là bảng đã có dòng. Phải chờ riêng, nếu không thì đếm `select`
+  // lúc bảng còn rỗng và `toBeGreaterThan(0)` đỏ oan.
+  //
+  // Đã đỏ thật 17/09/2026 khi chạy cả bộ: bản sửa `qc.clear()` lúc đổi phiên làm mọi query đều
+  // phải tải lại từ đầu, nên khoảng chờ này rộng hơn trước và lỗi lộ ra.
+  await expect(page.locator('tbody tr').first()).toBeVisible({ timeout: 15000 })
+
   const nutDd = await nutHienThi()
   expect(nutDd, 'học viên KHÔNG được thấy nút Chốt buổi').not.toContain('Chốt buổi')
   expect(nutDd, 'học viên KHÔNG được thấy nút Lưu điểm danh').not.toContain('Lưu điểm danh')

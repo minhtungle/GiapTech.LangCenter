@@ -8,6 +8,40 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Fixed — đổi nick xong giao diện vẫn giữ quyền của nick cũ (17/09/2026)
+
+Đăng xuất rồi đăng nhập tài khoản khác thì sidebar/nút vẫn theo **quyền của người vừa thoát**,
+phải Ctrl+Shift+R mới đúng. Tái hiện đúng như người dùng báo: từ `admin` đổi sang học viên thì
+học viên thấy nguyên menu quản trị — cả *Phân quyền* lẫn *Nhật ký hệ thống*.
+
+**Không rò rỉ dữ liệu** — backend vẫn 403 mọi endpoint ngoài quyền, bấm vào chỉ nhận lỗi. Nhưng
+hiện menu người ta không dùng được là sai, và với dữ liệu nghiệp vụ đã tải sẵn (danh sách nhân
+sự, khách hàng…) thì đó là dữ liệu phiên trước còn nằm trên màn.
+
+Gốc rễ: mọi `queryKey` trong app đều là **hằng** — `['toi-quyen']`, `['toi-he-thong']`… — tức
+không mang danh tính người đăng nhập; cộng với `staleTime: Infinity` ở `useQuyen` thì phiên mới
+dùng lại nguyên cache phiên cũ. Chữa bằng `queryClient.clear()` ở cả `dangNhap` và `dangXuat`
+(`frontend/src/lib/auth.tsx`), **không** đi thêm `username` vào từng khoá: ~20 chỗ phải nhớ, và
+chỗ thứ 21 thêm sau sẽ quên.
+
+Ba điều rút ra khi kiểm chứng:
+
+- **Test E2E đầu tiên vô dụng mà vẫn xanh**: nó dùng `page.goto('/dang-nhap')` để quay về màn
+  đăng nhập, mà `goto` là tải lại trang ⇒ cache mất sạch ⇒ xanh **kể cả khi đã gỡ hết bản sửa**
+  — đúng cái "Ctrl+Shift+R" người dùng đang phải làm tay. Phải **bấm nút Đăng xuất** mới đi vào
+  đường đang hỏng. Mutation test lộ ra điều này, không phải đọc code.
+- **Hai `qc.clear()` là thừa có chủ ý**: gỡ một trong hai thì test vẫn xanh (chỉ gỡ cả hai mới
+  đỏ). Giữ cả hai vì chúng lo hai việc khác nhau — `dangNhap` lo **đúng** (vào thẳng không qua
+  `dangXuat`: phiên hết hạn ở tab khác), `dangXuat` lo **kín** (máy dùng chung). Đã ghi lý do
+  ngay tại chỗ để không ai gỡ vì tưởng dead code.
+- Bản sửa làm lộ một **race có sẵn** ở `hoc-vien-chi-xem-buoi-hoc.spec.ts`: nó chờ ghi chú "chỉ
+  có quyền xem" (vẽ từ *quyền*) rồi đếm ngay ô `select` của bảng điểm danh (đến từ *query khác*).
+  Cache trống làm khoảng chờ rộng ra và test đỏ. Đã thêm bước chờ dòng đầu của bảng.
+
+Test mới: `frontend/e2e/doi-nick-khong-giu-quyen-cu.spec.ts` — đi một vòng quản trị → học viên →
+quản trị, menu phải **co lại rồi nở ra**, và F5 không được làm đổi gì nữa.
+
+
 ### Chore — dọn 661 tenant rác E2E khỏi DB dev (17/09/2026)
 
 DB dev phình từ việc chạy E2E: mỗi test tự tạo một trung tâm qua `/dang-ky-trung-tam` và không
