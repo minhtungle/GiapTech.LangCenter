@@ -8,6 +8,29 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Chore — dọn 661 tenant rác E2E khỏi DB dev (17/09/2026)
+
+DB dev phình từ việc chạy E2E: mỗi test tự tạo một trung tâm qua `/dang-ky-trung-tam` và không
+dọn sau. Đã dọn: **662 → 1 tenant**, **51 MB → 12 MB**, kèm **80 thư mục ảnh MinIO mồ côi**
+(2,6 MB → 4 KB). `W686AE9` giữ nguyên 100% — 75 người, 11 tài khoản, 8 lớp, 85 đơn, 32 khách,
+4 tiêu chí.
+
+Thêm `scripts/don-tenant-e2e.sql`. Hai điều đáng ghi lại:
+
+- **Xoá thẳng ở `TENANT` KHÔNG chạy được**: nhiều khoá ngoại giữa các bảng nghiệp vụ là
+  `RESTRICT` (cố ý, chặn xoá nhầm), nên nó đứng ở `LOP_HOC → NGUOI_DUNG`. Dry-run trên DB bản sao
+  lộ ra điều này và rollback sạch.
+- Thay danh sách thứ tự viết tay bằng **vòng lặp theo đồ thị khoá ngoại**: mỗi vòng thử xoá mọi
+  bảng có `tenant_id`, bảng nào còn bị tham chiếu thì vòng sau thử lại. Danh sách tay sẽ lạc hậu
+  im lặng mỗi lần thêm bảng.
+
+Script có ba chốt an toàn: danh sách tenant giữ lại **khai tường minh** (không dựa vào "cái nào
+không phải E2E"), dừng nếu mã trong danh sách đó không tồn tại (gõ sai ⇒ xoá sạch), và kiểm
+`W686AE9` còn ≥70 người dùng sau khi xoá.
+
+Đây là **nợ N11 tái phát** (12/09 đã dọn 212 tenant). Dọn tay không phải cách chữa —
+`globalTeardown` cho E2E mới là.
+
 ### Fixed — ghi đơn ở Doanh thu và Lịch sử đơn hàng chưa đồng nhất (17/09/2026)
 
 Chủ sản phẩm báo: *"phần ghi mua hàng tại lịch sử mua hàng và doanh thu đang chưa đồng nhất về cả
