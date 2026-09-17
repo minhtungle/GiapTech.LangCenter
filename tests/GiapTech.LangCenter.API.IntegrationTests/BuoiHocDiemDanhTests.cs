@@ -484,6 +484,103 @@ public class BuoiHocDiemDanhTests(ApiFactory factory) : IClassFixture<ApiFactory
         });
     }
 
+    /// <summary>
+    /// Đặt trạng thái buổi (18/09/2026) — *"Quản lý lớp có thể chọn trạng thái cho buổi học"*.
+    ///
+    /// Kiểm luôn `tinhTrang` suy ra: đây là thứ người dùng THẤY, và là chỗ lỗi được báo
+    /// (*"buổi đã qua vẫn hiện đã lên lịch"*).
+    ///
+    /// Ba mốc thời gian, mỗi mốc một buổi riêng — `DungLopCoLich` nhận `batDauBuoi1` nên đặt
+    /// được buổi vào quá khứ / hiện tại / tương lai mà không cần đồng hồ giả.
+    /// </summary>
+    [Fact]
+    public async Task Tinh_trang_suy_theo_gio_khi_buoi_con_da_len_lich()
+    {
+        var c = await Client();
+
+        async Task<string> TinhTrangCua(string nhan, DateTimeOffset batDau)
+        {
+            var (_, buoi, _) = await DungLopCoLich(c, nhan, batDau);
+            var b = await c.GetFromJsonAsync<JsonElement>($"/api/v1/buoi-hoc/{buoi}");
+            Assert.Equal("DaLenLich", b.GetProperty("trangThai").GetString());
+            return b.GetProperty("tinhTrang").GetString()!;
+        }
+
+        var bayGio = DateTimeOffset.UtcNow;
+
+        // Buổi ĐÃ QUA mà chưa ai chốt → "chưa chốt", KHÔNG phải "đã lên lịch".
+        // Đây chính là ca lỗi chủ sản phẩm báo (85/129 buổi thật rơi vào đây).
+        Assert.Equal("ChuaChot", await TinhTrangCua("tt-da-qua", bayGio.AddDays(-3)));
+
+        // Đang trong khung giờ.
+        Assert.Equal("DangDienRa", await TinhTrangCua("tt-dang-hoc", bayGio.AddMinutes(-30)));
+
+        // Chưa tới giờ.
+        Assert.Equal("ChuaBatDau", await TinhTrangCua("tt-chua-den", bayGio.AddDays(3)));
+    }
+
+    /// <summary>
+    /// Đặt trạng thái, và trạng thái người đặt **THẮNG** giờ.
+    ///
+    /// Buổi trong test này đang diễn ra (mặc định của `DungLopCoLich`), nên nếu giờ thắng thì
+    /// mọi trạng thái đều hiện "đang diễn ra" — test sẽ bắt được.
+    /// </summary>
+    [Fact]
+    public async Task Dat_trang_thai_buoi_thi_trang_thai_thang_gio()
+    {
+        var c = await Client();
+        var (_, buoi, _) = await DungLopCoLich(c, "dat-trang-thai");
+
+        async Task<(string TrangThai, string TinhTrang)> Doc()
+        {
+            var b = await c.GetFromJsonAsync<JsonElement>($"/api/v1/buoi-hoc/{buoi}");
+            return (b.GetProperty("trangThai").GetString()!,
+                    b.GetProperty("tinhTrang").GetString()!);
+        }
+
+        // Buổi đang trong khung giờ của nó.
+        Assert.Equal(("DaLenLich", "DangDienRa"), await Doc());
+
+        // Chuyển lịch — trạng thái mới, khác `DaHuy` (huỷ là bỏ hẳn, chuyển lịch là dời giờ).
+        (await c.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/trang-thai",
+            new { TrangThai = "ChuyenLich" })).EnsureSuccessStatusCode();
+        Assert.Equal(("ChuyenLich", "ChuyenLich"), await Doc());
+
+        // Đánh dấu đã xong dù đang trong khung giờ — người đặt thắng.
+        (await c.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/trang-thai",
+            new { TrangThai = "DaHoanThanh" })).EnsureSuccessStatusCode();
+        Assert.Equal(("DaHoanThanh", "DaXong"), await Doc());
+    }
+
+    /// <summary>
+    /// Buổi đã chốt thì phải MỞ LẠI (`DaLenLich`) trước khi đổi sang trạng thái khác.
+    ///
+    /// Chốt là lúc điểm danh thành bằng chứng chuyên cần. Cho đổi thẳng `DaHoanThanh` →
+    /// `ChuyenLich` thì buổi hết khoá, giờ sửa được, mà bản ghi điểm danh vẫn nói về thời điểm
+    /// cũ — đúng cái `BuoiHoc.DaKhoa` sinh ra để chặn.
+    /// </summary>
+    [Fact]
+    public async Task Buoi_da_chot_phai_mo_lai_truoc_khi_doi_trang_thai_khac()
+    {
+        var c = await Client();
+        var (_, buoi, _) = await DungLopCoLich(c, "mo-lai-buoi");
+
+        (await c.PostAsync($"/api/v1/buoi-hoc/{buoi}/chot", null)).EnsureSuccessStatusCode();
+
+        // Đổi thẳng sang ChuyenLich: PHẢI bị chặn.
+        var chan = await c.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/trang-thai",
+            new { TrangThai = "ChuyenLich" });
+        Assert.Equal(HttpStatusCode.BadRequest, chan.StatusCode);
+        Assert.Contains("BUOI_HOC_DA_KHOA", await chan.Content.ReadAsStringAsync());
+
+        // Nhưng MỞ LẠI thì được — nếu không thì buổi chốt nhầm sẽ khoá vĩnh viễn.
+        (await c.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/trang-thai",
+            new { TrangThai = "DaLenLich" })).EnsureSuccessStatusCode();
+
+        var sau = await c.GetFromJsonAsync<JsonElement>($"/api/v1/buoi-hoc/{buoi}");
+        Assert.Equal("DaLenLich", sau.GetProperty("trangThai").GetString());
+    }
+
     [Fact]
     public async Task Vang_khong_co_ly_do_bi_tu_choi()
     {

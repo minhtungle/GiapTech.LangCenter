@@ -21,6 +21,35 @@ public record TieuChiDto(
 public record LayTieuChiQuery(NhomTieuChi? Nhom = null, bool ChiDangDung = false)
     : IRequest<List<TieuChiDto>>;
 
+/// <summary>
+/// Tiêu chí **cho người đi chấm** (18/09/2026) — chỉ tên và mô tả, luôn lọc `DangDung`.
+///
+/// Không dùng lại <see cref="LayTieuChiQuery"/>: query đó trả kèm `SoLanDaCham` (đếm điểm trên
+/// TOÀN trung tâm) cho màn quản lý danh mục biết có nên ngừng dùng tiêu chí hay không. Người
+/// chấm không cần con số đó, và đếm nó là một truy vấn con thừa trên mỗi lần mở phiếu.
+/// </summary>
+public record LayTieuChiDeChamQuery(NhomTieuChi? Nhom = null)
+    : IRequest<List<TieuChiDeChamDto>>;
+
+/// <summary>Tiêu chí gọn cho phiếu chấm — vừa đủ dựng một dòng điểm.</summary>
+public record TieuChiDeChamDto(Guid Id, string Ten, string? MoTa);
+
+public class LayTieuChiDeChamHandler(IAppDbContext db)
+    : IRequestHandler<LayTieuChiDeChamQuery, List<TieuChiDeChamDto>>
+{
+    public async Task<List<TieuChiDeChamDto>> Handle(
+        LayTieuChiDeChamQuery request, CancellationToken ct)
+    {
+        var q = db.TieuChiDanhGias.Where(x => x.DangDung);
+        if (request.Nhom is { } nhom) q = q.Where(x => x.Nhom == nhom);
+
+        return await q
+            .OrderBy(x => x.ThuTu).ThenBy(x => x.Ten)
+            .Select(x => new TieuChiDeChamDto(x.Id, x.Ten, x.MoTa))
+            .ToListAsync(ct);
+    }
+}
+
 public class LayTieuChiHandler(IAppDbContext db) : IRequestHandler<LayTieuChiQuery, List<TieuChiDto>>
 {
     public async Task<List<TieuChiDto>> Handle(LayTieuChiQuery request, CancellationToken ct)

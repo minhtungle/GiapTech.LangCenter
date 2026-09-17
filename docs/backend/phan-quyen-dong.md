@@ -269,6 +269,25 @@ của hệ thống lưu từ phiên trước.
 hai hướng: người quản trị nhân sự cần sửa tài khoản nhưng không cần vào LMS, còn nhật ký thì ghi
 thao tác của cả ba hệ thống. Nhóm này hiện ở sidebar và ở **mọi tab** của màn phân quyền.
 
+### Thao tác KHÔNG mở lối vào hệ thống của chính nó (18/09/2026)
+
+Khác mục dưới (chức năng *dùng chung*, không thuộc hệ thống nào), đây là: chức năng **có** hệ
+thống rõ ràng, nhưng **một thao tác** của nó không đủ để coi là "làm việc trong hệ thống đó".
+
+Ca đầu tiên — `TieuChiDanhGia.TuLam`. `TieuChiDanhGia` thuộc **HRM** (module cấu hình nằm ở đó),
+nhưng học viên giữ `TuLam` chỉ để **đọc tên tiêu chí mà chấm giáo viên trên phiếu nhận xét buổi
+học ở LMS**. Tính nó là "vào được HRM" thì `Layout` đưa học viên sang sidebar nhân sự và họ
+**mất luôn menu Lớp học** — chỉ còn thấy "Tổng quan".
+
+Khai ở `ChucNang.KhongMoLoiVao`, hỏi qua `ChucNang.MoLoiVaoHeThong(chucNang, hanhDong)`. Đặt ở
+`Domain` để API và màn phân quyền dùng cùng một chỗ. Danh sách phải **hẹp** —
+`MoLoiVaoHeThongTests` chốt đúng một ngoại lệ và kiểm cả chiều ngược (`Xem`/`Them`/`Sua` của
+chính chức năng đó **vẫn** mở lối vào HRM, để người phụ trách danh mục tiêu chí không bị khoá
+ngoài).
+
+> Lỗi này do E2E `doi-nick-khong-giu-quyen-cu` bắt được, không phải tsc hay lint: cả hai thứ đó
+> không biết gì về việc một ô quyền làm đổi sidebar.
+
 ### Quyền dùng chung KHÔNG mở lối vào hệ thống
 
 `GET /toi/he-thong` trả hệ thống mà người dùng có ít nhất một quyền — **bỏ qua** nhóm dùng

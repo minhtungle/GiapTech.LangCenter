@@ -30,7 +30,7 @@ là đường frontend, API vẫn là `/api/v1/hoc-vien`.
 Tách ra từ một ứng dụng quản lý CLB đá bóng (04/09/2026), giữ toàn bộ tầng hệ thống. Nghiệp vụ
 LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 
-**29 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 558 test backend · 28 frontend · 40 E2E xanh.
+**29 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 581 test backend · 33 frontend · 42 E2E xanh.
 
 | Đã chạy đầu-cuối | Chưa có |
 |---|---|
@@ -41,7 +41,7 @@ LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 | **HRM** đủ nghiệp vụ (FR-22 → FR-24): cơ cấu tổ chức · chức vụ · hồ sơ mở rộng (CCCD, số TK, MXH, tệp) | Đăng ký trung tâm an toàn production (nợ N3) |
 | Hồ sơ con người: Nhân sự (HRM) · **Học viên quản lý tập trung ở CRM** (13/09) | **Bài tập cho khoá online** — FR-27, bước 4/4 chưa làm |
 | Lớp học: vòng đời, phân công, ghi danh, học phí riêng từng người, **gán tối đa 3 khoá** | Import Excel học viên |
-| Buổi học: sinh lịch tự động; điểm danh hai nguồn | Dọn nhật ký cũ theo chính sách lưu giữ |
+| Buổi học: sinh lịch tự động; điểm danh hai nguồn; **trạng thái suy theo giờ + màu riêng** (18/09) | Dọn nhật ký cũ theo chính sách lưu giữ |
 | Bài tập, bài nộp nhiều lần, tài liệu, tệp đính kèm | Danh mục ngày nghỉ khi sinh lịch |
 | Học phí: sổ thu + công nợ tính động — **ẩn khỏi LMS 12/09, chỉ CRM nắm tiền** |  |
 | **Nhật ký thao tác** mọi module (FR-16) | |
@@ -259,7 +259,7 @@ Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 ```bash
 # --- Backend ---
 dotnet build          # 0 warning — TreatWarningsAsErrors đang bật
-dotnet test           # 558 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
+dotnet test           # 581 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
                       #           quản trị, lớp học, điểm danh, học liệu, học phí
 
 # Chạy API cần 2 biến bắt buộc (thiếu là 500 lúc đăng nhập / tải ảnh, không phải lúc khởi động):
@@ -284,7 +284,7 @@ python3 scripts/check-token-mau.py
 cd frontend && npm install
 npm run dev     # http://localhost:5173, proxy /api -> :5229
 npm run build   # tsc -b && vite build
-npm test        # vitest run — 28 test cho PHÉP TÍNH (biểu đồ, ma trận quyền)
+npm test        # vitest run — 33 test cho PHÉP TÍNH (biểu đồ, ma trận quyền, tình trạng buổi)
 npx oxlint src e2e
 
 # --- E2E (Playwright) ---
@@ -329,7 +329,7 @@ Mọi nick dùng chung mật khẩu **`123456`** (đồng bộ 16/09/2026, xem s
 | `ns.mai` | Nhân viên khác | Chị Mai (nhân sự) |
 | `nv1` … `nv4` | NV kinh doanh | Sale Hà Nội · Sài Gòn · Online A · Online B |
 | `co.lan`, `nv6` | Giáo viên | Cô Lan · Thầy Hoà |
-| `tg.hoa` | Trợ giảng | Thầy Hoà (trợ giảng) |
+| `tg.hoa` | Trợ giảng | Thầy Hoà (trợ giảng) — **trợ giảng lớp *IELTS 6.5 — K1*** (gán 18/09 để thử chấm riêng GV/trợ giảng) |
 | `hv1`, `hv2` | Học viên | `hv1` đang học lớp *IELTS 6.5 cấp tốc — K1* |
 
 `hv1` là học viên **duy nhất** có tài khoản **và** đang trong lớp — dùng nó để thử luồng học viên

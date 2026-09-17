@@ -8,6 +8,11 @@ import viLocale from '@fullcalendar/core/locales/vi'
 import type { EventClickArg, EventInput } from '@fullcalendar/core'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui'
+import {
+  type TinhTrangBuoi,
+  type TrangThaiBuoiHoc,
+  tinhTrangHienTai,
+} from '@/lib/tinhTrangBuoi'
 import { useMuiGio } from '@/lib/quyen'
 import './lich-buoi-hoc.css'
 
@@ -17,7 +22,7 @@ export interface BuoiChoLich {
   thuTu: number
   batDau: string
   ketThuc: string
-  trangThai: 'DaLenLich' | 'DaHoanThanh' | 'DaHuy'
+  trangThai: TrangThaiBuoiHoc
   laHocBu: boolean
   tenGiaoVien?: string
   phongHoc?: string | null
@@ -43,6 +48,50 @@ type CheDo = (typeof CHE_DO)[number]['ma']
  * **Giờ vẽ theo múi giờ TRUNG TÂM**, không phải máy người xem: lệch giờ trên lịch làm buổi
  * nhảy sang ô ngày khác, sai rõ hơn nhiều so với bảng.
  */
+/**
+ * Đổi một mốc tuyệt đối sang **giờ treo tường** của múi giờ trung tâm (18/09/2026).
+ *
+ * ## Vì sao cần hàm này, khi đã truyền `timeZone` cho FullCalendar
+ *
+ * FullCalendar bản **không có plugin múi giờ** chỉ hiểu `'local'` và `'UTC'`. Đưa cho nó một
+ * tên IANA như `Asia/Ho_Chi_Minh` thì nó **âm thầm rơi về UTC** — không cảnh báo, không lỗi.
+ * Hậu quả thấy trên màn: buổi 18:00 giờ Việt Nam hiện **"11 giờ"** (= 11:00 UTC), trong khi
+ * bảng danh sách ngay cạnh hiện đúng 18:00. Hai chỗ nói hai giờ khác nhau về cùng một buổi.
+ *
+ * Đã kiểm trên dữ liệu thật: `BUOI_HOC.bat_dau = 2026-09-16 11:00+00`, thiết lập trung tâm
+ * `Asia/Ho_Chi_Minh`, lịch hiện "11 giờ". Lỗi có từ trước, không phải do thay đổi hôm nay —
+ * chạy lại trên bản gốc cũng ra "11 giờ".
+ *
+ * ## Cách chữa: đổi dữ liệu, không đổi thư viện
+ *
+ * Thay vì thêm `@fullcalendar/luxon3` (một phụ thuộc nữa, chỉ để định dạng giờ), ta dịch mốc
+ * sang giờ treo tường của trung tâm rồi đưa cho FullCalendar dưới dạng `'local'`. Lịch nhận
+ * chuỗi **không có offset** nên hiểu đúng như giờ địa phương.
+ *
+ * Hệ quả cần biết: từ đây lịch luôn vẽ theo giờ TRUNG TÂM, kể cả khi máy người xem đặt múi
+ * giờ khác — đó chính là điều mong muốn (xem `useMuiGio`).
+ */
+function gioTreoTuong(moc: string, muiGio: string | undefined): string {
+  const d = new Date(moc)
+  if (!muiGio) return moc   // chưa tải xong thiết lập: để nguyên, lệch một khoảnh khắc đầu
+
+  // `en-CA` cho `YYYY-MM-DD`, `en-GB` cho `HH:mm:ss` 24 giờ — hai locale ổn định nhất cho
+  // việc ghép chuỗi ISO, không phụ thuộc locale máy người xem.
+  const ngay = d.toLocaleDateString('en-CA', { timeZone: muiGio })
+  const gio = d.toLocaleTimeString('en-GB', { timeZone: muiGio, hour12: false })
+  return `${ngay}T${gio}`
+}
+
+/** Tình trạng → class CSS ở `lich-buoi-hoc.css`. Một chỗ khai để bảng và lịch cùng màu. */
+const CLASS_TINH_TRANG: Record<TinhTrangBuoi, string> = {
+  ChuaBatDau: 'buoi-chua-bat-dau',
+  DangDienRa: 'buoi-dang-dien-ra',
+  ChuaChot: 'buoi-chua-chot',
+  DaXong: 'buoi-xong',
+  ChuyenLich: 'buoi-chuyen-lich',
+  DaHuy: 'buoi-huy',
+}
+
 export function LichBuoiHoc({
   buoi,
   onChonBuoi,
@@ -66,15 +115,14 @@ export function LichBuoiHoc({
         title: hienTenLop && b.tenLopHoc
           ? b.tenLopHoc
           : `${t('buoiHoc.thuTuNgan')}${b.thuTu}`,
-        start: b.batDau,
-        end: b.ketThuc,
-        // Màu theo trạng thái, khớp badge ở bảng để hai chỗ không nói khác nhau.
+        // Giờ treo tường của trung tâm — xem `gioTreoTuong`. Đưa mốc có offset thì
+        // FullCalendar (không plugin múi giờ) vẽ theo UTC và lệch 7 tiếng.
+        start: gioTreoTuong(b.batDau, muiGio),
+        end: gioTreoTuong(b.ketThuc, muiGio),
+        // Màu theo TÌNH TRẠNG suy từ giờ, khớp badge ở bảng để hai chỗ không nói khác nhau.
+        // Dùng `trangThai` thô thì buổi đã qua chưa chốt tô như buổi sắp tới.
         classNames: [
-          b.trangThai === 'DaHoanThanh'
-            ? 'buoi-xong'
-            : b.trangThai === 'DaHuy'
-              ? 'buoi-huy'
-              : 'buoi-lich',
+          CLASS_TINH_TRANG[tinhTrangHienTai(b.trangThai, b.batDau, b.ketThuc)],
           ...(b.laHocBu ? ['buoi-bu'] : []),
         ],
         extendedProps: {
@@ -83,7 +131,7 @@ export function LichBuoiHoc({
           laHocBu: b.laHocBu,
         },
       })),
-    [buoi, hienTenLop, t],
+    [buoi, hienTenLop, muiGio, t],
   )
 
   const dieuHuong = (huong: 'truoc' | 'sau' | 'homNay') => {
@@ -149,15 +197,34 @@ export function LichBuoiHoc({
         </div>
       </div>
 
+      {/*
+        Chú giải màu — bảng có chữ trong badge, còn lịch CHỈ có màu, nên không có chú giải thì
+        người dùng phải bấm vào từng buổi mới biết màu nghĩa gì.
+      */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+        {(Object.keys(CLASS_TINH_TRANG) as TinhTrangBuoi[]).map((tt) => (
+          <span key={tt} className="inline-flex items-center gap-1.5">
+            <span
+              aria-hidden
+              className={`chu-giai-mau ${CLASS_TINH_TRANG[tt]} inline-block h-2.5 w-2.5 rounded-sm`}
+            />
+            {t(`tinhTrangBuoi.${tt}`)}
+          </span>
+        ))}
+      </div>
+
       <div className="lich-buoi-hoc rounded-lg border border-border p-2">
         <FullCalendar
           ref={lich}
           plugins={[dayGridPlugin, timeGridPlugin, listPlugin]}
           initialView="dayGridMonth"
           locale={viLocale}
-          // Múi giờ TRUNG TÂM. `undefined` lúc chưa tải xong → FullCalendar tạm dùng múi giờ
-          // máy; chỉ lệch trong khoảnh khắc đầu, và hook cache theo phiên nên chỉ xảy ra một lần.
-          timeZone={muiGio}
+          /*
+            `'local'`, KHÔNG phải tên IANA: bản FullCalendar này không có plugin múi giờ nên
+            tên IANA bị âm thầm hiểu thành UTC (buổi 18:00 hiện "11 giờ"). Việc quy đổi đã làm
+            ở `gioTreoTuong` khi dựng sự kiện, nên ở đây chỉ cần lịch hiểu "giờ như đã ghi".
+          */
+          timeZone="local"
           headerToolbar={false}
           height="auto"
           // Ẩn hẳn thanh cuộn giờ ngoài khung 6h–22h: trung tâm ngoại ngữ không dạy đêm, để

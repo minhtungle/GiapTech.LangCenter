@@ -33,6 +33,23 @@ public class TieuChiDanhGiaController(ISender sender) : ControllerBase
         CancellationToken ct = default)
         => Ok(await sender.Send(new LayTieuChiQuery(nhom, chiDangDung), ct));
 
+    /// <summary>
+    /// Danh mục tiêu chí **cho người đi chấm** (18/09/2026) — luôn chỉ trả tiêu chí đang dùng.
+    ///
+    /// Endpoint riêng thay vì nới quyền của `DanhSach` ở trên: `DanhSach` là màn QUẢN LÝ danh
+    /// mục (thấy cả tiêu chí đã ngừng dùng, kèm `soLanDaCham` để biết có xoá được không), cấp
+    /// quyền đó cho học viên là mở một phần màn quản trị HRM cho họ. Ở đây chỉ có tên và mô tả
+    /// — vừa đủ để dựng phiếu chấm.
+    ///
+    /// `[RequirePermission]` nhận ĐÚNG MỘT quyền nên không thể viết "Xem HOẶC TuLam"; vì vậy
+    /// người chấm dùng `TuLam`, và quản trị vẫn có ô này trong nhóm quyền của họ.
+    /// </summary>
+    [HttpGet("de-cham")]
+    [RequirePermission(ChucNang.TieuChiDanhGia, HanhDong.TuLam)]
+    public async Task<ActionResult<List<TieuChiDeChamDto>>> DeCham(
+        [FromQuery] NhomTieuChi? nhom, CancellationToken ct = default)
+        => Ok(await sender.Send(new LayTieuChiDeChamQuery(nhom), ct));
+
     [HttpPost]
     [RequirePermission(ChucNang.TieuChiDanhGia, HanhDong.Them)]
     public async Task<ActionResult<Guid>> Tao(

@@ -22,10 +22,35 @@ public record NhanXetBuoiHocDto(
     List<DiemTieuChiDto> DiemTieuChis);
 
 /// <summary>Một điểm tiêu chí trong phiếu (FR-29, 16/09/2026).</summary>
-public record DiemTieuChiDto(Guid TieuChiId, string TenTieuChi, int Diem);
+public record DiemTieuChiDto(
+    Guid TieuChiId,
+    string TenTieuChi,
+    int Diem,
+    /// <summary>
+    /// Ai được chấm điểm này (18/09/2026). `null` = điểm chấm trước khi tách người, hiểu là
+    /// "chấm chung cho buổi" — xem `DiemTieuChi.NguoiDuocChamId`.
+    /// </summary>
+    Guid? NguoiDuocChamId,
+    string? TenNguoiDuocCham);
 
-/// <summary>Một điểm khi GHI — chỉ cần id tiêu chí và điểm.</summary>
-public record LuuDiemTieuChi(Guid TieuChiId, int Diem);
+/// <summary>Một điểm khi GHI — id tiêu chí, điểm, và người được chấm.</summary>
+public record LuuDiemTieuChi(Guid TieuChiId, int Diem, Guid? NguoiDuocChamId = null);
+
+/// <summary>
+/// Một người đứng lớp của buổi, để dựng phiếu chấm (18/09/2026).
+///
+/// Trả từ backend chứ không để frontend tự ghép từ `TenGiaoVien` + `TenTroGiangs`: hai trường
+/// đó chỉ có TÊN, mà chấm điểm cần `id`. Ghép ở frontend cũng sẽ sai khi buổi dùng giáo viên
+/// riêng (`GiaoVienRieng`).
+/// </summary>
+public record NguoiDungLopDto(Guid Id, string HoTen, VaiTroDungLop VaiTro);
+
+/// <summary>Vai trò của người đứng lớp trong buổi — quyết định nhãn trên phiếu chấm.</summary>
+public enum VaiTroDungLop
+{
+    GiaoVien = 0,
+    TroGiang = 1
+}
 
 // ---------- Queries ----------
 
@@ -58,7 +83,10 @@ public class LayNhanXetBuoiHocHandler(
                 n.CreatedAt, n.HocVienId == toi,
                 n.DiemTieuChis
                     .OrderBy(d => d.TieuChi.ThuTu).ThenBy(d => d.TieuChi.Ten)
-                    .Select(d => new DiemTieuChiDto(d.TieuChiId, d.TieuChi.Ten, d.Diem))
+                    .Select(d => new DiemTieuChiDto(
+                        d.TieuChiId, d.TieuChi.Ten, d.Diem,
+                        d.NguoiDuocChamId,
+                        d.NguoiDuocCham != null ? d.NguoiDuocCham.HoTen : null))
                     .ToList()))
             .ToListAsync(ct);
     }
@@ -82,6 +110,27 @@ public class LayNhanXetBuoiHocHandler(
                    tid, tkId, ChucNang.NhanXetBuoiHoc, HanhDong.Xem, ct)
                || await quyenService.CoQuyenAsync(
                    tid, tkId, ChucNang.LopHocToanTrungTam, HanhDong.Xem, ct);
+    }
+}
+
+/// <summary>
+/// Những người đứng lớp của buổi, để học viên biết mình đang chấm ai (18/09/2026).
+///
+/// Gác bằng `NhanXetBuoiHoc.TuLam` — quyền học viên đã có: đây là dữ liệu để dựng phiếu chấm
+/// của chính họ, không phải danh sách nhân sự.
+/// </summary>
+public record LayNguoiDungLopQuery(Guid BuoiHocId) : IRequest<List<NguoiDungLopDto>>;
+
+public class LayNguoiDungLopHandler(IAppDbContext db, IPhamViLopHoc phamVi)
+    : IRequestHandler<LayNguoiDungLopQuery, List<NguoiDungLopDto>>
+{
+    public async Task<List<NguoiDungLopDto>> Handle(
+        LayNguoiDungLopQuery request, CancellationToken ct)
+    {
+        var buoi = await BuoiHoc.LayBuoiHocCuaLopHandler
+            .TimBuoiTrongPhamVi(db, phamVi, request.BuoiHocId, HanhDong.Xem, ct);
+
+        return await GuiNhanXetBuoiHocHandler.LayNguoiDungLop(db, buoi, ct);
     }
 }
 
@@ -144,6 +193,23 @@ public class GuiNhanXetBuoiHocHandler(
 
         if (!trongLop) throw new AppException("KHONG_THUOC_LOP_NAY");
 
+        /*
+          Người được chấm phải THỰC SỰ đứng lớp buổi này (18/09/2026).
+
+          Không kiểm thì học viên gửi `nguoiDuocChamId` của bất kỳ ai — kể cả giáo viên lớp
+          khác — và điểm đó chảy vào xếp hạng FR-29 của người vô can. Đây là tham số do client
+          gửi nên phải kiểm ở server; frontend chỉ hiện đúng người là *tiện lợi*, không phải
+          lớp bảo vệ.
+        */
+        if (request.DiemTieuChis is { } ds)
+        {
+            var duocPhepCham = await LayNguoiDungLop(db, buoi, ct);
+            var hopLe = duocPhepCham.Select(n => n.Id).ToHashSet();
+
+            if (ds.Any(d => d.NguoiDuocChamId is { } ai && !hopLe.Contains(ai)))
+                throw new AppException("NGUOI_DUOC_CHAM_KHONG_DUNG_LOP");
+        }
+
         var noiDung = request.NoiDung.Trim();
 
         // Gửi lần thứ hai là SỬA nhận xét cũ, không tạo thêm dòng: nhiều nhận xét cho cùng
@@ -177,6 +243,33 @@ public class GuiNhanXetBuoiHocHandler(
     }
 
     /// <summary>
+    /// Những người ĐỨNG LỚP của buổi — giáo viên hiệu lực + trợ giảng của lớp (18/09/2026).
+    ///
+    /// Giáo viên lấy theo `GiaoVienHieuLuc` (buổi override thì là của buổi): chấm buổi dạy thay
+    /// mà điểm chảy vào giáo viên chính là chấm oan người không có mặt.
+    /// </summary>
+    internal static async Task<List<NguoiDungLopDto>> LayNguoiDungLop(
+        IAppDbContext db, Domain.Entities.BuoiHoc buoi, CancellationToken ct)
+    {
+        var gvId = buoi.GiaoVienId ?? buoi.LopHoc.GiaoVienChinhId;
+
+        var gv = await db.NguoiDungs
+            .Where(n => n.Id == gvId)
+            .Select(n => new NguoiDungLopDto(n.Id, n.HoTen, VaiTroDungLop.GiaoVien))
+            .ToListAsync(ct);
+
+        var tg = await db.LopHocTroGiangs
+            .Where(x => x.LopHocId == buoi.LopHocId)
+            .Select(x => new NguoiDungLopDto(
+                x.TroGiangId, x.TroGiang.HoTen, VaiTroDungLop.TroGiang))
+            .ToListAsync(ct);
+
+        // Trợ giảng kiêm dạy chính buổi này thì đã có ở trên — bỏ trùng để phiếu không hiện
+        // hai lần cùng một người với hai vai trò.
+        return [.. gv, .. tg.Where(x => x.Id != gvId)];
+    }
+
+    /// <summary>
     /// Ghi lại điểm tiêu chí cho MỘT phiếu — dùng chung cho nhận xét buổi học và phiếu đánh giá
     /// nhân viên (FR-29). `internal static` để hai handler không trôi khỏi nhau.
     ///
@@ -199,15 +292,28 @@ public class GuiNhanXetBuoiHocHandler(
         // chỉ có hai cột dữ liệu.
         db.DiemTieuChis.RemoveRange(cu);
 
-        // Bỏ trùng id tiêu chí: client gửi hai điểm cho cùng tiêu chí thì UNIQUE ở DB sẽ chặn
-        // cả lệnh, mà lỗi đó người dùng không hiểu. Lấy điểm cuối cùng.
-        foreach (var d in diems.GroupBy(x => x.TieuChiId).Select(g => g.Last()))
+        /*
+          Bỏ trùng theo **(tiêu chí, người được chấm)** — không phải chỉ theo tiêu chí.
+
+          Đổi 18/09/2026 cùng lúc với UNIQUE ở DB. Gom chỉ theo `TieuChiId` thì điểm của trợ
+          giảng bị coi là trùng với điểm của giáo viên và **bị bỏ mất một cách im lặng** —
+          không lỗi nào, người dùng chấm hai người mà chỉ lưu một.
+
+          Vẫn cần bỏ trùng: client gửi hai điểm cho cùng (tiêu chí, người) thì UNIQUE ở DB chặn
+          cả lệnh, mà lỗi đó người dùng không hiểu. Lấy điểm cuối cùng.
+        */
+        foreach (var d in diems
+                     .GroupBy(x => (x.TieuChiId, x.NguoiDuocChamId))
+                     .Select(g => g.Last()))
             db.DiemTieuChis.Add(new Domain.Entities.DiemTieuChi
             {
                 TieuChiId = d.TieuChiId,
                 Diem = d.Diem,
                 NhanXetBuoiHocId = nhanXetId,
-                PhieuDanhGiaNhanVienId = phieuId
+                PhieuDanhGiaNhanVienId = phieuId,
+                // Phiếu nhân viên KHÔNG mang người được chấm (đã có ở phiếu) — `CHECK` ở DB
+                // chặn, nên bỏ qua giá trị client gửi thay vì để lệnh đỏ.
+                NguoiDuocChamId = nhanXetId is null ? null : d.NguoiDuocChamId
             });
     }
 }

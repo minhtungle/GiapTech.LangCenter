@@ -37,6 +37,65 @@ thầm nếu trung tâm đổi múi giờ — chỉ buổi sát ranh giới ngà
 `IMuiGioTrungTam` bọc lại với fallback về UTC + log Error để không sập cả module.
 
 
+### Trạng thái buổi: thứ người ĐẶT vs thứ SUY từ giờ (18/09/2026)
+
+Chủ sản phẩm báo: *"trạng thái buổi học chưa chuẩn, buổi đã qua vẫn hiện đã lên lịch"*. Đúng vậy
+trên dữ liệu thật lúc đó: **129/129 buổi đều `DaLenLich`, trong đó 85 buổi đã qua** — chưa buổi
+nào được chốt, nên bảng và lịch nói mọi buổi đều "Đã lên lịch".
+
+Chia làm **hai lớp khái niệm**, đừng gộp:
+
+| | Ai quyết | Giá trị |
+|---|---|---|
+| `BUOI_HOC.trang_thai` (`TrangThaiBuoiHoc`) | **con người** | `DaLenLich` · `DaHoanThanh` · `ChuyenLich` · `DaHuy` |
+| `tinhTrang` (`TinhTrangBuoiHoc`) — chỉ để HIỂN THỊ | **suy ra** | `ChuaBatDau` · `DangDienRa` · `ChuaChot` · `DaXong` · `ChuyenLich` · `DaHuy` |
+
+Luật suy (một chỗ duy nhất: `Domain/Common/TinhTrangBuoiHoc.cs`):
+
+- Trạng thái người đặt **luôn thắng giờ** — buổi đã huỷ không bao giờ hiện "đang diễn ra" dù
+  đang trong khung giờ của nó, buổi chốt sớm vẫn là "đã xong".
+- Chỉ khi còn `DaLenLich` thì giờ mới quyết định: chưa tới giờ → `ChuaBatDau`, trong khoảng
+  `[BatDau, KetThuc]` → `DangDienRa`, đã quá → **`ChuaChot`** (việc tồn đọng, không phải trạng
+  thái bình thường).
+
+**Vì sao SUY chứ không thêm cột.** Lưu `ChuaBatDau`/`DangDienRa` vào DB thì phải có job chạy nền
+đổi trạng thái theo giờ; job chết là trạng thái đứng im và sai âm thầm — đúng kiểu lỗi khó tìm
+nhất. Suy từ giờ thì luôn đúng, không có gì để hỏng. Chủ sản phẩm chốt phương án này 18/09/2026.
+
+**Hai bản sao logic, có chủ ý**: backend (`TinhTrangBuoiHocExt`) trả `tinhTrang` đúng tại thời
+điểm gọi API; frontend (`lib/tinhTrangBuoi.ts`) tính lại vì màn lịch mở cả buổi sáng và buổi 9h
+phải tự chuyển trạng thái mà không chờ tải lại. `TinhTrangBuoiHocTests` (backend) và
+`tinhTrangBuoi.test.ts` (frontend) cố tình lặp lại **cùng bộ ca** để hai bên không trôi khỏi nhau.
+
+**Đặt trạng thái**: `POST /buoi-hoc/{id}/trang-thai` với `{ trangThai }`, gác bằng `BuoiHoc.Sua`
+(ai sửa được giờ/phòng thì cũng đặt được trạng thái). Endpoint **từ chối** `ChuaBatDau`/
+`DangDienRa`/`ChuaChot` — chúng suy từ giờ, đặt tay là tạo hai nguồn sự thật cho cùng câu hỏi.
+Buổi đã chốt phải **mở lại** (`DaLenLich`) trước khi đổi sang trạng thái khác; xem mục dưới.
+
+`ChuyenLich` khác `DaHuy`: huỷ là bỏ hẳn, chuyển lịch là buổi vẫn diễn ra nhưng vào thời điểm
+khác — nên `ChuyenLich` **không khoá** buổi, còn phải sửa được giờ.
+
+### Màu của từng trạng thái
+
+Yêu cầu 18/09/2026: *"thêm màu sắc cho từng trạng thái khi hiển thị trên bảng và lịch để dễ nhận
+biết đúng"*. Khai **một chỗ** (`MAU_TINH_TRANG` + `CLASS_TINH_TRANG`) cho cả badge ở bảng và sự
+kiện trên lịch — hai chỗ tô khác nhau thì cùng một buổi đọc ra hai nghĩa.
+
+| Tình trạng | Màu | Vì sao |
+|---|---|---|
+| Chưa bắt đầu | xám | chưa có gì xảy ra, không cần hút mắt |
+| Đang diễn ra | xanh dương, đậm | việc đang xảy ra NGAY BÂY GIỜ, thấy đầu tiên |
+| **Chưa chốt** | vàng cảnh báo | **việc tồn đọng** — chính ô chữa lỗi được báo |
+| Đã xong | xanh lá | |
+| Chuyển lịch | tím | không phải lỗi (đỏ), không phải chờ (vàng) |
+| Đã huỷ | đỏ nhạt, gạch ngang | |
+
+"Chưa bắt đầu" **không** dùng `--primary`: primary của dự án là xanh lá, cùng họ với `--status-ok`
+("đã xong") — trên chú giải hai ô đứng cạnh nhau gần như một màu, đúng cái mà yêu cầu muốn tránh.
+
+Lịch có **chú giải màu** phía trên: bảng có chữ trong badge, còn lịch chỉ có màu nên không có
+chú giải thì phải bấm từng buổi mới biết màu nghĩa gì.
+
 ### Buổi ĐÃ KHOÁ — không sửa, không huỷ, không xoá
 
 Chốt buổi (`TrangThai = DaHoanThanh`) là **khoá** nó. Từ lúc đó điểm danh trở thành bằng chứng
@@ -223,7 +282,8 @@ Nhận xét của học viên thì **phải** là bảng riêng, vì hai thứ k
   403 cho tới khi chạy bổ khuyết quyền.
 - Lệnh gửi nhận xét **không nhận id học viên** — lấy từ token, cùng cách với tự điểm danh.
 - **Gửi lần hai là SỬA**, không tạo bản mới (`UNIQUE(buoi_hoc_id, hoc_vien_id)`).
-- `muc_hai_long` 1–5 **nullable** — không ép cho điểm mới gửi được góp ý.
+- `muc_hai_long` 1–5 **nullable** — không ép cho điểm mới gửi được góp ý. **Từ 18/09/2026 form
+  không còn chấm trường này**; xem mục dưới.
 - DTO trả cờ **`cuaToi`** để UI biết bản nào nạp vào form sửa. Đừng suy từ *"danh sách có một
   phần tử"*: giáo viên đọc được mọi nhận xét, lớp chỉ một học viên đã gửi thì suy kiểu đó sẽ nạp
   nhận xét của **học viên** vào form của **giáo viên**, bấm Gửi là ghi đè nhầm chủ.
@@ -234,11 +294,71 @@ Nhận xét của học viên thì **phải** là bảng riêng, vì hai thứ k
 - **Xoá buổi đã có nhận xét bị chặn** (`BUOI_HOC_DA_CO_NHAN_XET`) — FK là Restrict, thiếu kiểm ở
   handler thì API trả 500 thay vì nói rõ "hãy huỷ buổi thay vì xoá". Đã gặp thật 07/09/2026.
 
+### Chấm tiêu chí RIÊNG từng người đứng lớp (18/09/2026)
+
+Chủ sản phẩm: *"phần đánh sao cho mức hài lòng cần thay bằng tiêu chí đánh giá cho giáo viên và
+trợ giảng như đã quy định tại HRM, bố trí lại giao diện phần nhận xét cho thuận tiện hiển thị và
+thao tác"*.
+
+Bản 16/09 đã có điểm tiêu chí (FR-29) nhưng **chấm chung cho cả buổi**, nên xếp hạng trợ giảng ở
+thống kê nhân sự thực chất là điểm của giáo viên: trợ giảng giỏi trong lớp có giáo viên bị chấm
+thấp sẽ chịu oan, và ngược lại. Nay mỗi người một cột điểm.
+
+**Schema**: thêm `DIEM_TIEU_CHI.nguoi_duoc_cham_id` (nullable, FK Restrict tới `NGUOI_DUNG`).
+UNIQUE đổi từ `(nhan_xet_buoi_hoc_id, tieu_chi_id)` sang
+`(nhan_xet_buoi_hoc_id, tieu_chi_id, nguoi_duoc_cham_id) NULLS NOT DISTINCT`:
+
+- Giữ khoá cũ mà cho chấm riêng thì điểm người thứ hai **bị chặn ở tầng DB** — lỗi lúc chạy.
+- `NULLS NOT DISTINCT` là bắt buộc: mặc định Postgres coi mọi `NULL` là khác nhau, thiếu cờ này
+  thì một tiêu chí có nhiều điểm "chấm chung" trong cùng phiếu — đúng cái khoá cũ đang chặn.
+- `CHECK` chặn `nguoi_duoc_cham_id` ở phiếu nhân viên kinh doanh: người được chấm đã là
+  `PHIEU_DANH_GIA_NHAN_VIEN.nhan_vien_id`, thêm nữa là hai nguồn sự thật.
+
+**Ba loại điểm cùng tồn tại** (quy tắc #1 — dữ liệu cũ không được biến mất):
+
+| Điểm | Thuộc về ai khi thống kê |
+|---|---|
+| tiêu chí có `nguoi_duoc_cham_id` | đúng người đó, KHÔNG chia cho người khác |
+| tiêu chí `nguoi_duoc_cham_id = NULL` (trước 18/09) | cả buổi — mọi người dạy buổi đó |
+| `muc_hai_long` (phiếu không có tiêu chí) | cả buổi |
+
+**Người được chấm phải THỰC SỰ đứng lớp buổi đó** — kiểm ở handler
+(`NGUOI_DUOC_CHAM_KHONG_DUNG_LOP`). Đây là tham số client gửi; không kiểm thì học viên chấm được
+giáo viên lớp khác và điểm chảy vào xếp hạng của người vô can.
+
+`GET /buoi-hoc/{id}/nguoi-dung-lop` trả danh sách để dựng phiếu (giáo viên **hiệu lực** của buổi
++ trợ giảng của lớp, bỏ trùng). Frontend không tự ghép từ `tenGiaoVien`/`tenTroGiangs`: hai
+trường đó chỉ có tên, mà chấm điểm cần `id`, và ghép sai khi buổi dùng giáo viên riêng.
+
+**Quyền đọc danh mục tiêu chí.** Trước 18/09 màn nhận xét gọi endpoint quản lý danh mục (gác
+`TieuChiDanhGia.Xem` — quyền HRM), học viên nhận **403**, frontend `catch` trả rỗng rồi **âm thầm
+rơi về chấm sao** — chính là lỗi được báo. Chữa bằng hai bước:
+
+1. Thêm thao tác `TieuChiDanhGia.TuLam` = *đọc danh mục để tự đi chấm*, và endpoint riêng
+   `GET /tieu-chi-danh-gia/de-cham` (chỉ tên + mô tả, luôn lọc `DangDung`). Không nới quyền của
+   endpoint cũ: đó là màn QUẢN LÝ danh mục, cấp cho học viên là mở một phần HRM cho họ.
+2. `TieuChiDanhGia` thuộc **HRM**, nên vừa cấp ô này là học viên "vào được HRM" ⇒ `Layout` đưa
+   sang sidebar nhân sự và họ **mất luôn menu Lớp học**. Chữa bằng `ChucNang.MoLoiVaoHeThong`:
+   một danh sách hẹp các cặp (chức năng, thao tác) **không mở lối vào** hệ thống của chúng.
+   Cùng tinh thần với `DungChung`. Canh bởi `MoLoiVaoHeThongTests` (cả hai chiều: `TuLam` không
+   mở lối, nhưng `Xem`/`Them`/`Sua` vẫn mở).
+
+   > Lỗi này do E2E `doi-nick-khong-giu-quyen-cu` bắt được, không phải do tsc hay lint.
+
+Trung tâm lập **trước 18/09** cần chạy `scripts/cap-quyen-tieu-chi-cho-hoc-vien.sql` — nhóm
+"Học viên" của họ chưa có ô này (`BoKhuyetQuyenQuanTri` cố ý chỉ vá nhóm quản trị).
+
+**Giao diện**: mỗi người đứng lớp một khối, kèm nhãn vai trò; trong khối là **bảng** tiêu chí ×
+mức 1–5. Dạng bảng thay vì cột sao dọc: 2 người × N tiêu chí xếp dọc thì phiếu dài mấy màn hình.
+Ô "mức hài lòng" chung **bỏ khỏi form** nhưng vẫn **hiện để đọc** ở nhận xét cũ.
+
 ## Mã lỗi
 
 | Mã | Khi nào |
 |---|---|
 | `TAN_SUAT_TRONG` | Chưa chọn thứ nào trong tuần |
+| `NGUOI_DUOC_CHAM_KHONG_DUNG_LOP` | Chấm điểm cho người không đứng lớp buổi đó (18/09/2026) |
+| `TRANG_THAI_KHONG_HOP_LE` | Đặt trạng thái buổi bằng giá trị ngoài enum |
 | `GIO_KET_THUC_KHONG_HOP_LE` | Giờ kết thúc ≤ giờ bắt đầu |
 | `SO_BUOI_KHONG_HOP_LE` | Số buổi ngoài 1–500 |
 | `NGAY_KET_THUC_TRUOC_KHAI_GIANG` | Ngày kết thúc trước ngày khai giảng |

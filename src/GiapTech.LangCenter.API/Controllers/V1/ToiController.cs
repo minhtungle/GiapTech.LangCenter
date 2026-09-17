@@ -88,7 +88,14 @@ public class ToiController(
             return Ok(new HeThongCuaToi([]));
 
         var quyen = await quyenService.LayTatCaQuyenAsync(tid, tkId, ct);
-        var coQuyen = quyen.Select(x => x.ChucNang).ToHashSet();
+
+        // Bỏ những thao tác KHÔNG mở lối vào hệ thống của chúng — ví dụ
+        // `TieuChiDanhGia.TuLam`: học viên giữ nó để chấm giáo viên trên phiếu nhận xét ở LMS,
+        // không phải để vào module nhân sự. Xem `ChucNang.MoLoiVaoHeThong`.
+        var coQuyen = quyen
+            .Where(x => ChucNang.MoLoiVaoHeThong(x.ChucNang, x.HanhDong))
+            .Select(x => x.ChucNang)
+            .ToHashSet();
 
         return Ok(new HeThongCuaToi(
             Enum.GetValues<HeThong>()

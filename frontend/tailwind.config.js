@@ -40,6 +40,8 @@ export default {
           ok: 'hsl(var(--status-ok))',
           loi: 'hsl(var(--status-loi))',
           cho: 'hsl(var(--status-cho))',
+          dang: 'hsl(var(--status-dang))',
+          doi: 'hsl(var(--status-doi))',
         },
       },
       borderRadius: {

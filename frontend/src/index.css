@@ -57,6 +57,11 @@
     --status-ok: 152 55% 34%;
     --status-loi: 0 72% 45%;
     --status-cho: 38 92% 45%;
+    /* Buổi ĐANG diễn ra — xanh dương, tách khỏi `ok` (xanh lá, "đã xong") vì hai thứ này hay
+       nằm cạnh nhau trên cùng bảng lịch và người dùng phải phân biệt được từ xa. */
+    --status-dang: 214 80% 48%;
+    /* Chuyển lịch — tím: không phải lỗi (đỏ), không phải chờ (vàng, "chưa chốt"). */
+    --status-doi: 271 60% 52%;
 
     --radius: 0.5rem;
   }
@@ -99,6 +104,8 @@
     --status-ok: 152 50% 48%;
     --status-loi: 0 62% 55%;
     --status-cho: 38 88% 55%;
+    --status-dang: 214 80% 62%;
+    --status-doi: 271 60% 68%;
   }
 }
 

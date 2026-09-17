@@ -39,13 +39,32 @@ public class DiemTieuChiConfig : IEntityTypeConfiguration<DiemTieuChi>
             // Thang 5 ép ở tầng DB: validator có thể bị bỏ qua nếu sau này có đường ghi khác
             // (script, import), mà điểm 0 hay 99 sẽ làm mọi số trung bình vô nghĩa.
             t.HasCheckConstraint("ck_diem_tieu_chi_thang_5", "diem BETWEEN 1 AND 5");
+            // `NguoiDuocChamId` CHỈ dành cho phiếu buổi học (18/09/2026). Với phiếu nhân viên
+            // thì người được chấm đã nằm ở `PHIEU_DANH_GIA_NHAN_VIEN.nhan_vien_id` — thêm ở đây
+            // là hai nguồn sự thật, và chúng sẽ lệch nhau.
+            t.HasCheckConstraint(
+                "ck_diem_tieu_chi_nguoi_cham_chi_cua_buoi",
+                "nguoi_duoc_cham_id IS NULL OR nhan_xet_buoi_hoc_id IS NOT NULL");
         });
 
         b.HasIndex(x => x.TenantId);
 
-        // Một tiêu chí chỉ có MỘT điểm trong một phiếu — chấm lại là sửa, không thêm dòng.
-        b.HasIndex(x => new { x.NhanXetBuoiHocId, x.TieuChiId })
+        /*
+          Một tiêu chí chỉ có MỘT điểm cho MỘT NGƯỜI trong một phiếu — chấm lại là sửa, không
+          thêm dòng (quy tắc #8).
+
+          Đổi 18/09/2026: khoá cũ là `(NhanXetBuoiHocId, TieuChiId)`, tức mỗi tiêu chí chỉ được
+          một điểm cho cả buổi. Giữ khoá đó mà cho chấm riêng giáo viên/trợ giảng thì điểm người
+          thứ hai **bị chặn ở tầng DB** — lỗi lúc chạy, không phải lỗi biên dịch.
+
+          `NULLS NOT DISTINCT` để hai điểm `null` (dữ liệu trước 18/09, "chấm chung") vẫn không
+          trùng nhau được: mặc định Postgres coi mọi `NULL` là khác nhau, nên thiếu cờ này thì
+          một tiêu chí có thể có nhiều điểm "chấm chung" trong cùng phiếu — đúng cái mà khoá cũ
+          đang chặn, không được để mất.
+        */
+        b.HasIndex(x => new { x.NhanXetBuoiHocId, x.TieuChiId, x.NguoiDuocChamId })
             .IsUnique()
+            .AreNullsDistinct(false)
             .HasFilter("nhan_xet_buoi_hoc_id IS NOT NULL");
         b.HasIndex(x => new { x.PhieuDanhGiaNhanVienId, x.TieuChiId })
             .IsUnique()
@@ -61,6 +80,11 @@ public class DiemTieuChiConfig : IEntityTypeConfiguration<DiemTieuChi>
             .HasForeignKey(x => x.NhanXetBuoiHocId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.PhieuDanhGiaNhanVien).WithMany(p => p.Diems)
             .HasForeignKey(x => x.PhieuDanhGiaNhanVienId).OnDelete(DeleteBehavior.Cascade);
+
+        // Restrict: xoá hồ sơ một giáo viên không được âm thầm xoá điểm học viên đã chấm cho
+        // họ — đó là dữ liệu dùng để xếp hạng (FR-29), mất là mất lịch sử.
+        b.HasOne(x => x.NguoiDuocCham).WithMany()
+            .HasForeignKey(x => x.NguoiDuocChamId).OnDelete(DeleteBehavior.Restrict);
     }
 }
 

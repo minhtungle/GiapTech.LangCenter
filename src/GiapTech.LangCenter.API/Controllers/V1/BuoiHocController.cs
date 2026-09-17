@@ -57,6 +57,13 @@ public class BuoiHocController(ISender sender) : ControllerBase
     /// Gác bằng `DiemDanh.Them` — quyền mà nhóm Học viên có (để tự điểm danh), còn giáo viên
     /// thì bị chặn ở handler vì họ không phải học viên đang học của lớp.
     /// </summary>
+    /// <summary>Ai đứng lớp buổi này — để dựng phiếu chấm giáo viên / trợ giảng (18/09/2026).</summary>
+    [HttpGet("{id:guid}/nguoi-dung-lop")]
+    [RequirePermission(ChucNang.NhanXetBuoiHoc, HanhDong.TuLam)]
+    public async Task<ActionResult<List<Application.DaoTao.NhanXet.NguoiDungLopDto>>> NguoiDungLop(
+        Guid id, CancellationToken ct)
+        => Ok(await sender.Send(new Application.DaoTao.NhanXet.LayNguoiDungLopQuery(id), ct));
+
     [HttpPost("{id:guid}/nhan-xet")]
     [RequirePermission(ChucNang.NhanXetBuoiHoc, HanhDong.TuLam)]
     public async Task<ActionResult<Guid>> GuiNhanXet(
@@ -103,6 +110,24 @@ public class BuoiHocController(ISender sender) : ControllerBase
     public async Task<IActionResult> Huy(Guid id, CancellationToken ct)
     {
         await sender.Send(new HuyBuoiHocCommand(id), ct);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Đặt trạng thái buổi (18/09/2026) — *"Quản lý lớp có thể chọn trạng thái cho buổi học"*.
+    ///
+    /// Gác bằng `BuoiHoc.Sua` chứ không thêm thao tác mới: đây là sửa một thuộc tính của buổi,
+    /// và ai sửa được giờ/phòng thì cũng là người đặt được trạng thái. Thêm ô quyền riêng cho
+    /// mỗi trường sẽ làm màn phân quyền dài ra mà không ai chia khác được.
+    /// </summary>
+    [HttpPost("{id:guid}/trang-thai")]
+    [RequirePermission(ChucNang.BuoiHoc, HanhDong.Sua)]
+    public async Task<IActionResult> DatTrangThai(
+        Guid id, [FromBody] DatTrangThaiBuoiHocCommand command, CancellationToken ct)
+    {
+        // Lấy id từ ĐƯỜNG DẪN, không tin id trong thân request: gửi `{id}` khác nhau ở hai chỗ
+        // thì sẽ sửa buổi mà đường dẫn không nói tới, và log/nhật ký ghi sai đối tượng.
+        await sender.Send(command with { Id = id }, ct);
         return NoContent();
     }
 

@@ -59,7 +59,16 @@ public record BuoiHocDto(
     string? PhongHocHieuLuc,
     string? LinkHocHieuLuc,
     /// <summary>true = buổi này ghi phòng/link riêng, khác lớp — UI gắn nhãn như `GiaoVienRieng`.</summary>
-    bool DiaDiemRieng);
+    bool DiaDiemRieng,
+    /// <summary>
+    /// Tình trạng để HIỂN THỊ — trộn <see cref="TrangThai"/> với giờ hiện tại (18/09/2026).
+    ///
+    /// Tính ở backend **và** frontend giữ một bản sao (`lib/tinhTrangBuoi.ts`): server trả giá
+    /// trị đúng tại thời điểm gọi API, còn màn hình mở lâu thì phải tự chuyển "chưa bắt đầu" →
+    /// "đang diễn ra" mà không chờ tải lại. Hai bản sao là có chủ ý, `TinhTrangBuoiHocTests`
+    /// canh chúng khớp nhau.
+    /// </summary>
+    TinhTrangBuoiHoc TinhTrang);
 
 /// <summary>Một xung đột lịch của giáo viên — trả DỮ LIỆU, frontend tự dựng câu (quy tắc #3).</summary>
 public record XungDotLich(
@@ -87,7 +96,12 @@ public class LayBuoiHocCuaLopHandler(
         // này trả rỗng một cách im lặng, không có lỗi biên dịch.
         var toi = currentUser.UserId;
 
-        return await db.BuoiHocs
+        // `TinhTrang` tính SAU khi lấy về, không nhét vào `Select`: `TinhTinhTrang` là hàm C#
+        // nên EF không dịch được sang SQL (lỗi lúc chạy, không phải lúc biên dịch). Tính ở đây
+        // cũng đúng hơn — cùng một mốc `bayGio` cho cả danh sách, thay vì mỗi hàng một mốc.
+        var bayGio = DateTimeOffset.UtcNow;
+
+        var ds = await db.BuoiHocs
             .Where(b => b.LopHocId == request.LopHocId)
             .OrderBy(b => b.ThuTu)
             .Select(b => new BuoiHocDto(
@@ -103,8 +117,17 @@ public class LayBuoiHocCuaLopHandler(
                 b.LopHoc.TroGiangs.Select(tg => tg.TroGiang.HoTen).ToList(),
                 b.PhongHoc ?? b.LopHoc.PhongHoc,
                 b.LinkHoc ?? b.LopHoc.LinkHoc,
-                b.PhongHoc != null || b.LinkHoc != null))
+                b.PhongHoc != null || b.LinkHoc != null,
+                TinhTrangBuoiHoc.ChuaBatDau))
             .ToListAsync(ct);
+
+        return ds
+            .Select(d => d with
+            {
+                TinhTrang = TinhTrangBuoiHocExt.TinhTinhTrang(
+                    d.TrangThai, d.BatDau, d.KetThuc, bayGio)
+            })
+            .ToList();
     }
 
     /// <summary>
@@ -180,8 +203,9 @@ public class LayLichTheoKhoangHandler(
     {
         var lopDuocPhep = await phamVi.LocTheoPhamVi(db.LopHocs.AsQueryable(), HanhDong.Xem, ct);
         var toi = currentUser.UserId;
+        var bayGio = DateTimeOffset.UtcNow;   // xem ghi chú ở `LayBuoiHocCuaLopHandler`
 
-        return await db.BuoiHocs
+        var ds = await db.BuoiHocs
             .Where(b => lopDuocPhep.Select(l => l.Id).Contains(b.LopHocId))
             .Where(b => b.BatDau >= request.Tu && b.BatDau < request.Den)
             .OrderBy(b => b.BatDau)
@@ -198,8 +222,17 @@ public class LayLichTheoKhoangHandler(
                 b.LopHoc.TroGiangs.Select(tg => tg.TroGiang.HoTen).ToList(),
                 b.PhongHoc ?? b.LopHoc.PhongHoc,
                 b.LinkHoc ?? b.LopHoc.LinkHoc,
-                b.PhongHoc != null || b.LinkHoc != null))
+                b.PhongHoc != null || b.LinkHoc != null,
+                TinhTrangBuoiHoc.ChuaBatDau))
             .ToListAsync(ct);
+
+        return ds
+            .Select(d => d with
+            {
+                TinhTrang = TinhTrangBuoiHocExt.TinhTinhTrang(
+                    d.TrangThai, d.BatDau, d.KetThuc, bayGio)
+            })
+            .ToList();
     }
 }
 
@@ -609,6 +642,54 @@ public class CapNhatBuoiHocHandler(IAppDbContext db, IPhamViLopHoc phamVi)
         if (request.GhiChu is { } gc)
             buoi.GhiChu = string.IsNullOrWhiteSpace(gc) ? null : gc.Trim();
 
+        await db.SaveChangesAsync(ct);
+    }
+}
+
+/// <summary>
+/// Đặt trạng thái buổi học (18/09/2026) — *"Quản lý lớp có thể chọn trạng thái cho buổi học"*.
+///
+/// Một endpoint cho MỌI trạng thái người đặt, thay vì thêm `/chuyen-lich` rồi `/mo-lai`… mỗi
+/// lần có trạng thái mới. `/huy` và `/chot` giữ nguyên vì đã có người dùng và mỗi cái còn mang
+/// nghiệp vụ riêng (chốt còn khoá điểm danh).
+///
+/// **Không nhận `ChuaBatDau`/`DangDienRa`**: hai tình trạng đó suy từ giờ, không ai đặt tay —
+/// xem <see cref="TinhTrangBuoiHoc"/>. Gửi lên sẽ bị validator chặn.
+/// </summary>
+public record DatTrangThaiBuoiHocCommand(Guid Id, TrangThaiBuoiHoc TrangThai) : IRequest;
+
+public class DatTrangThaiBuoiHocValidator : AbstractValidator<DatTrangThaiBuoiHocCommand>
+{
+    public DatTrangThaiBuoiHocValidator()
+    {
+        // Chặn giá trị ngoài enum (ví dụ `99` gửi thẳng qua API) — `IsInEnum` bắt cả trường hợp
+        // đó, còn `switch` trong handler thì sẽ rơi vào nhánh mặc định một cách im lặng.
+        RuleFor(x => x.TrangThai).IsInEnum().WithMessage("TRANG_THAI_KHONG_HOP_LE");
+    }
+}
+
+public class DatTrangThaiBuoiHocHandler(IAppDbContext db, IPhamViLopHoc phamVi)
+    : IRequestHandler<DatTrangThaiBuoiHocCommand>
+{
+    public async Task Handle(DatTrangThaiBuoiHocCommand request, CancellationToken ct)
+    {
+        var buoi = await LayBuoiHocCuaLopHandler
+            .TimBuoiTrongPhamVi(db, phamVi, request.Id, HanhDong.Sua, ct);
+
+        /*
+          Buổi đã chốt thì phải MỞ LẠI trước khi đổi sang trạng thái khác.
+
+          Vì sao không cho đổi thẳng: chốt là lúc điểm danh trở thành bằng chứng chuyên cần
+          (xem `BuoiHoc.DaKhoa`). Cho đổi thẳng từ `DaHoanThanh` sang `ChuyenLich` thì buổi hết
+          khoá, giờ sửa được, mà bản ghi điểm danh vẫn nói về thời điểm cũ.
+
+          Đổi `DaHoanThanh` → `DaLenLich` LÀ đường mở lại, nên được phép: nó đưa buổi về đúng
+          trạng thái "chưa chốt" và người dùng thấy ngay việc còn tồn đọng.
+        */
+        if (buoi.DaKhoa && request.TrangThai is not TrangThaiBuoiHoc.DaLenLich)
+            throw new AppException("BUOI_HOC_DA_KHOA");
+
+        buoi.TrangThai = request.TrangThai;
         await db.SaveChangesAsync(ct);
     }
 }

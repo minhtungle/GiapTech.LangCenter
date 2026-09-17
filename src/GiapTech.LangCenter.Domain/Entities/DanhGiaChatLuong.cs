@@ -63,6 +63,27 @@ public class DiemTieuChi : TenantEntity
 
     public Guid? PhieuDanhGiaNhanVienId { get; set; }
     public PhieuDanhGiaNhanVien? PhieuDanhGiaNhanVien { get; set; }
+
+    /// <summary>
+    /// **Ai** được chấm điểm này (18/09/2026). Chỉ dùng cho phiếu nhận xét buổi học.
+    ///
+    /// Chủ sản phẩm chốt: học viên chấm **giáo viên và trợ giảng RIÊNG từng người**, không phải
+    /// chấm chung cho cả buổi. Nếu chấm chung thì xếp hạng trợ giảng ở FR-29 thực chất là điểm
+    /// của giáo viên — trợ giảng giỏi trong lớp có giáo viên bị chấm thấp sẽ chịu oan, và ngược
+    /// lại. Quyết định này **thay** ghi chú cũ trong <see cref="NhomTieuChi.GiangDay"/>
+    /// ("dùng chung cho giáo viên và trợ giảng").
+    ///
+    /// **Nullable để giữ 2 điểm đã chấm trước 18/09** (quy tắc #1): điểm cũ không biết chấm cho
+    /// ai nên `null` = "chấm chung cho buổi, theo thiết kế cũ". Thống kê tính điểm `null` cho
+    /// giáo viên chính của buổi — đó là cách hiểu đúng nhất với dữ liệu cũ, vì lúc ấy phiếu
+    /// không tách người và mọi lớp đã chấm đều không có trợ giảng.
+    ///
+    /// Với phiếu nhân viên kinh doanh thì luôn `null`: người được chấm đã là
+    /// `PHIEU_DANH_GIA_NHAN_VIEN.nhan_vien_id`, thêm ở đây là hai nguồn sự thật cho cùng một
+    /// câu hỏi. Có `CHECK` ở tầng DB chặn điều đó.
+    /// </summary>
+    public Guid? NguoiDuocChamId { get; set; }
+    public NguoiDung? NguoiDuocCham { get; set; }
 }
 
 /// <summary>

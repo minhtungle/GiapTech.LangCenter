@@ -118,6 +118,12 @@ public static class NhomQuyenMacDinh
         // trong buổi — đó là quyền của giáo viên. Học viên gửi và đọc lại nhận xét của chính
         // mình qua `TuLam`; handler lọc theo id từ token.
         (ChucNang.NhanXetBuoiHoc, [HanhDong.TuLam]),
+        // ĐỌC danh mục tiêu chí để chấm giáo viên/trợ giảng trên phiếu nhận xét (18/09/2026).
+        // CHỈ `TuLam`, không `Xem`: `Xem` là màn quản lý danh mục ở HRM.
+        //
+        // Thiếu ô này thì endpoint trả 403, frontend `catch` rỗng và âm thầm rơi về chấm sao —
+        // đúng lỗi người dùng báo 18/09 ("cần thay sao bằng tiêu chí đánh giá").
+        (ChucNang.TieuChiDanhGia, [HanhDong.TuLam]),
         (ChucNang.BaiTap, DocThoi),
         (ChucNang.BaiNopBaiTap, [HanhDong.Xem, HanhDong.TuLam]),  // TuLam = nộp bài của mình
         (ChucNang.TaiLieu, DocThoi),

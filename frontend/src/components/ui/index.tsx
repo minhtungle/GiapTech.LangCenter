@@ -206,12 +206,17 @@ export function Badge({
    *
    * - `ok` — xong · đạt · đủ (lớp đang học, buổi đã chốt, học phí đã đủ, thao tác thành công)
    * - `loi` — hỏng · quá hạn · bị từ chối (lớp đã huỷ, nộp muộn, học phí quá hạn)
-   * - `cho` — đang chờ · cần chú ý (lớp nháp, còn nợ, buộc đổi mật khẩu)
+   * - `cho` — đang chờ · cần chú ý (lớp nháp, còn nợ, buộc đổi mật khẩu, buổi **chưa chốt**)
+   * - `dang` — đang diễn ra NGAY BÂY GIỜ (buổi học đang trong khung giờ) — 18/09/2026
+   * - `doi` — đã dời sang lịch khác (buổi chuyển lịch) — 18/09/2026
    *
-   * Ba tên này đổi từ `win`/`lose`/`draw` (08/09/2026, nợ N8) — di sản của dự án tiền thân,
+   * Ba tên đầu đổi từ `win`/`lose`/`draw` (08/09/2026, nợ N8) — di sản của dự án tiền thân,
    * đọc lên gây hiểu sai vì không có "thắng/thua" nào trong nghiệp vụ LMS.
+   *
+   * `dang` tách khỏi `ok`: hai màu này hay nằm cạnh nhau trên cùng bảng lịch ("đang diễn ra"
+   * vs "đã xong") và người dùng phải phân biệt được từ xa, không phải đọc chữ.
    */
-  variant?: 'muted' | 'ok' | 'loi' | 'cho' | 'accent'
+  variant?: 'muted' | 'ok' | 'loi' | 'cho' | 'accent' | 'dang' | 'doi'
 }) {
   return (
     <span
@@ -223,6 +228,8 @@ export function Badge({
         variant === 'loi' && 'bg-status-loi/15 text-status-loi',
         variant === 'cho' && 'bg-status-cho/15 text-status-cho',
         variant === 'accent' && 'bg-accent/15 text-accent',
+        variant === 'dang' && 'bg-status-dang/15 text-status-dang',
+        variant === 'doi' && 'bg-status-doi/15 text-status-doi',
         className,
       )}
       {...props}

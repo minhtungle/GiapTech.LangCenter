@@ -40,10 +40,37 @@
   font-size: 0.75rem;
 }
 
-/* Ba trạng thái, cùng màu với badge ở bảng danh sách để hai chỗ không nói khác nhau. */
-.lich-buoi-hoc .buoi-lich {
-  background: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
+/*
+  SÁU tình trạng, cùng màu với badge ở bảng danh sách để hai chỗ không nói khác nhau
+  (yêu cầu 18/09/2026: *"thêm màu sắc cho từng trạng thái khi hiển thị trên bảng và lịch"*).
+
+  Tên class theo TÌNH TRẠNG suy ra, không theo `trangThai` trong DB: buổi đã qua mà chưa chốt
+  vẫn mang `DaLenLich`, tô như buổi sắp tới thì người dùng không thấy việc còn tồn đọng.
+
+  Màu lấy từ token ở `index.css` — cùng biến mà `MAU_TINH_TRANG` dùng.
+*/
+/*
+  Xám trung tính, KHÔNG dùng `--primary`: primary của dự án là xanh lá, cùng họ với
+  `--status-ok` ("đã xong") — trên chú giải hai ô đứng cạnh nhau gần như một màu, đúng cái mà
+  yêu cầu "để dễ nhận biết" muốn tránh. Khớp badge `muted` ở bảng danh sách.
+*/
+.lich-buoi-hoc .buoi-chua-bat-dau {
+  background: hsl(var(--muted-foreground) / 0.55);
+  color: #fff;
+}
+
+/* Đang diễn ra: xanh dương + viền đậm, hút mắt nhất vì là việc NGAY BÂY GIỜ. */
+.lich-buoi-hoc .buoi-dang-dien-ra {
+  background: hsl(var(--status-dang));
+  color: #fff;
+  box-shadow: 0 0 0 2px hsl(var(--status-dang) / 0.35);
+  font-weight: 600;
+}
+
+/* Chưa chốt: vàng cảnh báo — giờ đã qua mà chưa ai điểm danh/chốt. */
+.lich-buoi-hoc .buoi-chua-chot {
+  background: hsl(var(--status-cho));
+  color: #111;
 }
 
 .lich-buoi-hoc .buoi-xong {
@@ -51,11 +78,29 @@
   color: #fff;
 }
 
+.lich-buoi-hoc .buoi-chuyen-lich {
+  background: hsl(var(--status-doi));
+  color: #fff;
+}
+
+/* Đã huỷ: đỏ NHẠT + gạch ngang. Nền xám như trước thì lẫn với "chưa bắt đầu". */
 .lich-buoi-hoc .buoi-huy {
-  background: hsl(var(--muted));
-  color: hsl(var(--muted-foreground));
+  background: hsl(var(--status-loi) / 0.15);
+  color: hsl(var(--status-loi));
   text-decoration: line-through;
 }
+
+/*
+  Ô màu ở CHÚ GIẢI dùng chung class với sự kiện (`.buoi-*`) để không bao giờ lệch màu. Nhưng
+  chú giải nằm NGOÀI `.lich-buoi-hoc`, nên cần bản khai riêng — thiếu nó thì ô chú giải trong
+  suốt và người dùng thấy một dãy ô trắng.
+*/
+.chu-giai-mau.buoi-chua-bat-dau { background: hsl(var(--muted-foreground) / 0.55); }
+.chu-giai-mau.buoi-dang-dien-ra { background: hsl(var(--status-dang)); }
+.chu-giai-mau.buoi-chua-chot { background: hsl(var(--status-cho)); }
+.chu-giai-mau.buoi-xong { background: hsl(var(--status-ok)); }
+.chu-giai-mau.buoi-chuyen-lich { background: hsl(var(--status-doi)); }
+.chu-giai-mau.buoi-huy { background: hsl(var(--status-loi) / 0.5); }
 
 /* Buổi bù: viền nhấn thay vì đổi màu nền, để vẫn đọc được trạng thái. */
 .lich-buoi-hoc .buoi-bu {

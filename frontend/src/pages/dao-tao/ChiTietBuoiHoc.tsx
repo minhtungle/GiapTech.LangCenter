@@ -10,7 +10,8 @@ import { BangDiemDanh } from './BangDiemDanh'
 import { NhanXetBuoiHoc } from './NhanXetBuoiHoc'
 import { BaiTapCuaLop } from './BaiTapCuaLop'
 import TaiLieu from './TaiLieu'
-import { type BuoiHocDto, daKhoa, gioVN } from './buoiHocTypes'
+import { type BuoiHocDto, gioVN } from './buoiHocTypes'
+import { NhanTinhTrangBuoi } from '@/components/dao-tao/NhanTinhTrangBuoi'
 
 /** Xem chú thích `CAC_TAB` trong `ChiTietLopHoc.tsx` về việc KHÔNG ghép khoá i18n động. */
 const CAC_TAB = [
@@ -91,9 +92,14 @@ export default function ChiTietBuoiHoc() {
           {buoi.tenLopHoc} — {t('buoiHoc.thuTuNgan')}
           {buoi.thuTu}
         </h2>
-        <Badge variant={buoi.trangThai === 'DaHuy' ? 'loi' : daKhoa(buoi) ? 'ok' : 'cho'}>
-          {t(`trangThaiBuoiHoc.${buoi.trangThai}`)}
-        </Badge>
+        {/* Tình trạng SUY TỪ GIỜ, cùng một nhãn với bảng lịch — hiện `trangThai` thô ở đây
+            thì buổi đã qua chưa chốt mang nhãn "Đã lên lịch" trong khi bảng nói "Chưa chốt",
+            hai chỗ nói khác nhau về cùng một buổi (18/09/2026). */}
+        <NhanTinhTrangBuoi
+          trangThai={buoi.trangThai}
+          batDau={buoi.batDau}
+          ketThuc={buoi.ketThuc}
+        />
         {buoi.laHocBu && <Badge variant="accent">{t('buoiHoc.hocBu')}</Badge>}
 
         <div className="ml-auto flex items-center gap-2">

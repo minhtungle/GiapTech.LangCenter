@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import {
-  CalendarDays, CalendarPlus, CalendarRange, ClipboardCheck, Eye, List, RotateCcw,
+  CalendarDays, CalendarPlus, CalendarRange, CircleDot, ClipboardCheck, Eye, List, RotateCcw,
   Trash2, X,
 } from 'lucide-react'
 import { api, layMaLoi } from '@/lib/api'
@@ -17,6 +17,8 @@ import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { useQuyen } from '@/lib/quyen'
 import { useXacNhan } from '@/lib/xacNhan'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
+import { NhanTinhTrangBuoi } from '@/components/dao-tao/NhanTinhTrangBuoi'
+import { TRANG_THAI_DAT_DUOC, type TrangThaiBuoiHoc } from '@/lib/tinhTrangBuoi'
 import { BangDiemDanh } from './BangDiemDanh'
 import { type BuoiHocDto, gioVN } from './buoiHocTypes'
 
@@ -76,6 +78,8 @@ export function LichVaDiemDanh({
   const duocThemBuoi = coQuyen('BuoiHoc', 'Them')
   const duocHuyBuoi = coQuyen('BuoiHoc', 'Huy')
   const duocXoaBuoi = coQuyen('BuoiHoc', 'Xoa')
+  // Đặt trạng thái buổi dùng chung quyền với sửa buổi — xem `BuoiHocController.DatTrangThai`.
+  const duocSuaBuoi = coQuyen('BuoiHoc', 'Sua')
   const duocDiemDanh = coQuyen('DiemDanh', 'Sua')
 
   const [moSinhLich, setMoSinhLich] = useState(false)
@@ -84,6 +88,7 @@ export function LichVaDiemDanh({
   const [huyCho, setHuyCho] = useState<BuoiHocDto | null>(null)
   const [xoaCho, setXoaCho] = useState<BuoiHocDto | null>(null)
   const [buoiDiemDanh, setBuoiDiemDanh] = useState<BuoiHocDto | null>(null)
+  const [trangThaiCho, setTrangThaiCho] = useState<BuoiHocDto | null>(null)
 
   const { data: buoiHocs = [], isLoading } = useQuery({
     queryKey: ['lop-hoc', lopHocId, 'buoi-hoc'],
@@ -145,6 +150,19 @@ export function LichVaDiemDanh({
     onError: (e) => {
       setMaLoi(layMaLoi(e))
       setXoaCho(null)
+    },
+  })
+
+  const datTrangThai = useMutation({
+    mutationFn: ({ id, trangThai }: { id: string; trangThai: TrangThaiBuoiHoc }) =>
+      api.post(`/buoi-hoc/${id}/trang-thai`, { trangThai }),
+    onSuccess: () => {
+      lamMoi()
+      setTrangThaiCho(null)
+    },
+    onError: (e) => {
+      setMaLoi(layMaLoi(e))
+      setTrangThaiCho(null)
     },
   })
 
@@ -312,17 +330,14 @@ export function LichVaDiemDanh({
                       {b.soDaDiemDanh}/{b.soHocVien}
                     </Td>
                     <Td>
-                      <Badge
-                        variant={
-                          b.trangThai === 'DaHoanThanh'
-                            ? 'ok'
-                            : b.trangThai === 'DaHuy'
-                              ? 'loi'
-                              : 'cho'
-                        }
-                      >
-                        {t(`trangThaiBuoiHoc.${b.trangThai}`)}
-                      </Badge>
+                      {/* Tình trạng SUY TỪ GIỜ, không hiện thẳng `trangThai`: buổi đã qua mà
+                          chưa chốt vẫn mang `DaLenLich` trong DB, hiện thẳng ra thì thành
+                          "Đã lên lịch" — đúng lỗi chủ sản phẩm báo 18/09/2026. */}
+                      <NhanTinhTrangBuoi
+                        trangThai={b.trangThai}
+                        batDau={b.batDau}
+                        ketThuc={b.ketThuc}
+                      />
                     </Td>
                     {/* Chặn nổi bọt: bấm menu thao tác không được đồng thời mở view chi tiết. */}
                     <Td onClick={(e) => e.stopPropagation()}>
@@ -342,6 +357,14 @@ export function LichVaDiemDanh({
                               // Học viên chỉ có `Xem` + `TuLam` (tự khai có mặt).
                               an: !duocDiemDanh,
                               onChon: () => setBuoiDiemDanh(b),
+                            },
+                            {
+                              nhan: t('buoiHoc.doiTrangThai'),
+                              icon: CircleDot,
+                              // Cùng quyền với sửa buổi (`BuoiHoc.Sua`) — xem endpoint
+                              // `/buoi-hoc/{id}/trang-thai`. Học viên chỉ XEM.
+                              an: !duocSuaBuoi,
+                              onChon: () => setTrangThaiCho(b),
                             },
                             {
                               nhan: t('buoiHoc.huyBuoi'),
@@ -441,6 +464,59 @@ export function LichVaDiemDanh({
         onHuy={() => setXoaCho(null)}
         onDongY={() => xoaCho && xoaBuoi.mutate(xoaCho.id)}
       />
+
+      {/*
+        Chọn trạng thái — dùng `Modal` chứ không `HopXacNhan`: đây là chọn MỘT TRONG NHIỀU, còn
+        hộp xác nhận chỉ có đồng ý/huỷ.
+
+        Chỉ liệt kê `TRANG_THAI_DAT_DUOC`. "Chưa bắt đầu"/"đang diễn ra"/"chưa chốt" KHÔNG có ở
+        đây vì chúng suy từ giờ — cho đặt tay là tạo hai nguồn sự thật cho cùng câu hỏi.
+      */}
+      <Modal
+        mo={trangThaiCho !== null}
+        onDong={() => setTrangThaiCho(null)}
+        tieuDe={t('buoiHoc.doiTrangThai')}
+        moTa={
+          trangThaiCho
+            ? t('buoiHoc.moTaDoiTrangThai', {
+                thuTu: trangThaiCho.thuTu,
+                gio: gioVN(trangThaiCho.batDau),
+              })
+            : undefined
+        }
+        rong="sm"
+      >
+        <div className="grid gap-2">
+          {TRANG_THAI_DAT_DUOC.map((tt) => {
+            const dangChon = trangThaiCho?.trangThai === tt
+            return (
+              <button
+                key={tt}
+                type="button"
+                disabled={datTrangThai.isPending}
+                onClick={() =>
+                  trangThaiCho && datTrangThai.mutate({ id: trangThaiCho.id, trangThai: tt })
+                }
+                className={
+                  'flex items-center justify-between rounded-lg border px-3 py-2 text-left '
+                  + 'text-sm transition-colors disabled:opacity-50 '
+                  + (dangChon
+                    ? 'border-primary bg-primary/5 font-medium'
+                    : 'border-border hover:bg-muted/50')
+                }
+              >
+                <span>{t(`trangThaiBuoiHoc.${tt}`)}</span>
+                {/* Đánh dấu trạng thái ĐANG áp dụng để người dùng biết mình đang đổi TỪ đâu. */}
+                {dangChon && (
+                  <span className="text-xs text-muted-foreground">
+                    {t('buoiHoc.dangApDung')}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </Modal>
 
       {buoiDiemDanh && (
         <BangDiemDanh

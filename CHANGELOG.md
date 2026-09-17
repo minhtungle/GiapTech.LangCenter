@@ -8,6 +8,72 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Fixed — trạng thái buổi học: buổi đã qua vẫn hiện "Đã lên lịch" (18/09/2026)
+
+Trên dữ liệu thật: **129/129 buổi đều `DaLenLich`, trong đó 85 buổi đã qua** — chưa buổi nào
+được chốt, nên bảng và lịch nói mọi buổi đều "Đã lên lịch".
+
+Tách **hai lớp khái niệm**: `BUOI_HOC.trang_thai` chỉ lưu thứ **con người quyết định**
+(`DaLenLich` · `DaHoanThanh` · **`ChuyenLich`** mới · `DaHuy`), còn `ChuaBatDau`/`DangDienRa`/
+**`ChuaChot`** thì **suy từ giờ**. Chủ sản phẩm chốt phương án suy thay vì lưu: lưu thành cột
+thì cần job chạy nền đổi trạng thái theo giờ, mà job chết là trạng thái đứng im và sai âm thầm.
+
+- Endpoint mới `POST /buoi-hoc/{id}/trang-thai` (gác `BuoiHoc.Sua`) — *"Quản lý lớp có thể chọn
+  trạng thái cho buổi học"*. Từ chối các giá trị suy-từ-giờ; buổi đã chốt phải **mở lại** trước
+  khi đổi sang trạng thái khác (chốt là lúc điểm danh thành bằng chứng chuyên cần).
+- Luật suy nằm **một chỗ** ở `Domain`, frontend giữ một bản sao có chủ ý (màn lịch mở cả buổi
+  sáng phải tự chuyển trạng thái mà không chờ tải lại). Hai bộ test cố tình lặp cùng bộ ca.
+
+### Added — màu cho từng trạng thái buổi, trên cả bảng và lịch (18/09/2026)
+
+Sáu tình trạng, sáu màu, khai **một chỗ** cho cả badge ở bảng và sự kiện trên lịch. "Chưa chốt"
+dùng vàng cảnh báo vì đó là **việc tồn đọng**, không phải trạng thái bình thường. Lịch thêm
+**chú giải màu** — bảng có chữ trong badge, còn lịch chỉ có màu.
+
+"Chưa bắt đầu" **không** dùng `--primary`: primary của dự án là xanh lá, cùng họ với
+`--status-ok` ("đã xong"), hai ô cạnh nhau trên chú giải gần như một màu.
+
+### Fixed — lịch hiện sai giờ: buổi 18:00 thành "11 giờ" (18/09/2026)
+
+Phát hiện khi soi ảnh chụp màn hình, **không** phải do test: FullCalendar bản không có plugin múi
+giờ chỉ hiểu `'local'`/`'UTC'`, đưa tên IANA (`Asia/Ho_Chi_Minh`) thì nó **âm thầm rơi về UTC**.
+Bảng danh sách ngay cạnh hiện đúng 18:00 — hai chỗ nói hai giờ khác nhau về cùng một buổi.
+
+Chữa bằng cách quy đổi mốc sang **giờ treo tường** của trung tâm trước khi đưa cho lịch, thay vì
+thêm một phụ thuộc chỉ để định dạng giờ. Lỗi có từ trước (chạy lại trên bản gốc cũng ra "11 giờ").
+
+### Changed — chấm sao → chấm tiêu chí RIÊNG giáo viên và trợ giảng (18/09/2026)
+
+*"Phần đánh sao cho mức hài lòng cần thay bằng tiêu chí đánh giá cho giáo viên và trợ giảng như
+đã quy định tại HRM, bố trí lại giao diện phần nhận xét."*
+
+Bản 16/09 đã có điểm tiêu chí nhưng **chấm chung cho cả buổi**, nên xếp hạng trợ giảng ở FR-29
+thực chất là điểm của giáo viên. Nay mỗi người một cột điểm:
+
+- `DIEM_TIEU_CHI.nguoi_duoc_cham_id` (nullable); UNIQUE mở rộng kèm **`NULLS NOT DISTINCT`** —
+  thiếu cờ này thì một tiêu chí có nhiều điểm "chấm chung" trong cùng phiếu.
+- Handler kiểm **người được chấm phải thực sự đứng lớp buổi đó** (`NGUOI_DUOC_CHAM_KHONG_DUNG_LOP`)
+  — tham số do client gửi, không kiểm thì học viên chấm được giáo viên lớp khác.
+- Thống kê tách đúng người; **3 loại điểm cùng tồn tại**, dữ liệu trước 18/09 vẫn tính như cũ
+  (quy tắc #1). Kiểm chứng trên tenant thật: cô Lan 5.0 · trợ giảng 3.33, trước đây cả hai 3.0.
+- Giao diện: mỗi người một khối kèm nhãn vai trò, bên trong là **bảng** tiêu chí × mức 1–5 (2
+  người × N tiêu chí xếp dọc thì phiếu dài mấy màn hình). Ô "mức hài lòng" bỏ khỏi form nhưng
+  **vẫn hiện để đọc** ở nhận xét cũ.
+
+**Hai lỗi phân quyền phải chữa kèm**, không thì tính năng không chạy:
+
+1. Học viên gọi endpoint danh mục tiêu chí nhận **403** → frontend `catch` trả rỗng và **âm thầm
+   rơi về chấm sao**. Thêm thao tác `TieuChiDanhGia.TuLam` + endpoint hẹp
+   `GET /tieu-chi-danh-gia/de-cham`. Trung tâm lập trước 18/09 chạy
+   `scripts/cap-quyen-tieu-chi-cho-hoc-vien.sql`.
+2. `TieuChiDanhGia` thuộc **HRM**, nên vừa cấp ô đó là học viên "vào được HRM" ⇒ sidebar nhân sự
+   và **mất menu Lớp học**. Thêm `ChucNang.MoLoiVaoHeThong` — danh sách hẹp các cặp (chức năng,
+   thao tác) không mở lối vào hệ thống của chúng. **E2E `doi-nick-khong-giu-quyen-cu` bắt được
+   lỗi này**, tsc và lint không biết gì về việc một ô quyền làm đổi sidebar.
+
+581 test backend · 33 vitest · 42 E2E xanh.
+
+
 ### Fixed — đổi nick xong giao diện vẫn giữ quyền của nick cũ (17/09/2026)
 
 Đăng xuất rồi đăng nhập tài khoản khác thì sidebar/nút vẫn theo **quyền của người vừa thoát**,

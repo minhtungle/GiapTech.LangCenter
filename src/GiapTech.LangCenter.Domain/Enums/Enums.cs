@@ -179,8 +179,10 @@ public enum NhomTieuChi
     /// <summary>
     /// Chấm chất lượng giảng dạy — do HỌC VIÊN chấm trên từng buổi học.
     ///
-    /// Dùng chung cho giáo viên và trợ giảng: chủ sản phẩm chốt "trợ giảng tương tự giáo viên",
-    /// và học viên chấm *buổi học* chứ không chấm riêng từng người đứng lớp.
+    /// Dùng chung **bộ tiêu chí** cho giáo viên và trợ giảng (cùng câu hỏi: truyền đạt, nhiệt
+    /// tình…), nhưng **chấm RIÊNG từng người**: xem `DiemTieuChi.NguoiDuocChamId`. Sửa lại
+    /// 18/09/2026 — bản đầu (16/09) chấm chung một phiếu cho cả buổi, làm xếp hạng trợ giảng ở
+    /// FR-29 thực chất là điểm của giáo viên.
     /// </summary>
     GiangDay = 1
 }
@@ -225,12 +227,31 @@ public enum TrangThaiHocVienTrongLop
     DaNghi = 3
 }
 
-/// <summary>Trạng thái buổi học.</summary>
+/// <summary>
+/// Trạng thái buổi học — **chỉ những gì CON NGƯỜI quyết định**.
+///
+/// Cố ý KHÔNG có `ChuaBatDau`/`DangDienRa`: hai thứ đó suy được từ giờ của buổi so với hiện
+/// tại, luôn đúng, không cần job chạy nền. Lưu thành cột thì phải có job đổi trạng thái theo
+/// giờ — job chết là trạng thái đứng im và sai âm thầm, đúng kiểu lỗi khó tìm nhất. Chủ sản
+/// phẩm chốt phương án suy theo giờ ngày 18/09/2026.
+///
+/// Phần suy theo giờ nằm ở <see cref="Common.TinhTrangBuoiHoc"/>.
+/// </summary>
 public enum TrangThaiBuoiHoc
 {
+    /// <summary>Mặc định khi sinh lịch. Kết hợp với giờ để ra "chưa bắt đầu"/"đang diễn ra"/"chưa chốt".</summary>
     DaLenLich = 0,
     DaHoanThanh = 1,
-    DaHuy = 2
+    DaHuy = 2,
+
+    /// <summary>
+    /// Buổi đã chuyển sang lịch khác (18/09/2026) — khác `DaHuy`: huỷ là bỏ hẳn, chuyển lịch là
+    /// buổi vẫn sẽ diễn ra nhưng vào thời điểm khác.
+    ///
+    /// Không khoá buổi: chuyển lịch rồi còn phải sửa được giờ, nếu khoá thì chính việc chuyển
+    /// lịch thành bất khả thi.
+    /// </summary>
+    ChuyenLich = 3
 }
 
 /// <summary>

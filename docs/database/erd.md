@@ -146,7 +146,7 @@ không phân công được họ vào lớp cũ nữa.
 
 | Bảng | Cột đáng chú ý |
 |---|---|
-| `BUOI_HOC` | `bat_dau`, `ket_thuc` là `timestamptz` — **không có cột `ngay_hoc`**: cột ngày tách rời sẽ lệch khi trung tâm đổi múi giờ. `giao_vien_id` nullable = dùng giáo viên của lớp. `la_hoc_bu` |
+| `BUOI_HOC` | `bat_dau`, `ket_thuc` là `timestamptz` — **không có cột `ngay_hoc`**: cột ngày tách rời sẽ lệch khi trung tâm đổi múi giờ. `giao_vien_id` nullable = dùng giáo viên của lớp. `la_hoc_bu`. `trang_thai` chỉ lưu thứ **con người quyết định** (`DaLenLich` · `DaHoanThanh` · `ChuyenLich` từ 18/09 · `DaHuy`) — **không có** `ChuaBatDau`/`DangDienRa`: hai thứ đó suy từ giờ, lưu thành cột thì cần job chạy nền và job chết là sai âm thầm |
 | `DIEM_DANH` | **Hai cột trạng thái**: `trang_thai_tu_khai` (nullable — học viên tự khai; null ≠ Vắng) và `trang_thai_chinh_thuc` (NOT NULL — **nguồn sự thật duy nhất cho mọi báo cáo**). Gộp một cột là mất vĩnh viễn thông tin học viên đã khai gì trước khi giáo viên ghi đè. **`nhan_xet`** — nhận xét của giáo viên về học viên NÀY trong buổi NÀY (khác `ly_do_vang`: lý do nói vì sao không có mặt, nhận xét nói về việc học) |
 | `NHAN_XET_BUOI_HOC` | Học viên nhận xét về **buổi** (chiều ngược của `DIEM_DANH.nhan_xet`). `muc_hai_long` 1–5 **nullable** — không ép cho điểm mới gửi được góp ý. Bảng riêng chứ không thêm cột vào `DIEM_DANH` vì **quyền khác nhau** (học viên ghi ở đây nhưng không được đụng `DIEM_DANH`) và **vòng đời khác nhau** (học viên vắng vẫn nhận xét được) |
 
@@ -185,12 +185,17 @@ không phân công được họ vào lớp cũ nữa.
 | Bảng | Cột đáng chú ý |
 |---|---|
 | `TIEU_CHI_DANH_GIA` | `nhom` (0=KinhDoanh, 1=GiangDay), `thu_tu`, `dang_dung`. `UNIQUE(tenant_id, nhom, ten)` — trùng tên trong cùng nhóm thì người chấm không biết chấm cái nào |
-| `DIEM_TIEU_CHI` | `diem` + `CHECK (diem BETWEEN 1 AND 5)`; **đúng một** trong `nhan_xet_buoi_hoc_id` / `phieu_danh_gia_nhan_vien_id` (`CHECK` cùng khuôn `TEP_DINH_KEM`). FK tới tiêu chí là `RESTRICT` — xoá tiêu chí đang có điểm sẽ làm mọi kỳ đã chấm đổi số |
+| `DIEM_TIEU_CHI` | `diem` + `CHECK (diem BETWEEN 1 AND 5)`; **đúng một** trong `nhan_xet_buoi_hoc_id` / `phieu_danh_gia_nhan_vien_id` (`CHECK` cùng khuôn `TEP_DINH_KEM`). FK tới tiêu chí là `RESTRICT` — xoá tiêu chí đang có điểm sẽ làm mọi kỳ đã chấm đổi số. **18/09/2026**: thêm `nguoi_duoc_cham_id` (nullable, FK `RESTRICT`) để chấm RIÊNG giáo viên / trợ giảng; UNIQUE thành `(nhan_xet_buoi_hoc_id, tieu_chi_id, nguoi_duoc_cham_id)` **`NULLS NOT DISTINCT`** — thiếu cờ này thì một tiêu chí có nhiều điểm "chấm chung" trong cùng phiếu; `CHECK` chặn cột này ở phiếu nhân viên (người được chấm đã là `nhan_vien_id` của phiếu) |
 | `PHIEU_DANH_GIA_NHAN_VIEN` | `ky varchar(7)` dạng `yyyy-MM` (chuỗi để so và sắp xếp đúng thứ tự thời gian mà không cần chuẩn hoá mốc), `UNIQUE(tenant_id, nhan_vien_id, ky)` |
 
 `NHAN_XET_BUOI_HOC` **giữ nguyên** cột `muc_hai_long` (1–5, hài lòng chung) — không bị điểm tiêu
 chí thay thế. Thống kê ưu tiên điểm tiêu chí, thiếu thì rơi về `muc_hai_long`, nên dữ liệu cũ
 không mất ý nghĩa (quy tắc #1).
+
+Từ **18/09/2026** form nhận xét không còn chấm `muc_hai_long` (đổi sang chấm tiêu chí riêng từng
+người đứng lớp), nhưng cột và dữ liệu giữ nguyên và UI vẫn hiện để đọc. Ba loại điểm cùng tồn
+tại — điểm có `nguoi_duoc_cham_id` tính cho đúng người, điểm `NULL` và `muc_hai_long` tính cho
+mọi người dạy buổi đó.
 
 ## Ràng buộc nghiệp vụ quan trọng
 

@@ -235,27 +235,40 @@ public class LayThongKeNhanSuHandler(IAppDbContext db, IMuiGioTrungTam muiGio)
                 .GroupBy(x => x.TroGiangId)
                 .ToDictionary(g => g.Key, g => g.Select(x => x.LopHocId).ToHashSet());
 
-        // Điểm giảng dạy: điểm tiêu chí của buổi, rơi về `MucHaiLong` khi buổi đó chưa có tiêu chí.
+        /*
+          Điểm giảng dạy — từ 18/09/2026 điểm mang theo **người được chấm**.
+
+          Ba loại điểm, phải xử khác nhau:
+
+          | Điểm | Thuộc về ai |
+          |---|---|
+          | tiêu chí có `NguoiDuocChamId` | đúng người đó, KHÔNG chia cho người khác của buổi |
+          | tiêu chí `NguoiDuocChamId = null` (trước 18/09) | cả buổi — mọi người dạy buổi đó |
+          | `MucHaiLong` (không có tiêu chí) | cả buổi |
+
+          Giữ hai loại sau chứ không bỏ: đó là dữ liệu thật đã chấm (quy tắc #1), bỏ đi thì
+          xếp hạng của kỳ cũ đổi số một cách im lặng.
+        */
         var nhanXets = await db.NhanXetBuoiHocs
             .Where(n => n.BuoiHoc.BatDau >= tu && n.BuoiHoc.BatDau < den)
             .Select(n => new
             {
                 n.BuoiHocId,
-                DiemTieuChi = n.DiemTieuChis.Select(d => d.Diem).ToList(),
+                DiemTieuChi = n.DiemTieuChis
+                    .Select(d => new { d.Diem, d.NguoiDuocChamId }).ToList(),
                 n.MucHaiLong
             })
             .ToListAsync(ct);
 
         var diemTheoBuoi = nhanXets
-            .Select(n => new
-            {
-                n.BuoiHocId,
-                Diems = n.DiemTieuChi.Count > 0
-                    ? n.DiemTieuChi
-                    : n.MucHaiLong is { } m ? [m] : new List<int>()
-            })
-            .Where(x => x.Diems.Count > 0)
-            .SelectMany(x => x.Diems.Select(d => new { x.BuoiHocId, Diem = d }))
+            .SelectMany(n => n.DiemTieuChi.Count > 0
+                ? n.DiemTieuChi.Select(d => new
+                {
+                    n.BuoiHocId, d.Diem, ChoRieng = d.NguoiDuocChamId
+                })
+                : n.MucHaiLong is { } m
+                    ? [new { n.BuoiHocId, Diem = m, ChoRieng = (Guid?)null }]
+                    : [])
             .ToList();
 
         return nguois
@@ -267,7 +280,14 @@ public class LayThongKeNhanSuHandler(IAppDbContext db, IMuiGioTrungTam muiGio)
                                        && lop.Contains(b.LopHocId)).ToList();
 
                 var idBuoi = buoiCuaHo.Select(b => b.Id).ToHashSet();
-                var diems = diemTheoBuoi.Where(d => idBuoi.Contains(d.BuoiHocId)).ToList();
+
+                // Điểm của buổi mình dạy, VÀ (chấm riêng cho mình HOẶC chấm chung cho buổi).
+                // Thiếu nhánh `ChoRieng == n.Id` thì điểm chấm riêng bị bỏ hết; thiếu nhánh
+                // `null` thì mất toàn bộ dữ liệu chấm trước 18/09.
+                var diems = diemTheoBuoi
+                    .Where(d => idBuoi.Contains(d.BuoiHocId)
+                                && (d.ChoRieng is null || d.ChoRieng == n.Id))
+                    .ToList();
 
                 return new HangGiangDayDto(
                     n.Id, n.HoTen, n.TenPhongBan,
@@ -304,8 +324,10 @@ public class LayPhieuDanhGiaHandler(IAppDbContext db)
                 p.Id, p.NhanVienId, p.NhanVien.HoTen, p.Ky, p.NhanXet,
                 p.Diems
                     .OrderBy(d => d.TieuChi.ThuTu).ThenBy(d => d.TieuChi.Ten)
+                    // Người được chấm luôn `null` ở phiếu nhân viên: đã là `p.NhanVienId`, và
+                    // `CHECK` ở DB chặn ghi vào cột kia (xem `DiemTieuChi.NguoiDuocChamId`).
                     .Select(d => new DaoTao.NhanXet.DiemTieuChiDto(
-                        d.TieuChiId, d.TieuChi.Ten, d.Diem))
+                        d.TieuChiId, d.TieuChi.Ten, d.Diem, null, null))
                     .ToList()))
             .FirstOrDefaultAsync(ct);
 }

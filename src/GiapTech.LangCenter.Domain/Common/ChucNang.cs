@@ -356,7 +356,14 @@ public static class ChucNang
         [ThongKeDoanhThu] = [HanhDong.Xem],
         // Danh mục cấu hình: đủ CRUD, nhưng KHÔNG `Xoa` — tiêu chí đã có điểm thì
         // chỉ ngừng dùng (`DangDung=false`), xoá sẽ làm mọi kỳ đã chấm đổi số.
-        [TieuChiDanhGia] = [HanhDong.Xem, HanhDong.Them, HanhDong.Sua],
+        // `TuLam` = ĐỌC danh mục tiêu chí để tự đi chấm (18/09/2026). Cần ô riêng vì học viên
+        // phải đọc được tên tiêu chí mới chấm giáo viên/trợ giảng trên phiếu nhận xét buổi học,
+        // nhưng `Xem` là quyền của màn QUẢN LÝ danh mục (kèm `soLanDaCham`, thấy cả tiêu chí đã
+        // ngừng dùng) — cấp `Xem` cho học viên là mở cả màn quản trị HRM cho họ.
+        //
+        // Trước 18/09 học viên gọi endpoint này nhận 403, frontend `catch` trả rỗng rồi âm thầm
+        // rơi về chấm sao — người dùng báo "chưa thay bằng tiêu chí" chính là vì chỗ này.
+        [TieuChiDanhGia] = [HanhDong.Xem, HanhDong.Them, HanhDong.Sua, HanhDong.TuLam],
         // `Cham` = ghi phiếu đánh giá nhân viên kinh doanh theo kỳ.
         [ThongKeNhanSu] = [HanhDong.Xem, HanhDong.Cham],
         [KhachHang] = Crud,
@@ -484,4 +491,33 @@ public static class ChucNang
     /// <summary>Các chức năng của một hệ thống, KHÔNG gồm nhóm dùng chung.</summary>
     public static IReadOnlyList<string> ChucNangCua(HeThong heThong) =>
         TatCa.Where(cn => HeThongCua(cn) == heThong).ToList();
+
+    /// <summary>
+    /// Cặp (chức năng, thao tác) **không mở lối vào hệ thống** của chức năng đó (18/09/2026).
+    ///
+    /// Có những thao tác thuộc một hệ thống nhưng người giữ nó KHÔNG làm việc trong hệ thống
+    /// ấy — họ chỉ cần một mẩu dữ liệu của nó để làm việc của mình ở nơi khác.
+    ///
+    /// Ca đầu tiên: `TieuChiDanhGia.TuLam` = ĐỌC danh mục tiêu chí để tự đi chấm.
+    /// `TieuChiDanhGia` thuộc HRM (module cấu hình nằm ở đó), nhưng học viên giữ `TuLam` chỉ để
+    /// chấm giáo viên **trên phiếu nhận xét buổi học ở LMS**. Tính nó là "vào được HRM" thì học
+    /// viên bị đưa vào sidebar nhân sự và **mất luôn menu Lớp học** — đã xảy ra thật, E2E
+    /// `doi-nick-khong-giu-quyen-cu` bắt được: học viên chỉ còn thấy "Tổng quan".
+    ///
+    /// Cùng tinh thần với <see cref="DungChung"/>: ở đó là "chức năng không thuộc hệ thống
+    /// nào", ở đây là "thao tác không mở lối vào hệ thống của chính nó".
+    /// </summary>
+    private static readonly HashSet<(string ChucNang, HanhDong HanhDong)> KhongMoLoiVao =
+    [
+        (TieuChiDanhGia, HanhDong.TuLam)
+    ];
+
+    /// <summary>
+    /// Cặp quyền này có mở lối vào hệ thống con không — dùng cho bộ chuyển HRM/CRM/LMS.
+    ///
+    /// Đặt ở `Domain` để API và màn phân quyền hỏi cùng một chỗ; suy ở tầng API sẽ sinh ra bản
+    /// sao thứ hai rồi hai bên trôi khỏi nhau.
+    /// </summary>
+    public static bool MoLoiVaoHeThong(string chucNang, HanhDong hanhDong) =>
+        !KhongMoLoiVao.Contains((chucNang, hanhDong));
 }

@@ -502,9 +502,19 @@ const vi = {
     cuaToi: 'Nhận xét của tôi',
     noiDung: 'Nội dung',
     noiDungGoiY: 'Buổi học hôm nay thế nào? Điều gì cần cải thiện?',
-    mucHaiLong: 'Mức hài lòng',
+    mucHaiLong: 'Mức hài lòng chung',
     theoTieuChi: 'Chấm theo tiêu chí (thang 5)',
     khongChon: 'Không đánh giá',
+    // Chấm riêng từng người đứng lớp (18/09/2026).
+    chamNguoiDungLop: 'Đánh giá người đứng lớp',
+    vaiTro: { GiaoVien: 'Giáo viên', TroGiang: 'Trợ giảng' },
+    chuaChonDiem: 'Chưa chấm',
+    boChon: 'Bấm lại mức đang chọn để bỏ chấm',
+    khongCoTieuChi:
+      'Trung tâm chưa cấu hình tiêu chí đánh giá giảng dạy. Liên hệ quản trị để thêm ở '
+      + 'mục Tiêu chí đánh giá (HRM).',
+    diemDaCham: 'Điểm đã chấm',
+    chamChung: 'Chấm chung cho buổi',
     gui: 'Gửi nhận xét',
     capNhat: 'Cập nhật nhận xét',
     hoiGui: 'Gửi nhận xét về buổi học này?',
@@ -531,6 +541,9 @@ const vi = {
     thuTuNgan: 'Buổi ',
     sinhThemBuoi: 'Thêm buổi',
     xoaBuoi: 'Xoá buổi',
+    doiTrangThai: 'Đổi trạng thái',
+    moTaDoiTrangThai: 'Buổi {{thuTu}} — {{gio}}. Chọn trạng thái mới:',
+    dangApDung: 'đang áp dụng',
     laHocBu: 'Là buổi học bù',
     macDinhTheoLop: 'Để trống = theo lớp',
     tuNgay: 'Sinh từ ngày',
@@ -618,6 +631,18 @@ const vi = {
   trangThaiBuoiHoc: {
     DaLenLich: 'Đã lên lịch',
     DaHoanThanh: 'Đã hoàn thành',
+    DaHuy: 'Đã huỷ',
+    ChuyenLich: 'Chuyển lịch',
+  },
+  // Tình trạng HIỂN THỊ — suy từ trạng thái lưu + giờ (18/09/2026). Khác `trangThaiBuoiHoc`:
+  // bảng kia là giá trị trong DB, bảng này là thứ người dùng đọc trên màn.
+  tinhTrangBuoi: {
+    ChuaBatDau: 'Chưa bắt đầu',
+    DangDienRa: 'Đang diễn ra',
+    // KHÔNG gọi là "đã qua": nói rõ còn việc phải làm thì người dùng biết phải bấm vào.
+    ChuaChot: 'Chưa chốt',
+    DaXong: 'Đã xong',
+    ChuyenLich: 'Chuyển lịch',
     DaHuy: 'Đã huỷ',
   },
   thu: {
@@ -1473,6 +1498,9 @@ const vi = {
     MAT_KHAU_MOI_TRUNG_CU: 'Mật khẩu mới phải khác mật khẩu hiện tại',
     USERNAME_KY_TU_KHONG_HOP_LE: 'Tên đăng nhập chỉ gồm chữ, số và . _ -',
     ID_KHONG_KHOP: 'Dữ liệu không khớp',
+    NGUOI_DUOC_CHAM_KHONG_DUNG_LOP:
+      'Người được chấm không đứng lớp buổi này. Tải lại trang rồi thử lại.',
+    TRANG_THAI_KHONG_HOP_LE: 'Trạng thái buổi học không hợp lệ.',
     BUOI_HOC_DA_KHOA:
       'Buổi này đã chốt nên không sửa, huỷ hay xoá được. Điểm danh của buổi đã chốt là bằng '
       + 'chứng chuyên cần.',
