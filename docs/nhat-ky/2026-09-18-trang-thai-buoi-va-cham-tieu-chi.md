@@ -134,3 +134,62 @@ tính cả điểm "chấm chung" cũ của buổi 2 — tức dữ liệu trư�
 | Chỉ hiện khối giáo viên, bỏ trợ giảng | chết |
 
 581 test backend · 33 vitest · 42 E2E xanh.
+
+---
+
+## Bổ sung cuối ngày — "lưu điểm danh không lưu được"
+
+Chủ sản phẩm báo tiếp. Tái hiện ngay trên nick `co.lan` vừa cấp: lớp K1 có 6 học viên, mặc định
+ai cũng `Vắng` với ô lý do trống, đổi 2 người sang Có mặt rồi bấm Lưu → **400**.
+
+### Lỗi thật không nằm ở validator
+
+Validator bắt vắng phải có lý do là **đúng và có chủ ý**. Lỗi nằm ở chỗ màn hình **không nói
+được điều đó**: API trả lỗi theo từng dòng trong `duLieu.truong`
+(`{"DanhSach[2]":["THIEU_LY_DO_VANG"], ...}`), nhưng `layMaLoi` chỉ đọc `errorCode` ở tầng ngoài
+nên người dùng thấy đúng một câu *"Dữ liệu nhập vào chưa hợp lệ"*.
+
+Mã `THIEU_LY_DO_VANG` **đã có bản dịch sẵn** trong `i18n.ts` từ trước — chỉ là chưa bao giờ tới
+được mắt người dùng. Dự án cũng đã có `layDuLieuLoi` cho đúng việc này.
+
+Nên với người dùng nó là *"lỗi không lưu được"*, không phải *"thiếu lý do vắng"*. Hai câu đó
+dẫn tới hai hành động khác nhau.
+
+### Hai lần tự bẫy mình khi thăm dò
+
+1. Gọi API tay bằng `dongs` và `trangThaiChinhThuc` → 400. Tưởng đã thấy lỗi, thực ra là tôi gửi
+   sai tên trường. Đọc `GhiDiemDanhCommand` mới biết là `danhSach` / `trangThai`; gửi đúng thì
+   **204**. Nếu dừng ở bước đó thì đã đi sửa backend đang chạy tốt.
+2. Script thăm dò bấm Lưu rồi **không trả lời hộp xác nhận**, nên không có request nào bay đi —
+   đúng triệu chứng "không lưu được" nhưng vì lý do khác hẳn. Ảnh chụp màn hình lộ ra hộp thoại
+   còn mở, và lộ luôn 4 ô lý do trống — mới là nguyên nhân thật.
+
+Cả hai lần đều được ảnh chụp/đọc hợp đồng API gỡ ra, không phải suy luận.
+
+### Còn một lần tự bẫy nữa, ở locator
+
+Điền lý do bằng `nth(i)` rồi timeout: điền xong thì `aria-invalid` mất, locator co lại và
+`nth(3)` biến mất **giữa vòng lặp**. `.all()` cũng vậy vì vẫn theo chỉ số. Phải chốt danh sách
+`aria-label` trước rồi nhắm theo tên — đã ghi lại cách này trong test để người sau không mất
+thời gian.
+
+### 22 test đỏ vì tôi cấu hình sai, không phải regression
+
+Chạy cả bộ E2E thì **22/43 đỏ**, rải rác ở những test không liên quan. Tôi đã khởi động lại API
+với hạn mức tần suất **BẬT** (đúng cho dùng thường), mà cả bộ E2E tạo hàng chục trung tâm nên
+đụng hạn mức — CLAUDE.md đã ghi rõ phải tắt. Khởi động lại với `GIOI_HAN_TAN_SUAT=false`: **43/43
+xanh**.
+
+Bài học lặp lại của ngày hôm qua: test đỏ phải đọc *lý do* đỏ. Lần này triệu chứng còn dễ quy oan
+hơn vì nó đỏ ở 22 chỗ cùng lúc, rất giống "vừa làm hỏng gì đó to".
+
+### Mutation test
+
+| Mutant | Kết quả |
+|---|---|
+| Bỏ dòng cảnh báo (quay về lỗi gốc) | chết |
+| Bỏ khoá nút (cho bấm rồi nhận 400) | chết |
+| Khoá nút vĩnh viễn (chữa quá tay) | chết |
+
+Ca thứ ba là lý do test phải kiểm **cả hai chiều** — chỉ kiểm "bị chặn khi thiếu" thì một bản sửa
+khoá nút vĩnh viễn cũng xanh, và người dùng mất hẳn tính năng lưu.

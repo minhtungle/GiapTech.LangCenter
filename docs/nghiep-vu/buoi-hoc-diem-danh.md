@@ -252,6 +252,43 @@ không có dữ liệu quá khứ. Chi phí giữ: một cột `integer` nullabl
   lớp vắng", hai thứ khác hẳn nhau.
 - `UNIQUE(buoi_hoc_id, hoc_vien_id)` ở tầng DB (quy tắc #8).
 
+### Vắng phải có lý do — và UI phải NÓI RÕ ai thiếu (18/09/2026)
+
+Validator bắt buộc: vắng (có phép hay không) mà `LyDoVang` rỗng thì cả lệnh bị từ chối
+(`THIEU_LY_DO_VANG`). Cố ý — *"báo cáo vắng không lý do là báo cáo vô dụng"*.
+
+Nhưng **quy tắc đúng không có nghĩa là màn hình dùng được**. Người dùng báo *"lưu điểm danh đang
+lỗi không lưu được"*, tái hiện đúng vậy:
+
+1. Bảng mặc định cho mọi học viên là **Vắng**, ô lý do **trống**.
+2. Giáo viên đổi vài người sang Có mặt rồi bấm Lưu → **400**.
+3. Lỗi trả theo TỪNG DÒNG trong `duLieu.truong`
+   (`{"DanhSach[2]":["THIEU_LY_DO_VANG"], ...}`), nhưng `layMaLoi` chỉ đọc `errorCode` ở tầng
+   ngoài ⇒ màn hình hiện đúng một câu **"Dữ liệu nhập vào chưa hợp lệ"**.
+
+Người dùng biết là sai mà không biết sai ở đâu trong 6 dòng, cũng không biết có đường nào khác.
+Đó là lý do nó *"lỗi không lưu được"* chứ không phải *"thiếu lý do vắng"*.
+
+Chữa ở frontend, ba việc cùng nhau:
+
+| Việc | Vì sao cần |
+|---|---|
+| Liệt kê **tên** học viên còn thiếu (không chỉ đếm) | lớp 20 người thì con số vẫn buộc dò từng dòng |
+| Viền đỏ + `aria-invalid` ở **đúng ô** thiếu | dòng cảnh báo nói "ai", viền nói "gõ vào đâu" |
+| Khoá nút Lưu kèm `title` giải thích | cho bấm để nhận 400 là bắt đi một vòng vô nghĩa; nút mờ không lời giải thích thì trông như màn treo |
+
+Câu cảnh báo còn **chỉ đường thoát**: dùng **"Chốt buổi"** nếu không muốn nhập tay — lệnh chốt tự
+ghi `"Không điểm danh"` cho người chưa khai (xem `ChotBuoiHandler`). Sự bất đối xứng này là chủ ý:
+chốt là *"tôi kết luận cả buổi"*, còn lưu là *"tôi ghi đúng từng người"* — nên lưu không tự bịa
+lý do thay giáo viên.
+
+Ngoài ra `onError` nay lấy **mã lỗi cụ thể đầu tiên** trong `duLieu.truong` để hiện thay mã chung
+— các mã này đều đã có bản dịch, chỉ là trước đây bị bỏ đi.
+
+> Canh bởi `e2e/luu-diem-danh-thieu-ly-do.spec.ts`, **cả hai chiều**: chặn kèm chỉ dẫn khi thiếu,
+> và **lưu được** khi đã đủ. Thiếu chiều thứ hai thì bản sửa "khoá nút vĩnh viễn" cũng xanh —
+> mutation test xác nhận ca đó bị bắt.
+
 ## FR-09b — Nhận xét quanh buổi học
 
 Hai chiều, **hai cơ chế lưu khác nhau** — đừng gộp:

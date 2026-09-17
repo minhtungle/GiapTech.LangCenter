@@ -8,6 +8,36 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Fixed — "lưu điểm danh không lưu được" (18/09/2026)
+
+Bảng điểm danh mặc định cho mọi học viên là **Vắng** với ô lý do **trống**, mà validator bắt
+buộc vắng phải có lý do (`THIEU_LY_DO_VANG` — chủ ý, *"báo cáo vắng không lý do là báo cáo vô
+dụng"*). Bấm Lưu là nhận 400.
+
+**Quy tắc đúng, nhưng màn hình không dùng được**: lỗi trả theo TỪNG DÒNG trong `duLieu.truong`,
+còn `layMaLoi` chỉ đọc `errorCode` ở tầng ngoài ⇒ người dùng thấy đúng một câu *"Dữ liệu nhập vào
+chưa hợp lệ"*. Biết là sai mà không biết sai ở đâu trong 6 dòng, cũng không biết có đường nào
+khác. Nên nó *"lỗi không lưu được"* chứ không phải *"thiếu lý do vắng"*.
+
+Chữa ở frontend:
+
+- **Liệt kê tên** học viên còn thiếu lý do, không chỉ đếm (lớp 20 người thì con số vẫn buộc dò
+  từng dòng), kèm gợi ý đường thoát: dùng **"Chốt buổi"** để tự ghi `"Không điểm danh"`.
+- **Viền đỏ + `aria-invalid`** ở đúng ô còn thiếu — dòng cảnh báo nói *"ai"*, viền nói *"gõ vào
+  đâu"*.
+- **Khoá nút Lưu** kèm `title` giải thích, thay vì cho bấm để nhận 400.
+- `onError` lấy **mã lỗi cụ thể** trong `duLieu.truong` để hiện thay mã chung — các mã đó đều đã
+  có bản dịch, chỉ là trước đây bị bỏ đi.
+
+Bất đối xứng "chốt tự bịa lý do, lưu thì không" là chủ ý: chốt là *kết luận cả buổi*, lưu là *ghi
+đúng từng người* — nên lưu không tự đặt lời vào miệng giáo viên.
+
+Canh bởi `e2e/luu-diem-danh-thieu-ly-do.spec.ts`, **cả hai chiều** (chặn khi thiếu, lưu được khi
+đủ). Mutation test: bỏ cảnh báo · bỏ khoá nút · khoá nút vĩnh viễn — cả ba đều bị bắt.
+
+581 test backend · 33 vitest · 43 E2E xanh.
+
+
 ### Fixed — trạng thái buổi học: buổi đã qua vẫn hiện "Đã lên lịch" (18/09/2026)
 
 Trên dữ liệu thật: **129/129 buổi đều `DaLenLich`, trong đó 85 buổi đã qua** — chưa buổi nào

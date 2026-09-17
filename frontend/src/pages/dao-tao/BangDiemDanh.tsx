@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { CheckCircle2 } from 'lucide-react'
-import { api, layMaLoi } from '@/lib/api'
+import { api, layDuLieuLoi, layMaLoi } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Input, Table, Td, Th, TrangTrong,
 } from '@/components/ui'
@@ -99,6 +99,26 @@ export function BangDiemDanh({
     return m
   }, [ds, sua])
 
+  /*
+    Ai đang VẮNG mà CHƯA có lý do — backend bắt buộc (`THIEU_LY_DO_VANG`).
+
+    Phải tính ở đây để chặn TRƯỚC khi gửi (18/09/2026). Trước đó bấm Lưu là nhận 400 kèm
+    `DU_LIEU_KHONG_HOP_LE`, mà `layMaLoi` chỉ đọc `errorCode` ở tầng ngoài nên người dùng thấy
+    đúng một câu **"Dữ liệu nhập vào chưa hợp lệ"** — không biết thiếu ở đâu, không biết phải
+    sửa gì. Mã cụ thể `THIEU_LY_DO_VANG` nằm trong `duLieu.truong` và bị bỏ đi.
+
+    Người dùng báo: *"lưu điểm danh đang lỗi không lưu được"*. Tái hiện đúng vậy: lớp 6 học
+    viên, mặc định ai cũng `Vắng`, đổi 2 người thành Có mặt rồi bấm Lưu → 400, 4 dòng còn lại
+    thiếu lý do mà màn hình không chỉ ra dòng nào.
+  */
+  const thieuLyDo = useMemo(
+    () => ds.filter((d) => {
+      const h = hienTai[d.hocVienId]
+      return (h.tt === 'Vang' || h.tt === 'VangCoPhep') && !h.lyDo.trim()
+    }),
+    [ds, hienTai],
+  )
+
   const luu = useMutation({
     mutationFn: () =>
       api.post(`/buoi-hoc/${buoi.id}/diem-danh`, {
@@ -117,7 +137,24 @@ export function BangDiemDanh({
       window.setTimeout(() => setDaLuu(false), 2500)
     },
     onError: (e) => {
-      setMaLoi(layMaLoi(e))
+      /*
+        Lỗi validation theo TỪNG DÒNG đến trong `duLieu.truong`, ví dụ
+        `{"DanhSach[2]":["THIEU_LY_DO_VANG"]}`. `layMaLoi` chỉ đọc `errorCode` ở tầng ngoài
+        (`DU_LIEU_KHONG_HOP_LE`) nên người dùng thấy đúng một câu "Dữ liệu nhập vào chưa hợp
+        lệ" — biết là sai mà không biết sai gì.
+
+        Lấy mã cụ thể ĐẦU TIÊN để hiện thay: các mã này đều đã có bản dịch (`i18n.ts`). Chỉ lấy
+        một mã, không ghép nhiều: một lệnh lưu thường sai cùng một kiểu ở nhiều dòng, và dòng
+        cảnh báo phía trên đã liệt kê đủ tên người.
+      */
+      const truong = layDuLieuLoi(e)?.truong
+      const maCuThe = truong && typeof truong === 'object'
+        ? Object.values(truong as Record<string, unknown>)
+            .flatMap((v) => (Array.isArray(v) ? v : [v]))
+            .find((v): v is string => typeof v === 'string')
+        : undefined
+
+      setMaLoi(maCuThe ?? layMaLoi(e))
       setDaLuu(false)
     },
   })
@@ -212,7 +249,15 @@ export function BangDiemDanh({
                           onChange={(e) => doi(d.hocVienId, { lyDo: e.target.value })}
                           disabled={!duocSua || !canLyDo}
                           placeholder={canLyDo ? t('diemDanh.lyDoVang') : ''}
-                          className="h-8"
+                          /* Viền đỏ ở ĐÚNG ô còn thiếu — dòng cảnh báo phía dưới nói "ai",
+                             viền nói "gõ vào đâu". Chỉ tô khi người dùng sửa được. */
+                          aria-invalid={duocSua && canLyDo && !v?.lyDo.trim() ? true : undefined}
+                          className={
+                            'h-8 '
+                            + (duocSua && canLyDo && !v?.lyDo.trim()
+                              ? 'border-status-loi focus-visible:ring-status-loi'
+                              : '')
+                          }
                         />
                       </Td>
                       <Td>
@@ -236,6 +281,21 @@ export function BangDiemDanh({
         )}
 
         <p className="text-xs text-muted-foreground">{t('buoiHoc.chotBuoiGoiY')}</p>
+
+        {/*
+          Nói RÕ ai đang thiếu lý do, ngay trên màn, trước khi người dùng bấm Lưu.
+
+          Dùng `CanhBaoLoi` cùng chỗ với lỗi API để mắt chỉ phải nhìn một nơi. Liệt kê TÊN chứ
+          không chỉ đếm: lớp 20 người thì "còn 7 người thiếu lý do" vẫn buộc dò từng dòng.
+        */}
+        {duocSua && thieuLyDo.length > 0 && (
+          <CanhBaoLoi>
+            {t('diemDanh.thieuLyDoVang', {
+              ten: thieuLyDo.map((d) => d.hoTen).join(', '),
+              soLuong: thieuLyDo.length,
+            })}
+          </CanhBaoLoi>
+        )}
 
         <div className="flex items-center justify-end gap-2">
           {daLuu && (
@@ -270,7 +330,13 @@ export function BangDiemDanh({
           </Button>
           <Button
             className={duocSua ? '' : 'hidden'}
-            disabled={luu.isPending || ds.length === 0}
+            /*
+              Chặn ngay ở nút khi còn dòng vắng thiếu lý do — backend sẽ từ chối cả lệnh, nên
+              cho bấm chỉ để nhận 400 là bắt người dùng đi một vòng vô nghĩa. `title` nói lý do
+              nút bị mờ, nếu không thì nút disabled trông như màn bị treo.
+            */
+            disabled={luu.isPending || ds.length === 0 || thieuLyDo.length > 0}
+            title={thieuLyDo.length > 0 ? t('diemDanh.thieuLyDoNgan') : undefined}
             onClick={() =>
               hoi({
                 tieuDe: t('chung.xacNhanLuu'),

@@ -607,6 +607,11 @@ const vi = {
     tuKhai: 'Học viên tự khai',
     chinhThuc: 'Chính thức',
     lyDoVang: 'Lý do vắng',
+    // Nói RÕ ai thiếu, không chỉ đếm: lớp 20 người thì con số vẫn buộc dò từng dòng.
+    thieuLyDoVang:
+      'Chưa nhập lý do vắng cho {{soLuong}} học viên: {{ten}}. '
+      + 'Nhập lý do rồi lưu, hoặc dùng "Chốt buổi" để ghi nhận là "Không điểm danh".',
+    thieuLyDoNgan: 'Còn học viên vắng chưa có lý do',
     nguon: 'Nguồn',
     chuaGhiNhan: 'Chưa ghi nhận',
     khacTuKhai: 'Khác lời khai',
