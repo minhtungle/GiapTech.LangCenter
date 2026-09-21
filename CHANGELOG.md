@@ -8,6 +8,31 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Fixed — lịch "Lớp học" kẹt khi chuyển tới tháng không có buổi (21/09/2026)
+
+Chủ sản phẩm báo: *"chuyển ngày đi xa thì hiện 'Chưa có buổi học nào' và không thao tác
+được"*. Đúng vậy — tôi thay **cả tấm lịch** bằng `TrangTrong` khi `buoi.length === 0`, nên
+lịch biến mất **cùng với nút điều hướng**: đi xa là kẹt, không quay lại được.
+
+Nay luôn vẽ lịch; tháng rỗng dùng `noEventsText` sẵn có của FullCalendar.
+
+### Added — lọc lịch theo khoảng ngày (21/09/2026)
+
+Chọn được **một đầu hoặc cả hai** (*"lọc theo cả thời gian hoặc khoảng thời gian"*). Đầu còn
+trống lấy theo tháng đang xem — endpoint bắt buộc cả hai, thiếu một đầu là 400. Kèm dòng chú
+thích khi đang lọc (nút chuyển tháng không đổi dữ liệu nữa) và nút **Bỏ lọc**.
+
+### Changed — Bảng / Lịch thành nút chuyển view, bỏ tab riêng (21/09/2026)
+
+*"Danh sách lớp và lịch học không cần tách đôi 2 tab, hãy dùng dạng chuyển view như trong lịch
+& điểm danh."* Cùng khuôn với `LichVaDiemDanh` để người dùng chỉ phải học một lần.
+
+Bản đầu tôi làm thành tab riêng, lập luận bảng liệt kê *lớp* còn lịch vẽ *buổi* nên bộ lọc
+không dùng chung. Cách chuyển view đúng hơn: đây vẫn là "xem lớp học", chỉ khác cách trình
+bày — tab riêng làm màn hình có hai tầng điều hướng cho cùng một thứ. Mỗi view giữ bộ lọc
+riêng của nó.
+
+
 ### Added — tab "Lịch học" ở màn Lớp học: lịch của MỌI lớp (21/09/2026)
 
 *"Phần lớp học — bổ sung chế độ xem dạng lịch như lịch học."*

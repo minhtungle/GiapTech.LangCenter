@@ -85,9 +85,24 @@ còn đây trả lời *"tuần này trung tâm dạy những gì, có lớp nà
 | Nhãn ô | `Buổi 3` | **Tên lớp** (`hienTenLop`) |
 | Bộ lọc | không | lọc theo lớp |
 
-**Là TAB, không phải nút chuyển bảng/lịch.** Bảng bên cạnh liệt kê **lớp**, còn lịch vẽ **buổi
-học** — hai thực thể khác nhau. Gộp một khung nhìn thì ô tìm kiếm và bộ lọc trạng thái lớp
-(đang gắn với bảng) trở nên vô nghĩa khi đang xem lịch.
+**Là NÚT CHUYỂN VIEW Bảng / Lịch** (sửa 21/09/2026), cùng khuôn với Lịch & điểm danh để người
+dùng chỉ phải học một lần.
+
+> Bản đầu tôi làm thành TAB riêng, lập luận rằng bảng liệt kê *lớp* còn lịch vẽ *buổi* nên bộ
+> lọc không dùng chung được. Chủ sản phẩm chọn cách chuyển view — và đúng hơn: đây vẫn là "xem
+> lớp học", chỉ khác cách trình bày, nên một thanh tab riêng làm màn hình có **hai tầng điều
+> hướng cho cùng một thứ**. Mỗi view tự có bộ lọc của mình: bảng có tìm kiếm + trạng thái lớp,
+> lịch có khoảng ngày + lọc lớp.
+
+**Tháng rỗng KHÔNG được thay cả tấm lịch bằng thông báo** (sửa 21/09/2026). Bản đầu hiện
+`TrangTrong` khi `buoi.length === 0`, nên người dùng bấm ‹ đi xa vài tháng là **lịch biến mất
+cùng với nút điều hướng** — kẹt luôn, không quay lại được. FullCalendar đã có `noEventsText`
+cho tháng rỗng; không cần lớp chặn nào ở ngoài.
+
+**Lọc theo khoảng ngày** (21/09/2026) — chọn được **một đầu hoặc cả hai**. Đầu còn trống lấy
+theo tháng đang xem, không để rỗng: endpoint bắt buộc cả `tu` lẫn `den`, thiếu một đầu là 400.
+Khi đang lọc ngày, nút chuyển tháng của lịch không đổi dữ liệu nữa — có một dòng chú thích nói
+rõ điều đó, kèm nút **Bỏ lọc**.
 
 **Tải theo tháng, không gộp từ bảng danh sách.** Bảng có phân trang — gộp buổi từ đó thì lịch
 chỉ có buổi của 20 lớp đang hiện, và bấm sang trang 2 lịch đổi nội dung. Lịch báo mốc tháng

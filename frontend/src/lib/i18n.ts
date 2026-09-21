@@ -446,7 +446,12 @@ const vi = {
     // đây là tab ở màn danh sách — lịch của MỌI lớp.
     tabLichTatCa: 'Lịch học',
     locTheoLop: 'Lọc theo lớp',
-    lichChuaCoBuoi: 'Chưa có buổi học nào trong khoảng thời gian này',
+    lichTuNgay: 'Từ ngày',
+    lichDenNgay: 'Đến ngày',
+    lichXoaLoc: 'Bỏ lọc',
+    dangLocKhoangNgay:
+      'Đang lọc theo khoảng ngày — nút chuyển tháng của lịch không đổi dữ liệu. '
+      + 'Bỏ lọc để xem lại theo tháng.',
     tabDanhSach: 'Danh sách lớp',
     tabTongQuan: 'Tổng quan',
     tabHocVien: 'Học viên',

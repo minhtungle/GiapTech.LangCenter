@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { CalendarDays, ClipboardList, Eye, Pencil, Plus, Trash2, Users, X } from 'lucide-react'
+import {
+  CalendarDays, CalendarRange, ClipboardList, Eye, List, Pencil, Plus, Trash2, Users, X,
+} from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang, type ThamSoTrang } from '@/lib/api'
 import { useQuyen } from '@/lib/quyen'
 import {
@@ -31,18 +33,6 @@ import {
  */
 const CAC_TAB = [
   { ma: 'danh-sach', khoa: 'lopHoc.tabDanhSach', can: undefined, hanhDong: undefined },
-  /*
-    Lịch của MỌI lớp (21/09/2026) — *"bổ sung chế độ xem dạng lịch như lịch học"*.
-
-    Là TAB chứ không phải nút chuyển bảng/lịch như trong một lớp: lịch ở đây vẽ **buổi học**,
-    còn bảng bên cạnh liệt kê **lớp** — hai thực thể khác nhau, nên bộ lọc và phân trang của
-    bảng không áp dụng được cho lịch. Gộp chung một khung nhìn sẽ khiến bộ lọc trạng thái lớp
-    và ô tìm kiếm trở nên vô nghĩa khi đang ở chế độ lịch.
-
-    Không cần quyền riêng: gác bằng `BuoiHoc.Xem` ở endpoint, và `IPhamViLopHoc` đã lọc về
-    đúng lớp người dùng được thấy.
-  */
-  { ma: 'lich', khoa: 'lopHoc.tabLichTatCa', can: 'BuoiHoc', hanhDong: 'Xem' },
   { ma: 'cho-xep-lop', khoa: 'menu.choXepLop', can: 'LopHoc', hanhDong: 'Sua' },
 ] as const
 
@@ -68,6 +58,16 @@ export default function LopHoc() {
     tabQuery && tabHienThi.some((x) => x.ma === tabQuery) ? tabQuery : 'danh-sach'
   // `replace` để bấm qua lại hai tab không sinh một mục lịch sử mỗi lần.
   const doiTab = (x: Tab) => setSp(x === 'danh-sach' ? {} : { tab: x }, { replace: true })
+
+  /*
+    Bảng hay Lịch — cùng kiểu chuyển view như trong Lịch & điểm danh (yêu cầu 21/09/2026).
+
+    Trước đó tôi làm thành hai TAB riêng, lập luận rằng bảng liệt kê *lớp* còn lịch vẽ *buổi*
+    nên bộ lọc không dùng chung được. Chủ sản phẩm chọn cách chuyển view — và đúng hơn: đây
+    vẫn là "xem lớp học", chỉ khác cách trình bày, nên một thanh tab riêng làm màn hình có hai
+    tầng điều hướng cho cùng một thứ. Bộ lọc thì mỗi view tự có bộ của mình.
+  */
+  const [kieuXem, setKieuXem] = useState<'bang' | 'lich'>('bang')
 
   const [trang, setTrang] = useState(1)
   const [soDong, setSoDong] = useState(20)
@@ -228,9 +228,49 @@ export default function LopHoc() {
 
       {tab === 'cho-xep-lop' && <ChoXepLop nhung />}
 
-      {tab === 'lich' && <LichTatCaLop />}
-
       {tab === 'danh-sach' && (
+      <>
+      {/*
+        Chuyển Bảng / Lịch — cùng khuôn với Lịch & điểm danh để người dùng chỉ phải học một
+        lần. Luôn hiện (không như trong lớp, nơi ẩn khi chưa có buổi): ở đây lịch là cách xem
+        cả trung tâm, người dùng cần vào được kể cả khi tháng này chưa có buổi nào.
+      */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex gap-1 rounded-lg border border-border p-1">
+          {(['bang', 'lich'] as const).map((x) => (
+            <button
+              key={x}
+              type="button"
+              onClick={() => setKieuXem(x)}
+              className={
+                'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ' +
+                'transition-colors ' +
+                (kieuXem === x
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-muted')
+              }
+            >
+              {x === 'bang' ? (
+                <List className="h-3.5 w-3.5" />
+              ) : (
+                <CalendarRange className="h-3.5 w-3.5" />
+              )}
+              {t(x === 'bang' ? 'lich.kieuBang' : 'lich.kieuLich')}
+            </button>
+          ))}
+        </div>
+
+        {coQuyen('LopHoc', 'Them') && (
+          <Button onClick={moThem} className="ml-auto">
+            <Plus className="mr-1.5 h-4 w-4" />
+            {t('lopHoc.themMoi')}
+          </Button>
+        )}
+      </div>
+
+      {kieuXem === 'lich' && <LichTatCaLop />}
+
+      {kieuXem === 'bang' && (
       <>
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1.5">
@@ -262,13 +302,6 @@ export default function LopHoc() {
             placeholder={t('chung.tatCa')}
           />
         </div>
-
-        {coQuyen('LopHoc', 'Them') && (
-          <Button onClick={moThem} className="ml-auto">
-            <Plus className="mr-1.5 h-4 w-4" />
-            {t('lopHoc.themMoi')}
-          </Button>
-        )}
       </div>
 
       {maLoiBang && (
@@ -417,6 +450,8 @@ export default function LopHoc() {
           )}
         </CardContent>
       </Card>
+      </>
+      )}
       </>
       )}
 
