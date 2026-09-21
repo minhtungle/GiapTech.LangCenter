@@ -442,6 +442,11 @@ const vi = {
     siSo: 'Sĩ số',
     buoiDaHoc: 'Buổi đã học',
     thoiGian: 'Thời gian',
+    // KHÁC `tabLich` bên dưới: cái kia là tab BÊN TRONG một lớp ("Lịch & điểm danh"), còn
+    // đây là tab ở màn danh sách — lịch của MỌI lớp.
+    tabLichTatCa: 'Lịch học',
+    locTheoLop: 'Lọc theo lớp',
+    lichChuaCoBuoi: 'Chưa có buổi học nào trong khoảng thời gian này',
     tabDanhSach: 'Danh sách lớp',
     tabTongQuan: 'Tổng quan',
     tabHocVien: 'Học viên',
@@ -1482,6 +1487,9 @@ const vi = {
     PHAI_DOI_MAT_KHAU: 'Bạn cần đổi mật khẩu trước khi tiếp tục',
     MAT_KHAU_CU_KHONG_DUNG: 'Mật khẩu hiện tại không đúng',
     TOKEN_DAT_LAI_KHONG_HOP_LE: 'Mã đặt lại không hợp lệ hoặc đã hết hạn',
+    PHIEN_DA_BI_DAY_RA:
+      'Tài khoản này vừa đăng nhập ở nơi khác nên phiên của bạn đã kết thúc. '
+      + 'Nếu không phải bạn, hãy đăng nhập lại và đổi mật khẩu.',
     CHUA_XAC_THUC: 'Bạn cần đăng nhập',
     KHONG_DU_QUYEN: 'Bạn không có quyền thực hiện thao tác này',
     TOKEN_THIEU_TENANT: 'Phiên đăng nhập không hợp lệ, vui lòng đăng nhập lại',

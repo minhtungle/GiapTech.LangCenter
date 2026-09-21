@@ -55,6 +55,7 @@ public static class DependencyInjection
 
         services.AddMemoryCache();
         services.AddScoped<IQuyenService, QuyenService>();
+        services.AddScoped<IPhienService, PhienService>();
         services.AddScoped<IPhamViLopHoc, PhamViLopHoc>();
         services.AddScoped<IPhamViHocPhi, PhamViHocPhi>();
         services.AddScoped<IPhamViKhoaOnline, PhamViKhoaOnline>();

@@ -72,6 +72,40 @@ Lọc áp ở **cả danh sách lẫn chi tiết**. Chi tiết dễ bị quên n
 tiết không lọc thì gõ thẳng id vào URL là đọc được lớp người khác (IDOR). Trả **404**, không
 phải 403 — 403 xác nhận lớp đó tồn tại, tự nó là rò rỉ thông tin.
 
+### Tab "Lịch học" — lịch của MỌI lớp (21/09/2026)
+
+Yêu cầu chủ sản phẩm: *"phần lớp học — bổ sung chế độ xem dạng lịch như lịch học"*.
+
+Khác lịch **trong một lớp** (`LichVaDiemDanh`): cái kia trả lời *"lớp này học những buổi nào"*,
+còn đây trả lời *"tuần này trung tâm dạy những gì, có lớp nào trùng giờ không"*.
+
+| | Lịch trong một lớp | Tab Lịch học (mới) |
+|---|---|---|
+| Dữ liệu | `GET /lop-hoc/{id}/buoi-hoc` — tải một lần | `GET /buoi-hoc?tu=&den=` — **tải theo tháng** |
+| Nhãn ô | `Buổi 3` | **Tên lớp** (`hienTenLop`) |
+| Bộ lọc | không | lọc theo lớp |
+
+**Là TAB, không phải nút chuyển bảng/lịch.** Bảng bên cạnh liệt kê **lớp**, còn lịch vẽ **buổi
+học** — hai thực thể khác nhau. Gộp một khung nhìn thì ô tìm kiếm và bộ lọc trạng thái lớp
+(đang gắn với bảng) trở nên vô nghĩa khi đang xem lịch.
+
+**Tải theo tháng, không gộp từ bảng danh sách.** Bảng có phân trang — gộp buổi từ đó thì lịch
+chỉ có buổi của 20 lớp đang hiện, và bấm sang trang 2 lịch đổi nội dung. Lịch báo mốc tháng
+đang xem qua `onDoiThang`, trang cha tải lại khoảng đó (rộng hơn **một tháng mỗi bên**, vì view
+tuần ở đầu/cuối tháng có hiển thị vài ngày của tháng kề).
+
+**Ở view THÁNG của lịch nhiều lớp, nhãn ẩn giờ** (`displayEventTime`): ô ngày rộng ~130px,
+"18 giờ " chiếm gần một phần ba nên tên lớp bị cắt thành `IELTS 6.5 cấ` — không phân biệt được
+K1 với K6. Giờ vẫn đọc được ở tooltip, view Tuần và view Danh sách. Lịch trong một lớp không ẩn
+(nhãn chỉ là "Buổi 3", còn thừa chỗ).
+
+**Phạm vi dữ liệu do BACKEND quyết**: giáo viên chỉ thấy buổi của lớp mình dạy, học viên chỉ
+thấy lớp mình học — `IPhamViLopHoc` lọc ở `LayLichTheoKhoangHandler`, không phải màn này ẩn.
+Kiểm chứng 21/09 với nick `co.lan`: chỉ thấy đúng 3 lớp cô dạy.
+
+Canh bởi `e2e/lich-tat-ca-lop.spec.ts` (nhiều lớp cùng hiện · nhãn mang tên lớp · lọc thu hẹp
+đúng).
+
 ## FR-08 — Học viên trong lớp
 
 Thêm / gỡ học viên, xem danh sách.

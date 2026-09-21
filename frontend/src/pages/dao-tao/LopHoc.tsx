@@ -15,6 +15,7 @@ import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { FormLopHoc, type DuLieuLopHoc } from './FormLopHoc'
 import ChoXepLop from './ChoXepLop'
+import { LichTatCaLop } from './LichTatCaLop'
 import type { YeuCauXepLopDto } from '../crm/crmTypes'
 import {
   ngayVN, mauTrangThai,
@@ -30,6 +31,18 @@ import {
  */
 const CAC_TAB = [
   { ma: 'danh-sach', khoa: 'lopHoc.tabDanhSach', can: undefined, hanhDong: undefined },
+  /*
+    Lịch của MỌI lớp (21/09/2026) — *"bổ sung chế độ xem dạng lịch như lịch học"*.
+
+    Là TAB chứ không phải nút chuyển bảng/lịch như trong một lớp: lịch ở đây vẽ **buổi học**,
+    còn bảng bên cạnh liệt kê **lớp** — hai thực thể khác nhau, nên bộ lọc và phân trang của
+    bảng không áp dụng được cho lịch. Gộp chung một khung nhìn sẽ khiến bộ lọc trạng thái lớp
+    và ô tìm kiếm trở nên vô nghĩa khi đang ở chế độ lịch.
+
+    Không cần quyền riêng: gác bằng `BuoiHoc.Xem` ở endpoint, và `IPhamViLopHoc` đã lọc về
+    đúng lớp người dùng được thấy.
+  */
+  { ma: 'lich', khoa: 'lopHoc.tabLichTatCa', can: 'BuoiHoc', hanhDong: 'Xem' },
   { ma: 'cho-xep-lop', khoa: 'menu.choXepLop', can: 'LopHoc', hanhDong: 'Sua' },
 ] as const
 
@@ -214,6 +227,8 @@ export default function LopHoc() {
       )}
 
       {tab === 'cho-xep-lop' && <ChoXepLop nhung />}
+
+      {tab === 'lich' && <LichTatCaLop />}
 
       {tab === 'danh-sach' && (
       <>

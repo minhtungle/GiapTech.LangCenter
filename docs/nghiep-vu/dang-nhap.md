@@ -91,6 +91,43 @@ Canh bởi `TraTenTrungTamTests` (12 test) và `e2e/dang-nhap-tra-ma.spec.ts` (3
 | Phát hiện đánh cắp | Dùng lại token **đã thu hồi** → thu hồi **toàn bộ** phiên | Tái sử dụng là dấu hiệu có bản sao trong tay người khác; thà buộc đăng nhập lại còn hơn để phiên bị chiếm chạy tiếp |
 | Đổi mật khẩu | Thu hồi mọi phiên đang mở | Đổi mật khẩu thường là phản ứng khi nghi bị lộ |
 | Hạn | Access 60 phút · Refresh 30 ngày | |
+| **Một phiên mỗi tài khoản** (20/09/2026) | Đăng nhập mới **đẩy phiên cũ ra**, hiệu lực **ngay** | Yêu cầu chủ sản phẩm *"chỉ cho phép 1 người đăng nhập tài khoản cùng lúc"* |
+
+### Một phiên mỗi tài khoản (20/09/2026)
+
+Chốt phương án **đẩy phiên CŨ ra** (người vừa đăng nhập được vào, như Facebook/Zalo) thay vì
+chặn người mới: ai quên đăng xuất ở máy khác vẫn tự vào được, không phải nhờ quản trị.
+
+**Vì sao không chỉ thu hồi refresh token.** JWT là stateless — server không tra DB mỗi request.
+Thu hồi refresh token thôi thì phiên cũ vẫn gọi API bình thường tới **60 phút** (hạn access
+token). Một tiếng hai người dùng song song thì không còn là "chỉ 1 người cùng lúc". Nên phải
+chặn ở middleware.
+
+Cách làm — ba mảnh, thiếu một là hở:
+
+| Mảnh | Việc |
+|---|---|
+| `TAI_KHOAN.phien_hien_tai` | Lưu `jti` của access token phát ở lần đăng nhập gần nhất |
+| `PhienDuyNhatMiddleware` | Mỗi request so `jti` trong token với cột đó; lệch ⇒ **401 `PHIEN_DA_BI_DAY_RA`** |
+| Handler đăng nhập | Ghi `jti` mới **và** thu hồi mọi refresh token cũ (để phiên cũ không tự sống lại) |
+
+**Dùng lại `jti` có sẵn, không thêm claim mới** (quy tắc #1): thêm claim là thay đổi phá vỡ
+tương thích với mọi token đang lưu hành — người đang mở app bị đá ra ngay lúc triển khai.
+
+**Hai trường hợp cố ý CHO QUA**: token không có `jti`, và `phien_hien_tai` rỗng (token phát
+trước 20/09/2026). Chặn thì đá hàng loạt người đang dùng; họ vào khuôn khổ ở lần đăng nhập kế.
+
+**Làm mới token là CÙNG một phiên đi tiếp** — `LamMoiTokenHandler` phải chuyển `phien_hien_tai`
+sang `jti` mới. Thiếu bước này thì cứ 60 phút người dùng lại bị chính mình đá ra;
+`Lam_moi_token_tra_ve_cap_token_moi` bắt được ngay.
+
+**Cache 10 giây** theo tài khoản (đọc cột này ở mọi request là đắt), nhưng **xoá ngay khi đăng
+nhập / làm mới token** qua `IPhienService`. Không xoá thì chính người vừa đăng nhập bị chặn tới
+khi cache hết hạn — đã gặp thật khi kiểm chứng: máy B đăng nhập xong gọi API nhận **401**.
+
+> **Giới hạn đã biết**: đổi mật khẩu thu hồi refresh token của phiên khác nhưng **không** đổi
+> `phien_hien_tai`, nên access token của máy kia còn dùng được tối đa 60 phút. Muốn chặt hơn thì
+> phải đưa `jti` vào `ICurrentUser` — chưa làm vì ngoài phạm vi yêu cầu.
 
 ## Trạng thái triển khai
 

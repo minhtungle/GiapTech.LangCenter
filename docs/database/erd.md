@@ -102,7 +102,7 @@ erDiagram
 |---|---|---|
 | `TENANT` | Trung tâm | `ma_trung_tam` 7 ký tự, duy nhất **toàn hệ thống**. `mui_gio` (mặc định `Asia/Ho_Chi_Minh`), `so_ngay_canh_bao_no_hoc_phi` (mặc định 14) |
 | `NGUOI_DUNG` | **Con người** | `ho_ten` bắt buộc, `loai_nguoi_dung` **chỉ để lọc và chọn hồ sơ**, không dùng phân quyền. `trang_thai_nhan_su` = còn thuộc trung tâm không. `phong_ban_id` (FR-22) đặt ở đây chứ không ở `HO_SO_NHAN_VIEN` — **mọi vai trò nhân sự** xếp được vào phòng ban, kể cả giáo viên. **12 khoá ngoại nghiệp vụ trỏ vào đây** |
-| `TAI_KHOAN` | **Đăng nhập** | `username`, `password_hash`, `phai_doi_mat_khau`, `trang_thai` = còn đăng nhập được không. `nguoi_dung_id` nullable (tài khoản kỹ thuật) |
+| `TAI_KHOAN` | **Đăng nhập** | `username`, `password_hash`, `phai_doi_mat_khau`, `trang_thai` = còn đăng nhập được không. `nguoi_dung_id` nullable (tài khoản kỹ thuật). **20/09/2026**: thêm `phien_hien_tai` (nullable) = `jti` của access token phát ở lần đăng nhập gần nhất — một phiên mỗi tài khoản; `null` = token cũ, cố ý CHO QUA |
 | `HO_SO_GIAO_VIEN` | Hồ sơ người dạy | Bằng cấp, chuyên môn, ngày vào làm. **Trợ giảng dùng chung** |
 | `HO_SO_HOC_VIEN` | Hồ sơ người học | Trường/lớp, tên và SĐT phụ huynh — trung tâm dạy trẻ em cần gọi được cho phụ huynh |
 | `HO_SO_NHAN_VIEN` | Hồ sơ vận hành | **Hiện chưa có trường nào** — `chuc_vu` và `phong_ban` (chuỗi) đã chuyển lên `NGUOI_DUNG`. Giữ bảng cho FR-23 (CCCD, số tài khoản, MXH) |

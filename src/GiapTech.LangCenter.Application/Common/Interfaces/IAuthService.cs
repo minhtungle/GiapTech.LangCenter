@@ -20,7 +20,17 @@ public record ThongTinToken(
     Guid? NguoiDungId, Guid TaiKhoanId, string Username);
 
 /// <summary>Cặp token trả về sau đăng nhập.</summary>
-public record CapToken(string AccessToken, string RefreshToken, DateTimeOffset HetHan);
+public record CapToken(
+    string AccessToken,
+    string RefreshToken,
+    DateTimeOffset HetHan,
+    /// <summary>
+    /// `jti` của access token vừa phát — định danh PHIÊN (20/09/2026).
+    ///
+    /// Trả ra đây thay vì để handler tự giải mã lại token: giải mã lại là làm hai lần một việc,
+    /// và hai chỗ dễ trôi khỏi nhau khi đổi cách sinh `jti`.
+    /// </summary>
+    Guid Jti);
 
 /// <summary>Phát hành JWT (FR-01).</summary>
 public interface ITokenService

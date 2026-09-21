@@ -21,6 +21,7 @@ public class LamMoiTokenValidator : AbstractValidator<LamMoiTokenCommand>
 public class LamMoiTokenHandler(
     IAppDbContext db,
     ITokenService tokenService,
+    IPhienService phienService,
     ILogger<LamMoiTokenHandler> logger)
     : IRequestHandler<LamMoiTokenCommand, DangNhapResult>
 {
@@ -84,7 +85,24 @@ public class LamMoiTokenHandler(
             HetHan = bayGio.AddDays(TokenService_HanRefreshNgay)
         });
 
+        /*
+          CHUYỂN phiên sang token vừa cấp — làm mới token là **cùng một phiên đi tiếp**, không
+          phải phiên mới (20/09/2026).
+
+          Thiếu dòng này thì access token mới mang `jti` khác `PhienHienTai`, và
+          `PhienDuyNhatMiddleware` đá chính người đang dùng ra — cứ mỗi lần token hết hạn
+          (60 phút) là văng về màn đăng nhập. Test `Lam_moi_token_tra_ve_cap_token_moi` bắt
+          được ngay khi tôi quên.
+
+          An toàn với mục tiêu "một phiên": refresh token đã bị thu hồi khi có người đăng nhập
+          nơi khác, nên phiên cũ không tới được đây để giành lại phiên.
+        */
+        token.TaiKhoan.PhienHienTai = capMoi.Jti;
+
         await db.SaveChangesAsync(ct);
+
+        // Xoá cache để token mới dùng được NGAY, cùng lý do với handler đăng nhập.
+        phienService.XoaCache(token.TaiKhoanId);
 
         return new DangNhapResult(
             capMoi.AccessToken, capMoi.RefreshToken, capMoi.HetHan,

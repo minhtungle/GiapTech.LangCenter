@@ -8,6 +8,69 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — tab "Lịch học" ở màn Lớp học: lịch của MỌI lớp (21/09/2026)
+
+*"Phần lớp học — bổ sung chế độ xem dạng lịch như lịch học."*
+
+Khác lịch trong từng lớp: cái kia trả lời *"lớp này học buổi nào"*, còn đây trả lời *"tuần này
+trung tâm dạy gì, có trùng giờ không"*. Dùng lại `LichBuoiHoc` sẵn có — component đã có cờ
+`hienTenLop` dựng từ trước cho đúng tình huống này nhưng chưa ai dùng.
+
+- **Là TAB, không phải nút chuyển bảng/lịch**: bảng liệt kê *lớp*, lịch vẽ *buổi học* — gộp một
+  khung nhìn thì ô tìm kiếm và bộ lọc trạng thái lớp thành vô nghĩa khi đang xem lịch.
+- **Tải theo tháng** (`onDoiThang` mới), không gộp từ bảng danh sách: bảng có phân trang, gộp
+  thì lịch chỉ có buổi của 20 lớp đang hiện và đổi nội dung khi sang trang 2.
+- **Lọc theo lớp** — tấm lịch cả trung tâm dễ rối.
+- **Ở view tháng, nhãn ẩn giờ**: ô ngày ~130px, "18 giờ " chiếm gần một phần ba nên tên lớp bị
+  cắt thành `IELTS 6.5 cấ` — không phân biệt được K1 với K6. Giờ vẫn có ở tooltip và view
+  Tuần/Danh sách. Phát hiện khi soi ảnh chụp màn hình, không phải do test.
+
+Phạm vi dữ liệu do backend lọc sẵn (`IPhamViLopHoc`): kiểm chứng với nick `co.lan` — chỉ thấy
+đúng 3 lớp cô dạy, không thấy lớp của thầy Hoà.
+
+
+### Added — một phiên mỗi tài khoản (20/09/2026)
+
+Yêu cầu chủ sản phẩm: *"chỉ cho phép 1 người đăng nhập tài khoản cùng lúc"*. Chốt phương án
+**đẩy phiên CŨ ra** (người vừa đăng nhập được vào, như Facebook/Zalo) và **hiệu lực ngay**.
+
+**Vì sao không chỉ thu hồi refresh token.** JWT là stateless — server không tra DB mỗi request.
+Thu hồi refresh token thôi thì phiên cũ vẫn gọi API bình thường tới **60 phút** (hạn access
+token); một tiếng hai người dùng song song thì không còn là "chỉ 1 người cùng lúc".
+
+Ba mảnh, thiếu một là hở:
+
+- `TAI_KHOAN.phien_hien_tai` lưu `jti` của access token phát ở lần đăng nhập gần nhất.
+- `PhienDuyNhatMiddleware` so `jti` mỗi request; lệch ⇒ **401 `PHIEN_DA_BI_DAY_RA`**.
+- Handler đăng nhập ghi `jti` mới **và** thu hồi refresh token cũ (phiên cũ không sống lại).
+
+**Dùng lại `jti` có sẵn, không thêm claim mới** (quy tắc #1): thêm claim là phá vỡ tương thích
+với token đang lưu hành — mọi người đang mở app bị đá ra ngay lúc triển khai. Token cũ không có
+`jti`, và `phien_hien_tai` rỗng, đều **cố ý cho qua**.
+
+Frontend: interceptor nhận mã này thì **không** thử làm mới token (vô ích — refresh token đã bị
+thu hồi), mà về thẳng màn đăng nhập kèm câu giải thích *"Tài khoản này vừa đăng nhập ở nơi khác…
+Nếu không phải bạn, hãy đăng nhập lại và đổi mật khẩu"*.
+
+Hai lỗi tự gây, đều do kiểm chứng trên hệ thống thật chứ không phải đọc code:
+
+- **Người vừa đăng nhập cũng bị chặn**: middleware cache `phien_hien_tai` 10 giây mà quên xoá
+  lúc đăng nhập ⇒ máy B đăng nhập xong gọi API nhận **401**. Thêm `IPhienService.XoaCache`.
+- **Làm mới token tự đá mình ra**: `LamMoiTokenHandler` phát `jti` mới nhưng không chuyển
+  `phien_hien_tai` ⇒ cứ 60 phút người dùng lại văng về màn đăng nhập. Test
+  `Lam_moi_token_tra_ve_cap_token_moi` bắt được.
+
+> **Giới hạn đã biết**: đổi mật khẩu thu hồi refresh token của phiên khác nhưng không đổi
+> `phien_hien_tai`, nên access token máy kia còn dùng được tối đa 60 phút. Chặt hơn thì phải
+> đưa `jti` vào `ICurrentUser` — chưa làm vì ngoài phạm vi yêu cầu.
+
+### Chore — dọn 441 tenant rác E2E (20/09/2026)
+
+DB dev lại phình: **444 → 6 tenant**. Tạo trung tâm từ 3,5s xuống 2,4s. W686AE9 nguyên vẹn
+(75 người, 8 lớp, 12 buổi). Đây là nợ **N11** tái diễn — mỗi test E2E tạo một trung tâm và
+không dọn sau.
+
+
 ### Fixed — "lưu điểm danh không lưu được" (18/09/2026)
 
 Bảng điểm danh mặc định cho mọi học viên là **Vắng** với ô lý do **trống**, mà validator bắt

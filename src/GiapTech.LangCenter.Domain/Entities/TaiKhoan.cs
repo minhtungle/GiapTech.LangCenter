@@ -34,6 +34,23 @@ public class TaiKhoan : TenantEntity
     /// <summary>Còn đăng nhập được không. Không liên quan tới việc người đó còn làm hay không.</summary>
     public TrangThaiNguoiDung TrangThai { get; set; } = TrangThaiNguoiDung.HoatDong;
 
+    /// <summary>
+    /// Phiên đăng nhập ĐANG hiệu lực — mỗi tài khoản chỉ một người dùng cùng lúc (20/09/2026).
+    ///
+    /// Giá trị là `jti` của access token phát ra ở lần đăng nhập gần nhất. Đăng nhập mới ghi đè
+    /// giá trị này ⇒ token của phiên cũ mang `jti` khác ⇒ bị chặn ở
+    /// <c>PhienDuyNhatMiddleware</c>.
+    ///
+    /// **Dùng lại `jti` có sẵn thay vì thêm claim mới** (quy tắc #1): thêm claim là thay đổi
+    /// phá vỡ tương thích với mọi token đang lưu hành — người đang mở app sẽ bị đá ra ngay khi
+    /// triển khai. `jti` đã nằm trong mọi token từ trước, kể cả token phát trước thay đổi này.
+    ///
+    /// `null` = chưa từng đăng nhập, hoặc đã đăng xuất. Middleware coi `null` là **cho qua**,
+    /// không phải chặn: token còn hạn mà cột rỗng chỉ có thể là token phát trước 20/09/2026, và
+    /// đá hàng loạt người đang dùng là cái giá không đáng cho một thay đổi không khẩn cấp.
+    /// </summary>
+    public Guid? PhienHienTai { get; set; }
+
     public Tenant Tenant { get; set; } = null!;
 
     /// <summary>Nhóm quyền gán cho TÀI KHOẢN, không phải cho người — quyền là chuyện đăng nhập.</summary>

@@ -21,6 +21,16 @@ public static class MaLoi
 
     // --- Xác thực / phân quyền ---
     public const string ChuaXacThuc = "CHUA_XAC_THUC";
+
+    /// <summary>
+    /// Phiên bị đẩy ra vì tài khoản vừa đăng nhập ở nơi khác (20/09/2026) — mỗi tài khoản chỉ
+    /// một phiên cùng lúc.
+    ///
+    /// Mã RIÊNG, không dùng lại <see cref="ChuaXacThuc"/>: hai tình huống cần hai câu khác
+    /// nhau. "Chưa xác thực" nghe như lỗi hệ thống, còn ở đây người dùng cần biết **tài khoản
+    /// của mình vừa được dùng ở máy khác** — đó có thể là dấu hiệu bị lộ mật khẩu.
+    /// </summary>
+    public const string PhienDaBiDayRa = "PHIEN_DA_BI_DAY_RA";
     public const string KhongDuQuyen = "KHONG_DU_QUYEN";
     public const string TokenThieuTenant = "TOKEN_THIEU_TENANT";
 

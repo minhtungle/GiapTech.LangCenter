@@ -24,9 +24,13 @@ public class TokenService(IConfiguration config) : ITokenService
         var phut = int.TryParse(config["JWT_EXPIRY_MINUTES"], out var p) ? p : 60;
         var hetHan = DateTimeOffset.UtcNow.AddMinutes(phut);
 
+        // Tách ra biến để vừa ký vào token vừa trả cho handler ghi làm PHIÊN hiện tại — xem
+        // `CapToken.Jti`.
+        var jti = Guid.NewGuid();
+
         var claims = new List<Claim>
         {
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(JwtRegisteredClaimNames.Jti, jti.ToString()),
             new(ClaimTypes.Name, tt.Username),
             new(ClaimTenant.TaiKhoanId, tt.TaiKhoanId.ToString()),
             new(ClaimTenant.TenantId, tt.TenantId.ToString()),
@@ -54,6 +58,7 @@ public class TokenService(IConfiguration config) : ITokenService
             // Refresh token ngẫu nhiên bằng RNG mật mã — không dùng Guid, vốn không được
             // thiết kế để khó đoán.
             Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
-            hetHan);
+            hetHan,
+            jti);
     }
 }

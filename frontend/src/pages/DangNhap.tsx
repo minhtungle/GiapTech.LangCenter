@@ -27,7 +27,21 @@ export default function DangNhap() {
   const tinhNang = useTinhNang()
   const { dangNhap } = useAuth()
   const navigate = useNavigate()
-  const [maLoi, setMaLoi] = useState<string | null>(null)
+  /*
+    Lý do bị đá khỏi phiên trước, do interceptor đặt vào `sessionStorage` (xem `lib/api.ts`).
+
+    Đọc một lần rồi XOÁ: giữ lại thì lần đăng nhập sau vẫn hiện câu "vừa đăng nhập ở nơi khác"
+    dù chẳng có gì xảy ra, và người dùng sẽ tưởng bị chiếm tài khoản.
+  */
+  const [maLoi, setMaLoi] = useState<string | null>(() => {
+    try {
+      const ly = sessionStorage.getItem('lms_ly_do_thoat')
+      if (ly) sessionStorage.removeItem('lms_ly_do_thoat')
+      return ly
+    } catch {
+      return null
+    }
+  })
 
   const { register, handleSubmit, formState, watch } = useForm<FormData>({
     resolver: zodResolver(schema),

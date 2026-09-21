@@ -130,12 +130,21 @@ public class QuyenCuaToiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Moi_vai_tro_doc_duoc_mui_gio_trung_tam()
     {
-        foreach (var c in new[]
-                 {
-                     await Client("manager", "manager123"),
-                     await TaoVaDangNhap("gvtz", "GiaoVien", "Giáo viên"),
-                     await TaoVaDangNhap("hvtz", "HocVien", "Học viên"),
-                 })
+        /*
+          Lấy client của `manager` SAU CÙNG (sửa 20/09/2026).
+
+          Từ khi có "một phiên mỗi tài khoản", đăng nhập lại cùng một nick sẽ **đẩy phiên trước
+          ra**. `TaoVaDangNhap` bên trong tự đăng nhập bằng `manager` để tạo người dùng, nên
+          lấy client `manager` trước rồi mới gọi nó thì client ấy đã bị chính nó đá ra và nhận
+          401 — hỏng ở chỗ chẳng liên quan gì tới múi giờ.
+
+          Đây là **giới hạn của test, không phải lỗi sản phẩm**: người thật không mở hai phiên
+          cùng một nick rồi mong cả hai chạy.
+        */
+        var gv = await TaoVaDangNhap("gvtz", "GiaoVien", "Giáo viên");
+        var hv = await TaoVaDangNhap("hvtz", "HocVien", "Học viên");
+
+        foreach (var c in new[] { gv, hv, await Client("manager", "manager123") })
         {
             var ch = await c.GetFromJsonAsync<JsonElement>("/api/v1/toi/cau-hinh");
             Assert.Equal("Asia/Ho_Chi_Minh", ch.GetProperty("muiGio").GetString());

@@ -222,6 +222,10 @@ app.UseMiddleware<TenantMiddleware>();
 // Chặn mọi endpoint nghiệp vụ khi còn cờ PhaiDoiMatKhau (FR-01). Đặt trước Authorization
 // để không phụ thuộc việc frontend có tôn trọng cờ trong response đăng nhập hay không.
 app.UseMiddleware<BuocDoiMatKhauMiddleware>();
+// Một phiên mỗi tài khoản (20/09/2026): chặn token của phiên đã bị đăng nhập nơi khác đẩy ra.
+// Đặt SAU `BuocDoiMatKhau` để người bị buộc đổi mật khẩu nhận đúng mã lỗi của họ trước — mã đó
+// có đường đi tiếp (màn đổi mật khẩu), còn "phiên bị đẩy ra" thì chỉ còn nước đăng nhập lại.
+app.UseMiddleware<PhienDuyNhatMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

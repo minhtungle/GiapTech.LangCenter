@@ -57,6 +57,27 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const config = error.config as InternalAxiosRequestConfig & { _daThuLai?: boolean }
 
+    /*
+      Phiên bị đẩy ra vì đăng nhập nơi khác (20/09/2026) — KHÔNG thử làm mới token.
+
+      Làm mới cũng vô ích: refresh token của phiên cũ đã bị thu hồi ngay lúc người kia đăng
+      nhập. Thử rồi mới về màn đăng nhập chỉ tốn thêm một vòng request, và người dùng mất câu
+      giải thích: họ về màn đăng nhập trắng trơn, không hiểu vì sao đang dùng thì bị văng.
+
+      Mang mã lỗi sang màn đăng nhập qua `sessionStorage` (không phải query string): lý do bị
+      đá ra không nên nằm trên thanh địa chỉ để người khác đọc hay chia sẻ nhầm.
+    */
+    const maLoi = (error.response?.data as { errorCode?: string } | undefined)?.errorCode
+
+    if (error.response?.status === 401 && maLoi === 'PHIEN_DA_BI_DAY_RA') {
+      try {
+        sessionStorage.setItem('lms_ly_do_thoat', maLoi)
+      } catch { /* chế độ riêng tư chặn storage — vẫn phải đá ra được */ }
+      xoaToken()
+      window.location.href = '/dang-nhap'
+      return Promise.reject(error)
+    }
+
     const canLamMoi =
       error.response?.status === 401 &&
       config &&

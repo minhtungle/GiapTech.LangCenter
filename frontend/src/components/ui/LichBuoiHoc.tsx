@@ -96,11 +96,20 @@ export function LichBuoiHoc({
   buoi,
   onChonBuoi,
   hienTenLop,
+  onDoiThang,
 }: {
   buoi: BuoiChoLich[]
   onChonBuoi?: (id: string) => void
   /** true = hiện tên lớp trong nhãn (lịch nhiều lớp), false = hiện số buổi. */
   hienTenLop?: boolean
+  /**
+   * Người dùng bấm ‹ › hoặc "Hôm nay" — báo ra mốc của khung nhìn mới (21/09/2026).
+   *
+   * Cần khi dữ liệu **tải theo tháng**: lịch của cả trung tâm không thể tải hết mọi buổi từ
+   * xưa tới nay. Lịch trong MỘT lớp thì không cần (số buổi hữu hạn, tải một lần), nên tham số
+   * này tuỳ chọn — không truyền thì lịch hoạt động y như trước.
+   */
+  onDoiThang?: (moc: Date) => void
 }) {
   const { t } = useTranslation()
   const muiGio = useMuiGio()
@@ -141,6 +150,13 @@ export function LichBuoiHoc({
     else if (huong === 'sau') api.next()
     else api.today()
     setTieuDe(api.view.title)
+
+    // Báo mốc GIỮA khung nhìn, không phải `activeStart`: ở view tháng, `activeStart` thường
+    // rơi vào tháng TRƯỚC (lịch vẽ vài ngày đầu tuần của tháng kề), nên trang cha sẽ tải
+    // nhầm tháng.
+    const v = api.view
+    const giua = new Date((v.activeStart.getTime() + v.activeEnd.getTime()) / 2)
+    onDoiThang?.(giua)
   }
 
   const doiCheDo = (ma: CheDo) => {
@@ -236,6 +252,16 @@ export function LichBuoiHoc({
           firstDay={1}
           dayMaxEvents={3}
           events={sukien}
+          /*
+            Lịch NHIỀU LỚP ở chế độ THÁNG: ẩn giờ trên nhãn để tên lớp có đủ chỗ.
+
+            Ô ngày trong view tháng rộng khoảng 130px; "18 giờ " chiếm gần một phần ba, nên
+            tên lớp bị cắt thành "IELTS 6.5 cấ" — không phân biệt được K1 với K6. Giờ vẫn còn
+            ở tooltip (bên dưới) và ở view Tuần / Danh sách, nơi có chỗ hiển thị đầy đủ.
+
+            Chỉ ẩn khi `hienTenLop`: lịch trong MỘT lớp nhãn chỉ là "Buổi 3", còn thừa chỗ.
+          */
+          displayEventTime={!(hienTenLop && cheDo === 'dayGridMonth')}
           eventClick={(arg: EventClickArg) => onChonBuoi?.(arg.event.id)}
           datesSet={(arg) => setTieuDe(arg.view.title)}
           eventDidMount={(arg) => {
@@ -245,8 +271,16 @@ export function LichBuoiHoc({
               phongHoc?: string | null
               laHocBu?: boolean
             }
+            // Giờ vào tooltip: ở view tháng của lịch nhiều lớp, nhãn đã ẩn giờ để nhường
+            // chỗ cho tên lớp, nên đây là chỗ duy nhất còn đọc được giờ mà không đổi view.
+            const gio = arg.event.start
+              ? arg.event.start.toLocaleTimeString('vi-VN',
+                  { hour: '2-digit', minute: '2-digit', timeZone: muiGio })
+              : null
+
             const dong = [
               arg.event.title,
+              gio,
               p.giaoVien,
               p.phongHoc,
               p.laHocBu ? t('buoiHoc.hocBu') : null,
