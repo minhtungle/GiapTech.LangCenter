@@ -88,6 +88,11 @@ export function useQuyen() {
 
 interface CauHinhDto {
   muiGio: string
+  /** Nhận diện trung tâm (22/09/2026) — sidebar hiện logo và tên thật. */
+  tenTrungTam: string
+  tenVietTat: string | null
+  /** Khoá ảnh logo; null = chưa tải, UI dùng ô chữ cái đầu. */
+  khoaLogo: string | null
 }
 
 /**
@@ -100,16 +105,38 @@ interface CauHinhDto {
  * Trong lúc chưa tải xong, trả `undefined` để component tự quyết định (FullCalendar hiểu
  * `undefined` là dùng múi giờ máy — chấp nhận được trong khoảnh khắc đầu).
  */
-export function useMuiGio(): string | undefined {
+function useCauHinhCuaToi() {
   const { daDangNhap } = useAuth()
 
-  const { data } = useQuery({
+  return useQuery({
     queryKey: ['toi-cau-hinh'],
     queryFn: async () => (await api.get<CauHinhDto>('/toi/cau-hinh')).data,
     enabled: daDangNhap,
     staleTime: Infinity,
     retry: false,
   })
+}
 
-  return data?.muiGio
+export function useMuiGio(): string | undefined {
+  return useCauHinhCuaToi().data?.muiGio
+}
+
+/**
+ * Nhận diện trung tâm cho sidebar (22/09/2026) — logo thật, tên thật, tên viết tắt do trung
+ * tâm tự đặt.
+ *
+ * Dùng chung **một query** với `useMuiGio` (cùng `queryKey`): hai hook gọi cùng endpoint, tách
+ * key sẽ thành hai request cho một dữ liệu.
+ *
+ * Không đọc từ JWT nữa: token chỉ có tên và mã, không có logo — và tên trong token là tên **lúc
+ * đăng nhập**, đổi tên ở Thiết lập thì sidebar vẫn hiện tên cũ tới khi đăng nhập lại.
+ */
+export function useNhanDienTrungTam() {
+  const { data } = useCauHinhCuaToi()
+
+  return {
+    tenTrungTam: data?.tenTrungTam,
+    tenVietTat: data?.tenVietTat ?? null,
+    khoaLogo: data?.khoaLogo ?? null,
+  }
 }

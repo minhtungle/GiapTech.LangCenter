@@ -8,6 +8,36 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — nhận diện trung tâm ở màn đăng nhập và trong sidebar (22/09/2026)
+
+*"Nhập đúng mã trung tâm tại đăng nhập sẽ load đúng thông tin trung tâm như trong thiết lập
+(logo, tên, ...), bên trong giao diện quản trị cũng vậy."*
+
+**Màn đăng nhập**: gõ đủ 7 ký tự là hiện **logo thật + tên + tên viết tắt**. Endpoint tra mã
+(ẩn danh) trả thêm `tenVietTat` và `coLogo` — **không** trả địa chỉ, liên hệ, id, dù chúng cũng
+nằm trong Thiết lập: ai dò trúng mã cũng đọc được những gì endpoint này trả.
+
+**Logo có endpoint riêng** `GET /auth/logo/{maTrungTam}` (ẩn danh, có rate limit). Không mở
+`GET /anh/{khoa}` cho ẩn danh — endpoint đó nhận khoá tự do, mở ra là lộ luôn **ảnh học viên,
+ảnh CCCD, ảnh QR chuyển khoản**. Ở đây người gọi chỉ đưa mã, server tự tra khoá. Mã sai và chưa
+có logo đều 404, không phân biệt.
+
+**Sidebar**: dùng logo thật thay ô chữ cái, và lấy tên từ `/toi/cau-hinh` chứ không từ JWT —
+token chỉ mang tên lúc đăng nhập, nên đổi tên ở Thiết lập thì sidebar vẫn hiện tên cũ. Không
+dùng `/thiet-lap` vì nó gác `ThietLapChung.Xem`, giáo viên và học viên nhận 403.
+
+Ba điều đáng ghi lại:
+
+- **`MinioLuuTruAnh.TaiVe` cố ý từ chối khi không biết tenant** (quy tắc #2), nên endpoint ẩn
+  danh nhận 404 dù logo có thật. Không nới chốt chặn; controller tự đặt phạm vi bằng
+  `DatPhamVi(tenantId)` — id do server tra từ mã, không phải người gọi đưa.
+- **`MoiEndpointPhaiDuocGacTests` chặn đúng lúc**: thêm endpoint ẩn danh thứ 7 làm test đỏ, buộc
+  dừng lại viết ra lý do thay vì thêm âm thầm.
+- **Một mutation SỐNG**: test E2E đầu kiểm sidebar hiện đúng tên, nhưng tên trong JWT và trong
+  thiết lập giống nhau nên bỏ hẳn `useNhanDienTrungTam` test vẫn xanh. Sửa thành **đổi tên rồi
+  mới kiểm** — giờ mutation chết.
+
+
 ### Fixed — lịch "Lớp học" kẹt khi chuyển tới tháng không có buổi (21/09/2026)
 
 Chủ sản phẩm báo: *"chuyển ngày đi xa thì hiện 'Chưa có buổi học nào' và không thao tác

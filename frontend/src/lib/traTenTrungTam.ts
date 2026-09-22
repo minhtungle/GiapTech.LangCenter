@@ -13,7 +13,17 @@ import { api } from '@/lib/api'
  *
  * Trả `null` khi không có trung tâm nào dùng mã đó (API trả 404) — phân biệt với `undefined` là
  * "chưa tra" để UI không hiện "không tìm thấy" lúc người dùng còn đang gõ.
+ *
+ * Từ 22/09/2026 trả thêm **tên viết tắt** và **cờ có logo** (yêu cầu chủ sản phẩm: *"nhập đúng
+ * mã trung tâm sẽ load đúng thông tin trung tâm như trong thiết lập"*). Backend cố ý **không**
+ * trả khoá ảnh — khoá mang `tenantId` ở đầu; xem `TenTrungTamTheoMaDto`.
  */
+export interface NhanDienTrungTam {
+  tenTrungTam: string
+  tenVietTat: string | null
+  coLogo: boolean
+}
+
 export function useTraTenTrungTam(maTrungTam: string) {
   const ma = maTrungTam.trim().toUpperCase()
   const duDai = ma.length === 7
@@ -26,7 +36,7 @@ export function useTraTenTrungTam(maTrungTam: string) {
     retry: false,
     queryFn: async () => {
       try {
-        return (await api.get<{ tenTrungTam: string }>(`/auth/ten-trung-tam/${ma}`)).data.tenTrungTam
+        return (await api.get<NhanDienTrungTam>(`/auth/ten-trung-tam/${ma}`)).data
       } catch (e) {
         // 404 là câu trả lời hợp lệ "không có trung tâm nào", không phải lỗi hệ thống. Ném tiếp các
         // lỗi khác để `data` là undefined và UI im lặng thay vì báo sai là "không tìm thấy".
@@ -36,5 +46,19 @@ export function useTraTenTrungTam(maTrungTam: string) {
     },
   })
 
-  return { tenTrungTam: data, dangTra: duDai && isFetching }
+  return {
+    /** Giữ tên cũ để chỗ gọi hiện có không phải sửa — vẫn là chuỗi tên hoặc null/undefined. */
+    tenTrungTam: data === null ? null : data?.tenTrungTam,
+    /** Toàn bộ nhận diện: tên, tên viết tắt, cờ logo. */
+    trungTam: data,
+    /**
+     * Đường dẫn logo — `undefined` khi trung tâm chưa tải logo.
+     *
+     * Dùng `<img src>` THẲNG, không qua component `Anh`: endpoint này ẩn danh nên không cần
+     * header token, mà `Anh` lại đi qua `api` (có interceptor gắn token và xử lý 401) — ở màn
+     * đăng nhập thì 401 sẽ kích hoạt luồng làm mới token vô nghĩa.
+     */
+    duongDanLogo: data?.coLogo ? `/api/v1/auth/logo/${ma}` : undefined,
+    dangTra: duDai && isFetching,
+  }
 }

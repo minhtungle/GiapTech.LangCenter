@@ -122,3 +122,36 @@ public class CapNhatThietLapHandler(IAppDbContext db, ICurrentTenant tenant)
         await db.SaveChangesAsync(ct);
     }
 }
+
+/// <summary>
+/// Nhận diện trung tâm cho MỌI vai trò — sidebar hiện logo và tên đúng (22/09/2026).
+///
+/// ## Vì sao không dùng `LayThietLapQuery`
+///
+/// Endpoint `/thiet-lap` gác bằng `ThietLapChung.Xem` — **giáo viên và học viên nhận 403**,
+/// mà họ cũng nhìn sidebar. Kiểm chứng 22/09: nick `co.lan` gọi `/thiet-lap` trả 403.
+///
+/// Query này trả **đúng ba trường nhận diện**, không trả số tài khoản ngân hàng, ảnh QR,
+/// ngưỡng cảnh báo nợ — những thứ `ThietLapDto` có mà người không phải quản trị không nên đọc.
+/// </summary>
+public record NhanDienTrungTamDto(string TenTrungTam, string? TenVietTat, string? KhoaLogo);
+
+public record LayNhanDienTrungTamQuery : IRequest<NhanDienTrungTamDto>;
+
+public class LayNhanDienTrungTamHandler(IAppDbContext db, ICurrentTenant tenant)
+    : IRequestHandler<LayNhanDienTrungTamQuery, NhanDienTrungTamDto>
+{
+    public async Task<NhanDienTrungTamDto> Handle(
+        LayNhanDienTrungTamQuery request, CancellationToken ct)
+    {
+        if (tenant.TenantId is not { } tid)
+            throw new AppException(MaLoi.ChuaXacThuc);
+
+        // TENANT không phải ITenantEntity nên không tự lọc — phải so Id tường minh.
+        return await db.Tenants
+                   .Where(t => t.Id == tid)
+                   .Select(t => new NhanDienTrungTamDto(t.TenTrungTam, t.TenVietTat, t.LogoUrl))
+                   .FirstOrDefaultAsync(ct)
+               ?? throw new KhongTimThayException($"Tenant {tid}");
+    }
+}

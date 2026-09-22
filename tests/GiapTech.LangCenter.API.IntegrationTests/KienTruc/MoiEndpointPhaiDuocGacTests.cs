@@ -128,11 +128,24 @@ public class MoiEndpointPhaiDuocGacTests
             .OrderBy(x => x)
             .ToList();
 
-        // Đếm ngày 09/09/2026: 5 ở AuthController (đăng nhập, làm mới token, quên/đặt lại mật
-        // khẩu, tra mã trung tâm) + 1 đăng ký trung tâm.
+        /*
+          Đếm ngày 09/09/2026: 5 ở AuthController (đăng nhập, làm mới token, quên/đặt lại mật
+          khẩu, tra mã trung tâm) + 1 đăng ký trung tâm.
+
+          **22/09/2026 → 7**: thêm `AuthController.Logo` — màn đăng nhập hiện logo trung tâm
+          (yêu cầu chủ sản phẩm *"nhập đúng mã trung tâm sẽ load đúng thông tin trung tâm"*).
+
+          Vì sao chấp nhận thêm một endpoint ẩn danh:
+
+          - Người gọi **chỉ đưa mã trung tâm**, không chọn được khoá ảnh — server tự tra trong
+            DB. Khác hẳn `GET /anh/{khoa}` (nhận khoá tự do, gác `Anh.Xem`); mở endpoint đó cho
+            người chưa đăng nhập là mở luôn ảnh học viên, ảnh CCCD, ảnh QR chuyển khoản.
+          - Thứ lộ ra là **logo của đúng trung tâm mang mã đó** — thứ họ vẫn in trên biển hiệu.
+          - Là endpoint ĐỌC, và có `EnableRateLimiting(TraCuu)` như endpoint tra tên.
+        */
         Assert.True(
-            anDanh.Count <= 6,
-            $"Có {anDanh.Count} endpoint ẩn danh (trước là 6): {string.Join(", ", anDanh)}.\n"
+            anDanh.Count <= 7,
+            $"Có {anDanh.Count} endpoint ẩn danh (trước là 7): {string.Join(", ", anDanh)}.\n"
             + "Mỗi endpoint ẩn danh là chỗ ai cũng gọi được — endpoint GHI thì còn phải có rate "
             + "limit (xem GioiHanTanSuatTests). Nếu thêm là có chủ ý, cập nhật số này kèm lý do.");
     }

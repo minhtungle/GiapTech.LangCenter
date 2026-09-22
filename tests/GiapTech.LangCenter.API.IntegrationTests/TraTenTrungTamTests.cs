@@ -30,16 +30,29 @@ public class TraTenTrungTamTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task Chi_tra_TEN_khong_tra_gi_khac()
+    public async Task Chi_tra_NHAN_DIEN_khong_tra_gi_khac()
     {
-        // Khoá cứng danh sách field. Thêm `id` là mở đường thử gọi endpoint khác; thêm khu vực /
-        // logo / quy mô là lộ dữ liệu trung tâm cho người lạ chỉ vì họ đoán đúng 7 ký tự.
+        /*
+          Khoá cứng danh sách field. Thêm `id` là mở đường thử gọi endpoint khác; thêm địa chỉ /
+          liên hệ / quy mô là lộ dữ liệu trung tâm cho người lạ chỉ vì họ đoán đúng 7 ký tự.
+
+          **22/09/2026 — từ 1 field thành 3**: chủ sản phẩm yêu cầu màn đăng nhập hiện đúng
+          nhận diện trung tâm (*"logo, tên, ..."*). Nới thêm đúng hai thứ trung tâm vẫn in trên
+          biển hiệu:
+
+          - `tenVietTat` — tên rút gọn do chính trung tâm đặt ở Thiết lập.
+          - `coLogo` — **cờ boolean, KHÔNG phải khoá ảnh**: khoá mang `tenantId` ở đầu, trả ra
+            là tặng người chưa đăng nhập một id thật. Có logo thì frontend gọi
+            `GET /auth/logo/{ma}` — endpoint tự tra khoá, người gọi không chọn được.
+
+          KHÔNG nới địa chỉ và liên hệ, dù chúng cũng nằm trong Thiết lập.
+        */
         var client = factory.CreateClient();
 
         var body = await client.GetFromJsonAsync<JsonElement>(
             $"/api/v1/auth/ten-trung-tam/{factory.MaTrungTamA}");
 
-        Assert.Equal(new[] { "tenTrungTam" },
+        Assert.Equal(new[] { "tenTrungTam", "tenVietTat", "coLogo" },
             body.EnumerateObject().Select(p => p.Name).ToArray());
     }
 

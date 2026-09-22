@@ -12,27 +12,21 @@ import { useQuyen } from '@/lib/quyen'
 import { useHeThong, type MaHeThong } from '@/lib/heThong'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { vietTat } from '@/lib/nhanDienTrungTam'
+import { useNhanDienTrungTam } from '@/lib/quyen'
+import { Anh } from '@/components/ui/Anh'
 
 const KHOA_THU_GON = 'lms_sidebar_thu_gon'
-
-/**
- * Chữ viết tắt cho ô logo: lấy chữ cái đầu của 2 từ cuối, bỏ các từ chung ("trung tâm",
- * "ngoại ngữ") vì gần như tên nào cũng có — để lại thì mọi ô đều hiện "TT".
- */
-function vietTat(tenTrungTam?: string) {
-  if (!tenTrungTam) return 'TT'
-  const tu = tenTrungTam
-    .trim()
-    .split(/\s+/)
-    .filter((t) => !['trung', 'tam', 'tt', 'ngoai', 'ngu'].includes(t.toLowerCase()))
-  const lay = tu.slice(-2)
-  return (lay.map((t) => t[0]).join('') || tenTrungTam[0]).toUpperCase()
-}
 
 /** Sidebar thu gọn được (docs/frontend/ui-ux-nguyen-tac.md). */
 export default function Layout() {
   const { t } = useTranslation()
   const { phien, dangXuat } = useAuth()
+
+  // Nhận diện trung tâm từ `/toi/cau-hinh` — mọi vai trò đọc được. Rơi về tên trong JWT khi
+  // chưa tải xong, để sidebar không nhấp nháy lúc mới vào.
+  const { tenTrungTam, tenVietTat, khoaLogo } = useNhanDienTrungTam()
+  const tenHienThi = tenTrungTam ?? phien?.tenTrungTam
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -247,19 +241,34 @@ export default function Layout() {
           thuGon ? 'justify-center px-2' : 'px-3',
         )}
       >
-        <div
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-primary text-xs font-bold text-primary-foreground"
-          title={thuGon ? `${phien?.tenTrungTam ?? ''} · ${phien?.maTrungTam ?? ''}` : undefined}
-        >
-          {vietTat(phien?.tenTrungTam)}
-        </div>
+        {/*
+          Logo THẬT nếu trung tâm đã tải lên (22/09/2026), không thì ô chữ cái đầu như trước.
+
+          Tên lấy từ `/toi/cau-hinh`, KHÔNG từ JWT: token chỉ có tên lúc đăng nhập, nên đổi tên
+          ở Thiết lập thì sidebar vẫn hiện tên cũ tới khi đăng nhập lại. Rơi về `phien` khi
+          cấu hình chưa tải xong — tránh nhấp nháy "—" mỗi lần vào app.
+        */}
+        {khoaLogo ? (
+          <Anh
+            khoa={khoaLogo}
+            className="h-8 w-8 shrink-0 rounded object-contain"
+          />
+        ) : (
+          <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-primary text-xs font-bold text-primary-foreground"
+            title={thuGon ? `${tenHienThi ?? ''} · ${phien?.maTrungTam ?? ''}` : undefined}
+          >
+            {vietTat(tenVietTat ?? tenHienThi)}
+          </div>
+        )}
         {!thuGon && (
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold leading-tight" title={phien?.tenTrungTam}>
+            <p className="truncate text-sm font-semibold leading-tight" title={tenHienThi}>
               {/* Token cũ chưa có claim ten_doi: hiện mã đội thay vì để trống. */}
-              {phien?.tenTrungTam || phien?.maTrungTam || '—'}
+              {tenHienThi || phien?.maTrungTam || '—'}
             </p>
-            {phien?.tenTrungTam && (
+            {/* Cần CẢ HAI: tên để biết dòng trên không phải mã, và `phien` để đọc mã. */}
+            {tenHienThi && phien && (
               <p className="truncate font-mono text-[11px] leading-tight tracking-wide text-muted-foreground">
                 {phien.maTrungTam}
               </p>

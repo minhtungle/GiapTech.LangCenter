@@ -5,6 +5,7 @@ using GiapTech.LangCenter.Application.DangNhap.Commands.DatLaiMatKhauQuaToken;
 using GiapTech.LangCenter.Application.DangNhap.Commands.DoiMatKhau;
 using GiapTech.LangCenter.Application.DangNhap.Commands.LamMoiToken;
 using GiapTech.LangCenter.Application.DangNhap.Commands.QuenMatKhau;
+using GiapTech.LangCenter.Application.Common.Interfaces;
 using GiapTech.LangCenter.Application.DangNhap.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -17,7 +18,8 @@ namespace GiapTech.LangCenter.API.Controllers.V1;
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/auth")]
-public class AuthController(ISender sender) : ControllerBase
+public class AuthController(ISender sender, ILuuTruAnh luuTru, ICurrentTenant tenant)
+    : ControllerBase
 {
     /// <summary>
     /// Tra tên trung tâm theo mã trung tâm — ĐỂ HIỂN THỊ ở trang đăng nhập, ẩn danh.
@@ -40,6 +42,43 @@ public class AuthController(ISender sender) : ControllerBase
         => await sender.Send(new TraTenTrungTamQuery(maTrungTam), ct) is { } dto
             ? Ok(dto)
             : NotFound();
+
+    /// <summary>
+    /// Logo của một trung tâm — ENDPOINT ẨN DANH, để màn đăng nhập hiện đúng nhận diện
+    /// (22/09/2026, yêu cầu chủ sản phẩm).
+    ///
+    /// **Không dùng `GET /anh/{khoa}`** cho việc này: endpoint đó nhận khoá tự do và gác bằng
+    /// `Anh.Xem`; mở cho người chưa đăng nhập là mở luôn ảnh học viên, ảnh CCCD, ảnh QR chuyển
+    /// khoản. Ở đây người gọi chỉ đưa **mã trung tâm**, server tự tra khoá — không chọn được
+    /// ảnh nào khác.
+    ///
+    /// Mã sai và trung tâm chưa có logo đều trả **404**, không phân biệt: phân biệt là cho
+    /// người dò biết mã nào có thật.
+    /// </summary>
+    [HttpGet("logo/{maTrungTam:length(7)}")]
+    [AllowAnonymous]
+    [EnableRateLimiting(GioiHanTanSuat.TraCuu)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Logo(string maTrungTam, CancellationToken ct)
+    {
+        if (await sender.Send(new TraKhoaLogoQuery(maTrungTam), ct) is not { } logo)
+            return NotFound();
+
+        // Đặt phạm vi tenant TRƯỚC khi đọc kho ảnh: `MinioLuuTruAnh.TaiVe` từ chối khi không
+        // biết tenant (quy tắc #2), mà người gọi ở đây chưa đăng nhập. Id do server tra từ mã
+        // trung tâm, không phải người gọi đưa vào — xem `TraKhoaLogoQuery`.
+        using var _ = tenant.DatPhamVi(logo.TenantId);
+
+        var anh = await luuTru.TaiVe(logo.Khoa, ct);
+        if (anh is null) return NotFound();
+
+        // `public` (không phải `private` như `/anh/{khoa}`): logo là nhận diện công khai, để
+        // proxy cache được. Khoá chứa GUID nên đổi logo là đổi khoá — cache dài vẫn đúng.
+        Response.Headers.CacheControl = "public, max-age=86400";
+
+        return File(anh.NoiDung, anh.LoaiNoiDung);
+    }
 
     /// <summary>FR-01 — đăng nhập bằng {mã trung tâm, username, mật khẩu}.</summary>
     [HttpPost("dang-nhap")]

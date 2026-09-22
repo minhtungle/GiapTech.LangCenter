@@ -13,12 +13,18 @@ import { taoTrungTam } from './tro-giup'
 const GOI_Y = '7 ký tự, không phân biệt hoa thường'
 
 /**
- * Dòng kết quả tra nằm ngay dưới ô mã. Neo bằng vùng chứa ô `#maTrungTam` thay vì `text=<tên trung tâm>`:
- * tên trung tâm hiện trong `<span class="truncate">`, và `truncate` cắt theo thị giác nên
- * `page.locator('text=...')` không khớp được chuỗi tên đầy đủ khi tên dài. Test đầu tiên đỏ
- * vì lý do đó chứ không phải vì chức năng sai — API trả đủ tên, DOM cũng có đủ.
+ * Kết quả tra nằm ngay dưới ô mã. Neo bằng vùng chứa ô `#maTrungTam` thay vì
+ * `text=<tên trung tâm>`: tên hiện trong `<span class="truncate">`, mà `truncate` cắt theo thị
+ * giác nên `page.locator('text=...')` không khớp chuỗi tên đầy đủ khi tên dài. Test đầu tiên
+ * đỏ vì lý do đó chứ không phải vì chức năng sai — API trả đủ tên, DOM cũng có đủ.
+ *
+ * **22/09/2026 — đổi từ `~ p` sang `~ *`**: kết quả tra nay là một THẺ NHẬN DIỆN (`<div>` chứa
+ * logo + tên + tên viết tắt), không còn là một thẻ `<p>`. Ba trạng thái kia (đang tra / không
+ * tìm thấy / câu gợi ý) vẫn là `<p>`, nên `~ *` bắt được cả bốn.
+ *
+ * Dùng `.first()` ở chỗ gọi: `~ *` khớp MỌI anh em sau ô mã, không chỉ phần tử kế tiếp.
  */
-const DONG_KET_QUA = '#maTrungTam ~ p'
+const DONG_KET_QUA = '#maTrungTam ~ *'
 
 test.describe('Đăng nhập — tra mã trung tâm', () => {
   test('mã đúng hiện tên trung tâm, mã sai hiện không tìm thấy', async ({ page, request }) => {
@@ -31,7 +37,9 @@ test.describe('Đăng nhập — tra mã trung tâm', () => {
     await expect(page.locator(`text=${GOI_Y}`)).toBeVisible()
 
     await page.fill('#maTrungTam', trungTam.maTrungTam)
-    await expect(page.locator(DONG_KET_QUA)).toHaveText(trungTam.tenTrungTam, { timeout: 10_000 })
+    await expect(page.locator(DONG_KET_QUA).first())
+      // `toContainText` chứ không `toHaveText`: thẻ nhận diện còn có tên viết tắt bên dưới.
+      .toContainText(trungTam.tenTrungTam, { timeout: 10_000 })
 
     await page.fill('#maTrungTam', 'ZZZZZZZ')
     await expect(page.locator('text=Không tìm thấy trung tâm tương ứng')).toBeVisible({ timeout: 10_000 })
@@ -48,7 +56,9 @@ test.describe('Đăng nhập — tra mã trung tâm', () => {
 
     await page.goto('/dang-nhap')
     await page.fill('#maTrungTam', trungTam.maTrungTam.toLowerCase())
-    await expect(page.locator(DONG_KET_QUA)).toHaveText(trungTam.tenTrungTam, { timeout: 10_000 })
+    await expect(page.locator(DONG_KET_QUA).first())
+      // `toContainText` chứ không `toHaveText`: thẻ nhận diện còn có tên viết tắt bên dưới.
+      .toContainText(trungTam.tenTrungTam, { timeout: 10_000 })
   })
 
   test('gõ TÊN trung tâm vào ô mã thì không tra ra gì', async ({ page, request }) => {
@@ -61,8 +71,7 @@ test.describe('Đăng nhập — tra mã trung tâm', () => {
     await page.goto('/dang-nhap')
     await page.fill('#maTrungTam', bayChuDauTen)
 
-    await expect(page.locator(DONG_KET_QUA)).toHaveText('Không tìm thấy trung tâm tương ứng', {
-      timeout: 10_000,
-    })
+    await expect(page.locator(DONG_KET_QUA).first())
+      .toHaveText('Không tìm thấy trung tâm tương ứng', { timeout: 10_000 })
   })
 })

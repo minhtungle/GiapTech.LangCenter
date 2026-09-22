@@ -70,6 +70,56 @@ Canh bởi `TraTenTrungTamTests` (12 test) và `e2e/dang-nhap-tra-ma.spec.ts` (3
 - Thông báo lỗi đăng nhập sai **không phân biệt** "sai username" hay "sai password" — trả cùng một mã lỗi.
 - Mật khẩu lưu hash bằng thuật toán chuẩn của ASP.NET Core Identity.
 
+### Nhận diện trung tâm ở màn đăng nhập (22/09/2026)
+
+Yêu cầu chủ sản phẩm: *"nhập đúng mã trung tâm tại đăng nhập sẽ load đúng thông tin trung tâm
+như trong thiết lập (logo, tên, ...), bên trong giao diện quản trị cũng vậy"*.
+
+`GET /auth/ten-trung-tam/{ma}` (ẩn danh) nay trả **ba trường**, không còn chỉ tên:
+
+| Trường | Vì sao an toàn |
+|---|---|
+| `tenTrungTam` | vốn đã hiện từ trước |
+| `tenVietTat` | trung tâm tự đặt, vẫn in trên biển hiệu |
+| `coLogo` | **cờ boolean, KHÔNG phải khoá ảnh** — khoá mang `tenantId` ở đầu |
+
+**Không** trả địa chỉ, liên hệ, id — dù chúng cũng nằm trong Thiết lập. Ai dò trúng mã 7 ký tự
+cũng đọc được những gì endpoint này trả. Canh bởi
+`TraTenTrungTamTests.Chi_tra_NHAN_DIEN_khong_tra_gi_khac` (khoá cứng danh sách field).
+
+#### Logo: endpoint riêng, không mở endpoint ảnh dùng chung
+
+`GET /auth/logo/{maTrungTam}` — ẩn danh, `EnableRateLimiting(TraCuu)`.
+
+Không dùng `GET /anh/{khoa}` cho việc này: endpoint đó nhận **khoá tự do** và gác bằng
+`Anh.Xem`; mở cho người chưa đăng nhập là mở luôn **ảnh học viên, ảnh CCCD, ảnh QR chuyển
+khoản**. Ở đây người gọi chỉ đưa mã trung tâm, server tự tra khoá trong DB.
+
+Mã sai và trung tâm chưa có logo **đều trả 404** — phân biệt là cho người dò biết mã nào có
+thật, tức thu hẹp không gian dò từ 27 tỷ xuống danh sách trung tâm có thật.
+
+> **Bẫy khi làm**: `MinioLuuTruAnh.TaiVe` cố ý từ chối khi không biết tenant hiện tại (quy tắc
+> #2 — khoá đến từ URL nên phải kiểm tiền tố). Người gọi endpoint này chưa đăng nhập ⇒ `TaiVe`
+> trả null ⇒ **404 dù logo có thật**. Không nới chốt chặn đó; controller tự đặt phạm vi bằng
+> `ICurrentTenant.DatPhamVi(tenantId)` — id do **server** tra từ mã, không phải người gọi đưa.
+
+Đây là **endpoint ẩn danh thứ 7**; `MoiEndpointPhaiDuocGacTests` đã cập nhật số kèm lý do.
+
+#### Bên trong: sidebar lấy nhận diện từ `/toi/cau-hinh`
+
+`/thiet-lap` gác bằng `ThietLapChung.Xem` — **giáo viên và học viên nhận 403**, mà họ cũng nhìn
+sidebar. Nên `/toi/cau-hinh` (mọi vai trò đọc được, vốn đã có cho múi giờ) trả thêm
+`tenTrungTam` · `tenVietTat` · `khoaLogo`. Chỉ ba trường nhận diện — không số tài khoản ngân
+hàng, không ảnh QR, không ngưỡng cảnh báo nợ.
+
+Ở đây trả **khoá thật** (khác endpoint ẩn danh chỉ trả cờ): người gọi đã đăng nhập và đã thuộc
+tenant này, khoá không lộ thêm gì.
+
+**Không đọc tên từ JWT nữa**: token chỉ mang tên **lúc đăng nhập**, nên đổi tên ở Thiết lập thì
+sidebar vẫn hiện tên cũ tới khi đăng nhập lại. Canh bởi `e2e/nhan-dien-trung-tam.spec.ts` —
+test **đổi tên rồi mới kiểm**, vì giữ nguyên tên thì hai nguồn cho cùng kết quả và mutation
+sống (đã xảy ra thật 22/09).
+
 ## FR-02 — Quên mật khẩu
 
 1. Người dùng nhập email đã đăng ký (kèm ID đội để xác định tenant).

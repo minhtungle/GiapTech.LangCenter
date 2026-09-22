@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth'
 import { layMaLoi } from '@/lib/api'
 import { useTinhNang } from '@/lib/tinhNang'
 import { useTraTenTrungTam } from '@/lib/traTenTrungTam'
+import { vietTat } from '@/lib/nhanDienTrungTam'
 import {
   Button, CanhBaoLoi, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label,
 } from '@/components/ui'
@@ -50,7 +51,8 @@ export default function DangNhap() {
 
   // Tra tên đội ngay khi mã đủ 7 ký tự: gõ sai một chữ mà chỉ biết sau khi điền cả mật khẩu
   // rồi nhận "sai thông tin đăng nhập" thì không phân biệt được là sai mã hay sai mật khẩu.
-  const { tenTrungTam, dangTra } = useTraTenTrungTam(watch('maTrungTam') ?? '')
+  const { tenTrungTam, trungTam, duongDanLogo, dangTra } =
+    useTraTenTrungTam(watch('maTrungTam') ?? '')
 
   const onSubmit = async (data: FormData) => {
     setMaLoi(null)
@@ -91,11 +93,44 @@ export default function DangNhap() {
                   lúc người dùng còn đang gõ là báo sai. */}
               {dangTra ? (
                 <p className="text-xs text-muted-foreground">{t('dangNhap.dangTraTenTrungTam')}</p>
-              ) : tenTrungTam ? (
-                <p className="flex items-center gap-1 text-xs font-medium text-primary">
-                  <Check className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">{tenTrungTam}</span>
-                </p>
+              ) : trungTam ? (
+                /*
+                  Thẻ nhận diện trung tâm (22/09/2026) — *"nhập đúng mã trung tâm sẽ load đúng
+                  thông tin trung tâm như trong thiết lập"*.
+
+                  Hiện logo THẬT nếu trung tâm đã tải lên, không thì ô chữ cái đầu như sidebar.
+                  Không hiện địa chỉ/liên hệ: đây là màn công khai, ai dò trúng mã 7 ký tự cũng
+                  đọc được — xem `TenTrungTamTheoMaDto`.
+                */
+                <div className="flex items-center gap-2.5 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-2">
+                  {duongDanLogo ? (
+                    <img
+                      src={duongDanLogo}
+                      alt=""
+                      className="h-9 w-9 shrink-0 rounded object-contain"
+                      /* Logo hỏng (bị xoá khỏi kho, MinIO chết) thì ẩn hẳn thay vì để icon
+                         ảnh vỡ — người dùng vẫn đọc được tên bên cạnh. */
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none'
+                      }}
+                    />
+                  ) : (
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-primary text-xs font-semibold text-primary-foreground">
+                      {vietTat(trungTam.tenVietTat ?? trungTam.tenTrungTam)}
+                    </span>
+                  )}
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-1 text-xs font-medium text-primary">
+                      <Check className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{trungTam.tenTrungTam}</span>
+                    </span>
+                    {trungTam.tenVietTat && (
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {trungTam.tenVietTat}
+                      </span>
+                    )}
+                  </span>
+                </div>
               ) : tenTrungTam === null ? (
                 <p className="flex items-center gap-1 text-xs text-destructive">
                   <CircleAlert className="h-3.5 w-3.5 shrink-0" />

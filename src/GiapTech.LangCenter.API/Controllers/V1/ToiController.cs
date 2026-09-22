@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using GiapTech.LangCenter.Application.Common.Interfaces;
+using GiapTech.LangCenter.Application.QuanTri.ThietLap;
 using GiapTech.LangCenter.Application.DaoTao.ThongKe;
 using GiapTech.LangCenter.Domain.Common;
 using MediatR;
@@ -27,8 +28,23 @@ public class ToiController(
     ISender sender)
     : ControllerBase
 {
-    /// <summary>Cấu hình trung tâm mà MỌI vai trò cần để hiển thị đúng.</summary>
-    public record CauHinhCuaToi(string MuiGio);
+    /// <summary>
+    /// Cấu hình trung tâm mà MỌI vai trò cần để hiển thị đúng.
+    ///
+    /// Thêm nhận diện (logo, tên viết tắt) ngày 22/09/2026 — sidebar phải hiện đúng logo trung
+    /// tâm chứ không phải ô chữ cái suy từ tên.
+    /// </summary>
+    /// <param name="MuiGio">Múi giờ trung tâm, để vẽ lịch đúng ô ngày.</param>
+    /// <param name="TenTrungTam">Tên đầy đủ — sidebar hiện cái này, không lấy từ JWT nữa.</param>
+    /// <param name="TenVietTat">Tên viết tắt do trung tâm tự đặt ở Thiết lập; null = tự suy từ tên.</param>
+    /// <param name="KhoaLogo">
+    /// Khoá ảnh logo để gọi `GET /anh/{khoa}`; null = chưa tải logo, UI dùng ô chữ cái.
+    ///
+    /// Ở đây trả **khoá thật** (khác endpoint ẩn danh `/auth/ten-trung-tam` chỉ trả cờ
+    /// boolean): người gọi đã đăng nhập và đã thuộc tenant này, khoá không lộ thêm gì.
+    /// </param>
+    public record CauHinhCuaToi(
+        string MuiGio, string TenTrungTam, string? TenVietTat, string? KhoaLogo);
 
     /// <summary>
     /// Múi giờ của trung tâm — frontend cần để vẽ lịch đúng ô ngày.
@@ -44,7 +60,10 @@ public class ToiController(
     public async Task<ActionResult<CauHinhCuaToi>> CauHinh(CancellationToken ct)
     {
         var tz = await muiGio.LayMuiGio(ct);
-        return Ok(new CauHinhCuaToi(tz.Id));
+        var nhanDien = await sender.Send(new LayNhanDienTrungTamQuery(), ct);
+
+        return Ok(new CauHinhCuaToi(
+            tz.Id, nhanDien.TenTrungTam, nhanDien.TenVietTat, nhanDien.KhoaLogo));
     }
 
     /// <summary>
