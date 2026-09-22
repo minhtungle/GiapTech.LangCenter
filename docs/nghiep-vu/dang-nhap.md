@@ -120,6 +120,92 @@ sidebar vẫn hiện tên cũ tới khi đăng nhập lại. Canh bởi `e2e/nha
 test **đổi tên rồi mới kiểm**, vì giữ nguyên tên thì hai nguồn cho cùng kết quả và mutation
 sống (đã xảy ra thật 22/09).
 
+### Bố cục màn đăng nhập: banner trái · form phải · footer (22/09/2026)
+
+Chủ sản phẩm: *"màn hình đăng nhập đang hơi trống — đưa khung đăng nhập sang phải, bên trái để
+hiển thị 1 khung banner được setting trong thiết lập như logo, nếu chưa có hãy để mặc định,
+nhớ làm responsive... footer có 1 dòng bản quyền phần mềm của GiapTex"*.
+
+**Banner có BA trạng thái**, không phải hai:
+
+| Khi nào | Hiện gì |
+|---|---|
+| Chưa gõ mã / mã sai | **Ảnh học tập mặc định** + tên phần mềm + câu giới thiệu |
+| Đúng mã, chưa có ảnh bìa | Ảnh mặc định + logo + tên + mô tả + địa chỉ |
+| Đúng mã, đã có ảnh bìa | **Ảnh bìa của trung tâm** thay ảnh mặc định |
+
+**Ảnh mặc định là ảnh THẬT về học tập** (22/09/2026, lần 3) — `assets/banner-hoc-tap.jpg`, xem
+`banner-hoc-tap.NGUON.md` cho nguồn, giấy phép và lý do chọn. Đã xem ba ứng viên và loại hai:
+ảnh lớp học có chữ trên màn chiếu (chọi với chữ phủ lên), ảnh sách + khối ABC (đọc ra lớp trẻ
+em, trong khi trung tâm ngoại ngữ dạy cả người lớn).
+
+Ba lớp chồng nhau, lớp dưới lộ ra khi lớp trên hỏng: **gradient thương hiệu** → **ảnh mặc
+định** (đóng gói trong bundle, không đi mạng) → **ảnh bìa trung tâm**. Lớp phủ tối dùng
+gradient **chéo** (`bg-gradient-to-tr`), đậm nhất ở góc dưới-trái nơi có logo và tên.
+
+Trạng thái đầu hay bị quên: người dùng mở trang là thấy ngay, lúc đó chưa gõ gì. Để trống thì
+nửa màn hình trắng — đúng cái *"hơi trống"* cần chữa.
+
+**Ảnh bìa dùng `<img>` phủ kín, không `background-image`**: `onError` bắt được ảnh hỏng (bị xoá
+khỏi kho, MinIO chết) và ẩn đi, để lộ gradient bên dưới. `background-image` hỏng thì chỉ còn
+khoảng trống, không có cách nào biết.
+
+**Logo đặt trên nền trắng** (`bg-white/95`): logo thường là ảnh tối trên nền trong suốt, đặt
+thẳng lên nền xanh đậm thì gần như biến mất.
+
+#### Responsive: màn hẹp ẩn hẳn banner
+
+`hidden lg:flex` — dưới 1024px banner biến mất, form chiếm trọn màn. Nhồi cả hai vào màn điện
+thoại thì form bị đẩy xuống dưới nếp gấp, người dùng phải cuộn mới đăng nhập được: tệ hơn hẳn
+so với không có banner. Nhận diện trung tâm vẫn thấy ở thẻ dưới ô mã.
+
+> Test kiểm `toBeHidden()`, **không** `toHaveCount(0)`: `hidden lg:flex` ẩn bằng CSS nên phần
+> tử vẫn nằm trong DOM. Kiểm số lượng thì đỏ oan dù giao diện đúng — đã gặp khi viết test.
+
+#### Tên phần mềm và nút tạo trung tâm
+
+Tên rút gọn thành **"LangCenter"** (22/09/2026) — bỏ tiền tố "GiapTech". Dòng bản quyền vẫn ghi
+*"Phần mềm được phát triển bởi GiapTex"*.
+
+**Tự đăng ký trung tâm ĐÓNG mặc định** từ 22/09/2026. Chủ sản phẩm yêu cầu *"ẩn nút tạo trung
+tâm"*, và khi được hỏi đã chọn **đóng hẳn chức năng** chứ không chỉ ẩn lối vào — chỉ tắt cờ thì
+ai biết đường dẫn vẫn `curl` tạo được tenant.
+
+| | |
+|---|---|
+| Cờ | `CHO_TU_DANG_KY` (mặc định **tắt**) — `API/TinhNang.cs` |
+| Endpoint | `POST /dang-ky-trung-tam` trả **404** khi tắt (không phải 403: 403 xác nhận endpoint tồn tại) |
+| Giao diện | `/tinh-nang` khai `dangKyTrungTam=false` ⇒ ẩn link |
+
+**Mặc định TẮT chứ không mặc định bật**: quên cấu hình ở môi trường thật thì hậu quả là "không
+ai tạo được trung tâm" (phiền, dễ thấy) chứ không phải "ai cũng tạo được" (âm thầm, nguy hiểm).
+
+> ⚠️ **Bộ E2E cần bật lại** — mỗi test tự tạo một trung tâm qua endpoint này. Chạy API với
+> `CHO_TU_DANG_KY=true` (xem CLAUDE.md mục 7). `ApiFactory` tự bật cho integration test.
+
+Cờ và chốt chặn đọc chung **một nguồn** (`TinhNang.ChoTuDangKy`): hai chỗ tự đọc cấu hình riêng
+sẽ có ngày lệch nhau — cờ nói "bật" mà endpoint 404, đúng cái ngõ cụt mà cờ sinh ra để tránh.
+Canh bởi `TinhNangTests.Co_khop_voi_hanh_vi_that_cua_endpoint_dang_ky`.
+
+#### Footer: chỉ dòng bản quyền
+
+Chủ sản phẩm chốt: footer **chỉ có dòng bản quyền GiapTex**; thông tin trung tâm nằm ở banner
+(chỉ hiện sau khi gõ đúng mã). Người chưa biết mã không đọc được gì về trung tâm — cùng lý lẽ
+với việc endpoint ẩn danh không trả `lienHe`.
+
+Footer trải **ngang cả hai cột**, không nằm trong cột phải: nằm trong cột phải thì nó dừng ở
+mép banner, nhìn như bị cắt.
+
+#### Dữ liệu cho banner
+
+Endpoint tra mã (ẩn danh) trả thêm `moTa`, `diaChi`, `coAnhBia`. Ảnh bìa có endpoint riêng
+`GET /auth/anh-bia/{maTrungTam}` — cùng khuôn và cùng lý lẽ với `/auth/logo/{ma}`.
+
+**`diaChi` rời khỏi danh sách cấm**, nhưng `lienHe` thì **giữ nguyên**: số điện thoại là thứ
+người dò dùng được ngay, khác hẳn một dòng địa chỉ vốn in trên biển hiệu.
+
+Đây là **endpoint ẩn danh thứ 8**; `MoiEndpointPhaiDuocGacTests` đã cập nhật số kèm lý do.
+
 ## FR-02 — Quên mật khẩu
 
 1. Người dùng nhập email đã đăng ký (kèm ID đội để xác định tenant).

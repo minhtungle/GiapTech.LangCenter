@@ -16,14 +16,22 @@ test('Gõ mã đúng thì hiện nhận diện trung tâm; sidebar dùng tên t�
 }) => {
   const tt = await taoTrungTam(request, 'nhan-dien')
 
-  // ---------- Màn đăng nhập: gõ mã → hiện tên ----------
+  /*
+    Màn đăng nhập: gõ mã → hiện tên.
+
+    Neo vào THẺ NHẬN DIỆN dưới ô mã (`#maTrungTam ~ *`), không dùng `getByText(tên)`: từ
+    22/09 (bố cục banner) tên trung tâm xuất hiện ở **ba chỗ** — banner trái, thẻ nhận diện,
+    và footer — nên `getByText` vi phạm strict mode. Đã đỏ đúng vậy khi chạy cả bộ.
+  */
   await page.goto('/dang-nhap')
   await page.fill('#maTrungTam', tt.maTrungTam)
-  await expect(page.getByText(tt.tenTrungTam, { exact: false })).toBeVisible({ timeout: 15_000 })
 
-  // Chiều NGƯỢC: mã sai thì KHÔNG hiện thẻ nhận diện, và không hiện ảnh vỡ.
+  const theNhanDien = page.locator('#maTrungTam ~ *').first()
+  await expect(theNhanDien).toContainText(tt.tenTrungTam, { timeout: 15_000 })
+
+  // Chiều NGƯỢC: mã sai thì thẻ không còn mang tên, và không hiện ảnh vỡ.
   await page.fill('#maTrungTam', 'ZZZZZZZ')
-  await expect(page.getByText(tt.tenTrungTam, { exact: false })).toHaveCount(0)
+  await expect(theNhanDien).not.toContainText(tt.tenTrungTam)
   await expect(page.locator('img[src*="/auth/logo/"]')).toHaveCount(0)
 
   // ---------- Đăng nhập, đổi tên viết tắt ở Thiết lập ----------

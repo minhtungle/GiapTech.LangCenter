@@ -81,6 +81,14 @@ public class ApiFactory : WebApplicationFactory<Program>
     protected virtual string MoiTruong => Environments.Development;
 
     /// <summary>
+    /// Bật tự đăng ký trung tâm cho test (mặc định của SẢN PHẨM là tắt từ 22/09/2026).
+    ///
+    /// Lớp con đặt `false` để kiểm chính hành vi mặc định — xem
+    /// `TinhNangTests.ApiFactoryMacDinh`.
+    /// </summary>
+    protected virtual bool ChoTuDangKy => true;
+
+    /// <summary>
     /// Giới hạn tần suất TẮT mặc định trong test.
     ///
     /// `TestServer` không mở socket thật nên `RemoteIpAddress` là null với mọi request — tất cả
@@ -100,6 +108,13 @@ public class ApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("JWT_SECRET", JwtSecret);
         builder.UseSetting("JWT_ISSUER", "langcenter-api");
         builder.UseSetting("JWT_EXPIRY_MINUTES", "60");
+
+        // Tự đăng ký trung tâm TẮT mặc định từ 22/09/2026 (chủ sản phẩm chốt đóng hẳn), nhưng
+        // test cần bật: nhiều test dựng dữ liệu bằng cách tạo tenant mới qua endpoint này.
+        // Bật ở đây chứ không nới mặc định — mặc định tắt là chốt chặn thật cho môi trường
+        // chạy thật.
+        builder.UseSetting(
+            GiapTech.LangCenter.API.TinhNang.KhoaChoTuDangKy, ChoTuDangKy ? "true" : "false");
         if (DatCoGioiHanTanSuat is { } bat)
             builder.UseSetting("GIOI_HAN_TAN_SUAT", bat ? "true" : "false");
 

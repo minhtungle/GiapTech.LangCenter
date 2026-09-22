@@ -20,6 +20,7 @@ namespace GiapTech.LangCenter.API.Controllers.V1;
 [Route("api/v{version:apiVersion}/dang-ky-trung-tam")]
 public class DangKyTrungTamController(
     ITenantSeeder seeder,
+    IConfiguration config,
     ILogger<DangKyTrungTamController> logger) : ControllerBase
 {
     /// <summary>Chỉ cần tên trung tâm — mã trung tâm do hệ thống sinh (7 ký tự).</summary>
@@ -34,6 +35,22 @@ public class DangKyTrungTamController(
     [EnableRateLimiting(GioiHanTanSuat.XacThuc)]
     public async Task<IActionResult> DangKy([FromBody] DangKyRequest body, CancellationToken ct)
     {
+        /*
+          ĐÓNG tự đăng ký (22/09/2026) — chủ sản phẩm chốt *"ẩn nút tạo trung tâm"*, và khi
+          được hỏi đã chọn **đóng hẳn chức năng**, không chỉ ẩn lối vào.
+
+          Trả 404 chứ không 403: 403 xác nhận "có endpoint này, chỉ là bạn không được phép" —
+          404 không nói gì thêm cho người dò.
+
+          Đóng ở ĐÂY, không chỉ tắt cờ `/tinh-nang`: cờ chỉ ẩn nút trên giao diện, ai biết
+          đường dẫn vẫn `curl` tạo được tenant. Test `Co_khop_voi_hanh_vi_that_cua_endpoint`
+          canh đúng chuyện này — cờ nói "tắt" mà endpoint vẫn chạy là cờ nói dối.
+
+          Bật lại bằng cấu hình `CHO_TU_DANG_KY=true`, không phải sửa mã. Bộ E2E cần nó (mỗi
+          test tự tạo một trung tâm), nên `ApiFactory` và script chạy E2E đặt cờ này.
+        */
+        if (!TinhNang.ChoTuDangKy(config)) return NotFound();
+
         if (string.IsNullOrWhiteSpace(body.TenTrungTam))
             return BadRequest(new { errorCode = "DU_LIEU_KHONG_HOP_LE" });
 

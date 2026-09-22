@@ -80,6 +80,33 @@ public class AuthController(ISender sender, ILuuTruAnh luuTru, ICurrentTenant te
         return File(anh.NoiDung, anh.LoaiNoiDung);
     }
 
+    /// <summary>
+    /// Ảnh bìa của một trung tâm — banner ở màn đăng nhập (22/09/2026).
+    ///
+    /// Cùng khuôn và cùng lý lẽ với <see cref="Logo"/>: người gọi đưa **mã trung tâm**, server
+    /// tự tra khoá. Chưa tải ảnh bìa thì 404 và frontend vẽ nền gradient mặc định.
+    /// </summary>
+    [HttpGet("anh-bia/{maTrungTam:length(7)}")]
+    [AllowAnonymous]
+    [EnableRateLimiting(GioiHanTanSuat.TraCuu)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AnhBia(string maTrungTam, CancellationToken ct)
+    {
+        if (await sender.Send(new TraKhoaAnhBiaQuery(maTrungTam), ct) is not { } bia)
+            return NotFound();
+
+        // Đặt phạm vi tenant trước khi đọc kho ảnh — xem chú thích ở `Logo`.
+        using var _ = tenant.DatPhamVi(bia.TenantId);
+
+        var anh = await luuTru.TaiVe(bia.Khoa, ct);
+        if (anh is null) return NotFound();
+
+        Response.Headers.CacheControl = "public, max-age=86400";
+
+        return File(anh.NoiDung, anh.LoaiNoiDung);
+    }
+
     /// <summary>FR-01 — đăng nhập bằng {mã trung tâm, username, mật khẩu}.</summary>
     [HttpPost("dang-nhap")]
     [EnableRateLimiting(GioiHanTanSuat.XacThuc)]

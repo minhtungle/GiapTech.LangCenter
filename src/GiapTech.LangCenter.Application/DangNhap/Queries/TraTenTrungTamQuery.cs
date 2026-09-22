@@ -18,8 +18,22 @@ namespace GiapTech.LangCenter.Application.DangNhap.Queries;
 /// Mở rộng 22/09/2026 theo yêu cầu chủ sản phẩm (*"nhập đúng mã trung tâm sẽ load đúng thông
 /// tin trung tâm như trong thiết lập"*). Bản trước cố ý chỉ trả tên — nay nới thêm đúng hai
 /// thứ mà trung tâm vẫn in trên biển hiệu, và **không** nới địa chỉ/liên hệ.
+///
+/// **22/09/2026 (lần 2)** — thêm `MoTa`, `DiaChi` và `CoAnhBia` cho **banner** ở màn đăng
+/// nhập. Chủ sản phẩm chốt: banner chỉ hiện **sau khi gõ đúng mã**, và footer chỉ có dòng bản
+/// quyền. Vẫn **không** trả `LienHe` (số điện thoại là thứ người dò dùng được ngay), không
+/// trả số tài khoản ngân hàng, không trả id.
 /// </summary>
-public record TenTrungTamTheoMaDto(string TenTrungTam, string? TenVietTat, bool CoLogo);
+public record TenTrungTamTheoMaDto(
+    string TenTrungTam,
+    string? TenVietTat,
+    bool CoLogo,
+    /// <summary>Mô tả ngắn — hiện dưới tên trên banner. Trung tâm tự viết ở Thiết lập.</summary>
+    string? MoTa,
+    /// <summary>Địa chỉ — thứ trung tâm vẫn in trên biển hiệu và website.</summary>
+    string? DiaChi,
+    /// <summary>Cờ, KHÔNG phải khoá — cùng lý do với `CoLogo`.</summary>
+    bool CoAnhBia);
 
 /// <summary>
 /// Tra tên trung tâm theo mã trung tâm — ENDPOINT ẨN DANH (FR-01).
@@ -61,7 +75,10 @@ public class TraTenTrungTamHandler(IAppDbContext db) : IRequestHandler<TraTenTru
                 t.TenTrungTam,
                 t.TenVietTat,
                 // Cờ, KHÔNG phải khoá: khoá ảnh mang `tenantId` ở đầu.
-                t.LogoUrl != null))
+                t.LogoUrl != null,
+                t.MoTa,
+                t.DiaChi,
+                t.AnhBiaUrl != null))
             .FirstOrDefaultAsync(ct);
     }
 }
@@ -92,6 +109,30 @@ public class TraTenTrungTamHandler(IAppDbContext db) : IRequestHandler<TraTenTru
 /// Tenant id ở đây do SERVER tra từ mã, không phải người gọi đưa vào.
 /// </summary>
 public record TraKhoaLogoQuery(string MaTrungTam) : IRequest<KhoaLogoDto?>;
+
+/// <summary>
+/// Khoá ảnh BÌA — banner ở màn đăng nhập (22/09/2026). Cùng khuôn và cùng lý lẽ với
+/// <see cref="TraKhoaLogoQuery"/>: người gọi đưa mã, server tra khoá.
+/// </summary>
+public record TraKhoaAnhBiaQuery(string MaTrungTam) : IRequest<KhoaLogoDto?>;
+
+public class TraKhoaAnhBiaHandler(IAppDbContext db)
+    : IRequestHandler<TraKhoaAnhBiaQuery, KhoaLogoDto?>
+{
+    public async Task<KhoaLogoDto?> Handle(TraKhoaAnhBiaQuery request, CancellationToken ct)
+    {
+        if (!Domain.Common.MaTrungTam.HopLe(request.MaTrungTam)) return null;
+
+        var ma = Domain.Common.MaTrungTam.ChuanHoa(request.MaTrungTam);
+
+        var kq = await db.Tenants
+            .Where(t => t.MaTrungTam == ma && t.AnhBiaUrl != null)
+            .Select(t => new { t.Id, t.AnhBiaUrl })
+            .FirstOrDefaultAsync(ct);
+
+        return kq is null ? null : new KhoaLogoDto(kq.Id, kq.AnhBiaUrl!);
+    }
+}
 
 /// <param name="TenantId">Để controller đặt phạm vi trước khi đọc kho ảnh — xem trên.</param>
 /// <param name="Khoa">Khoá ảnh trong kho lưu trữ.</param>

@@ -1,3 +1,4 @@
+using GiapTech.LangCenter.API;
 using System.Text;
 using Asp.Versioning;
 using GiapTech.LangCenter.API.Authorization;
@@ -241,11 +242,20 @@ app.MapHealthChecks("/health").AllowAnonymous();
 //
 // Chỉ khai những gì frontend cần để KHÔNG hiện lối vào dẫn tới ngõ cụt. Không khai tên môi
 // trường: "Production"/"Development" là thông tin thừa với người dùng và thừa với người dò.
-app.MapGet("/api/v1/tinh-nang", () => Results.Ok(new
+app.MapGet("/api/v1/tinh-nang", (IConfiguration cfg) => Results.Ok(new
 {
-    // Giữ cờ này thay vì xoá: nó là hợp đồng với frontend, và nếu sau này cần đóng đăng ký
-    // (spam quá nhiều chẳng hạn) thì đổi ở đây là xong, không phải sửa cả trang đăng nhập.
-    dangKyTrungTam = true,
+    /*
+      TẮT từ 22/09/2026 theo yêu cầu chủ sản phẩm (*"ẩn nút tạo trung tâm đi"*).
+
+      Tắt ở ĐÂY chứ không xoá khối JSX ở `DangNhap.tsx`: cờ này vốn sinh ra cho đúng tình
+      huống này, và tắt bằng cờ thì bật lại chỉ là đổi một dòng — xoá giao diện thì phải dựng
+      lại cả link, cả bản dịch.
+
+      Endpoint `/dang-ky-trung-tam` VẪN mở (nợ N3 — "đăng ký trung tâm an toàn production"
+      chưa làm). Cờ này chỉ ẩn LỐI VÀO trên giao diện, không phải lớp bảo vệ: ai biết đường
+      dẫn vẫn gọi được. Đóng hẳn endpoint là việc của nợ N3.
+    */
+    dangKyTrungTam = TinhNang.ChoTuDangKy(cfg),
 })).AllowAnonymous();
 
 app.Run();

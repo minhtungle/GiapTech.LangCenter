@@ -65,6 +65,14 @@ const vi = {
     tieuDe: 'Đăng nhập',
     moTa: 'Nhập mã trung tâm, tên đăng nhập và mật khẩu',
     maTrungTam: 'Mã trung tâm',
+    // Banner + footer màn đăng nhập (22/09/2026).
+    tenPhanMem: 'LangCenter',
+    bannerTieuDe: 'Hệ thống quản lý trung tâm ngoại ngữ',
+    bannerMoTa:
+      'Nhập mã trung tâm để bắt đầu. Quản lý lớp học, học viên, điểm danh và học phí '
+      + 'trên một hệ thống duy nhất.',
+    banQuyen: '© {{nam}} LangCenter · Phần mềm được phát triển bởi GiapTex',
+    banQuyenCoTen: '© {{nam}} {{ten}} · Phần mềm được phát triển bởi GiapTex',
     maTrungTamGoiY: '7 ký tự, không phân biệt hoa thường',
     dangTraTenTrungTam: 'Đang tra mã trung tâm…',
     khongTimThayTrungTam: 'Không tìm thấy trung tâm tương ứng',

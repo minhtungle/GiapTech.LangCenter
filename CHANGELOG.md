@@ -8,6 +8,65 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — tên "LangCenter", ảnh banner thật, đóng tự đăng ký (22/09/2026)
+
+Ba phản hồi của chủ sản phẩm sau khi xem bố cục mới.
+
+**Tên**: "GiapTech LangCenter" → **"LangCenter"**. Dòng bản quyền vẫn ghi *"Phần mềm được phát
+triển bởi GiapTex"*.
+
+**Ảnh banner mặc định**: thay gradient bằng **ảnh thật về học tập** (nhóm người lớn học cùng
+nhau, Unsplash License — dùng thương mại không cần ghi công). Đã xem ba ứng viên và loại hai:
+ảnh lớp học có chữ trên màn chiếu (chọi với chữ phủ lên), ảnh sách + khối ABC (đọc ra lớp trẻ
+em, mà trung tâm ngoại ngữ dạy cả người lớn). Cắt sẵn về 3:4 dọc cho khớp cột banner — 87 KB
+thay vì tải ảnh ngang rồi cắt bỏ hai bên. Nguồn và lý do chọn ghi ở
+`assets/banner-hoc-tap.NGUON.md`.
+
+**Tự đăng ký trung tâm: ĐÓNG mặc định.** Yêu cầu là *"ẩn nút tạo trung tâm"*; khi được hỏi,
+chủ sản phẩm chọn **đóng hẳn chức năng** chứ không chỉ ẩn lối vào — chỉ tắt cờ thì ai biết
+đường dẫn vẫn `curl` tạo được tenant.
+
+- Cờ `CHO_TU_DANG_KY`, **mặc định tắt**: quên cấu hình thì hậu quả là "không ai tạo được"
+  (phiền, dễ thấy) chứ không phải "ai cũng tạo được" (âm thầm, nguy hiểm).
+- Endpoint trả **404** khi tắt, không phải 403 — 403 xác nhận endpoint tồn tại.
+- Cờ `/tinh-nang` và chốt chặn đọc **chung một nguồn** (`TinhNang.ChoTuDangKy`). Test
+  `Co_khop_voi_hanh_vi_that_cua_endpoint_dang_ky` canh đúng chuyện này và **đã đỏ** khi tôi
+  mới chỉ tắt cờ mà chưa đóng endpoint — cờ nói dối là tệ hơn không có cờ.
+- **Bộ E2E cần `CHO_TU_DANG_KY=true`** (mỗi test tự tạo một trung tâm); CLAUDE.md đã cập nhật.
+
+Một chi tiết chỉ thấy khi soi ảnh: chữ địa chỉ nằm đúng vùng laptop sáng trong ảnh nền nên khó
+đọc — đổi lớp phủ tối từ gradient dọc sang **chéo**, đậm nhất ở góc dưới-trái.
+
+
+### Changed — bố cục màn đăng nhập: banner trái · form phải · footer (22/09/2026)
+
+*"Màn hình đăng nhập đang hơi trống — đưa khung đăng nhập sang phải, bên trái để hiển thị 1
+khung banner được setting trong thiết lập như logo, nếu chưa có hãy để mặc định, nhớ làm
+responsive... footer có 1 dòng bản quyền phần mềm của GiapTex."*
+
+**Banner có ba trạng thái**: chưa gõ mã → gradient + câu giới thiệu (không để trống, đúng cái
+"hơi trống" cần chữa); gõ đúng mã → logo + tên + mô tả + địa chỉ; có ảnh bìa → ảnh làm nền,
+phủ lớp tối để chữ đọc được.
+
+**Responsive**: dưới 1024px ẩn hẳn banner, form chiếm trọn màn. Nhồi cả hai vào màn điện thoại
+thì form bị đẩy xuống dưới nếp gấp — tệ hơn hẳn so với không có banner. Kiểm ở 1440 / 820 /
+390px: không màn nào cuộn ngang, nút đăng nhập luôn thấy được.
+
+**Footer** trải ngang cả hai cột (nằm trong cột phải thì dừng ở mép banner, nhìn như bị cắt).
+Chỉ có dòng bản quyền GiapTex — thông tin trung tâm ở banner, chỉ hiện sau khi gõ đúng mã.
+
+Dữ liệu: endpoint tra mã trả thêm `moTa`, `diaChi`, `coAnhBia`; ảnh bìa có endpoint ẩn danh
+riêng `GET /auth/anh-bia/{ma}`, cùng khuôn với logo. **`diaChi` rời danh sách cấm nhưng
+`lienHe` giữ nguyên**: số điện thoại là thứ người dò dùng được ngay.
+
+Hai chi tiết đáng ghi:
+
+- **Ảnh bìa dùng `<img>` phủ kín, không `background-image`** — `onError` bắt được ảnh hỏng và
+  để lộ gradient bên dưới; `background-image` hỏng thì chỉ còn khoảng trống.
+- **Test phải kiểm `toBeHidden()`, không `toHaveCount(0)`** — `hidden lg:flex` ẩn bằng CSS nên
+  phần tử vẫn trong DOM. Kiểm số lượng thì đỏ oan dù giao diện đúng.
+
+
 ### Added — nhận diện trung tâm ở màn đăng nhập và trong sidebar (22/09/2026)
 
 *"Nhập đúng mã trung tâm tại đăng nhập sẽ load đúng thông tin trung tâm như trong thiết lập

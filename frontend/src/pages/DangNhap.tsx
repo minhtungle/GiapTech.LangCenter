@@ -10,6 +10,7 @@ import { layMaLoi } from '@/lib/api'
 import { useTinhNang } from '@/lib/tinhNang'
 import { useTraTenTrungTam } from '@/lib/traTenTrungTam'
 import { vietTat } from '@/lib/nhanDienTrungTam'
+import { BannerTrungTam } from './BannerTrungTam'
 import {
   Button, CanhBaoLoi, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label,
 } from '@/components/ui'
@@ -51,7 +52,7 @@ export default function DangNhap() {
 
   // Tra tên đội ngay khi mã đủ 7 ký tự: gõ sai một chữ mà chỉ biết sau khi điền cả mật khẩu
   // rồi nhận "sai thông tin đăng nhập" thì không phân biệt được là sai mã hay sai mật khẩu.
-  const { tenTrungTam, trungTam, duongDanLogo, dangTra } =
+  const { tenTrungTam, trungTam, duongDanLogo, duongDanAnhBia, dangTra } =
     useTraTenTrungTam(watch('maTrungTam') ?? '')
 
   const onSubmit = async (data: FormData) => {
@@ -67,7 +68,25 @@ export default function DangNhap() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
+    /*
+      Hai cột: banner trái, form phải (22/09/2026 — *"đưa khung đăng nhập sang phải, bên trái
+      để hiển thị 1 khung banner"*).
+
+      `min-h-screen` + `lg:flex-row`: dưới `lg` banner tự ẩn (xem `BannerTrungTam`) và form
+      chiếm trọn màn — nhồi cả hai vào màn điện thoại sẽ đẩy form xuống dưới nếp gấp.
+    */
+    <div className="flex min-h-screen flex-col">
+      {/* Hàng trên: banner trái + form phải. `flex-1` để nó ăn hết chiều cao còn lại. */}
+      <div className="flex flex-1 flex-col lg:flex-row">
+      <BannerTrungTam
+        trungTam={trungTam}
+        duongDanLogo={duongDanLogo}
+        duongDanAnhBia={duongDanAnhBia}
+      />
+
+      {/* Cột phải: form căn giữa cả hai chiều. */}
+      <div className="flex flex-1 items-center justify-center bg-muted/30 px-4 py-10">
+        <div className="w-full max-w-sm">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-lg">{t('dangNhap.tieuDe')}</CardTitle>
@@ -182,6 +201,28 @@ export default function DangNhap() {
           </form>
         </CardContent>
       </Card>
+        </div>
+      </div>
+      </div>
+
+      {/*
+          Footer — *"thông tin cũng được thiết lập và 1 dòng bản quyền phần mềm của GiapTex"*.
+
+          Chủ sản phẩm chốt: footer **chỉ có dòng bản quyền**; thông tin trung tâm nằm ở banner
+          bên trái (chỉ hiện sau khi gõ đúng mã). Nên người chưa biết mã không đọc được gì về
+          trung tâm — cùng lý lẽ với việc endpoint ẩn danh không trả `lienHe`.
+
+          Tên trung tâm chèn vào dòng bản quyền khi đã biết, để footer không phải một dòng
+          trơ trọi giữa màn.
+        */}
+      <footer className="border-t border-border bg-background px-4 py-4 text-center text-xs text-muted-foreground">
+          {trungTam
+            ? t('dangNhap.banQuyenCoTen', {
+                nam: new Date().getFullYear(),
+                ten: trungTam.tenTrungTam,
+              })
+            : t('dangNhap.banQuyen', { nam: new Date().getFullYear() })}
+      </footer>
     </div>
   )
 }

@@ -52,7 +52,11 @@ public class TraTenTrungTamTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var body = await client.GetFromJsonAsync<JsonElement>(
             $"/api/v1/auth/ten-trung-tam/{factory.MaTrungTamA}");
 
-        Assert.Equal(new[] { "tenTrungTam", "tenVietTat", "coLogo" },
+        // 22/09 lần 2: thêm `moTa`, `diaChi`, `coAnhBia` cho BANNER ở màn đăng nhập.
+        // Vẫn KHÔNG có `lienHe` (số điện thoại là thứ người dò dùng được ngay), không `id`,
+        // không số tài khoản ngân hàng.
+        Assert.Equal(
+            new[] { "tenTrungTam", "tenVietTat", "coLogo", "moTa", "diaChi", "coAnhBia" },
             body.EnumerateObject().Select(p => p.Name).ToArray());
     }
 

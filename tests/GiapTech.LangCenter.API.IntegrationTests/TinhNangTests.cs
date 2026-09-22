@@ -92,6 +92,37 @@ public class TinhNangTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.OK, dn.StatusCode);
     }
 
+    /// <summary>
+    /// MẶC ĐỊNH tự đăng ký **TẮT** — cờ báo tắt, và endpoint thật sự trả 404 (22/09/2026).
+    ///
+    /// Chủ sản phẩm yêu cầu *"ẩn nút tạo trung tâm"*, và khi được hỏi đã chọn **đóng hẳn chức
+    /// năng** chứ không chỉ ẩn lối vào: chỉ tắt cờ thì ai biết đường dẫn vẫn `curl` tạo được
+    /// tenant.
+    ///
+    /// `ApiFactory` bật `CHO_TU_DANG_KY=true` cho các test khác (chúng dựng dữ liệu bằng cách
+    /// tạo tenant mới), nên test này phải dùng factory **không** bật cờ để kiểm mặc định thật.
+    /// </summary>
+    [Fact]
+    public async Task Mac_dinh_TAT_tu_dang_ky_va_endpoint_tra_404()
+    {
+        using var macDinh = new ApiFactoryMacDinh();
+        var client = macDinh.CreateClient();
+
+        var tinhNang = await client.GetFromJsonAsync<JsonElement>("/api/v1/tinh-nang");
+        Assert.False(tinhNang.GetProperty("dangKyTrungTam").GetBoolean());
+
+        // Chốt chặn THẬT, không chỉ cờ: 404 chứ không 403 — 403 xác nhận endpoint có tồn tại.
+        var dangKy = await client.PostAsJsonAsync("/api/v1/dang-ky-trung-tam",
+            new { TenTrungTam = "Trung tâm không được phép tạo" });
+        Assert.Equal(HttpStatusCode.NotFound, dangKy.StatusCode);
+    }
+
+    /// <summary>Factory KHÔNG bật `CHO_TU_DANG_KY` — để kiểm hành vi mặc định.</summary>
+    public sealed class ApiFactoryMacDinh : ApiFactory
+    {
+        protected override bool ChoTuDangKy => false;
+    }
+
     [Fact]
     public async Task Khong_khai_ten_moi_truong()
     {

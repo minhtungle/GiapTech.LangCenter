@@ -82,3 +82,118 @@ nó hiện tên cũ và test đỏ. Chạy lại mutation: chết.
 | Sidebar đọc thiết lập, không đọc JWT | bỏ `useNhanDienTrungTam` | chết (sau khi sửa test) |
 
 588 test backend · 33 vitest xanh.
+
+---
+
+## Bổ sung: bố cục lại màn đăng nhập
+
+Chủ sản phẩm phản hồi ngay sau khi xem:
+
+> - màn hình đăng nhập đang hơi trống
+> - đưa khung đăng nhập sang phải, bên trái để hiển thị 1 khung banner được setting trong
+>   thiết lập như logo, nếu chưa có hãy để mặc định, nhớ làm responsive cho các thiết bị
+> - footer có kèm thông tin cũng được thiết lập và 1 dòng bản quyền phần mềm của GiapTex
+
+### Dữ liệu đã có sẵn
+
+`TENANT.anh_bia_url` tồn tại từ đầu và Thiết lập đã có ô tải ảnh bìa — chỉ chưa ai dùng tới.
+Không phải thêm cột nào; chỉ cần mở đường cho nó ra màn đăng nhập.
+
+### Ba trạng thái banner, không phải hai
+
+Chỗ dễ sót nhất là **trạng thái chưa gõ mã**: người dùng mở trang là thấy ngay, mà lúc đó chưa
+biết trung tâm nào. Nếu chỉ làm hai nhánh "có ảnh bìa / có logo" thì màn hình lúc mới vào vẫn
+trống nửa bên trái — đúng cái đang phải chữa.
+
+Nên banner luôn có nội dung: chưa gõ mã thì hiện tên phần mềm và một câu giới thiệu.
+
+### Hỏi trước hai điều
+
+| Câu hỏi | Chốt |
+|---|---|
+| Footer hiện thông tin gì? | **Chỉ dòng bản quyền GiapTex** |
+| Chưa có ảnh bìa thì banner hiện gì? | **Gradient + logo + tên** |
+
+Câu đầu quan trọng vì nó **đảo một quyết định của chính hôm nay**: sáng nay chủ sản phẩm chọn
+KHÔNG lộ địa chỉ/liên hệ cho người chưa đăng nhập. Chốt mới: địa chỉ hiện ở **banner** (chỉ sau
+khi gõ đúng mã), còn `lienHe` vẫn nằm trong danh sách cấm — số điện thoại là thứ người dò dùng
+được ngay, khác một dòng địa chỉ vốn in trên biển hiệu.
+
+### Test đỏ oan vì tôi kiểm nhầm thứ
+
+Viết `await expect(trangDt.locator('h2')).toHaveCount(0)` cho màn điện thoại → đỏ.
+
+Soi lại: banner **đúng là đã ẩn** (`visible=false`), nhưng `hidden lg:flex` của Tailwind ẩn
+bằng CSS nên phần tử vẫn nằm trong DOM. Kiểm số lượng là kiểm nhầm thứ. Đổi sang `toBeHidden()`.
+
+Đáng nhớ vì nó khác hẳn các lần đỏ trước: lần này **sản phẩm đúng, test sai**, và nếu tôi tin
+test thì đã đi sửa CSS đang chạy tốt.
+
+### Hai chi tiết giao diện chỉ thấy khi soi ảnh
+
+- **Nội dung banner nằm lệch xuống dưới**: bản đầu dùng `justify-between` với một `<div/>` giữ
+  chỗ. Đổi sang neo tuyệt đối tên phần mềm ở góc trên, khối giữa `justify-center`.
+- **Footer dừng ở mép banner**: vì tôi đặt nó trong cột phải. Đưa ra ngoài, trải ngang cả hai.
+
+Cả hai đều không test nào bắt được.
+
+### Mutation
+
+| Mutant | Kết quả |
+|---|---|
+| Bỏ nội dung mặc định (lại "hơi trống") | chết |
+| Banner không ẩn trên màn hẹp | chết |
+| Bỏ dòng bản quyền GiapTex | chết |
+
+---
+
+## Bổ sung lần 2: tên ngắn · ảnh thật · đóng tự đăng ký
+
+> - GiapTech LangCenter thay bằng LangCenter thôi
+> - phần banner tự tìm ảnh thật phù hợp để làm mặc định, liên quan tới học tập
+> - ẩn nút tạo trung tâm đi
+
+### Chọn ảnh: xem ba cái rồi mới quyết
+
+Tải ba ứng viên từ Unsplash (giấy phép cho dùng thương mại, không bắt buộc ghi công) và **xem
+từng cái** thay vì lấy cái đầu tiên:
+
+| Ảnh | Quyết |
+|---|---|
+| Lớp học có máy chiếu | loại — nhiều chi tiết và có **chữ** trên màn chiếu, chọi với logo/tiêu đề phủ lên |
+| Sách + táo + khối chữ ABC | loại — đọc ra lớp **trẻ em**, mà trung tâm ngoại ngữ dạy cả người lớn |
+| Nhóm người lớn học cùng nhau | **chọn** — đúng đối tượng, tông tối hợp chữ trắng |
+
+Cắt sẵn về **3:4 dọc** rồi mới đưa vào repo: banner là cột dọc, ảnh ngang 1400×933 đặt vào sẽ
+bị `object-cover` cắt mất hai bên — tức tải về nhiều byte rồi vứt đi. 87 KB sau khi cắt và nén.
+
+Ghi nguồn + giấy phép + lý do chọn vào `banner-hoc-tap.NGUON.md` cạnh tệp ảnh.
+
+### "Ẩn nút" hoá ra là câu hỏi, không phải lệnh
+
+Tắt cờ `dangKyTrungTam` là xong phần "ẩn nút". Nhưng test
+`Co_khop_voi_hanh_vi_that_cua_endpoint_dang_ky` **đỏ ngay**:
+
+> Điểm mấu chốt: cờ phải nói ĐÚNG sự thật. Cờ true mà endpoint trả 404 (hoặc ngược lại) còn
+> tệ hơn không có cờ.
+
+Cờ nói "tắt" mà endpoint vẫn tạo được tenant — cờ nói dối. Test này viết từ trước, và nó đúng.
+
+Hỏi chủ sản phẩm: **ẩn nút hay đóng hẳn?** Chốt **đóng hẳn**. Nên endpoint trả 404 khi cờ tắt,
+và cờ `/tinh-nang` với chốt chặn đọc **chung một nguồn** (`TinhNang.ChoTuDangKy`) để không bao
+giờ lệch nhau nữa.
+
+Hai lựa chọn nhỏ đáng ghi:
+
+- **404 chứ không 403**: 403 xác nhận "có endpoint này, chỉ là bạn không được phép".
+- **Mặc định TẮT**: quên cấu hình ở môi trường thật thì hậu quả là "không ai tạo được trung
+  tâm" (phiền, dễ thấy) chứ không phải "ai cũng tạo được" (âm thầm, nguy hiểm).
+
+Hệ quả phải xử: **mỗi test E2E tự tạo một trung tâm** qua endpoint này. Nếu đóng mà không mở
+đường cho test thì cả bộ 47 test đỏ. `ApiFactory` tự bật cờ; bộ E2E cần
+`CHO_TU_DANG_KY=true` — đã ghi vào CLAUDE.md.
+
+### Một chi tiết chỉ thấy khi soi ảnh
+
+Chữ "Hà Nội, Việt Nam" nằm đúng vùng laptop sáng trong ảnh nền → khó đọc. Đổi lớp phủ tối từ
+gradient **dọc** sang **chéo**, đậm nhất ở góc dưới-trái nơi có logo, tên và địa chỉ.

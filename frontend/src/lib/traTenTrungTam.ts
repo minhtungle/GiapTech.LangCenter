@@ -22,6 +22,10 @@ export interface NhanDienTrungTam {
   tenTrungTam: string
   tenVietTat: string | null
   coLogo: boolean
+  /** Mô tả ngắn và địa chỉ — hiện trên banner màn đăng nhập (22/09/2026). */
+  moTa: string | null
+  diaChi: string | null
+  coAnhBia: boolean
 }
 
 export function useTraTenTrungTam(maTrungTam: string) {
@@ -59,6 +63,8 @@ export function useTraTenTrungTam(maTrungTam: string) {
      * đăng nhập thì 401 sẽ kích hoạt luồng làm mới token vô nghĩa.
      */
     duongDanLogo: data?.coLogo ? `/api/v1/auth/logo/${ma}` : undefined,
+    /** Ảnh bìa cho banner; `undefined` = chưa tải, UI vẽ nền gradient mặc định. */
+    duongDanAnhBia: data?.coAnhBia ? `/api/v1/auth/anh-bia/${ma}` : undefined,
     dangTra: duDai && isFetching,
   }
 }

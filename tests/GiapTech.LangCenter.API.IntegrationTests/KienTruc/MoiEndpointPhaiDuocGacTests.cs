@@ -142,10 +142,14 @@ public class MoiEndpointPhaiDuocGacTests
             người chưa đăng nhập là mở luôn ảnh học viên, ảnh CCCD, ảnh QR chuyển khoản.
           - Thứ lộ ra là **logo của đúng trung tâm mang mã đó** — thứ họ vẫn in trên biển hiệu.
           - Là endpoint ĐỌC, và có `EnableRateLimiting(TraCuu)` như endpoint tra tên.
+
+          **22/09/2026 (lần 2) → 8**: thêm `AuthController.AnhBia` — banner ở màn đăng nhập
+          (*"bên trái để hiển thị 1 khung banner được setting trong thiết lập"*). Y hệt
+          `Logo` về mọi mặt: người gọi đưa mã, server tra khoá, là endpoint đọc, có rate limit.
         */
         Assert.True(
-            anDanh.Count <= 7,
-            $"Có {anDanh.Count} endpoint ẩn danh (trước là 7): {string.Join(", ", anDanh)}.\n"
+            anDanh.Count <= 8,
+            $"Có {anDanh.Count} endpoint ẩn danh (trước là 8): {string.Join(", ", anDanh)}.\n"
             + "Mỗi endpoint ẩn danh là chỗ ai cũng gọi được — endpoint GHI thì còn phải có rate "
             + "limit (xem GioiHanTanSuatTests). Nếu thêm là có chủ ý, cập nhật số này kèm lý do.");
     }

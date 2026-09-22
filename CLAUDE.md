@@ -290,7 +290,10 @@ npx oxlint src e2e
 # --- E2E (Playwright) ---
 # Mỗi test tự tạo một trung tâm qua /dang-ky-trung-tam, mà endpoint đó có hạn mức 10 req/phút
 # mỗi IP (thêm 08/09/2026) → chạy cả bộ sẽ 429. PHẢI tắt hạn mức khi chạy E2E:
-GIOI_HAN_TAN_SUAT=false dotnet run --project src/GiapTech.LangCenter.API   # ở terminal khác
+# Và từ 22/09/2026, tự đăng ký trung tâm TẮT mặc định (chủ sản phẩm chốt đóng hẳn) — mà mỗi
+# test E2E lại tự tạo một trung tâm, nên phải bật lại khi chạy test:
+GIOI_HAN_TAN_SUAT=false CHO_TU_DANG_KY=true \
+  dotnet run --project src/GiapTech.LangCenter.API   # ở terminal khác
 E2E_BASE_URL=http://localhost:5173 npx playwright test
 
 # --- PostgreSQL + MinIO cho dev ---
@@ -304,7 +307,9 @@ dotnet ef database update --project src/GiapTech.LangCenter.Infrastructure \
   --startup-project src/GiapTech.LangCenter.API
 # → 45 bảng (15 hệ thống + 30 nghiệp vụ) — xem docs/database/erd.md
 
-# Tạo trung tâm thử — endpoint ẩn danh, mã 7 ký tự do hệ thống sinh:
+# Tạo trung tâm thử — endpoint ẩn danh, mã 7 ký tự do hệ thống sinh.
+# CẦN `CHO_TU_DANG_KY=true` lúc chạy API, nếu không endpoint trả 404 (mặc định TẮT từ
+# 22/09/2026 — xem API/TinhNang.cs):
 curl -X POST localhost:5229/api/v1/dang-ky-trung-tam \
   -H 'Content-Type: application/json' -d '{"tenTrungTam":"Trung tâm Ngoại ngữ Dev"}'
 # → { maTrungTam: "A3K9M2P", username: "admin", matKhau: "123456" }

@@ -52,8 +52,18 @@ public class NhanDienTrungTamTests(ApiFactory factory) : IClassFixture<ApiFactor
         Assert.True(body.TryGetProperty("tenVietTat", out _));
         Assert.True(body.TryGetProperty("coLogo", out _));
 
-        // Chiều LOẠI — những thứ dứt khoát không được trả cho người chưa đăng nhập.
-        foreach (var cam in new[] { "id", "diaChi", "lienHe", "soTaiKhoan", "logoUrl", "khoaLogo" })
+        /*
+          Chiều LOẠI — những thứ dứt khoát không được trả cho người chưa đăng nhập.
+
+          `diaChi` **đã rời khỏi danh sách cấm** ngày 22/09 (lần 2): chủ sản phẩm yêu cầu banner
+          ở màn đăng nhập hiện thông tin trung tâm, và địa chỉ là thứ vẫn in trên biển hiệu.
+          Nhưng `lienHe` thì GIỮ NGUYÊN trong danh sách cấm — số điện thoại là thứ người dò
+          dùng được ngay, khác hẳn một dòng địa chỉ.
+
+          `logoUrl`/`khoaLogo` vẫn cấm dù có `coLogo`: khoá mang `tenantId` ở đầu, trả ra là
+          tặng người chưa đăng nhập một id thật.
+        */
+        foreach (var cam in new[] { "id", "lienHe", "soTaiKhoan", "logoUrl", "khoaLogo", "anhBiaUrl" })
             Assert.False(body.TryGetProperty(cam, out _), $"KHÔNG được trả `{cam}`");
     }
 
