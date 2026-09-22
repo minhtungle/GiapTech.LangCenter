@@ -118,7 +118,7 @@ public class TraTenTrungTamTests(ApiFactory factory) : IClassFixture<ApiFactory>
         using var scope = factory.Services.CreateScope();
         var seeder = scope.ServiceProvider.GetRequiredService<ITenantSeeder>();
         const string tenDai = "Cong Hoa Thanh Nien Ha Noi";
-        var trungTam = await seeder.TaoTenantMoiAsync(tenDai);
+        var trungTam = (await seeder.TaoTenantMoiAsync(tenDai)).Tenant;
 
         var client = factory.CreateClient();
 

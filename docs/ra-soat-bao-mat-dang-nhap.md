@@ -18,9 +18,27 @@ qua xác thực** hay **đọc dữ liệu trung tâm khác** — cách ly tenan
 
 ---
 
+## Trạng thái khắc phục
+
+Chủ sản phẩm chốt ngày 22/09/2026: **làm lần lượt toàn bộ**, riêng mục 7 bàn sau vì nó là thay
+đổi kiến trúc (cần ADR, và triển khai sẽ đá mọi phiên đang mở ra).
+
+| Mục | Trạng thái |
+|---|---|
+| 1. Đăng xuất phía server | ✅ **XONG** 22/09 |
+| 2. Mật khẩu admin mặc định | ✅ **XONG** 22/09 |
+| 3. Kênh thời gian | ✅ **XONG** 22/09 |
+| 4. Khoá tài khoản sau N lần sai | ✅ **XONG** 22/09 |
+| 5. Security header ở tầng ứng dụng | ⏳ đang làm |
+| 6. Độ dài mật khẩu tối thiểu | ⏳ chờ |
+| 7. Token trong `localStorage` | 🅿️ **để riêng** — cần ADR |
+| 8. Fail-open của `PhienDuyNhatMiddleware` | ✅ **XONG** 22/09 (làm cùng mục 1) |
+
+---
+
 ## Cần sửa, theo thứ tự ưu tiên
 
-### 1. 🔴 Không có đăng xuất phía server
+### 1. ✅ ĐÃ SỬA — Không có đăng xuất phía server
 
 `POST /auth/dang-xuat` **không tồn tại**. `dangXuat()` ở frontend chỉ xoá `localStorage`.
 
@@ -31,9 +49,16 @@ qua. Ai đọc được `localStorage` sau đó (máy dùng chung, extension, ba
 Chú thích ở `TaiKhoan.cs:52` đã ghi *"`null` = chưa từng đăng nhập, **hoặc đã đăng xuất**"* —
 tức ý định đã có, phần cài đặt thì chưa. **Đã kiểm chứng: không dòng nào set `PhienHienTai = null`.**
 
-**Sửa:** thêm endpoint thu hồi refresh token + `PhienHienTai = null` + `IPhienService.XoaCache`.
+**Đã sửa 22/09/2026** — `POST /auth/dang-xuat` (`DangXuatCommand`) làm **ba việc cùng lúc**:
+thu hồi refresh token, ghi `TaiKhoan.DaDangXuat` vào `PhienHienTai`, xoá cache phiên.
 
-### 2. 🔴 Mọi trung tâm mới có `admin` / `123456`
+⚠️ **Không ghi `null`** như đề xuất ban đầu của bản rà soát này: `null` mang nghĩa *"chưa từng
+đăng nhập"* và middleware **cố ý cho qua**, nên ghi `null` thì token vừa đăng xuất vẫn đi lọt —
+tức thêm endpoint mà không chặn được gì. Dùng một `Guid` hằng làm giá trị đánh dấu.
+
+Canh bởi `DangXuatTests` (7 test). Mutation "ghi `null` thay vì `DaDangXuat`" → chết.
+
+### 2. ✅ ĐÃ SỬA — Mọi trung tâm mới có `admin` / `123456`
 
 `TenantSeeder.cs:20` — `string matKhauAdmin = "123456"`, và `DangKyTrungTamController` gọi **không
 truyền** tham số này.
@@ -42,9 +67,17 @@ Giảm nhẹ đã có: tự đăng ký **đang tắt mặc định** (22/09/2026
 Nhưng `/auth/dang-nhap` **vẫn cho đăng nhập thành công** với cặp này, và `/auth/doi-mat-khau` nằm
 trong allowlist của middleware — nên kẻ vào được sẽ tự đặt mật khẩu của mình và chiếm trung tâm.
 
-**Sửa:** sinh mật khẩu ngẫu nhiên bằng CSPRNG khi khởi tạo tenant.
+**Đã sửa 22/09/2026** — mật khẩu admin **sinh ngẫu nhiên** (CSPRNG, 16 ký tự, ~92 bit), trả về
+đúng một lần trong response đăng ký; DB chỉ giữ bản băm.
 
-### 3. 🟠 Dò được username qua thời gian phản hồi
+Đổi luôn kiểu trả về của `ITenantSeeder` thành `TenantMoi(Tenant, MatKhauAdmin)` để **trình biên
+dịch bắt** mọi chỗ gọi phải xử lý — nếu chỉ sửa bên trong seeder thì controller vẫn trả
+`"123456"` và cặp đó không đăng nhập được, tức vá bảo mật xong lại hỏng đăng ký.
+
+Canh bởi `MatKhauAdminNgauNhienTests` (4 test), trong đó có test *"mật khẩu trả về PHẢI đăng
+nhập được"* chốt đúng ca hỏng trên.
+
+### 3. ✅ ĐÃ SỬA — Dò được username qua thời gian phản hồi
 
 `DangNhapCommand.cs` — username **không tồn tại** thì `throw` ngay, **không chạy PBKDF2**;
 username có thật thì chạy ~100k vòng băm. Chênh lệch hàng chục ms, đo được.
@@ -57,7 +90,7 @@ Cùng lỗi ở `QuenMatKhauCommand`, và **nặng hơn**: nhánh có email th�
 
 **Sửa:** băm một hash giả khi không tìm thấy tài khoản; đẩy gửi email sang chạy nền.
 
-### 4. 🟠 Không khoá tài khoản sau nhiều lần sai
+### 4. ✅ ĐÃ SỬA — Không khoá tài khoản sau nhiều lần sai
 
 Rate limit là **10 lần/phút theo IP**. Không có cột đếm lần sai, không có khoá tạm.
 
@@ -93,14 +126,20 @@ không có `unsafe-inline`) giảm nhẹ đáng kể. Phương án chắc hơn l
 cookie `httpOnly; Secure; SameSite=Strict` và giữ access token trong bộ nhớ — nhưng đó là thay
 đổi lớn, nên cân nhắc riêng chứ không gộp vào đợt này.
 
-### 8. 🟡 `PhienDuyNhatMiddleware` fail-open không còn lý do tồn tại
+### 8. ✅ ĐÃ SỬA — `PhienDuyNhatMiddleware` fail-open không còn lý do tồn tại
 
 Token thiếu `jti`/`TaiKhoanId`, hoặc `PhienHienTai == null` → **cho qua**. Đây là nhượng bộ tương
 thích cho token phát trước 20/09/2026; access token chỉ sống 60 phút nên **những token đó đã chết
 từ lâu**.
 
-Quan trọng khi làm mục 1: nếu đăng xuất set `PhienHienTai = null` mà nhánh fail-open còn đó thì
-middleware sẽ **cho qua đúng những token vừa bị đăng xuất**. Hai việc này phải làm cùng nhau.
+**Đã sửa 22/09/2026, cùng lúc với mục 1** — token thiếu `jti`/`TaiKhoanId` nay **bị chặn** (401
+`PHIEN_DA_BI_DAY_RA`) thay vì cho qua.
+
+Hai việc bắt buộc đi cùng nhau: nếu đăng xuất ghi dấu vào `PhienHienTai` mà nhánh fail-open còn
+đó thì middleware vẫn cho qua token vừa bị đăng xuất.
+
+Canh bởi `DangXuatTests.Token_KHONG_co_jti_bi_chan_chu_khong_cho_qua` — viết **sau khi một
+mutation SỐNG** cho thấy lúc đó chưa có gì canh bản vá này.
 
 ---
 

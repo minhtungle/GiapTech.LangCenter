@@ -1499,6 +1499,11 @@ const vi = {
     ANH_RONG: 'Tệp ảnh rỗng',
     DANG_NHAP_THAT_BAI: 'Mã trung tâm, tên đăng nhập hoặc mật khẩu không đúng',
     TAI_KHOAN_BI_VO_HIEU_HOA: 'Tài khoản đã bị vô hiệu hóa',
+    // Khoá TẠM (sai mật khẩu nhiều lần), khác hẳn vô hiệu hoá. Câu chữ phải nói rõ "tạm" và
+    // "thử lại sau" để người gõ nhầm không tưởng mình bị cấm cửa rồi gọi điện lên trung tâm.
+    TAI_KHOAN_BI_KHOA_TAM:
+      'Sai mật khẩu quá nhiều lần. Tài khoản bị tạm khoá, vui lòng thử lại sau ít phút '
+      + 'hoặc dùng "Quên mật khẩu".',
     PHAI_DOI_MAT_KHAU: 'Bạn cần đổi mật khẩu trước khi tiếp tục',
     MAT_KHAU_CU_KHONG_DUNG: 'Mật khẩu hiện tại không đúng',
     TOKEN_DAT_LAI_KHONG_HOP_LE: 'Mã đặt lại không hợp lệ hoặc đã hết hạn',

@@ -32,7 +32,8 @@ public class DangNhapHandler(
     IPasswordHasher hasher,
     ITokenService tokenService,
     ICurrentTenant currentTenant,
-    IPhienService phienService)
+    IPhienService phienService,
+    IChongDoMatKhau chongDo)
     : IRequestHandler<DangNhapCommand, DangNhapResult>
 {
     public async Task<DangNhapResult> Handle(DangNhapCommand request, CancellationToken ct)
@@ -41,15 +42,46 @@ public class DangNhapHandler(
         // chuyện thường. Không chuẩn hoá thì họ bị từ chối chỉ vì bàn phím đang ở chế độ thường.
         var maTrungTam = Domain.Common.MaTrungTam.ChuanHoa(request.MaTrungTam);
 
+        /*
+          Khoá tạm sau nhiều lần sai (22/09/2026) — chặn dò mật khẩu phân tán, thứ mà rate
+          limit theo IP không chặn được. Xem `IChongDoMatKhau`.
+
+          Kiểm TRƯỚC khi chạm DB: đang bị khoá thì không có lý do gì tốn thêm truy vấn, và
+          đây cũng là lúc rẻ nhất để từ chối.
+
+          Khoá đếm theo {mã trung tâm, username} chứ không theo id tài khoản, nên đếm được cả
+          khi tài khoản không tồn tại — nếu chỉ đếm tài khoản có thật thì hai nhánh hành xử
+          khác nhau và tạo lại đúng kênh dò mà `BamGia()` vừa bịt.
+        */
+        var khoaDem = IChongDoMatKhau.TaoKhoa(maTrungTam, request.Username);
+
+        if (chongDo.DangBiKhoa(khoaDem))
+            throw new AppException(MaLoi.TaiKhoanBiKhoaTam, $"Khoá tạm: {khoaDem}");
+
         // TENANT không phải ITenantEntity nên không bị Global Query Filter chặn — cần thiết,
         // vì lúc này chưa biết tenant nào để mà lọc.
         var tenant = await db.Tenants
             .FirstOrDefaultAsync(t => t.MaTrungTam == maTrungTam, ct);
 
-        // Sai mã trung tâm, sai username, sai mật khẩu → CÙNG một mã lỗi. Phân biệt sẽ cho phép
-        // dò xem trung tâm nào tồn tại và tài khoản nào có thật.
+        /*
+          Sai mã trung tâm, sai username, sai mật khẩu → CÙNG một mã lỗi. Phân biệt sẽ cho phép
+          dò xem trung tâm nào tồn tại và tài khoản nào có thật.
+
+          **Và phải cùng cả THỜI GIAN** (22/09/2026). Cùng mã lỗi thôi là chưa đủ: bản trước
+          `throw` ngay ở hai nhánh dưới mà không chạy PBKDF2, trong khi nhánh "sai mật khẩu"
+          chạy ~100k vòng băm. Chênh lệch hàng chục mili-giây ấy đo được qua mạng, nên người
+          dò vẫn biết mã trung tâm nào có thật và username nào tồn tại — đúng thứ mà việc dùng
+          chung mã lỗi định giấu.
+
+          Gọi `BamGia()` để hai nhánh tốn thời gian tương đương. Đợt rà soát bảo mật 22/09/2026
+          xếp đây là mục 3.
+        */
         if (tenant is null)
+        {
+            hasher.BamGia();
+            chongDo.GhiNhanSai(khoaDem);
             throw new AppException(MaLoi.DangNhapThatBai, $"Không có tenant {maTrungTam}");
+        }
 
         var taiKhoan = await db.TaiKhoans
             .IgnoreQueryFilters() // chưa có tenant trong context ở bước đăng nhập
@@ -57,10 +89,21 @@ public class DangNhapHandler(
                 u => u.TenantId == tenant.Id && u.Username == request.Username, ct);
 
         if (taiKhoan is null)
+        {
+            hasher.BamGia();
+            chongDo.GhiNhanSai(khoaDem);
             throw new AppException(MaLoi.DangNhapThatBai, $"Không có user {request.Username}");
+        }
 
         if (!hasher.KiemTra(taiKhoan.PasswordHash, request.MatKhau))
+        {
+            chongDo.GhiNhanSai(khoaDem);
             throw new AppException(MaLoi.DangNhapThatBai, "Sai mật khẩu");
+        }
+
+        // Đăng nhập ĐÚNG ⇒ xoá bộ đếm. Thiếu dòng này thì người gõ sai vài lần rồi gõ đúng
+        // vẫn mang bộ đếm cũ sang lần sau và bị khoá oan.
+        chongDo.XoaDem(khoaDem);
 
         if (taiKhoan.TrangThai == TrangThaiNguoiDung.VoHieuHoa)
             throw new AppException(MaLoi.TaiKhoanBiVoHieuHoa);

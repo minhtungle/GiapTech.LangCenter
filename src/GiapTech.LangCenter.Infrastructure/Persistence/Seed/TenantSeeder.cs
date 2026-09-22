@@ -2,6 +2,7 @@ using GiapTech.LangCenter.Application.Common.Interfaces;
 using GiapTech.LangCenter.Domain.Common;
 using GiapTech.LangCenter.Domain.Entities;
 using GiapTech.LangCenter.Domain.Enums;
+using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 
 namespace GiapTech.LangCenter.Infrastructure.Persistence.Seed;
@@ -16,9 +17,38 @@ public class TenantSeeder(AppDbContext db, IPasswordHasher hasher, ICurrentTenan
     /// <summary>Số lần thử sinh mã trước khi bỏ cuộc — xem <see cref="SinhMaChuaDungAsync"/>.</summary>
     private const int SoLanThuSinhMa = 10;
 
-    public async Task<Tenant> TaoTenantMoiAsync(
-        string tenTrungTam, string matKhauAdmin = "123456", CancellationToken ct = default)
+    /// <summary>
+    /// Bộ ký tự sinh mật khẩu admin — **bỏ các ký tự dễ đọc nhầm**: `0/O`, `1/l/I`.
+    ///
+    /// Mật khẩu này người ta phải đọc từ màn hình rồi gõ lại (có khi đọc qua điện thoại cho
+    /// nhau), nên nhầm một ký tự là mất luôn quyền vào trung tâm vừa tạo. Mất ~2 bit entropy
+    /// đổi lấy việc không ai gõ nhầm — với 16 ký tự thì vẫn còn thừa rất nhiều.
+    /// </summary>
+    private const string KyTuMatKhau = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+    /// <summary>
+    /// 16 ký tự từ bộ 55 ⇒ ~92 bit entropy. Thừa sức cho một mật khẩu chỉ dùng một lần rồi
+    /// bị buộc đổi, và vẫn ngắn đủ để đọc cho nhau qua điện thoại.
+    /// </summary>
+    private const int DoDaiMatKhau = 16;
+
+    /// <summary>
+    /// Sinh mật khẩu admin bằng <see cref="RandomNumberGenerator"/> (CSPRNG), **không** dùng
+    /// <see cref="Random"/> — `Random` gieo theo thời gian nên hai trung tâm tạo cùng lúc có
+    /// thể nhận đúng một mật khẩu.
+    ///
+    /// `GetItems` lấy mẫu không lệch (unbiased); tự viết `% KyTuMatKhau.Length` sẽ lệch về các
+    /// ký tự đầu bộ.
+    /// </summary>
+    private static string SinhMatKhauAdmin() =>
+        RandomNumberGenerator.GetString(KyTuMatKhau, DoDaiMatKhau);
+
+    public async Task<TenantMoi> TaoTenantMoiAsync(
+        string tenTrungTam, string? matKhauAdmin = null, CancellationToken ct = default)
     {
+        // Mặc định NGẪU NHIÊN. Chỉ test mới truyền mật khẩu biết trước — xem `TenantMoi`.
+        matKhauAdmin ??= SinhMatKhauAdmin();
+
         var maTrungTam = await SinhMaChuaDungAsync(ct);
 
         var tenant = new Tenant { MaTrungTam = maTrungTam, TenTrungTam = tenTrungTam };
@@ -104,7 +134,7 @@ public class TenantSeeder(AppDbContext db, IPasswordHasher hasher, ICurrentTenan
         });
 
         await db.SaveChangesAsync(ct);
-        return tenant;
+        return new TenantMoi(tenant, matKhauAdmin);
     }
 
     /// <summary>

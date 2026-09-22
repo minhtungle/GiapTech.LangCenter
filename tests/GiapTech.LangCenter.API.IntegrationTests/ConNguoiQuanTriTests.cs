@@ -30,18 +30,22 @@ public class ConNguoiQuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory
         if (ten.Length > 40) ten = ten[..40];
         var dangKy = await moTai.PostAsJsonAsync("/api/v1/dang-ky-trung-tam", new { TenTrungTam = ten });
         dangKy.EnsureSuccessStatusCode();
-        var ma = (await dangKy.Content.ReadFromJsonAsync<JsonElement>())
-            .GetProperty("maTrungTam").GetString()!;
+        var body = await dangKy.Content.ReadFromJsonAsync<JsonElement>();
+        var ma = body.GetProperty("maTrungTam").GetString()!;
+
+        // Đọc mật khẩu TỪ RESPONSE, không giả định "123456": từ 22/09/2026 mỗi trung tâm mới
+        // nhận một mật khẩu admin ngẫu nhiên (xem `MatKhauAdminNgauNhienTests`).
+        var mkBanDau = body.GetProperty("matKhau").GetString()!;
 
         var dn1 = await moTai.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaTrungTam = ma, Username = "admin", MatKhau = "123456" });
+            new { MaTrungTam = ma, Username = "admin", MatKhau = mkBanDau });
         var t1 = (await dn1.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("accessToken").GetString();
 
         var doi = factory.CreateClient();
         doi.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", t1);
         await doi.PostAsJsonAsync("/api/v1/auth/doi-mat-khau",
-            new { MatKhauCu = "123456", MatKhauMoi = MatKhauMoi });
+            new { MatKhauCu = mkBanDau, MatKhauMoi = MatKhauMoi });
 
         var dn2 = await moTai.PostAsJsonAsync("/api/v1/auth/dang-nhap",
             new { MaTrungTam = ma, Username = "admin", MatKhau = MatKhauMoi });

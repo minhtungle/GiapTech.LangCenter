@@ -33,6 +33,10 @@ public class MoiEndpointPhaiDuocGacTests
     /// </summary>
     private static readonly Dictionary<string, string> NgoaiLeChiCanDangNhap = new()
     {
+        ["AuthController.DangXuat"] =
+            "Đăng xuất CHÍNH MÌNH — chỉ thu hồi phiên của người đang gọi (lấy TaiKhoanId từ "
+            + "claim, không nhận id từ client). Gác bằng quyền thì ai mất quyền sẽ không thoát "
+            + "ra được, mà đăng xuất phải luôn làm được.",
         ["AuthController.DoiMatKhau"] =
             "Đổi mật khẩu CỦA CHÍNH MÌNH — mật khẩu cũ là lớp xác thực, không cần quyền chức năng.",
         ["ToiController.CauHinh"] =

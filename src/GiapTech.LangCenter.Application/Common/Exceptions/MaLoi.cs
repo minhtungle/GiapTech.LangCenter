@@ -15,6 +15,15 @@ public static class MaLoi
     public const string DangNhapThatBai = "DANG_NHAP_THAT_BAI";
 
     public const string TaiKhoanBiVoHieuHoa = "TAI_KHOAN_BI_VO_HIEU_HOA";
+
+    /// <summary>
+    /// Tài khoản bị **khoá tạm** vì đăng nhập sai quá nhiều lần (22/09/2026).
+    ///
+    /// Khác `TaiKhoanBiVoHieuHoa` (quản trị tắt tài khoản — người dùng phải liên hệ trung tâm):
+    /// cái này tự mở sau ít phút, nên câu thông báo phải nói rõ "thử lại sau" để người gõ nhầm
+    /// không tưởng mình bị cấm cửa và gọi điện lên trung tâm.
+    /// </summary>
+    public const string TaiKhoanBiKhoaTam = "TAI_KHOAN_BI_KHOA_TAM";
     public const string PhaiDoiMatKhau = "PHAI_DOI_MAT_KHAU";
     public const string MatKhauCuKhongDung = "MAT_KHAU_CU_KHONG_DUNG";
     public const string TokenDatLaiKhongHopLe = "TOKEN_DAT_LAI_KHONG_HOP_LE";

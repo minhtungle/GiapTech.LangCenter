@@ -45,11 +45,26 @@ public class TaiKhoan : TenantEntity
     /// phá vỡ tương thích với mọi token đang lưu hành — người đang mở app sẽ bị đá ra ngay khi
     /// triển khai. `jti` đã nằm trong mọi token từ trước, kể cả token phát trước thay đổi này.
     ///
-    /// `null` = chưa từng đăng nhập, hoặc đã đăng xuất. Middleware coi `null` là **cho qua**,
-    /// không phải chặn: token còn hạn mà cột rỗng chỉ có thể là token phát trước 20/09/2026, và
-    /// đá hàng loạt người đang dùng là cái giá không đáng cho một thay đổi không khẩn cấp.
+    /// `null` = **chưa từng đăng nhập** kể từ 20/09/2026. Middleware coi `null` là **cho qua**:
+    /// token còn hạn mà cột rỗng chỉ có thể là token phát trước ngày đó, và đá hàng loạt người
+    /// đang dùng là cái giá không đáng cho một thay đổi không khẩn cấp.
+    ///
+    /// **Đăng xuất KHÔNG ghi `null`** mà ghi <see cref="DaDangXuat"/> — xem lý do ở đó.
     /// </summary>
     public Guid? PhienHienTai { get; set; }
+
+    /// <summary>
+    /// Giá trị đánh dấu **đã đăng xuất**, ghi vào <see cref="PhienHienTai"/> (22/09/2026).
+    ///
+    /// Cần một giá trị riêng vì `null` đã mang nghĩa *"chưa từng đăng nhập"* và middleware
+    /// **cho qua** — đăng xuất mà ghi `null` thì token vừa đăng xuất vẫn đi lọt, tức endpoint
+    /// đăng xuất không chặn được gì.
+    ///
+    /// Là hằng số nên không `jti` nào trùng được (`jti` sinh ngẫu nhiên mỗi lần phát token),
+    /// vì vậy **mọi** token của tài khoản đều lệch giá trị này ⇒ đều bị chặn. Không cần thêm
+    /// cột, không cần migration, không đụng tới token đang lưu hành (quy tắc #1).
+    /// </summary>
+    public static readonly Guid DaDangXuat = new("00000000-0000-0000-0000-00000000da07");
 
     public Tenant Tenant { get; set; } = null!;
 

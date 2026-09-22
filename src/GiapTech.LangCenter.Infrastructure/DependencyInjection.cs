@@ -56,6 +56,11 @@ public static class DependencyInjection
         services.AddMemoryCache();
         services.AddScoped<IQuyenService, QuyenService>();
         services.AddScoped<IPhienService, PhienService>();
+
+        // SINGLETON, không Scoped: bộ đếm lần đăng nhập sai phải sống qua nhiều request. Đăng
+        // ký Scoped thì mỗi request có một bộ đếm mới và nó luôn bằng 0 — cơ chế thành vô
+        // dụng mà không có lỗi nào báo. Canh bởi `ChongDoMatKhauTests`.
+        services.AddSingleton<IChongDoMatKhau, ChongDoMatKhau>();
         services.AddScoped<IPhamViLopHoc, PhamViLopHoc>();
         services.AddScoped<IPhamViHocPhi, PhamViHocPhi>();
         services.AddScoped<IPhamViKhoaOnline, PhamViKhoaOnline>();

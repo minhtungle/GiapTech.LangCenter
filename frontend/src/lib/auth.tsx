@@ -92,6 +92,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
 
   const dangXuat = React.useCallback(() => {
+    /*
+      Báo server thu hồi phiên (22/09/2026) — TRƯỚC khi xoá token, vì request này cần token để
+      xác thực.
+
+      Trước đây đăng xuất chỉ xoá `localStorage`: access token vẫn sống tới 60 phút và refresh
+      token tới 30 ngày, nên ai đọc được máy đó sau khi người dùng đứng dậy vẫn vào được. Xem
+      `DangXuatCommand` phía backend.
+
+      KHÔNG `await`: phần dọn dẹp phía client phải chạy dù mạng hỏng hay server chết. Chờ
+      request rồi mới xoá token nghĩa là mất mạng thì bấm "Đăng xuất" không có tác dụng gì cả
+      — tệ hơn hẳn so với xoá ngay rồi để server dọn sau.
+
+      Nuốt lỗi có chủ ý: người dùng muốn thoát ra, không muốn đọc thông báo lỗi. Phiên hỏng sẵn
+      (token hết hạn) thì request này 401 — cũng không sao, vì phiên đó đã chết rồi.
+    */
+    api.post('/auth/dang-xuat').catch(() => { /* xem trên */ })
+
     xoaToken()
     setPhien(null)
     setPhaiDoiMatKhau(false)

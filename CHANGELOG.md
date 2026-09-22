@@ -8,6 +8,48 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Security — vá 5/8 mục của đợt rà soát đăng nhập (22/09/2026)
+
+Chủ sản phẩm chốt *"lần lượt toàn bộ"*. Đợt này xong **mục 1, 2, 3, 4, 8**; mục 5 và 6 tiếp
+theo; **mục 7 để riêng** (chuyển refresh token sang cookie `httpOnly` là thay đổi kiến trúc,
+cần ADR và sẽ đá mọi phiên đang mở ra khi triển khai).
+
+**1 + 8 — ĐĂNG XUẤT THẬT.** Thêm `POST /auth/dang-xuat`; trước đó endpoint này **không tồn
+tại**, nút "Đăng xuất" chỉ xoá `localStorage` nên token vẫn sống 60 phút (access) và 30 ngày
+(refresh). Làm ba việc cùng lúc: thu hồi refresh token, ghi dấu vào `PhienHienTai`, xoá cache
+phiên.
+
+Cái bẫy: bản rà soát đề xuất ghi `PhienHienTai = null`, nhưng `null` mang nghĩa *"chưa từng
+đăng nhập"* và middleware **cố ý cho qua** — làm vậy thì token vừa đăng xuất vẫn đi lọt, tức
+thêm endpoint mà không chặn được gì. Dùng `TaiKhoan.DaDangXuat` (Guid hằng) thay thế.
+
+Đi kèm bắt buộc: **gỡ nhánh fail-open** của `PhienDuyNhatMiddleware` (token thiếu `jti` nay bị
+chặn). Phải làm cùng lúc, nếu không thì đăng xuất ghi dấu xong middleware vẫn cho qua.
+
+**2 — Mật khẩu admin NGẪU NHIÊN.** Mọi trung tâm mới từng có `admin`/`123456` trong DB cho tới
+khi ai đó đăng nhập lần đầu. Nay sinh bằng CSPRNG (16 ký tự, bỏ `0/O`, `1/l/I` cho dễ đọc),
+trả về **đúng một lần** trong response đăng ký.
+
+Đổi luôn kiểu trả về của `ITenantSeeder` thành `TenantMoi(Tenant, MatKhauAdmin)` để **trình
+biên dịch bắt** mọi chỗ gọi — chỉ sửa trong seeder thì controller vẫn trả `"123456"`, cặp đó
+không đăng nhập được, tức vá bảo mật xong lại hỏng đăng ký.
+
+**3 — Bịt kênh thời gian.** Đăng nhập: nhánh không tìm thấy tenant/tài khoản từng `throw` ngay
+mà **không chạy PBKDF2**, chênh hàng chục ms so với nhánh sai mật khẩu ⇒ đo được là dò ra
+username có thật. Nay gọi `IPasswordHasher.BamGia()`. Quên mật khẩu: việc gửi SMTP **ra khỏi
+đường trả lời** (chênh lệch ở đó còn to hơn, hàng trăm ms tới vài giây).
+
+**4 — Khoá tạm sau 10 lần sai.** Rate limit cũ chỉ theo IP, nên botnet phân tán thử vào **cùng
+một tài khoản** không bao giờ bị chặn. Nay đếm theo `{mã trung tâm, username}`, khoá 15 phút.
+Khoá **tự mở** và **hết hạn tuyệt đối** (không trượt) — nếu không thì kẻ tấn công giữ tài khoản
+nạn nhân đóng vĩnh viễn, biến phòng thủ thành công cụ tấn công.
+
+**Test:** +23 test backend (608 xanh, từ 585). Mutation test mọi cơ chế mới — trong đó **một
+mutation SỐNG** chỉ ra bản vá fail-open lúc đó chưa có gì canh, phải viết thêm test dựng token
+không có `jti` ký bằng khoá thật.
+
+Chi tiết và trạng thái từng mục: [`docs/ra-soat-bao-mat-dang-nhap.md`](./docs/ra-soat-bao-mat-dang-nhap.md).
+
 ### Added — "Nhớ đăng nhập" (22/09/2026)
 
 Ô tích ở màn đăng nhập, ghi nhớ **mã trung tâm + tên đăng nhập** cho lần sau. **Không lưu mật

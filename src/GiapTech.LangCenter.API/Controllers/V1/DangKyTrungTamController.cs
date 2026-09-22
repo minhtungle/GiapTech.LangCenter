@@ -56,15 +56,27 @@ public class DangKyTrungTamController(
 
         try
         {
-            var tenant = await seeder.TaoTenantMoiAsync(body.TenTrungTam.Trim(), ct: ct);
+            var moi = await seeder.TaoTenantMoiAsync(body.TenTrungTam.Trim(), ct: ct);
             return Ok(new
             {
-                tenant.Id,
-                tenant.MaTrungTam,
-                tenant.TenTrungTam,
+                moi.Tenant.Id,
+                moi.Tenant.MaTrungTam,
+                moi.Tenant.TenTrungTam,
                 username = "admin",
-                matKhau = "123456",
-                luuY = "Ghi lại mã trung tâm — cần nó để đăng nhập. Bắt buộc đổi mật khẩu lần đầu."
+                /*
+                  Mật khẩu SINH NGẪU NHIÊN, lấy từ seeder (22/09/2026).
+
+                  Trước đây chỗ này viết cứng `"123456"` — trùng giá trị với hằng trong seeder
+                  nhưng **không liên quan nhau về mã**. Hệ quả: mọi trung tâm mới đều có
+                  `admin`/`123456` nằm trong DB cho tới khi ai đó đăng nhập lần đầu, và ai biết
+                  điều đó thì chiếm được trung tâm (đăng nhập được ⇒ gọi `/auth/doi-mat-khau`
+                  vốn nằm trong allowlist ⇒ tự đặt mật khẩu của mình).
+
+                  Giờ hai chỗ dùng CHUNG một giá trị, nên không thể lệch nhau nữa. Xem `TenantMoi`.
+                */
+                matKhau = moi.MatKhauAdmin,
+                luuY = "GHI LẠI NGAY mã trung tâm và mật khẩu — mật khẩu chỉ hiện MỘT LẦN này, "
+                       + "hệ thống không lưu bản đọc được. Bắt buộc đổi mật khẩu ở lần đăng nhập đầu."
             });
         }
         catch (InvalidOperationException ex)

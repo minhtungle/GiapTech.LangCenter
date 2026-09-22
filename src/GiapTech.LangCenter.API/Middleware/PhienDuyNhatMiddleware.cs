@@ -28,13 +28,23 @@ namespace GiapTech.LangCenter.API.Middleware;
 /// (quy tắc #1): token đang lưu hành không có claim đó, và mọi người đang mở app sẽ bị đá ra
 /// ngay lúc triển khai.
 ///
-/// ## Hai trường hợp CỐ Ý cho qua
+/// ## Trường hợp cho qua
 ///
-/// - **Token không có `jti`** hoặc **`PhienHienTai` rỗng** — token phát trước thay đổi này.
-///   Chặn thì đá hàng loạt người đang dùng, cái giá không đáng cho thay đổi không khẩn cấp.
-///   Họ sẽ vào khuôn khổ ngay ở lần đăng nhập kế tiếp.
 /// - **Đường dẫn xác thực** (`/auth/*`) — chặn ở đây thì chính lệnh đăng nhập cũng bị chặn, và
 ///   người bị đẩy ra không có đường quay lại.
+/// - **`PhienHienTai` rỗng** = tài khoản **chưa từng đăng nhập** kể từ 20/09/2026. Cho qua.
+///   Đăng xuất KHÔNG ghi `null` mà ghi `TaiKhoan.DaDangXuat` — nếu không thì token vừa đăng
+///   xuất sẽ đi lọt qua đúng nhánh này.
+///
+/// ## Đã GỠ: nhánh cho qua khi token thiếu `jti` (22/09/2026)
+///
+/// Bản 20/09 cho qua token thiếu `jti`/`TaiKhoanId` để không đá hàng loạt người đang mở app
+/// lúc triển khai. Access token chỉ sống **60 phút** nên những token đó đã chết từ lâu; nhánh
+/// này giờ chỉ còn là một đường vòng **fail-open**: ai gửi được token không có `jti` sẽ bỏ qua
+/// được toàn bộ cơ chế một-phiên, kể cả sau khi đăng xuất.
+///
+/// Nay **chặn** (401 `PHIEN_DA_BI_DAY_RA`). Đợt rà soát bảo mật 22/09/2026 nêu đúng rủi ro
+/// này, và nó bắt buộc phải gỡ **cùng lúc** với việc thêm endpoint đăng xuất.
 ///
 /// ## Cache
 ///
@@ -71,8 +81,11 @@ public class PhienDuyNhatMiddleware(RequestDelegate next)
         if (!Guid.TryParse(context.User.FindFirstValue(ClaimTenant.TaiKhoanId), out var taiKhoanId)
             || !Guid.TryParse(context.User.FindFirstValue(JwtRegisteredClaimNames.Jti), out var jti))
         {
-            // Token cũ, chưa có đủ claim — cho qua, xem chú thích đầu lớp.
-            await next(context);
+            // CHẶN, không cho qua (đổi 22/09/2026 — xem "Đã GỠ" ở chú thích đầu lớp). Token
+            // thiếu claim là token phát trước 20/09/2026, mà access token chỉ sống 60 phút nên
+            // chúng đã chết từ lâu. Để ngỏ thì đây là đường vòng bỏ qua cả cơ chế một-phiên
+            // lẫn đăng xuất.
+            await TraLoiBiDayRa(context);
             return;
         }
 
@@ -88,14 +101,26 @@ public class PhienDuyNhatMiddleware(RequestDelegate next)
         });
 
         // `null` = tài khoản chưa từng đăng nhập kể từ khi có tính năng này. Cho qua.
+        //
+        // Đã ĐĂNG XUẤT thì cột mang `TaiKhoan.DaDangXuat` — một Guid hằng, không `jti` nào
+        // trùng được — nên rơi đúng vào nhánh chặn dưới đây mà không cần kiểm riêng.
         if (phienHienTai is { } phien && phien != jti)
         {
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            await context.Response.WriteAsJsonAsync(
-                new { errorCode = MaLoi.PhienDaBiDayRa, duLieu = (object?)null });
+            await TraLoiBiDayRa(context);
             return;
         }
 
         await next(context);
+    }
+
+    /// <summary>
+    /// 401 kèm mã lỗi để frontend biết **không được thử làm mới token** (làm mới cũng vô ích,
+    /// refresh token đã bị thu hồi) và hiện đúng câu giải thích thay vì màn đăng nhập trắng.
+    /// </summary>
+    private static Task TraLoiBiDayRa(HttpContext context)
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return context.Response.WriteAsJsonAsync(
+            new { errorCode = MaLoi.PhienDaBiDayRa, duLieu = (object?)null });
     }
 }

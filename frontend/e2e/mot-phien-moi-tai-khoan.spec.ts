@@ -54,8 +54,18 @@ test('Đăng nhập nơi khác đẩy phiên cũ ra, người mới vẫn dùng 
   // `goto` ở đây hay bị `ERR_ABORTED`: interceptor bắt 401 rồi tự đặt `window.location.href`,
   // tức điều hướng của chính nó CẮT NGANG lần điều hướng mà test vừa yêu cầu. Đó là hành vi
   // đúng, không phải lỗi — nên bỏ qua ngoại lệ và chỉ chờ kết quả cuối: về màn đăng nhập.
+  //
+  // `waitForURL` cũng phải bọc `catch` (22/09/2026), không chỉ `goto`: cú điều hướng bị cắt
+  // ngang có thể rơi vào ĐÚNG lúc `waitForURL` đang chờ, và nó ném `ERR_ABORTED` y hệt. Trước
+  // đây hiếm gặp nên trông như flaky; từ khi thêm `POST /auth/dang-xuat` thì mỗi lần thoát
+  // phiên có thêm một request nữa, cửa sổ đua rộng ra và nó đỏ đều.
+  //
+  // Bọc xong vẫn KHÔNG mất sức canh: khẳng định thật nằm ở `expect(a).toHaveURL` ngay dưới —
+  // `expect` tự thử lại nên không quan tâm điều hướng bị cắt mấy lần, chỉ quan tâm ĐÍCH ĐẾN.
   await a.goto('/lms/lop-hoc').catch(() => { /* interceptor cắt ngang, xem trên */ })
   await a.waitForURL(/dang-nhap/, { timeout: 20_000 })
+    .catch(() => { /* điều hướng bị cắt ngang giữa chừng — xem trên */ })
+  await expect(a).toHaveURL(/dang-nhap/, { timeout: 20_000 })
 
   // Nói RÕ vì sao, không để người dùng về màn đăng nhập trắng trơn mà không hiểu chuyện gì.
   await expect(a.locator('[role=alert]')).toContainText(/đăng nhập ở nơi khác/)

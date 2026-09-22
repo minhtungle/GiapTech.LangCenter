@@ -23,6 +23,12 @@ public class ApiFactory : WebApplicationFactory<Program>
 {
     public const string JwtSecret = "khoa-test-du-32-ky-tu-cho-hs256-abcdef";
 
+    /// <summary>
+    /// Mật khẩu admin dùng trong test. Từ 22/09/2026 seeder sinh ngẫu nhiên khi không được
+    /// truyền, nên fixture phải nói rõ giá trị mình muốn — xem chỗ gọi `TaoTenantMoiAsync`.
+    /// </summary>
+    public const string MatKhauAdmin = "123456";
+
     /// <summary>Id do seeder sinh ra. Phải là instance, không static: mỗi ApiFactory dùng
     /// một InMemory DB riêng, để static thì factory tạo sau ghi đè id của factory trước.</summary>
     public Guid TenantAId { get; private set; }
@@ -185,7 +191,20 @@ public class ApiFactory : WebApplicationFactory<Program>
         foreach (var nhan in new[] { "A", "B", "C" })
         {
             // Mã trung tâm do hệ thống sinh, test đọc lại từ kết quả thay vì tự đặt.
-            var tenant = seeder.TaoTenantMoiAsync($"Trung tâm {nhan}").GetAwaiter().GetResult();
+            /*
+              Truyền mật khẩu admin TƯỜNG MINH cho test (22/09/2026).
+
+              Từ 22/09 seeder sinh mật khẩu ngẫu nhiên khi không được truyền — đúng cho
+              production, nhưng test cần một giá trị biết trước để đăng nhập bằng nick `admin`.
+              Tham số `matKhauAdmin` tồn tại chính vì ca này.
+
+              KHÔNG đổi mặc định của seeder về lại hằng số để "cho test dễ": mặc định phải là
+              cái an toàn, còn test là chỗ khai ngoại lệ. Canh bởi `MatKhauAdminNgauNhienTests`
+              — nó gọi qua HTTP nên không đi qua đường này.
+            */
+            var tenant = seeder
+                .TaoTenantMoiAsync($"Trung tâm {nhan}", MatKhauAdmin)
+                .GetAwaiter().GetResult().Tenant;
 
             using var _ = currentTenant.DatPhamVi(tenant.Id);
 

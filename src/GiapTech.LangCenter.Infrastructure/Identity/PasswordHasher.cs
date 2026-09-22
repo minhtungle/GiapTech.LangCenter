@@ -18,6 +18,24 @@ public class AppPasswordHasher : IPasswordHasher
 
     public string Bam(string matKhau) => _hasher.HashPassword(DoiTuongGia, matKhau);
 
+    /// <summary>
+    /// Hash của một mật khẩu bất kỳ, băm **một lần** lúc khởi tạo lớp.
+    ///
+    /// Băm lại mỗi lần gọi `BamGia` sẽ tốn gấp đôi (một lần `Bam` + một lần `KiemTra`) và làm
+    /// nhánh "không tìm thấy" **chậm hơn** nhánh thật — vẫn là chênh lệch đo được, chỉ đảo
+    /// chiều. Giữ sẵn một hash cố định rồi verify mới ra đúng chi phí của một lần kiểm thật.
+    /// </summary>
+    private static readonly string HashGia = new PasswordHasher<object>()
+        .HashPassword(DoiTuongGia, "mat-khau-gia-de-can-bang-thoi-gian");
+
+    /// <summary>
+    /// Tiêu tốn đúng chi phí một lần kiểm mật khẩu rồi bỏ kết quả — xem `IPasswordHasher.BamGia`.
+    ///
+    /// Chuỗi so ở đây cố tình **không** khớp `HashGia`, nhưng điều đó không ảnh hưởng thời
+    /// gian: PBKDF2 phải chạy đủ số vòng rồi mới so được kết quả.
+    /// </summary>
+    public void BamGia() => _hasher.VerifyHashedPassword(DoiTuongGia, HashGia, "khong-khop");
+
     public bool KiemTra(string hash, string matKhau)
     {
         try

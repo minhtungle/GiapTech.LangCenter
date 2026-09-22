@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using GiapTech.LangCenter.API.RateLimit;
 using GiapTech.LangCenter.Application.DangNhap.Commands.DangNhap;
+using GiapTech.LangCenter.Application.DangNhap.Commands.DangXuat;
 using GiapTech.LangCenter.Application.DangNhap.Commands.DatLaiMatKhauQuaToken;
 using GiapTech.LangCenter.Application.DangNhap.Commands.DoiMatKhau;
 using GiapTech.LangCenter.Application.DangNhap.Commands.LamMoiToken;
@@ -116,6 +117,25 @@ public class AuthController(ISender sender, ILuuTruAnh luuTru, ICurrentTenant te
     public async Task<ActionResult<DangNhapResult>> DangNhap(
         [FromBody] DangNhapCommand command, CancellationToken ct)
         => Ok(await sender.Send(command, ct));
+
+    /// <summary>
+    /// FR-01 — **ĐĂNG XUẤT**: thu hồi refresh token + chặn access token còn hạn (22/09/2026).
+    ///
+    /// Trước đây không có endpoint này — nút "Đăng xuất" chỉ xoá `localStorage`, nên token vẫn
+    /// dùng được tới 60 phút (access) và 30 ngày (refresh). Xem `DangXuatCommand`.
+    ///
+    /// **Luôn trả 204, kể cả khi phiên đã chết.** Đăng xuất là thao tác *dọn dẹp*: báo lỗi cho
+    /// người đang muốn thoát ra là vô nghĩa, và frontend sẽ phải xử lý một nhánh lỗi không dẫn
+    /// tới hành động nào khác ngoài… vẫn đăng xuất.
+    /// </summary>
+    [HttpPost("dang-xuat")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> DangXuat(CancellationToken ct)
+    {
+        await sender.Send(new DangXuatCommand(), ct);
+        return NoContent();
+    }
 
     /// <summary>
     /// FR-01 — người dùng tự đổi mật khẩu. Gọi được cả khi đang bị buộc đổi mật khẩu
