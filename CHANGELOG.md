@@ -8,6 +8,33 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Fixed — linh vật đi giật lùi, lời thoại bị che (23/09/2026)
+
+Chủ sản phẩm báo hai lỗi sau khi xem bản Lottie.
+
+**Đi giật lùi.** Tôi thêm `scale-x-[-1]` vì **đoán** tệp gốc vẽ chó quay trái — sai, nó quay
+phải. Hai phép lật nhân nhau nên chó đi ngược ở **cả hai** nửa chu kỳ.
+
+Gỡ phép lật vẫn chưa đủ: `di-ngang` nội suy **cả `translateX` lẫn `scaleX` trong một
+`matrix`**, nên giữa cú quay giá trị lật là số lẻ (đo được `-0.48`) và animation bù cho bong
+bóng thoại không tài nào khớp. Chữa đúng gốc bằng cách **tách phép lật ra thẻ riêng** bọc con
+chó, dùng `steps(1)` cho nó nhảy bậc thay vì nội suy — bong bóng là thẻ anh em nên không dính,
+bỏ hẳn animation bù `lat-lai`.
+
+Còn một mốc lệch ở giây 37 vì điểm quay đầu đặt 48–52% trong khi phép lật ở 50%. Đưa về đúng
+50%. **Đo 76 điểm trong chu kỳ 38 giây: 0 mốc giật lùi.**
+
+**Lời thoại bị che** — hai nguyên nhân chồng nhau:
+
+| | Nguyên nhân | Sửa |
+|---|---|---|
+| 1 | `overflow-hidden` + khung `h-28` xén mất **30px** phần trên bong bóng | `h-48` + `overflow-x-clip` |
+| 2 | Chó chạy sát mép phải ⇒ bong bóng rộng 16rem bị cắt đôi | Chừa 14rem mép phải, 2rem mép trái |
+
+Cả hai lỗi **không lộ ra khi đọc code**: phải đo bằng `getComputedStyle` ở từng mốc thời gian
+và chụp màn hình so sánh. Riêng lỗi giật lùi nhìn ảnh tĩnh rất khó thấy vì nhân vật nhỏ — chỉ
+khi tính tích hai phép lật mới rõ.
+
 ### Changed — linh vật dùng Lottie thay SVG vẽ tay (22/09/2026)
 
 Chủ sản phẩm xem bản SVG vẽ tay và nhận xét *"animation đang xấu"* — đúng: vài đường `path`

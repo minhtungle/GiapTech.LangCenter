@@ -158,32 +158,48 @@
   trên máy yếu, mà phần mềm này chạy ở trung tâm với đủ loại máy.
 
   `scaleX(-1)` ở nửa sau để nhân vật quay mặt theo hướng đi, không đi giật lùi.
+
+  **Chừa 14rem ở mép phải và 2rem ở mép trái**, không cho chó chạy sát mép: bong bóng thoại
+  rộng tới 16rem và nằm ngay trên đầu chó, nên sát mép là bong bóng bị `overflow-x-clip` xén
+  mất một nửa — chữ đọc không ra. Thấy khi chụp màn kiểm tra, không thấy khi đọc code.
 */
 @keyframes di-ngang {
   0% {
-    transform: translateX(-3rem) scaleX(1);
+    transform: translateX(2rem);
   }
-  48% {
-    transform: translateX(calc(100vw - 1rem)) scaleX(1);
-  }
-  52% {
-    transform: translateX(calc(100vw - 1rem)) scaleX(-1);
+  /*
+    Điểm quay đầu đặt đúng **50%**, khớp chính xác mốc lật của `lat-mat`.
+
+    Bản trước để 48%–52% (dừng một nhịp ở mép) làm hai animation lệch pha: ở giây cuối chu kỳ
+    chó đã đi sang trái nhưng mặt còn quay phải — tức đi giật lùi. Đo từng giây trong 38 giây
+    mới bắt được đúng một mốc sai.
+  */
+  50% {
+    transform: translateX(calc(100vw - 14rem));
   }
   100% {
-    transform: translateX(-3rem) scaleX(-1);
+    transform: translateX(2rem);
   }
 }
 
 /*
-  Lật ngược bong bóng thoại để bù phép `scaleX(-1)` của `di-ngang` — xem `LinhVat`.
-  Cùng thời lượng và cùng timing function, nếu không hai phép lật sẽ lệch pha.
+  Lật mặt nhân vật — TÁCH khỏi `di-ngang`, và dùng `steps(1)`.
+
+  Ban đầu tôi gộp `scaleX(-1)` vào `di-ngang`, rồi bù lại cho bong bóng thoại bằng một
+  animation ngược. **Không bao giờ khớp được**: `di-ngang` nội suy `translateX` và `scaleX`
+  cùng một lúc trong một `matrix`, nên ở giữa cú quay giá trị `scaleX` là số lẻ (đo được
+  −0.48), còn animation bù thì nội suy theo nhịp khác. Chữ trong bong bóng bị ngược ở đúng
+  khoảnh khắc đó.
+
+  Tách ra và dùng `steps(1, end)`: phép lật thành **nhảy bậc**, không có giá trị trung gian,
+  nên hai bên hoặc cùng +1 hoặc cùng −1 — không còn khe hở nào.
 */
-@keyframes lat-lai {
+@keyframes lat-mat {
   0%,
-  48% {
+  49.99% {
     transform: scaleX(1);
   }
-  52%,
+  50%,
   100% {
     transform: scaleX(-1);
   }
@@ -216,7 +232,7 @@
   */
   .animate-\[chay-ngang_1\.4s_ease-in-out_infinite\],
   .animate-\[di-ngang_38s_linear_infinite\],
-  .animate-\[lat-lai_38s_linear_infinite\],
+  .animate-\[lat-mat_38s_steps\(1\,end\)_infinite\],
   .animate-\[hien-thoai_5s_ease-in-out\] {
     animation: none !important;
   }

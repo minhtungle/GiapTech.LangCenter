@@ -117,6 +117,11 @@ export function LinhVat() {
       biến đó, linh vật đi **phía trên** nó. Đặt `bottom-0` cứng thì nhân vật đè lên dòng bản
       quyền ở màn đăng nhập — thấy ngay khi chụp màn kiểm tra.
 
+      `h-48` + `overflow-x-clip`, KHÔNG phải `h-28` + `overflow-hidden`: bong bóng thoại nằm
+      **phía trên** con chó, nên khung thấp cộng với cắt cả hai chiều sẽ xén mất phần trên của
+      bong bóng — đo được là mất 30px. Nay khung đủ cao cho cả bong bóng, và chỉ cắt theo
+      chiều NGANG để chó không thò ra ngoài mép màn lúc quay đầu.
+
       `z-40`: dưới modal (`z-50`) để không che hộp thoại.
     */
     <div
@@ -129,24 +134,24 @@ export function LinhVat() {
 
         Thay vào đó `aria-hidden` đặt riêng cho phần hình vẽ (SVG + bong bóng thoại) ở dưới.
       */
-      className="pointer-events-none fixed inset-x-0 bottom-[var(--linh-vat-day,0px)] z-40 hidden h-28 select-none overflow-hidden md:block"
+      className="pointer-events-none fixed inset-x-0 bottom-[var(--linh-vat-day,0px)] z-40 hidden h-48 select-none overflow-x-clip md:block"
     >
       <div className="absolute bottom-2 animate-[di-ngang_38s_linear_infinite] will-change-transform">
         <div className="relative flex flex-col items-center">
           {cauThoai && (
             /*
-              `animate-[lat-lai...]`: LẬT NGƯỢC bong bóng so với thẻ cha.
+              Bong bóng **không** cần lật bù nữa (sửa 23/09/2026).
 
-              Thẻ cha chạy `di-ngang`, mà nửa sau của animation đó có `scaleX(-1)` để nhân vật
-              quay mặt theo hướng đi. Phép lật ấy áp cho **toàn bộ** cây con, nên chữ trong
-              bong bóng bị viết ngược — đọc không ra. Thấy ngay khi chụp màn kiểm tra.
+              Trước đây `di-ngang` vừa di chuyển vừa lật, phép lật áp cho cả cây con nên chữ ở
+              đây bị ngược; tôi bù bằng một animation lật ngược lại. **Không bao giờ khớp
+              được** — hai bên nội suy theo nhịp khác nhau, và ngay giữa cú quay chữ vẫn ngược
+              (đo được `scaleX = -0.48`).
 
-              Lật lại đúng nhịp (cùng thời lượng, cùng `linear`) thì chữ luôn xuôi, còn nhân
-              vật vẫn quay đầu bình thường.
+              Nay phép lật nằm riêng ở thẻ con bọc con chó, nên bong bóng không dính gì.
             */
             <div
               aria-hidden
-              className="mb-1 max-w-[16rem] animate-[lat-lai_38s_linear_infinite] rounded-2xl border border-border bg-background/95 px-3 py-1.5 text-xs text-foreground shadow-md backdrop-blur"
+              className="mb-1 max-w-[16rem] rounded-2xl border border-border bg-background/95 px-3 py-1.5 text-xs text-foreground shadow-md backdrop-blur"
             >
               {cauThoai}
             </div>
@@ -202,13 +207,28 @@ function NhanVat() {
   }, [])
 
   /*
-    `scale-x-[-1]`: tệp gốc vẽ chó quay mặt sang PHẢI, còn `di-ngang` bắt đầu bằng việc đi từ
-    trái sang phải rồi mới lật. Không lật sẵn thì nửa đầu chu kỳ chó đi giật lùi.
-  */
-  /*
     `h-24 w-24` + `-mb-3`: tệp gốc vẽ chó nhỏ giữa khung vuông có nhiều khoảng trắng, nên ở
     `h-16` con chó chỉ còn bằng cái icon. Phóng khung lên rồi kéo xuống một chút để chó đứng
     **sát mặt đất** thay vì lơ lửng — đo bằng ảnh chụp, không đoán.
+
+    **KHÔNG lật ở đây.** Tệp gốc đã vẽ chó quay mặt sang PHẢI, đúng hướng nửa đầu chu kỳ
+    `di-ngang` (đi từ trái sang phải); nửa sau `di-ngang` tự thêm `scaleX(-1)` nên chó quay
+    mặt theo.
+
+    Bản trước tôi thêm `scale-x-[-1]` vì ĐOÁN tệp gốc quay sang trái — sai, và nó làm chó đi
+    giật lùi ở **cả hai** nửa (hai phép lật nhân nhau: nửa đầu +1×−1 = −1, nửa sau −1×−1 = +1,
+    cả hai đều ngược hướng đi). Đo bằng `getComputedStyle` mới ra, nhìn thường khó thấy.
   */
-  return <div ref={oChua} aria-hidden className="-mb-3 h-24 w-24 scale-x-[-1]" />
+  /*
+    Phép lật nằm ở ĐÂY, không ở thẻ cha: thẻ cha lo di chuyển, thẻ này lo hướng mặt. Tách ra
+    thì bong bóng thoại (anh em của thẻ này) không bị lật theo. Xem `lat-mat` trong
+    `index.css` về lý do dùng `steps(1)`.
+  */
+  return (
+    <div
+      ref={oChua}
+      aria-hidden
+      className="-mb-3 h-24 w-24 animate-[lat-mat_38s_steps(1,end)_infinite]"
+    />
+  )
 }
