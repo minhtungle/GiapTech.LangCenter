@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { MAT_KHAU_MOI, taoTrungTam, dangNhap } from './tro-giup'
+import { MAT_KHAU_MOI, taoTrungTam, dangNhap, layTokenQuaApi } from './tro-giup'
 
 /**
  * Tab **Lịch học** ở màn Lớp học — lịch của MỌI lớp trên một tấm (21/09/2026).
@@ -26,7 +26,7 @@ test('Tab Lịch học hiện buổi của mọi lớp, lọc theo lớp thu h�
   const tt = await taoTrungTam(request, 'lich-tat-ca')
   await dangNhap(page, tt)
 
-  const tok = await page.evaluate(() => localStorage.getItem('lms_access_token'))
+  const tok = await layTokenQuaApi(page)
   const api = async (duong: string, than: unknown) => {
     const res = await page.request.post(`/api/v1${duong}`, {
       headers: { Authorization: `Bearer ${tok}` },

@@ -101,6 +101,14 @@
     --input: 217 18% 24%;
     --ring: 152 45% 45%;
 
+    /*
+      Chiều cao vùng chừa ở đáy cho linh vật (`LinhVat`).
+
+      Mặc định 0: phần lớn màn không có footer nên nhân vật đi sát đáy. Màn đăng nhập tự đặt
+      lại giá trị này qua `documentElement.style` vì `LinhVat` mount ngoài cây DOM của nó.
+    */
+    --linh-vat-day: 0px;
+
     --status-ok: 152 50% 48%;
     --status-loi: 0 62% 55%;
     --status-cho: 38 88% 55%;
@@ -116,5 +124,100 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+}
+
+/*
+  Animation cho thanh tiến trình và linh vật (22/09/2026).
+
+  Khai ở đây chứ không trong `tailwind.config`: đây là animation dùng một chỗ mỗi cái, thêm vào
+  config sẽ nằm trong bundle của mọi trang kể cả trang không dùng.
+
+  **Tôn trọng `prefers-reduced-motion`** — người bật nó thường vì chuyển động gây chóng mặt
+  hoặc đau đầu. Ở cuối tệp có khối tắt hẳn mọi animation dưới đây.
+*/
+
+/* Vạch tiến trình chạy qua lại ở mép trên — xem `DangXuLy`. */
+@keyframes chay-ngang {
+  0% {
+    transform: translateX(-100%) scaleX(0.4);
+  }
+  50% {
+    transform: translateX(0) scaleX(0.7);
+  }
+  100% {
+    transform: translateX(100%) scaleX(0.4);
+  }
+}
+
+/*
+  Linh vật đi ngang màn hình rồi quay đầu.
+
+  Dùng `translateX` theo `vw` chứ không `left`: `transform` chạy trên GPU nên không gây
+  reflow, còn đổi `left` liên tục sẽ bắt trình duyệt tính lại bố cục 60 lần/giây — thấy rõ
+  trên máy yếu, mà phần mềm này chạy ở trung tâm với đủ loại máy.
+
+  `scaleX(-1)` ở nửa sau để nhân vật quay mặt theo hướng đi, không đi giật lùi.
+*/
+@keyframes di-ngang {
+  0% {
+    transform: translateX(-3rem) scaleX(1);
+  }
+  48% {
+    transform: translateX(calc(100vw - 1rem)) scaleX(1);
+  }
+  52% {
+    transform: translateX(calc(100vw - 1rem)) scaleX(-1);
+  }
+  100% {
+    transform: translateX(-3rem) scaleX(-1);
+  }
+}
+
+/*
+  Lật ngược bong bóng thoại để bù phép `scaleX(-1)` của `di-ngang` — xem `LinhVat`.
+  Cùng thời lượng và cùng timing function, nếu không hai phép lật sẽ lệch pha.
+*/
+@keyframes lat-lai {
+  0%,
+  48% {
+    transform: scaleX(1);
+  }
+  52%,
+  100% {
+    transform: scaleX(-1);
+  }
+}
+
+/* Bong bóng thoại hiện ra rồi biến mất. */
+@keyframes hien-thoai {
+  0% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+  }
+  12%,
+  88% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-2px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /*
+    Tắt hẳn chuyển động, KHÔNG chỉ làm chậm.
+
+    Người bật thiết lập này thường vì chuyển động gây chóng mặt hoặc đau đầu — làm chậm lại
+    vẫn gây triệu chứng. Thanh tiến trình vẫn HIỆN (chỉ đứng yên) để không mất tín hiệu "đang
+    tải"; linh vật thì đứng im một chỗ.
+  */
+  .animate-\[chay-ngang_1\.4s_ease-in-out_infinite\],
+  .animate-\[di-ngang_38s_linear_infinite\],
+  .animate-\[lat-lai_38s_linear_infinite\],
+  .animate-\[hien-thoai_5s_ease-in-out\] {
+    animation: none !important;
   }
 }

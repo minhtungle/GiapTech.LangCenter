@@ -9,7 +9,13 @@ namespace GiapTech.LangCenter.Application.DangNhap.Commands.DangNhap;
 
 /// <summary>FR-01 — đăng nhập bằng bộ ba {mã trung tâm, username, password}.</summary>
 public record DangNhapCommand(string MaTrungTam, string Username, string MatKhau)
-    : IRequest<DangNhapResult>;
+    : IRequest<DangNhapResult>, ILenhXacThuc
+{
+    // Khai danh tính cho nhật ký: lệnh này chưa có JWT nên behavior không tự suy được ai đang
+    // cố vào — và chính lần THẤT BẠI mới là thứ cần ghi. Xem `ILenhXacThuc`.
+    string ILenhXacThuc.MaTrungTamDeGhiNhatKy => MaTrungTam;
+    string ILenhXacThuc.UsernameDeGhiNhatKy => Username;
+}
 
 /// <param name="PhaiDoiMatKhau">
 /// true → frontend chuyển hướng sang màn đổi mật khẩu trước khi vào hệ thống (FR-01).
@@ -139,7 +145,13 @@ public class DangNhapHandler(
             .Where(t => t.TaiKhoanId == taiKhoan.Id && t.ThuHoiLuc == null)
             .ToListAsync(ct);
 
-        foreach (var t in tokenCu) t.ThuHoiLuc = bayGioUtc;
+        // Lý do BỊ ĐẨY RA (ADR-0007): phiên cũ dùng lại token này là chuyện bình thường, không
+        // phải dấu hiệu bị trộm — `LamMoiTokenCommand` đọc cờ này để không thu hồi nhầm toàn bộ.
+        foreach (var t in tokenCu)
+        {
+            t.ThuHoiLuc = bayGioUtc;
+            t.LyDo = Domain.Entities.LyDoThuHoi.BiDayRa;
+        }
 
         taiKhoan.PhienHienTai = token.Jti;
 

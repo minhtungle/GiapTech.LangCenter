@@ -61,6 +61,24 @@ const vi = {
   },
 
 
+  /*
+    Linh vật (22/09/2026). Câu thoại cố ý **trung tính và ngắn**: nó hiện lên giữa lúc người
+    dùng đang làm việc, nên không đùa quá trớn, không nhắc số liệu (sẽ sai), không thúc giục.
+  */
+  linhVat: {
+    tat: 'Ẩn nhân vật',
+    thoai: [
+      'Chúc bạn một ngày dạy và học vui vẻ!',
+      'Nhớ lưu lại trước khi đóng trang nhé.',
+      'Cà phê chưa? Nghỉ một chút cũng tốt mà.',
+      'Lớp học hôm nay thế nào rồi?',
+      'Mình đi dạo chút thôi, bạn cứ làm việc tiếp.',
+      'Số liệu gọn gàng thì cuối tháng đỡ vất vả.',
+      'Có gì khó cứ hỏi quản trị viên nhé!',
+      'Học một chữ cũng là thầy — dạy tốt nha!',
+    ],
+  },
+
   dangNhap: {
     tieuDe: 'Đăng nhập',
     moTa: 'Nhập mã trung tâm, tên đăng nhập và mật khẩu',

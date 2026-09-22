@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { vaoHeThong } from './tro-giup'
+import { vaoHeThong, layTokenQuaApi } from './tro-giup'
 
 /**
  * FR-29 — thống kê nhân sự + module tiêu chí đánh giá (16/09/2026).
@@ -12,8 +12,8 @@ import { vaoHeThong } from './tro-giup'
  * `null` và handler chạy đúng theo `null`. Chỉ test đầu-cuối bắt được.
  */
 test('Tạo tiêu chí, chấm điểm, điểm lên bảng xếp hạng', async ({ page, request }) => {
-  await vaoHeThong(page, request, 'tk-nhan-su')
-  const token = await page.evaluate(() => localStorage.getItem('lms_access_token'))
+  const ttE2E = await vaoHeThong(page, request, 'tk-nhan-su')
+  const token = await layTokenQuaApi(page)
 
   const api = async (duong: string, than: unknown) => {
     const res = await page.request.post(`http://localhost:5229/api/v1${duong}`, {

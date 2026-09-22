@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { MAT_KHAU_MOI, taoTrungTam, dangNhap } from './tro-giup'
+import { MAT_KHAU_MOI, taoTrungTam, dangNhap, layTokenQuaApi } from './tro-giup'
 
 /**
  * Lưu điểm danh khi còn học viên vắng CHƯA có lý do (18/09/2026).
@@ -21,7 +21,7 @@ test('Thiếu lý do vắng thì nói rõ ai thiếu; nhập đủ thì lưu đ�
   const tt = await taoTrungTam(request, 'luu-diem-danh')
   await dangNhap(page, tt)
 
-  const tok = await page.evaluate(() => localStorage.getItem('lms_access_token'))
+  const tok = await layTokenQuaApi(page)
   const api = async (duong: string, than: unknown, method = 'post') => {
     const res = await page.request[method as 'post'](`/api/v1${duong}`, {
       headers: { Authorization: `Bearer ${tok}` },

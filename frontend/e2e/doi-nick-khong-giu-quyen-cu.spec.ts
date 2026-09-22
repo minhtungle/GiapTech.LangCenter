@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { MAT_KHAU_MOI, taoTrungTam, dangNhap } from './tro-giup'
+import { MAT_KHAU_MOI, taoTrungTam, dangNhap, layTokenQuaApi } from './tro-giup'
 
 /**
  * Đăng xuất rồi đăng nhập nick khác → giao diện phải theo quyền NICK MỚI ngay (17/09/2026).
@@ -34,7 +34,7 @@ test('Đổi nick thì menu theo quyền nick mới, không cần F5', async ({ 
   const tt = await taoTrungTam(request, 'doi-nick')
   await dangNhap(page, tt)
 
-  const tok = await page.evaluate(() => localStorage.getItem('lms_access_token'))
+  const tok = await layTokenQuaApi(page)
   const goiApi = async (duong: string, than: unknown) => {
     const res = await page.request.post(`/api/v1${duong}`, {
       headers: { Authorization: `Bearer ${tok}` },

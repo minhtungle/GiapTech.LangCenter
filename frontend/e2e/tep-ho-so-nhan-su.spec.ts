@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { vaoHeThong } from './tro-giup'
+import { vaoHeThong, layTokenQuaApi } from './tro-giup'
 
 /**
  * FR-23 — đặt tên tệp hồ sơ nhân sự + hạn mức 10 tệp (yêu cầu chủ sản phẩm 16/09/2026).
@@ -14,8 +14,8 @@ import { vaoHeThong } from './tro-giup'
  * tệp rồi mới nhận lỗi.
  */
 test('Đặt tên khi tải lên, đổi tên sau, và khoá nút khi đủ 10 tệp', async ({ page, request }) => {
-  await vaoHeThong(page, request, 'tep-ho-so')
-  const token = await page.evaluate(() => localStorage.getItem('lms_access_token'))
+  const ttE2E = await vaoHeThong(page, request, 'tep-ho-so')
+  const token = await layTokenQuaApi(page)
 
   const api = async (duong: string, than: unknown) => {
     const res = await page.request.post(`http://localhost:5229/api/v1${duong}`, {
@@ -62,9 +62,13 @@ test('Đặt tên khi tải lên, đổi tên sau, và khoá nút khi đủ 10 t
   await expect(page.getByText('Hợp đồng lao động 2026.pdf')).toHaveCount(0)
 
   // --- Đổ cho đủ 10 tệp rồi kiểm nút bị khoá ---
+  // Lấy LẠI token: `page.goto` ở trên đã làm app xoay vòng token, bản cũ nay 401 (xem
+  // `layTokenQuaApi`).
+  const token2 = await layTokenQuaApi(page)
+
   for (let i = 2; i <= 10; i++) {
     const r = await page.request.post(`http://localhost:5229/api/v1/nhan-su/${id}/tep`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token2}` },
       multipart: {
         tep: {
           name: `t${i}.pdf`, mimeType: 'application/pdf', buffer: Buffer.from(`pdf ${i}`),

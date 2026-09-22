@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { vaoHeThong } from './tro-giup'
+import { vaoHeThong, layTokenQuaApi } from './tro-giup'
 
 /**
  * Tổng quan hiện **buổi sắp tới** đủ thông tin và bấm được (17/09/2026).
@@ -18,8 +18,8 @@ import { vaoHeThong } from './tro-giup'
  *    nên không có lỗi nào hiện ra.
  */
 test('Buổi sắp tới: đủ tên lớp, số buổi, thời gian và bấm tới chi tiết', async ({ page, request }) => {
-  await vaoHeThong(page, request, 'tq-sap-toi')
-  const token = await page.evaluate(() => localStorage.getItem('lms_access_token'))
+  const ttE2E = await vaoHeThong(page, request, 'tq-sap-toi')
+  const token = await layTokenQuaApi(page)
 
   const api = async (duong: string, than: unknown) => {
     const res = await page.request.post(`http://localhost:5229/api/v1${duong}`, {

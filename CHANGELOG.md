@@ -8,6 +8,128 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Changed — linh vật dùng Lottie thay SVG vẽ tay (22/09/2026)
+
+Chủ sản phẩm xem bản SVG vẽ tay và nhận xét *"animation đang xấu"* — đúng: vài đường `path`
+không ra được dáng đi tự nhiên với chân bước luân phiên, đuôi vẫy, tai nảy.
+
+Thay bằng **`lottie-web` + tệp "Dog Walk" của Satvir Singh** (Lottie Simple License — dùng
+thương mại, không bắt buộc ghi công).
+
+**Cách chọn tệp**: dùng API công khai của LottieFiles để tìm, tải **bốn** ứng viên về rồi so
+bằng số liệu, và **xem ảnh động thật** trước khi quyết — không chọn theo tên tệp.
+
+| Tệp | Cỡ | Ảnh nhúng | |
+|---|---|---|---|
+| **Dog Walk** | **29 KB** | **0** | ✅ chọn |
+| walking | 60 KB | 0 | to gấp đôi, 1 lớp nên đơn điệu |
+| walk2 | 63 KB | **56** | nhúng ảnh raster ⇒ vỡ khi phóng to |
+
+Tiêu chí loại quan trọng nhất là **ảnh nhúng**: Lottie nhúng raster mất hẳn ưu thế vector (một
+tệp thử nghiệm 364 KB hoá ra chứa 25 ảnh base64). Nguồn và lý lẽ ghi ở
+`assets/cho-di-dao.NGUON.md`.
+
+⚠️ **Cái giá đã nói trước và được chấp nhận**: bundle **314 KB → 428 KB gzip** (+114 KB). Đã
+trình bày phương án tải lười (không đổi bundle chính) nhưng chủ sản phẩm chọn gộp thẳng để
+nhân vật hiện ngay.
+
+Hai chi tiết chỉnh theo ảnh chụp, không đoán: phóng khung từ `h-16` lên `h-24` (tệp gốc có
+nhiều khoảng trắng quanh hình nên ở cỡ cũ con chó chỉ bằng cái icon), và `-mb-3` cho chó đứng
+sát mặt đất thay vì lơ lửng. Gỡ keyframes `nhun-nhe` — Lottie tự lo phần nhún.
+
+### Added — linh vật, thanh tiến trình, favicon theo trung tâm (22/09/2026)
+
+**Favicon + tiêu đề tab theo trung tâm.** Người dùng mở nhiều tab (lớp học, khách hàng, thống
+kê); tab nào cũng mang logo mặc định thì phải bấm thử từng cái. Nay tab mang logo và tên trung
+tâm.
+
+Không đặt thẳng `<link rel="icon" href="/api/v1/anh/{khoa}">` được — thẻ `<link>` **không gắn
+được header `Authorization`**, mà endpoint ảnh chung cần token. Trong quản trị phải tải blob
+qua `api` rồi dùng object URL; ở màn đăng nhập thì dùng endpoint ẩn danh
+`/auth/logo/{maTrungTam}` (nhận MÃ, không nhận khoá ảnh).
+
+Cũng thay favicon mặc định: tệp cũ là **logo mẫu của shadcn-admin** còn sót lại, không liên
+quan gì tới dự án.
+
+**Thanh tiến trình** ở mép trên khi có request đang chạy (`useIsFetching` + `useIsMutating`).
+Không dùng spinner che màn — nó khoá người dùng lại và làm thao tác nhanh trông như chậm. Có
+**độ trễ 250ms** trước khi hiện: phần lớn request xong dưới ngưỡng đó, hiện ngay thì thành một
+vệt nhấp nháy ở mọi thao tác.
+
+**Linh vật** đi dạo dưới đáy màn, thỉnh thoảng nói một câu. Vẽ bằng SVG inline (không ảnh,
+không thư viện) nên đổi màu theo chế độ sáng/tối. Có **nút tắt, nhớ theo từng máy** — người
+dùng hệ thống này ngồi với nó cả ngày, và chuyển động trong tầm mắt ngoại vi là thứ gây phân
+tâm kinh điển.
+
+**Bốn lỗi chỉ thấy khi nhìn màn hình thật**, không lỗi nào lộ ra từ trình biên dịch:
+
+1. **Linh vật đè lên footer** ở màn đăng nhập. Biến CSS khai bằng class trên thẻ bao ngoài
+   không tới được component — nó mount ở `App.tsx`, **ngoài cây DOM của trang**. Phải đặt biến
+   lên `:root`.
+2. **Chữ trong bong bóng thoại bị viết ngược** ở nửa sau chu kỳ: `scaleX(-1)` để nhân vật quay
+   đầu áp cho **cả cây con**. Thêm animation lật lại đúng nhịp.
+3. **Mũ dùng `currentColor`** nên gần như tàng hình trên ảnh banner. Đổi sang token cố định,
+   thêm viền theo màu nền để tách nhân vật khỏi nền.
+4. **`aria-hidden` giấu luôn nút tắt** khỏi cây accessibility — giấu một control thật là lỗi
+   tiếp cận. Chuyển `aria-hidden` xuống riêng phần hình vẽ.
+
+Cả bốn đều tôn trọng `prefers-reduced-motion`: chuyển động tắt hẳn (không phải làm chậm), còn
+thanh tiến trình vẫn hiện để không mất tín hiệu "đang tải".
+
+**Test:** 5 E2E mới — tiêu đề tab ở cả hai màn, linh vật không đè footer (so **toạ độ**, không
+so class), tắt được và nhớ lựa chọn, và **không nuốt cú click** của trang (lỗi kinh điển của
+mọi thứ nổi trên màn, triệu chứng là "thỉnh thoảng bấm không ăn" — gần như không lần ra được
+từ báo lỗi người dùng).
+
+### Security — mục 7: refresh token vào cookie `httpOnly` (22/09/2026)
+
+**ADR-0007.** Hoàn tất đợt rà soát: **8/8 mục đã vá**.
+
+| | Trước | Sau |
+|---|---|---|
+| Access token (60 phút) | `localStorage` | **RAM của tab** |
+| Refresh token (30 ngày) | `localStorage` | **Cookie** `httpOnly; Secure; SameSite=Lax; Path=/api/v1/auth` |
+| Chống CSRF | không cần | **double-submit token** |
+
+XSS — hoặc một gói npm bị chiếm, thực tế hơn nhiều — nay **không mang được phiên đi nơi khác**:
+cookie `httpOnly` JavaScript không đọc được, và `localStorage` không còn gì của phiên.
+
+⚠️ **Triển khai sẽ đá mọi người đang đăng nhập ra một lần.** Không tránh được; đã cân nhắc bản
+trung gian đọc cả hai nguồn và bỏ, vì nó giữ nguyên lỗ hổng thêm một thời gian.
+
+**BA LỖI CÓ SẴN TỪ TRƯỚC mà việc này lôi ra** — phần giá trị nhất của đợt thay đổi:
+
+1. **Đổi mật khẩu tự giết phiên của chính mình.** Lệnh thu hồi *mọi* refresh token, kể cả của
+   người đang đổi. `localStorage` che đi vì access token còn sống 60 phút; nay F5 ngay sau khi
+   đổi mật khẩu là văng. Sửa: cấp lại cặp token cho chính phiên đó.
+
+2. **`React.StrictMode` tự kích hoạt cơ chế chống trộm token.** Effect khôi phục phiên chạy hai
+   lần ⇒ lần hai cầm token vừa bị lần một xoay vòng ⇒ backend hiểu là bị đánh cắp ⇒ thu hồi
+   toàn bộ. Không riêng dev: **hai tab mở cùng lúc** cũng vậy. Sửa: dùng chung hàng đợi
+   `dangLamMoi` vốn đã có sẵn.
+
+3. **Phiên bị đẩy ra kéo theo phiên của người vừa đăng nhập.** A bị đẩy ra → A gọi làm mới →
+   backend tưởng bị trộm → thu hồi toàn bộ → **B cũng bị đá ra**. Hai người cùng văng.
+   `REFRESH_TOKEN` không lưu *lý do* thu hồi nên không phân biệt được "bị xoay vòng" (nghi trộm)
+   với "bị đẩy ra" (bình thường).
+
+   Đã thử suy từ `PhienHienTai` và **bỏ**: sau một lần xoay vòng hợp lệ thì cột đó cũng khác
+   `jti` của token cũ ⇒ suy đoán coi ca trộm thật là "bị đẩy ra" ⇒ nới lỏng đúng chốt chặn quan
+   trọng nhất. Test chống trộm đỏ ngay và chặn lại.
+
+   Sửa đúng gốc: **migration `LyDoThuHoiRefreshToken`** thêm cột `ly_do` (chỉ THÊM một cột
+   nullable; đã sao lưu, đếm 1329 hàng trước/sau đều khớp).
+
+**Điều chỉnh so với bản ADR đầu**: `SameSite=Strict` → **`Lax`**. `Strict` chặn cookie ở điều
+hướng tài liệu (gõ URL, F5, mở link) — đúng những thao tác cần cookie nhất.
+
+**Test:** 630 backend (+2 cho cookie/CSRF/đổi mật khẩu, +1 phân biệt đẩy-ra/trộm) · 3 E2E mới
+(XSS không đọc được token · F5 giữ phiên · tab mới vào thẳng). Mutation **hai chiều** cho cột
+`ly_do`: "luôn thu hồi toàn bộ" và "không bao giờ thu hồi" đều chết.
+
+**Bài học cho test E2E**: phải **lấy lại token sau mỗi `page.goto`/`reload`** — token cũ thành
+401 vì xoay vòng. Đây là lỗi im lặng, đỏ ở chỗ trông như lỗi nghiệp vụ. Ghi ở `tro-giup.ts`.
+
 ### Security — vá nốt mục 5 và 6 của đợt rà soát đăng nhập (22/09/2026)
 
 **5 — Header bảo mật ở tầng ứng dụng.** Trước đây toàn bộ header chỉ nằm trong

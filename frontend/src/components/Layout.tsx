@@ -13,6 +13,7 @@ import { useHeThong, type MaHeThong } from '@/lib/heThong'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { vietTat } from '@/lib/nhanDienTrungTam'
+import { useNhanDienTab } from '@/lib/nhanDienTab'
 import { useNhanDienTrungTam } from '@/lib/quyen'
 import { Anh } from '@/components/ui/Anh'
 
@@ -26,6 +27,9 @@ export default function Layout() {
   // Nhận diện trung tâm từ `/toi/cau-hinh` — mọi vai trò đọc được. Rơi về tên trong JWT khi
   // chưa tải xong, để sidebar không nhấp nháy lúc mới vào.
   const { tenTrungTam, tenVietTat, khoaLogo } = useNhanDienTrungTam()
+
+  // Tab mang logo + tên trung tâm (22/09/2026) — người dùng mở nhiều tab nhận ra ngay.
+  useNhanDienTab(tenTrungTam, khoaLogo)
   const tenHienThi = tenTrungTam ?? phien?.tenTrungTam
   const location = useLocation()
   const navigate = useNavigate()

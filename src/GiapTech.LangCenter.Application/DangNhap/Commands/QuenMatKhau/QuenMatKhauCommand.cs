@@ -23,7 +23,16 @@ namespace GiapTech.LangCenter.Application.DangNhap.Commands.QuenMatKhau;
 /// Nay **gửi email KHÔNG nằm trên đường trả lời**: phần chậm nhất chạy tách rời, nên hai
 /// nhánh trả về gần như cùng lúc. Đợt rà soát bảo mật 22/09/2026 xếp đây là mục 3.
 /// </summary>
-public record QuenMatKhauCommand(string MaTrungTam, string Email) : IRequest;
+public record QuenMatKhauCommand(string MaTrungTam, string Email) : IRequest, ILenhXacThuc
+{
+    // Cũng là lệnh ẩn danh: không khai thì mọi yêu cầu quên mật khẩu đều biến mất khỏi nhật ký
+    // (không có tenant trong context). Xem `ILenhXacThuc`.
+    string ILenhXacThuc.MaTrungTamDeGhiNhatKy => MaTrungTam;
+
+    // Không có username — người dùng gõ EMAIL. Ghi email vào ô username sẽ làm cột đó mang hai
+    // loại giá trị khác nhau; để trống và dựa vào `ThamSo` (đã có email) thì đọc log không nhầm.
+    string ILenhXacThuc.UsernameDeGhiNhatKy => string.Empty;
+}
 
 public class QuenMatKhauValidator : AbstractValidator<QuenMatKhauCommand>
 {

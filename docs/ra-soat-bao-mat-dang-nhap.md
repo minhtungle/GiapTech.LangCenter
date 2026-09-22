@@ -20,8 +20,10 @@ qua xác thực** hay **đọc dữ liệu trung tâm khác** — cách ly tenan
 
 ## Trạng thái khắc phục
 
-Chủ sản phẩm chốt ngày 22/09/2026: **làm lần lượt toàn bộ**, riêng mục 7 bàn sau vì nó là thay
-đổi kiến trúc (cần ADR, và triển khai sẽ đá mọi phiên đang mở ra).
+Chủ sản phẩm chốt ngày 22/09/2026: **làm lần lượt toàn bộ**. **8/8 mục đã vá.**
+
+⚠️ Mục 7 khi triển khai sẽ **đá mọi người đang đăng nhập ra một lần** — chọn giờ thấp điểm và
+báo trước cho trung tâm.
 
 | Mục | Trạng thái |
 |---|---|
@@ -31,7 +33,7 @@ Chủ sản phẩm chốt ngày 22/09/2026: **làm lần lượt toàn bộ**, r
 | 4. Khoá tài khoản sau N lần sai | ✅ **XONG** 22/09 |
 | 5. Security header ở tầng ứng dụng | ✅ **XONG** 22/09 |
 | 6. Độ dài mật khẩu tối thiểu | ✅ **XONG** 22/09 (blocklist còn nợ) |
-| 7. Token trong `localStorage` | 🅿️ **để riêng** — cần ADR |
+| 7. Token trong `localStorage` | ✅ **XONG** 22/09 — [ADR-0007](./kien-truc/adr/0007-refresh-token-cookie-httponly.md) |
 | 8. Fail-open của `PhienDuyNhatMiddleware` | ✅ **XONG** 22/09 (làm cùng mục 1) |
 
 ---
@@ -138,12 +140,16 @@ Verify bằng `curl` trên API thật.
 `123457` là hợp lệ. Khuyến nghị hiện hành (NIST SP 800-63B) là **tối thiểu 8–12** + blocklist,
 và bỏ yêu cầu ký tự đặc biệt.
 
-### 7. 🟡 Token trong `localStorage` — XSS lấy được cả phiên 30 ngày
+### 7. ✅ ĐÃ SỬA — Token trong `localStorage`
 
-Đây là đánh đổi kiến trúc, không phải lỗi cài đặt. CSP ở nginx (`default-src 'self'`, script
-không có `unsafe-inline`) giảm nhẹ đáng kể. Phương án chắc hơn là chuyển **refresh token** sang
-cookie `httpOnly; Secure; SameSite=Strict` và giữ access token trong bộ nhớ — nhưng đó là thay
-đổi lớn, nên cân nhắc riêng chứ không gộp vào đợt này.
+**Đã sửa 22/09/2026** theo [ADR-0007](./kien-truc/adr/0007-refresh-token-cookie-httponly.md):
+refresh token vào cookie `httpOnly; Secure; SameSite=Lax; Path=/api/v1/auth`, access token vào
+RAM, thêm double-submit chống CSRF.
+
+Việc này **lôi ra ba lỗi có sẵn từ trước** mà `localStorage` che đi — đọc chi tiết trong ADR:
+đổi mật khẩu tự giết phiên của chính mình; `React.StrictMode` tự kích hoạt cơ chế chống trộm;
+và phiên bị đẩy ra kéo theo phiên của người vừa đăng nhập (phải thêm cột `REFRESH_TOKEN.ly_do`
+mới sửa đúng gốc).
 
 ### 8. ✅ ĐÃ SỬA — `PhienDuyNhatMiddleware` fail-open không còn lý do tồn tại
 
@@ -159,6 +165,38 @@ Hai việc bắt buộc đi cùng nhau: nếu đăng xuất ghi dấu vào `Phie
 
 Canh bởi `DangXuatTests.Token_KHONG_co_jti_bi_chan_chu_khong_cho_qua` — viết **sau khi một
 mutation SỐNG** cho thấy lúc đó chưa có gì canh bản vá này.
+
+---
+
+## Bổ sung 22/09/2026 — nhật ký hành vi đăng nhập
+
+Chủ sản phẩm yêu cầu *"nhớ log cả hành vi đăng nhập"*. Kiểm lại thì đăng nhập **đã** được ghi
+(mọi lệnh `...Command` đi qua `NhatKyBehavior`), nhưng đo trên DB thật lộ ra **hai lỗ hổng**:
+
+| | Vấn đề | Đo được |
+|---|---|---|
+| 1 | **Không ghi lần THẤT BẠI** | 61 bản ghi đăng nhập, **0 thất bại** |
+| 2 | **Username ghi nhầm người** | Vài dòng `username` lệch hẳn với `ThamSo` |
+
+Nguyên nhân chung: `GhiNhatKy` lấy tenant/username từ JWT, mà lệnh đăng nhập **chưa có JWT**.
+Không có tenant thì nó `return` sớm ⇒ mất trắng lần thất bại; còn `ICurrentUser` thì vẫn mang
+danh tính của request **trước** trong cùng kết nối ⇒ ghi nhầm người.
+
+Lỗ hổng 1 nghiêm trọng hơn vẻ ngoài: nhật ký chỉ kể chuyện thành công là **vô dụng đúng lúc
+cần điều tra**. Dò mật khẩu không để lại vết nào.
+
+**Đã sửa**: thêm `ILenhXacThuc` — lệnh xác thực tự khai mã trung tâm + username, behavior tra
+ra `TenantId`. Làm bằng interface trên command chứ không sửa behavior, để thêm lệnh xác thực
+mới không thể quên.
+
+Nay ghi đủ: **sai mật khẩu**, **username không tồn tại** (dấu vết rõ nhất của người đang dò),
+và **bị khoá tạm**. Kèm IP. Mật khẩu vẫn bị lọc thành `***`.
+
+Còn một ca **không ghi được**: sai **mã trung tâm**. Bảng nhật ký tách theo tenant nên không
+biết ghi vào đâu. Chấp nhận — ca đó cũng ít giá trị vì không rõ nhắm vào ai.
+
+Canh bởi `NhatKyDangNhapTests` (5 test). Không test IP tự động vì máy chủ test trong bộ nhớ
+không đặt `RemoteIpAddress`; đã kiểm bằng tay trên API thật (`::1`), lý do ghi trong tệp test.
 
 ---
 

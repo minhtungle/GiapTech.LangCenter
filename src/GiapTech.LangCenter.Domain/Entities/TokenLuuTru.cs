@@ -21,7 +21,39 @@ public class RefreshToken : TenantEntity
     /// <summary>Thời điểm bị thu hồi (đăng xuất, hoặc đã dùng để xoay vòng). Null = còn hiệu lực.</summary>
     public DateTimeOffset? ThuHoiLuc { get; set; }
 
+    /// <summary>
+    /// **Vì sao** token bị thu hồi (22/09/2026, ADR-0007). Null với token còn hiệu lực, và với
+    /// token thu hồi trước ngày này.
+    ///
+    /// Cần vì `ThuHoiLuc` không nói được lý do, mà hai lý do đòi hai cách xử lý **ngược nhau**
+    /// khi ai đó dùng lại token đã thu hồi:
+    ///
+    /// - <see cref="LyDoThuHoi.XoayVong"/> → nghi **bị đánh cắp**: kẻ tấn công dùng bản sao cũ
+    ///   sau khi chủ tài khoản đã xoay vòng ⇒ thu hồi TOÀN BỘ phiên.
+    /// - <see cref="LyDoThuHoi.BiDayRa"/> → chuyện **bình thường**: người kia vừa đăng nhập.
+    ///   Thu hồi toàn bộ ở đây sẽ giết luôn token của chính người vừa đăng nhập ⇒ hai người
+    ///   cùng bị đá ra, không ai vào được.
+    ///
+    /// Trước ADR-0007 không phân biệt được cũng không sao: phiên cũ nhận 401 ở endpoint nghiệp
+    /// vụ và frontend **không** gọi làm mới. Nay refresh token đi bằng cookie nên phiên cũ chạm
+    /// vào `lam-moi-token` trước, và sự nhập nhằng thành lỗi thật.
+    /// </summary>
+    public LyDoThuHoi? LyDo { get; set; }
+
     public bool ConHieuLuc(DateTimeOffset bayGio) => ThuHoiLuc is null && bayGio < HetHan;
+}
+
+/// <summary>Lý do một refresh token bị thu hồi — xem <see cref="RefreshToken.LyDo"/>.</summary>
+public enum LyDoThuHoi
+{
+    /// <summary>Đã dùng để đổi lấy cặp token mới. Dùng lại = nghi bị đánh cắp.</summary>
+    XoayVong = 0,
+
+    /// <summary>Bị lần đăng nhập mới đẩy ra (một phiên mỗi tài khoản). Dùng lại là bình thường.</summary>
+    BiDayRa = 1,
+
+    /// <summary>Người dùng tự đăng xuất, hoặc đổi/đặt lại mật khẩu.</summary>
+    DangXuatHoacDoiMatKhau = 2,
 }
 
 /// <summary>

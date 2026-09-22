@@ -24,6 +24,15 @@ public static class MaLoi
     /// không tưởng mình bị cấm cửa và gọi điện lên trung tâm.
     /// </summary>
     public const string TaiKhoanBiKhoaTam = "TAI_KHOAN_BI_KHOA_TAM";
+
+    /// <summary>
+    /// Token CSRF thiếu hoặc không khớp (ADR-0007, 22/09/2026).
+    ///
+    /// Chỉ xảy ra ở nhóm endpoint nhận cookie phiên. Với người dùng thật, nguyên nhân gần như
+    /// luôn là cookie CSRF đã hết hạn hoặc bị xoá — nên thông báo phải dẫn họ đăng nhập lại,
+    /// không dùng chữ "CSRF" mà không ai hiểu.
+    /// </summary>
+    public const string CsrfKhongHopLe = "CSRF_KHONG_HOP_LE";
     public const string PhaiDoiMatKhau = "PHAI_DOI_MAT_KHAU";
     public const string MatKhauCuKhongDung = "MAT_KHAU_CU_KHONG_DUNG";
     public const string TokenDatLaiKhongHopLe = "TOKEN_DAT_LAI_KHONG_HOP_LE";

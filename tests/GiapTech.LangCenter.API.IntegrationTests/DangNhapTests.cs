@@ -24,7 +24,10 @@ public class DangNhapTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         Assert.Equal(HttpStatusCode.OK, status);
         Assert.False(string.IsNullOrWhiteSpace(body.GetProperty("accessToken").GetString()));
-        Assert.False(string.IsNullOrWhiteSpace(body.GetProperty("refreshToken").GetString()));
+
+        // Refresh token **KHÔNG** còn trong body từ ADR-0007 (22/09/2026) — nó đi bằng cookie
+        // `httpOnly` để JavaScript không đọc được. `CookiePhienTests` canh kỹ phần này.
+        Assert.False(body.TryGetProperty("refreshToken", out _));
 
         // Admin mặc định phải đổi mật khẩu lần đầu (FR-01).
         Assert.True(body.GetProperty("phaiDoiMatKhau").GetBoolean());

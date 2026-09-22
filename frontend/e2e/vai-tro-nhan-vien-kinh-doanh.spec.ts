@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { vaoHeThong } from './tro-giup'
+import { vaoHeThong, layTokenQuaApi } from './tro-giup'
 
 /**
  * Vai trò **Nhân viên kinh doanh** (16/09/2026) — yêu cầu chủ sản phẩm:
@@ -13,8 +13,8 @@ import { vaoHeThong } from './tro-giup'
  * bảng, và ô lọc phải tách được chúng.
  */
 test('Hai vai trò nhân viên tách biệt trên màn Nhân sự', async ({ page, request }) => {
-  await vaoHeThong(page, request, 'vai-tro-kd')
-  const token = await page.evaluate(() => localStorage.getItem('lms_access_token'))
+  const ttE2E = await vaoHeThong(page, request, 'vai-tro-kd')
+  const token = await layTokenQuaApi(page)
 
   const api = async (duong: string, than: unknown) => {
     const res = await page.request.post(`http://localhost:5229/api/v1${duong}`, {

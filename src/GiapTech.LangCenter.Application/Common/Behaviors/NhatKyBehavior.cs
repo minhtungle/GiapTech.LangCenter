@@ -3,6 +3,7 @@ using System.Text.Json;
 using GiapTech.LangCenter.Application.Common.Exceptions;
 using GiapTech.LangCenter.Application.Common.Interfaces;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace GiapTech.LangCenter.Application.Common.Behaviors;
 
@@ -20,7 +21,7 @@ namespace GiapTech.LangCenter.Application.Common.Behaviors;
 /// lỗi client, không phải thao tác nghiệp vụ. Nhưng lỗi **nghiệp vụ** (`AppException`) thì có
 /// ghi, vì "ai đó đã cố xoá buổi đã chốt" là thông tin đáng lưu.
 /// </summary>
-public class NhatKyBehavior<TRequest, TResponse>(IGhiNhatKy ghiNhatKy)
+public class NhatKyBehavior<TRequest, TResponse>(IGhiNhatKy ghiNhatKy, IAppDbContext db)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
@@ -42,6 +43,9 @@ public class NhatKyBehavior<TRequest, TResponse>(IGhiNhatKy ghiNhatKy)
         var dongHo = Stopwatch.StartNew();
         var ten = typeof(TRequest).Name;
 
+        // Lệnh xác thực tự khai danh tính — chúng chưa có JWT. Xem `ILenhXacThuc`.
+        var danhTinh = await DanhTinhXacThuc(request, ct);
+
         try
         {
             var ketQua = await next();
@@ -49,7 +53,7 @@ public class NhatKyBehavior<TRequest, TResponse>(IGhiNhatKy ghiNhatKy)
 
             await ghiNhatKy.GhiAsync(
                 ten, ThamSoJson(request), thanhCong: true, maLoi: null,
-                (int)dongHo.ElapsedMilliseconds, ct);
+                (int)dongHo.ElapsedMilliseconds, ct, danhTinh);
 
             return ketQua;
         }
@@ -60,7 +64,7 @@ public class NhatKyBehavior<TRequest, TResponse>(IGhiNhatKy ghiNhatKy)
             dongHo.Stop();
             await ghiNhatKy.GhiAsync(
                 ten, ThamSoJson(request), thanhCong: false, ex.Ma,
-                (int)dongHo.ElapsedMilliseconds, ct);
+                (int)dongHo.ElapsedMilliseconds, ct, danhTinh);
             throw;
         }
         catch (Exception)
@@ -68,9 +72,38 @@ public class NhatKyBehavior<TRequest, TResponse>(IGhiNhatKy ghiNhatKy)
             dongHo.Stop();
             await ghiNhatKy.GhiAsync(
                 ten, ThamSoJson(request), thanhCong: false, "LOI_HE_THONG",
-                (int)dongHo.ElapsedMilliseconds, ct);
+                (int)dongHo.ElapsedMilliseconds, ct, danhTinh);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Tra danh tính cho lệnh XÁC THỰC: đổi **mã trung tâm người dùng gõ** thành `TenantId`.
+    ///
+    /// Trả `null` cho mọi lệnh khác — chúng đã có JWT nên `GhiNhatKy` tự lấy từ context.
+    ///
+    /// `IgnoreQueryFilters` vì lúc này context chưa có tenant (chính là lý do phải làm việc
+    /// này). An toàn: chỉ đọc đúng một hàng `TENANT` theo mã người dùng gõ, không trả gì ra
+    /// ngoài — kết quả chỉ đi vào bảng nhật ký.
+    ///
+    /// Mã sai ⇒ `TenantId` null ⇒ `GhiNhatKy` bỏ qua. Không tra được thì cũng không ghi được:
+    /// bảng nhật ký tách theo tenant.
+    /// </summary>
+    private async Task<DanhTinhNhatKy?> DanhTinhXacThuc(TRequest request, CancellationToken ct)
+    {
+        if (request is not ILenhXacThuc lenh) return null;
+
+        var ma = Domain.Common.MaTrungTam.ChuanHoa(lenh.MaTrungTamDeGhiNhatKy);
+
+        var tenantId = await db.Tenants
+            .IgnoreQueryFilters()
+            .Where(t => t.MaTrungTam == ma)
+            .Select(t => (Guid?)t.Id)
+            .FirstOrDefaultAsync(ct);
+
+        return new DanhTinhNhatKy(
+            tenantId,
+            string.IsNullOrWhiteSpace(lenh.UsernameDeGhiNhatKy) ? null : lenh.UsernameDeGhiNhatKy);
     }
 
     /// <summary>

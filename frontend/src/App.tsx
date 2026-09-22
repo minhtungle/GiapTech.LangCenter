@@ -30,6 +30,8 @@ import PhanQuyen from '@/pages/quan-tri/PhanQuyen'
 import ChiTietQuyen from '@/pages/quan-tri/phan-quyen/ChiTietQuyen'
 import ThietLap from '@/pages/quan-tri/ThietLap'
 import NhatKy from '@/pages/quan-tri/NhatKy'
+import { DangXuLy } from '@/components/ui/DangXuLy'
+import { LinhVat } from '@/components/LinhVat'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,7 +63,20 @@ function DoiSangLms() {
 
 /** Chặn route cần đăng nhập; còn cờ buộc đổi mật khẩu thì ép về màn đổi. */
 function CanDangNhap({ children }: { children: React.ReactNode }) {
-  const { daDangNhap, phaiDoiMatKhau } = useAuth()
+  const { daDangNhap, dangKhoiPhuc, phaiDoiMatKhau } = useAuth()
+
+  /*
+    CHỜ khôi phục xong rồi mới quyết (ADR-0007).
+
+    Từ 22/09/2026 access token nằm trong RAM, nên ngay sau khi F5 thì `daDangNhap` là `false`
+    dù người dùng vẫn đang đăng nhập — cookie `httpOnly` còn đó, chỉ là app chưa kịp đổi lấy
+    access token mới. Không chờ thì **mỗi lần F5 là văng về màn đăng nhập**, rồi một nhịp sau
+    lại tự vào — nhấp nháy và mất luôn trang đang xem.
+
+    Trả `null` (không vẽ gì) thay vì một spinner: khoảng chờ chỉ là một request, spinner nhấp
+    nháy trong 100ms còn khó chịu hơn màn trắng.
+  */
+  if (dangKhoiPhuc) return null
 
   if (!daDangNhap) return <Navigate to="/dang-nhap" replace />
   if (phaiDoiMatKhau) return <Navigate to="/doi-mat-khau" replace />
@@ -71,8 +86,19 @@ function CanDangNhap({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      {/*
+        Thanh tiến trình và linh vật đặt NGOÀI `Routes` để không bị dựng lại mỗi lần đổi
+        trang: dựng lại nghĩa là linh vật nhảy về đầu màn và bộ đếm thoại reset ở mọi cú
+        bấm menu.
+
+        Trong `QueryClientProvider` vì `DangXuLy` đọc `useIsFetching`/`useIsMutating`.
+      */}
+      <DangXuLy />
+
       <BrowserRouter>
         <AuthProvider>
+          <LinhVat />
+
           <Routes>
             <Route path="/dang-nhap" element={<DangNhap />} />
             <Route path="/quen-mat-khau" element={<QuenMatKhau />} />

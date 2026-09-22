@@ -74,6 +74,40 @@ export async function dangNhap(page: Page, trungTam: TrungTam) {
   await page.waitForURL((u) => u.pathname === '/', { timeout: 15_000 })
 }
 
+/**
+ * Lấy access token mà TRANG đang giữ trong RAM (ADR-0007, 22/09/2026).
+ *
+ * ⚠️ **GỌI LẠI sau mỗi `page.goto`/`page.reload`.** Tải trang làm app đổi cookie lấy access
+ * token mới, mà refresh token **xoay vòng** nên `PhienHienTai` đổi theo ⇒ token cũ bị
+ * `PhienDuyNhatMiddleware` trả **401**. Giữ token trong một biến rồi dùng lại sau khi điều
+ * hướng là lỗi im lặng: request đầu còn chạy, request sau 401, và test đỏ ở chỗ trông như lỗi
+ * nghiệp vụ.
+ *
+ * Trước đây test đọc `localStorage.getItem('lms_access_token')`. Từ ADR-0007 token nằm trong
+ * biến JS, không còn ở `localStorage`, nên dòng đó trả `null` và 21 tệp test đỏ.
+ *
+ * **Đã thử cách khác và SAI**: cho helper tự gọi `POST /auth/dang-nhap` để lấy token riêng.
+ * Đăng nhập lần hai **đẩy phiên của trình duyệt ra** (một phiên mỗi tài khoản, 20/09/2026), nên
+ * chính trang đang test bị đá về màn đăng nhập — 17 test đỏ theo kiểu rất khó đoán, vì lỗi hiện
+ * ra ở chỗ "không thấy tab/nút" chứ không ở chỗ xác thực.
+ *
+ * Nên phải lấy **đúng token của phiên trình duyệt**, không tạo phiên mới.
+ */
+export async function layTokenQuaApi(page: Page): Promise<string> {
+  const token = await page.evaluate(
+    () => (window as unknown as { __layTokenTest?: () => string | null }).__layTokenTest?.() ?? null,
+  )
+
+  expect(
+    token,
+    'Không lấy được access token từ trang. Kiểm `__layTokenTest` trong `lib/api.ts` '
+    + '(chỉ gắn khi `import.meta.env.DEV`) và trang đã đăng nhập xong chưa.',
+  ).toBeTruthy()
+
+  return token!
+}
+
+
 /** Tạo trung tâm + đăng nhập — bước mở đầu của gần như mọi test. */
 export async function vaoHeThong(page: Page, request: APIRequestContext, nhan: string) {
   const trungTam = await taoTrungTam(request, nhan)

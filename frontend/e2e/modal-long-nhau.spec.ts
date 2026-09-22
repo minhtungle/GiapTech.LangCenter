@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { vaoHeThong } from './tro-giup'
+import { vaoHeThong, layTokenQuaApi } from './tro-giup'
 
 /**
  * Khi một modal mở tiếp hộp xác nhận, CHỈ lớp trên cùng được nhận tương tác.
@@ -12,7 +12,7 @@ import { vaoHeThong } from './tro-giup'
  */
 test('modal dưới bị inert khi hộp xác nhận mở; duyệt vẫn ghi đúng', async ({ page, request }) => {
   await vaoHeThong(page, request, 'modal-long')
-  const tok = await page.evaluate(() => localStorage.getItem('lms_access_token'))
+  const tok = await layTokenQuaApi(page)
   const H = { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' }
   const J = async (r: { json: () => Promise<unknown> }) => await r.json()
 
@@ -74,7 +74,17 @@ test('modal dưới bị inert khi hộp xác nhận mở; duyệt vẫn ghi đ�
   await page.waitForTimeout(1800)
   expect(await page.getByText('Khach M').isVisible().catch(() => false),
     'đã duyệt thì phải rời hàng chờ, kể cả sau F5').toBe(false)
+  /*
+    LẤY LẠI token sau `reload` (ADR-0007, 22/09/2026).
+
+    Tải lại trang làm app đổi cookie lấy access token mới, mà refresh token **xoay vòng** nên
+    `PhienHienTai` cũng đổi theo ⇒ token cũ trong `H` bị `PhienDuyNhatMiddleware` trả **401**.
+    Dùng lại `H` ở đây thì API trả lỗi và `tongSoDong` là `undefined`, đỏ ở một chỗ trông như
+    "hàng chờ chưa rỗng" — hoàn toàn lạc hướng so với nguyên nhân thật.
+  */
+  const H2 = { Authorization: `Bearer ${await layTokenQuaApi(page)}` }
+
   // Endpoint trả `KetQuaTrang` từ 12/09/2026 (trước đó là mảng trần) — đọc `tongSoDong`.
-  const api = await (await request.get('/api/v1/lop-hoc/cho-xep-lop', { headers: H })).json()
+  const api = await (await request.get('/api/v1/lop-hoc/cho-xep-lop', { headers: H2 })).json()
   expect(api.tongSoDong, 'API hàng chờ phải rỗng').toBe(0)
 })

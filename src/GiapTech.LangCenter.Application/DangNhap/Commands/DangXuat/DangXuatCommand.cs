@@ -74,7 +74,10 @@ public class DangXuatHandler(
             .ToListAsync(ct);
 
         foreach (var r in dangMo)
+        {
             r.ThuHoiLuc = bayGio;
+            r.LyDo = Domain.Entities.LyDoThuHoi.DangXuatHoacDoiMatKhau;
+        }
 
         await db.SaveChangesAsync(ct);
 

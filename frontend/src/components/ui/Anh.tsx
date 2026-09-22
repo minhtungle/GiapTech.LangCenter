@@ -25,7 +25,13 @@ import { api } from '@/lib/api'
  */
 const cache = new Map<string, string>()
 
-async function taiAnh(khoa: string): Promise<string | null> {
+/**
+ * Tải ảnh qua API (có token) và trả object URL, có cache.
+ *
+ * Export để `useNhanDienTab` dùng lại cho favicon — favicon không thể trỏ thẳng
+ * `/api/v1/anh/...` vì thẻ `<link>` không gắn được header `Authorization`.
+ */
+export async function taiAnh(khoa: string): Promise<string | null> {
   const daCo = cache.get(khoa)
   if (daCo) return daCo
 

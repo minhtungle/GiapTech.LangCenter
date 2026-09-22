@@ -112,7 +112,7 @@ erDiagram
 | `QUYEN` | Nhóm quyền | Seeder tạo sẵn 4 nhóm: Quản trị viên / Giáo viên / Trợ giảng / Học viên |
 | `QUYEN_CHUC_NANG` | Chi tiết quyền | `(quyen_id, ten_chuc_nang, hanh_dong)` — nguồn của phân quyền động |
 | `NGUOIDUNG_QUYEN` | Gán nhóm quyền | Nhiều–nhiều, gán cho **TÀI KHOẢN** (`tai_khoan_id`) chứ không cho người |
-| `REFRESH_TOKEN` | Phiên đăng nhập | Xoay vòng, phát hiện tái sử dụng |
+| `REFRESH_TOKEN` | Phiên đăng nhập | Xoay vòng, phát hiện tái sử dụng. Cột `ly_do` (22/09/2026) phân biệt **bị xoay vòng** (dùng lại ⇒ nghi bị trộm ⇒ thu hồi toàn bộ) với **bị đẩy ra** (bình thường, không thu hồi thêm) — xem ADR-0007 |
 | `TOKEN_DATLAI_MATKHAU` | Quên mật khẩu | Hash, hạn 30 phút, dùng một lần |
 | `NHAT_KY_HE_THONG` | **Nhật ký thao tác** (FR-16) | Một bản ghi cho mỗi LỆNH, không phải mỗi dòng dữ liệu. Chỉ ghi thêm — không sửa, không xoá. `username`/`ho_ten` lưu **bản chụp** để đọc được cả khi tài khoản đã xoá |
 

@@ -33,13 +33,22 @@ public class GhiNhatKy(
 
     public async Task GhiAsync(
         string tenLenh, string? thamSoJson, bool thanhCong, string? maLoi,
-        int soMiliGiay, CancellationToken ct)
+        int soMiliGiay, CancellationToken ct, DanhTinhNhatKy? danhTinh = null)
     {
         try
         {
-            // Không có tenant thì không biết ghi vào đâu — đăng nhập thất bại vì sai mã trung
-            // tâm rơi vào đây, và đó là ca chấp nhận bỏ qua.
-            if (tenant.TenantId is not { } tid) return;
+            /*
+              Ưu tiên danh tính do LỆNH khai (22/09/2026) — xem `DanhTinhNhatKy`.
+
+              Lệnh xác thực chưa có JWT nên `ICurrentTenant` rỗng. Không có nhánh này thì mọi
+              lần đăng nhập THẤT BẠI bị bỏ qua (return ngay dưới đây) — đúng những lần cần ghi
+              nhất cho việc phát hiện dò mật khẩu.
+
+              Mã trung tâm sai thì vẫn không ghi được: bảng nhật ký tách theo tenant, không
+              biết ghi vào đâu. Chấp nhận, và ca đó cũng ít giá trị vì không rõ nhắm vào ai.
+            */
+            var tid0 = danhTinh?.TenantId ?? tenant.TenantId;
+            if (tid0 is not { } tid) return;
 
             var (truong, soBanGhi) = LayThayDoiGanNhat();
 
@@ -50,7 +59,9 @@ public class GhiNhatKy(
                 ChucNang = SuyChucNang(tenLenh),
                 HanhDong = SuyHanhDong(tenLenh),
                 NguoiDungId = currentUser.UserId,
-                Username = currentUser.Username,
+                // Username do lệnh khai thắng: lúc đăng nhập, `currentUser` còn mang danh tính
+                // của request TRƯỚC trong cùng kết nối — ghi nhầm người.
+                Username = danhTinh?.Username ?? currentUser.Username,
                 HoTen = await LayHoTen(ct),
                 ThanhCong = thanhCong,
                 MaLoi = maLoi,

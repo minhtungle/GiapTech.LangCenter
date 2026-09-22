@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { MAT_KHAU_MOI, taoTrungTam, dangNhap } from './tro-giup'
+import { MAT_KHAU_MOI, taoTrungTam, dangNhap, layTokenQuaApi } from './tro-giup'
 
 /**
  * Nhận diện trung tâm ở màn ĐĂNG NHẬP và trong sidebar (22/09/2026).
@@ -38,7 +38,7 @@ test('Gõ mã đúng thì hiện nhận diện trung tâm; sidebar dùng tên t�
   await page.fill('#maTrungTam', tt.maTrungTam)
   await dangNhap(page, tt)
 
-  const tok = await page.evaluate(() => localStorage.getItem('lms_access_token'))
+  const tok = await layTokenQuaApi(page)
   const hienTai = await (await page.request.get('/api/v1/thiet-lap', {
     headers: { Authorization: `Bearer ${tok}` },
   })).json()

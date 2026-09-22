@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { vaoHeThong } from './tro-giup'
+import { vaoHeThong, layTokenQuaApi } from './tro-giup'
 
 /**
  * Thống kê CRM lọc **từ ngày → đến ngày** (16/09/2026) — yêu cầu chủ sản phẩm:
@@ -20,8 +20,8 @@ import { vaoHeThong } from './tro-giup'
  *    F5. Gặp thật lúc kiểm chứng tính năng này.
  */
 test('Lọc từ ngày → đến ngày, không lệch ngày cuối kỳ', async ({ page, request }) => {
-  await vaoHeThong(page, request, 'tk-tu-den')
-  const token = await page.evaluate(() => localStorage.getItem('lms_access_token'))
+  const ttE2E = await vaoHeThong(page, request, 'tk-tu-den')
+  const token = await layTokenQuaApi(page)
 
   const api = async (duong: string, than: unknown) => {
     const res = await page.request.post(`http://localhost:5229/api/v1${duong}`, {

@@ -20,6 +20,22 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
         return await res.Content.ReadFromJsonAsync<JsonElement>();
     }
 
+    /// <summary>
+    /// Đăng nhập và trả `(refreshToken, csrf)` — refresh token lấy TỪ COOKIE, không còn trong
+    /// body (ADR-0007). Cặp này là thứ mọi test xoay vòng token bên dưới cần.
+    /// </summary>
+    private async Task<(string Refresh, string Csrf)> DangNhapLayCookie(
+        string maTrungTam, string user, string mk)
+    {
+        var res = await factory.CreateClient().PostAsJsonAsync("/api/v1/auth/dang-nhap",
+            new { MaTrungTam = maTrungTam, Username = user, MatKhau = mk });
+        res.EnsureSuccessStatusCode();
+
+        var body = await res.Content.ReadFromJsonAsync<JsonElement>();
+        return (TroGiupPhien.LayCookie(res, API.Authorization.CookiePhien.Ten)!,
+                body.GetProperty("tokenCsrf").GetString()!);
+    }
+
     private HttpClient ClientVoiToken(string token)
     {
         var c = factory.CreateClient();
@@ -32,17 +48,16 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Lam_moi_token_tra_ve_cap_token_moi()
     {
-        var dn = await DangNhap(factory.MaTrungTamA, "manager", "manager123456");
-        var refreshCu = dn.GetProperty("refreshToken").GetString()!;
+        var (refreshCu, csrf) = await DangNhapLayCookie(factory.MaTrungTamA, "manager", "manager123456");
 
-        var res = await factory.CreateClient().PostAsJsonAsync(
-            "/api/v1/auth/lam-moi-token", new { RefreshToken = refreshCu });
+        var res = await TroGiupPhien.LamMoiAsync(factory.CreateClient(), refreshCu, csrf);
 
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
         var body = await res.Content.ReadFromJsonAsync<JsonElement>();
 
         var accessMoi = body.GetProperty("accessToken").GetString()!;
-        Assert.NotEqual(refreshCu, body.GetProperty("refreshToken").GetString());
+        // Xoay vòng: cookie mới phải mang refresh token KHÁC cái vừa dùng.
+        Assert.NotEqual(refreshCu, TroGiupPhien.LayCookie(res, API.Authorization.CookiePhien.Ten));
 
         // Access token mới phải dùng được ngay.
         var goiApi = await ClientVoiToken(accessMoi).GetAsync("/api/v1/tai-khoan");
@@ -56,15 +71,12 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Refresh_token_cu_khong_dung_lai_duoc()
     {
-        var dn = await DangNhap(factory.MaTrungTamB, "manager", "manager123456");
-        var refreshCu = dn.GetProperty("refreshToken").GetString()!;
+        var (refreshCu, csrf) = await DangNhapLayCookie(factory.MaTrungTamB, "manager", "manager123456");
 
-        var lan1 = await factory.CreateClient().PostAsJsonAsync(
-            "/api/v1/auth/lam-moi-token", new { RefreshToken = refreshCu });
+        var lan1 = await TroGiupPhien.LamMoiAsync(factory.CreateClient(), refreshCu, csrf);
         Assert.Equal(HttpStatusCode.OK, lan1.StatusCode);
 
-        var lan2 = await factory.CreateClient().PostAsJsonAsync(
-            "/api/v1/auth/lam-moi-token", new { RefreshToken = refreshCu });
+        var lan2 = await TroGiupPhien.LamMoiAsync(factory.CreateClient(), refreshCu, csrf);
         Assert.Equal(HttpStatusCode.BadRequest, lan2.StatusCode);
     }
 
@@ -75,30 +87,58 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Tai_su_dung_token_da_thu_hoi_thi_thu_hoi_toan_bo_phien()
     {
-        var dn = await DangNhap(factory.MaTrungTamA, "player", "player123456");
-        var doi1 = dn.GetProperty("refreshToken").GetString()!;
+        var (doi1, csrf) = await DangNhapLayCookie(factory.MaTrungTamA, "player", "player123456");
 
-        var r2 = await factory.CreateClient().PostAsJsonAsync(
-            "/api/v1/auth/lam-moi-token", new { RefreshToken = doi1 });
-        var doi2 = (await r2.Content.ReadFromJsonAsync<JsonElement>())
-            .GetProperty("refreshToken").GetString()!;
+        var r2 = await TroGiupPhien.LamMoiAsync(factory.CreateClient(), doi1, csrf);
+        var doi2 = TroGiupPhien.LayCookie(r2, API.Authorization.CookiePhien.Ten)!;
+        var csrf2 = (await r2.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("tokenCsrf").GetString()!;
 
         // Kẻ tấn công dùng lại bản sao đời 1 (đã bị thu hồi).
-        var taiSuDung = await factory.CreateClient().PostAsJsonAsync(
-            "/api/v1/auth/lam-moi-token", new { RefreshToken = doi1 });
+        var taiSuDung = await TroGiupPhien.LamMoiAsync(factory.CreateClient(), doi1, csrf);
         Assert.Equal(HttpStatusCode.BadRequest, taiSuDung.StatusCode);
 
         // Hệ quả: token đời 2 của chủ tài khoản cũng bị thu hồi.
-        var doi2SauCanhBao = await factory.CreateClient().PostAsJsonAsync(
-            "/api/v1/auth/lam-moi-token", new { RefreshToken = doi2 });
+        var doi2SauCanhBao = await TroGiupPhien.LamMoiAsync(factory.CreateClient(), doi2, csrf2);
         Assert.Equal(HttpStatusCode.BadRequest, doi2SauCanhBao.StatusCode);
+    }
+
+    /// <summary>
+    /// **Phiên bị ĐẨY RA dùng lại token KHÔNG được thu hồi phiên của người vừa đăng nhập.**
+    ///
+    /// Đây là chiều ngược của test tái-sử-dụng ngay trên, và là lỗi thật gặp khi làm ADR-0007:
+    /// A bị đẩy ra, A gọi làm mới, backend tưởng bị trộm ⇒ thu hồi toàn bộ ⇒ **B vừa đăng nhập
+    /// cũng bị đá ra**. Hai người cùng văng, không ai vào được.
+    ///
+    /// Phân biệt bằng cột `REFRESH_TOKEN.ly_do` (migration `LyDoThuHoiRefreshToken`), **không**
+    /// suy từ `PhienHienTai`: sau một lần xoay vòng hợp lệ thì cột đó cũng khác `jti` của token
+    /// cũ, nên suy đoán sẽ coi ca trộm thật là "bị đẩy ra" và nới lỏng đúng chốt chặn quan
+    /// trọng nhất.
+    /// </summary>
+    [Fact]
+    public async Task Phien_bi_day_ra_KHONG_lam_chet_phien_cua_nguoi_vua_dang_nhap()
+    {
+        // A đăng nhập, rồi B đăng nhập cùng tài khoản (đẩy A ra).
+        var (refreshA, csrfA) = await DangNhapLayCookie(factory.MaTrungTamA, "manager", "manager123456");
+        var (refreshB, csrfB) = await DangNhapLayCookie(factory.MaTrungTamA, "manager", "manager123456");
+
+        // A cố làm mới bằng token đã bị đẩy ra → phải bị từ chối, KÈM mã lỗi đúng sự thật.
+        var cuaA = await TroGiupPhien.LamMoiAsync(factory.CreateClient(), refreshA, csrfA);
+        Assert.Equal(HttpStatusCode.BadRequest, cuaA.StatusCode);
+        Assert.Equal("PHIEN_DA_BI_DAY_RA",
+            (await cuaA.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errorCode").GetString());
+
+        // ĐIỀU CỐT LÕI: B vẫn làm mới được — không bị A kéo theo.
+        var cuaB = await TroGiupPhien.LamMoiAsync(factory.CreateClient(), refreshB, csrfB);
+        Assert.Equal(HttpStatusCode.OK, cuaB.StatusCode);
     }
 
     [Fact]
     public async Task Refresh_token_bia_dat_bi_tu_choi()
     {
-        var res = await factory.CreateClient().PostAsJsonAsync(
-            "/api/v1/auth/lam-moi-token", new { RefreshToken = "token-khong-co-that" });
+        // CSRF khớp để chắc chắn 400 đến từ token bịa, không phải từ chốt CSRF.
+        var res = await TroGiupPhien.LamMoiAsync(
+            factory.CreateClient(), "token-khong-co-that", "csrf-bat-ky");
 
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
     }

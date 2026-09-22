@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { api, layMaLoi } from '@/lib/api'
+import { api, layMaLoi, luuToken } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import {
   Button, CanhBaoLoi, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label,
@@ -38,10 +38,19 @@ export default function DoiMatKhau() {
   const onSubmit = async (data: FormData) => {
     setMaLoi(null)
     try {
-      await api.post('/auth/doi-mat-khau', {
+      /*
+        Lưu cặp token MỚI mà endpoint trả về (ADR-0007).
+
+        Đổi mật khẩu thu hồi **mọi** refresh token của tài khoản — kể cả của chính phiên đang
+        đổi. Không lưu token mới thì người dùng vẫn đi tiếp được nhờ access token cũ trong RAM,
+        nhưng **tải lại trang là văng ra**: không còn refresh token hợp lệ để khôi phục phiên.
+        Cookie mới do server đặt kèm phản hồi này.
+      */
+      const { data: phienMoi } = await api.post('/auth/doi-mat-khau', {
         matKhauCu: data.matKhauCu,
         matKhauMoi: data.matKhauMoi,
       })
+      luuToken(phienMoi.accessToken, phienMoi.tokenCsrf)
       danhDauDaDoiMatKhau()
       navigate('/', { replace: true })
     } catch (e) {

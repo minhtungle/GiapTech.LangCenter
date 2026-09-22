@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { vaoHeThong } from './tro-giup'
+import { layTokenQuaApi, vaoHeThong } from './tro-giup'
 
 /**
  * FR-22 — cây cơ cấu tổ chức.
@@ -42,9 +42,9 @@ async function xoaPhong(page: import('@playwright/test').Page, ten: string) {
 }
 
 test('Xoá phòng ban KHÔNG làm trắng màn hình', async ({ page, request }) => {
-  await vaoHeThong(page, request, 'co-cau-xoa')
+  const tt = await vaoHeThong(page, request, 'co-cau-xoa')
 
-  const token = await page.evaluate(() => localStorage.getItem('lms_access_token'))
+  const token = await layTokenQuaApi(page)
   const api = async (duong: string, than: unknown) => {
     const res = await page.request.post(`http://localhost:5229/api/v1${duong}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -95,9 +95,9 @@ test('Xoá phòng ban KHÔNG làm trắng màn hình', async ({ page, request })
  * gì xảy ra là trải nghiệm tệ ngang với màn trắng — người dùng không biết mình cần làm gì.
  */
 test('Xoá bị chặn thì báo lỗi rõ ràng, màn vẫn sống', async ({ page, request }) => {
-  await vaoHeThong(page, request, 'co-cau-chan')
+  const tt = await vaoHeThong(page, request, 'co-cau-chan')
 
-  const token = await page.evaluate(() => localStorage.getItem('lms_access_token'))
+  const token = await layTokenQuaApi(page)
   const api = async (duong: string, than: unknown) => {
     const res = await page.request.post(`http://localhost:5229/api/v1${duong}`, {
       headers: { Authorization: `Bearer ${token}` },

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -10,6 +10,7 @@ import { layMaLoi } from '@/lib/api'
 import { useTinhNang } from '@/lib/tinhNang'
 import { useTraTenTrungTam } from '@/lib/traTenTrungTam'
 import { vietTat } from '@/lib/nhanDienTrungTam'
+import { useNhanDienTab } from '@/lib/nhanDienTab'
 import { docDaNho, luuDaNho, xoaDaNho } from '@/lib/nhoDangNhap'
 import { BannerTrungTam } from './BannerTrungTam'
 import {
@@ -70,6 +71,29 @@ export default function DangNhap() {
   // rồi nhận "sai thông tin đăng nhập" thì không phân biệt được là sai mã hay sai mật khẩu.
   const { tenTrungTam, trungTam, duongDanLogo, duongDanAnhBia, dangTra } =
     useTraTenTrungTam(watch('maTrungTam') ?? '')
+
+  /*
+    Tab đổi theo mã vừa gõ (22/09/2026).
+
+    `laUrl = true` vì ở màn đăng nhập chưa có token: `duongDanLogo` trỏ endpoint ẩn danh
+    `/auth/logo/{ma}` nhận MÃ chứ không nhận khoá ảnh, nên dùng thẳng được.
+  */
+  useNhanDienTab(trungTam?.tenTrungTam, duongDanLogo, true)
+
+  /*
+    Đẩy linh vật lên TRÊN footer của màn này (footer cao ~3.5rem).
+
+    Phải đặt biến lên `:root`, không đặt bằng class trên thẻ bao ngoài: `LinhVat` mount ở
+    `App.tsx`, **ngoài cây DOM của trang này**, nên nó không thừa kế được biến khai ở đây.
+    Đã thử cách class trước và biến luôn về giá trị mặc định `0px` — nhân vật đè lên dòng bản
+    quyền, phát hiện khi chụp màn kiểm tra.
+  */
+  useEffect(() => {
+    document.documentElement.style.setProperty('--linh-vat-day', '3.5rem')
+    return () => {
+      document.documentElement.style.removeProperty('--linh-vat-day')
+    }
+  }, [])
 
   const onSubmit = async (data: FormData) => {
     setMaLoi(null)

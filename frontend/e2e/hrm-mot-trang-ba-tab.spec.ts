@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { vaoHeThong } from './tro-giup'
+import { vaoHeThong, layTokenQuaApi } from './tro-giup'
 
 /**
  * HRM gộp một trang ba tab + bấm sĩ số ra danh sách người (16/09/2026).
@@ -25,9 +25,9 @@ async function soDong(page: import('@playwright/test').Page) {
 }
 
 test('Một trang ba tab, bấm sĩ số ra ĐÚNG những người đang làm việc', async ({ page, request }) => {
-  await vaoHeThong(page, request, 'hrm-tab')
+  const ttE2E = await vaoHeThong(page, request, 'hrm-tab')
 
-  const token = await page.evaluate(() => localStorage.getItem('lms_access_token'))
+  const token = await layTokenQuaApi(page)
   const api = async (duong: string, than: unknown, method: 'post' | 'put' = 'post') => {
     const res = await page.request[method](`http://localhost:5229/api/v1${duong}`, {
       headers: { Authorization: `Bearer ${token}` },

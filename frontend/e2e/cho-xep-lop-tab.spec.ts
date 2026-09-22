@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { vaoHeThong, MAT_KHAU_MOI } from './tro-giup'
+import { layTokenQuaApi, vaoHeThong, MAT_KHAU_MOI } from './tro-giup'
 
 /**
  * "Chờ xếp lớp" là một TAB của màn Lớp học, không phải module riêng (yêu cầu 10/09/2026).
@@ -51,17 +51,16 @@ test.describe('Chờ xếp lớp — tab của màn Lớp học', () => {
    */
   test('giáo viên KHÔNG thấy tab, gõ thẳng ?tab= cũng không vào được', async ({ page, request }) => {
     const tt = await vaoHeThong(page, request, 'cxl-gv')
+    const tokenAdmin = await layTokenQuaApi(page)
 
     // Tạo giáo viên có tài khoản, dùng nhóm quyền "Giáo viên" mặc định.
     const quyens = await (await request.get('/api/v1/quyen', {
-      headers: { Authorization: `Bearer ${await page.evaluate(
-        () => localStorage.getItem('lms_access_token'))}` },
+      headers: { Authorization: `Bearer ${tokenAdmin}` },
     })).json()
     const quyenGv = quyens.find((q: { tenQuyen: string }) => q.tenQuyen === 'Giáo viên').id
 
     const res = await request.post('/api/v1/nguoi-dung', {
-      headers: { Authorization: `Bearer ${await page.evaluate(
-        () => localStorage.getItem('lms_access_token'))}` },
+      headers: { Authorization: `Bearer ${tokenAdmin}` },
       data: {
         hoTen: 'GV không thấy tab', loaiNguoiDung: 'GiaoVien',
         taiKhoan: {

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { vaoHeThong } from './tro-giup'
+import { vaoHeThong, layTokenQuaApi } from './tro-giup'
 
 /**
  * Lịch học **ưu tiên buổi sắp tới lên đầu** (yêu cầu chủ sản phẩm 16/09/2026).
@@ -15,8 +15,8 @@ import { vaoHeThong } from './tro-giup'
  * và điều hướng buổi trước/sau vẫn theo thứ tự thời gian.
  */
 test('Buổi sắp tới lên đầu, buổi đã qua xuống dưới', async ({ page, request }) => {
-  await vaoHeThong(page, request, 'lich-sap-toi')
-  const token = await page.evaluate(() => localStorage.getItem('lms_access_token'))
+  const ttE2E = await vaoHeThong(page, request, 'lich-sap-toi')
+  const token = await layTokenQuaApi(page)
 
   const api = async (duong: string, than: unknown) => {
     const res = await page.request.post(`http://localhost:5229/api/v1${duong}`, {
@@ -109,7 +109,7 @@ test('Buổi sắp tới lên đầu, buổi đã qua xuống dưới', async ({
   */
   const ds = await (await page.request.get(
     `http://localhost:5229/api/v1/lop-hoc/${lop}/buoi-hoc`,
-    { headers: { Authorization: `Bearer ${token}` } })).json()
+    { headers: { Authorization: `Bearer ${await layTokenQuaApi(page)}` } })).json()
   const thuTu = (ds as { thuTu: number }[]).map((b) => b.thuTu)
   expect(thuTu, 'API phải giữ thứ tự theo số buổi — 4 màn khác phụ thuộc vào nó')
     .toEqual([...thuTu].sort((a, b) => a - b))

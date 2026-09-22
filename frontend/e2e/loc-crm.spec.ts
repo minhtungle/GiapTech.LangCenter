@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { vaoHeThong } from './tro-giup'
+import { layTokenQuaApi, vaoHeThong } from './tro-giup'
 
 /**
  * Bộ lọc CRM theo đội nhóm · nhân viên · nguồn · hình thức · sản phẩm · khoảng ngày
@@ -15,6 +15,26 @@ import { vaoHeThong } from './tro-giup'
 
 /** Đọc ba ô KPI của màn Doanh thu. */
 async function oSo(page: import('@playwright/test').Page) {
+  /*
+    CHỜ ba ô số hiện đủ rồi mới đọc.
+
+    `page.evaluate` chụp DOM đúng một lần, không thử lại. Trang tải xong khung trước rồi mới
+    điền số (query chạy sau), nên đọc sớm là ra chuỗi rỗng và test đỏ ở chỗ trông như "số sai".
+    Đã gặp thật sau ADR-0007: mỗi lần tải trang có thêm một request khôi phục phiên, cửa sổ đua
+    rộng ra và test hỏng đều.
+
+    `expect.poll` thử lại tới khi đủ ba ô có nội dung — chờ đúng ĐIỀU KIỆN thay vì chờ một
+    khoảng thời gian đoán mò.
+  */
+  await expect
+    .poll(
+      () => page.evaluate(() =>
+        [...document.querySelectorAll('p.text-2xl')]
+          .filter((e) => (e.textContent?.trim() ?? '') !== '').length),
+      { timeout: 15_000 },
+    )
+    .toBeGreaterThanOrEqual(3)
+
   return page.evaluate(() => {
     const c = [...document.querySelectorAll('p.text-2xl')].map((e) => e.textContent?.trim() ?? '')
     return { tongTien: c[0], soDon: c[1], soKhach: c[2] }
@@ -22,7 +42,7 @@ async function oSo(page: import('@playwright/test').Page) {
 }
 
 test('Doanh thu: ô số tổng đổi theo bộ lọc, không chỉ bảng bên dưới', async ({ page, request }) => {
-  await vaoHeThong(page, request, 'loc-crm-dt')
+  const tt = await vaoHeThong(page, request, 'loc-crm-dt')
 
   /*
     DỰNG DỮ LIỆU PHÂN BIỆT ĐƯỢC — hai đơn khác hình thức thanh toán.
@@ -40,10 +60,11 @@ test('Doanh thu: ô số tổng đổi theo bộ lọc, không chỉ bảng bên
     chọn hiển thị tên kèm số điện thoại — nên `getByText(..., exact)` không khớp. Đi qua form ở
     đây cũng không kiểm thêm điều gì: form tạo đơn đã có test riêng, còn test NÀY canh bộ lọc.
   */
-  const token = await page.evaluate(() => localStorage.getItem('lms_access_token'))
+  // Lấy token MỚI mỗi lần gọi, không bắt sẵn vào biến: `page.goto`/`reload` giữa các lời gọi
+  // làm app xoay vòng token và bản cũ thành 401 (xem `layTokenQuaApi`).
   const api = async (duong: string, than: unknown) => {
     const res = await page.request.post(`http://localhost:5229/api/v1${duong}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${await layTokenQuaApi(page)}` },
       data: than,
     })
     expect(res.ok(), `${duong} → ${res.status()} ${await res.text()}`).toBeTruthy()
@@ -97,7 +118,7 @@ test('Doanh thu: ô số tổng đổi theo bộ lọc, không chỉ bảng bên
 })
 
 test('Khách hàng: lọc đội nhóm thu hẹp danh sách và hiện số bộ lọc', async ({ page, request }) => {
-  await vaoHeThong(page, request, 'loc-crm-kh')
+  const tt = await vaoHeThong(page, request, 'loc-crm-kh')
 
   /*
     Hai khách, HAI ĐỘI khác nhau — dữ liệu phải phân biệt được, nếu không test vô nghĩa.
@@ -109,10 +130,12 @@ test('Khách hàng: lọc đội nhóm thu hẹp danh sách và hiện số bộ
 
     Đội nhóm thì tạo được: hai nhân viên ở hai phòng, mỗi người tạo khách của mình.
   */
-  const token = await page.evaluate(() => localStorage.getItem('lms_access_token'))
-  const api = async (duong: string, than: unknown, tok = token) => {
+  // `tok` để gọi API DƯỚI DANH NGHĨA người khác (test này tạo nhân viên rồi cho họ tự tạo
+  // khách). Bỏ trống thì lấy token MỚI của quản trị — không bắt sẵn vào biến, vì `page.goto`
+  // giữa các lời gọi làm app xoay vòng token (xem `layTokenQuaApi`).
+  const api = async (duong: string, than: unknown, tok?: string) => {
     const res = await page.request.post(`http://localhost:5229/api/v1${duong}`, {
-      headers: { Authorization: `Bearer ${tok}` },
+      headers: { Authorization: `Bearer ${tok ?? await layTokenQuaApi(page)}` },
       data: than,
     })
     expect(res.ok(), `${duong} → ${res.status()} ${await res.text()}`).toBeTruthy()
@@ -126,7 +149,7 @@ test('Khách hàng: lọc đội nhóm thu hẹp danh sách và hiện số bộ
   const doiB = await api('/phong-ban', { ten: 'Đội Beta', tagVaiTro: 'KinhDoanh' })
 
   const quyens = await (await page.request.get('http://localhost:5229/api/v1/quyen', {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${await layTokenQuaApi(page)}` },
   })).json()
   const quyenId = quyens.find((q: { tenQuyen: string }) => q.tenQuyen === 'Quản trị viên').id
 
@@ -138,11 +161,9 @@ test('Khách hàng: lọc đội nhóm thu hẹp danh sách và hiện số bộ
       phongBanId,
       taiKhoan: { username, matKhau: 'matkhau123456', quyenIds: [quyenId], phaiDoiMatKhau: false },
     })
-    const maTrungTam = await page.evaluate(() => {
-      const t = localStorage.getItem('lms_access_token')!
-      return JSON.parse(atob(t.split('.')[1])).ma_trung_tam
-        ?? JSON.parse(atob(t.split('.')[1])).maTrungTam
-    })
+    // Lấy thẳng từ trung tâm đã tạo, không giải mã JWT trong trang: access token nay nằm
+    // trong RAM (ADR-0007) nên `localStorage` không còn gì để đọc.
+    const maTrungTam = tt.maTrungTam
     const res = await page.request.post('http://localhost:5229/api/v1/auth/dang-nhap', {
       data: { maTrungTam, username, matKhau: 'matkhau123456' },
     })
@@ -183,12 +204,13 @@ test('Khách hàng: lọc đội nhóm thu hẹp danh sách và hiện số bộ
  * thay vì để ô rỗng im lặng (người dùng sẽ tưởng hệ thống hỏng).
  */
 test('Bộ lọc đội nhóm chỉ hiện phòng tag Kinh doanh', async ({ page, request }) => {
-  await vaoHeThong(page, request, 'loc-tag')
+  const tt = await vaoHeThong(page, request, 'loc-tag')
 
-  const token = await page.evaluate(() => localStorage.getItem('lms_access_token'))
+  // Lấy token MỚI mỗi lần gọi, không bắt sẵn vào biến: `page.goto`/`reload` giữa các lời gọi
+  // làm app xoay vòng token và bản cũ thành 401 (xem `layTokenQuaApi`).
   const api = async (duong: string, than: unknown) => {
     const res = await page.request.post(`http://localhost:5229/api/v1${duong}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${await layTokenQuaApi(page)}` },
       data: than,
     })
     expect(res.ok(), `${duong} → ${res.status()} ${await res.text()}`).toBeTruthy()

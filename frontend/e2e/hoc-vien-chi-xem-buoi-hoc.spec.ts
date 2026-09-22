@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { MAT_KHAU_MOI, taoTrungTam, dangNhap } from './tro-giup'
+import { MAT_KHAU_MOI, taoTrungTam, dangNhap, layTokenQuaApi } from './tro-giup'
 
 /**
  * **Học viên chỉ XEM** buổi học — không sinh lịch, không điểm danh (17/09/2026).
@@ -28,7 +28,7 @@ test('Học viên chỉ xem; giáo viên vẫn thao tác được', async ({ pag
   const tt = await taoTrungTam(request, 'hv-chi-xem')
   await dangNhap(page, tt)
 
-  const tok = async () => await page.evaluate(() => localStorage.getItem('lms_access_token'))
+  const tok = async () => await layTokenQuaApi(page)
   const api = async (duong: string, than: unknown) => {
     const res = await page.request.post(`http://localhost:5229/api/v1${duong}`, {
       headers: { Authorization: `Bearer ${await tok()}` },

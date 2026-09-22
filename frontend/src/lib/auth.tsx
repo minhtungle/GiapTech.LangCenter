@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { api, layAccessToken, luuToken, xoaToken } from './api'
+import { api, khoiPhucPhien, layAccessToken, luuToken, xoaToken } from './api'
 
 interface PhienDangNhap {
   nguoiDungId: string
@@ -13,6 +13,14 @@ interface PhienDangNhap {
 interface AuthContextValue {
   phien: PhienDangNhap | null
   daDangNhap: boolean
+  /**
+   * Đang khôi phục phiên lúc mở app (ADR-0007).
+   *
+   * Access token nằm trong RAM nên F5 là mất; app phải đổi cookie `httpOnly` lấy token mới.
+   * Trong lúc chờ, `daDangNhap` là `false` nhưng **chưa chắc** người dùng chưa đăng nhập — đá
+   * họ về màn đăng nhập ngay lúc này là đá oan mỗi lần F5.
+   */
+  dangKhoiPhuc: boolean
   dangNhap: (maTrungTam: string, username: string, matKhau: string) => Promise<{ phaiDoiMatKhau: boolean }>
   dangXuat: () => void
   /** Gọi sau khi đổi mật khẩu để gỡ trạng thái "phải đổi". */
@@ -58,6 +66,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
   const [phaiDoiMatKhau, setPhaiDoiMatKhau] = React.useState(false)
 
+  /*
+    Khôi phục phiên lúc mở app (ADR-0007).
+
+    Bắt đầu bằng `true`: lúc này chưa biết người dùng có phiên hay không, mà `daDangNhap` thì
+    đang `false` vì RAM trống. Nếu không có cờ này, mọi route có bảo vệ sẽ đá người dùng về màn
+    đăng nhập ngay trước khi request khôi phục kịp trả lời — tức F5 là văng, mỗi lần.
+  */
+  const [dangKhoiPhuc, setDangKhoiPhuc] = React.useState(true)
+
   const qc = useQueryClient()
 
   /*
@@ -83,7 +100,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Xoá TRƯỚC khi đặt phiên mới: đặt phiên làm các query `enabled: daDangNhap` chạy ngay,
       // clear sau đó sẽ vứt luôn kết quả vừa tải và chúng phải gọi lại lần hai.
       qc.clear()
-      luuToken(data.accessToken, data.refreshToken)
+      // `tokenCsrf` chứ không phải `refreshToken` — refresh token nay đi bằng cookie `httpOnly`
+      // và JS không đọc được (ADR-0007).
+      luuToken(data.accessToken, data.tokenCsrf)
       setPhien(docPhienTuToken(data.accessToken))
       setPhaiDoiMatKhau(Boolean(data.phaiDoiMatKhau))
       return { phaiDoiMatKhau: Boolean(data.phaiDoiMatKhau) }
@@ -125,6 +144,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     qc.clear()
   }, [qc])
 
+  React.useEffect(() => {
+    let huy = false
+
+    khoiPhucPhien()
+      .then((token) => {
+        if (huy) return
+        // `null` = không có phiên hợp lệ. Im lặng: đây là đường đi bình thường của người chưa
+        // đăng nhập, không phải lỗi cần báo.
+        if (token) setPhien(docPhienTuToken(token))
+      })
+      .finally(() => {
+        if (!huy) setDangKhoiPhuc(false)
+      })
+
+    return () => {
+      huy = true
+    }
+  }, [])
+
   const danhDauDaDoiMatKhau = React.useCallback(() => setPhaiDoiMatKhau(false), [])
 
   const capNhatTenTrungTam = React.useCallback(
@@ -136,13 +174,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     () => ({
       phien,
       daDangNhap: phien !== null,
+      dangKhoiPhuc,
       dangNhap,
       dangXuat,
       danhDauDaDoiMatKhau,
       phaiDoiMatKhau,
       capNhatTenTrungTam,
     }),
-    [phien, dangNhap, dangXuat, danhDauDaDoiMatKhau, phaiDoiMatKhau, capNhatTenTrungTam],
+    [phien, dangKhoiPhuc, dangNhap, dangXuat, danhDauDaDoiMatKhau, phaiDoiMatKhau, capNhatTenTrungTam],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

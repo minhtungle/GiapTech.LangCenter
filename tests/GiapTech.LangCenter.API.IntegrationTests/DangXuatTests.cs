@@ -23,15 +23,14 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class DangXuatTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<(string Access, string Refresh)> DangNhap(string user = "manager", string mk = "manager123456")
+    /// <summary>
+    /// Refresh token nay lấy TỪ COOKIE, không còn trong body (ADR-0007) — xem `TroGiupPhien`.
+    /// </summary>
+    private async Task<(string Access, string Refresh, string Csrf)> DangNhap(
+        string user = "manager", string mk = "manager123456")
     {
-        var c = factory.CreateClient();
-        var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaTrungTam = factory.MaTrungTamA, Username = user, MatKhau = mk });
-        res.EnsureSuccessStatusCode();
-        var body = await res.Content.ReadFromJsonAsync<JsonElement>();
-        return (body.GetProperty("accessToken").GetString()!,
-                body.GetProperty("refreshToken").GetString()!);
+        var p = await TroGiupPhien.DangNhapAsync(factory.CreateClient(), factory, user, mk);
+        return (p.Access, p.Refresh, p.Csrf);
     }
 
     private HttpClient Voi(string accessToken)
@@ -50,7 +49,7 @@ public class DangXuatTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Dang_xuat_roi_thi_access_token_con_han_KHONG_dung_duoc_nua()
     {
-        var (access, _) = await DangNhap();
+        var (access, _, _) = await DangNhap();
         Assert.Equal(HttpStatusCode.OK, (await Voi(access).GetAsync("/api/v1/toi/quyen")).StatusCode);
 
         var raa = await Voi(access).PostAsync("/api/v1/auth/dang-xuat", null);
@@ -70,12 +69,11 @@ public class DangXuatTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Dang_xuat_roi_thi_KHONG_lam_moi_token_duoc_nua()
     {
-        var (access, refresh) = await DangNhap();
+        var (access, refresh, csrf) = await DangNhap();
 
         await Voi(access).PostAsync("/api/v1/auth/dang-xuat", null);
 
-        var lamMoi = await factory.CreateClient()
-            .PostAsJsonAsync("/api/v1/auth/lam-moi-token", new { RefreshToken = refresh });
+        var lamMoi = await TroGiupPhien.LamMoiAsync(factory.CreateClient(), refresh, csrf);
 
         Assert.NotEqual(HttpStatusCode.OK, lamMoi.StatusCode);
     }
@@ -90,10 +88,10 @@ public class DangXuatTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Dang_xuat_roi_dang_nhap_lai_van_vao_duoc_binh_thuong()
     {
-        var (access, _) = await DangNhap();
+        var (access, _, _) = await DangNhap();
         await Voi(access).PostAsync("/api/v1/auth/dang-xuat", null);
 
-        var (accessMoi, _) = await DangNhap();
+        var (accessMoi, _, _) = await DangNhap();
 
         Assert.Equal(HttpStatusCode.OK, (await Voi(accessMoi).GetAsync("/api/v1/toi/quyen")).StatusCode);
     }
@@ -115,7 +113,7 @@ public class DangXuatTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Dang_xuat_hai_lan_van_tra_204()
     {
-        var (access, _) = await DangNhap();
+        var (access, _, _) = await DangNhap();
 
         Assert.Equal(HttpStatusCode.NoContent,
             (await Voi(access).PostAsync("/api/v1/auth/dang-xuat", null)).StatusCode);
@@ -147,7 +145,7 @@ public class DangXuatTests(ApiFactory factory) : IClassFixture<ApiFactory>
     public async Task Token_KHONG_co_jti_bi_chan_chu_khong_cho_qua()
     {
         // Lấy thông tin thật của `manager` từ một lần đăng nhập bình thường.
-        var (access, _) = await DangNhap();
+        var (access, _, _) = await DangNhap();
         var that = new JwtSecurityTokenHandler().ReadJwtToken(access);
 
         // Dựng lại token y hệt NHƯNG bỏ `jti`.
@@ -191,8 +189,8 @@ public class DangXuatTests(ApiFactory factory) : IClassFixture<ApiFactory>
     {
         // `player` bị buộc đổi mật khẩu nên không gọi được endpoint nghiệp vụ; điều cần kiểm
         // ở đây chỉ là token của nó **không bị 401 vì cơ chế phiên** sau khi manager đăng xuất.
-        var (accessKhac, _) = await DangNhap("player", "player123456");
-        var (access, _) = await DangNhap();
+        var (accessKhac, _, _) = await DangNhap("player", "player123456");
+        var (access, _, _) = await DangNhap();
 
         await Voi(access).PostAsync("/api/v1/auth/dang-xuat", null);
 
