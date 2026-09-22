@@ -15,7 +15,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -57,7 +57,7 @@ public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
             LoaiNguoiDung = "NhanVien",
             TaiKhoan = new
             {
-                Username = username, MatKhau = "matkhau123",
+                Username = username, MatKhau = "matkhau123456",
                 QuyenIds = quyenIds, PhaiDoiMatKhau = false
             }
         });
@@ -90,7 +90,7 @@ public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var q = await TaoNhomQuyen(admin, "Chỉ LMS", ChucNang.LopHoc, ChucNang.TaiLieu);
         await TaoNguoiDung(admin, "chi-lms", [q]);
 
-        var c = await Client("chi-lms", "matkhau123");
+        var c = await Client("chi-lms", "matkhau123456");
         Assert.Equal(["Lms"], await HeThongCuaToi(c));
     }
 
@@ -103,7 +103,7 @@ public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
             ChucNang.NhanSu, ChucNang.DoanhThu);
         await TaoNguoiDung(admin, "hrm-crm", [q]);
 
-        var c = await Client("hrm-crm", "matkhau123");
+        var c = await Client("hrm-crm", "matkhau123456");
         Assert.Equal(["Hrm", "Crm"], await HeThongCuaToi(c));
     }
 
@@ -122,7 +122,7 @@ public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
             ChucNang.TaiKhoan, ChucNang.PhanQuyen, ChucNang.NhatKyHeThong);
         await TaoNguoiDung(admin, "chi-quan-tri", [q]);
 
-        var c = await Client("chi-quan-tri", "matkhau123");
+        var c = await Client("chi-quan-tri", "matkhau123456");
         Assert.Empty(await HeThongCuaToi(c));
     }
 
@@ -344,7 +344,7 @@ public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var quyenHv = await QuyenId(admin, "Học viên");
         await TaoNguoiDung(admin, "hv-doc-ds", [quyenHv]);
 
-        var cHv = await Client("hv-doc-ds", "matkhau123");
+        var cHv = await Client("hv-doc-ds", "matkhau123456");
 
         Assert.Equal(HttpStatusCode.Forbidden, (await cHv.GetAsync("/api/v1/hoc-vien")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await cHv.GetAsync("/api/v1/nhan-su")).StatusCode);
@@ -367,7 +367,7 @@ public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var quyenGv = await QuyenId(admin, "Giáo viên");
         await TaoNguoiDung(admin, "gv-doc-ds", [quyenGv]);
 
-        var cGv = await Client("gv-doc-ds", "matkhau123");
+        var cGv = await Client("gv-doc-ds", "matkhau123456");
         (await cGv.GetAsync("/api/v1/hoc-vien")).EnsureSuccessStatusCode();
     }
 
@@ -386,7 +386,7 @@ public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var qNhanSu = await TaoNhomQuyen(admin, "Chỉ nhân sự", ChucNang.NhanSu);
         await TaoNguoiDung(admin, "chi-nhan-su", [qNhanSu]);
-        var cNhanSu = await Client("chi-nhan-su", "matkhau123");
+        var cNhanSu = await Client("chi-nhan-su", "matkhau123456");
 
         (await cNhanSu.GetAsync("/api/v1/nhan-su")).EnsureSuccessStatusCode();
 
@@ -401,7 +401,7 @@ public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
         // viên nhưng KHÔNG vào được màn Nhân sự — đó mới là phần HRM.
         var qTk = await TaoNhomQuyen(admin, "Chỉ tài khoản", ChucNang.TaiKhoan);
         await TaoNguoiDung(admin, "chi-tai-khoan", [qTk]);
-        var cTk = await Client("chi-tai-khoan", "matkhau123");
+        var cTk = await Client("chi-tai-khoan", "matkhau123456");
 
         (await cTk.GetAsync("/api/v1/hoc-vien")).EnsureSuccessStatusCode();
         Assert.Equal(HttpStatusCode.Forbidden,
@@ -421,7 +421,7 @@ public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var cB = factory.CreateClient();
         var dn = await cB.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123" });
+            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123456" });
         dn.EnsureSuccessStatusCode();
         cB.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             "Bearer", (await dn.Content.ReadFromJsonAsync<JsonElement>())
@@ -468,14 +468,14 @@ public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var q = await TaoNhomQuyen(admin, "Chỉ HRM cách ly", ChucNang.ChucVu);
         await TaoNguoiDung(admin, "chi-hrm-cach-ly", [q]);
 
-        var cA = await Client("chi-hrm-cach-ly", "matkhau123");
+        var cA = await Client("chi-hrm-cach-ly", "matkhau123456");
         Assert.Equal(["Hrm"], await HeThongCuaToi(cA));
 
         // Admin tenant B có toàn quyền của RIÊNG tenant B — vẫn cả ba, nhưng do quyền của
         // chính nó, không phải mượn từ A.
         var cB = factory.CreateClient();
         var dn = await cB.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123" });
+            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123456" });
         dn.EnsureSuccessStatusCode();
         cB.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             "Bearer", (await dn.Content.ReadFromJsonAsync<JsonElement>())

@@ -21,7 +21,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class TagVaiTroPhongBanTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -267,13 +267,13 @@ public class TagVaiTroPhongBanTests(ApiFactory factory) : IClassFixture<ApiFacto
             TaiKhoan = new
             {
                 Username = username,
-                MatKhau = "matkhau123",
+                MatKhau = "matkhau123456",
                 QuyenIds = new[] { quyenId },
                 PhaiDoiMatKhau = false
             }
         })).EnsureSuccessStatusCode();
 
-        var cNv = await Client(username, "matkhau123");
+        var cNv = await Client(username, "matkhau123456");
 
         var khach = await cNv.PostAsJsonAsync("/api/v1/khach-hang",
             new { HoTen = $"KH {hau} {moc}", SoDienThoai = $"097{moc}{hau switch { "b" => 1, _ => 2 }}" });

@@ -15,7 +15,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class HocPhiTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -38,7 +38,7 @@ public class HocPhiTests(ApiFactory factory) : IClassFixture<ApiFactory>
             LoaiNguoiDung = loai,
             TaiKhoan = new
             {
-                Username = username, MatKhau = "matkhau123",
+                Username = username, MatKhau = "matkhau123456",
                 QuyenIds = quyenIds ?? [], PhaiDoiMatKhau = false
             }
         });
@@ -160,7 +160,7 @@ public class HocPhiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         (await Thu(c, lop, hv1, 111_000m)).EnsureSuccessStatusCode();
         (await Thu(c, lop, hv2, 222_000m)).EnsureSuccessStatusCode();
 
-        var cHv1 = await Client("hvhp-hvxem", "matkhau123");
+        var cHv1 = await Client("hvhp-hvxem", "matkhau123456");
         var ds = await cHv1.GetFromJsonAsync<JsonElement>("/api/v1/hoc-phi");
         var items = ds.GetProperty("duLieu").EnumerateArray().ToList();
 
@@ -184,7 +184,7 @@ public class HocPhiTests(ApiFactory factory) : IClassFixture<ApiFactory>
             new { HocVienIds = new[] { hv2 } })).EnsureSuccessStatusCode();
         (await Thu(c, lop, hv2, 777_000m)).EnsureSuccessStatusCode();
 
-        var cHv1 = await Client("hvhp-hvlach", "matkhau123");
+        var cHv1 = await Client("hvhp-hvlach", "matkhau123456");
         var ds = await cHv1.GetFromJsonAsync<JsonElement>($"/api/v1/hoc-phi?hocVienId={hv2}");
 
         Assert.Empty(ds.GetProperty("duLieu").EnumerateArray());
@@ -198,7 +198,7 @@ public class HocPhiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var (lop, _, hv) = await DungLop(c, "hvxoa");
         var id = await (await Thu(c, lop, hv, 300_000m)).Content.ReadFromJsonAsync<Guid>();
 
-        var cHv = await Client("hvhp-hvxoa", "matkhau123");
+        var cHv = await Client("hvhp-hvxoa", "matkhau123456");
         var res = await cHv.DeleteAsync($"/api/v1/hoc-phi/{id}");
 
         Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
@@ -216,7 +216,7 @@ public class HocPhiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var c = await Client();
         var (lop, _, hv) = await DungLop(c, "gvghi");
 
-        var cGv = await Client("gvhp-gvghi", "matkhau123");
+        var cGv = await Client("gvhp-gvghi", "matkhau123456");
         var res = await Thu(cGv, lop, hv, 400_000m);
 
         Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
@@ -231,7 +231,7 @@ public class HocPhiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var (lop, _, hv) = await DungLop(c, "gvdoc");
         (await Thu(c, lop, hv, 900_000m)).EnsureSuccessStatusCode();
 
-        var cGv = await Client("gvhp-gvdoc", "matkhau123");
+        var cGv = await Client("gvhp-gvdoc", "matkhau123456");
         var res = await cGv.GetAsync($"/api/v1/hoc-phi?lopHocId={lop}");
 
         // Hoặc bị chặn ở cổng quyền, hoặc qua cổng nhưng phạm vi trả rỗng. Cả hai đều đạt —
@@ -341,7 +341,7 @@ public class HocPhiTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var cB = factory.CreateClient();
         var dn = await cB.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123" });
+            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123456" });
         dn.EnsureSuccessStatusCode();
         var token = (await dn.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("accessToken").GetString();

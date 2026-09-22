@@ -1,4 +1,5 @@
 using FluentValidation;
+using GiapTech.LangCenter.Application.Common;
 using GiapTech.LangCenter.Application.Common.Exceptions;
 using GiapTech.LangCenter.Application.Common.Interfaces;
 using MediatR;
@@ -18,8 +19,7 @@ public class DoiMatKhauValidator : AbstractValidator<DoiMatKhauCommand>
     {
         RuleFor(x => x.MatKhauCu).NotEmpty();
         RuleFor(x => x.MatKhauMoi)
-            .NotEmpty()
-            .MinimumLength(6).WithErrorCode("MAT_KHAU_QUA_NGAN")
+            .ApDungChinhSach()
             .NotEqual(x => x.MatKhauCu).WithErrorCode("MAT_KHAU_MOI_TRUNG_CU");
     }
 }

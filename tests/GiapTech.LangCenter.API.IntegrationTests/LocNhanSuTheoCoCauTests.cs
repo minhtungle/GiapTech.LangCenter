@@ -26,7 +26,7 @@ public class LocNhanSuTheoCoCauTests(ApiFactory factory) : IClassFixture<ApiFact
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaTrungTam = factory.MaTrungTamA, Username = "manager", MatKhau = "manager123" });
+            new { MaTrungTam = factory.MaTrungTamA, Username = "manager", MatKhau = "manager123456" });
         res.EnsureSuccessStatusCode();
         var body = await res.Content.ReadFromJsonAsync<JsonElement>();
 

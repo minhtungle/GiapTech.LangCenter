@@ -1,10 +1,10 @@
-# 22/09/2026 — Vá 5/8 lỗ hổng luồng đăng nhập
+# 22/09/2026 — Vá 7/8 lỗ hổng luồng đăng nhập
 
 Chủ sản phẩm xem bản rà soát rồi chốt: *"lần lượt toàn bộ"*. Hỏi lại đúng một điều — **mục 7**
 (chuyển refresh token sang cookie `httpOnly`) là thay đổi kiến trúc, cần ADR và khi triển khai
 sẽ **đá mọi người đang đăng nhập ra**. Chốt: làm 1→6 và 8 trước, mục 7 bàn riêng.
 
-Đợt này xong **1, 2, 3, 4, 8**.
+Đợt này xong **1, 2, 3, 4, 5, 6, 8** — tức tất cả trừ mục 7.
 
 ---
 
@@ -125,13 +125,79 @@ một test kiểm thẳng đăng ký DI (`Assert.Same`), và mutation đổi san
 
 ---
 
+## Mục 5 — header bảo mật ở tầng ứng dụng
+
+Toàn bộ header chỉ có trong `deploy/nginx/langcenter.conf` — tệp **phải copy tay lên VPS**, mà
+certbot còn tự chèn thêm block 443. Cài sai, quên reload, hay dựng môi trường mới mà bỏ sót thì
+production chạy trần trụi.
+
+Không phải rủi ro lý thuyết: chú thích trong chính `langcenter.conf` và `Caddyfile.dev` xác nhận
+**đã từng xảy ra** và kéo dài.
+
+`HeaderBaoMatMiddleware` là **lớp đáy**, không thay Nginx. Ba chi tiết:
+
+- **`TryAdd`, không gán** — Nginx đặt rồi thì giữ của Nginx. Ghi đè thì hai nơi cấu hình âm thầm
+  đá nhau, và người sửa Nginx sẽ không hiểu vì sao thay đổi của mình vô tác dụng.
+- **Qua `OnStarting`** — endpoint trả stream (ảnh MinIO) bắt đầu gửi rất sớm; thêm header sau đó
+  ném `InvalidOperationException`.
+- **HSTS chỉ khi thật sự HTTPS** — gửi qua `http://localhost` ở dev sẽ **khoá luôn localhost
+  sang HTTPS** trong trình duyệt lập trình viên. Lỗi đó nằm trong cache trình duyệt chứ không
+  trong mã, nên rất khó chẩn đoán.
+
+**Không** đặt CSP ở đây: nó phụ thuộc thứ **trang** tải (`blob:` cho ảnh qua axios, `data:` cho
+favicon), không phải thứ **API** trả. Đoán mò một CSP ở tầng API thì hoặc quá chặt (ảnh biến mất
+không lỗi nào hiện) hoặc quá lỏng (vô nghĩa).
+
+Test đáng nói nhất: *"header có cả trên phản hồi LỖI"* — nửa hay bị quên, và là nửa quan trọng
+hơn, vì trang lỗi mới là thứ kẻ tấn công muốn nhúng iframe. Nginx phải dùng `always` cũng vì lý
+do đó.
+
+---
+
+## Mục 6 — mật khẩu tối thiểu 12 ký tự
+
+Từ 6 lên 12. Cộng với việc **trước đây không khoá tài khoản** sau nhiều lần sai (mục 4, vá cùng
+đợt), 6 ký tự là ngắn một cách nguy hiểm.
+
+**Không** thêm luật "phải có hoa/thường/số/ký tự đặc biệt". Theo NIST SP 800-63B luật đó phản
+tác dụng: người dùng đáp ứng bằng `Matkhau@123` — dễ đoán hơn hẳn một cụm từ dài — rồi dán lên
+màn hình vì không nhớ nổi.
+
+### Năm bản sao của một quy tắc
+
+`MinimumLength(6)` nằm rải ở **5 nơi** backend, cộng **5 ô** `minLength={6}` ở frontend. Mười
+chỗ chép tay cùng một con số. Sửa từng chỗ thì lần sau vẫn thế, nên gom vào `ChinhSachMatKhau`
+(backend) và `DO_DAI_MAT_KHAU_TOI_THIEU` (frontend).
+
+Frontend cũng phải sửa, không chỉ backend: để `minLength={6}` trong khi server đòi 12 thì trình
+duyệt cho bấm Lưu rồi server mới từ chối — người dùng không hiểu vì sao form "hợp lệ" lại lỗi.
+Bản dịch `MAT_KHAU_QUA_NGAN` cũng ghi số 6, sửa nốt kẻo nó nói dối.
+
+### 157 test đỏ
+
+Đổi ngưỡng làm **157 test đỏ** cùng lúc — chúng tạo tài khoản với `matkhau123` (10 ký tự),
+`manager123` (10), `player123` (9). Không phải lỗi: đó là fixture, không phải khẳng định về
+chính sách. Kéo dài các giá trị đó là xong.
+
+### Còn nợ
+
+**Blocklist mật khẩu phổ biến** chưa làm. Blocklist tử tế cần đóng gói một danh sách lớn, còn
+HIBP là gọi ra dịch vụ ngoài — cả hai là quyết định riêng, không nên lặng lẽ gộp vào một thay
+đổi về độ dài. Ghi ở `docs/ra-soat-bao-mat-dang-nhap.md`.
+
+---
+
 ## Kết quả
 
-**608 test backend xanh** (từ 585, +23) · **48 E2E xanh**.
+**619 test backend xanh** (từ 585, +34) · **40 frontend** · **48 E2E xanh**.
 
 Verify trên PostgreSQL thật với nick `co.lan` của tenant W686AE9: đăng nhập 200 → đăng xuất 204
 → access token cũ **401** → làm mới token **400** → đăng nhập lại **200**. Tạo hai trung tâm
-thật, nhận hai mật khẩu ngẫu nhiên khác nhau.
+thật, nhận hai mật khẩu ngẫu nhiên khác nhau. `curl` xác nhận header bảo mật có trên cả phản hồi
+200 lẫn 401, và **không** có HSTS trên HTTP thuần.
+
+**Còn lại mục 7** (refresh token sang cookie `httpOnly`) — để riêng theo quyết định của chủ sản
+phẩm, cần ADR.
 
 ## Một test E2E đỏ — và lần này KHÔNG phải flaky
 

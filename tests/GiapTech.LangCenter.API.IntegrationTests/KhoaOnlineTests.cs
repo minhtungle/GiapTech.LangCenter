@@ -18,7 +18,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class KhoaOnlineTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -45,7 +45,7 @@ public class KhoaOnlineTests(ApiFactory factory) : IClassFixture<ApiFactory>
             LoaiNguoiDung = "HocVien",
             TaiKhoan = new
             {
-                Username = username, MatKhau = "matkhau123",
+                Username = username, MatKhau = "matkhau123456",
                 QuyenIds = new[] { quyenId }, PhaiDoiMatKhau = false
             }
         });
@@ -106,7 +106,7 @@ public class KhoaOnlineTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         (await CapQuyen(admin, cua.Khoa, hv)).EnsureSuccessStatusCode();
 
-        var c = await Client("hv-khoa-cua-minh", "matkhau123");
+        var c = await Client("hv-khoa-cua-minh", "matkhau123456");
 
         // Khoá mình: đọc được cả bài trả phí.
         var bai = await c.GetFromJsonAsync<JsonElement>(
@@ -133,7 +133,7 @@ public class KhoaOnlineTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var k = await DungKhoa(admin, "Khoá chưa mua");
 
-        var c = await Client("hv-chua-mua", "matkhau123");
+        var c = await Client("hv-chua-mua", "matkhau123456");
 
         var bai = await c.GetFromJsonAsync<JsonElement>(
             $"/api/v1/khoa-online/bai-hoc/{k.BaiCongKhai}");
@@ -162,7 +162,7 @@ public class KhoaOnlineTests(ApiFactory factory) : IClassFixture<ApiFactory>
         (await CapQuyen(admin, k.Khoa, hv, DateTimeOffset.UtcNow.AddDays(-1)))
             .EnsureSuccessStatusCode();
 
-        var c = await Client("hv-het-han", "matkhau123");
+        var c = await Client("hv-het-han", "matkhau123456");
 
         Assert.Equal(HttpStatusCode.NotFound,
             (await c.GetAsync($"/api/v1/khoa-online/bai-hoc/{k.BaiThuong}")).StatusCode);
@@ -210,7 +210,7 @@ public class KhoaOnlineTests(ApiFactory factory) : IClassFixture<ApiFactory>
             KhoaOnlineId = khoa, TieuDe = "Bài mẫu", NoiDung = "X", ThuTu = 0, CongKhai = true
         })).Content.ReadFromJsonAsync<Guid>();
 
-        var c = await Client("hv-khoa-nhap", "matkhau123");
+        var c = await Client("hv-khoa-nhap", "matkhau123456");
 
         var ds = await c.GetFromJsonAsync<JsonElement>("/api/v1/khoa-online");
         Assert.DoesNotContain("Khoá đang soạn dở",
@@ -242,7 +242,7 @@ public class KhoaOnlineTests(ApiFactory factory) : IClassFixture<ApiFactory>
         await TaoHocVien(admin, "hv-danh-dau", quyenHv);
 
         var k = await DungKhoa(admin, "Khoá không mua");
-        var c = await Client("hv-danh-dau", "matkhau123");
+        var c = await Client("hv-danh-dau", "matkhau123456");
 
         Assert.Equal(HttpStatusCode.NotFound,
             (await c.PostAsync($"/api/v1/khoa-online/bai-hoc/{k.BaiThuong}/da-hoc", null))
@@ -266,7 +266,7 @@ public class KhoaOnlineTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var cB = factory.CreateClient();
         var dn = await cB.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123" });
+            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123456" });
         dn.EnsureSuccessStatusCode();
         var token = (await dn.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("accessToken").GetString();

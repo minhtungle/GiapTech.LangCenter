@@ -17,7 +17,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class PhamViHocVienTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -43,7 +43,7 @@ public class PhamViHocVienTests(ApiFactory factory) : IClassFixture<ApiFactory>
             HoTen = hoTen, LoaiNguoiDung = loai, SoDienThoai = "0900000000",
             TaiKhoan = new
             {
-                Username = username, MatKhau = "matkhau123",
+                Username = username, MatKhau = "matkhau123456",
                 QuyenIds = new[] { quyenId }, PhaiDoiMatKhau = false
             }
         })).Content.ReadFromJsonAsync<Guid>();
@@ -83,7 +83,7 @@ public class PhamViHocVienTests(ApiFactory factory) : IClassFixture<ApiFactory>
                 new { HocVienIds = new[] { hv } })).EnsureSuccessStatusCode();
         }
 
-        var cGvA = await Client("gv-pv-a", "matkhau123");
+        var cGvA = await Client("gv-pv-a", "matkhau123456");
         var thay = await TenHocVien(cGvA);
 
         Assert.Contains("HV lớp A", thay);
@@ -121,7 +121,7 @@ public class PhamViHocVienTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var quyenHv = await QuyenTheoTen(admin, "Học viên");
         await TaoNguoi(admin, "HV không vào được", "HocVien", "hv-403", quyenHv);
 
-        var c = await Client("hv-403", "matkhau123");
+        var c = await Client("hv-403", "matkhau123456");
         Assert.Equal(
             System.Net.HttpStatusCode.Forbidden,
             (await c.GetAsync("/api/v1/hoc-vien")).StatusCode);
@@ -159,7 +159,7 @@ public class PhamViHocVienTests(ApiFactory factory) : IClassFixture<ApiFactory>
             HocPhi = 1_000_000m, TroGiangIds = Array.Empty<Guid>()
         })).EnsureSuccessStatusCode();
 
-        var c = await Client("gv-them-hv", "matkhau123");
+        var c = await Client("gv-them-hv", "matkhau123456");
         var ds = await c.GetFromJsonAsync<JsonElement>("/api/v1/nguoi-dung?soDong=200");
         var ten = ds.GetProperty("duLieu").EnumerateArray()
             .Select(x => x.GetProperty("hoTen").GetString()).ToList();

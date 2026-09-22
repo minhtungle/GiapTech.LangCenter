@@ -27,7 +27,7 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
         var body = await res.Content.ReadFromJsonAsync<JsonElement>();
         return body.GetProperty("duLieu").EnumerateArray().ToList();
     }
-    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -205,7 +205,7 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
             HoSoGiaoVien = new { BangCap = "Cử nhân" },
             TaiKhoan = new
             {
-                Username = "vo-hieu-hoa", MatKhau = "matkhau123",
+                Username = "vo-hieu-hoa", MatKhau = "matkhau123456",
                 QuyenIds = Array.Empty<Guid>(), PhaiDoiMatKhau = false
             }
         });
@@ -241,7 +241,7 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
         var tao = await client.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
             Username = "co-buoc-doi",
-            MatKhau = "matkhau123",
+            MatKhau = "matkhau123456",
             NguoiDungId = (Guid?)null,
             QuyenIds = Array.Empty<Guid>(),
             PhaiDoiMatKhau = true
@@ -441,12 +441,12 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
             HoTen = "Người sửa audit", LoaiNguoiDung = "NhanVien",
             TaiKhoan = new
             {
-                Username = "audit-nguoi-sua", MatKhau = "matkhau123",
+                Username = "audit-nguoi-sua", MatKhau = "matkhau123456",
                 QuyenIds = new[] { quyenAdmin }, PhaiDoiMatKhau = false
             }
         })).EnsureSuccessStatusCode();
 
-        var c2 = await Client("audit-nguoi-sua", "matkhau123");
+        var c2 = await Client("audit-nguoi-sua", "matkhau123456");
         (await c2.PutAsJsonAsync($"/api/v1/khoa-hoc/{id}", new
         {
             Id = id, Ten = "Khoá canh audit (đã sửa)", GhiChu = (string?)null,

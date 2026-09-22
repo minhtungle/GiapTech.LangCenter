@@ -25,7 +25,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class ThongKeNhanSuTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -70,7 +70,7 @@ public class ThongKeNhanSuTests(ApiFactory factory) : IClassFixture<ApiFactory>
             LoaiNguoiDung = loai,
             TaiKhoan = new
             {
-                Username = username, MatKhau = "matkhau123",
+                Username = username, MatKhau = "matkhau123456",
                 QuyenIds = quyenIds, PhaiDoiMatKhau = false
             }
         });
@@ -421,7 +421,7 @@ public class ThongKeNhanSuTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(JsonValueKind.Null, truoc.GetProperty("diemChatLuong").ValueKind);
 
         // Học viên tự gửi bằng TÀI KHOẢN CỦA MÌNH.
-        var cHv = await Client($"hvtk-{moc}", "matkhau123");
+        var cHv = await Client($"hvtk-{moc}", "matkhau123456");
         (await cHv.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nhan-xet", new
         {
             NoiDung = "Cô dạy dễ hiểu",
@@ -474,7 +474,7 @@ public class ThongKeNhanSuTests(ApiFactory factory) : IClassFixture<ApiFactory>
         (await admin.PostAsJsonAsync($"/api/v1/lop-hoc/{lop}/hoan-tat", new { }))
             .EnsureSuccessStatusCode();
 
-        var cHv = await Client($"hvk-{moc}", "matkhau123");
+        var cHv = await Client($"hvk-{moc}", "matkhau123456");
         (await cHv.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nhan-xet", new
         {
             NoiDung = "lần đầu",
@@ -546,7 +546,7 @@ public class ThongKeNhanSuTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var cb = factory.CreateClient();
         var dn = await cb.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123" });
+            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123456" });
         dn.EnsureSuccessStatusCode();
         var tok = (await dn.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("accessToken").GetString();

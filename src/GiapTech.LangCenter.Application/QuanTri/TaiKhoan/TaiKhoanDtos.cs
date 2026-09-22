@@ -1,4 +1,5 @@
 using FluentValidation;
+using GiapTech.LangCenter.Application.Common;
 using GiapTech.LangCenter.Application.Common.Exceptions;
 using GiapTech.LangCenter.Application.Common.Interfaces;
 using GiapTech.LangCenter.Application.Common.Models;
@@ -84,7 +85,7 @@ public class TaoTaiKhoanValidator : AbstractValidator<TaoTaiKhoanCommand>
     {
         RuleFor(x => x.Username).NotEmpty().MaximumLength(100)
             .Matches("^[a-zA-Z0-9._-]+$").WithErrorCode("USERNAME_KY_TU_KHONG_HOP_LE");
-        RuleFor(x => x.MatKhau).NotEmpty().MinimumLength(6).WithErrorCode("MAT_KHAU_QUA_NGAN");
+        RuleFor(x => x.MatKhau).ApDungChinhSach();
     }
 }
 
@@ -232,8 +233,7 @@ public record DatLaiMatKhauCommand(Guid TaiKhoanId, string MatKhauMoi) : IReques
 public class DatLaiMatKhauValidator : AbstractValidator<DatLaiMatKhauCommand>
 {
     public DatLaiMatKhauValidator()
-        => RuleFor(x => x.MatKhauMoi).NotEmpty().MinimumLength(6)
-            .WithErrorCode("MAT_KHAU_QUA_NGAN");
+        => RuleFor(x => x.MatKhauMoi).ApDungChinhSach();
 }
 
 public class DatLaiMatKhauHandler(IAppDbContext db, IPasswordHasher hasher)

@@ -1,4 +1,5 @@
 using FluentValidation;
+using GiapTech.LangCenter.Application.Common;
 using GiapTech.LangCenter.Application.Common.Exceptions;
 using GiapTech.LangCenter.Application.Common.Interfaces;
 using GiapTech.LangCenter.Application.Common.Models;
@@ -310,8 +311,7 @@ public class TaoNguoiDungValidator : AbstractValidator<TaoNguoiDungCommand>
         {
             RuleFor(x => x.TaiKhoan!.Username).NotEmpty().MaximumLength(100)
                 .Matches("^[a-zA-Z0-9._-]+$").WithErrorCode("USERNAME_KY_TU_KHONG_HOP_LE");
-            RuleFor(x => x.TaiKhoan!.MatKhau).NotEmpty().MinimumLength(6)
-                .WithErrorCode("MAT_KHAU_QUA_NGAN");
+            RuleFor(x => x.TaiKhoan!.MatKhau).ApDungChinhSach();
         });
     }
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { DO_DAI_MAT_KHAU_TOI_THIEU } from '@/lib/chinhSachMatKhau'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Plus, KeyRound, Trash2, Pencil } from 'lucide-react'
@@ -332,7 +333,7 @@ export default function TaiKhoan() {
               </div>
               <div>
                 <Label htmlFor="matKhau">{t('taiKhoan.matKhau')} *</Label>
-                <Input id="matKhau" name="matKhau" type="password" minLength={6} required />
+                <Input id="matKhau" name="matKhau" type="password" minLength={DO_DAI_MAT_KHAU_TOI_THIEU} required />
               </div>
             </div>
           )}
@@ -427,7 +428,7 @@ export default function TaiKhoan() {
           <p className="text-sm text-muted-foreground">{datLaiCho?.username}</p>
           <div>
             <Label htmlFor="mkMoi">{t('taiKhoan.matKhauMoi')} *</Label>
-            <Input id="mkMoi" name="mkMoi" type="password" minLength={6} required />
+            <Input id="mkMoi" name="mkMoi" type="password" minLength={DO_DAI_MAT_KHAU_TOI_THIEU} required />
           </div>
 
           {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { DO_DAI_MAT_KHAU_TOI_THIEU } from '@/lib/chinhSachMatKhau'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { api, layMaLoi } from '@/lib/api'
@@ -123,7 +124,7 @@ export default function QuenMatKhau() {
                 <Input
                   id="mkMoi"
                   type="password"
-                  minLength={6}
+                  minLength={DO_DAI_MAT_KHAU_TOI_THIEU}
                   value={matKhauMoi}
                   onChange={(e) => setMatKhauMoi(e.target.value)}
                   required

@@ -21,7 +21,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class LocCrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -56,7 +56,7 @@ public class LocCrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
             TaiKhoan = new
             {
                 Username = username,
-                MatKhau = "matkhau123",
+                MatKhau = "matkhau123456",
                 QuyenIds = new[] { quyenId },
                 PhaiDoiMatKhau = false
             }
@@ -134,8 +134,8 @@ public class LocCrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var (nvB, userB) = await TaoNhanVien(
             admin, $"NV B {mocThoiGian}", $"nvb{mocThoiGian}", doiB, quyenAdmin);
 
-        var cA = await Client(userA, "matkhau123");
-        var cB = await Client(userB, "matkhau123");
+        var cA = await Client(userA, "matkhau123456");
+        var cB = await Client(userB, "matkhau123456");
 
         var khoa = await TaoKhoa(admin, $"Khoá {mocThoiGian}", 1_000_000m);
 

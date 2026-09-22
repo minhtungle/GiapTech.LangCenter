@@ -18,7 +18,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 public class XepLopTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
     private async Task<HttpClient> Client(
-        string user = "manager", string mk = "manager123", bool tenantB = false)
+        string user = "manager", string mk = "manager123456", bool tenantB = false)
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap", new
@@ -83,7 +83,7 @@ public class XepLopTests(ApiFactory factory) : IClassFixture<ApiFactory>
             LoaiNguoiDung = loai,
             TaiKhoan = new
             {
-                Username = username, MatKhau = "matkhau123",
+                Username = username, MatKhau = "matkhau123456",
                 QuyenIds = Array.Empty<string>(), PhaiDoiMatKhau = false
             }
         });

@@ -13,7 +13,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class TongQuanTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -35,7 +35,7 @@ public class TongQuanTests(ApiFactory factory) : IClassFixture<ApiFactory>
             HoTen = $"Người {username}", LoaiNguoiDung = loai,
             TaiKhoan = new
             {
-                Username = username, MatKhau = "matkhau123",
+                Username = username, MatKhau = "matkhau123456",
                 QuyenIds = quyenIds, PhaiDoiMatKhau = false
             }
         });
@@ -82,7 +82,7 @@ public class TongQuanTests(ApiFactory factory) : IClassFixture<ApiFactory>
                 new { NgayKhaiGiang = DateTimeOffset.UtcNow.AddDays(1) })).EnsureSuccessStatusCode();
         }
 
-        var cuaGv1 = await TongQuan(await Client("tq-gv1", "matkhau123"));
+        var cuaGv1 = await TongQuan(await Client("tq-gv1", "matkhau123456"));
         Assert.Equal(1, cuaGv1.GetProperty("lopDangHoatDong").GetInt32());
 
         var cuaAdmin = await TongQuan(c);
@@ -136,7 +136,7 @@ public class TongQuanTests(ApiFactory factory) : IClassFixture<ApiFactory>
             "Admin có LopHoc.Sua thì phải thấy hàng chờ — nếu không, phép gác quá tay.");
 
         // Giáo viên chỉ có LopHoc.Xem → 0, dù hàng chờ có thật.
-        var cuaGv = await TongQuan(await Client("tq-gv-cho", "matkhau123"));
+        var cuaGv = await TongQuan(await Client("tq-gv-cho", "matkhau123456"));
         Assert.Equal(0, cuaGv.GetProperty("choXepLop").GetInt32());
     }
 

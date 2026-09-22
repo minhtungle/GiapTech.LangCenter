@@ -16,7 +16,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class TachNguoiDungTaiKhoanTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -52,7 +52,7 @@ public class TachNguoiDungTaiKhoanTests(ApiFactory factory) : IClassFixture<ApiF
             LoaiNguoiDung = "GiaoVien",
             TaiKhoan = new
             {
-                Username = "gv-nghi-viec", MatKhau = "matkhau123",
+                Username = "gv-nghi-viec", MatKhau = "matkhau123456",
                 QuyenIds = Array.Empty<Guid>(), PhaiDoiMatKhau = false
             }
         });
@@ -148,7 +148,7 @@ public class TachNguoiDungTaiKhoanTests(ApiFactory factory) : IClassFixture<ApiF
             LoaiNguoiDung = "NhanVien",
             TaiKhoan = new
             {
-                Username = "mot-tk-1", MatKhau = "matkhau123",
+                Username = "mot-tk-1", MatKhau = "matkhau123456",
                 QuyenIds = Array.Empty<Guid>(), PhaiDoiMatKhau = false
             }
         });
@@ -157,7 +157,7 @@ public class TachNguoiDungTaiKhoanTests(ApiFactory factory) : IClassFixture<ApiF
 
         var them = await c.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
-            Username = "mot-tk-2", MatKhau = "matkhau123",
+            Username = "mot-tk-2", MatKhau = "matkhau123456",
             NguoiDungId = nguoiId,
             QuyenIds = Array.Empty<Guid>(), PhaiDoiMatKhau = false
         });
@@ -184,7 +184,7 @@ public class TachNguoiDungTaiKhoanTests(ApiFactory factory) : IClassFixture<ApiF
             HoSoGiaoVien = new { BangCap = "Thạc sĩ" },
             TaiKhoan = new
             {
-                Username = "se-bi-xoa", MatKhau = "matkhau123",
+                Username = "se-bi-xoa", MatKhau = "matkhau123456",
                 QuyenIds = Array.Empty<Guid>(), PhaiDoiMatKhau = false
             }
         });
@@ -249,7 +249,7 @@ public class TachNguoiDungTaiKhoanTests(ApiFactory factory) : IClassFixture<ApiF
             new
             {
                 MaTrungTam = factory.MaTrungTamA,
-                Username = "Học Viên Nhỏ Tuổi", MatKhau = "matkhau123"
+                Username = "Học Viên Nhỏ Tuổi", MatKhau = "matkhau123456"
             });
 
         Assert.Equal(HttpStatusCode.BadRequest, dn.StatusCode);

@@ -17,7 +17,7 @@ public class PhanTrangTests(ApiFactory factory) : IClassFixture<ApiFactory>
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaTrungTam = factory.MaTrungTamA, Username = "manager", MatKhau = "manager123" });
+            new { MaTrungTam = factory.MaTrungTamA, Username = "manager", MatKhau = "manager123456" });
         res.EnsureSuccessStatusCode();
         var body = await res.Content.ReadFromJsonAsync<JsonElement>();
 
@@ -34,7 +34,7 @@ public class PhanTrangTests(ApiFactory factory) : IClassFixture<ApiFactory>
             await client.PostAsJsonAsync("/api/v1/tai-khoan", new
             {
                 Username = $"{tienTo}{i:D2}",
-                MatKhau = "matkhau123",
+                MatKhau = "matkhau123456",
                 HoTen = $"{tienTo}{i:D2}",
                 Email = (string?)null,
                 SoDienThoai = (string?)null,

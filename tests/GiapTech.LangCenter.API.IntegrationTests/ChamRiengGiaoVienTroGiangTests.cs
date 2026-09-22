@@ -23,7 +23,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class ChamRiengGiaoVienTroGiangTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -50,7 +50,7 @@ public class ChamRiengGiaoVienTroGiangTests(ApiFactory factory) : IClassFixture<
             HoTen = $"Người {username}", LoaiNguoiDung = loai,
             TaiKhoan = new
             {
-                Username = username, MatKhau = "matkhau123",
+                Username = username, MatKhau = "matkhau123456",
                 QuyenIds = quyenIds ?? [], PhaiDoiMatKhau = false
             }
         });
@@ -119,7 +119,7 @@ public class ChamRiengGiaoVienTroGiangTests(ApiFactory factory) : IClassFixture<
         var (buoi, gv, tg, _) = await DungLopCoTroGiang(admin, "cham-rieng");
         var tc = await TaoTieuChi(admin, $"Truyền đạt {Guid.NewGuid():N}"[..20], 0);
 
-        var cHv = await Client("hv-cham-rieng", "matkhau123");
+        var cHv = await Client("hv-cham-rieng", "matkhau123456");
 
         var gui = await cHv.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nhan-xet", new
         {
@@ -158,7 +158,7 @@ public class ChamRiengGiaoVienTroGiangTests(ApiFactory factory) : IClassFixture<
         var (buoi, gv, tg, _) = await DungLopCoTroGiang(admin, "cham-lai");
         var tc = await TaoTieuChi(admin, $"Nhiệt tình {Guid.NewGuid():N}"[..20], 0);
 
-        var cHv = await Client("hv-cham-lai", "matkhau123");
+        var cHv = await Client("hv-cham-lai", "matkhau123456");
 
         async Task Gui(int diemGv, int diemTg) =>
             (await cHv.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nhan-xet", new
@@ -202,7 +202,7 @@ public class ChamRiengGiaoVienTroGiangTests(ApiFactory factory) : IClassFixture<
         // Giáo viên của MỘT LỚP KHÁC — hoàn toàn không liên quan tới buổi đang chấm.
         var nguoiLa = await TaoNguoiDung(admin, $"gv-la-{Guid.NewGuid():N}"[..20], "GiaoVien");
 
-        var cHv = await Client("hv-ngoai-lop", "matkhau123");
+        var cHv = await Client("hv-ngoai-lop", "matkhau123456");
 
         var res = await cHv.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nhan-xet", new
         {
@@ -228,7 +228,7 @@ public class ChamRiengGiaoVienTroGiangTests(ApiFactory factory) : IClassFixture<
         var (buoi, gv, tg, _) = await DungLopCoTroGiang(admin, "thong-ke-tach");
         var tc = await TaoTieuChi(admin, $"Rõ ràng {Guid.NewGuid():N}"[..18], 0);
 
-        var cHv = await Client("hv-thong-ke-tach", "matkhau123");
+        var cHv = await Client("hv-thong-ke-tach", "matkhau123456");
         (await cHv.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nhan-xet", new
         {
             NoiDung = "Chấm lệch để kiểm tách người",
@@ -267,7 +267,7 @@ public class ChamRiengGiaoVienTroGiangTests(ApiFactory factory) : IClassFixture<
         await DungLopCoTroGiang(admin, "quyen-tieu-chi");
         await TaoTieuChi(admin, $"Tiêu chí {Guid.NewGuid():N}"[..18], 0);
 
-        var cHv = await Client("hv-quyen-tieu-chi", "matkhau123");
+        var cHv = await Client("hv-quyen-tieu-chi", "matkhau123456");
 
         var deCham = await cHv.GetAsync("/api/v1/tieu-chi-danh-gia/de-cham?nhom=GiangDay");
         deCham.EnsureSuccessStatusCode();
@@ -295,7 +295,7 @@ public class ChamRiengGiaoVienTroGiangTests(ApiFactory factory) : IClassFixture<
         var admin = await Client();
         await DungLopCoTroGiang(admin, "he-thong-hv");
 
-        var cHv = await Client("hv-he-thong-hv", "matkhau123");
+        var cHv = await Client("hv-he-thong-hv", "matkhau123456");
 
         var ht = await cHv.GetFromJsonAsync<JsonElement>("/api/v1/toi/he-thong");
         var ma = ht.GetProperty("ma").EnumerateArray().Select(x => x.GetString()).ToList();
@@ -321,7 +321,7 @@ public class ChamRiengGiaoVienTroGiangTests(ApiFactory factory) : IClassFixture<
         var admin = await Client();
         var (buoi, gv, tg, _) = await DungLopCoTroGiang(admin, "nguoi-dung-lop");
 
-        var cHv = await Client("hv-nguoi-dung-lop", "matkhau123");
+        var cHv = await Client("hv-nguoi-dung-lop", "matkhau123456");
         var ds = await cHv.GetFromJsonAsync<List<JsonElement>>(
             $"/api/v1/buoi-hoc/{buoi}/nguoi-dung-lop");
 

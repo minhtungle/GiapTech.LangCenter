@@ -1527,7 +1527,10 @@ const vi = {
     KHONG_TU_XOA_TAI_KHOAN_CUA_MINH: 'Không thể tự xóa tài khoản của chính mình',
     KHONG_TU_VO_HIEU_HOA_MINH: 'Không thể tự vô hiệu hóa tài khoản của chính mình',
     CHUC_NANG_KHONG_HOP_LE: 'Chức năng không hợp lệ',
-    MAT_KHAU_QUA_NGAN: 'Mật khẩu phải có ít nhất 6 ký tự',
+    // Số ở đây phải khớp `ChinhSachMatKhau.DoDaiToiThieu` bên backend (22/09/2026: 6 → 12).
+    // Lệch thì người dùng đọc "ít nhất 6" rồi gõ 8 ký tự và bị từ chối mà không hiểu vì sao.
+    MAT_KHAU_QUA_NGAN: 'Mật khẩu phải có ít nhất 12 ký tự',
+    MAT_KHAU_QUA_DAI: 'Mật khẩu quá dài (tối đa 128 ký tự)',
     MAT_KHAU_MOI_TRUNG_CU: 'Mật khẩu mới phải khác mật khẩu hiện tại',
     USERNAME_KY_TU_KHONG_HOP_LE: 'Tên đăng nhập chỉ gồm chữ, số và . _ -',
     ID_KHONG_KHOP: 'Dữ liệu không khớp',

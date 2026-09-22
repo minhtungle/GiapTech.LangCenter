@@ -49,7 +49,7 @@ public class ChongDoMatKhauTests
         for (var i = 0; i < 10; i++)
             await ThuDangNhap(f, "manager", $"sai-{i}");
 
-        var dung = await ThuDangNhap(f, "manager", "manager123");
+        var dung = await ThuDangNhap(f, "manager", "manager123456");
 
         Assert.NotEqual(HttpStatusCode.OK, dung.StatusCode);
         Assert.Equal("TAI_KHOAN_BI_KHOA_TAM", await MaLoiCua(dung));
@@ -69,7 +69,7 @@ public class ChongDoMatKhauTests
         for (var i = 0; i < 3; i++)
             await ThuDangNhap(f, "manager", $"sai-{i}");
 
-        var dung = await ThuDangNhap(f, "manager", "manager123");
+        var dung = await ThuDangNhap(f, "manager", "manager123456");
 
         Assert.Equal(HttpStatusCode.OK, dung.StatusCode);
     }
@@ -88,11 +88,11 @@ public class ChongDoMatKhauTests
         using var f = Moi();
 
         for (var i = 0; i < 6; i++) await ThuDangNhap(f, "manager", $"sai-a-{i}");
-        Assert.Equal(HttpStatusCode.OK, (await ThuDangNhap(f, "manager", "manager123")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await ThuDangNhap(f, "manager", "manager123456")).StatusCode);
 
         for (var i = 0; i < 6; i++) await ThuDangNhap(f, "manager", $"sai-b-{i}");
 
-        var cuoi = await ThuDangNhap(f, "manager", "manager123");
+        var cuoi = await ThuDangNhap(f, "manager", "manager123456");
         Assert.Equal(HttpStatusCode.OK, cuoi.StatusCode);
     }
 
@@ -111,7 +111,7 @@ public class ChongDoMatKhauTests
             await ThuDangNhap(f, "manager", $"sai-{i}");
 
         // `player` chưa từng sai lần nào → không được dính khoá.
-        var khac = await ThuDangNhap(f, "player", "player123");
+        var khac = await ThuDangNhap(f, "player", "player123456");
 
         Assert.NotEqual("TAI_KHOAN_BI_KHOA_TAM", await MaLoiCua(khac));
     }

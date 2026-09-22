@@ -222,7 +222,7 @@ public class ApiFactory : WebApplicationFactory<Program>
                 TenantId = tenant.Id,
                 Username = "player",
                 NguoiDungId = nguoiPlayer.Id,
-                PasswordHash = hasher.Bam("player123")
+                PasswordHash = hasher.Bam("player123456")
             });
 
             // Manager: đủ quyền và KHÔNG bị buộc đổi mật khẩu. Các test nghiệp vụ dùng tài
@@ -245,7 +245,7 @@ public class ApiFactory : WebApplicationFactory<Program>
                 TenantId = tenant.Id,
                 Username = "manager",
                 NguoiDungId = nguoiManager.Id,
-                PasswordHash = hasher.Bam("manager123"),
+                PasswordHash = hasher.Bam("manager123456"),
                 PhaiDoiMatKhau = false
             };
             db.TaiKhoans.Add(manager);

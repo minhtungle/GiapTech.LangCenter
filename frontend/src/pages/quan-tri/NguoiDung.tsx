@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { DO_DAI_MAT_KHAU_TOI_THIEU } from '@/lib/chinhSachMatKhau'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -949,7 +950,7 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
                       id="matKhau"
                       name="matKhau"
                       type="password"
-                      minLength={6}
+                      minLength={DO_DAI_MAT_KHAU_TOI_THIEU}
                       required={taoTaiKhoan}
                     />
                   </div>

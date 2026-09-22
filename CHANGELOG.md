@@ -8,6 +8,35 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Security — vá nốt mục 5 và 6 của đợt rà soát đăng nhập (22/09/2026)
+
+**5 — Header bảo mật ở tầng ứng dụng.** Trước đây toàn bộ header chỉ nằm trong
+`deploy/nginx/langcenter.conf`, tệp **phải copy tay lên VPS**; cài sai hay quên reload thì
+production chạy không HSTS, không `nosniff`, không `X-Frame-Options` — và chú thích trong chính
+tệp đó xác nhận việc này **đã từng xảy ra**.
+
+`HeaderBaoMatMiddleware` là **lớp đáy**, không thay Nginx: dùng `TryAdd` nên Nginx đã đặt thì
+giữ của Nginx (ghi đè sẽ làm hai nơi cấu hình âm thầm đá nhau). HSTS **chỉ gửi khi thật sự
+HTTPS** — gửi qua `http://localhost` ở dev sẽ khoá luôn localhost sang HTTPS trong trình duyệt
+lập trình viên, lỗi rất khó chẩn đoán vì nằm trong cache chứ không trong mã. CSP vẫn ở Nginx vì
+nó phụ thuộc thứ **trang** tải, không phải thứ **API** trả.
+
+**6 — Mật khẩu tối thiểu 12 ký tự** (từ 6). Quy tắc từng nằm rải ở **5 nơi** backend + **5 ô**
+`minLength` frontend, mỗi nơi chép tay số 6 — năm bản sao của một quy tắc thì sớm muộn cũng
+lệch, và chỗ quên sửa thành cửa hậu đặt mật khẩu yếu. Nay gom vào `ChinhSachMatKhau` và
+`DO_DAI_MAT_KHAU_TOI_THIEU`.
+
+**Không** thêm luật "phải có hoa/thường/số/ký tự đặc biệt" — theo NIST SP 800-63B luật đó phản
+tác dụng, người dùng đáp ứng bằng `Matkhau@123` còn dễ đoán hơn một cụm từ dài.
+
+**Còn nợ:** blocklist mật khẩu phổ biến (cần đóng gói danh sách lớn hoặc gọi HIBP — quyết định
+riêng, không gộp vào thay đổi độ dài).
+
+Đổi ngưỡng làm **157 test đỏ** vì chúng dùng mật khẩu 9–10 ký tự; đã kéo dài các giá trị đó.
+
+**Test:** +11 (619 xanh, từ 608). Mutation: gỡ middleware header / hạ ngưỡng về 6 / gửi HSTS bất
+kể giao thức → chết cả ba.
+
 ### Security — vá 5/8 mục của đợt rà soát đăng nhập (22/09/2026)
 
 Chủ sản phẩm chốt *"lần lượt toàn bộ"*. Đợt này xong **mục 1, 2, 3, 4, 8**; mục 5 và 6 tiếp

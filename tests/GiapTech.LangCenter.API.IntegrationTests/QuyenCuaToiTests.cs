@@ -46,7 +46,7 @@ public class QuyenCuaToiTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
     private async Task<HttpClient> TaoVaDangNhap(string username, string loai, string tenNhom)
     {
-        var admin = await Client("manager", "manager123");
+        var admin = await Client("manager", "manager123456");
         var quyen = await QuyenTheoTen(admin, tenNhom);
 
         (await admin.PostAsJsonAsync("/api/v1/nguoi-dung", new
@@ -55,12 +55,12 @@ public class QuyenCuaToiTests(ApiFactory factory) : IClassFixture<ApiFactory>
             LoaiNguoiDung = loai,
             TaiKhoan = new
             {
-                Username = username, MatKhau = "matkhau123",
+                Username = username, MatKhau = "matkhau123456",
                 QuyenIds = new[] { quyen }, PhaiDoiMatKhau = false
             }
         })).EnsureSuccessStatusCode();
 
-        return await Client(username, "matkhau123");
+        return await Client(username, "matkhau123456");
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class QuyenCuaToiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Quan_tri_thay_du_quyen()
     {
-        var q = await Quyen(await Client("manager", "manager123"));
+        var q = await Quyen(await Client("manager", "manager123456"));
 
         Assert.Contains("HocPhi:Xem", q);
         Assert.Contains("LopHocToanTrungTam:Xem", q);
@@ -144,7 +144,7 @@ public class QuyenCuaToiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var gv = await TaoVaDangNhap("gvtz", "GiaoVien", "Giáo viên");
         var hv = await TaoVaDangNhap("hvtz", "HocVien", "Học viên");
 
-        foreach (var c in new[] { gv, hv, await Client("manager", "manager123") })
+        foreach (var c in new[] { gv, hv, await Client("manager", "manager123456") })
         {
             var ch = await c.GetFromJsonAsync<JsonElement>("/api/v1/toi/cau-hinh");
             Assert.Equal("Asia/Ho_Chi_Minh", ch.GetProperty("muiGio").GetString());
@@ -164,7 +164,7 @@ public class QuyenCuaToiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     public async Task Moi_nguoi_nhan_dung_quyen_cua_minh()
     {
         var qGv = await Quyen(await TaoVaDangNhap("gvqt2", "GiaoVien", "Giáo viên"));
-        var qAdmin = await Quyen(await Client("manager", "manager123"));
+        var qAdmin = await Quyen(await Client("manager", "manager123456"));
 
         Assert.NotEqual(qGv.Count, qAdmin.Count);
         Assert.True(qAdmin.Count > qGv.Count);

@@ -15,7 +15,13 @@ export interface TrungTam {
   matKhau: string
 }
 
-/** Mật khẩu sau khi đổi lần đầu — mọi test dùng chung giá trị này. */
+/**
+ * Mật khẩu sau khi đổi lần đầu — mọi test dùng chung giá trị này.
+ *
+ * **Phải ≥ 12 ký tự** (`ChinhSachMatKhau.DoDaiToiThieu`, nâng từ 6 lên 12 ngày 22/09/2026).
+ * Mật khẩu ngắn hơn sẽ bị validator từ chối và test đỏ ở chỗ trông như lỗi giao diện — đã xảy
+ * ra thật với hai test dùng `'matkhau123'` (10 ký tự).
+ */
 export const MAT_KHAU_MOI = 'e2e-matkhau-123'
 
 /**

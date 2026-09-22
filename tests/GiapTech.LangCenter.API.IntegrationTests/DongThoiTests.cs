@@ -188,7 +188,7 @@ public class DongThoiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var than = new
         {
             Username = "trungusername",
-            MatKhau = "matkhau123", HoTen = "Test trungusername",
+            MatKhau = "matkhau123456", HoTen = "Test trungusername",
             Email = (string?)null,
             SoDienThoai = (string?)null,
             DiaChi = (string?)null,
@@ -223,7 +223,7 @@ public class DongThoiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var than = new
         {
             Username = "trunggiuahaitenant",
-            MatKhau = "matkhau123", HoTen = "Test trunggiuahaitenant",
+            MatKhau = "matkhau123456", HoTen = "Test trunggiuahaitenant",
             Email = (string?)null,
             SoDienThoai = (string?)null,
             DiaChi = (string?)null,
@@ -242,7 +242,7 @@ public class DongThoiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         {
             MaTrungTam = maTrungTam ?? factory.MaTrungTamA,
             Username = "manager",
-            MatKhau = "manager123"
+            MatKhau = "manager123456"
         });
         res.EnsureSuccessStatusCode();
         var body = await res.Content.ReadFromJsonAsync<JsonElement>();

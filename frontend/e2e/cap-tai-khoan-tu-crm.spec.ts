@@ -40,7 +40,7 @@ test('FR-25: cấp tài khoản học viên từ màn Khách hàng, hồ sơ t�
     .click()
 
   await page.locator('#username').fill('hv.online.01')
-  await page.locator('#matKhau').fill('matkhau123')
+  await page.locator('#matKhau').fill('matkhau123456')
   await luuVaXacNhan(page)
 
   // SAU khi cấp: hồ sơ phải TỰ NỐI — cột Học viên hiện tên, không còn "chưa vào học".

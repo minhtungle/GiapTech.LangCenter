@@ -11,7 +11,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
     /// <param name="maTrungTam">Null = dùng trung tâm A. Không đặt mặc định được vì mã do seeder sinh
     /// lúc chạy, mà tham số mặc định phải là hằng biên dịch.</param>
     private async Task<HttpClient> Client(string? maTrungTam = null, string user = "manager",
-        string mk = "manager123")
+        string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -159,7 +159,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var tao = await client.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
             Username = "nhanvien1",
-            MatKhau = "matkhau123", HoTen = "Test nhanvien1",
+            MatKhau = "matkhau123456", HoTen = "Test nhanvien1",
             Email = "nv1@example.com",
             QuyenIds = new[] { quyenId },
             PhaiDoiMatKhau = false
@@ -168,7 +168,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         // Tài khoản vừa tạo phải đăng nhập được ngay.
         var dangNhap = await factory.CreateClient().PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaTrungTam = factory.MaTrungTamA, Username = "nhanvien1", MatKhau = "matkhau123" });
+            new { MaTrungTam = factory.MaTrungTamA, Username = "nhanvien1", MatKhau = "matkhau123456" });
         Assert.Equal(HttpStatusCode.OK, dangNhap.StatusCode);
     }
 
@@ -180,7 +180,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var res = await client.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
             Username = "admin", // đã tồn tại trong trung tâm A
-            MatKhau = "matkhau123",
+            MatKhau = "matkhau123456",
             HoTen = "Trùng username",
             QuyenIds = Array.Empty<Guid>()
         });
@@ -202,7 +202,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var res = await clientA.PostAsJsonAsync("/api/v1/tai-khoan", new
         {
             Username = "user-lai-quyen",
-            MatKhau = "matkhau123", HoTen = "Test user-lai-quyen",
+            MatKhau = "matkhau123456", HoTen = "Test user-lai-quyen",
             QuyenIds = new[] { quyenCuaB }
         });
 
@@ -268,7 +268,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Player_khong_quyen_bi_tu_choi_moi_endpoint_quan_tri()
     {
-        var client = await Client(factory.MaTrungTamA, "player", "player123");
+        var client = await Client(factory.MaTrungTamA, "player", "player123456");
 
         foreach (var url in new[]
                  { "/api/v1/tai-khoan", "/api/v1/quyen", "/api/v1/thiet-lap" })

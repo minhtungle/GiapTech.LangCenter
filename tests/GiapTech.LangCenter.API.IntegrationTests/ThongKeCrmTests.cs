@@ -13,7 +13,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class ThongKeCrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -103,7 +103,7 @@ public class ThongKeCrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
             HoTen = "Người nhập đơn hộ", LoaiNguoiDung = "NhanVien",
             TaiKhoan = new
             {
-                Username = "ke-toan-nhap-don", MatKhau = "matkhau123",
+                Username = "ke-toan-nhap-don", MatKhau = "matkhau123456",
                 QuyenIds = new[] { quyenNv }, PhaiDoiMatKhau = false
             }
         })).EnsureSuccessStatusCode();
@@ -113,7 +113,7 @@ public class ThongKeCrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var khoa = await TaoKhoa(admin, "Khoá mốc doanh số", 3_000_000m);
 
         // ...nhưng KẾ TOÁN là người nhập đơn.
-        var cKeToan = await Client("ke-toan-nhap-don", "matkhau123");
+        var cKeToan = await Client("ke-toan-nhap-don", "matkhau123456");
         (await Ban(cKeToan, khach, khoa, 3_000_000m)).EnsureSuccessStatusCode();
 
         var tk = await ThongKe(admin);
@@ -192,12 +192,12 @@ public class ThongKeCrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
             HoTen = "Học viên tò mò", LoaiNguoiDung = "HocVien",
             TaiKhoan = new
             {
-                Username = "hv-thong-ke", MatKhau = "matkhau123",
+                Username = "hv-thong-ke", MatKhau = "matkhau123456",
                 QuyenIds = new[] { quyenHv }, PhaiDoiMatKhau = false
             }
         })).EnsureSuccessStatusCode();
 
-        var cHv = await Client("hv-thong-ke", "matkhau123");
+        var cHv = await Client("hv-thong-ke", "matkhau123456");
         Assert.Equal(HttpStatusCode.Forbidden,
             (await cHv.GetAsync("/api/v1/thong-ke-crm")).StatusCode);
 
@@ -279,7 +279,7 @@ public class ThongKeCrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
         (await Ban(cA, khach, khoa, 9_000_000m)).EnsureSuccessStatusCode();
 
         var dn = await factory.CreateClient().PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123" });
+            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123456" });
         dn.EnsureSuccessStatusCode();
         var token = (await dn.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("accessToken").GetString();

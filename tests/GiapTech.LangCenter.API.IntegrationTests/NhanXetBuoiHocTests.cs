@@ -17,7 +17,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class NhanXetBuoiHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -45,7 +45,7 @@ public class NhanXetBuoiHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
             LoaiNguoiDung = loai,
             TaiKhoan = new
             {
-                Username = username, MatKhau = "matkhau123",
+                Username = username, MatKhau = "matkhau123456",
                 QuyenIds = quyenIds ?? [], PhaiDoiMatKhau = false
             }
         });
@@ -110,9 +110,9 @@ public class NhanXetBuoiHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var admin = await Client();
         var (buoi, _, _, _) = await DungLop(admin, "doc-nhan-xet");
 
-        var c1 = await Client("hv1-doc-nhan-xet", "matkhau123");
-        var c2 = await Client("hv2-doc-nhan-xet", "matkhau123");
-        var cGv = await Client("gv-doc-nhan-xet", "matkhau123");
+        var c1 = await Client("hv1-doc-nhan-xet", "matkhau123456");
+        var c2 = await Client("hv2-doc-nhan-xet", "matkhau123456");
+        var cGv = await Client("gv-doc-nhan-xet", "matkhau123456");
 
         (await c1.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nhan-xet",
             new { NoiDung = "Buổi học hay", MucHaiLong = 4 })).EnsureSuccessStatusCode();
@@ -148,7 +148,7 @@ public class NhanXetBuoiHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
     {
         var admin = await Client();
         var (buoi, _, _, _) = await DungLop(admin, "gui-lai");
-        var c1 = await Client("hv1-gui-lai", "matkhau123");
+        var c1 = await Client("hv1-gui-lai", "matkhau123456");
 
         (await c1.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nhan-xet",
             new { NoiDung = "Bản đầu", MucHaiLong = 2 })).EnsureSuccessStatusCode();
@@ -172,7 +172,7 @@ public class NhanXetBuoiHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
     {
         var admin = await Client();
         var (buoi, _, _, _) = await DungLop(admin, "gv-gui");
-        var cGv = await Client("gv-gv-gui", "matkhau123");
+        var cGv = await Client("gv-gv-gui", "matkhau123456");
 
         var res = await cGv.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nhan-xet",
             new { NoiDung = "Giáo viên thử gửi", MucHaiLong = 3 });
@@ -196,8 +196,8 @@ public class NhanXetBuoiHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var admin = await Client();
         var (buoi, _, _, _) = await DungLop(admin, "co-la-hoc-vien");
 
-        var cHv = await Client("hv1-co-la-hoc-vien", "matkhau123");
-        var cGv = await Client("gv-co-la-hoc-vien", "matkhau123");
+        var cHv = await Client("hv1-co-la-hoc-vien", "matkhau123456");
+        var cGv = await Client("gv-co-la-hoc-vien", "matkhau123456");
 
         Assert.True((await cHv.GetFromJsonAsync<JsonElement>($"/api/v1/buoi-hoc/{buoi}"))
             .GetProperty("toiLaHocVien").GetBoolean());
@@ -231,7 +231,7 @@ public class NhanXetBuoiHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
     {
         var admin = await Client();
         var (buoi, _, _, _) = await DungLop(admin, "khong-cham-diem");
-        var c1 = await Client("hv1-khong-cham-diem", "matkhau123");
+        var c1 = await Client("hv1-khong-cham-diem", "matkhau123456");
 
         (await c1.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nhan-xet",
             new { NoiDung = "Em vắng nên không đánh giá", MucHaiLong = (int?)null }))
@@ -335,7 +335,7 @@ public class NhanXetBuoiHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
     {
         var admin = await Client();
         var (buoi, _, _, _) = await DungLop(admin, "hop-dong-nhan-xet");
-        var c1 = await Client("hv1-hop-dong-nhan-xet", "matkhau123");
+        var c1 = await Client("hv1-hop-dong-nhan-xet", "matkhau123456");
 
         (await c1.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nhan-xet",
             new { NoiDung = "x", MucHaiLong = 3 })).EnsureSuccessStatusCode();
@@ -396,7 +396,7 @@ public class NhanXetBuoiHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
     {
         var admin = await Client();
         var (buoi, _, _, _) = await DungLop(admin, "xoa-co-nhan-xet");
-        var c1 = await Client("hv1-xoa-co-nhan-xet", "matkhau123");
+        var c1 = await Client("hv1-xoa-co-nhan-xet", "matkhau123456");
 
         (await c1.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nhan-xet",
             new { NoiDung = "Buổi này em thấy khó", MucHaiLong = 2 })).EnsureSuccessStatusCode();
@@ -435,11 +435,11 @@ public class NhanXetBuoiHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
     {
         var admin = await Client();
         var (buoiA, _, _, _) = await DungLop(admin, "cach-ly-tenant");
-        var c1 = await Client("hv1-cach-ly-tenant", "matkhau123");
+        var c1 = await Client("hv1-cach-ly-tenant", "matkhau123456");
 
         var adminB = factory.CreateClient();
         var dnB = await adminB.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123" });
+            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123456" });
         dnB.EnsureSuccessStatusCode();
         var tokenB = (await dnB.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("accessToken").GetString();

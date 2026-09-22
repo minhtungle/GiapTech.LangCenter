@@ -32,7 +32,7 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Lam_moi_token_tra_ve_cap_token_moi()
     {
-        var dn = await DangNhap(factory.MaTrungTamA, "manager", "manager123");
+        var dn = await DangNhap(factory.MaTrungTamA, "manager", "manager123456");
         var refreshCu = dn.GetProperty("refreshToken").GetString()!;
 
         var res = await factory.CreateClient().PostAsJsonAsync(
@@ -56,7 +56,7 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Refresh_token_cu_khong_dung_lai_duoc()
     {
-        var dn = await DangNhap(factory.MaTrungTamB, "manager", "manager123");
+        var dn = await DangNhap(factory.MaTrungTamB, "manager", "manager123456");
         var refreshCu = dn.GetProperty("refreshToken").GetString()!;
 
         var lan1 = await factory.CreateClient().PostAsJsonAsync(
@@ -75,7 +75,7 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Tai_su_dung_token_da_thu_hoi_thi_thu_hoi_toan_bo_phien()
     {
-        var dn = await DangNhap(factory.MaTrungTamA, "player", "player123");
+        var dn = await DangNhap(factory.MaTrungTamA, "player", "player123456");
         var doi1 = dn.GetProperty("refreshToken").GetString()!;
 
         var r2 = await factory.CreateClient().PostAsJsonAsync(
@@ -186,7 +186,7 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
     /// <summary>Tạo tài khoản có email để chạy luồng FR-02.</summary>
     private async Task<HttpClient> TaoTaiKhoanCoEmail(string username, string email)
     {
-        var dn = await DangNhap(factory.MaTrungTamA, "manager", "manager123");
+        var dn = await DangNhap(factory.MaTrungTamA, "manager", "manager123456");
         var client = ClientVoiToken(dn.GetProperty("accessToken").GetString()!);
 
         // Email nằm ở NGUOI_DUNG còn tài khoản ở TAI_KHOAN — tạo cả hai trong một lượt gọi.

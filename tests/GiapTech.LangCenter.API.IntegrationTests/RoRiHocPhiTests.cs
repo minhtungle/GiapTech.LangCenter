@@ -22,7 +22,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class RoRiHocPhiTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -50,7 +50,7 @@ public class RoRiHocPhiTests(ApiFactory factory) : IClassFixture<ApiFactory>
             LoaiNguoiDung = loai,
             TaiKhoan = new
             {
-                Username = username, MatKhau = "matkhau123",
+                Username = username, MatKhau = "matkhau123456",
                 QuyenIds = quyenIds, PhaiDoiMatKhau = false
             }
         });
@@ -104,7 +104,7 @@ public class RoRiHocPhiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var c = await Client();
         await DungLop(c, "gvlop");
 
-        var cGv = await Client("gvrr-gvlop", "matkhau123");
+        var cGv = await Client("gvrr-gvlop", "matkhau123456");
         var ds = await cGv.GetFromJsonAsync<JsonElement>("/api/v1/lop-hoc");
 
         var lops = ds.GetProperty("duLieu").EnumerateArray().ToList();
@@ -122,7 +122,7 @@ public class RoRiHocPhiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var c = await Client();
         var (lop, _, _) = await DungLop(c, "gvct");
 
-        var cGv = await Client("gvrr-gvct", "matkhau123");
+        var cGv = await Client("gvrr-gvct", "matkhau123456");
         var l = await cGv.GetFromJsonAsync<JsonElement>($"/api/v1/lop-hoc/{lop}");
 
         Assert.Null(Tien(l, "hocPhi"));
@@ -138,7 +138,7 @@ public class RoRiHocPhiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var c = await Client();
         var (lop, _, _) = await DungLop(c, "gvmuc");
 
-        var cGv = await Client("gvrr-gvmuc", "matkhau123");
+        var cGv = await Client("gvrr-gvmuc", "matkhau123456");
         var ds = await cGv.GetFromJsonAsync<List<JsonElement>>($"/api/v1/lop-hoc/{lop}/hoc-vien");
 
         Assert.Equal(2, ds!.Count);   // vẫn thấy đủ học viên để điểm danh
@@ -151,7 +151,7 @@ public class RoRiHocPhiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var c = await Client();
         var (lop, _, _) = await DungLop(c, "tg");
 
-        var cTg = await Client("tgrr-tg", "matkhau123");
+        var cTg = await Client("tgrr-tg", "matkhau123456");
 
         var l = await cTg.GetFromJsonAsync<JsonElement>($"/api/v1/lop-hoc/{lop}");
         Assert.Null(Tien(l, "hocPhi"));
@@ -179,9 +179,9 @@ public class RoRiHocPhiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         foreach (var (nhan, client) in new[]
                  {
                      ("quản trị", c),
-                     ("giáo viên", await Client("gvrr-khongai", "matkhau123")),
-                     ("trợ giảng", await Client("tgrr-khongai", "matkhau123")),
-                     ("học viên", await Client("hvrr1-khongai", "matkhau123")),
+                     ("giáo viên", await Client("gvrr-khongai", "matkhau123456")),
+                     ("trợ giảng", await Client("tgrr-khongai", "matkhau123456")),
+                     ("học viên", await Client("hvrr1-khongai", "matkhau123456")),
                  })
         {
             var l = await client.GetFromJsonAsync<JsonElement>($"/api/v1/lop-hoc/{lop}");
@@ -239,7 +239,7 @@ public class RoRiHocPhiTests(ApiFactory factory) : IClassFixture<ApiFactory>
             "Admin có KhachHang.Xem thì phải thấy tên nhân viên kinh doanh.");
 
         // GIÁO VIÊN không có KhachHang.Xem → null ở MỌI dòng.
-        var gv = await Client($"gvrr-nvkd", "matkhau123");
+        var gv = await Client($"gvrr-nvkd", "matkhau123456");
         var cuaGv = await gv.GetFromJsonAsync<List<JsonElement>>(
             $"/api/v1/lop-hoc/{lop}/hoc-vien");
         Assert.All(cuaGv!, x => Assert.Equal(
@@ -247,7 +247,7 @@ public class RoRiHocPhiTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         // HỌC VIÊN cũng không — kể cả với dòng của CHÍNH MÌNH. Khác học phí (họ thấy số của
         // mình): ai bán mình không phải thông tin của mình.
-        var hocVien = await Client($"hvrr1-nvkd", "matkhau123");
+        var hocVien = await Client($"hvrr1-nvkd", "matkhau123456");
         var cuaHv = await hocVien.GetFromJsonAsync<List<JsonElement>>(
             $"/api/v1/lop-hoc/{lop}/hoc-vien");
         Assert.All(cuaHv!, x => Assert.Equal(

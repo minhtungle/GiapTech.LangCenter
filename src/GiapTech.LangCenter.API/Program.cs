@@ -202,6 +202,10 @@ if (app.Environment.IsDevelopment())
 // Bắt exception sớm nhất để mọi lỗi phía sau đều thành { errorCode } (quy tắc #3).
 app.UseMiddleware<ExceptionMiddleware>();
 
+// NGAY SAU ExceptionMiddleware: header bảo mật phải có trên MỌI phản hồi, kể cả phản hồi lỗi
+// do middleware đó sinh ra — trang lỗi chính là thứ kẻ tấn công muốn nhúng vào iframe.
+app.UseMiddleware<HeaderBaoMatMiddleware>();
+
 // Giới hạn tần suất cho endpoint ẩn danh (nợ N3). Đặt SAU ExceptionMiddleware để 429 cũng đi
 // qua cùng đường trả lỗi, nhưng TRƯỚC Authentication: chặn được request rác mà không phải
 // giải mã JWT hay truy vấn DB cho nó.

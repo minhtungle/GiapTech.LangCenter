@@ -14,7 +14,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class CrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -729,13 +729,13 @@ public class CrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
             HoTen = "Trực tổng đài 2", LoaiNguoiDung = "NhanVien",
             TaiKhoan = new
             {
-                Username = "truc-2", MatKhau = "matkhau123",
+                Username = "truc-2", MatKhau = "matkhau123456",
                 QuyenIds = new[] { quyen }, PhaiDoiMatKhau = false
             }
         })).EnsureSuccessStatusCode();
 
         var khach = await TaoKhach(admin, "Khách của trực tổng đài");
-        var c = await Client("truc-2", "matkhau123");
+        var c = await Client("truc-2", "matkhau123456");
 
         (await c.GetAsync($"/api/v1/khach-hang/{khach}")).EnsureSuccessStatusCode();
         (await c.GetAsync($"/api/v1/khach-hang/{khach}/cham-soc")).EnsureSuccessStatusCode();
@@ -769,12 +769,12 @@ public class CrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
             HoTen = "Người trực tổng đài", LoaiNguoiDung = "NhanVien",
             TaiKhoan = new
             {
-                Username = "truc-tong-dai", MatKhau = "matkhau123",
+                Username = "truc-tong-dai", MatKhau = "matkhau123456",
                 QuyenIds = new[] { quyen }, PhaiDoiMatKhau = false
             }
         })).EnsureSuccessStatusCode();
 
-        var c = await Client("truc-tong-dai", "matkhau123");
+        var c = await Client("truc-tong-dai", "matkhau123456");
 
         (await c.GetAsync("/api/v1/khach-hang")).EnsureSuccessStatusCode();
         Assert.Equal(HttpStatusCode.Forbidden, (await c.GetAsync("/api/v1/doanh-thu")).StatusCode);
@@ -797,7 +797,7 @@ public class CrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var cB = factory.CreateClient();
         var dn = await cB.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123" });
+            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123456" });
         dn.EnsureSuccessStatusCode();
         cB.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             "Bearer", (await dn.Content.ReadFromJsonAsync<JsonElement>())

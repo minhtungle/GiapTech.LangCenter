@@ -19,7 +19,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class NhanDienTrungTamTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -141,12 +141,12 @@ public class NhanDienTrungTamTests(ApiFactory factory) : IClassFixture<ApiFactor
             HoTen = "GV nhận diện", LoaiNguoiDung = "GiaoVien",
             TaiKhoan = new
             {
-                Username = "gv-nhan-dien", MatKhau = "matkhau123",
+                Username = "gv-nhan-dien", MatKhau = "matkhau123456",
                 QuyenIds = new[] { quyenGv }, PhaiDoiMatKhau = false
             }
         })).EnsureSuccessStatusCode();
 
-        var gv = await Client("gv-nhan-dien", "matkhau123");
+        var gv = await Client("gv-nhan-dien", "matkhau123456");
 
         var ch = await gv.GetFromJsonAsync<JsonElement>("/api/v1/toi/cau-hinh");
         Assert.False(string.IsNullOrWhiteSpace(ch.GetProperty("tenTrungTam").GetString()));

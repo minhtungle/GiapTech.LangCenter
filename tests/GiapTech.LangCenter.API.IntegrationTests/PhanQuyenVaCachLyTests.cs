@@ -77,7 +77,7 @@ public class PhanQuyenVaCachLyTests(ApiFactory factory) : IClassFixture<ApiFacto
     [Fact]
     public async Task Xac_thuc_duoc_nhung_thieu_quyen_thi_bi_tu_choi()
     {
-        var client = ClientVoiToken(await LayToken(factory.MaTrungTamA, "player", "player123"));
+        var client = ClientVoiToken(await LayToken(factory.MaTrungTamA, "player", "player123456"));
         var res = await client.GetAsync("/api/v1/tai-khoan");
 
         Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
@@ -90,8 +90,8 @@ public class PhanQuyenVaCachLyTests(ApiFactory factory) : IClassFixture<ApiFacto
     [Fact]
     public async Task Moi_tenant_chi_thay_du_lieu_cua_minh()
     {
-        var clientA = ClientVoiToken(await LayToken(factory.MaTrungTamA, "manager", "manager123"));
-        var clientB = ClientVoiToken(await LayToken(factory.MaTrungTamB, "manager", "manager123"));
+        var clientA = ClientVoiToken(await LayToken(factory.MaTrungTamA, "manager", "manager123456"));
+        var clientB = ClientVoiToken(await LayToken(factory.MaTrungTamB, "manager", "manager123456"));
 
         var cuaA = await DocTrang(await clientA.GetAsync("/api/v1/tai-khoan"));
         var cuaB = await DocTrang(await clientB.GetAsync("/api/v1/tai-khoan"));
@@ -118,7 +118,7 @@ public class PhanQuyenVaCachLyTests(ApiFactory factory) : IClassFixture<ApiFacto
     {
         // Dùng "manager", KHÔNG dùng "admin": test Buoc_doi_mat_khau đổi mật khẩu admin nên
         // hai test chạy song song sẽ tranh nhau — cái chạy sau không đăng nhập được.
-        var token = await LayToken(factory.MaTrungTamA, "manager", "manager123");
+        var token = await LayToken(factory.MaTrungTamA, "manager", "manager123456");
 
         /*
           Đổi một ký tự Ở GIỮA chữ ký, KHÔNG phải ký tự cuối (sửa 12/09/2026 — nợ N12).

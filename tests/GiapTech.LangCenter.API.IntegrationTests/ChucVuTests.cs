@@ -20,7 +20,7 @@ public class ChucVuTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap", new
         {
             MaTrungTam = tenantB ? factory.MaTrungTamB : factory.MaTrungTamA,
-            Username = "manager", MatKhau = "manager123"
+            Username = "manager", MatKhau = "manager123456"
         });
         res.EnsureSuccessStatusCode();
         var body = await res.Content.ReadFromJsonAsync<JsonElement>();

@@ -18,7 +18,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class NhatKyHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -180,7 +180,7 @@ public class NhatKyHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
             HoTen = "Người nk-dl", LoaiNguoiDung = "NhanVien",
             TaiKhoan = new
             {
-                Username = "nk-dl", MatKhau = "matkhau123",
+                Username = "nk-dl", MatKhau = "matkhau123456",
                 QuyenIds = Array.Empty<string>(), PhaiDoiMatKhau = false
             }
         })).EnsureSuccessStatusCode();
@@ -256,12 +256,12 @@ public class NhatKyHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
             HoTen = "GV nhật ký", LoaiNguoiDung = "GiaoVien",
             TaiKhoan = new
             {
-                Username = "gv-nk", MatKhau = "matkhau123",
+                Username = "gv-nk", MatKhau = "matkhau123456",
                 QuyenIds = new[] { quyenGv }, PhaiDoiMatKhau = false
             }
         })).EnsureSuccessStatusCode();
 
-        var cGv = await Client("gv-nk", "matkhau123");
+        var cGv = await Client("gv-nk", "matkhau123456");
         var res = await cGv.GetAsync("/api/v1/nhat-ky");
 
         Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
@@ -293,7 +293,7 @@ public class NhatKyHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var cB = factory.CreateClient();
         var dn = await cB.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123" });
+            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123456" });
         dn.EnsureSuccessStatusCode();
         var token = (await dn.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("accessToken").GetString();

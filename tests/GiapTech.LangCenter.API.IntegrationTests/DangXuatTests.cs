@@ -23,7 +23,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class DangXuatTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<(string Access, string Refresh)> DangNhap(string user = "manager", string mk = "manager123")
+    private async Task<(string Access, string Refresh)> DangNhap(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -191,7 +191,7 @@ public class DangXuatTests(ApiFactory factory) : IClassFixture<ApiFactory>
     {
         // `player` bị buộc đổi mật khẩu nên không gọi được endpoint nghiệp vụ; điều cần kiểm
         // ở đây chỉ là token của nó **không bị 401 vì cơ chế phiên** sau khi manager đăng xuất.
-        var (accessKhac, _) = await DangNhap("player", "player123");
+        var (accessKhac, _) = await DangNhap("player", "player123456");
         var (access, _) = await DangNhap();
 
         await Voi(access).PostAsync("/api/v1/auth/dang-xuat", null);

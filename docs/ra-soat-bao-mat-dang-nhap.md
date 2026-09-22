@@ -29,8 +29,8 @@ Chủ sản phẩm chốt ngày 22/09/2026: **làm lần lượt toàn bộ**, r
 | 2. Mật khẩu admin mặc định | ✅ **XONG** 22/09 |
 | 3. Kênh thời gian | ✅ **XONG** 22/09 |
 | 4. Khoá tài khoản sau N lần sai | ✅ **XONG** 22/09 |
-| 5. Security header ở tầng ứng dụng | ⏳ đang làm |
-| 6. Độ dài mật khẩu tối thiểu | ⏳ chờ |
+| 5. Security header ở tầng ứng dụng | ✅ **XONG** 22/09 |
+| 6. Độ dài mật khẩu tối thiểu | ✅ **XONG** 22/09 (blocklist còn nợ) |
 | 7. Token trong `localStorage` | 🅿️ **để riêng** — cần ADR |
 | 8. Fail-open của `PhienDuyNhatMiddleware` | ✅ **XONG** 22/09 (làm cùng mục 1) |
 
@@ -111,7 +111,26 @@ Toàn bộ header nằm ở `deploy/nginx/langcenter.conf` — tệp **phải co
 quên reload thì production chạy không HSTS, không nosniff, không X-Frame-Options. Chính chú thích
 trong hai tệp cấu hình xác nhận **việc này đã từng xảy ra**.
 
-**Sửa:** thêm middleware header bảo mật trong `Program.cs` làm lớp đáy, không thay nginx mà chồng thêm.
+**Đã sửa 22/09/2026** — `HeaderBaoMatMiddleware` đặt `X-Content-Type-Options`,
+`X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` trên **mọi** phản hồi của API, và
+HSTS khi request thật sự là HTTPS.
+
+Ba điểm đáng lưu ý:
+
+- **`TryAdd`, không ghi đè** — Nginx đã đặt thì giữ của Nginx. Ghi đè sẽ làm hai nơi cấu hình
+  âm thầm đá nhau và người sửa Nginx không hiểu vì sao thay đổi của mình vô tác dụng.
+- **Đặt qua `OnStarting`** — endpoint trả stream (ảnh qua MinIO) bắt đầu gửi rất sớm; thêm
+  header sau đó sẽ ném `InvalidOperationException`.
+- **HSTS chỉ khi thật sự HTTPS** — gửi qua HTTP thuần là vô nghĩa, mà ở dev chạy
+  `http://localhost` thì nó **khoá luôn localhost sang HTTPS** trong trình duyệt lập trình
+  viên: lỗi rất khó chẩn đoán vì nằm trong cache trình duyệt, không nằm trong mã.
+
+**Không đặt CSP ở đây**: CSP phụ thuộc thứ frontend thật sự tải (`blob:`, `data:`…), nên thuộc
+về nơi phục vụ **trang**, không phải nơi phục vụ **API**. Nginx giữ CSP.
+
+Canh bởi `HeaderBaoMatTests` (5 test), gồm test *"header có cả trên phản hồi LỖI"* — nửa hay bị
+quên, và là nửa quan trọng hơn vì trang lỗi chính là thứ kẻ tấn công muốn nhúng iframe.
+Verify bằng `curl` trên API thật.
 
 ### 6. 🟡 Mật khẩu tối thiểu 6 ký tự, không có blocklist
 

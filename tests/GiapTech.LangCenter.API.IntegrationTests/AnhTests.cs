@@ -78,7 +78,7 @@ public class AnhTests(ApiFactory factory) : IClassFixture<ApiFactory>
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaTrungTam = maTrungTam ?? factory.MaTrungTamA, Username = "manager", MatKhau = "manager123" });
+            new { MaTrungTam = maTrungTam ?? factory.MaTrungTamA, Username = "manager", MatKhau = "manager123456" });
         res.EnsureSuccessStatusCode();
         var body = await res.Content.ReadFromJsonAsync<JsonElement>();
 

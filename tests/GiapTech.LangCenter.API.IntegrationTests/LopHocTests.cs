@@ -32,7 +32,7 @@ public class LopHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     private async Task<HttpClient> Client(string? maTrungTam = null, string user = "manager",
-        string mk = "manager123")
+        string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -56,7 +56,7 @@ public class LopHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
             LoaiNguoiDung = loai,
             TaiKhoan = new
             {
-                Username = username, MatKhau = "matkhau123",
+                Username = username, MatKhau = "matkhau123456",
                 QuyenIds = quyenIds ?? [], PhaiDoiMatKhau = false
             }
         });
@@ -167,7 +167,7 @@ public class LopHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
             ht.EnsureSuccessStatusCode();
         }
 
-        var cGv1 = await Client(factory.MaTrungTamA, "gv-pham-vi-1", "matkhau123");
+        var cGv1 = await Client(factory.MaTrungTamA, "gv-pham-vi-1", "matkhau123456");
 
         var ds = await cGv1.GetFromJsonAsync<JsonElement>("/api/v1/lop-hoc");
         var ten = ds.GetProperty("duLieu").EnumerateArray()
@@ -209,7 +209,7 @@ public class LopHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var gv = await TaoNguoiDung(admin, "gv-lop-nhap", "GiaoVien", [quyenGv]);
         var lopNhap = await TaoLop(admin, "Lớp còn đang nghĩ", gv);
 
-        var cGv = await Client(factory.MaTrungTamA, "gv-lop-nhap", "matkhau123");
+        var cGv = await Client(factory.MaTrungTamA, "gv-lop-nhap", "matkhau123456");
 
         var ds = await cGv.GetFromJsonAsync<JsonElement>("/api/v1/lop-hoc");
         Assert.DoesNotContain("Lớp còn đang nghĩ",
@@ -269,7 +269,7 @@ public class LopHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
         (await admin.PostAsJsonAsync($"/api/v1/lop-hoc/{lopCoHv}/hoc-vien",
             new { HocVienIds = new[] { hv } })).EnsureSuccessStatusCode();
 
-        var cHv = await Client(factory.MaTrungTamA, "hv-pham-vi", "matkhau123");
+        var cHv = await Client(factory.MaTrungTamA, "hv-pham-vi", "matkhau123456");
 
         var ds = await cHv.GetFromJsonAsync<JsonElement>("/api/v1/lop-hoc");
         var ten = ds.GetProperty("duLieu").EnumerateArray()
@@ -319,7 +319,7 @@ public class LopHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var gv = await TaoNguoiDung(admin, "gv-thay-nhap", "GiaoVien", [quyenGv]);
         await TaoLop(admin, "Lớp còn nháp", gv);
 
-        var cGv = await Client(factory.MaTrungTamA, "gv-thay-nhap", "matkhau123");
+        var cGv = await Client(factory.MaTrungTamA, "gv-thay-nhap", "matkhau123456");
         var ds = await cGv.GetFromJsonAsync<JsonElement>("/api/v1/lop-hoc");
 
         Assert.DoesNotContain("Lớp còn nháp",

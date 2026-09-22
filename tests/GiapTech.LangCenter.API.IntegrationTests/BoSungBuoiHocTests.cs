@@ -17,7 +17,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class BoSungBuoiHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -39,7 +39,7 @@ public class BoSungBuoiHocTests(ApiFactory factory) : IClassFixture<ApiFactory>
             LoaiNguoiDung = loai,
             TaiKhoan = new
             {
-                Username = username, MatKhau = "matkhau123",
+                Username = username, MatKhau = "matkhau123456",
                 QuyenIds = Array.Empty<string>(), PhaiDoiMatKhau = false
             }
         });

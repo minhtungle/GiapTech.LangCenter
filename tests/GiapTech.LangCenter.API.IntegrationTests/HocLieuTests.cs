@@ -15,7 +15,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -38,7 +38,7 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
             LoaiNguoiDung = loai,
             TaiKhoan = new
             {
-                Username = username, MatKhau = "matkhau123",
+                Username = username, MatKhau = "matkhau123456",
                 QuyenIds = quyenIds ?? [], PhaiDoiMatKhau = false
             }
         });
@@ -149,7 +149,7 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
             new { BuoiHocId = buoi, TieuDe = "Bài nộp nhiều lần", MoTa = (string?)null, HanNop = (DateTimeOffset?)null });
         var bt = await tao.Content.ReadFromJsonAsync<Guid>();
 
-        var cHv = await Client("hv-nop-nhieu", "matkhau123");
+        var cHv = await Client("hv-nop-nhieu", "matkhau123456");
 
         (await cHv.PostAsJsonAsync($"/api/v1/bai-tap/{bt}/nop", new { NoiDung = "lần 1" }))
             .EnsureSuccessStatusCode();
@@ -176,7 +176,7 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
         });
         var bt = await tao.Content.ReadFromJsonAsync<Guid>();
 
-        var cHv = await Client("hv-nop-muon", "matkhau123");
+        var cHv = await Client("hv-nop-muon", "matkhau123456");
         (await cHv.PostAsJsonAsync($"/api/v1/bai-tap/{bt}/nop", new { NoiDung = "muộn" }))
             .EnsureSuccessStatusCode();
 
@@ -195,7 +195,7 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
             new { BuoiHocId = buoi, TieuDe = "Không xoá được", MoTa = (string?)null, HanNop = (DateTimeOffset?)null });
         var bt = await tao.Content.ReadFromJsonAsync<Guid>();
 
-        var cHv = await Client("hv-xoa-bt", "matkhau123");
+        var cHv = await Client("hv-xoa-bt", "matkhau123456");
         (await cHv.PostAsJsonAsync($"/api/v1/bai-tap/{bt}/nop", new { NoiDung = "bài" }))
             .EnsureSuccessStatusCode();
 
@@ -216,7 +216,7 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
             new { BuoiHocId = buoi, TieuDe = "Bài chấm", MoTa = (string?)null, HanNop = (DateTimeOffset?)null });
         var bt = await tao.Content.ReadFromJsonAsync<Guid>();
 
-        var cHv = await Client("hv-cham", "matkhau123");
+        var cHv = await Client("hv-cham", "matkhau123456");
         (await cHv.PostAsJsonAsync($"/api/v1/bai-tap/{bt}/nop", new { NoiDung = "bài" }))
             .EnsureSuccessStatusCode();
 
@@ -256,7 +256,7 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var bt = await tao.Content.ReadFromJsonAsync<Guid>();
 
         // HV1 nộp bài và đính kèm tệp.
-        var cHv1 = await Client("hv-tep-chu-so-huu", "matkhau123");
+        var cHv1 = await Client("hv-tep-chu-so-huu", "matkhau123456");
         var nopRes = await cHv1.PostAsJsonAsync($"/api/v1/bai-tap/{bt}/nop", new { NoiDung = "bài" });
         var nop = await nopRes.Content.ReadFromJsonAsync<Guid>();
 
@@ -267,7 +267,7 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
             .GetProperty("id").GetGuid();
 
         // HV2 thử xoá tệp của HV1 → 404, không phải 403 (403 xác nhận tệp tồn tại).
-        var cHv2 = await Client("hv-ke-trom", "matkhau123");
+        var cHv2 = await Client("hv-ke-trom", "matkhau123456");
         Assert.Equal(HttpStatusCode.NotFound,
             (await cHv2.DeleteAsync($"/api/v1/tep/{tepId}")).StatusCode);
 
@@ -292,11 +292,11 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
             new { BuoiHocId = buoi, TieuDe = "Bài", MoTa = (string?)null, HanNop = (DateTimeOffset?)null });
         var bt = await tao.Content.ReadFromJsonAsync<Guid>();
 
-        var cHv1 = await Client("hv-dinh-kem-cheo", "matkhau123");
+        var cHv1 = await Client("hv-dinh-kem-cheo", "matkhau123456");
         var nop = await (await cHv1.PostAsJsonAsync($"/api/v1/bai-tap/{bt}/nop",
             new { NoiDung = "bài" })).Content.ReadFromJsonAsync<Guid>();
 
-        var cHv2 = await Client("hv-cheo-2", "matkhau123");
+        var cHv2 = await Client("hv-cheo-2", "matkhau123456");
         var res = await cHv2.PostAsync(
             $"/api/v1/tep?loai=BaiNop&doiTuongId={nop}", Tep("x.txt", "text/plain"));
 
@@ -348,7 +348,7 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var cB = factory.CreateClient();
         var dn = await cB.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123" });
+            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123456" });
         var tok = (await dn.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("accessToken").GetString();
 

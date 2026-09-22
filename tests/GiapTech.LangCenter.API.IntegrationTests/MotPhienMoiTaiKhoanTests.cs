@@ -49,10 +49,10 @@ public class MotPhienMoiTaiKhoanTests(ApiFactory factory) : IClassFixture<ApiFac
     [Fact]
     public async Task Dang_nhap_moi_day_phien_cu_ra_va_nguoi_moi_vao_duoc_ngay()
     {
-        var (accessA, _) = await DangNhap("manager", "manager123");
+        var (accessA, _) = await DangNhap("manager", "manager123456");
         Assert.Equal(HttpStatusCode.OK, (await Voi(accessA).GetAsync("/api/v1/toi/quyen")).StatusCode);
 
-        var (accessB, _) = await DangNhap("manager", "manager123");
+        var (accessB, _) = await DangNhap("manager", "manager123456");
 
         // KHÔNG chờ: người vừa đăng nhập phải dùng được ngay, không sau vài giây.
         Assert.Equal(HttpStatusCode.OK, (await Voi(accessB).GetAsync("/api/v1/toi/quyen")).StatusCode);
@@ -73,8 +73,8 @@ public class MotPhienMoiTaiKhoanTests(ApiFactory factory) : IClassFixture<ApiFac
     [Fact]
     public async Task Phien_cu_khong_lam_moi_token_de_song_lai_duoc()
     {
-        var (_, refreshA) = await DangNhap("manager", "manager123");
-        await DangNhap("manager", "manager123");   // B đăng nhập, A bị đẩy ra
+        var (_, refreshA) = await DangNhap("manager", "manager123456");
+        await DangNhap("manager", "manager123456");   // B đăng nhập, A bị đẩy ra
 
         var res = await factory.CreateClient().PostAsJsonAsync(
             "/api/v1/auth/lam-moi-token", new { RefreshToken = refreshA });
@@ -92,8 +92,8 @@ public class MotPhienMoiTaiKhoanTests(ApiFactory factory) : IClassFixture<ApiFac
     [Fact]
     public async Task Tai_khoan_khac_nhau_khong_day_nhau_ra()
     {
-        var (accessQuanLy, _) = await DangNhap("manager", "manager123");
-        var (accessKhac, _) = await DangNhap("player", "player123");
+        var (accessQuanLy, _) = await DangNhap("manager", "manager123456");
+        var (accessKhac, _) = await DangNhap("player", "player123456");
 
         // Cả hai phải cùng dùng được — khác tài khoản thì khác phiên.
         Assert.Equal(HttpStatusCode.OK,

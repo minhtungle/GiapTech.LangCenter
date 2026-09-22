@@ -136,7 +136,7 @@ test('Khách hàng: lọc đội nhóm thu hẹp danh sách và hiện số bộ
       hoTen: ten,
       loaiNguoiDung: 'NhanVien',
       phongBanId,
-      taiKhoan: { username, matKhau: 'matkhau123', quyenIds: [quyenId], phaiDoiMatKhau: false },
+      taiKhoan: { username, matKhau: 'matkhau123456', quyenIds: [quyenId], phaiDoiMatKhau: false },
     })
     const maTrungTam = await page.evaluate(() => {
       const t = localStorage.getItem('lms_access_token')!
@@ -144,7 +144,7 @@ test('Khách hàng: lọc đội nhóm thu hẹp danh sách và hiện số bộ
         ?? JSON.parse(atob(t.split('.')[1])).maTrungTam
     })
     const res = await page.request.post('http://localhost:5229/api/v1/auth/dang-nhap', {
-      data: { maTrungTam, username, matKhau: 'matkhau123' },
+      data: { maTrungTam, username, matKhau: 'matkhau123456' },
     })
     expect(res.ok(), `đăng nhập ${username} → ${await res.text()}`).toBeTruthy()
     return (await res.json()).accessToken as string

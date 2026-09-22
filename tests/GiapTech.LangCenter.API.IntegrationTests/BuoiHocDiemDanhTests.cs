@@ -13,7 +13,7 @@ namespace GiapTech.LangCenter.API.IntegrationTests;
 /// </summary>
 public class BuoiHocDiemDanhTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
-    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123")
+    private async Task<HttpClient> Client(string user = "manager", string mk = "manager123456")
     {
         var c = factory.CreateClient();
         var res = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap",
@@ -36,7 +36,7 @@ public class BuoiHocDiemDanhTests(ApiFactory factory) : IClassFixture<ApiFactory
             LoaiNguoiDung = loai,
             TaiKhoan = new
             {
-                Username = username, MatKhau = "matkhau123",
+                Username = username, MatKhau = "matkhau123456",
                 QuyenIds = quyenIds ?? [], PhaiDoiMatKhau = false
             }
         });
@@ -385,7 +385,7 @@ public class BuoiHocDiemDanhTests(ApiFactory factory) : IClassFixture<ApiFactory
             new { Id = buoi, BatDau = bd, KetThuc = bd.AddHours(2) })).EnsureSuccessStatusCode();
 
         // Học viên khai CÓ MẶT.
-        var cHv = await Client("hv-ghi-de", "matkhau123");
+        var cHv = await Client("hv-ghi-de", "matkhau123456");
         (await cHv.PostAsync($"/api/v1/buoi-hoc/{buoi}/tu-diem-danh", null))
             .EnsureSuccessStatusCode();
 
@@ -451,7 +451,7 @@ public class BuoiHocDiemDanhTests(ApiFactory factory) : IClassFixture<ApiFactory
         (await admin.PutAsJsonAsync($"/api/v1/buoi-hoc/{buoi}",
             new { Id = buoi, BatDau = xa, KetThuc = xa.AddHours(2) })).EnsureSuccessStatusCode();
 
-        var cHv = await Client("hv-ngoai-gio", "matkhau123");
+        var cHv = await Client("hv-ngoai-gio", "matkhau123456");
         var res = await cHv.PostAsync($"/api/v1/buoi-hoc/{buoi}/tu-diem-danh", null);
 
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
@@ -628,7 +628,7 @@ public class BuoiHocDiemDanhTests(ApiFactory factory) : IClassFixture<ApiFactory
 
         var cB = factory.CreateClient();
         var dn = await cB.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123" });
+            new { MaTrungTam = factory.MaTrungTamB, Username = "manager", MatKhau = "manager123456" });
         var tok = (await dn.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("accessToken").GetString();
 
