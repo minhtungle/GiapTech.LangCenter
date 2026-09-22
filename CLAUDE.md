@@ -123,6 +123,7 @@ Chi tiết và nợ kỹ thuật: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 | 6 ADR đã chốt | [`docs/kien-truc/adr/`](./docs/kien-truc/adr/) |
 | Git flow, commit convention, PR checklist | [`CONTRIBUTING.md`](./CONTRIBUTING.md) |
 | Chính sách bảo mật | [`SECURITY.md`](./SECURITY.md) |
+| **Rà soát bảo mật luồng đăng nhập** (22/09/2026) | [`docs/ra-soat-bao-mat-dang-nhap.md`](./docs/ra-soat-bao-mat-dang-nhap.md) |
 | Thuật ngữ dễ nhầm | [`docs/kien-truc/THUAT-NGU.md`](./docs/kien-truc/THUAT-NGU.md) |
 
 ---

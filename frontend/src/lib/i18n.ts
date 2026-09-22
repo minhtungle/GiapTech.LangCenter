@@ -80,6 +80,8 @@ const vi = {
     username: 'Tên đăng nhập',
     matKhau: 'Mật khẩu',
     nut: 'Đăng nhập',
+    // Nhớ MÃ + TÊN ĐĂNG NHẬP, không nhớ mật khẩu — xem `lib/nhoDangNhap.ts`.
+    nhoDangNhap: 'Nhớ mã trung tâm và tên đăng nhập',
     quenMatKhau: 'Quên mật khẩu?',
     doiMatKhauTieuDe: 'Đổi mật khẩu',
     doiMatKhauMoTa: 'Tài khoản của bạn cần đổi mật khẩu trước khi vào hệ thống',

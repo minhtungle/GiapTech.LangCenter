@@ -10,6 +10,7 @@ import { layMaLoi } from '@/lib/api'
 import { useTinhNang } from '@/lib/tinhNang'
 import { useTraTenTrungTam } from '@/lib/traTenTrungTam'
 import { vietTat } from '@/lib/nhanDienTrungTam'
+import { docDaNho, luuDaNho, xoaDaNho } from '@/lib/nhoDangNhap'
 import { BannerTrungTam } from './BannerTrungTam'
 import {
   Button, CanhBaoLoi, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label,
@@ -45,9 +46,24 @@ export default function DangNhap() {
     }
   })
 
+  /*
+    Thông tin đã nhớ từ lần trước — đọc MỘT lần lúc dựng component (`useState` khởi tạo lười),
+    không đọc lại mỗi lần render. Đọc lại sẽ ghi đè thứ người dùng đang gõ dở.
+
+    Ô "nhớ" tích sẵn khi đã từng nhớ: người dùng đã chọn nhớ thì lần sau bỏ tích mới là hành
+    động có ý thức, chứ không phải mỗi lần đăng nhập lại phải tích lại.
+  */
+  const [daNho] = useState(docDaNho)
+  const [nhoDangNhap, setNhoDangNhap] = useState(daNho !== null)
+
   const { register, handleSubmit, formState, watch } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { maTrungTam: '', username: '', matKhau: '' },
+    defaultValues: {
+      maTrungTam: daNho?.maTrungTam ?? '',
+      username: daNho?.username ?? '',
+      // KHÔNG bao giờ điền sẵn mật khẩu — xem `lib/nhoDangNhap.ts`.
+      matKhau: '',
+    },
   })
 
   // Tra tên đội ngay khi mã đủ 7 ký tự: gõ sai một chữ mà chỉ biết sau khi điền cả mật khẩu
@@ -59,6 +75,10 @@ export default function DangNhap() {
     setMaLoi(null)
     try {
       const { phaiDoiMatKhau } = await dangNhap(data.maTrungTam, data.username, data.matKhau)
+      // Ghi nhớ SAU khi đăng nhập thành công: nhớ bộ sai thì lần sau người dùng lại phải xoá
+      // tay đúng cái mà hệ thống vừa điền cho họ.
+      if (nhoDangNhap) luuDaNho({ maTrungTam: data.maTrungTam, username: data.username })
+      else xoaDaNho()
       // Bắt buộc đổi mật khẩu trước khi vào hệ thống (FR-01). Backend cũng chặn ở
       // middleware, nên điều hướng này chỉ để trải nghiệm mượt, không phải lớp bảo vệ.
       navigate(phaiDoiMatKhau ? '/doi-mat-khau' : '/', { replace: true })
@@ -98,7 +118,9 @@ export default function DangNhap() {
               <Label htmlFor="maTrungTam">{t('dangNhap.maTrungTam')}</Label>
               <Input
                 id="maTrungTam"
-                autoFocus
+                // Đã điền sẵn thì con trỏ nhảy thẳng xuống ô mật khẩu (xem ô mật khẩu bên
+                // dưới) — bắt người dùng tự bấm qua hai ô đã có sẵn chữ là vô nghĩa.
+                autoFocus={daNho === null}
                 autoComplete="organization"
                 maxLength={7}
                 placeholder="A3K9M2P"
@@ -170,10 +192,31 @@ export default function DangNhap() {
               <Input
                 id="matKhau"
                 type="password"
+                autoFocus={daNho !== null}
                 autoComplete="current-password"
                 {...register('matKhau')}
               />
             </div>
+
+            {/*
+              Nhớ MÃ TRUNG TÂM + TÊN ĐĂNG NHẬP, không nhớ mật khẩu (22/09/2026).
+
+              Bỏ tích thì QUÊN NGAY, không đợi lần đăng nhập thành công kế tiếp: người ở máy
+              dùng chung bỏ tích rồi đổi ý không đăng nhập nữa — thông tin của họ phải biến
+              mất ngay lúc đó, chứ không nằm lại chờ một sự kiện có thể không bao giờ tới.
+            */}
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-[hsl(var(--primary))]"
+                checked={nhoDangNhap}
+                onChange={(e) => {
+                  setNhoDangNhap(e.target.checked)
+                  if (!e.target.checked) xoaDaNho()
+                }}
+              />
+              {t('dangNhap.nhoDangNhap')}
+            </label>
 
             {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 

@@ -8,6 +8,42 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — "Nhớ đăng nhập" (22/09/2026)
+
+Ô tích ở màn đăng nhập, ghi nhớ **mã trung tâm + tên đăng nhập** cho lần sau. **Không lưu mật
+khẩu** — chủ sản phẩm yêu cầu *"thêm nút nhớ mật khẩu"*, nhưng phiên hiện tại đã sống 30 ngày và
+`localStorage` giữ token qua cả lần đóng trình duyệt, nên thứ người dùng tưởng đang thiếu thì
+thực ra đã có. Hỏi lại kèm đánh đổi từng phương án; chốt nhớ mã + tên đăng nhập.
+
+Đó cũng là thứ giải đúng phiền toái thật: mật khẩu do người dùng tự đặt nên còn nhớ được, còn
+**mã 7 ký tự vô nghĩa** (`W686AE9`) thì không ai thuộc. Mật khẩu để trình duyệt lo — nó mã hoá
+theo tài khoản hệ điều hành, an toàn hơn hẳn `localStorage` đọc được bằng JavaScript.
+
+**Mặc định tắt** (máy quầy lễ tân dùng chung — điền sẵn tên người trước là nói cho người sau
+biết ai vừa dùng máy). **Bỏ tích thì quên ngay**, không đợi lần đăng nhập thành công kế tiếp.
+
+Test: `nhoDangNhap.test.ts` (7 test, có một test kiểm **chuỗi thô** trong `localStorage` để chặn
+việc sau này ai đó "bổ sung cho đủ" bằng cách nhét mật khẩu vào) + `nho-dang-nhap.spec.ts` (E2E).
+Mutation test 6 đột biến, 6 chết.
+
+### Security — rà soát luồng đăng nhập (22/09/2026)
+
+Rà soát toàn bộ luồng xác thực theo OWASP Top 10 + ASVS chương 2. Kết quả đầy đủ:
+[`docs/ra-soat-bao-mat-dang-nhap.md`](./docs/ra-soat-bao-mat-dang-nhap.md).
+
+**27 hạng mục đạt** — PBKDF2, refresh token xoay vòng có phát hiện tái sử dụng, hash token trong
+DB, `ClockSkew = 0`, fail-fast `JWT_SECRET`, cách ly tenant lấy từ claim do server ký.
+**Không có lỗ hổng nào cho phép vượt qua xác thực hay đọc dữ liệu trung tâm khác.**
+
+**8 việc cần sửa**, chưa làm — chờ chủ sản phẩm quyết thứ tự. Nặng nhất:
+- không có `POST /auth/dang-xuat` (đăng xuất chỉ xoá `localStorage`; token còn sống 60 phút / 30 ngày)
+- mọi trung tâm mới vẫn có `admin` / `123456` trong DB
+- kênh thời gian lộ username (không thấy tài khoản thì `throw` ngay, không chạy PBKDF2)
+- không khoá tài khoản sau N lần sai (rate limit chỉ theo IP)
+
+Tài liệu ghi lại cả **5 thứ nghi ngờ nhưng kết luận không phải lỗ hổng**, để lần rà soát sau
+không mất công điều tra lại.
+
 ### Changed — tên "LangCenter", ảnh banner thật, đóng tự đăng ký (22/09/2026)
 
 Ba phản hồi của chủ sản phẩm sau khi xem bố cục mới.
