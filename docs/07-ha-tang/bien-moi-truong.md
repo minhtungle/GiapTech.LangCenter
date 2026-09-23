@@ -69,6 +69,8 @@ Dùng cho nhắc nợ học phí và thông báo lịch học — **chưa nối*
 |---|---|
 | `ASPNETCORE_ENVIRONMENT` | `Production` trên VPS, `Development` khi chạy local |
 | `ConnectionStrings__Default` | Chuỗi kết nối PostgreSQL. Host là **`postgres`** (tên service trong Docker network), không phải `localhost` |
+| `CHU_HE_THONG_MAT_KHAU` | Mật khẩu tài khoản chủ hệ thống đầu tiên ([ADR-0009](../02-kien-truc/adr/0009-tai-khoan-cap-he-thong.md)). **Để trống ⇒ không tạo tài khoản nào và site chủ không vào được** — cố ý không có endpoint tạo tài khoản chủ. Gỡ biến sau lần khởi động đầu |
+| `CHU_HE_THONG_USERNAME` | Tên đăng nhập của tài khoản trên. Bỏ trống thì dùng `chu` |
 | `SAU_REVERSE_PROXY` | `true` khi đứng sau Nginx (mặc định trong `docker-compose.yml`). Điều khiển **hai** thứ: bỏ qua `UseHttpsRedirection` (TLS đã kết thúc ở proxy), **và** cho phép đọc header `X-Tenant-Domain` để nhận diện tenant qua domain ([ADR-0008](../02-kien-truc/adr/0008-nhan-dien-tenant-qua-domain.md)). Đặt `true` khi **không** thật sự có proxy là mở đường cho client tự chọn tenant — chỉ bật khi mọi request đều đi qua Nginx |
 
 Dấu `__` (hai gạch dưới) là quy ước của ASP.NET Core để biểu diễn cấu trúc lồng nhau

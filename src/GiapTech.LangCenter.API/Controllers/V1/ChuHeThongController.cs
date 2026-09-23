@@ -60,6 +60,24 @@ public class ChuHeThongController(ISender sender) : ControllerBase
         => Ok(await sender.Send(new DanhSachTrungTamQuery(), ct));
 
     /// <summary>
+    /// Tạo trung tâm mới — thay endpoint tự đăng ký ẩn danh (đóng nợ N3).
+    ///
+    /// Trả **mật khẩu admin ở dạng thô, đúng một lần này**. Server chỉ giữ bản băm, nên không
+    /// có đường nào lấy lại — người tạo phải chép ngay. Đó là đánh đổi có chủ ý: phương án
+    /// còn lại là mật khẩu cố định ai cũng biết, đúng lỗ hổng đã vá 22/09/2026.
+    /// </summary>
+    [HttpPost("trung-tam")]
+    [ChiChuHeThong]
+    [ProducesResponseType<TrungTamVuaTaoDto>(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<TrungTamVuaTaoDto>> TaoTrungTam(
+        [FromBody] TaoTrungTamCommand command, CancellationToken ct)
+    {
+        var dto = await sender.Send(command, ct);
+        return CreatedAtAction(nameof(DanhSachTrungTam), new { }, dto);
+    }
+
+    /// <summary>
     /// Gắn / đổi / gỡ domain của một trung tâm (ADR-0008).
     ///
     /// Gỡ domain (truyền `null`) là thao tác an toàn: trung tâm rơi về đường mã trung tâm,

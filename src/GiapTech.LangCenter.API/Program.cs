@@ -198,6 +198,13 @@ if (app.Configuration.GetValue("TU_DONG_MIGRATE", true))
     await scope.ServiceProvider
         .GetRequiredService<GiapTech.LangCenter.Infrastructure.Persistence.Seed.TrungTamDauTien>()
         .ChayAsync();
+
+    // Tài khoản chủ hệ thống đầu tiên (ADR-0009). Cùng khuôn và cùng lý do: cố ý KHÔNG có
+    // endpoint tạo tài khoản chủ, nên không seed thì site chủ không vào được. Cũng chỉ chạy
+    // khi người triển khai tự đặt mật khẩu.
+    await scope.ServiceProvider
+        .GetRequiredService<GiapTech.LangCenter.Infrastructure.Persistence.Seed.ChuHeThongDauTien>()
+        .ChayAsync();
 }
 
 if (app.Environment.IsDevelopment())

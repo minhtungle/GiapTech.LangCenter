@@ -62,7 +62,7 @@ public class DangKyTrungTamController(
                 moi.Tenant.Id,
                 moi.Tenant.MaTrungTam,
                 moi.Tenant.TenTrungTam,
-                username = "admin",
+                username = ITenantSeeder.UsernameAdmin,
                 /*
                   Mật khẩu SINH NGẪU NHIÊN, lấy từ seeder (22/09/2026).
 

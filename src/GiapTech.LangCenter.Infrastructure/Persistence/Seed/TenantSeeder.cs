@@ -117,7 +117,7 @@ public class TenantSeeder(AppDbContext db, IPasswordHasher hasher, ICurrentTenan
         var admin = new TaiKhoan
         {
             TenantId = tenant.Id,
-            Username = "admin",
+            Username = ITenantSeeder.UsernameAdmin,
             PasswordHash = hasher.Bam(matKhauAdmin),
             NguoiDungId = nguoiAdmin.Id,
             // Mật khẩu mặc định ai cũng biết → bắt buộc đổi trước khi vào hệ thống (FR-01).

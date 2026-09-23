@@ -79,6 +79,8 @@ public static class DependencyInjection
         // Tạo trung tâm đầu tiên khi DB còn trống — chỉ chạy một lần trong đời một cài đặt,
         // và chỉ khi người triển khai tự đặt mật khẩu. Xem `TrungTamDauTien`.
         services.AddScoped<Persistence.Seed.TrungTamDauTien>();
+        // Tài khoản chủ hệ thống đầu tiên (ADR-0009) — xem `ChuHeThongDauTien`.
+        services.AddScoped<Persistence.Seed.ChuHeThongDauTien>();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
 
         // Scoped chứ không Singleton: MinioLuuTruAnh phụ thuộc ICurrentTenant (theo request)

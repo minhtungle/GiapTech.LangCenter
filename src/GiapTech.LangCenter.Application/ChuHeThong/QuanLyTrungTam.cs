@@ -89,3 +89,69 @@ public class GanDomainHandler(IAppDbContext db, IGiaiTenantTheoDomain giaiTenant
     }
 
 }
+
+/// <summary>
+/// Tạo trung tâm mới từ site chủ (ADR-0009) — thay endpoint tự đăng ký ẩn danh (nợ N3).
+///
+/// Dùng lại `ITenantSeeder` chứ không viết logic riêng: seeder đã lo mã 7 ký tự, tài khoản
+/// admin, nhóm quyền "Quản trị viên" đầy đủ, và **mật khẩu ngẫu nhiên bằng CSPRNG**. Viết lại
+/// là hai đường tạo tenant trôi khỏi nhau — đúng loại lỗi khiến trước 22/09/2026 mọi trung tâm
+/// mới đều có `admin`/`123456`.
+///
+/// Domain gắn ngay lúc tạo nếu người dùng nhập; bỏ trống cũng được và gắn sau bằng
+/// <see cref="GanDomainCommand"/>. Không bắt buộc vì DNS thường chưa trỏ xong lúc tạo.
+/// </summary>
+public record TaoTrungTamCommand(
+    string TenTrungTam,
+    string? DomainQuanTri,
+    string? DomainLanding) : IRequest<TrungTamVuaTaoDto>;
+
+/// <param name="MatKhauAdmin">
+/// Mật khẩu thô, **chỉ trả đúng một lần này**. Server chỉ giữ bản băm — xem `TenantMoi`.
+/// </param>
+public record TrungTamVuaTaoDto(
+    Guid Id,
+    string MaTrungTam,
+    string TenTrungTam,
+    string Username,
+    string MatKhauAdmin);
+
+public class TaoTrungTamHandler(
+    IAppDbContext db, ITenantSeeder seeder, IGiaiTenantTheoDomain giaiTenant)
+    : IRequestHandler<TaoTrungTamCommand, TrungTamVuaTaoDto>
+{
+    public async Task<TrungTamVuaTaoDto> Handle(TaoTrungTamCommand request, CancellationToken ct)
+    {
+        var ten = request.TenTrungTam?.Trim();
+        if (string.IsNullOrWhiteSpace(ten))
+            throw new AppException(MaLoi.DuLieuKhongHopLe, "Tên trung tâm không được để trống");
+
+        var quanTri = Domain.Common.DomainTrungTam.ChuanHoa(request.DomainQuanTri);
+        var landing = Domain.Common.DomainTrungTam.ChuanHoa(request.DomainLanding);
+
+        if (quanTri is not null && quanTri == landing)
+            throw new AppException(
+                MaLoi.DuLieuKhongHopLe,
+                "Domain quản trị và domain landing không được trùng nhau");
+
+        var moi = await seeder.TaoTenantMoiAsync(ten, matKhauAdmin: null, ct);
+
+        if (quanTri is not null || landing is not null)
+        {
+            var tenant = await db.Tenants.FirstAsync(t => t.Id == moi.Tenant.Id, ct);
+            tenant.DomainQuanTri = quanTri;
+            tenant.DomainLanding = landing;
+
+            // Xoá cache "domain này không khớp ai" (TTL 30 giây): không xoá thì người vận hành
+            // vừa tạo xong thử ngay sẽ thấy 404 và tưởng mình nhập sai.
+            if (quanTri is not null) giaiTenant.XoaCache(quanTri);
+            if (landing is not null) giaiTenant.XoaCache(landing);
+
+            await db.SaveChangesAsync(ct);
+        }
+
+        return new TrungTamVuaTaoDto(
+            moi.Tenant.Id, moi.Tenant.MaTrungTam, moi.Tenant.TenTrungTam,
+            ITenantSeeder.UsernameAdmin, moi.MatKhauAdmin);
+    }
+}

@@ -5,6 +5,7 @@ using System.Text.Json;
 using GiapTech.LangCenter.Application.Common.Interfaces;
 using GiapTech.LangCenter.Domain.Entities;
 using GiapTech.LangCenter.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GiapTech.LangCenter.API.IntegrationTests;
@@ -277,6 +278,139 @@ public class ChuHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(
             (await khongCo.Content.ReadFromJsonAsync<LoiDto>())?.ErrorCode,
             (await saiMk.Content.ReadFromJsonAsync<LoiDto>())?.ErrorCode);
+    }
+
+    // ---------------------------------------------------------------------------------
+    // Tạo trung tâm từ site chủ (thay nợ N3)
+    // ---------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Tạo trung tâm: phải trả mã + mật khẩu admin, và tài khoản đó phải đăng nhập được thật.
+    ///
+    /// Kiểm ĐĂNG NHẬP ĐƯỢC chứ không chỉ kiểm response có trường mật khẩu: trước 22/09/2026
+    /// seeder băm một chuỗi còn controller trả một chuỗi khác — hai bên trùng nhau do tình cờ.
+    /// Chỉ có đăng nhập thật mới bắt được kiểu lệch đó.
+    /// </summary>
+    [Fact]
+    public async Task Tao_trung_tam_roi_dang_nhap_duoc_bang_mat_khau_tra_ve()
+    {
+        var client = factory.CreateClient();
+        var token = await DangNhapChuAsync(client, "chu-tao");
+
+        var req = new HttpRequestMessage(HttpMethod.Post, "/api/v1/chu-he-thong/trung-tam")
+        {
+            Content = JsonContent.Create(new
+            {
+                TenTrungTam = "Trung tâm Kiểm Thử",
+                DomainQuanTri = (string?)null,
+                DomainLanding = (string?)null
+            })
+        };
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var res = await client.SendAsync(req);
+        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+
+        var moi = await res.Content.ReadFromJsonAsync<JsonElement>();
+        var ma = moi.GetProperty("maTrungTam").GetString()!;
+        var username = moi.GetProperty("username").GetString()!;
+        var matKhau = moi.GetProperty("matKhauAdmin").GetString()!;
+
+        Assert.Equal(7, ma.Length);
+        Assert.False(string.IsNullOrWhiteSpace(matKhau));
+
+        // Đăng nhập thật bằng bộ ba vừa nhận.
+        var dn = await client.PostAsJsonAsync(
+            "/api/v1/auth/dang-nhap",
+            new { MaTrungTam = ma, Username = username, MatKhau = matKhau });
+
+        Assert.Equal(HttpStatusCode.OK, dn.StatusCode);
+        var phien = await dn.Content.ReadFromJsonAsync<JsonElement>();
+        // Tài khoản mới phải bị buộc đổi mật khẩu — mật khẩu này đã đi qua tay người tạo.
+        Assert.True(phien.GetProperty("phaiDoiMatKhau").GetBoolean());
+    }
+
+    /// <summary>Hai trung tâm tạo liên tiếp phải có mật khẩu KHÁC nhau (CSPRNG, không phải hằng).</summary>
+    [Fact]
+    public async Task Hai_trung_tam_moi_co_mat_khau_khac_nhau()
+    {
+        var client = factory.CreateClient();
+        var token = await DangNhapChuAsync(client, "chu-hai");
+
+        async Task<string> Tao(string ten)
+        {
+            var req = new HttpRequestMessage(HttpMethod.Post, "/api/v1/chu-he-thong/trung-tam")
+            {
+                Content = JsonContent.Create(new { TenTrungTam = ten })
+            };
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var r = await client.SendAsync(req);
+            r.EnsureSuccessStatusCode();
+            return (await r.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("matKhauAdmin").GetString()!;
+        }
+
+        Assert.NotEqual(await Tao("TT Một"), await Tao("TT Hai"));
+    }
+
+    /// <summary>Token tenant KHÔNG tạo được trung tâm — đây là chỗ nợ N3 từng mở cho mọi người.</summary>
+    [Fact]
+    public async Task Token_tenant_khong_tao_duoc_trung_tam()
+    {
+        var client = factory.CreateClient();
+        var phien = await TroGiupPhien.DangNhapAsync(client, factory);
+
+        var req = new HttpRequestMessage(HttpMethod.Post, "/api/v1/chu-he-thong/trung-tam")
+        {
+            Content = JsonContent.Create(new { TenTrungTam = "Trung tâm lậu" })
+        };
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", phien.Access);
+
+        var res = await client.SendAsync(req);
+        Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
+    }
+
+    /// <summary>
+    /// Trung tâm tạo từ site chủ phải có `created_by_id` = NULL ở mọi bản ghi con.
+    ///
+    /// Vì sao test này tồn tại: token chủ đặt id tài khoản chủ vào `NameIdentifier`, và
+    /// `GanTenantVaDauVetAudit` lấy đúng claim đó gán vào `CreatedById` — cột có khoá ngoại
+    /// tới `NGUOI_DUNG`, nơi tài khoản chủ KHÔNG có hàng nào. Trên PostgreSQL thì INSERT chết
+    /// với "violates foreign key constraint fk_chuc_vu_nguoi_dung_created_by_id" (gặp thật
+    /// 23/09/2026 khi thử bằng curl).
+    ///
+    /// **Test in-memory không bắt được lỗi gốc** — provider đó không ép khoá ngoại. Nên ở đây
+    /// kiểm thứ bắt được: giá trị phải là NULL. Null sai thì khoá ngoại sẽ chết ở DB thật.
+    /// </summary>
+    [Fact]
+    public async Task Tao_trung_tam_tu_site_chu_thi_created_by_id_phai_null()
+    {
+        var client = factory.CreateClient();
+        var token = await DangNhapChuAsync(client, "chu-audit");
+
+        var req = new HttpRequestMessage(HttpMethod.Post, "/api/v1/chu-he-thong/trung-tam")
+        {
+            Content = JsonContent.Create(new { TenTrungTam = "TT Kiểm Audit" })
+        };
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var res = await client.SendAsync(req);
+        res.EnsureSuccessStatusCode();
+
+        var id = (await res.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id").GetGuid();
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        Assert.Null(db.Tenants.Single(t => t.Id == id).CreatedById);
+        // Bản ghi CON mới là chỗ khoá ngoại thật sự nổ — TENANT không có FK này.
+        Assert.All(
+            db.NguoiDungs.IgnoreQueryFilters().Where(x => x.TenantId == id).ToList(),
+            x => Assert.Null(x.CreatedById));
+        Assert.All(
+            db.TaiKhoans.IgnoreQueryFilters().Where(x => x.TenantId == id).ToList(),
+            x => Assert.Null(x.CreatedById));
     }
 
     private record LoiDto(string ErrorCode);

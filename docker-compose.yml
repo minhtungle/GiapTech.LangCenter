@@ -41,6 +41,10 @@ services:
       # GỠ biến này sau khi đã tạo và đổi mật khẩu.
       TRUNG_TAM_DAU_TIEN_MAT_KHAU: ${TRUNG_TAM_DAU_TIEN_MAT_KHAU:-}
       TRUNG_TAM_DAU_TIEN_TEN: ${TRUNG_TAM_DAU_TIEN_TEN:-}
+      # Tài khoản chủ hệ thống đầu tiên (ADR-0009). Không đặt mật khẩu ⇒ không tạo, và site
+      # chủ không vào được — cố ý KHÔNG có endpoint tạo tài khoản chủ.
+      CHU_HE_THONG_MAT_KHAU: ${CHU_HE_THONG_MAT_KHAU:-}
+      CHU_HE_THONG_USERNAME: ${CHU_HE_THONG_USERNAME:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}

@@ -6,6 +6,16 @@ namespace GiapTech.LangCenter.Application.Common.Interfaces;
 public interface ITenantSeeder
 {
     /// <summary>
+    /// Tên đăng nhập của tài khoản quản trị sinh cùng mỗi trung tâm mới.
+    ///
+    /// Hằng chứ không phải chuỗi rời: nơi TẠO (seeder) và nơi BÁO LẠI cho người dùng (site chủ,
+    /// endpoint đăng ký) phải nói cùng một giá trị. Hai chuỗi chép tay là đúng loại lỗi khiến
+    /// trước 22/09/2026 seeder băm "123456" còn controller tự viết "123456" — trùng nhau do
+    /// tình cờ, và sửa một bên là hỏng đăng nhập.
+    /// </summary>
+    const string UsernameAdmin = "admin";
+
+    /// <summary>
     /// Tạo tenant + tài khoản admin mặc định + nhóm quyền "Quản trị viên" đầy đủ.
     ///
     /// Chạy khi tạo trung tâm mới, không đặt trong migration InitialCreate: migration chạy một lần
