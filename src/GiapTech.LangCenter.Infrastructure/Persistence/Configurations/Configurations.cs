@@ -33,8 +33,8 @@ public class TenantConfig : IEntityTypeConfiguration<Tenant>
         b.HasIndex(x => x.MaTrungTam).IsUnique();
 
         // Domain riêng (ADR-0008). 253 = độ dài tối đa của tên miền theo RFC 1035.
-        b.Property(x => x.DomainQuanTri).HasMaxLength(253);
-        b.Property(x => x.DomainLanding).HasMaxLength(253);
+        b.Property(x => x.DomainQuanTri).HasMaxLength(Domain.Common.DomainTrungTam.DoDaiToiDa);
+        b.Property(x => x.DomainLanding).HasMaxLength(Domain.Common.DomainTrungTam.DoDaiToiDa);
 
         // UNIQUE ở TẦNG DB, không phải `if` trong handler (quy tắc #8): hai request song song
         // cùng gắn một domain thì cả hai đều thấy "chưa ai dùng" và đều ghi. Domain trùng
@@ -45,6 +45,38 @@ public class TenantConfig : IEntityTypeConfiguration<Tenant>
         // chưa gắn domain là trạng thái bình thường, không phải ngoại lệ.
         b.HasIndex(x => x.DomainQuanTri).IsUnique();
         b.HasIndex(x => x.DomainLanding).IsUnique();
+    }
+}
+
+public class QuanTriHeThongConfig : IEntityTypeConfiguration<QuanTriHeThong>
+{
+    public void Configure(EntityTypeBuilder<QuanTriHeThong> b)
+    {
+        b.ToTable("QUAN_TRI_HE_THONG");
+
+        b.Property(x => x.Username).HasMaxLength(100).IsRequired();
+        b.Property(x => x.PasswordHash).HasMaxLength(500).IsRequired();
+        b.Property(x => x.HoTen).HasMaxLength(200).IsRequired();
+        b.Property(x => x.Email).HasMaxLength(200);
+
+        // UNIQUE TOÀN CỤC, khác `TAI_KHOAN` vốn là UNIQUE(tenant_id, username).
+        //
+        // Ở đây không có tenant nào để thu hẹp phạm vi: tài khoản chủ đứng trên mọi tenant,
+        // nên hai người trùng username là hai người tranh nhau một danh tính.
+        b.HasIndex(x => x.Username).IsUnique();
+
+        /*
+          Cột audit của bảng này KHÔNG có khoá ngoại sang NGUOI_DUNG (ADR-0009).
+
+          Cần CẢ HAI vế, thiếu một là EF vẫn dựng khoá ngoại:
+          1. `Ignore` ở đây — chặn QUY ƯỚC tự động (navigation `CreatedBy` kiểu `NguoiDung`
+             cạnh cột `CreatedById` là đủ để EF tự suy ra quan hệ, không cần `HasOne`).
+          2. Loại trừ trong `AppDbContext.ApDungKhoaNgoaiChoCotAudit` — chặn khai TƯỜNG MINH.
+
+          Đã thử từng vế một và migration vẫn sinh ra hai khoá ngoại cả hai lần.
+        */
+        b.Ignore(x => x.CreatedBy);
+        b.Ignore(x => x.UpdatedBy);
     }
 }
 

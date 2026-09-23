@@ -54,8 +54,26 @@ public record CapToken(
     /// </summary>
     Guid Jti);
 
+/// <summary>
+/// Thông tin đưa vào JWT của **chủ hệ thống** (ADR-0009).
+///
+/// Là record RIÊNG, không phải `ThongTinToken` với `TenantId` nullable. Lý do: kiểu riêng thì
+/// không có chỗ nào để lỡ truyền tenant vào, còn trường nullable thì chỉ cần một handler quên
+/// kiểm là token chủ mang theo tenant và đi lọt vào API nghiệp vụ.
+/// </summary>
+public record ThongTinTokenChu(Guid QuanTriId, string Username, string HoTen);
+
 /// <summary>Phát hành JWT (FR-01).</summary>
 public interface ITokenService
 {
     CapToken PhatHanh(ThongTinToken thongTin);
+
+    /// <summary>
+    /// Phát token cho tài khoản chủ hệ thống (ADR-0009).
+    ///
+    /// Token này **không mang claim `tenant_id`**, nên `TenantMiddleware` trả 401
+    /// `TOKEN_THIEU_TENANT` ở mọi endpoint nghiệp vụ. Đó là hàng rào chính, và nó có sẵn —
+    /// không phải một lớp kiểm mới ai đó có thể quên gọi.
+    /// </summary>
+    CapToken PhatHanhChoChuHeThong(ThongTinTokenChu thongTin);
 }

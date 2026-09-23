@@ -58,6 +58,40 @@ public class TenantMiddleware(RequestDelegate next)
 
         if (context.User.Identity?.IsAuthenticated == true)
         {
+            /*
+              Token CHỦ HỆ THỐNG được đi qua — NHƯNG CHỈ TRÊN ĐƯỜNG CỦA SITE CHỦ (ADR-0009).
+
+              Token chủ cố ý không mang `tenant_id`, nên nhánh dưới trả 401 và site chủ không
+              dùng được chút nào (test `Chu_he_thong_xem_duoc_danh_sach` trả 401 thay vì 200).
+
+              Điều kiện đường dẫn là BẮT BUỘC. Bản đầu tôi cho token chủ qua ở MỌI đường, và
+              bốn test `Token_chu_khong_goi_duoc_api_nghiep_vu` đỏ ngay: nó đi lọt vào
+              `/hoc-vien`, `/lop-hoc` với `CurrentTenant` rỗng — mà tenant rỗng thì Global
+              Query Filter TẮT HẲN và trả dữ liệu của mọi trung tâm. Đổi một lỗi 401 lấy một
+              lỗ hổng đọc chéo toàn hệ thống.
+
+              Giới hạn theo đường dẫn giữ nguyên hàng rào: ngoài `/chu-he-thong/`, token chủ
+              vẫn rơi xuống nhánh dưới và nhận 401 TOKEN_THIEU_TENANT như cũ.
+            */
+            if (context.User.FindFirstValue(ClaimTenant.LoaiDanhTinh)
+                    == ClaimTenant.LoaiChuHeThong
+                && context.Request.Path.StartsWithSegments("/api/v1/chu-he-thong"))
+            {
+                if (theoDomain is not null)
+                {
+                    // Tài khoản chủ chỉ đăng nhập trên domain site chủ, không phải domain của
+                    // một trung tâm nào. Gặp token chủ trên domain tenant là dấu hiệu nhầm lẫn
+                    // hoặc token bị mang đi nơi khác.
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    await context.Response.WriteAsJsonAsync(
+                        new { errorCode = "TOKEN_KHONG_THUOC_DOMAIN" });
+                    return;
+                }
+
+                await next(context);
+                return;
+            }
+
             var giaTri = context.User.FindFirstValue(ClaimTenant.TenantId);
 
             if (!Guid.TryParse(giaTri, out var tenantId))

@@ -29,4 +29,21 @@ public static class ClaimTenant
     /// thay vì so sai. Phiên cũ hết hạn trong tối đa 60 phút.
     /// </summary>
     public const string TaiKhoanId = "tai_khoan_id";
+
+    /// <summary>
+    /// Loại danh tính: `"chu"` cho tài khoản chủ hệ thống (ADR-0009). Token của tenant KHÔNG
+    /// mang claim này.
+    ///
+    /// **Đây là claim để ĐỌC RA ý định, không phải hàng rào.** Hàng rào thật là sự VẮNG MẶT
+    /// của <see cref="TenantId"/>: `TenantMiddleware` trả 401 cho mọi token đã xác thực mà
+    /// thiếu claim tenant, nên token chủ không vào được API nghiệp vụ kể cả khi ai đó quên
+    /// kiểm claim này.
+    ///
+    /// Tách hai vai trò ra vì nếu dùng claim này làm hàng rào thì thêm một endpoint mà quên
+    /// kiểm là thủng — còn dựa vào việc thiếu `tenant_id` thì mọi endpoint đã được che sẵn.
+    /// </summary>
+    public const string LoaiDanhTinh = "loai";
+
+    /// <summary>Giá trị của <see cref="LoaiDanhTinh"/> cho tài khoản chủ hệ thống.</summary>
+    public const string LoaiChuHeThong = "chu";
 }

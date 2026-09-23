@@ -18,6 +18,7 @@ public class AppDbContext(
     : DbContext(options), IAppDbContext
 {
     public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<QuanTriHeThong> QuanTriHeThongs => Set<QuanTriHeThong>();
     public DbSet<NguoiDung> NguoiDungs => Set<NguoiDung>();
     public DbSet<TaiKhoan> TaiKhoans => Set<TaiKhoan>();
     public DbSet<HoSoGiaoVien> HoSoGiaoViens => Set<HoSoGiaoVien>();
@@ -125,6 +126,17 @@ public class AppDbContext(
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
             if (!typeof(BaseEntity).IsAssignableFrom(entityType.ClrType)) continue;
+
+            // QUAN_TRI_HE_THONG đứng ngoài (ADR-0009): cột audit của nó KHÔNG trỏ NGUOI_DUNG.
+            //
+            // `NGUOI_DUNG` là bảng thuộc tenant, còn tài khoản chủ đứng TRÊN mọi tenant — nó
+            // do một tài khoản chủ khác tạo, không do người của tenant nào. Để EF tự sinh khoá
+            // ngoại thì bảng cấp hệ thống phụ thuộc bảng cấp tenant, đúng thứ ADR-0009 tránh.
+            //
+            // Loại trừ ở ĐÂY chứ không bằng `b.Ignore()` trong config: vòng lặp này chạy sau
+            // và sẽ dựng lại quan hệ, nên `Ignore` không có tác dụng — đã thử và migration vẫn
+            // sinh ra hai khoá ngoại.
+            if (entityType.ClrType == typeof(QuanTriHeThong)) continue;
 
             // `HasOne(typeof(NguoiDung))` KHÔNG dùng được ở đây: nó không nói rõ quan hệ này
             // đi qua property nào, nên EF tạo cột bóng `CreatedById1` bên cạnh cột thật —

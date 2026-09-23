@@ -35,7 +35,7 @@ public class GiaiTenantTheoDomain(AppDbContext db, IMemoryCache cache) : IGiaiTe
     public async Task<ThongTinTenantTheoDomain?> TraAsync(
         string domain, CancellationToken ct = default)
     {
-        var chuan = ChuanHoa(domain);
+        var chuan = Domain.Common.DomainTrungTam.ChuanHoa(domain) ?? string.Empty;
         if (string.IsNullOrEmpty(chuan))
             return null;
 
@@ -75,42 +75,9 @@ public class GiaiTenantTheoDomain(AppDbContext db, IMemoryCache cache) : IGiaiTe
 
     public void XoaCache(string domain)
     {
-        var chuan = ChuanHoa(domain);
+        var chuan = Domain.Common.DomainTrungTam.ChuanHoa(domain) ?? string.Empty;
         if (!string.IsNullOrEmpty(chuan))
             cache.Remove(Khoa(chuan));
-    }
-
-    /// <summary>
-    /// Chuẩn hoá domain về dạng lưu trong DB: chữ thường, bỏ scheme, bỏ dấu chấm cuối.
-    ///
-    /// **Giữ nguyên cổng.** Lúc đầu tôi định cắt cổng đi cho gọn, nhưng như vậy
-    /// `localhost:5173` và `localhost:9999` thành một — ở local hai cổng là hai ứng dụng
-    /// khác nhau. Cổng là một phần của định danh, cắt đi là gộp nhầm.
-    ///
-    /// Dấu chấm cuối (`abc.com.`) hợp lệ về mặt DNS và trình duyệt gửi được, nhưng DB lưu
-    /// dạng không chấm — không bỏ thì cùng một domain lại tra trượt.
-    /// </summary>
-    internal static string ChuanHoa(string? domain)
-    {
-        if (string.IsNullOrWhiteSpace(domain))
-            return string.Empty;
-
-        var s = domain.Trim().ToLowerInvariant();
-
-        if (s.StartsWith("http://", StringComparison.Ordinal))
-            s = s[7..];
-        else if (s.StartsWith("https://", StringComparison.Ordinal))
-            s = s[8..];
-
-        // Bỏ đường dẫn nếu lỡ lọt vào (vd "abc.com/xyz")
-        var gach = s.IndexOf('/');
-        if (gach >= 0)
-            s = s[..gach];
-
-        // Dấu chấm cuối của FQDN
-        s = s.TrimEnd('.');
-
-        return s;
     }
 
     private static string Khoa(string domain) => $"tenant-domain:{domain}";

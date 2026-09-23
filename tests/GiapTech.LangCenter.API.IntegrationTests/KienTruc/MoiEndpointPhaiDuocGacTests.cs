@@ -80,6 +80,11 @@ public class MoiEndpointPhaiDuocGacTests
         var viPham = MoiEndpoint()
             .Where(x => !CoGac<RequirePermissionAttribute>(x.Method, x.Controller)
                         && !CoGac<AllowAnonymousAttribute>(x.Method, x.Controller)
+                        // [ChiChuHeThong] là cách gác THỨ BA (ADR-0009): chỉ tài khoản chủ
+                        // hệ thống gọi được. Không gộp vào [RequirePermission] được vì cơ chế
+                        // đó đọc QUYEN_CHUC_NANG của một tenant, mà tài khoản chủ không thuộc
+                        // tenant nào nên không có hàng nào để đọc.
+                        && !CoGac<ChiChuHeThongAttribute>(x.Method, x.Controller)
                         && !NgoaiLeChiCanDangNhap.ContainsKey(x.Ten))
             .Select(x => x.Ten)
             .OrderBy(x => x)
@@ -92,7 +97,8 @@ public class MoiEndpointPhaiDuocGacTests
             + "  1. Thêm [RequirePermission(ChucNang.X, HanhDong.Y)] — mặc định đúng cho mọi "
             + "endpoint nghiệp vụ (quy tắc #9).\n"
             + "  2. Thêm [AllowAnonymous] nếu thật sự không cần đăng nhập (đăng ký, quên mật khẩu).\n"
-            + "  3. Nếu chỉ cần đăng nhập mà không cần quyền — tức endpoint CHỈ trả/đổi dữ liệu "
+            + "  3. Thêm [ChiChuHeThong] nếu là endpoint của site chủ sản phẩm (ADR-0009).\n"
+            + "  4. Nếu chỉ cần đăng nhập mà không cần quyền — tức endpoint CHỈ trả/đổi dữ liệu "
             + "của chính người gọi — thêm vào NgoaiLeChiCanDangNhap kèm lý do.");
     }
 
@@ -163,10 +169,19 @@ public class MoiEndpointPhaiDuocGacTests
           Thứ lộ ra đúng bằng `ten-trung-tam/{ma}` đã lộ, và chỉ của MỘT trung tâm: trung tâm
           sở hữu domain mà người gọi vốn đã gõ trên thanh địa chỉ. Là endpoint đọc, có
           `EnableRateLimiting(TraCuu)`.
+
+          **23/09/2026 (lần 2) → 10**: thêm `ChuHeThongController.DangNhap` (ADR-0009) — đăng
+          nhập site chủ sản phẩm. Ẩn danh vì cùng lý do với `AuthController.DangNhap`: chưa
+          đăng nhập thì chưa có token. Dùng chung policy hạn mức `XacThuc`.
+
+          Đây là endpoint GHI (cập nhật `lan_dang_nhap_cuoi`) nên rate limit là bắt buộc, không
+          phải tuỳ chọn. Nó cũng là mục tiêu giá trị cao nhất trong mười cái — chiếm được tài
+          khoản chủ là tạo được tenant, đổi domain, cấp lại mật khẩu admin của mọi trung tâm.
+          Bù lại: không có luồng quên mật khẩu, và mọi thao tác ghi nhật ký.
         */
         Assert.True(
-            anDanh.Count <= 9,
-            $"Có {anDanh.Count} endpoint ẩn danh (trước là 9): {string.Join(", ", anDanh)}.\n"
+            anDanh.Count <= 10,
+            $"Có {anDanh.Count} endpoint ẩn danh (trước là 10): {string.Join(", ", anDanh)}.\n"
             + "Mỗi endpoint ẩn danh là chỗ ai cũng gọi được — endpoint GHI thì còn phải có rate "
             + "limit (xem GioiHanTanSuatTests). Nếu thêm là có chủ ý, cập nhật số này kèm lý do.");
     }

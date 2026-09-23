@@ -141,6 +141,11 @@ public class CachLyTenantTests
         [nameof(Tenant)] = "Bảng ĐỊNH NGHĨA tenant, không thuộc tenant nào.",
         [nameof(RefreshToken)] = "Tra theo token trước khi biết tenant nào — xem XacThucNangCao.",
         [nameof(TokenDatLaiMatKhau)] = "Quên mật khẩu: chưa đăng nhập nên chưa có tenant.",
+        [nameof(QuanTriHeThong)] =
+            "Tài khoản chủ sản phẩm, đứng TRÊN mọi tenant (ADR-0009). Lọc theo tenant ở đây là "
+            + "vô nghĩa vì nó không thuộc tenant nào. Bù lại bằng hai chốt khác: token của nó "
+            + "KHÔNG mang claim tenant_id nên TenantMiddleware chặn ở mọi endpoint nghiệp vụ, "
+            + "và endpoint site chủ từ chối token CÓ tenant_id.",
     };
 
     [Fact]

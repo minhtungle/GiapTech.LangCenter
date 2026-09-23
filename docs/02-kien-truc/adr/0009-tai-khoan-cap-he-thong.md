@@ -95,6 +95,27 @@ Xoá tenant cũng **không có**: xoá hàng loạt dữ liệu thật thuộc q
 - **Không có đường tự phục hồi nếu mất tài khoản chủ cuối cùng.** Giống `ChotConNguoiQuanTri` của
   tenant, cần một chốt tương tự: không cho xoá tài khoản chủ cuối cùng.
 
+## Ba chỗ phải sửa khi hiện thực (23/09/2026)
+
+Ba thứ chỉ lộ ra khi viết code thật, đều thuộc loại "hàng rào có sẵn chặn nhầm cả người nhà":
+
+1. **`TenantMiddleware` chặn chính site chủ.** Token chủ cố ý không mang `tenant_id`, mà
+   middleware trả 401 cho mọi token thiếu claim đó — nên site chủ không dùng được chút nào.
+   Cho đi qua, **nhưng chỉ trên đường `/api/v1/chu-he-thong`**. Bản đầu tôi cho qua ở mọi
+   đường và bốn test đỏ ngay: token chủ lọt vào `/hoc-vien`, `/lop-hoc` với `CurrentTenant`
+   rỗng — mà tenant rỗng thì Query Filter **tắt hẳn**. Suýt đổi một lỗi 401 lấy lỗ hổng đọc
+   chéo toàn hệ thống.
+
+2. **`PhienDuyNhatMiddleware` chặn tiếp.** Cơ chế một-phiên xây trên `TAI_KHOAN.phien_hien_tai`
+   và đòi claim `tai_khoan_id`; token chủ không có. Miễn `/api/v1/chu-he-thong` khỏi middleware
+   này. Chấp nhận được vì chỉ có vài tài khoản chủ và mọi thao tác đều ghi nhật ký — cần
+   một-phiên cho tài khoản chủ thì phải làm cơ chế riêng.
+
+3. **EF tự dựng khoá ngoại cột audit sang `NGUOI_DUNG`.** Sai về khái niệm: `NGUOI_DUNG` thuộc
+   tenant, tài khoản chủ đứng trên mọi tenant. Phải chặn **cả hai vế** — `Ignore` navigation
+   (chặn quy ước) *và* loại trừ khỏi vòng lặp trong `AppDbContext` (chặn khai tường minh);
+   thiếu một vế là migration vẫn sinh ra khoá ngoại.
+
 ## Test bắt buộc
 
 | Test | Canh gì |

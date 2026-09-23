@@ -116,6 +116,10 @@ public class RanhGioiHeThongConTests
             + "và mọi hệ thống đều dùng. Đọc DbSet ở đây là chuyện bình thường.",
         ["DangNhap"] =
             "Xác thực dùng chung cho cả ba hệ thống, đứng trước mọi phân nhóm chức năng.",
+        ["ChuHeThong"] =
+            "Site của chủ sản phẩm (ADR-0009) — đứng TRÊN mọi tenant nên không thuộc hệ thống "
+            + "con nào. Nó quản vòng đời tenant (tạo, gắn domain), cố ý KHÔNG đọc dữ liệu "
+            + "nghiệp vụ bên trong tenant; muốn đọc thì phải là một ADR mới.",
     };
 
     /// <summary>Mọi thư mục con của `Application/` trừ những cái đã khai miễn trừ.</summary>

@@ -64,9 +64,19 @@ public class PhienDuyNhatMiddleware(RequestDelegate next)
     /// `/auth/*` phải qua được, nếu không thì chính lệnh đăng nhập bị chặn và người vừa bị đẩy
     /// ra không có đường quay lại. `lam-moi-token` KHÔNG cần ngoại lệ ở đây vì nó tự kiểm
     /// refresh token đã bị thu hồi chưa — nhưng vẫn để trong nhóm `/auth/` cho nhất quán.
+    ///
+    /// `/chu-he-thong/*` qua được vì cơ chế một-phiên xây trên `TAI_KHOAN.phien_hien_tai`, mà
+    /// tài khoản chủ nằm ở bảng KHÁC và token của nó cố ý không mang `tai_khoan_id` (ADR-0009).
+    /// Không miễn thì nhánh "token thiếu claim ⇒ đẩy ra" chặn toàn bộ site chủ — đúng lỗi gặp
+    /// khi viết test, và nó hiện ra dưới dạng 401 khó lần vì middleware này nằm cuối chuỗi.
+    ///
+    /// Bỏ qua cơ chế một-phiên ở đây là CHẤP NHẬN ĐƯỢC: chỉ có vài tài khoản chủ, chúng không
+    /// dùng chung máy như tài khoản tenant, và mọi thao tác của chúng đều ghi nhật ký. Nếu sau
+    /// này cần một-phiên cho tài khoản chủ thì phải làm cơ chế riêng chứ không dùng lại cái này.
     /// </summary>
     private static bool DuocPhep(PathString duongDan) =>
         duongDan.StartsWithSegments("/api/v1/auth")
+        || duongDan.StartsWithSegments("/api/v1/chu-he-thong")
         || duongDan.StartsWithSegments("/swagger")
         || duongDan.StartsWithSegments("/health");
 

@@ -313,7 +313,7 @@ docker run -d --name lms-pg -e POSTGRES_PASSWORD=devpass -e POSTGRES_USER=langce
 export ConnectionStrings__Default="Host=localhost;Port=55432;Database=langcenter;Username=langcenter;Password=devpass"
 dotnet ef database update --project src/GiapTech.LangCenter.Infrastructure \
   --startup-project src/GiapTech.LangCenter.API
-# → 45 bảng (15 hệ thống + 30 nghiệp vụ) — xem docs/05-database/erd.md
+# → 45 bảng (16 hệ thống + 29 nghiệp vụ; QUAN_TRI_HE_THONG thêm 23/09) — xem docs/05-database/erd.md
 
 # Tạo trung tâm thử — endpoint ẩn danh, mã 7 ký tự do hệ thống sinh.
 # CẦN `CHO_TU_DANG_KY=true` lúc chạy API, nếu không endpoint trả 404 (mặc định TẮT từ
