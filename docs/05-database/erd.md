@@ -1,7 +1,7 @@
 # ERD — Mô hình dữ liệu
 
-**45 bảng**, PostgreSQL (đếm bằng `information_schema` ngày 23/09/2026, sau khi thêm
-`QUAN_TRI_HE_THONG`). Mọi cột chuỗi có `HasMaxLength` (canh bởi
+**49 bảng**, PostgreSQL (đếm bằng `information_schema` ngày 24/09/2026, sau khi thêm
+`QUAN_TRI_HE_THONG` và 4 bảng LDP). Mọi cột chuỗi có `HasMaxLength` (canh bởi
 `MoiEntityPhaiCoConfigTests`); ngoại lệ duy nhất là hai cột JSON của `NHAT_KY_HE_THONG`. Nội dung dưới đây khớp với schema thật (kiểm bằng
 `information_schema` sau khi áp toàn bộ migration), không phải bản thiết kế trên giấy.
 
@@ -116,6 +116,10 @@ erDiagram
 | `NGUOIDUNG_QUYEN` | Gán nhóm quyền | Nhiều–nhiều, gán cho **TÀI KHOẢN** (`tai_khoan_id`) chứ không cho người |
 | `REFRESH_TOKEN` | Phiên đăng nhập | Xoay vòng, phát hiện tái sử dụng. Cột `ly_do` (22/09/2026) phân biệt **bị xoay vòng** (dùng lại ⇒ nghi bị trộm ⇒ thu hồi toàn bộ) với **bị đẩy ra** (bình thường, không thu hồi thêm) — xem ADR-0007 |
 | `TOKEN_DATLAI_MATKHAU` | Quên mật khẩu | Hash, hạn 30 phút, dùng một lần |
+| `TRANG_DICH` | **Trang đích công khai** (FR-30) — mỗi tenant ĐÚNG MỘT trang (`UNIQUE(tenant_id)`). `da_xuat_ban` mặc định `false`: soạn xong không tự lên Internet | `tieu_de_seo`, `mo_ta_seo` |
+| `KHOI_LDP` | Một khối trên trang đích. `UNIQUE(trang_dich_id, loai)` — bố cục cố định nên không thể có hai khối `Hero`. `hien` tắt thì khối **biến mất khỏi phản hồi công khai**, không gửi kèm cờ | 7 loại: Hero · GioiThieu · KhoaHoc · GiaoVien · CamNhan · TinTuc · LienHe |
+| `MUC_LDP` | Mục trong khối nhiều mục. **Một bảng cho cả bốn loại** (khoá học, giáo viên, cảm nhận, tin tức) vì chúng cùng hình dạng — bốn bảng gần giống nhau thì thêm một trường là sửa bốn chỗ | `gia_niem_yet` là giá MARKETING, KHÔNG nối `KHOA_HOC.gia_tien` |
+| `LIEN_HE_LANDING` | Khách vãng lai để lại qua form. **Không** ghi thẳng `KHACH_HANG`: form là endpoint ẩn danh nên nhận cả bot, ghi thẳng làm danh sách khách hàng thật bị loãng | `khach_hang_id` null cho tới khi người phụ trách bấm chuyển |
 | `NHAT_KY_HE_THONG` | **Nhật ký thao tác** (FR-16) | Một bản ghi cho mỗi LỆNH, không phải mỗi dòng dữ liệu. Chỉ ghi thêm — không sửa, không xoá. `username`/`ho_ten` lưu **bản chụp** để đọc được cả khi tài khoản đã xoá |
 
 **Hai cột trạng thái, đừng nhầm:**

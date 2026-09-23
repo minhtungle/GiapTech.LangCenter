@@ -6,6 +6,9 @@ import DangNhap from '@/pages/DangNhap'
 import DoiMatKhau from '@/pages/DoiMatKhau'
 import DangNhapChu from '@/pages/chu-he-thong/DangNhapChu'
 import DanhSachTrungTam from '@/pages/chu-he-thong/DanhSachTrungTam'
+import NoiDungTrangDich from '@/pages/ldp/NoiDungTrangDich'
+import LienHeTrangDich from '@/pages/ldp/LienHeTrangDich'
+import TrangCongKhai from '@/pages/ldp/TrangCongKhai'
 import QuenMatKhau from '@/pages/QuenMatKhau'
 import DangKyTrungTam from '@/pages/DangKyTrungTam'
 import TongQuan from '@/pages/TongQuan'
@@ -118,6 +121,17 @@ export default function App() {
             <Route path="/chu" element={<DangNhapChu />} />
             <Route path="/chu/trung-tam" element={<DanhSachTrungTam />} />
 
+            {/*
+              TRANG ĐÍCH CÔNG KHAI (FR-30) — khách vãng lai, KHÔNG đăng nhập.
+
+              Ngoài `<CanDangNhap>` và không bọc `<Layout />`: Layout gọi useQuyen/useHeThong,
+              hai thứ cần token. Đây cũng là lý do trang dùng axios trần thay vì `api.ts`.
+
+              Hai đường: `/t/{mã}` cho trung tâm chưa trỏ DNS, và `/` khi vào bằng domain
+              riêng — lúc đó server tự giải tenant từ domain (ADR-0008) nên không cần mã.
+            */}
+            <Route path="/t/:ma" element={<TrangCongKhai />} />
+
             <Route
               element={
                 <CanDangNhap>
@@ -176,6 +190,9 @@ export default function App() {
               <Route path="/lms/buoi-hoc/:id" element={<ChiTietBuoiHoc />} />
               <Route path="/lms/khoa-online" element={<KhoaOnline />} />
               <Route path="/lms/khoa-online/:id" element={<ChiTietKhoaOnline />} />
+              {/* LDP — FR-30 */}
+              <Route path="/ldp/noi-dung" element={<NoiDungTrangDich />} />
+              <Route path="/ldp/lien-he" element={<LienHeTrangDich />} />
               <Route path="/lms/tai-lieu" element={<TaiLieu />} />
               {/*
                 Màn Học phí KHÔNG còn trong sidebar và không còn là tab của lớp (12/09/2026):

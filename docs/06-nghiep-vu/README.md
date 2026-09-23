@@ -7,7 +7,7 @@ Nguồn gốc: đặc tả kỹ thuật LMS Vietgenedu. Repo tách ra từ một
 vụ cũ đã gỡ khỏi cả code lẫn tài liệu, chỉ còn dấu vết trong [nhật ký](../nhat-ky/README.md) và
 git history.
 
-## Ba hệ thống con (08/09/2026)
+## Bốn hệ thống con (08/09/2026 · thêm LDP 24/09/2026)
 
 Chức năng phân quyền được **nhóm** thành ba hệ thống, người dùng chọn hệ thống đang làm việc và
 sidebar chỉ hiện phần của nó. Đây là cách nhóm để lọc giao diện — **không phải ba ứng dụng**:
@@ -23,6 +23,7 @@ một API, một database, một lần đăng nhập.
 | **CRM → LMS** | Yêu cầu xếp lớp (FR-21) | ✅ Chạy |
 | **LMS** | FR-07 → FR-14 + Học viên | ✅ Chạy |
 | **LMS** | **Học tập trực tuyến** (FR-25 → FR-27) — kênh học thứ hai, song song lớp offline | 📝 Đặc tả |
+| **LDP** | **Trang đích công khai** ([FR-30](./ldp.md)) — soạn nội dung, xuất bản, form liên hệ → CRM | ✅ Chạy |
 | **Dùng chung** | **Tổng quan** (FR-15) — màn chủ, một màn cho mọi vai trò | ✅ Chạy |
 | **Dùng chung** | FR-03 → FR-06, FR-16 (tài khoản, phân quyền, thiết lập, nhật ký) | ✅ Chạy |
 

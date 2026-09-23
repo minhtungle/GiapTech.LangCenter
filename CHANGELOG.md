@@ -8,6 +8,27 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Added — FR-30: trang đích công khai (LDP), hệ thống con thứ tư (24/09/2026)
+
+Mỗi trung tâm có một trang giới thiệu công khai; LDP là module soạn nội dung, song song
+HRM · CRM · LMS. Chi tiết: [`docs/06-nghiep-vu/ldp.md`](docs/06-nghiep-vu/ldp.md).
+
+| | |
+|---|---|
+| Bảng mới | `TRANG_DICH` · `KHOI_LDP` · `MUC_LDP` · `LIEN_HE_LANDING` |
+| Khối | 7 loại, bố cục cố định — sửa nội dung, bật/tắt, sắp thứ tự |
+| Đường công khai | domain riêng (ADR-0008), hoặc `/t/{mã}` khi chưa trỏ DNS |
+| Endpoint ẩn danh | 10 → **14** |
+
+**Nội dung nhập RIÊNG, không đọc `KHOA_HOC`/`HO_SO_GIAO_VIEN`.** Nhập hai lần phiền hơn,
+nhưng nối thẳng dữ liệu nghiệp vụ ra trang công khai là mở đường rò rỉ **vĩnh viễn**: mỗi cột
+ai đó thêm vào sau này đều có nguy cơ xuất hiện trên Internet mà không ai rà. DTO công khai
+(`...CongKhaiDto`) tách hẳn DTO quản trị — không có `id`, không có khoá ảnh, không có cờ `hien`.
+
+**Form liên hệ** là endpoint ẩn danh GHI, có bốn lớp: rate limit riêng 5/phút, honeypot bỏ qua
+im lặng, giới hạn độ dài ở validator, không trả dữ liệu. Lưu `LIEN_HE_LANDING` rồi người phụ
+trách bấm chuyển sang CRM — điều chỉnh so với chốt ban đầu "ghi thẳng", lý do ghi trong FR-30.
+
 ### Added — nhận diện tenant qua domain · site chủ hệ thống (23/09/2026)
 
 Hai ADR, chốt trước khi viết code (quy tắc #7).

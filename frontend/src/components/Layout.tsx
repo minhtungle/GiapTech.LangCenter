@@ -5,7 +5,7 @@ import {
   ShieldCheck,
   BarChart3, Settings, LogOut, Home, GraduationCap, BookOpen, MonitorPlay,
   PanelLeftClose, PanelLeft, Menu, X, ScrollText, UserCog, TrendingUp,
-  LayoutGrid, Check, KeyRound, Contact, PackageOpen, BookMarked, Star,
+  LayoutGrid, Check, KeyRound, Contact, PackageOpen, BookMarked, Star, Globe, Inbox,
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useQuyen } from '@/lib/quyen'
@@ -61,7 +61,9 @@ export default function Layout() {
     // Cả ba hệ thống con nay đều có tiền tố (LMS thêm `/lms` ngày 10/09/2026), nên chỉ cần
     // một bảng tra. Trước đó LMS phải liệt kê tường minh 5 đường và thêm màn mới mà quên khai
     // thì sidebar hiện sai hệ thống con — lỗi im lặng, không có lỗi biên dịch.
-    const theoDuong: Record<string, MaHeThong> = { '/hrm': 'Hrm', '/crm': 'Crm', '/lms': 'Lms' }
+    const theoDuong: Record<string, MaHeThong> = {
+      '/hrm': 'Hrm', '/crm': 'Crm', '/lms': 'Lms', '/ldp': 'Ldp',
+    }
     const tienTo = Object.keys(theoDuong).find((x) => location.pathname.startsWith(x))
     const suyRa = tienTo ? theoDuong[tienTo] : null
 
@@ -159,6 +161,19 @@ export default function Layout() {
         // khoá mình học, mà họ không có quyền soạn.
         { to: '/lms/khoa-online', nhan: t('menu.khoaOnline'), icon: MonitorPlay, can: 'HocOnline' },
         { to: '/lms/tai-lieu', nhan: t('menu.taiLieu'), icon: BookOpen, can: 'TaiLieu' },
+      ],
+    },
+
+    // ---------- LDP (FR-30) ----------
+    {
+      tieuDe: t('menu.trangDich'),
+      heThong: 'Ldp',
+      muc: [
+        { to: '/ldp/noi-dung', nhan: t('menu.noiDungTrangDich'), icon: Globe, can: 'TrangDich' },
+        {
+          to: '/ldp/lien-he', nhan: t('menu.lienHeTrangDich'), icon: Inbox,
+          can: 'LienHeLanding',
+        },
       ],
     },
 

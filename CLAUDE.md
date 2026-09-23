@@ -10,15 +10,16 @@
 
 ## 1. Dự án này là gì
 
-**Hệ thống quản lý trung tâm ngoại ngữ**, mô hình **multi-tenant**, gồm **ba hệ thống con**
-chia theo nhóm quyền — **HRM** (nhân sự) · **CRM** (khách hàng) · **LMS** (đào tạo). Đây là cách
+**Hệ thống quản lý trung tâm ngoại ngữ**, mô hình **multi-tenant**, gồm **bốn hệ thống con**
+chia theo nhóm quyền — **HRM** (nhân sự) · **CRM** (khách hàng) · **LMS** (đào tạo) ·
+**LDP** (trang đích công khai, FR-30). Đây là cách
 nhóm chức năng phân quyền để lọc sidebar, **không phải ba ứng dụng**: một API, một database,
 một lần đăng nhập. → [phan-quyen-dong.md](docs/03-backend/phan-quyen-dong.md#ba-hệ-thống-con-hrm--crm--lms)
 
 Mỗi trung tâm đăng ký là một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`.
 Đăng nhập bằng bộ ba **{mã trung tâm, tên đăng nhập, mật khẩu}**.
 
-**Đường dẫn frontend theo hệ thống con**: `/hrm/...` · `/crm/...` · `/lms/...` (thống nhất
+**Đường dẫn frontend theo hệ thống con**: `/hrm/...` · `/crm/...` · `/lms/...` · `/ldp/...` (thống nhất
 10/09/2026), quản trị dùng chung ở `/quan-tri/...`. `Layout.tsx` suy ra hệ thống con **từ tiền
 tố**, nên route mới **phải** có tiền tố đúng. **Đừng lẫn route với endpoint API**: `/lms/hoc-vien`
 là đường frontend, API vẫn là `/api/v1/hoc-vien`.
@@ -49,9 +50,10 @@ LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 | **FR-15 Tổng quan**: một màn cho mọi vai trò, chỉ hiện việc tồn đọng, không có số tiền | |
 | **FR-25 → FR-27 Học trực tuyến**: soạn khoá · cấp quyền học · tiến độ (bài tập chấm điểm chưa) | |
 | **FR-28 Thống kê CRM**: doanh thu theo khoá/sản phẩm/đội, phễu, công nợ, biểu đồ tăng trưởng | |
-| **FR-29 Thống kê nhân sự**: xếp hạng kinh doanh/giáo viên/trợ giảng + module tiêu chí chấm thang 5 | **LDP — landing page công khai** (FR-30), chưa bắt đầu |
+| **FR-29 Thống kê nhân sự**: xếp hạng kinh doanh/giáo viên/trợ giảng + module tiêu chí chấm thang 5 | Import Excel học viên |
 | **Nhận diện tenant qua domain** (ADR-0008): hai đường vào — domain riêng ẩn ô mã, hoặc mã trung tâm | |
 | **Site chủ hệ thống** (ADR-0009) đủ backend + UI: `/chu` — tạo trung tâm · gắn domain · đóng nợ N3 | |
+| **FR-30 LDP**: soạn nội dung 7 khối · xuất bản · trang công khai `/t/{mã}` · form liên hệ → CRM | |
 
 Chi tiết và nợ kỹ thuật: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-quan/ke-hoach.md).
 
@@ -112,7 +114,7 @@ Chi tiết và nợ kỹ thuật: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong
 | **Tiến độ, lộ trình, nợ kỹ thuật** | [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-quan/ke-hoach.md) |
 | Tổng quan nghiệp vụ, đọc 1 mạch | [`docs/01-tong-quan/tong-thuat.md`](docs/01-tong-quan/tong-thuat.md) |
 | **29 mã FR** theo module | [`docs/06-nghiep-vu/`](docs/06-nghiep-vu/README.md) |
-| **ERD 45 bảng** + ràng buộc + hành vi xoá | [`docs/05-database/erd.md`](docs/05-database/erd.md) |
+| **ERD 49 bảng** + ràng buộc + hành vi xoá | [`docs/05-database/erd.md`](docs/05-database/erd.md) |
 | **Nhật ký theo ngày** (bối cảnh git log không có) | [`docs/nhat-ky/`](./docs/nhat-ky/README.md) |
 | Clean Architecture, luật phụ thuộc | [`docs/03-backend/clean-architecture.md`](docs/03-backend/clean-architecture.md) |
 | **Quy ước viết mã** (đặt tên, null, chú thích, test) | [`docs/08-quy-uoc/quy-uoc-code.md`](docs/08-quy-uoc/quy-uoc-code.md) |
@@ -324,7 +326,7 @@ docker run -d --name lms-pg -e POSTGRES_PASSWORD=devpass -e POSTGRES_USER=langce
 export ConnectionStrings__Default="Host=localhost;Port=55432;Database=langcenter;Username=langcenter;Password=devpass"
 dotnet ef database update --project src/GiapTech.LangCenter.Infrastructure \
   --startup-project src/GiapTech.LangCenter.API
-# → 45 bảng (16 hệ thống + 29 nghiệp vụ; QUAN_TRI_HE_THONG thêm 23/09) — xem docs/05-database/erd.md
+# → 49 bảng (16 hệ thống + 33 nghiệp vụ; +4 bảng LDP 24/09) — xem docs/05-database/erd.md
 
 # Tạo trung tâm thử — endpoint ẩn danh, mã 7 ký tự do hệ thống sinh.
 # CẦN `CHO_TU_DANG_KY=true` lúc chạy API, nếu không endpoint trả 404 (mặc định TẮT từ

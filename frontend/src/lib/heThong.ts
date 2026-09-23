@@ -3,10 +3,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from './api'
 import { useAuth } from './auth'
 
-/** Mã ba hệ thống con — khớp enum `HeThong` ở backend. */
-export type MaHeThong = 'Hrm' | 'Crm' | 'Lms'
+/** Mã các hệ thống con — khớp enum `HeThong` ở backend. */
+export type MaHeThong = 'Hrm' | 'Crm' | 'Lms' | 'Ldp'
 
-export const MOI_HE_THONG: MaHeThong[] = ['Hrm', 'Crm', 'Lms']
+export const MOI_HE_THONG: MaHeThong[] = ['Hrm', 'Crm', 'Lms', 'Ldp']
 
 const KHOA = 'lms_he_thong'
 
