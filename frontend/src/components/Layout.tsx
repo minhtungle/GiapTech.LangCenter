@@ -20,7 +20,7 @@ import { Anh } from '@/components/ui/Anh'
 
 const KHOA_THU_GON = 'lms_sidebar_thu_gon'
 
-/** Sidebar thu gọn được (docs/frontend/ui-ux-nguyen-tac.md). */
+/** Sidebar thu gọn được (docs/04-frontend/ui-ux-nguyen-tac.md). */
 export default function Layout() {
   const { t } = useTranslation()
   const { phien, dangXuat } = useAuth()

@@ -26,7 +26,7 @@ loi() { printf '\033[1;31m✗ %s\033[0m\n' "$1" >&2; exit 1; }
 # ở bước build. Gặp thật 22/08 khi thử script (Docker Desktop tự tắt).
 docker info >/dev/null 2>&1 || loi "Docker không chạy. Khởi động Docker rồi thử lại."
 
-[ -f .env ] || loi "Thiếu .env — xem docs/ha-tang/bien-moi-truong.md"
+[ -f .env ] || loi "Thiếu .env — xem docs/07-ha-tang/bien-moi-truong.md"
 
 # `set -a` để export mọi biến cho docker compose đọc được.
 set -a; . ./.env; set +a

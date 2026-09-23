@@ -30,7 +30,7 @@ interface HocVienNgan {
 /**
  * FR-17 — khách hàng (CRM): người quan tâm khoá học, chưa chắc thành học viên.
  *
- * Bảng riêng chứ không dùng `NGUOI_DUNG` — xem `docs/nghiep-vu/crm.md`. Khi khách thật sự vào
+ * Bảng riêng chứ không dùng `NGUOI_DUNG` — xem `docs/06-nghiep-vu/crm.md`. Khi khách thật sự vào
  * học thì **nối** bằng `nguoiDungId`, không copy họ tên sang.
  */
 export default function KhachHang() {

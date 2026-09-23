@@ -82,7 +82,7 @@ type TepHoSo = NguoiDungDto['tepHoSos'][number]
  *
  * Bấm một dòng ở màn Hồ sơ nhân sự thì mở view này (yêu cầu 09/09/2026). Chỉ ĐỌC, sửa qua modal
  * ở màn danh sách — cùng quy ước với view chi tiết khách hàng và lớp học
- * (`docs/frontend/ui-ux-nguyen-tac.md`): đọc thông tin là việc thường xuyên hơn sửa.
+ * (`docs/04-frontend/ui-ux-nguyen-tac.md`): đọc thông tin là việc thường xuyên hơn sửa.
  *
  * Gọi `/nhan-su/{id}` chứ không tra trong danh sách đã tải: mở link trực tiếp (bookmark, link
  * đồng nghiệp gửi) thì không có danh sách nào để tra.

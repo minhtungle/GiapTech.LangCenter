@@ -54,7 +54,7 @@ jobs:
           npm run build
 
       # Frontend là static assets do Caddy phục vụ trực tiếp — không đóng gói thành
-      # container riêng (xem docs/kien-truc/adr/0004-ha-tang-tu-host-vps.md).
+      # container riêng (xem docs/02-kien-truc/adr/0004-ha-tang-tu-host-vps.md).
       - name: Upload frontend build
         uses: actions/upload-artifact@v4
         with:
@@ -203,7 +203,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           source: "frontend-dist/*"
-          # Đường dẫn phải khớp thư mục đã clone repo trên VPS (xem docs/ha-tang/trien-khai-vps.md).
+          # Đường dẫn phải khớp thư mục đã clone repo trên VPS (xem docs/07-ha-tang/trien-khai-pull-code.md).
           target: ${{ secrets.VPS_PATH }}/frontend/dist
           strip_components: 1
           # rm: xoá tệp cũ trước khi chép. Không xoá thì asset của bản trước (main-abc123.js)

@@ -3,7 +3,7 @@ using System.Reflection;
 namespace GiapTech.LangCenter.Application.UnitTests.KienTruc;
 
 /// <summary>
-/// Canh luật phụ thuộc Clean Architecture (docs/backend/clean-architecture.md).
+/// Canh luật phụ thuộc Clean Architecture (docs/03-backend/clean-architecture.md).
 /// Quy tắc bất di bất dịch #10: Domain KHÔNG phụ thuộc EF Core / ASP.NET Core.
 ///
 /// Test này tồn tại vì luật phụ thuộc chỉ ghi trong tài liệu thì rất dễ vi phạm
@@ -37,7 +37,7 @@ public class LuatPhuThuocTests
             viPham.Count == 0,
             $"Domain đang tham chiếu '{tenAssemblyCam}': {string.Join(", ", viPham)}. " +
             "Cấu hình EF Core phải đặt ở Infrastructure (IEntityTypeConfiguration), " +
-            "không rải attribute trong Domain. Xem docs/backend/clean-architecture.md.");
+            "không rải attribute trong Domain. Xem docs/03-backend/clean-architecture.md.");
     }
 
     /// <summary>

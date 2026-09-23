@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /*
-  Design token — xem docs/frontend/design-tokens.md.
+  Design token — xem docs/04-frontend/design-tokens.md.
   Ánh xạ sang biến theming của shadcn/ui, KHÔNG tạo hệ biến song song.
 */
 @layer base {

@@ -8,7 +8,7 @@ namespace GiapTech.LangCenter.Application.UnitTests.MultiTenancy;
 /// <summary>
 /// Kiểm chứng cách ly dữ liệu giữa các tenant — quy tắc bất di bất dịch #2.
 /// Rò rỉ dữ liệu chéo trung tâm là lỗi nghiêm trọng nhất hệ thống này có thể mắc,
-/// nên nó phải có test chứ không chỉ có tài liệu. Xem docs/backend/multi-tenant.md.
+/// nên nó phải có test chứ không chỉ có tài liệu. Xem docs/03-backend/multi-tenant.md.
 /// </summary>
 public class CachLyTenantTests
 {
@@ -127,7 +127,7 @@ public class CachLyTenantTests
         Assert.True(
             thieuFilter.Count == 0,
             $"Entity thiếu Global Query Filter: {string.Join(", ", thieuFilter)}. " +
-            "Mọi ITenantEntity phải được lọc tự động — xem docs/backend/multi-tenant.md.");
+            "Mọi ITenantEntity phải được lọc tự động — xem docs/03-backend/multi-tenant.md.");
     }
 
     /// <summary>

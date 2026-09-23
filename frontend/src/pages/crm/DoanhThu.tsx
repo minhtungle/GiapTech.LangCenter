@@ -26,7 +26,7 @@ import { locale } from '@/lib/ngon-ngu/dinhDang'
  * FR-18 — doanh thu: đăng ký khoá học (CRM).
  *
  * Ba con số tiền, không phải một: **giá gốc** (snapshot lúc đăng ký), **số tiền** thực thu, và
- * **% trên giá gốc** tính động. Xem `docs/nghiep-vu/crm.md`.
+ * **% trên giá gốc** tính động. Xem `docs/06-nghiep-vu/crm.md`.
  */
 export default function DoanhThu() {
   const { t } = useTranslation()

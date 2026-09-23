@@ -4,7 +4,7 @@ namespace GiapTech.LangCenter.Application.UnitTests.KienTruc;
 
 /// <summary>
 /// Ranh giới giữa ba hệ thống con HRM · CRM · LMS — chốt ở
-/// <c>docs/kien-truc/adr/0005-mot-source-va-doi-ten-langcenter.md</c>.
+/// <c>docs/02-kien-truc/adr/0005-mot-source-va-doi-ten-langcenter.md</c>.
 ///
 /// ADR-0005 chốt **một source**, KHÔNG tách ba. Nhưng "một source" không có nghĩa là các module
 /// được gọi nhau tự do: mỗi lần một module với tay sang module khác là một sợi dây phải cắt nếu

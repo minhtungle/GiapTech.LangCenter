@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 /*
   Bộ component tối giản theo phong cách shadcn/ui: đọc design token từ CSS variable
   (xem src/index.css), không hard-code màu. Mật độ thông tin cao, ít trang trí —
-  theo docs/frontend/ui-ux-nguyen-tac.md.
+  theo docs/04-frontend/ui-ux-nguyen-tac.md.
 */
 
 export const Button = React.forwardRef<

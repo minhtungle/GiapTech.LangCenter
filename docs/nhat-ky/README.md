@@ -30,7 +30,7 @@ Lỗi đã bắt được, thứ tưởng đúng mà sai, giới hạn chưa g�
 
 - Ghi **cuối mỗi đợt việc**, ngay sau khi commit — không dồn cuối tuần rồi viết lại từ trí nhớ.
 - Không lặp nội dung đã có ở `docs/` khác; nếu một quyết định đủ lớn thì viết
-  [ADR](../kien-truc/adr/) và ở đây chỉ dẫn link.
+  [ADR](../02-kien-truc/adr) và ở đây chỉ dẫn link.
 - Ghi cả thứ **chưa xong** và **chưa kiểm chứng được** — đó thường là thông tin có giá trị nhất khi
   đọc lại.
 

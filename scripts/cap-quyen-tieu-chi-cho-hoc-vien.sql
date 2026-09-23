@@ -2,7 +2,7 @@
 --
 -- Vì sao cần script tay: `BoKhuyetQuyenQuanTri` lúc khởi động chỉ vá nhóm "Quản trị viên" và
 -- **cố tình không đụng** ba nhóm còn lại — nới quyền cho giáo viên/học viên là quyết định của
--- admin, hệ thống tự làm là lỗ hổng (xem docs/backend/phan-quyen-dong.md).
+-- admin, hệ thống tự làm là lỗ hổng (xem docs/03-backend/phan-quyen-dong.md).
 --
 -- Nhưng tính năng "học viên chấm giáo viên/trợ giảng theo tiêu chí" KHÔNG chạy được nếu thiếu ô
 -- này: endpoint `/tieu-chi-danh-gia/de-cham` trả 403, frontend rơi về chấm sao — đúng lỗi chủ

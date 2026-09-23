@@ -4,7 +4,7 @@
 [Semantic Versioning](https://semver.org/).
 
 Bối cảnh chi tiết từng ngày: [`docs/nhat-ky/`](./docs/nhat-ky/README.md).
-Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
+Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-quan/ke-hoach.md).
 
 ## [Unreleased]
 
@@ -33,7 +33,7 @@ số — chỉ đúng với ngôn ngữ đặt số ở SAU. Tiếng Nhật/Hàn
 `第3`, `제 3` — câu bỏ dở. Sửa thành khoá có biến để mỗi ngôn ngữ tự đặt số vào chỗ của mình:
 `第3回` · `3차시` · `第 3 次课`. Hai tác nhân dịch **độc lập** chỉ ra cùng chỗ này.
 
-Quy tắc rút ra, ghi trong `docs/frontend/da-ngon-ngu.md`: **một chuỗi hiển thị là một khoá trọn
+Quy tắc rút ra, ghi trong `docs/04-frontend/da-ngon-ngu.md`: **một chuỗi hiển thị là một khoá trọn
 vẹn**, kể cả khi có biến ở giữa. Cắt đôi rồi nối trong code là ngầm giả định trật tự từ tiếng Việt.
 
 **Hai lỗi khác sửa dọc đường:**
@@ -268,7 +268,7 @@ nạn nhân đóng vĩnh viễn, biến phòng thủ thành công cụ tấn cô
 mutation SỐNG** chỉ ra bản vá fail-open lúc đó chưa có gì canh, phải viết thêm test dựng token
 không có `jti` ký bằng khoá thật.
 
-Chi tiết và trạng thái từng mục: [`docs/ra-soat-bao-mat-dang-nhap.md`](./docs/ra-soat-bao-mat-dang-nhap.md).
+Chi tiết và trạng thái từng mục: [`docs/02-kien-truc/ra-soat-bao-mat-dang-nhap.md`](docs/02-kien-truc/ra-soat-bao-mat-dang-nhap.md).
 
 ### Added — "Nhớ đăng nhập" (22/09/2026)
 
@@ -291,7 +291,7 @@ Mutation test 6 đột biến, 6 chết.
 ### Security — rà soát luồng đăng nhập (22/09/2026)
 
 Rà soát toàn bộ luồng xác thực theo OWASP Top 10 + ASVS chương 2. Kết quả đầy đủ:
-[`docs/ra-soat-bao-mat-dang-nhap.md`](./docs/ra-soat-bao-mat-dang-nhap.md).
+[`docs/02-kien-truc/ra-soat-bao-mat-dang-nhap.md`](docs/02-kien-truc/ra-soat-bao-mat-dang-nhap.md).
 
 **27 hạng mục đạt** — PBKDF2, refresh token xoay vòng có phát hiện tái sử dụng, hash token trong
 DB, `ClockSkew = 0`, fail-fast `JWT_SECRET`, cách ly tenant lấy từ claim do server ký.
@@ -1252,7 +1252,7 @@ Quét thêm 14 phép tính % khác trong frontend: ba chỗ chia cho biến có 
 trước`, `tỷ lệ đã thu`, `tỷ lệ hoàn thành`) đều **đã chặn đúng** từ trước. Lỗi phễu là duy nhất
 thuộc loại "công thức sai bản chất", không phải lỗi kỹ thuật lặp lại.
 
-Quy ước mới ở [`docs/quy-uoc-code.md`](./docs/quy-uoc-code.md) mục 10, với hai câu hỏi bắt buộc
+Quy ước mới ở [`docs/08-quy-uoc/quy-uoc-code.md`](docs/08-quy-uoc/quy-uoc-code.md) mục 10, với hai câu hỏi bắt buộc
 cho mọi phép chia hiển thị — câu thứ hai (*"kết quả có thể vượt 100% không?"*) là câu bắt được
 lỗi này.
 
@@ -1314,8 +1314,8 @@ Số liệu trong tài liệu lạc hậu tới 4 ngày. Rà và cập nhật:
 |---|---|---|
 | `README.md` | 20/24 FR · 387 test | **27/28 FR · 464 test · 23 E2E** |
 | `CLAUDE.md` | 23/24 FR · 440 test · 37 bảng | **27 FR · 464 test · 42 bảng** |
-| `docs/ke-hoach.md` | 444 test · 22 migration | **464 test · 24 migration** |
-| `docs/database/erd.md` | 37 bảng | **42 bảng** |
+| `docs/01-tong-quan/ke-hoach.md` | 444 test · 22 migration | **464 test · 24 migration** |
+| `docs/05-database/erd.md` | 37 bảng | **42 bảng** |
 
 Sửa ba chỗ mô tả sai hiện trạng:
 
@@ -1512,7 +1512,7 @@ kèm đường đi tiếp chỉ làm người dùng biết có việc mà không
 - Endpoint **không `[RequirePermission]`** — mọi người đăng nhập đều thấy màn chủ; lý do khai
   trong danh sách ngoại lệ của `MoiEndpointPhaiDuocGacTests`.
 
-Đặc tả: [`docs/nghiep-vu/thong-ke.md`](./docs/nghiep-vu/thong-ke.md).
+Đặc tả: [`docs/06-nghiep-vu/thong-ke.md`](docs/06-nghiep-vu/thong-ke.md).
 
 
 ### Changed — LMS không hiển thị tiền học nữa; chỉ CRM nắm số tiền (12/09/2026)
@@ -1573,7 +1573,7 @@ hàng chờ đã đổi sang phân trang cùng ngày → sửa thành `api.tongS
 
 ### Added — Tài liệu quy ước viết mã cho toàn dự án (12/09/2026)
 
-[`docs/quy-uoc-code.md`](./docs/quy-uoc-code.md) — quy ước áp cho cả C#, TypeScript, SQL và tài
+[`docs/08-quy-uoc/quy-uoc-code.md`](docs/08-quy-uoc/quy-uoc-code.md) — quy ước áp cho cả C#, TypeScript, SQL và tài
 liệu. Trước đó chỉ có `quy-uoc-migration.md` nói về DB, và nó còn ví dụ từ **dự án bóng đá cũ**
 (`TRAN_DAU`, `DONGGOP_QUY`, `cau_thu_id`) — đã sửa sang ví dụ thật của dự án này.
 
@@ -1610,7 +1610,7 @@ Từ điển thuật ngữ trong ADR **vẫn dùng được** — đã đối ch
 Theo yêu cầu chủ sản phẩm: *"cần cột người tạo, người sửa, ngày tạo, ngày sửa để check lịch sử
 dữ liệu khi cần"*, và *"nhất quán tiếng Anh cho tên bảng, hàm, biến"*.
 
-**[ADR-0006](./docs/kien-truc/adr/0006-dat-ten-tieng-anh-va-cot-audit.md)** chốt cả hai quyết
+**[ADR-0006](docs/02-kien-truc/adr/0006-dat-ten-tieng-anh-va-cot-audit.md)** chốt cả hai quyết
 định, thay thế quy ước *"tiếng Việt không dấu"* cũ. Ranh giới: **mã nguồn tiếng Anh, giao diện và
 URL tiếng Việt** — route `/lms/hoc-vien` giữ nguyên vì đó là thứ người dùng Việt thấy, đổi sang
 `/lms/students` không phục vụ mục tiêu open-source mà lại phá bookmark.
@@ -2007,15 +2007,15 @@ Không sửa số theo trí nhớ — đếm lại từ code và DB rồi mới 
 |---|---|---|
 | `README.md` | 14/15 mã FR · 306 test | 20/24 · 387 |
 | `README.md` | "Nghiệp vụ **của dự án cũ**", "DB còn 7 bảng hệ thống" | 24 FR thật · ERD 34 bảng |
-| `docs/tong-thuat.md` | Chỉ 5 nhóm chức năng (dừng ở FR-14) | **8 nhóm** — thêm CRM (FR-17→21) và HRM (FR-22→24) |
-| `docs/tong-thuat.md` | "HRM và CRM chỉ có hồ sơ nhân sự chạy thật" | LMS + CRM đủ nghiệp vụ; HRM có FR-22 |
-| `docs/backend/phan-quyen-dong.md` | Bảng chức năng thiếu **6 mục** (`KhachHang`, `KhoaHoc`, `SanPham`, `PhongBan`…) và ghi "*(đang làm)*" cho việc đã xong | **24/24 khớp `ChucNang.TatCa`** — đã đối chiếu bằng script |
-| `docs/kien-truc/TONG-QUAN-KIEN-TRUC.md` | Denormalize 25/26 bảng | 33/34 |
-| `docs/database/README.md` | ERD 16 bảng | 34 |
-| `docs/database/erd.md` | Nhóm học liệu 6 bảng, thiếu `TAI_LIEU_LOP_HOC` | 7 bảng — **tổng các nhóm nay = 34, khớp DB** |
-| `docs/ha-tang/prompt-trien-khai-vps.md` | 26 bảng · 306 test + 11 E2E | 34 · 387 + 13 |
-| `docs/ke-hoach.md` + `docs/tong-thuat.md` | Ma trận 20 chức năng | 24 |
-| `docs/ke-hoach.md` | "PostgreSQL thật: 20 bảng" | 34 bảng, 17 migration |
+| `docs/01-tong-quan/tong-thuat.md` | Chỉ 5 nhóm chức năng (dừng ở FR-14) | **8 nhóm** — thêm CRM (FR-17→21) và HRM (FR-22→24) |
+| `docs/01-tong-quan/tong-thuat.md` | "HRM và CRM chỉ có hồ sơ nhân sự chạy thật" | LMS + CRM đủ nghiệp vụ; HRM có FR-22 |
+| `docs/03-backend/phan-quyen-dong.md` | Bảng chức năng thiếu **6 mục** (`KhachHang`, `KhoaHoc`, `SanPham`, `PhongBan`…) và ghi "*(đang làm)*" cho việc đã xong | **24/24 khớp `ChucNang.TatCa`** — đã đối chiếu bằng script |
+| `docs/02-kien-truc/tong-quan-kien-truc.md` | Denormalize 25/26 bảng | 33/34 |
+| `docs/05-database/README.md` | ERD 16 bảng | 34 |
+| `docs/05-database/erd.md` | Nhóm học liệu 6 bảng, thiếu `TAI_LIEU_LOP_HOC` | 7 bảng — **tổng các nhóm nay = 34, khớp DB** |
+| `docs/07-ha-tang/prompt-trien-khai-vps.md` | 26 bảng · 306 test + 11 E2E | 34 · 387 + 13 |
+| `docs/01-tong-quan/ke-hoach.md` + `docs/01-tong-quan/tong-thuat.md` | Ma trận 20 chức năng | 24 |
+| `docs/01-tong-quan/ke-hoach.md` | "PostgreSQL thật: 20 bảng" | 34 bảng, 17 migration |
 
 Nợ kỹ thuật: **N11 sửa từ "20 tenant rác" → 39/42** (đếm 09/09, nâng lên mức Cao vì làm chậm mọi
 truy vấn `TENANT`). Thêm 4 nợ mới phát hiện hôm nay: **N21** chưa canh `Command` phải có
@@ -2061,7 +2061,7 @@ build xanh, migration sinh bình thường, **chỉ schema là sai**.
 ### Changed — Đổi tên toàn bộ về `GiapTech.LangCenter` (bỏ hậu tố `.LMS`) (09/09/2026)
 
 Dự án nay gồm cả CRM (FR-17 → FR-21) và HRM (FR-22 → FR-24), nên tên "LMS" gây nhầm là chỉ có
-đào tạo. Quyết định và số đo ghi ở [ADR-0005](./docs/kien-truc/adr/0005-mot-source-va-doi-ten-langcenter.md).
+đào tạo. Quyết định và số đo ghi ở [ADR-0005](docs/02-kien-truc/adr/0005-mot-source-va-doi-ten-langcenter.md).
 
 **Mã nguồn** (214 file, không rủi ro dữ liệu):
 - Namespace `GiapTech.LangCenter.LMS.*` → `GiapTech.LangCenter.*`
@@ -2533,7 +2533,7 @@ sử" của tôi ở lượt trước. Ba ADR còn hiệu lực nay mô tả LMS
   đơn vị công việc — bài học từ bảng chấm điểm 20 hộp thoại.
 - **Đồng bộ số liệu**: 16 → **20 chức năng**, 7 → **25/26 bảng** có `tenant_id`, 8 → **13 nợ**,
   cập nhật cuối 05/09 → 08/09.
-- **Bổ sung ba hệ thống con** vào `TONG-QUAN-KIEN-TRUC.md`, `docs/nghiep-vu/README.md`,
+- **Bổ sung ba hệ thống con** vào `TONG-QUAN-KIEN-TRUC.md`, `docs/06-nghiep-vu/README.md`,
   `tong-thuat.md`, `ke-hoach.md` (giai đoạn 5b) — trước đó chỉ có trong `phan-quyen-dong.md`.
 - **Thêm 5 thuật ngữ dễ nhầm** vào `THUAT-NGU.md`: hệ thống con, chức năng dùng chung, Nhân sự
   vs Học viên, `trang_thai_nhan_su` vs `TAI_KHOAN.trang_thai`, `UserId` vs `TaiKhoanId`.
@@ -3037,7 +3037,7 @@ vụ bóng đá. Bản bóng đá đầy đủ vẫn còn ở repo cũ.
 
 **Tài liệu**
 - Tổ chức lại `docs/` theo module: nghiệp vụ (16 mã FR) · database · backend · frontend · hạ tầng.
-- `docs/ke-hoach.md` — bảng tiến độ 16 FR, lộ trình, nợ kỹ thuật.
+- `docs/01-tong-quan/ke-hoach.md` — bảng tiến độ 16 FR, lộ trình, nợ kỹ thuật.
 - `docs/nhat-ky/` — nhật ký làm việc theo ngày.
 
 **Nền tảng**

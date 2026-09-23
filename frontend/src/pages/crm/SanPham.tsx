@@ -19,7 +19,7 @@ import { CAC_DON_VI, tien, type DonViTien, type SanPhamDto } from './crmTypes'
  * FR-20 — danh mục sản phẩm bán kèm: sách, học cụ, đồng phục (CRM).
  *
  * Bảng riêng chứ không gộp vào `KHOA_HOC` kèm cột `loai`: gộp thì `so_buoi` luôn NULL cho
- * sách, và mọi query khoá học phải nhớ `WHERE loai = ...`. Xem `docs/nghiep-vu/crm.md`.
+ * sách, và mọi query khoá học phải nhớ `WHERE loai = ...`. Xem `docs/06-nghiep-vu/crm.md`.
  */
 export default function SanPham() {
   const { t } = useTranslation()

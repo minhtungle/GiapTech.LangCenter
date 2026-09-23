@@ -13,7 +13,7 @@
 **Hệ thống quản lý trung tâm ngoại ngữ**, mô hình **multi-tenant**, gồm **ba hệ thống con**
 chia theo nhóm quyền — **HRM** (nhân sự) · **CRM** (khách hàng) · **LMS** (đào tạo). Đây là cách
 nhóm chức năng phân quyền để lọc sidebar, **không phải ba ứng dụng**: một API, một database,
-một lần đăng nhập. → [phan-quyen-dong.md](./docs/backend/phan-quyen-dong.md#ba-hệ-thống-con-hrm--crm--lms)
+một lần đăng nhập. → [phan-quyen-dong.md](docs/03-backend/phan-quyen-dong.md#ba-hệ-thống-con-hrm--crm--lms)
 
 Mỗi trung tâm đăng ký là một tenant độc lập, dữ liệu cách ly hoàn toàn theo `tenant_id`.
 Đăng nhập bằng bộ ba **{mã trung tâm, tên đăng nhập, mật khẩu}**.
@@ -51,7 +51,7 @@ LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 | **FR-28 Thống kê CRM**: doanh thu theo khoá/sản phẩm/đội, phễu, công nợ, biểu đồ tăng trưởng | |
 | **FR-29 Thống kê nhân sự**: xếp hạng kinh doanh/giáo viên/trợ giảng + module tiêu chí chấm thang 5 | |
 
-Chi tiết và nợ kỹ thuật: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
+Chi tiết và nợ kỹ thuật: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-quan/ke-hoach.md).
 
 ---
 
@@ -72,14 +72,14 @@ Chi tiết và nợ kỹ thuật: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 2. **Mọi bảng nghiệp vụ có `tenant_id` + EF Core Global Query Filter** — không được quên ở entity mới.
    Rò rỉ dữ liệu chéo trung tâm là lỗi nghiêm trọng nhất hệ thống này có thể mắc.
-   → [multi-tenant.md](./docs/backend/multi-tenant.md)
+   → [multi-tenant.md](docs/03-backend/multi-tenant.md)
 3. **API không hard-code message lỗi một ngôn ngữ** — trả **mã lỗi**, frontend dịch qua `react-i18next`.
-   → [cqrs-mediatr.md](./docs/backend/cqrs-mediatr.md#trả-lỗi)
+   → [cqrs-mediatr.md](docs/03-backend/cqrs-mediatr.md#trả-lỗi)
 4. **Đổi schema/API → cập nhật tài liệu trong cùng PR**, không tách "làm sau".
 5. **Không push thẳng `main`**, không force-push, không amend commit đã publish, không `--no-verify`
    (trừ yêu cầu tường minh). → [CONTRIBUTING.md](./CONTRIBUTING.md)
 6. **Mọi service ngoài reverse proxy không expose port ra Internet.**
-   → [ADR-0004](./docs/kien-truc/adr/0004-ha-tang-tu-host-vps.md)
+   → [ADR-0004](docs/02-kien-truc/adr/0004-ha-tang-tu-host-vps.md)
 7. **Quyết định kiến trúc lớn/khó đảo ngược → viết ADR mới**, không sửa đè ADR cũ.
 8. **Ràng buộc "chỉ một" phải là UNIQUE INDEX ở tầng DB**, không chỉ `if` trong handler.
    Kiểm bằng `AnyAsync` rồi `Add` là bẫy kinh điển: hai request song song đều thấy "chưa có" và
@@ -92,40 +92,46 @@ Chi tiết và nợ kỹ thuật: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
    tác THẬT của nghiệp vụ (`Chot`, `Duyet`, `ThuTien`…), không mặc định bốn ô CRUD. Khai thiếu
    thì ô không hiện trên màn phân quyền ⇒ không ai cấp được ⇒ endpoint 403 với **cả quản trị**.
    Kèm theo: nhãn tiếng Việt ở `i18n.ts` và giá trị ở `export type HanhDong` trong `quyen.ts`.
-   → [phan-quyen-dong.md](./docs/backend/phan-quyen-dong.md#-thêm-chức-năng-mới-bắt-buộc-khai-quyền-trong-cùng-pr)
+   → [phan-quyen-dong.md](docs/03-backend/phan-quyen-dong.md#-thêm-chức-năng-mới-bắt-buộc-khai-quyền-trong-cùng-pr)
 10. **`Domain` không phụ thuộc EF Core / ASP.NET Core** — cấu hình EF đặt ở `Infrastructure`.
-   → [clean-architecture.md](./docs/backend/clean-architecture.md)
+   → [clean-architecture.md](docs/03-backend/clean-architecture.md)
 11. **Tăng version API chỉ khi breaking change** — thêm field/endpoint mới hoặc sửa bug thì không.
-    → [ADR-0003](./docs/kien-truc/adr/0003-api-versioning.md)
+    → [ADR-0003](docs/02-kien-truc/adr/0003-api-versioning.md)
 
 ---
 
 ## 3. Bản đồ tài liệu
 
+> **Điểm vào: [`docs/README.md`](docs/README.md)** — chỉ đường theo mục đích (hiểu nghiệp vụ /
+> bắt đầu code / thêm chức năng / triển khai). Bảng dưới là tra cứu nhanh.
+
 | Cần biết gì | Đọc ở đâu |
 |---|---|
-| **Tiến độ, lộ trình, nợ kỹ thuật** | [`docs/ke-hoach.md`](./docs/ke-hoach.md) |
-| Tổng quan nghiệp vụ, đọc 1 mạch | [`docs/tong-thuat.md`](./docs/tong-thuat.md) |
-| **29 mã FR** theo module | [`docs/nghiep-vu/`](./docs/nghiep-vu/README.md) |
-| **ERD 45 bảng** + ràng buộc + hành vi xoá | [`docs/database/erd.md`](./docs/database/erd.md) |
+| **Tiến độ, lộ trình, nợ kỹ thuật** | [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-quan/ke-hoach.md) |
+| Tổng quan nghiệp vụ, đọc 1 mạch | [`docs/01-tong-quan/tong-thuat.md`](docs/01-tong-quan/tong-thuat.md) |
+| **29 mã FR** theo module | [`docs/06-nghiep-vu/`](docs/06-nghiep-vu/README.md) |
+| **ERD 45 bảng** + ràng buộc + hành vi xoá | [`docs/05-database/erd.md`](docs/05-database/erd.md) |
 | **Nhật ký theo ngày** (bối cảnh git log không có) | [`docs/nhat-ky/`](./docs/nhat-ky/README.md) |
-| Clean Architecture, luật phụ thuộc | [`docs/backend/clean-architecture.md`](./docs/backend/clean-architecture.md) |
-| **Quy ước viết mã** (đặt tên, null, chú thích, test) | [`docs/quy-uoc-code.md`](./docs/quy-uoc-code.md) |
-| Quy ước đặt tên DB, migration EF Core | [`docs/database/quy-uoc-migration.md`](./docs/database/quy-uoc-migration.md) |
-| CQRS/MediatR, tổ chức handler theo FR | [`docs/backend/cqrs-mediatr.md`](./docs/backend/cqrs-mediatr.md) |
-| Multi-tenant, chỗ Query Filter **không** bảo vệ | [`docs/backend/multi-tenant.md`](./docs/backend/multi-tenant.md) |
-| Phân quyền động | [`docs/backend/phan-quyen-dong.md`](./docs/backend/phan-quyen-dong.md) |
-| Nguyên tắc UI/UX bắt buộc | [`docs/frontend/ui-ux-nguyen-tac.md`](./docs/frontend/ui-ux-nguyen-tac.md) |
-| Design token | [`docs/frontend/design-tokens.md`](./docs/frontend/design-tokens.md) |
-| **Đa ngôn ngữ** (5 thứ tiếng, cách thêm mới) | [`docs/frontend/da-ngon-ngu.md`](./docs/frontend/da-ngon-ngu.md) |
-| Hạ tầng, VPS, runbook sự cố | [`docs/ha-tang/`](./docs/ha-tang/README.md) |
-| **Triển khai lên VPS** (`git pull` + build tại chỗ) | [`docs/ha-tang/trien-khai-pull-code.md`](./docs/ha-tang/trien-khai-pull-code.md) |
-| Kiến trúc tổng quan + trạng thái quyết định | [`docs/kien-truc/TONG-QUAN-KIEN-TRUC.md`](./docs/kien-truc/TONG-QUAN-KIEN-TRUC.md) |
-| 7 ADR đã chốt | [`docs/kien-truc/adr/`](./docs/kien-truc/adr/) |
+| Clean Architecture, luật phụ thuộc | [`docs/03-backend/clean-architecture.md`](docs/03-backend/clean-architecture.md) |
+| **Quy ước viết mã** (đặt tên, null, chú thích, test) | [`docs/08-quy-uoc/quy-uoc-code.md`](docs/08-quy-uoc/quy-uoc-code.md) |
+| Quy ước đặt tên DB, migration EF Core | [`docs/05-database/quy-uoc-migration.md`](docs/05-database/quy-uoc-migration.md) |
+| CQRS/MediatR, tổ chức handler theo FR | [`docs/03-backend/cqrs-mediatr.md`](docs/03-backend/cqrs-mediatr.md) |
+| Multi-tenant, chỗ Query Filter **không** bảo vệ | [`docs/03-backend/multi-tenant.md`](docs/03-backend/multi-tenant.md) |
+| Phân quyền động | [`docs/03-backend/phan-quyen-dong.md`](docs/03-backend/phan-quyen-dong.md) |
+| Nguyên tắc UI/UX bắt buộc | [`docs/04-frontend/ui-ux-nguyen-tac.md`](docs/04-frontend/ui-ux-nguyen-tac.md) |
+| Design token | [`docs/04-frontend/design-tokens.md`](docs/04-frontend/design-tokens.md) |
+| **Đa ngôn ngữ** (5 thứ tiếng, cách thêm mới) | [`docs/04-frontend/da-ngon-ngu.md`](docs/04-frontend/da-ngon-ngu.md) |
+| Hạ tầng, VPS, runbook sự cố | [`docs/07-ha-tang/`](docs/07-ha-tang/README.md) |
+| **Triển khai lên VPS** (`git pull` + build tại chỗ) | [`docs/07-ha-tang/trien-khai-pull-code.md`](docs/07-ha-tang/trien-khai-pull-code.md) |
+| Kiến trúc tổng quan + trạng thái quyết định | [`docs/02-kien-truc/tong-quan-kien-truc.md`](docs/02-kien-truc/tong-quan-kien-truc.md) |
+| 9 ADR đã chốt | [`docs/02-kien-truc/adr/`](docs/02-kien-truc/adr) |
+| **Nhận diện tenant qua domain** (23/09/2026) | [ADR-0008](docs/02-kien-truc/adr/0008-nhan-dien-tenant-qua-domain.md) |
+| **Tài khoản cấp hệ thống** (site chủ) | [ADR-0009](docs/02-kien-truc/adr/0009-tai-khoan-cap-he-thong.md) |
+| **Cẩm nang cho dự án khác** (đọc độc lập) | [`docs/09-cam-nang/`](docs/09-cam-nang/README.md) |
 | Git flow, commit convention, PR checklist | [`CONTRIBUTING.md`](./CONTRIBUTING.md) |
 | Chính sách bảo mật | [`SECURITY.md`](./SECURITY.md) |
-| **Rà soát bảo mật luồng đăng nhập** (22/09/2026) | [`docs/ra-soat-bao-mat-dang-nhap.md`](./docs/ra-soat-bao-mat-dang-nhap.md) |
-| Thuật ngữ dễ nhầm | [`docs/kien-truc/THUAT-NGU.md`](./docs/kien-truc/THUAT-NGU.md) |
+| **Rà soát bảo mật luồng đăng nhập** (22/09/2026) | [`docs/02-kien-truc/ra-soat-bao-mat-dang-nhap.md`](docs/02-kien-truc/ra-soat-bao-mat-dang-nhap.md) |
+| Thuật ngữ dễ nhầm | [`docs/01-tong-quan/thuat-ngu.md`](docs/01-tong-quan/thuat-ngu.md) |
 
 ---
 
@@ -133,18 +139,18 @@ Chi tiết và nợ kỹ thuật: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 | Thành phần | Lựa chọn | ADR |
 |---|---|---|
-| Backend | ASP.NET Core Web API (.NET 8 LTS), Clean Architecture 4 lớp, CQRS + MediatR | [0001](./docs/kien-truc/adr/0001-lua-chon-cong-nghe.md) |
-| ORM / DB | EF Core (Code-First) + **PostgreSQL** (không SQL Server — tránh license) | [0001](./docs/kien-truc/adr/0001-lua-chon-cong-nghe.md) |
+| Backend | ASP.NET Core Web API (.NET 8 LTS), Clean Architecture 4 lớp, CQRS + MediatR | [0001](docs/02-kien-truc/adr/0001-lua-chon-cong-nghe.md) |
+| ORM / DB | EF Core (Code-First) + **PostgreSQL** (không SQL Server — tránh license) | [0001](docs/02-kien-truc/adr/0001-lua-chon-cong-nghe.md) |
 | Auth | ASP.NET Core Identity + JWT Bearer (access + refresh token) | — |
-| Frontend | **React + TypeScript** trên nền **shadcn-admin** (Vite + Tailwind + shadcn/ui + Radix) — **không Blazor** | [0002](./docs/kien-truc/adr/0002-frontend-shadcn-admin.md) |
-| FE data/form | TanStack Query · React Hook Form + Zod | [0002](./docs/kien-truc/adr/0002-frontend-shadcn-admin.md) |
+| Frontend | **React + TypeScript** trên nền **shadcn-admin** (Vite + Tailwind + shadcn/ui + Radix) — **không Blazor** | [0002](docs/02-kien-truc/adr/0002-frontend-shadcn-admin.md) |
+| FE data/form | TanStack Query · React Hook Form + Zod | [0002](docs/02-kien-truc/adr/0002-frontend-shadcn-admin.md) |
 | FE lịch | **FullCalendar 6** (MIT) — tháng/tuần/danh sách, có `timeZone`; tải theo yêu cầu | — |
 | Đa ngôn ngữ | **5 thứ tiếng** (vi·en·zh·ko·ja) · FE `react-i18next` · API trả **mã lỗi** | — |
-| API versioning | URL segment `/api/v1/...`, `Asp.Versioning.Mvc` | [0003](./docs/kien-truc/adr/0003-api-versioning.md) |
-| Hạ tầng | 1 VPS · Docker Compose · **Nginx + certbot** (có sẵn trên VPS) · **MinIO** · Redis (tuỳ chọn) | [0004](./docs/kien-truc/adr/0004-ha-tang-tu-host-vps.md) |
-| CI/CD | GitHub Actions → build & test → image → **ghcr.io** → SSH `docker compose pull && up -d` | [0004](./docs/kien-truc/adr/0004-ha-tang-tu-host-vps.md) |
+| API versioning | URL segment `/api/v1/...`, `Asp.Versioning.Mvc` | [0003](docs/02-kien-truc/adr/0003-api-versioning.md) |
+| Hạ tầng | 1 VPS · Docker Compose · **Nginx + certbot** (có sẵn trên VPS) · **MinIO** · Redis (tuỳ chọn) | [0004](docs/02-kien-truc/adr/0004-ha-tang-tu-host-vps.md) |
+| CI/CD | GitHub Actions → build & test → image → **ghcr.io** → SSH `docker compose pull && up -d` | [0004](docs/02-kien-truc/adr/0004-ha-tang-tu-host-vps.md) |
 | Thông báo | SMTP (SendGrid/Gmail API) + SMS Gateway nội địa (eSMS/Speedsms) | — |
-| Quan sát | Loki+Promtail (log) · Prometheus+Grafana (metrics) · Uptime Kuma (alert) · Sentry (error) | [0004](./docs/kien-truc/adr/0004-ha-tang-tu-host-vps.md) |
+| Quan sát | Loki+Promtail (log) · Prometheus+Grafana (metrics) · Uptime Kuma (alert) · Sentry (error) | [0004](docs/02-kien-truc/adr/0004-ha-tang-tu-host-vps.md) |
 
 ---
 
@@ -174,8 +180,8 @@ Tầng hệ thống hiện có, đặt ở đâu:
 
 ### Thứ tự làm việc khi thêm tính năng mới
 
-1. Viết mô tả **FR-xx** vào [`docs/nghiep-vu/`](./docs/nghiep-vu/README.md) trước khi code.
-2. Cập nhật [ERD](./docs/database/erd.md) + migration nếu đổi dữ liệu.
+1. Viết mô tả **FR-xx** vào [`docs/06-nghiep-vu/`](docs/06-nghiep-vu/README.md) trước khi code.
+2. Cập nhật [ERD](docs/05-database/erd.md) + migration nếu đổi dữ liệu.
 3. Viết code: **Domain → Application → Infrastructure → API**. Entity mới **bắt buộc** kế thừa
    `TenantEntity` (quy tắc #2). Module mới: thêm hằng vào `ChucNang.TatCa`, phân loại trong
    `HeThongCua`, **và khai thao tác vào `ChucNang.ThaoTacTheoChucNang`** (quy tắc #9).
@@ -195,12 +201,12 @@ Tầng hệ thống hiện có, đặt ở đâu:
 
 Đã kiểm chứng và đang chạy — **không phải làm lại**:
 
-- **Multi-tenant**: [Global Query Filter](./docs/backend/multi-tenant.md) tự áp cho mọi
+- **Multi-tenant**: [Global Query Filter](docs/03-backend/multi-tenant.md) tự áp cho mọi
   `ITenantEntity`, tự gán `tenant_id` khi ghi. Canh bởi `CachLyTenantTests` — trong đó có test
   hỏi chiều ngược: *"entity KHÔNG bị lọc có phải ngoại lệ có chủ ý không"*, buộc người thêm
   entity mới phải dừng lại khai lý do.
 - **Phân quyền động**: `[RequirePermission]` + policy sinh động + `IAuthorizationHandler` đọc
-  `QUYEN_CHUC_NANG` có cache. → [phan-quyen-dong.md](./docs/backend/phan-quyen-dong.md)
+  `QUYEN_CHUC_NANG` có cache. → [phan-quyen-dong.md](docs/03-backend/phan-quyen-dong.md)
 - **Xác thực**: JWT Bearer + refresh token **có xoay vòng và phát hiện tái sử dụng**; quên mật
   khẩu (token hash, hạn 30 phút, dùng một lần); middleware buộc đổi mật khẩu lần đầu chặn ở
   **tầng API**, không phó mặc frontend.
@@ -250,7 +256,7 @@ Tầng hệ thống hiện có, đặt ở đâu:
   Trong code: **tra quyền dùng `ICurrentUser.TaiKhoanId`**, **khoá ngoại nghiệp vụ dùng
   `ICurrentUser.UserId`** — lẫn hai thứ này trả rỗng một cách im lặng, không có lỗi biên dịch.
 
-Nợ kỹ thuật: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
+Nợ kỹ thuật: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-quan/ke-hoach.md).
 
 ---
 
@@ -307,7 +313,7 @@ docker run -d --name lms-pg -e POSTGRES_PASSWORD=devpass -e POSTGRES_USER=langce
 export ConnectionStrings__Default="Host=localhost;Port=55432;Database=langcenter;Username=langcenter;Password=devpass"
 dotnet ef database update --project src/GiapTech.LangCenter.Infrastructure \
   --startup-project src/GiapTech.LangCenter.API
-# → 45 bảng (15 hệ thống + 30 nghiệp vụ) — xem docs/database/erd.md
+# → 45 bảng (15 hệ thống + 30 nghiệp vụ) — xem docs/05-database/erd.md
 
 # Tạo trung tâm thử — endpoint ẩn danh, mã 7 ký tự do hệ thống sinh.
 # CẦN `CHO_TU_DANG_KY=true` lúc chạy API, nếu không endpoint trả 404 (mặc định TẮT từ
@@ -318,7 +324,7 @@ curl -X POST localhost:5229/api/v1/dang-ky-trung-tam \
 #   Bắt buộc đổi mật khẩu ở lần đăng nhập đầu.
 #
 # VPS mới (DB rỗng): đặt TRUNG_TAM_DAU_TIEN_MAT_KHAU trong .env thì hệ thống tự tạo trung tâm
-# đầu tiên lúc khởi động — xem docs/ha-tang/trien-khai-2026-09-23.md
+# đầu tiên lúc khởi động — xem docs/07-ha-tang/trien-khai-2026-09-23.md
 
 # --- Đồng bộ mật khẩu mọi nick của MỘT trung tâm (CHỈ DEV) ---
 # Khi phải đăng nhập lần lượt nhiều vai trò để xem mỗi người thấy gì.

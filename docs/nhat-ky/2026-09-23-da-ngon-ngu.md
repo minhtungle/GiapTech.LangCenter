@@ -86,4 +86,4 @@ nói rõ) và test canh **số thứ tự đặt đúng chỗ** — mutation "b�
 
 **Bản dịch chưa có người bản ngữ rà.** Thuật ngữ phổ thông thì ổn, nhưng thuật ngữ nghiệp vụ
 riêng (*xếp lớp*, *sổ thu*, *chốt sổ*) nên có người bản ngữ xem trước khi dùng cho khách thật.
-Các tác nhân đã tự đánh dấu những chỗ họ không chắc — ghi trong `docs/frontend/da-ngon-ngu.md`.
+Các tác nhân đã tự đánh dấu những chỗ họ không chắc — ghi trong `docs/04-frontend/da-ngon-ngu.md`.

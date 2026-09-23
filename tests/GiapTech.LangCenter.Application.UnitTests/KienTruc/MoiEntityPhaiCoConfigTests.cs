@@ -13,7 +13,7 @@ namespace GiapTech.LangCenter.Application.UnitTests.KienTruc;
 /// - `string` thành `text` không giới hạn thay vì `varchar(200)` — mất cả ràng buộc độ dài
 ///   lẫn khả năng dùng index hiệu quả;
 /// - hành vi xoá mặc định là **Cascade**, trong khi dự án này chọn Restrict cho dữ liệu bằng
-///   chứng (điểm danh, tiền) — xem bảng hành vi xoá trong `docs/database/erd.md`;
+///   chứng (điểm danh, tiền) — xem bảng hành vi xoá trong `docs/05-database/erd.md`;
 /// - tên bảng/cột theo convention của EF, lệch khỏi quy ước `SNAKE_CASE` của dự án.
 ///
 /// Không test nào khác bắt được: build xanh, migration sinh ra bình thường, chỉ schema là sai.
@@ -80,7 +80,7 @@ public class MoiEntityPhaiCoConfigTests
             $"Entity chưa khai tên bảng đúng quy ước: {string.Join(", ", sai)}.\n"
             + "Thêm một `IEntityTypeConfiguration<T>` ở Infrastructure/Persistence/Configurations "
             + "với `b.ToTable(\"TEN_BANG\")`. Thiếu nó thì EF tự suy tên theo DbSet và schema lệch "
-            + "khỏi quy ước — xem docs/database/quy-uoc-migration.md.");
+            + "khỏi quy ước — xem docs/05-database/quy-uoc-migration.md.");
     }
 
     /// <summary>

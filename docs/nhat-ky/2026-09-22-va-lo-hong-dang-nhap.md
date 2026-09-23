@@ -183,7 +183,7 @@ chính sách. Kéo dài các giá trị đó là xong.
 
 **Blocklist mật khẩu phổ biến** chưa làm. Blocklist tử tế cần đóng gói một danh sách lớn, còn
 HIBP là gọi ra dịch vụ ngoài — cả hai là quyết định riêng, không nên lặng lẽ gộp vào một thay
-đổi về độ dài. Ghi ở `docs/ra-soat-bao-mat-dang-nhap.md`.
+đổi về độ dài. Ghi ở `docs/02-kien-truc/ra-soat-bao-mat-dang-nhap.md`.
 
 ---
 

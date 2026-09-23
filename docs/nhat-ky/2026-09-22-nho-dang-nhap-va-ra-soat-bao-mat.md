@@ -65,7 +65,7 @@ test còn lại. Dùng `localStorage` giả ~25 dòng, giả được cả hành
 
 ## 2. Rà soát bảo mật
 
-Kết quả đầy đủ: [`docs/ra-soat-bao-mat-dang-nhap.md`](../ra-soat-bao-mat-dang-nhap.md).
+Kết quả đầy đủ: [`docs/02-kien-truc/ra-soat-bao-mat-dang-nhap.md`](../02-kien-truc/ra-soat-bao-mat-dang-nhap.md).
 
 Tóm tắt: **27 hạng mục đạt**, tập trung ở mật mã học và quản lý token — PBKDF2, refresh token
 xoay vòng có phát hiện tái sử dụng, hash token trong DB, `ClockSkew = 0`, fail-fast `JWT_SECRET`.

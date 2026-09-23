@@ -1,7 +1,7 @@
 # 22/09/2026 — Mục 7: refresh token vào cookie `httpOnly` (ADR-0007)
 
 Chủ sản phẩm chọn **phương án đầy đủ**: cookie `httpOnly` + access token vào RAM + chống CSRF.
-Viết [ADR-0007](../kien-truc/adr/0007-refresh-token-cookie-httponly.md) trước, code sau (quy tắc #7).
+Viết [ADR-0007](../02-kien-truc/adr/0007-refresh-token-cookie-httponly.md) trước, code sau (quy tắc #7).
 
 Hoàn tất đợt rà soát: **8/8 mục đã vá**.
 

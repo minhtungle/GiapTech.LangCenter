@@ -63,7 +63,7 @@ Che cột chứ không cắt hàng.
 `ThayToanBoSo` cần **cả** `HocPhi` **và** `LopHocToanTrungTam`. Nghĩa là cấp
 `LopHocToanTrungTam.Xem` cho nhóm Giáo viên — nghe rất vô hại, "cho xem lịch mọi lớp" — sẽ mở
 toàn bộ sổ thu nếu nhóm đó cũng có `HocPhi.Xem`. Nhóm mặc định an toàn, nhưng admin sửa được
-ma trận. Đã ghi vào [FR-14](../nghiep-vu/hoc-phi.md).
+ma trận. Đã ghi vào [FR-14](../06-nghiep-vu/hoc-phi.md).
 
 ## Bố cục: gom tiền về một tab
 

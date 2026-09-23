@@ -55,4 +55,4 @@ mất đường quản trị hoàn toàn. Nay chặn bởi `ChotConNguoiQuanTri.
 `ChucNang.LopHocToanTrungTam` dùng để nhận ra ai thấy được mọi lớp.
 
 > ⚠️ Các mã nợ **N3/N4/N9** xuất hiện trong nhật ký cũ thuộc **bảng nợ của dự án tiền thân**,
-> đánh số khác bảng hiện tại trong [`ke-hoach.md`](../ke-hoach.md). Đừng đối chiếu chúng.
+> đánh số khác bảng hiện tại trong [`ke-hoach.md`](../01-tong-quan/ke-hoach.md). Đừng đối chiếu chúng.

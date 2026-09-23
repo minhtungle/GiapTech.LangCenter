@@ -19,7 +19,7 @@ import { CAC_DON_VI, tien, type DonViTien, type KhoaHocDto } from './crmTypes'
  * FR-19 — danh mục khoá học bán ra (CRM).
  *
  * Khoá học ≠ Lớp học: khoá là **sản phẩm** bán đi bán lại, lớp là một **lần mở** cụ thể có
- * giáo viên và lịch. Xem `docs/nghiep-vu/crm.md`.
+ * giáo viên và lịch. Xem `docs/06-nghiep-vu/crm.md`.
  */
 export default function KhoaHoc() {
   const { t } = useTranslation()

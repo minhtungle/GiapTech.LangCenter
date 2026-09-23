@@ -34,7 +34,7 @@ Commit message tập trung **"vì sao"** hơn "làm gì" — diff đã tự nói
       **không merge tính năng thiếu tài liệu tương ứng**.
 - [ ] Test tương ứng đã viết (unit cho Application layer, integration cho API endpoint mới/đổi).
 - [ ] Nếu đổi schema DB: đã tạo migration, đã cập nhật `docs/database/`.
-- [ ] Nếu đổi hợp đồng API (breaking change): đã tăng version theo `docs/kien-truc/adr/0003-api-versioning.md`.
+- [ ] Nếu đổi hợp đồng API (breaking change): đã tăng version theo `docs/02-kien-truc/adr/0003-api-versioning.md`.
 - [ ] Nếu là quyết định kiến trúc lớn/khó đảo ngược: đã viết ADR mới trong `docs/kien-truc/adr/`.
 - [ ] `CHANGELOG.md` đã ghi nhận thay đổi đáng chú ý.
 

@@ -108,9 +108,9 @@ Kết quả: 442 test xanh, dữ liệu `W686AE9` khớp từng bảng (8 ngư�
 Không phải công cốc:
 
 - **Bốn cột audit** đang chạy trên 37/37 bảng
-- **[ADR-0006](../kien-truc/adr/0006-dat-ten-tieng-anh-va-cot-audit.md)** với từ điển thuật ngữ
+- **[ADR-0006](../02-kien-truc/adr/0006-dat-ten-tieng-anh-va-cot-audit.md)** với từ điển thuật ngữ
   đã đối chiếu khớp 100% dữ liệu thật — ai làm lại thì bắt đầu từ đó
-- **[quy-uoc-code.md](../quy-uoc-code.md)** — quy ước viết mã cho toàn dự án, mục 9 ghi hẳn
+- **[quy-uoc-code.md](../08-quy-uoc/quy-uoc-code.md)** — quy ước viết mã cho toàn dự án, mục 9 ghi hẳn
   "đổi tên hàng loạt: đọc trước khi làm"
 
 ## Bài học
