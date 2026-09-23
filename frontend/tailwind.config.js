@@ -35,7 +35,7 @@ export default {
           foreground: 'hsl(var(--card-foreground))',
         },
         // Màu trạng thái cố định — quy ước xuyên suốt mọi module.
-        // Xem docs/frontend/ui-ux-nguyen-tac.md mục 4.
+        // Xem docs/04-frontend/ui-ux-nguyen-tac.md mục 4.
         status: {
           ok: 'hsl(var(--status-ok))',
           loi: 'hsl(var(--status-loi))',
