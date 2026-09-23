@@ -81,6 +81,8 @@ public static class DependencyInjection
         services.AddScoped<Persistence.Seed.TrungTamDauTien>();
         // Tài khoản chủ hệ thống đầu tiên (ADR-0009) — xem `ChuHeThongDauTien`.
         services.AddScoped<Persistence.Seed.ChuHeThongDauTien>();
+        // Dọn tenant rác của E2E (nợ N11) — cần SQL thô nên nằm ở Infrastructure.
+        services.AddScoped<IDonTenantE2E, Persistence.DonTenantE2E>();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
 
         // Scoped chứ không Singleton: MinioLuuTruAnh phụ thuộc ICurrentTenant (theo request)

@@ -8,6 +8,49 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Added — nhận diện tenant qua domain · site chủ hệ thống (23/09/2026)
+
+Hai ADR, chốt trước khi viết code (quy tắc #7).
+
+**[ADR-0008](docs/02-kien-truc/adr/0008-nhan-dien-tenant-qua-domain.md) — tenant giải được bằng
+hai đường, cả hai luôn cùng sống:**
+
+| Đường vào | Ai quyết tenant | Ô mã trên màn đăng nhập |
+|---|---|---|
+| Domain riêng đã gắn | **domain** | **ẩn**, hiện tên trung tâm |
+| Domain mặc định · local · E2E | **mã** người dùng gõ | hiện |
+
+Lý do cốt lõi: Global Query Filter có nhánh `TenantIdHienTai == null` tắt filter (cần cho
+seeder). An toàn chừng nào mọi endpoint còn đòi JWT — landing công khai làm tiền đề đó sai, và
+khi ấy tra hụt tenant **trả dữ liệu mọi trung tâm** thay vì trả rỗng.
+
+Chốt kèm: `Host` do client gửi nên không đáng tin (nginx là nguồn duy nhất, dùng `$server_name`);
+tra hụt thì **404 tại middleware**; domain đã gắn thì **bỏ qua mã client gửi**. Không rẽ nhánh
+theo `IsDevelopment()`.
+
+**[ADR-0009](docs/02-kien-truc/adr/0009-tai-khoan-cap-he-thong.md) — bảng `QUAN_TRI_HE_THONG`
+riêng** thay vì cờ trên `TAI_KHOAN`: với cờ thì mọi chỗ đọc `TAI_KHOAN` phải nhớ kiểm, quên một
+chỗ là leo thang đặc quyền.
+
+Site chủ quản **vòng đời tenant**: xem danh sách, tạo trung tâm, gắn/gỡ domain. Cố ý **không**
+đọc dữ liệu nghiệp vụ bên trong tenant, và **không** có xoá tenant.
+
+### Fixed
+
+- **Nợ N3 (Cao) — đóng.** Tạo trung tâm nay đi qua site chủ có xác thực, thay endpoint ẩn danh.
+- **Nợ N11 — chữa tận gốc.** `globalTeardown` dọn tenant E2E sau mỗi lượt chạy; trước đó phải
+  dọn tay **năm lần** và repo tích 5 script `.sql` dọn rác.
+- `check-doc-links.py` nay quét cả chú thích trong `.cs`/`.ts` — nó bắt được ngay một tham chiếu
+  hỏng vừa sót, và một cái hỏng sẵn từ trước trong `deploy.yml`.
+- ADR-0007: bảng tóm tắt còn ghi `SameSite=Strict` trong khi phần đính chính cuối file đã đổi
+  sang `Lax` — người đọc lướt bảng lấy nhầm giá trị.
+
+### Changed — tái cấu trúc tài liệu
+
+`docs/` sắp theo thứ tự đọc (`01-tong-quan` … `09-cam-nang`), thêm `docs/README.md` làm điểm vào
+theo **mục đích**, và thêm **`09-cam-nang/`** — viết cho người ngoài dự án, đọc được độc lập, để
+dùng làm cơ sở cho dự án khác.
+
 ### Added — đa ngôn ngữ: Anh · Trung · Hàn · Nhật (23/09/2026)
 
 Yêu cầu chủ sản phẩm. **Chỉ dịch giao diện** — tên lớp, tên học viên, ghi chú giữ nguyên, đúng

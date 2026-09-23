@@ -23,13 +23,13 @@ export default defineConfig({
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   timeout: 30_000,
 
-  // KHÔNG có globalTeardown dọn tenant test: endpoint dọn rác thuộc module dữ liệu mẫu, đã bị
-  // bỏ ở bản base. Mỗi lần chạy cả bộ E2E để lại một ít tenant "E2E ..." trong DB dev.
+  // Dọn tenant rác sau mỗi lượt chạy (nợ N11, làm 23/09/2026). Trước đó không có, và rác
+  // tích rất nhanh: đã phải dọn tay năm lần (12/09: 212→1, 17/09: 662→1, ba lần ngày 23/09).
   //
-  // Bài học từ dự án trước: rác này tích rất nhanh (đo thật: 242/249 tenant là rác sau vài lần
-  // chạy) và làm DB dev không dùng được để kiểm tay nữa. Khi thêm nghiệp vụ, hãy làm lại
-  // endpoint dọn theo tiền tố tên + globalTeardown, và nhớ: teardown thất bại chỉ được in cảnh
-  // báo, KHÔNG làm cả bộ test đỏ — nếu không thì "rác chưa dọn" bị hiểu thành "có test đỏ".
+  // Cần `CHO_DON_E2E=true` và `CHU_HE_THONG_MAT_KHAU` ở phía API; thiếu thì teardown in cảnh
+  // báo rồi bỏ qua. Thất bại ở teardown KHÔNG làm cả bộ test đỏ — "rác chưa dọn" mà bị hiểu
+  // thành "có test đỏ" thì lần sau người ta tắt teardown đi.
+  globalTeardown: './e2e/don-dep.ts',
 
   use: {
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:8080',

@@ -94,4 +94,27 @@ public class ChuHeThongController(ISender sender) : ControllerBase
         await sender.Send(command with { TrungTamId = id }, ct);
         return NoContent();
     }
+
+    /// <summary>
+    /// Dọn trung tâm rác do test E2E sinh ra (nợ N11) — **chỉ môi trường test**.
+    ///
+    /// Mỗi lượt chạy E2E sinh ~40 trung tâm; đã phải dọn tay năm lần và repo có tới 5 script
+    /// `.sql` dọn rác. `globalTeardown` của Playwright gọi endpoint này sau mỗi lượt.
+    ///
+    /// Trả **404 khi cờ tắt**, không phải 403: từ bên ngoài, endpoint chỉ tồn tại ở môi
+    /// trường test — cùng cách `DangKyTrungTamController` xử lý `CHO_TU_DANG_KY`.
+    /// </summary>
+    [HttpPost("don-tenant-e2e")]
+    [ChiChuHeThong]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DonTenantE2E(
+        [FromServices] IConfiguration config, CancellationToken ct)
+    {
+        if (!TinhNang.ChoDonE2E(config))
+            return NotFound();
+
+        var soLuong = await sender.Send(new DonTrungTamE2ECommand(), ct);
+        return Ok(new { daXoa = soLuong });
+    }
 }

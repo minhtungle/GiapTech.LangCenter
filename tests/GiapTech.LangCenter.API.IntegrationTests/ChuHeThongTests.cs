@@ -413,6 +413,45 @@ public class ChuHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
             x => Assert.Null(x.CreatedById));
     }
 
+    // ---------------------------------------------------------------------------------
+    // Dọn tenant E2E (nợ N11) — endpoint XOÁ HÀNG LOẠT, canh kỹ
+    // ---------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Cờ TẮT (mặc định) ⇒ 404, endpoint coi như không tồn tại.
+    ///
+    /// Đây là chốt quan trọng nhất: quên cấu hình ở môi trường thật phải dẫn tới "không dọn
+    /// được" chứ không phải "ai cũng xoá được".
+    /// </summary>
+    [Fact]
+    public async Task Don_tenant_e2e_tra_404_khi_co_tat()
+    {
+        var client = factory.CreateClient();
+        var token = await DangNhapChuAsync(client, "chu-don-tat");
+
+        var req = new HttpRequestMessage(HttpMethod.Post, "/api/v1/chu-he-thong/don-tenant-e2e");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var res = await client.SendAsync(req);
+
+        Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
+    }
+
+    /// <summary>Token tenant không gọi được, kể cả khi cờ bật.</summary>
+    [Fact]
+    public async Task Token_tenant_khong_don_duoc_tenant_e2e()
+    {
+        var client = factory.CreateClient();
+        var phien = await TroGiupPhien.DangNhapAsync(client, factory);
+
+        var req = new HttpRequestMessage(HttpMethod.Post, "/api/v1/chu-he-thong/don-tenant-e2e");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", phien.Access);
+
+        var res = await client.SendAsync(req);
+
+        Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
+    }
+
     private record LoiDto(string ErrorCode);
 
     private record TrungTamDto(Guid Id, string MaTrungTam, string TenTrungTam);

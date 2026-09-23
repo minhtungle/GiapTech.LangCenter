@@ -155,3 +155,46 @@ public class TaoTrungTamHandler(
             ITenantSeeder.UsernameAdmin, moi.MatKhauAdmin);
     }
 }
+
+/// <summary>
+/// Xoá các trung tâm do test E2E sinh ra (nợ N11).
+///
+/// ## Vì sao endpoint này tồn tại, và vì sao nó hẹp đến mức này
+///
+/// Mỗi lượt chạy E2E sinh ~40 trung tâm rác. Đã phải dọn tay ít nhất **năm lần** (12/09,
+/// 17/09, và ba lần trong ngày 23/09) — repo có tới 5 script `.sql` dọn rác, dấu hiệu rõ của
+/// việc chữa triệu chứng lặp lại. `globalTeardown` của Playwright gọi endpoint này.
+///
+/// **Bốn chốt chặn, cố ý chồng lên nhau** — đây là endpoint XOÁ HÀNG LOẠT, loại nguy hiểm nhất:
+///
+/// 1. Chỉ xoá trung tâm có tên bắt đầu đúng <see cref="TienToE2E"/>. Trung tâm thật không bao
+///    giờ mang tên đó.
+/// 2. Chỉ chạy khi <c>CHO_DON_E2E=true</c>. **Mặc định TẮT**, y như `CHO_TU_DANG_KY`. Cờ kiểm
+///    ở tầng API (`TinhNang.ChoDonE2E`) chứ không ở đây — `Application` không phụ thuộc
+///    `IConfiguration` (quy tắc #10), và cờ tắt thì controller trả 404 nên endpoint coi như
+///    không tồn tại.
+/// 3. Gác bằng `[ChiChuHeThong]` — cần token chủ hệ thống, không phải ai cũng gọi được.
+/// 4. Trả về SỐ LƯỢNG đã xoá để teardown ghi log; xoá nhầm thì con số bất thường là dấu hiệu.
+///
+/// Không dùng `TRUNCATE` hay xoá theo ngày tạo: hai cách đó không phân biệt được trung tâm
+/// thật với rác, và một lần chạy nhầm trên production là mất hết.
+/// </summary>
+public record DonTrungTamE2ECommand : IRequest<int>;
+
+public class DonTrungTamE2EHandler(IDonTenantE2E don)
+    : IRequestHandler<DonTrungTamE2ECommand, int>
+{
+    /// <summary>Tiền tố tên mà `frontend/e2e/tro-giup.ts` đặt cho mọi trung tâm test.</summary>
+    public const string TienToE2E = "E2E ";
+
+    /// <summary>
+    /// Giao việc xoá cho `IDonTenantE2E` (Infrastructure) chứ không tự `RemoveRange`.
+    ///
+    /// Bản đầu dùng Cascade của EF và chết ngay lần chạy E2E đầu tiên:
+    /// `violates foreign key constraint fk_lop_hoc_nguoi_dungs_giao_vien_chinh_id`.
+    /// `LOP_HOC.giao_vien_chinh_id` là RESTRICT nên xoá `NGUOI_DUNG` trước `LOP_HOC` là chết,
+    /// và EF không sắp được thứ tự cho đồ thị phụ thuộc này.
+    /// </summary>
+    public Task<int> Handle(DonTrungTamE2ECommand request, CancellationToken ct)
+        => don.XoaAsync(TienToE2E, ct);
+}

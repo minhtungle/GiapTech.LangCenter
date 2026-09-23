@@ -23,4 +23,18 @@ public static class TinhNang
 
     public static bool ChoTuDangKy(IConfiguration config) =>
         bool.TryParse(config[KhoaChoTuDangKy], out var bat) && bat;
+
+    /// <summary>
+    /// Cho phép dọn trung tâm rác do E2E sinh ra (nợ N11).
+    ///
+    /// **Mặc định TẮT**, cùng lý do với <see cref="KhoaChoTuDangKy"/> — đây là endpoint XOÁ
+    /// HÀNG LOẠT, nên quên cấu hình phải dẫn tới "không dọn được" chứ không phải "ai cũng
+    /// xoá được". Cờ tắt ⇒ controller trả 404, endpoint coi như không tồn tại.
+    ///
+    /// Bật: <c>CHO_DON_E2E=true</c>. CHỈ đặt ở môi trường test, không bao giờ trên VPS thật.
+    /// </summary>
+    public const string KhoaChoDonE2E = "CHO_DON_E2E";
+
+    public static bool ChoDonE2E(IConfiguration config) =>
+        bool.TryParse(config[KhoaChoDonE2E], out var bat) && bat;
 }

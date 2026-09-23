@@ -38,7 +38,7 @@ LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 | Người dùng (hồ sơ 3 vai trò) tách khỏi tài khoản · nhóm quyền · thiết lập | **Kết thúc lớp** — enum có `DaKetThuc` nhưng chưa endpoint nào set (nợ N26) |
 | **Ba hệ thống con** HRM/CRM/LMS: bộ chuyển, sidebar lọc, tab phân quyền · URL `/hrm` `/crm` `/lms` | Số **đã thu** ở CRM chưa chảy sang sổ học phí LMS |
 | **CRM** (FR-17 → FR-20): khách hàng + view 3 tab · doanh thu đa tiền tệ · **khoá học + sản phẩm** | Hộp thoại chọn lớp chưa **sắp** lớp cùng khoá lên đầu (nợ N19, còn phần nhỏ) |
-| **HRM** đủ nghiệp vụ (FR-22 → FR-24): cơ cấu tổ chức · chức vụ · hồ sơ mở rộng (CCCD, số TK, MXH, tệp) | Đăng ký trung tâm an toàn production (nợ N3) |
+| **HRM** đủ nghiệp vụ (FR-22 → FR-24): cơ cấu tổ chức · chức vụ · hồ sơ mở rộng (CCCD, số TK, MXH, tệp) | **Frontend site chủ hệ thống** — backend xong (ADR-0009), chưa có UI |
 | Hồ sơ con người: Nhân sự (HRM) · **Học viên quản lý tập trung ở CRM** (13/09) | **Bài tập cho khoá online** — FR-27, bước 4/4 chưa làm |
 | Lớp học: vòng đời, phân công, ghi danh, học phí riêng từng người, **gán tối đa 3 khoá** | Import Excel học viên |
 | Buổi học: sinh lịch tự động; điểm danh hai nguồn; **trạng thái suy theo giờ + màu riêng** (18/09) | Dọn nhật ký cũ theo chính sách lưu giữ |
@@ -49,7 +49,9 @@ LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 | **FR-15 Tổng quan**: một màn cho mọi vai trò, chỉ hiện việc tồn đọng, không có số tiền | |
 | **FR-25 → FR-27 Học trực tuyến**: soạn khoá · cấp quyền học · tiến độ (bài tập chấm điểm chưa) | |
 | **FR-28 Thống kê CRM**: doanh thu theo khoá/sản phẩm/đội, phễu, công nợ, biểu đồ tăng trưởng | |
-| **FR-29 Thống kê nhân sự**: xếp hạng kinh doanh/giáo viên/trợ giảng + module tiêu chí chấm thang 5 | |
+| **FR-29 Thống kê nhân sự**: xếp hạng kinh doanh/giáo viên/trợ giảng + module tiêu chí chấm thang 5 | **LDP — landing page công khai** (FR-30), chưa bắt đầu |
+| **Nhận diện tenant qua domain** (ADR-0008): hai đường vào — domain riêng ẩn ô mã, hoặc mã trung tâm | |
+| **Site chủ hệ thống** (ADR-0009): tạo trung tâm · gắn domain · đóng nợ N3 | |
 
 Chi tiết và nợ kỹ thuật: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-quan/ke-hoach.md).
 
@@ -300,9 +302,18 @@ npx oxlint src e2e
 # mỗi IP (thêm 08/09/2026) → chạy cả bộ sẽ 429. PHẢI tắt hạn mức khi chạy E2E:
 # Và từ 22/09/2026, tự đăng ký trung tâm TẮT mặc định (chủ sản phẩm chốt đóng hẳn) — mà mỗi
 # test E2E lại tự tạo một trung tâm, nên phải bật lại khi chạy test:
-GIOI_HAN_TAN_SUAT=false CHO_TU_DANG_KY=true \
+# Từ 23/09/2026 thêm CHO_DON_E2E + CHU_HE_THONG_MAT_KHAU để globalTeardown dọn tenant rác
+# sau mỗi lượt chạy (nợ N11). Thiếu hai biến này thì test vẫn chạy bình thường, chỉ là rác
+# không được dọn và teardown in một dòng cảnh báo.
+GIOI_HAN_TAN_SUAT=false CHO_TU_DANG_KY=true CHO_DON_E2E=true \
+  CHU_HE_THONG_MAT_KHAU='mat-khau-chu-e2e-123456' \
   dotnet run --project src/GiapTech.LangCenter.API   # ở terminal khác
-E2E_BASE_URL=http://localhost:5173 npx playwright test
+
+# CHẠY TỪ THƯ MỤC frontend/ — playwright.config.ts nằm ở đó, chạy từ gốc repo thì Playwright
+# quét nhầm cả file vitest trong src/ và báo "No tests found".
+cd frontend
+E2E_BASE_URL=http://localhost:5173 CHU_HE_THONG_MAT_KHAU='mat-khau-chu-e2e-123456' \
+  npx playwright test
 
 # --- PostgreSQL + MinIO cho dev ---
 docker run -d --name lms-minio -p 59000:9000 \
