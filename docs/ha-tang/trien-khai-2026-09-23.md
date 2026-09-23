@@ -35,6 +35,38 @@ khẩu** hoặc **tạo tài khoản mới** mới phải đủ 12 ký tự.
 
 Đáng báo trước cho người quản trị trung tâm để họ không bối rối khi tạo tài khoản mới.
 
+## Trung tâm đầu tiên trên VPS mới
+
+Tự đăng ký trung tâm **đóng mặc định**, nên VPS mới dựng có DB rỗng và **không có đường nào
+vào hệ thống**. Từ 23/09/2026, hệ thống tự tạo trung tâm đầu tiên lúc khởi động — nhưng **chỉ
+khi bạn tự đặt mật khẩu**:
+
+```bash
+# Thêm vào .env TRƯỚC khi khởi động lần đầu
+TRUNG_TAM_DAU_TIEN_MAT_KHAU=<mật khẩu bạn chọn, ≥12 ký tự>
+TRUNG_TAM_DAU_TIEN_TEN=Trung tâm Ngoại ngữ ABC      # tuỳ chọn
+```
+
+Khởi động xong, đọc log lấy **mã trung tâm** (mã không phải bí mật):
+
+```bash
+docker compose logs api | grep "trung tâm đầu tiên"
+```
+
+Rồi đăng nhập `admin` / mật khẩu vừa đặt → hệ thống **bắt đổi mật khẩu ngay**.
+
+**Sau đó GỠ `TRUNG_TAM_DAU_TIEN_MAT_KHAU` khỏi `.env`** — giữ lại là để mật khẩu nằm trong
+tệp cấu hình mà không còn tác dụng gì (seed chỉ chạy khi DB chưa có trung tâm nào).
+
+### Vì sao hệ thống KHÔNG tự sinh mật khẩu ở đây
+
+Endpoint đăng ký sinh mật khẩu ngẫu nhiên rồi **trả trong response** — an toàn vì chỉ người
+gọi thấy. Seed thì chạy lúc khởi động, trong container, **không có ai để trả về**. Đường duy
+nhất là ghi log — mà ai đọc được log server cũng thấy, và log thường gom về nơi lưu trữ tập
+trung.
+
+Nên mật khẩu do bạn đặt. Không đặt ⇒ **không tạo gì cả**, và log nói rõ vì sao.
+
 ## Migration
 
 Đợt này có **một** migration: `LyDoThuHoiRefreshToken` — thêm cột `ly_do` (nullable) vào

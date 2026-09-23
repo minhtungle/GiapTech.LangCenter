@@ -314,8 +314,11 @@ dotnet ef database update --project src/GiapTech.LangCenter.Infrastructure \
 # 22/09/2026 — xem API/TinhNang.cs):
 curl -X POST localhost:5229/api/v1/dang-ky-trung-tam \
   -H 'Content-Type: application/json' -d '{"tenTrungTam":"Trung tâm Ngoại ngữ Dev"}'
-# → { maTrungTam: "A3K9M2P", username: "admin", matKhau: "123456" }
+# → { maTrungTam: "A3K9M2P", username: "admin", matKhau: "<ngẫu nhiên 16 ký tự>" }
 #   Bắt buộc đổi mật khẩu ở lần đăng nhập đầu.
+#
+# VPS mới (DB rỗng): đặt TRUNG_TAM_DAU_TIEN_MAT_KHAU trong .env thì hệ thống tự tạo trung tâm
+# đầu tiên lúc khởi động — xem docs/ha-tang/trien-khai-2026-09-23.md
 
 # --- Đồng bộ mật khẩu mọi nick của MỘT trung tâm (CHỈ DEV) ---
 # Khi phải đăng nhập lần lượt nhiều vai trò để xem mỗi người thấy gì.

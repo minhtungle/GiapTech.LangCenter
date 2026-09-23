@@ -191,6 +191,13 @@ if (app.Configuration.GetValue("TU_DONG_MIGRATE", true))
     await scope.ServiceProvider
         .GetRequiredService<GiapTech.LangCenter.Infrastructure.Persistence.Seed.BoKhuyetQuyenQuanTri>()
         .ChayAsync();
+
+    // VPS mới dựng: DB rỗng và tự đăng ký đã đóng mặc định ⇒ không có đường nào vào hệ thống.
+    // Lớp này tạo trung tâm đầu tiên, nhưng CHỈ khi người triển khai tự đặt mật khẩu qua biến
+    // môi trường — hệ thống cố ý không tự sinh để khỏi phải ghi mật khẩu vào log.
+    await scope.ServiceProvider
+        .GetRequiredService<GiapTech.LangCenter.Infrastructure.Persistence.Seed.TrungTamDauTien>()
+        .ChayAsync();
 }
 
 if (app.Environment.IsDevelopment())

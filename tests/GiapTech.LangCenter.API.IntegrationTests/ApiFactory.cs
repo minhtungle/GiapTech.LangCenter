@@ -160,12 +160,21 @@ public class ApiFactory : WebApplicationFactory<Program>
     /// gọi services.BuildServiceProvider() ở đó tạo ra một container thứ hai, và dữ liệu
     /// seed đi vào provider đó thay vì provider mà ứng dụng thật sự dùng.
     /// </summary>
+    /// <summary>
+    /// Có gieo dữ liệu mẫu không. Đặt `false` để có **DB hoàn toàn rỗng** — cần cho
+    /// `TrungTamDauTienTests`, nơi phải kiểm hành vi của một cài đặt hoàn toàn mới.
+    /// </summary>
+    protected virtual bool GieoDuLieuMau => true;
+
     protected override IHost CreateHost(IHostBuilder builder)
     {
         var host = base.CreateHost(builder);
 
-        using var scope = host.Services.CreateScope();
-        SeedDuLieu(scope.ServiceProvider);
+        if (GieoDuLieuMau)
+        {
+            using var scope = host.Services.CreateScope();
+            SeedDuLieu(scope.ServiceProvider);
+        }
 
         return host;
     }
