@@ -35,7 +35,7 @@ thêm chống CSRF bằng double-submit token.**
 | | Trước | Sau |
 |---|---|---|
 | Access token (60 phút) | `localStorage` | **Biến trong bộ nhớ** của tab |
-| Refresh token (30 ngày) | `localStorage` | **Cookie** `httpOnly; Secure; SameSite=Strict; Path=/api/v1/auth` |
+| Refresh token (30 ngày) | `localStorage` | **Cookie** `httpOnly; Secure; SameSite=Lax; Path=/api/v1/auth` |
 | Chống CSRF | không có (không cần, vì không dùng cookie) | **double-submit token** |
 
 ### Vì sao cookie `httpOnly` giải quyết được vấn đề
@@ -61,12 +61,16 @@ Cookie chỉ được trình duyệt gửi kèm tới đúng nhóm endpoint xác
 (`/api/v1/lop-hoc`, `/api/v1/khach-hang`…) **không** mang refresh token theo, nên bề mặt rò rỉ
 qua log proxy, qua header forwarding, qua lỗi lập trình đều hẹp lại.
 
-### Vì sao `SameSite=Strict` dùng được ở đây
+### Vì sao không phải hạ xuống `SameSite=None`
 
 Frontend và API **cùng origin**: `deploy/nginx/langcenter.conf` phục vụ build của Vite ở
 `location /` và proxy API ở `location /api/`. Không có request chéo origin hợp lệ nào cần cookie
-này, nên `Strict` không phá thứ gì — khác với kiến trúc tách domain (`app.x.com` gọi `api.x.com`)
-buộc phải hạ xuống `SameSite=None` và mất gần hết lợi ích.
+này — khác với kiến trúc tách domain (`app.x.com` gọi `api.x.com`) buộc phải hạ xuống
+`SameSite=None` và mất gần hết lợi ích.
+
+> Bản đầu của ADR này chọn `Strict` với lý do "cùng origin thì Strict không phá gì". Lý do đó
+> **sai** và đã sửa thành `Lax` — xem [Và một điều chỉnh về `SameSite`](#và-một-điều-chỉnh-về-samesite)
+> ở cuối. Giữ lại đoạn này để thấy vì sao lập luận "cùng origin" không đủ.
 
 ## Ba cái giá — nói trước, không phát hiện sau
 
