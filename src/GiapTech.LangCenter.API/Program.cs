@@ -111,7 +111,7 @@ if (string.IsNullOrWhiteSpace(jwtSecret))
 {
     throw new InvalidOperationException(
         "Thiếu JWT_SECRET. Đặt biến môi trường này (tối thiểu 32 ký tự) trước khi chạy API — "
-        + "xem docs/ha-tang/bien-moi-truong.md.");
+        + "xem docs/07-ha-tang/bien-moi-truong.md.");
 }
 
 if (jwtSecret.Length < 32)

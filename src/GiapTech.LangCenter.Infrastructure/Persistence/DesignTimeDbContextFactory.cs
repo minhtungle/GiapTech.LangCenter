@@ -9,7 +9,7 @@ namespace GiapTech.LangCenter.Infrastructure.Persistence;
 /// khi chưa có DI container nào chạy.
 ///
 /// Connection string ở đây chỉ dùng để sinh migration (EF cần biết provider là PostgreSQL),
-/// không phải cấu hình chạy thật — runtime lấy từ biến môi trường, xem docs/ha-tang/bien-moi-truong.md.
+/// không phải cấu hình chạy thật — runtime lấy từ biến môi trường, xem docs/07-ha-tang/bien-moi-truong.md.
 /// </summary>
 public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {

@@ -2,7 +2,7 @@ namespace GiapTech.LangCenter.Application.Common.Interfaces;
 
 /// <summary>
 /// Tenant của request hiện tại, resolve từ JWT claim bởi middleware ở tầng API.
-/// DbContext dùng giá trị này cho Global Query Filter — xem docs/backend/multi-tenant.md.
+/// DbContext dùng giá trị này cho Global Query Filter — xem docs/03-backend/multi-tenant.md.
 /// </summary>
 public interface ICurrentTenant
 {

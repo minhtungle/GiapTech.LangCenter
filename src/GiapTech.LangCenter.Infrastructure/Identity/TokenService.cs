@@ -14,7 +14,7 @@ public class TokenService(IConfiguration config) : ITokenService
     {
         var secret = config["JWT_SECRET"]
             ?? throw new InvalidOperationException(
-                "Thiếu JWT_SECRET. Xem docs/ha-tang/bien-moi-truong.md.");
+                "Thiếu JWT_SECRET. Xem docs/07-ha-tang/bien-moi-truong.md.");
 
         // Khoá ngắn làm chữ ký HS256 yếu đi đáng kể; chặn ở đây thay vì để chạy được với
         // cấu hình không an toàn.

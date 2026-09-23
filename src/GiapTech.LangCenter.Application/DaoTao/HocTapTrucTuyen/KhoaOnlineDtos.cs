@@ -12,7 +12,7 @@ namespace GiapTech.LangCenter.Application.DaoTao.HocTapTrucTuyen;
 /// FR-26 — khoá học trực tuyến: kênh học tập thứ hai của LMS.
 ///
 /// **Không trỏ sang CRM.** Quản trị cấp quyền học bằng tay sau khi thấy đơn; CRM ghi tiền, LMS
-/// cấp quyền (chốt 13/09/2026). Xem `docs/nghiep-vu/hoc-tap-truc-tuyen.md`.
+/// cấp quyền (chốt 13/09/2026). Xem `docs/06-nghiep-vu/hoc-tap-truc-tuyen.md`.
 /// </summary>
 public record KhoaOnlineDto(
     Guid Id,

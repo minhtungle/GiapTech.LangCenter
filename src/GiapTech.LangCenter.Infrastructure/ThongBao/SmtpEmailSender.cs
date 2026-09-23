@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace GiapTech.LangCenter.Infrastructure.ThongBao;
 
-/// <summary>Gửi email qua SMTP — xem docs/ha-tang/bien-moi-truong.md.</summary>
+/// <summary>Gửi email qua SMTP — xem docs/07-ha-tang/bien-moi-truong.md.</summary>
 public class SmtpEmailSender(IConfiguration config, ILogger<SmtpEmailSender> logger) : IEmailSender
 {
     public async Task GuiAsync(

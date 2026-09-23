@@ -28,7 +28,7 @@ public class BoKhuyetQuyenQuanTri(AppDbContext db, ILogger<BoKhuyetQuyenQuanTri>
     {
         // IgnoreQueryFilters: đây là việc của hạ tầng, chạy khi chưa có tenant nào trong ngữ
         // cảnh nên Global Query Filter sẽ lọc sạch nếu không bỏ qua nó. Một trong số ít chỗ
-        // hợp lệ để dùng — xem docs/backend/multi-tenant.md.
+        // hợp lệ để dùng — xem docs/03-backend/multi-tenant.md.
         var nhomQuanTri = await db.Quyens
             .IgnoreQueryFilters()
             .Where(q => q.TenQuyen == NhomQuyenMacDinh.QuanTri)

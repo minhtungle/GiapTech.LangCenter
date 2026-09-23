@@ -28,7 +28,7 @@ namespace GiapTech.LangCenter.Application.Common;
 /// Bản rà soát đề xuất thêm blocklist (kiểu "123456789012", "matkhau12345") hoặc đối chiếu
 /// HIBP. Chưa làm ở đợt này: blocklist tử tế cần một danh sách lớn đóng gói kèm, còn HIBP là
 /// gọi ra dịch vụ ngoài — cả hai đều là quyết định riêng, không nên lặng lẽ gộp vào một thay
-/// đổi về độ dài. Đây là nợ đã biết, ghi ở `docs/ra-soat-bao-mat-dang-nhap.md`.
+/// đổi về độ dài. Đây là nợ đã biết, ghi ở `docs/02-kien-truc/ra-soat-bao-mat-dang-nhap.md`.
 /// </summary>
 public static class ChinhSachMatKhau
 {

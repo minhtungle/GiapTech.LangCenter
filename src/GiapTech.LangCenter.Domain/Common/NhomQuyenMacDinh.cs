@@ -4,7 +4,7 @@ namespace GiapTech.LangCenter.Domain.Common;
 
 /// <summary>
 /// Bốn nhóm quyền dựng sẵn khi tạo trung tâm mới, theo ma trận phân quyền ở
-/// docs/backend/phan-quyen-dong.md.
+/// docs/03-backend/phan-quyen-dong.md.
 ///
 /// Đây chỉ là **điểm khởi đầu**, không phải luật cứng: admin vào màn Phân quyền sửa lại được
 /// từng ô, hoặc tạo nhóm hoàn toàn khác. Hệ thống không có chỗ nào hard-code "nếu là giáo

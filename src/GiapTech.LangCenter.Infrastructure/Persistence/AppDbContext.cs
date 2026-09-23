@@ -9,7 +9,7 @@ namespace GiapTech.LangCenter.Infrastructure.Persistence;
 
 /// <summary>
 /// DbContext của ứng dụng. Chịu trách nhiệm cách ly dữ liệu giữa các tenant
-/// — xem docs/backend/multi-tenant.md.
+/// — xem docs/03-backend/multi-tenant.md.
 /// </summary>
 public class AppDbContext(
     DbContextOptions<AppDbContext> options,

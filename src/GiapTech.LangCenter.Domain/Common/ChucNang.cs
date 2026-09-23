@@ -9,7 +9,7 @@ namespace GiapTech.LangCenter.Domain.Common;
 /// nếu không sẽ sinh ra quyền gõ sai không bao giờ khớp với endpoint nào.
 ///
 /// Thêm module mới: thêm hằng số ở đây VÀ cập nhật bảng trong
-/// docs/backend/phan-quyen-dong.md trong cùng PR.
+/// docs/03-backend/phan-quyen-dong.md trong cùng PR.
 ///
 /// ⚠️ Thêm hằng mới KHÔNG tự cấp quyền cho nhóm "Quản trị viên" của tenant ĐÃ TỒN TẠI —
 /// seeder chỉ chạy lúc tạo tenant. Xem <c>BoKhuyetQuyenQuanTri</c> ở tầng Infrastructure.

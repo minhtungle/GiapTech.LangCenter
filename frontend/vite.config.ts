@@ -19,7 +19,7 @@ export default defineConfig({
   server: {
     port: 5173,
     // Proxy /api sang backend khi dev: frontend và API cùng origin nên không vướng CORS,
-    // giống hệt lúc chạy thật sau Caddy (xem docs/ha-tang/README.md).
+    // giống hệt lúc chạy thật sau Caddy (xem docs/07-ha-tang/README.md).
     proxy: {
       '/api': {
         target: 'http://localhost:5229',

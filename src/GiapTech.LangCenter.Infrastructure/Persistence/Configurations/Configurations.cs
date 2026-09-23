@@ -6,7 +6,7 @@ namespace GiapTech.LangCenter.Infrastructure.Persistence.Configurations;
 
 // Cấu hình EF đặt ở Infrastructure, KHÔNG rải attribute trong Domain (quy tắc #10).
 // Tên bảng/cột theo quy ước UPPER_SNAKE_CASE / lower_snake_case — xem
-// docs/database/quy-uoc-migration.md. Ánh xạ tên cột do UseSnakeCaseNamingConvention lo,
+// docs/05-database/quy-uoc-migration.md. Ánh xạ tên cột do UseSnakeCaseNamingConvention lo,
 // ở đây chỉ đặt tên bảng, ràng buộc và index.
 
 public class TenantConfig : IEntityTypeConfiguration<Tenant>

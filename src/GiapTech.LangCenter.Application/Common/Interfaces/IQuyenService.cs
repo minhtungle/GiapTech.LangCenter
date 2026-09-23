@@ -2,7 +2,7 @@ using GiapTech.LangCenter.Domain.Enums;
 
 namespace GiapTech.LangCenter.Application.Common.Interfaces;
 
-/// <summary>Tra quyền hiệu lực của người dùng (FR-05) — xem docs/backend/phan-quyen-dong.md.</summary>
+/// <summary>Tra quyền hiệu lực của người dùng (FR-05) — xem docs/03-backend/phan-quyen-dong.md.</summary>
 public interface IQuyenService
 {
     /// <summary>Người dùng có quyền thực hiện thao tác này trên chức năng này không.</summary>
