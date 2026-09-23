@@ -15,6 +15,7 @@ import {
 } from '@/lib/tinhTrangBuoi'
 import { useMuiGio } from '@/lib/quyen'
 import './lich-buoi-hoc.css'
+import { locale } from '@/lib/ngon-ngu/dinhDang'
 
 /** Buổi học tối giản — chỉ những gì lịch cần vẽ. */
 export interface BuoiChoLich {
@@ -123,7 +124,7 @@ export function LichBuoiHoc({
         id: b.id,
         title: hienTenLop && b.tenLopHoc
           ? b.tenLopHoc
-          : `${t('buoiHoc.thuTuNgan')}${b.thuTu}`,
+          : t('buoiHoc.thuTuNgan', { n: b.thuTu }),
         // Giờ treo tường của trung tâm — xem `gioTreoTuong`. Đưa mốc có offset thì
         // FullCalendar (không plugin múi giờ) vẽ theo UTC và lệch 7 tiếng.
         start: gioTreoTuong(b.batDau, muiGio),
@@ -274,7 +275,7 @@ export function LichBuoiHoc({
             // Giờ vào tooltip: ở view tháng của lịch nhiều lớp, nhãn đã ẩn giờ để nhường
             // chỗ cho tên lớp, nên đây là chỗ duy nhất còn đọc được giờ mà không đổi view.
             const gio = arg.event.start
-              ? arg.event.start.toLocaleTimeString('vi-VN',
+              ? arg.event.start.toLocaleTimeString(locale(),
                   { hour: '2-digit', minute: '2-digit', timeZone: muiGio })
               : null
 

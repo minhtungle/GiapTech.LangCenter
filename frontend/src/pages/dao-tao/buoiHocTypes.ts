@@ -1,3 +1,5 @@
+import { locale } from '@/lib/ngon-ngu/dinhDang'
+
 /**
  * Kiểu và tiện ích dùng chung cho buổi học.
  *
@@ -55,7 +57,7 @@ export const daKhoa = (b: Pick<BuoiHocDto, 'trangThai'>) => b.trangThai === 'DaH
 
 /** Giờ hiển thị. TODO: chuyển sang `useMuiGio()` cho nhất quán với lịch (nợ đã ghi). */
 export const gioVN = (s: string) =>
-  new Date(s).toLocaleString('vi-VN', {
+  new Date(s).toLocaleString(locale(), {
     weekday: 'short', day: '2-digit', month: '2-digit',
     hour: '2-digit', minute: '2-digit',
   })

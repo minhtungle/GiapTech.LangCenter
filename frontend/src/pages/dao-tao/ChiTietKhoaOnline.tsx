@@ -16,6 +16,7 @@ import { useQuyen } from '@/lib/quyen'
 import { useXacNhan } from '@/lib/xacNhan'
 import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import type { KhoaOnlineDto, TrangThaiKhoaOnline } from './KhoaOnline'
+import { locale } from '@/lib/ngon-ngu/dinhDang'
 
 interface BaiHocDto {
   id: string
@@ -390,7 +391,7 @@ export default function ChiTietKhoaOnline() {
                       <Td>
                         {g.ngayHetHan ? (
                           <Badge variant={g.daHetHan ? 'loi' : 'muted'}>
-                            {new Date(g.ngayHetHan).toLocaleDateString('vi-VN')}
+                            {new Date(g.ngayHetHan).toLocaleDateString(locale())}
                           </Badge>
                         ) : (
                           <span className="text-muted-foreground">

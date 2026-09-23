@@ -20,6 +20,7 @@ import {
   type LoaiDonHang,
 } from './crmTypes'
 import { LocDoiNhom } from '@/components/crm/LocDoiNhom'
+import { locale } from '@/lib/ngon-ngu/dinhDang'
 
 /**
  * FR-18 — doanh thu: đăng ký khoá học (CRM).
@@ -484,7 +485,7 @@ export default function DoanhThu() {
                         {tien(d.quyDoiVnd)}
                         {d.donViTien !== 'VND' && (
                           <div className="text-xs">
-                            {t('doanhThu.tyGiaNgan', { ty: d.tyGiaVeVnd.toLocaleString('vi-VN') })}
+                            {t('doanhThu.tyGiaNgan', { ty: d.tyGiaVeVnd.toLocaleString(locale()) })}
                           </div>
                         )}
                       </Td>

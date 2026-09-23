@@ -11,6 +11,7 @@ import { Modal, ModalChan } from '@/components/ui/Modal'
 import { useXacNhan } from '@/lib/xacNhan'
 import { useQuyen } from '@/lib/quyen'
 import type { NguoiDungDto } from '@/pages/quan-tri/NguoiDung'
+import { locale } from '@/lib/ngon-ngu/dinhDang'
 
 /**
  * Mã tab (nằm trong URL) đi kèm khoá i18n — **không ghép chuỗi động**.
@@ -26,7 +27,7 @@ const CAC_TAB = [
 
 type Tab = (typeof CAC_TAB)[number]['ma']
 
-const ngayVN = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('vi-VN') : '—')
+const ngayVN = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(locale()) : '—')
 
 /**
  * Định dạng cho phép — PHẢI khớp `LoaiTepHoSo.ChoPhep` ở backend (10/09/2026).

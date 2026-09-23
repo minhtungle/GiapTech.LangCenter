@@ -1,3 +1,5 @@
+import { locale } from '@/lib/ngon-ngu/dinhDang'
+
 /** Kiểu và tiện ích dùng chung cho ba màn CRM (FR-17 → FR-19). */
 
 export type DonViTien = 'VND' | 'USD' | 'EUR' | 'CAD'
@@ -92,7 +94,7 @@ export interface TongHopDoanhThuDto {
  * cho khách (1.200 EUR), còn cột quy đổi là để tổng hợp.
  */
 export const tien = (so: number, donVi: DonViTien = 'VND') =>
-  new Intl.NumberFormat('vi-VN', {
+  new Intl.NumberFormat(locale(), {
     style: 'currency',
     currency: donVi,
     // VND không có phần thập phân; ngoại tệ giữ 2 số.
@@ -243,9 +245,9 @@ export interface YeuCauXepLopDto {
   ghiChu: string | null
 }
 
-export const ngayVN = (iso: string) => new Date(iso).toLocaleDateString('vi-VN')
+export const ngayVN = (iso: string) => new Date(iso).toLocaleDateString(locale())
 export const gioNgayVN = (iso: string) =>
-  new Date(iso).toLocaleString('vi-VN', {
+  new Date(iso).toLocaleString(locale(), {
     day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
   })
 export const ngayChoInput = (iso: string | null) => (iso ? iso.slice(0, 10) : '')

@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { gopDuoi, tinhPhanBo, tinhRongThanh } from './tinh-toan'
+import { locale } from '@/lib/ngon-ngu/dinhDang'
 
 /**
  * Biểu đồ dựng bằng SVG thuần — **không thêm thư viện** (FR-28, 14/09/2026).
@@ -28,7 +29,7 @@ export function tienGon(v: number): string {
   return String(Math.round(v))
 }
 
-export const tienDayDu = (v: number) => v.toLocaleString('vi-VN') + ' ₫'
+export const tienDayDu = (v: number) => v.toLocaleString(locale()) + ' ₫'
 
 /** Ô số dẫn — dùng cho một con số hiện tại, KHÔNG dùng biểu đồ một thanh. */
 export function OSo({

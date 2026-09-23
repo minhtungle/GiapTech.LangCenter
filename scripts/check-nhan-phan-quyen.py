@@ -39,10 +39,11 @@ def hanh_dong_backend() -> list[str]:
 
 
 def nhan_frontend(ten: str) -> set[str]:
-    s = doc(GOC / "frontend/src/lib/i18n.ts")
+    # Bảng dịch tách khỏi `i18n.ts` từ 23/09/2026 — `vi.ts` là nguồn chân lý.
+    s = doc(GOC / "frontend/src/lib/ngon-ngu/vi.ts")
     m = re.search(r"\n  " + ten + r": \{(.*?)\n  \},", s, re.S)
     if not m:
-        sys.exit(f"Không thấy khối `{ten}` trong i18n.ts — sửa regex trong script này.")
+        sys.exit(f"Không thấy khối `{ten}` trong ngon-ngu/vi.ts — sửa regex trong script này.")
     return set(re.findall(r"^\s{4}(\w+):", m.group(1), re.M))
 
 
@@ -72,7 +73,7 @@ def main() -> int:
         if thieu := sorted(set(be) - fe):
             loi.append(
                 f"  {ten} THIẾU nhãn: {', '.join(thieu)}\n"
-                f"    → thêm vào khối `{ten}` trong frontend/src/lib/i18n.ts"
+                f"    → thêm vào khối `{ten}` trong frontend/src/lib/ngon-ngu/vi.ts"
             )
         if du := sorted(fe - set(be)):
             loi.append(

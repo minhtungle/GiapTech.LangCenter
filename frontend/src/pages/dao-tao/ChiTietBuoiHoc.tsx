@@ -89,8 +89,7 @@ export default function ChiTietBuoiHoc() {
           {t('chiTietBuoi.quayLaiLich')}
         </Link>
         <h2 className="text-lg font-semibold">
-          {buoi.tenLopHoc} — {t('buoiHoc.thuTuNgan')}
-          {buoi.thuTu}
+          {buoi.tenLopHoc} — {t('buoiHoc.thuTuNgan', { n: buoi.thuTu })}
         </h2>
         {/* Tình trạng SUY TỪ GIỜ, cùng một nhãn với bảng lịch — hiện `trangThai` thô ở đây
             thì buổi đã qua chưa chốt mang nhãn "Đã lên lịch" trong khi bảng nói "Chưa chốt",
@@ -120,8 +119,7 @@ export default function ChiTietBuoiHoc() {
           >
             {dsBuoi.map((b) => (
               <option key={b.id} value={b.id}>
-                {t('buoiHoc.thuTuNgan')}
-                {b.thuTu} · {gioVN(b.batDau)}
+                {t('buoiHoc.thuTuNgan', { n: b.thuTu })} · {gioVN(b.batDau)}
               </option>
             ))}
           </select>

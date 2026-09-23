@@ -8,6 +8,48 @@ Tiến độ và lộ trình: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 
 ## [Unreleased]
 
+### Added — đa ngôn ngữ: Anh · Trung · Hàn · Nhật (23/09/2026)
+
+Yêu cầu chủ sản phẩm. **Chỉ dịch giao diện** — tên lớp, tên học viên, ghi chú giữ nguyên, đúng
+như i18n vốn hoạt động. Có E2E canh điều này.
+
+| | |
+|---|---|
+| Ngôn ngữ | vi (gốc) · en · zh · ko · ja |
+| Khoá mỗi ngôn ngữ | **1198**, lệch placeholder **0** |
+| Lưu lựa chọn | `localStorage` theo từng máy/người — **không cần migration** |
+| Nút chuyển | sidebar **và** màn đăng nhập |
+
+Nút ở màn đăng nhập là bắt buộc: người chưa vào được mà không đọc được tiếng Việt thì không
+còn đường nào khác.
+
+**Ngày/số/tiền cũng đổi theo.** 12 tệp từng gọi cứng `toLocaleDateString('vi-VN')` — để nguyên
+thì chữ đổi mà ngày vẫn kiểu Việt, và **gây đọc nhầm**: người quen định dạng Mỹ hiểu `23/09`
+thành 9 tháng 23. Gom vào `ngon-ngu/dinhDang.ts`. Tiếng Anh dùng `en-GB` để giữ thứ tự
+ngày-trước. **Tiền luôn hiện `₫`** dù ngôn ngữ nào — đổi ký hiệu là nói sai đơn vị.
+
+**Bài học: đừng ghép chuỗi bằng tiền tố.** Khoá `buoiHoc.thuTuNgan` là `'Buổi '` rồi code nối
+số — chỉ đúng với ngôn ngữ đặt số ở SAU. Tiếng Nhật/Hàn/Trung đếm kiểu bao quanh số nên ra
+`第3`, `제 3` — câu bỏ dở. Sửa thành khoá có biến để mỗi ngôn ngữ tự đặt số vào chỗ của mình:
+`第3回` · `3차시` · `第 3 次课`. Hai tác nhân dịch **độc lập** chỉ ra cùng chỗ này.
+
+Quy tắc rút ra, ghi trong `docs/frontend/da-ngon-ngu.md`: **một chuỗi hiển thị là một khoá trọn
+vẹn**, kể cả khi có biến ở giữa. Cắt đôi rồi nối trong code là ngầm giả định trật tự từ tiếng Việt.
+
+**Hai lỗi khác sửa dọc đường:**
+- Tiêu đề tab kẹt tiếng Việt vì đọc `document.title` một lần lúc nạp (tức đọc chuỗi cứng trong
+  `index.html`). Nay lấy từ bảng dịch.
+- `check-i18n-keys.py` báo "thừa 2 khoá" trong khi hai tệp giống hệt: nó so bằng regex, mà
+  `vi.ts` viết gọn một dòng thì regex không thấy khoá con còn tệp sinh tự động thì thấy. Nay
+  đọc đúng dữ liệu qua Node, và **kiểm chéo mọi ngôn ngữ với `vi.ts`**.
+
+**Cách dịch**: 4 tác nhân song song, mỗi tác nhân một ngôn ngữ, cùng một **bảng thuật ngữ bắt
+buộc** để không mỗi chỗ dịch một kiểu. Kết quả **kiểm lại bằng script**, không tin báo cáo: số
+khoá, placeholder, chuỗi tiếng Việt còn sót.
+
+⚠️ **Chưa có người bản ngữ rà.** Thuật ngữ phổ thông thì ổn; thuật ngữ nghiệp vụ riêng (*xếp
+lớp*, *sổ thu*, *chốt sổ*) nên có người bản ngữ xem trước khi dùng cho khách thật.
+
 ### Fixed — linh vật đi giật lùi, lời thoại bị che (23/09/2026)
 
 Chủ sản phẩm báo hai lỗi sau khi xem bản Lottie.

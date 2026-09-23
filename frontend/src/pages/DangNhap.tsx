@@ -11,6 +11,7 @@ import { useTinhNang } from '@/lib/tinhNang'
 import { useTraTenTrungTam } from '@/lib/traTenTrungTam'
 import { vietTat } from '@/lib/nhanDienTrungTam'
 import { useNhanDienTab } from '@/lib/nhanDienTab'
+import { ChonNgonNgu } from '@/components/ChonNgonNgu'
 import { docDaNho, luuDaNho, xoaDaNho } from '@/lib/nhoDangNhap'
 import { BannerTrungTam } from './BannerTrungTam'
 import {
@@ -119,7 +120,7 @@ export default function DangNhap() {
       `min-h-screen` + `lg:flex-row`: dưới `lg` banner tự ẩn (xem `BannerTrungTam`) và form
       chiếm trọn màn — nhồi cả hai vào màn điện thoại sẽ đẩy form xuống dưới nếp gấp.
     */
-    <div className="flex min-h-screen flex-col">
+    <div className="relative flex min-h-screen flex-col">
       {/* Hàng trên: banner trái + form phải. `flex-1` để nó ăn hết chiều cao còn lại. */}
       <div className="flex flex-1 flex-col lg:flex-row">
       <BannerTrungTam
@@ -282,6 +283,16 @@ export default function DangNhap() {
           Tên trung tâm chèn vào dòng bản quyền khi đã biết, để footer không phải một dòng
           trơ trọi giữa màn.
         */}
+      {/*
+        Nút đổi ngôn ngữ ở góc trên phải màn đăng nhập.
+
+        Phải có Ở ĐÂY, không chỉ trong hệ thống: người chưa đăng nhập được mà không đọc được
+        tiếng Việt thì không có đường nào khác để đổi.
+      */}
+      <div className="absolute right-4 top-4 z-10">
+        <ChonNgonNgu huong="xuong" />
+      </div>
+
       <footer className="border-t border-border bg-background px-4 py-4 text-center text-xs text-muted-foreground">
           {trungTam
             ? t('dangNhap.banQuyenCoTen', {

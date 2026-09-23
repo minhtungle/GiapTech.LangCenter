@@ -1,3 +1,5 @@
+import { locale } from '@/lib/ngon-ngu/dinhDang'
+
 /**
  * Kiểu và tiện ích dùng chung giữa danh sách lớp và view chi tiết lớp.
  *
@@ -66,10 +68,10 @@ export interface HocVienTrongLop {
 }
 
 export const tienVN = (n: number | null) =>
-  n === null ? '—' : n.toLocaleString('vi-VN') + '₫'
+  n === null ? '—' : n.toLocaleString(locale()) + '₫'
 
 export const ngayVN = (s: string | null) =>
-  s ? new Date(s).toLocaleDateString('vi-VN') : '—'
+  s ? new Date(s).toLocaleDateString(locale()) : '—'
 
 /** Màu badge theo trạng thái — nháp mờ, đang học nổi, đã huỷ đỏ. */
 export const mauTrangThai = (tt: TrangThaiLopHoc) =>

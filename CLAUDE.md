@@ -117,6 +117,7 @@ Chi tiết và nợ kỹ thuật: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 | Phân quyền động | [`docs/backend/phan-quyen-dong.md`](./docs/backend/phan-quyen-dong.md) |
 | Nguyên tắc UI/UX bắt buộc | [`docs/frontend/ui-ux-nguyen-tac.md`](./docs/frontend/ui-ux-nguyen-tac.md) |
 | Design token | [`docs/frontend/design-tokens.md`](./docs/frontend/design-tokens.md) |
+| **Đa ngôn ngữ** (5 thứ tiếng, cách thêm mới) | [`docs/frontend/da-ngon-ngu.md`](./docs/frontend/da-ngon-ngu.md) |
 | Hạ tầng, VPS, runbook sự cố | [`docs/ha-tang/`](./docs/ha-tang/README.md) |
 | **Triển khai lên VPS** (`git pull` + build tại chỗ) | [`docs/ha-tang/trien-khai-pull-code.md`](./docs/ha-tang/trien-khai-pull-code.md) |
 | Kiến trúc tổng quan + trạng thái quyết định | [`docs/kien-truc/TONG-QUAN-KIEN-TRUC.md`](./docs/kien-truc/TONG-QUAN-KIEN-TRUC.md) |
@@ -138,7 +139,7 @@ Chi tiết và nợ kỹ thuật: [`docs/ke-hoach.md`](./docs/ke-hoach.md).
 | Frontend | **React + TypeScript** trên nền **shadcn-admin** (Vite + Tailwind + shadcn/ui + Radix) — **không Blazor** | [0002](./docs/kien-truc/adr/0002-frontend-shadcn-admin.md) |
 | FE data/form | TanStack Query · React Hook Form + Zod | [0002](./docs/kien-truc/adr/0002-frontend-shadcn-admin.md) |
 | FE lịch | **FullCalendar 6** (MIT) — tháng/tuần/danh sách, có `timeZone`; tải theo yêu cầu | — |
-| Đa ngôn ngữ | BE `.resx` theo culture · FE `react-i18next` · API trả **mã lỗi** | — |
+| Đa ngôn ngữ | **5 thứ tiếng** (vi·en·zh·ko·ja) · FE `react-i18next` · API trả **mã lỗi** | — |
 | API versioning | URL segment `/api/v1/...`, `Asp.Versioning.Mvc` | [0003](./docs/kien-truc/adr/0003-api-versioning.md) |
 | Hạ tầng | 1 VPS · Docker Compose · **Nginx + certbot** (có sẵn trên VPS) · **MinIO** · Redis (tuỳ chọn) | [0004](./docs/kien-truc/adr/0004-ha-tang-tu-host-vps.md) |
 | CI/CD | GitHub Actions → build & test → image → **ghcr.io** → SSH `docker compose pull && up -d` | [0004](./docs/kien-truc/adr/0004-ha-tang-tu-host-vps.md) |

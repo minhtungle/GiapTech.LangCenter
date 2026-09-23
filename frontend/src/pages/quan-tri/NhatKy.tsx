@@ -7,6 +7,7 @@ import { Badge, Card, CardContent, Input, Label, Table, Td, Th, TrangTrong } fro
 import { PhanTrang } from '@/components/ui/PhanTrang'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { useMuiGio } from '@/lib/quyen'
+import { locale } from '@/lib/ngon-ngu/dinhDang'
 
 type HanhDongNhatKy = 'Them' | 'Sua' | 'Xoa' | 'XacThuc' | 'Khac'
 
@@ -83,7 +84,7 @@ export default function NhatKy() {
 
   /** Giờ theo múi giờ TRUNG TÂM — nhật ký là bằng chứng, giờ phải khớp với người ở trung tâm. */
   const gio = (s: string) =>
-    new Date(s).toLocaleString('vi-VN', {
+    new Date(s).toLocaleString(locale(), {
       timeZone: muiGio,
       day: '2-digit', month: '2-digit', year: 'numeric',
       hour: '2-digit', minute: '2-digit', second: '2-digit',

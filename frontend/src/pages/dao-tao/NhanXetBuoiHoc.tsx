@@ -7,6 +7,7 @@ import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Label, Textarea, TrangTrong,
 } from '@/components/ui'
 import { useXacNhan } from '@/lib/xacNhan'
+import { locale } from '@/lib/ngon-ngu/dinhDang'
 
 interface DiemTieuChiDto {
   tieuChiId: string
@@ -214,7 +215,7 @@ export function NhanXetBuoiHoc({
             <h3 className="font-semibold">{t('nhanXetBuoi.cuaToi')}</h3>
             {cuaToi && (
               <span className="text-xs text-muted-foreground">
-                {new Date(cuaToi.thoiDiem).toLocaleString('vi-VN')}
+                {new Date(cuaToi.thoiDiem).toLocaleString(locale())}
               </span>
             )}
           </div>
@@ -359,7 +360,7 @@ export function NhanXetBuoiHoc({
                       <span className="text-sm font-medium">{n.hoTen}</span>
                       {n.cuaToi && <Badge variant="accent">{t('nhanXetBuoi.cuaToi')}</Badge>}
                       <span className="ml-auto text-xs text-muted-foreground">
-                        {new Date(n.thoiDiem).toLocaleString('vi-VN')}
+                        {new Date(n.thoiDiem).toLocaleString(locale())}
                       </span>
                     </div>
                     <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">

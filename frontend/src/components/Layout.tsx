@@ -14,6 +14,7 @@ import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { vietTat } from '@/lib/nhanDienTrungTam'
 import { useNhanDienTab } from '@/lib/nhanDienTab'
+import { ChonNgonNgu } from '@/components/ChonNgonNgu'
 import { useNhanDienTrungTam } from '@/lib/quyen'
 import { Anh } from '@/components/ui/Anh'
 
@@ -377,6 +378,16 @@ export default function Layout() {
             )}
           </div>
         )}
+
+        {/*
+          Nút đổi ngôn ngữ ngay trên nút Đăng xuất (23/09/2026).
+
+          Đặt cuối sidebar chứ không trong Thiết lập: người cần đổi ngôn ngữ nhất là người
+          **đang không đọc được giao diện** — bắt họ tìm trong menu tiếng Việt là vô lý.
+        */}
+        <div className="px-1">
+          <ChonNgonNgu gonGang={thuGon} />
+        </div>
 
         {!thuGon && (
           <div className="px-3 py-1.5 text-xs text-muted-foreground">{phien?.username}</div>

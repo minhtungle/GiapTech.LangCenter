@@ -14,6 +14,7 @@ import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import { PhanTrang } from '@/components/ui/PhanTrang'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
+import { locale } from '@/lib/ngon-ngu/dinhDang'
 
 type PhuongThuc = 'TienMat' | 'ChuyenKhoan' | 'Khac'
 const CAC_PHUONG_THUC: PhuongThuc[] = ['TienMat', 'ChuyenKhoan', 'Khac']
@@ -49,9 +50,9 @@ interface LopNgan {
 }
 
 /** Tiền luôn hiển thị nguyên đồng — làm tròn hay rút gọn "5tr" là mời gọi tranh chấp. */
-const dinhDangTien = (n: number) => n.toLocaleString('vi-VN') + ' ₫'
+const dinhDangTien = (n: number) => n.toLocaleString(locale()) + ' ₫'
 
-const dinhDangNgay = (iso: string) => new Date(iso).toLocaleDateString('vi-VN')
+const dinhDangNgay = (iso: string) => new Date(iso).toLocaleDateString(locale())
 
 /** Chuyển ISO về `yyyy-MM-dd` cho `<input type="date">` theo giờ địa phương. */
 function ngayChoInput(iso: string) {

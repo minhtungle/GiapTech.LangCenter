@@ -13,6 +13,7 @@ import { useQuyen } from '@/lib/quyen'
 import { useXacNhan } from '@/lib/xacNhan'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { ChonTep, type TepDto } from '@/components/ui/ChonTep'
+import { locale } from '@/lib/ngon-ngu/dinhDang'
 
 interface BaiTapDto {
   id: string
@@ -46,7 +47,7 @@ interface BuoiNgan {
 }
 
 const ngayGio = (s: string | null) =>
-  s ? new Date(s).toLocaleString('vi-VN', {
+  s ? new Date(s).toLocaleString(locale(), {
     day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
   }) : '—'
 

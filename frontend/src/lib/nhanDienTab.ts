@@ -1,4 +1,6 @@
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
+import i18n from '@/lib/i18n'
 import { taiAnh } from '@/components/ui/Anh'
 
 /**
@@ -24,8 +26,16 @@ import { taiAnh } from '@/components/ui/Anh'
  * xong vẫn thấy logo trung tâm cũ trên tab — trông như chưa thoát hẳn.
  */
 
-/** Tiêu đề mặc định, đọc từ `index.html` một lần lúc nạp module. */
-const TIEU_DE_MAC_DINH = document.title
+/**
+ * Tiêu đề mặc định khi **chưa biết** trung tâm nào (màn đăng nhập lúc chưa gõ mã).
+ *
+ * Lấy từ `i18n` chứ không từ `document.title`: đọc `document.title` là đọc chuỗi tiếng Việt
+ * viết cứng trong `index.html`, nên đổi giao diện sang tiếng Anh mà tab vẫn ghi tiếng Việt —
+ * nửa vời, và thấy ngay khi thử đổi ngôn ngữ.
+ */
+function tieuDeMacDinh(): string {
+  return i18n.t('chung.tieuDeTab')
+}
 
 /** Favicon mặc định — đọc từ thẻ có sẵn thay vì viết cứng đường dẫn. */
 const FAVICON_MAC_DINH =
@@ -58,15 +68,20 @@ export function useNhanDienTab(
   logo?: string | null,
   laUrl = false,
 ) {
+  const { i18n: i18nHook } = useTranslation()
+  const ngonNgu = i18nHook.language
+
   useEffect(() => {
     document.title = tenTrungTam
       ? `${tenTrungTam} — LangCenter`
-      : TIEU_DE_MAC_DINH
+      : tieuDeMacDinh()
 
     return () => {
-      document.title = TIEU_DE_MAC_DINH
+      document.title = tieuDeMacDinh()
     }
-  }, [tenTrungTam])
+    // `ngonNgu` trong dependency: đổi ngôn ngữ phải vẽ lại tiêu đề, nếu không tab giữ nguyên
+    // chữ của ngôn ngữ cũ cho tới lần điều hướng kế tiếp.
+  }, [tenTrungTam, ngonNgu])
 
   useEffect(() => {
     if (!logo) {
