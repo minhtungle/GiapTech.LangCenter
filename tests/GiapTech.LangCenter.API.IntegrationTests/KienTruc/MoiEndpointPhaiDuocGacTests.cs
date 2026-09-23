@@ -150,10 +150,23 @@ public class MoiEndpointPhaiDuocGacTests
           **22/09/2026 (lần 2) → 8**: thêm `AuthController.AnhBia` — banner ở màn đăng nhập
           (*"bên trái để hiển thị 1 khung banner được setting trong thiết lập"*). Y hệt
           `Logo` về mọi mặt: người gọi đưa mã, server tra khoá, là endpoint đọc, có rate limit.
+
+          **23/09/2026 → 9**: thêm `AuthController.TrungTamTheoDomain` (ADR-0008) — màn đăng
+          nhập hỏi "domain này của trung tâm nào" để ẩn ô mã.
+
+          Đây là endpoint ẩn danh **an toàn nhất trong chín cái**, vì nó KHÔNG NHẬN THAM SỐ
+          NÀO. Tenant do header `X-Tenant-Domain` quyết định, mà header đó nginx đặt từ
+          `$server_name` và API xoá đi khi không đứng sau proxy — người gọi không có gì để
+          thao túng. Bảy endpoint kia đều nhận input do người gọi kiểm soát (mã trung tâm,
+          email, token); cái này thì không.
+
+          Thứ lộ ra đúng bằng `ten-trung-tam/{ma}` đã lộ, và chỉ của MỘT trung tâm: trung tâm
+          sở hữu domain mà người gọi vốn đã gõ trên thanh địa chỉ. Là endpoint đọc, có
+          `EnableRateLimiting(TraCuu)`.
         */
         Assert.True(
-            anDanh.Count <= 8,
-            $"Có {anDanh.Count} endpoint ẩn danh (trước là 8): {string.Join(", ", anDanh)}.\n"
+            anDanh.Count <= 9,
+            $"Có {anDanh.Count} endpoint ẩn danh (trước là 9): {string.Join(", ", anDanh)}.\n"
             + "Mỗi endpoint ẩn danh là chỗ ai cũng gọi được — endpoint GHI thì còn phải có rate "
             + "limit (xem GioiHanTanSuatTests). Nếu thêm là có chủ ý, cập nhật số này kèm lý do.");
     }

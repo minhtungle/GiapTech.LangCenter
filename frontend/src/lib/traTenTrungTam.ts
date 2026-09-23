@@ -28,6 +28,44 @@ export interface NhanDienTrungTam {
   coAnhBia: boolean
 }
 
+/** Như {@link NhanDienTrungTam} nhưng kèm mã — xem `useTrungTamTheoDomain`. */
+export interface NhanDienTrungTamTheoDomain extends NhanDienTrungTam {
+  maTrungTam: string
+}
+
+/**
+ * Trung tâm của DOMAIN đang mở (ADR-0008).
+ *
+ * Có kết quả ⇒ đang ở domain riêng của một trung tâm ⇒ màn đăng nhập **ẩn ô mã**.
+ * `null` ⇒ đường mặc định hoặc local ⇒ hiện ô mã như cũ.
+ *
+ * Endpoint không nhận tham số nào: tenant do header nginx đặt quyết định. Nên hook này cũng
+ * không nhận tham số — không có gì để truyền sai.
+ *
+ * Trả kèm **mã trung tâm** vì logo và ảnh bìa lấy theo mã (`/auth/logo/{ma}`); ẩn ô mã rồi
+ * thì frontend không còn chỗ nào khác để có nó.
+ */
+export function useTrungTamTheoDomain() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['trung-tam-theo-domain'],
+    // Domain không đổi giữa chừng trong một lần mở trang.
+    staleTime: Infinity,
+    retry: false,
+    queryFn: async () => {
+      const res = await api.get<NhanDienTrungTamTheoDomain | ''>('/auth/trung-tam-theo-domain')
+      // 204 ⇒ axios trả chuỗi rỗng, không phải object. Không kiểm chỗ này thì `data` là ''
+      // và mọi thứ dưới đây coi như "có trung tâm" — ô mã biến mất ở cả đường mặc định.
+      return res.status === 204 || !res.data ? null : res.data
+    },
+  })
+
+  return {
+    /** `null` = không ở domain riêng nào; `undefined` = đang tra. */
+    trungTam: data,
+    dangTra: isLoading,
+  }
+}
+
 export function useTraTenTrungTam(maTrungTam: string) {
   const ma = maTrungTam.trim().toUpperCase()
   const duDai = ma.length === 7

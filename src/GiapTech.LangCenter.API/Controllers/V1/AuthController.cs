@@ -90,6 +90,36 @@ public class AuthController(
             : NotFound();
 
     /// <summary>
+    /// Trung tâm của DOMAIN đang gọi — ENDPOINT ẨN DANH (ADR-0008, 23/09/2026).
+    ///
+    /// Màn đăng nhập gọi cái này đầu tiên. Có kết quả ⇒ đang ở domain riêng của một trung
+    /// tâm ⇒ **ẩn ô mã** và hiện tên trung tâm. Không có ⇒ đường mặc định ⇒ hiện ô mã như cũ.
+    ///
+    /// ## Vì sao an toàn hơn `ten-trung-tam/{ma}`
+    ///
+    /// Endpoint này **không nhận tham số nào**. Tenant do `X-Tenant-Domain` quyết định, mà
+    /// header đó do nginx đặt từ `$server_name` và API xoá đi nếu không đứng sau proxy. Người
+    /// gọi không có gì để thao túng — khác với endpoint tra theo mã, nơi họ tự đưa mã vào.
+    ///
+    /// Thứ lộ ra cũng đúng bằng thứ endpoint kia đã lộ, và chỉ của **một** trung tâm: trung
+    /// tâm sở hữu domain mà người gọi vốn đã gõ trên thanh địa chỉ.
+    ///
+    /// Trả 204 chứ không 404 khi không có domain: "ở đây không gắn domain nào" là câu trả lời
+    /// **bình thường** của đường mặc định, không phải lỗi. Dùng 404 sẽ khiến log đầy lỗi giả
+    /// mỗi lần ai đó mở màn đăng nhập.
+    /// </summary>
+    [HttpGet("trung-tam-theo-domain")]
+    [AllowAnonymous]
+    [EnableRateLimiting(GioiHanTanSuat.TraCuu)]
+    [ProducesResponseType<TrungTamTheoDomainDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<ActionResult<TrungTamTheoDomainDto>> TrungTamTheoDomain(CancellationToken ct)
+        => await sender.Send(new TraTrungTamTheoDomainQuery(), ct) is { } dto
+            ? Ok(dto)
+            // 204 chứ không 404 — xem chú thích trên.
+            : NoContent();
+
+    /// <summary>
     /// Logo của một trung tâm — ENDPOINT ẨN DANH, để màn đăng nhập hiện đúng nhận diện
     /// (22/09/2026, yêu cầu chủ sản phẩm).
     ///

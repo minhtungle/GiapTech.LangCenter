@@ -8,7 +8,7 @@ import { Check, CircleAlert } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { layMaLoi } from '@/lib/api'
 import { useTinhNang } from '@/lib/tinhNang'
-import { useTraTenTrungTam } from '@/lib/traTenTrungTam'
+import { useTraTenTrungTam, useTrungTamTheoDomain } from '@/lib/traTenTrungTam'
 import { vietTat } from '@/lib/nhanDienTrungTam'
 import { useNhanDienTab } from '@/lib/nhanDienTab'
 import { ChonNgonNgu } from '@/components/ChonNgonNgu'
@@ -18,8 +18,19 @@ import {
   Button, CanhBaoLoi, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label,
 } from '@/components/ui'
 
+/*
+  `maTrungTam` KHÔNG bắt buộc ở tầng schema (ADR-0008).
+
+  Ở domain riêng, ô mã bị ẩn nên ô này luôn rỗng — bắt buộc ở đây thì form không submit
+  được, mà thông báo lỗi lại gắn vào một ô KHÔNG HIỂN THỊ: người dùng bấm "Đăng nhập" và
+  thấy... không có gì xảy ra. Loại hỏng tệ nhất vì không để lại dấu vết nào trên màn hình.
+
+  Ràng buộc thật vẫn còn, chỉ là đúng chỗ hơn: ở đường mặc định thì `<Input required>` chặn,
+  và cuối cùng backend luôn từ chối nếu thiếu mã. Tin vào validate của client làm hàng rào
+  duy nhất thì vốn đã sai.
+*/
 const schema = z.object({
-  maTrungTam: z.string().min(1).transform((v) => v.trim().toUpperCase()),
+  maTrungTam: z.string().transform((v) => v.trim().toUpperCase()).optional(),
   username: z.string().min(1),
   matKhau: z.string().min(1),
 })
@@ -68,10 +79,34 @@ export default function DangNhap() {
     },
   })
 
+  /*
+    ADR-0008 — hai đường vào.
+
+    Đang ở domain riêng của một trung tâm (`trungTamCuaDomain` có giá trị) thì ẩn hẳn ô mã:
+    domain đã chốt tenant, và server cũng BỎ QUA mã client gửi. Để ô mã hiện mà sửa được thì
+    domain chỉ còn là gợi ý — người dùng xoá đi gõ mã trung tâm khác là mất tác dụng ràng buộc.
+
+    Đường mặc định và local thì `trungTamCuaDomain === null` ⇒ mọi thứ y như trước.
+  */
+  const { trungTam: trungTamCuaDomain, dangTra: dangTraDomain } = useTrungTamTheoDomain()
+  const coDomainRieng = !!trungTamCuaDomain
+
   // Tra tên đội ngay khi mã đủ 7 ký tự: gõ sai một chữ mà chỉ biết sau khi điền cả mật khẩu
   // rồi nhận "sai thông tin đăng nhập" thì không phân biệt được là sai mã hay sai mật khẩu.
-  const { tenTrungTam, trungTam, duongDanLogo, duongDanAnhBia, dangTra } =
-    useTraTenTrungTam(watch('maTrungTam') ?? '')
+  //
+  // Ở domain riêng thì không tra theo mã nữa — đã có sẵn thông tin từ domain.
+  const traTheoMa = useTraTenTrungTam(coDomainRieng ? '' : (watch('maTrungTam') ?? ''))
+
+  const maHieuLuc = trungTamCuaDomain?.maTrungTam ?? (watch('maTrungTam') ?? '')
+  const trungTam = trungTamCuaDomain ?? traTheoMa.trungTam
+  const tenTrungTam = trungTamCuaDomain?.tenTrungTam ?? traTheoMa.tenTrungTam
+  const dangTra = dangTraDomain || traTheoMa.dangTra
+  const duongDanLogo = trungTam?.coLogo
+    ? `/api/v1/auth/logo/${maHieuLuc.trim().toUpperCase()}`
+    : undefined
+  const duongDanAnhBia = trungTam?.coAnhBia
+    ? `/api/v1/auth/anh-bia/${maHieuLuc.trim().toUpperCase()}`
+    : undefined
 
   /*
     Tab đổi theo mã vừa gõ (22/09/2026).
@@ -99,10 +134,16 @@ export default function DangNhap() {
   const onSubmit = async (data: FormData) => {
     setMaLoi(null)
     try {
-      const { phaiDoiMatKhau } = await dangNhap(data.maTrungTam, data.username, data.matKhau)
+      // Ở domain riêng, mã lấy TỪ DOMAIN chứ không từ form (ô mã đã bị ẩn). Server cũng bỏ
+      // qua mã client gửi trong trường hợp này, nên hai bên nhất quán.
+      // `?? ''` chứ không `!`: `maTrungTam` là optional từ ADR-0008, và ở đường mặc định
+      // người dùng có thể submit khi ô còn rỗng. Gửi chuỗi rỗng để BACKEND từ chối bằng mã
+      // lỗi thật, thay vì khẳng định bừa là nó có giá trị.
+      const ma = trungTamCuaDomain?.maTrungTam ?? data.maTrungTam ?? ''
+      const { phaiDoiMatKhau } = await dangNhap(ma, data.username, data.matKhau)
       // Ghi nhớ SAU khi đăng nhập thành công: nhớ bộ sai thì lần sau người dùng lại phải xoá
       // tay đúng cái mà hệ thống vừa điền cho họ.
-      if (nhoDangNhap) luuDaNho({ maTrungTam: data.maTrungTam, username: data.username })
+      if (nhoDangNhap) luuDaNho({ maTrungTam: ma, username: data.username })
       else xoaDaNho()
       // Bắt buộc đổi mật khẩu trước khi vào hệ thống (FR-01). Backend cũng chặn ở
       // middleware, nên điều hướng này chỉ để trải nghiệm mượt, không phải lớp bảo vệ.
@@ -139,6 +180,38 @@ export default function DangNhap() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+            {/*
+              ADR-0008 — ở domain riêng thì ẩn HẲN ô mã, không chỉ điền sẵn.
+
+              Điền sẵn mà vẫn sửa được nghĩa là domain không chốt được tenant: người dùng
+              xoá đi gõ mã trung tâm khác là domain hết tác dụng ràng buộc. Ẩn ở client và
+              BỎ QUA mã ở server — hai vế phải đi cùng nhau.
+            */}
+            {coDomainRieng ? (
+              <div className="flex items-center gap-2 rounded-md border bg-muted/40 p-2.5">
+                {duongDanLogo ? (
+                  <img
+                    src={duongDanLogo}
+                    alt=""
+                    className="h-9 w-9 shrink-0 rounded object-contain"
+                  />
+                ) : (
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-primary text-xs font-semibold text-primary-foreground">
+                    {vietTat(trungTam?.tenVietTat ?? trungTam?.tenTrungTam ?? '')}
+                  </span>
+                )}
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium">
+                    {trungTam?.tenTrungTam}
+                  </span>
+                  {trungTam?.tenVietTat && (
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {trungTam.tenVietTat}
+                    </span>
+                  )}
+                </span>
+              </div>
+            ) : (
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="maTrungTam">{t('dangNhap.maTrungTam')}</Label>
               <Input
@@ -206,10 +279,18 @@ export default function DangNhap() {
                 <p className="text-xs text-muted-foreground">{t('dangNhap.maTrungTamGoiY')}</p>
               )}
             </div>
+            )}
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="username">{t('dangNhap.username')}</Label>
-              <Input id="username" autoComplete="username" {...register('username')} />
+              <Input
+                id="username"
+                // Ở domain riêng, ô mã bị ẩn và ô mật khẩu chỉ tự focus khi đã nhớ đăng nhập
+                // — không có dòng này thì KHÔNG ô nào được focus với người vào lần đầu.
+                autoFocus={coDomainRieng && daNho === null}
+                autoComplete="username"
+                {...register('username')}
+              />
             </div>
 
             <div className="flex flex-col gap-1.5">

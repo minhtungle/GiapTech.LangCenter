@@ -241,5 +241,79 @@ public class NhanDienTenantTheoDomainTests(DomainApiFactory factory)
         Assert.True(kq!.LaDomainQuanTri);
     }
 
+    // ---------------------------------------------------------------------------------
+    // 7. Endpoint cho màn đăng nhập biết có nên ẩn ô mã không
+    // ---------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Trên domain đã gắn: trả 200 kèm tên trung tâm ⇒ frontend ẩn ô mã.
+    /// </summary>
+    [Fact]
+    public async Task Tren_domain_da_gan_thi_tra_ve_trung_tam()
+    {
+        var f = factory.SauProxy();
+        f.BaoDamDaGanDomain();
+        var client = f.CreateClient();
+
+        var req = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/trung-tam-theo-domain");
+        GiaLapNginx(req, DomainQuanTri);
+
+        var res = await client.SendAsync(req);
+
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var dto = await res.Content.ReadFromJsonAsync<TrungTamDto>();
+        Assert.False(string.IsNullOrWhiteSpace(dto?.TenTrungTam));
+    }
+
+    /// <summary>
+    /// Đường mặc định (không có domain): trả 204 ⇒ frontend hiện ô mã như cũ.
+    ///
+    /// 204 chứ không 404: "ở đây không gắn domain nào" là câu trả lời BÌNH THƯỜNG của đường
+    /// mặc định. Dùng 404 sẽ làm log đầy lỗi giả mỗi lần ai mở màn đăng nhập.
+    /// </summary>
+    [Fact]
+    public async Task Khong_co_domain_thi_tra_204_de_frontend_hien_o_ma()
+    {
+        // factory mặc định = không sau proxy = giống local
+        var client = factory.CreateClient();
+
+        var res = await client.GetAsync("/api/v1/auth/trung-tam-theo-domain");
+
+        Assert.Equal(HttpStatusCode.NoContent, res.StatusCode);
+    }
+
+    /// <summary>
+    /// Endpoint này KHÔNG nhận tham số, nên client không chọn được trung tâm.
+    ///
+    /// Canh việc không ai "tiện tay" thêm tham số mã trung tâm vào sau này — làm vậy là biến
+    /// nó thành bản sao của `ten-trung-tam/{ma}` nhưng KHÔNG có ràng buộc độ dài 7 ký tự.
+    /// </summary>
+    [Fact]
+    public async Task Khong_the_chon_trung_tam_qua_query_string()
+    {
+        var f = factory.SauProxy();
+        f.BaoDamDaGanDomain();
+        var client = f.CreateClient();
+
+        var req = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"/api/v1/auth/trung-tam-theo-domain?maTrungTam={f.MaTrungTamB}&tenantId={f.TenantBId}");
+        GiaLapNginx(req, DomainQuanTri);   // domain của tenant A
+
+        var res = await client.SendAsync(req);
+
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var dto = await res.Content.ReadFromJsonAsync<TrungTamDto>();
+
+        // Phải là tenant A (chủ domain), không phải tenant B mà client cố chỉ định.
+        using var scope = f.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var tenA = db.Tenants.Single(t => t.Id == f.TenantAId).TenTrungTam;
+        Assert.Equal(tenA, dto?.TenTrungTam);
+        Assert.Equal(f.MaTrungTamA, dto?.MaTrungTam);
+    }
+
+    private record TrungTamDto(string MaTrungTam, string TenTrungTam, string? TenVietTat, bool CoLogo);
+
     private record LoiDto(string ErrorCode);
 }

@@ -154,3 +154,58 @@ public class TraKhoaLogoHandler(IAppDbContext db) : IRequestHandler<TraKhoaLogoQ
         return kq is null ? null : new KhoaLogoDto(kq.Id, kq.LogoUrl!);
     }
 }
+
+/// <summary>
+/// Trung tâm của DOMAIN đang gọi (ADR-0008, 23/09/2026) — `null` nếu domain chưa gắn.
+///
+/// **Không nhận tham số.** Tenant do `TenantMiddleware` giải từ header nginx đặt và gán vào
+/// <see cref="ICurrentTenant"/>. Đó là điểm làm nó an toàn hơn <see cref="TraTenTrungTamQuery"/>:
+/// người gọi không đưa vào được gì cả.
+///
+/// Trả cùng DTO với truy vấn theo mã — hai đường vào, một hình dạng dữ liệu, nên frontend
+/// chỉ có một nhánh dựng giao diện.
+/// </summary>
+public record TraTrungTamTheoDomainQuery : IRequest<TrungTamTheoDomainDto?>;
+
+/// <summary>
+/// Như <see cref="TenTrungTamTheoMaDto"/> nhưng KÈM MÃ TRUNG TÂM.
+///
+/// Vì sao cần mã ở đây trong khi truy vấn theo mã thì không: khi màn đăng nhập ẩn ô mã,
+/// frontend không còn mã nào trong tay, mà `GET /auth/logo/{ma}` và `/auth/anh-bia/{ma}`
+/// đều lấy theo mã. Không trả mã thì trang mất logo và banner.
+///
+/// Nới lỏng này có cân nhắc: mã trung tâm ở đây **không phải bí mật** — người gọi đã đứng
+/// trên domain riêng của trung tâm đó, tức là đã biết mình đang ở đâu. Khác hẳn việc trả mã
+/// cho một người gõ domain bất kỳ.
+/// </summary>
+public record TrungTamTheoDomainDto(
+    string MaTrungTam,
+    string TenTrungTam,
+    string? TenVietTat,
+    bool CoLogo,
+    string? MoTa,
+    string? DiaChi,
+    bool CoAnhBia);
+
+public class TraTrungTamTheoDomainHandler(IAppDbContext db, ICurrentTenant currentTenant)
+    : IRequestHandler<TraTrungTamTheoDomainQuery, TrungTamTheoDomainDto?>
+{
+    public async Task<TrungTamTheoDomainDto?> Handle(
+        TraTrungTamTheoDomainQuery request, CancellationToken ct)
+    {
+        if (currentTenant.TenantId is not { } tenantId) return null;
+
+        // TENANT không phải ITenantEntity nên không có Query Filter — lọc theo Id tường minh.
+        return await db.Tenants
+            .Where(t => t.Id == tenantId)
+            .Select(t => new TrungTamTheoDomainDto(
+                t.MaTrungTam,
+                t.TenTrungTam,
+                t.TenVietTat,
+                t.LogoUrl != null,
+                t.MoTa,
+                t.DiaChi,
+                t.AnhBiaUrl != null))
+            .FirstOrDefaultAsync(ct);
+    }
+}
