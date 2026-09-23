@@ -81,6 +81,8 @@ backup/
 caddy_data/
 caddy_config/
 
-# Playwright — kết quả chạy test E2E, không commit
-frontend/test-results/
-frontend/playwright-report/
+# Playwright — kết quả chạy test E2E, không commit.
+# Không gắn tiền tố `frontend/`: thư mục sinh ra ở CHỖ CHẠY lệnh, mà lệnh chạy được từ cả
+# gốc repo lẫn `frontend/`. Gắn tiền tố thì chạy từ chỗ kia là rác lọt vào `git status`.
+test-results/
+playwright-report/
