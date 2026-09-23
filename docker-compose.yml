@@ -35,6 +35,12 @@ services:
       JWT_SECRET: ${JWT_SECRET:?can JWT_SECRET toi thieu 32 ky tu}
       JWT_ISSUER: ${JWT_ISSUER:-langcenter-api}
       JWT_EXPIRY_MINUTES: ${JWT_EXPIRY_MINUTES:-60}
+      # Trung tâm đầu tiên trên cài đặt MỚI (23/09/2026). Bỏ trống ⇒ không tạo gì.
+      # Hệ thống CỐ Ý không tự sinh mật khẩu: seed chạy trong container, không có đường trả
+      # về nào ngoài log — mà log thì ai đọc được cũng thấy. Xem `TrungTamDauTien`.
+      # GỠ biến này sau khi đã tạo và đổi mật khẩu.
+      TRUNG_TAM_DAU_TIEN_MAT_KHAU: ${TRUNG_TAM_DAU_TIEN_MAT_KHAU:-}
+      TRUNG_TAM_DAU_TIEN_TEN: ${TRUNG_TAM_DAU_TIEN_TEN:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
