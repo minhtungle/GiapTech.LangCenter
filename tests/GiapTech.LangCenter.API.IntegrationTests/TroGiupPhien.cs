@@ -25,12 +25,22 @@ public static class TroGiupPhien
     /// Đọc refresh token từ header `Set-Cookie` thay vì từ body: đây là nơi duy nhất còn lấy
     /// được nó, và cũng là cách trình duyệt thật nhận token.
     /// </summary>
+    /// <param name="maTrungTam">
+    /// Mặc định `null` = tenant A, giữ nguyên hành vi cũ cho mọi lời gọi đã có. Truyền mã
+    /// khác khi cần đăng nhập vào trung tâm thứ hai (vd kiểm token lệch domain, ADR-0008).
+    /// </param>
     public static async Task<Phien> DangNhapAsync(
         HttpClient client, ApiFactory factory,
-        string username = "manager", string matKhau = "manager123456")
+        string username = "manager", string matKhau = "manager123456",
+        string? maTrungTam = null)
     {
         var res = await client.PostAsJsonAsync("/api/v1/auth/dang-nhap",
-            new { MaTrungTam = factory.MaTrungTamA, Username = username, MatKhau = matKhau });
+            new
+            {
+                MaTrungTam = maTrungTam ?? factory.MaTrungTamA,
+                Username = username,
+                MatKhau = matKhau
+            });
         res.EnsureSuccessStatusCode();
 
         var body = await res.Content.ReadFromJsonAsync<JsonElement>();

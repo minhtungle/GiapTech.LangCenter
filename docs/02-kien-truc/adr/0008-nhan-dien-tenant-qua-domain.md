@@ -109,6 +109,12 @@ Nguy hiểm gấp đôi vì nginx hiện `include /etc/nginx/proxy_params` (4 ch
    truyền xuống bằng **header riêng do chính nó đặt**, ví dụ `X-Tenant-Domain $server_name` —
    dùng `$server_name` (giá trị trong cấu hình), **không** dùng `$host`/`$http_host` (giá trị
    client gửi).
+
+   > **Bẫy kế thừa của nginx** (phát hiện khi làm, 23/09/2026): nginx **không** kế thừa
+   > `proxy_set_header` từ cấp `server` xuống một `location` đã tự khai `proxy_set_header`
+   > bất kỳ. Ba location proxy trong `langcenter.conf` đều khai `X-Forwarded-For`, nên chỉ
+   > đặt ở cấp `server` là chúng **không nhận được header** — tính năng chết im lặng trên
+   > VPS trong khi mọi test ở local vẫn xanh. Phải lặp lại trong từng location proxy.
 2. API **xoá sạch header đó** nếu request không đến từ reverse proxy tin cậy. Header do client
    tự đặt không bao giờ được đọc tới.
 3. Tra domain không ra tenant → **từ chối ngay tại middleware**, không bao giờ chạy tiếp với

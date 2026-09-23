@@ -22,6 +22,8 @@ public static class DependencyInjection
         // DbContext và handler chỉ thấy interface.
         services.AddScoped<CurrentTenant>();
         services.AddScoped<ICurrentTenant>(sp => sp.GetRequiredService<CurrentTenant>());
+        // Tra tenant từ domain (ADR-0008) — chạy ở mọi request nên có cache bên trong.
+        services.AddScoped<IGiaiTenantTheoDomain, GiaiTenantTheoDomain>();
 
         services.AddDbContext<AppDbContext>((sp, options) =>
             options
