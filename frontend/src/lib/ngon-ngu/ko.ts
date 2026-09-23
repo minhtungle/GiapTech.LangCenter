@@ -944,6 +944,10 @@ const ko = {
     chuyenCrm: 'CRM으로 이관',
     xacNhanXoaLienHe: '이 문의를 삭제할까요?',
     xoaLienHeMatGi: '“{{ten}}” 님의 문의가 삭제되며 복구할 수 없습니다.',
+    goiYDoiTac: '항목당 로고 하나. 이미지와 이름(대체 텍스트용)만 있으면 됩니다.',
+    goiYQuyTrinh: '항목당 한 단계. 단계 번호는 순서대로 매겨지므로 제목과 설명만 입력하세요.',
+    goiYCoSo: '제목＝지점명 · 설명＝주소 · 부제＝운영 시간.',
+    goiYGiaoVien: '사진은 원형으로 표시됩니다. 부제＝직함.',
     khoi: {
       Hero: '히어로 배너',
       GioiThieu: '소개',
@@ -952,6 +956,9 @@ const ko = {
       CamNhan: '수강 후기',
       TinTuc: '소식',
       LienHe: '문의',
+      DoiTac: '파트너 및 인증',
+      QuyTrinh: '등록 절차',
+      CoSo: '지점',
     },
   },
   heThong: {

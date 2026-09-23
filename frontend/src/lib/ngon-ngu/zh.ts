@@ -944,6 +944,10 @@ const zh = {
     chuyenCrm: '转入 CRM',
     xacNhanXoaLienHe: '删除此咨询？',
     xoaLienHeMatGi: '来自“{{ten}}”的咨询将被删除，且无法恢复。',
+    goiYDoiTac: '每项一个徽标。只需图片和名称（用作替代文字）。',
+    goiYQuyTrinh: '每项一个步骤。步骤编号按顺序生成，只需标题和说明。',
+    goiYCoSo: '标题＝校区名称 · 说明＝地址 · 副标题＝营业时间。',
+    goiYGiaoVien: '照片显示为圆形。副标题＝职称。',
     khoi: {
       Hero: '首屏横幅',
       GioiThieu: '关于我们',
@@ -952,6 +956,9 @@ const zh = {
       CamNhan: '学员评价',
       TinTuc: '新闻',
       LienHe: '联系我们',
+      DoiTac: '合作与认可',
+      QuyTrinh: '报名流程',
+      CoSo: '校区',
     },
   },
   heThong: {

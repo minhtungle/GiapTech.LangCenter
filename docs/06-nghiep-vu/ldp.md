@@ -14,7 +14,16 @@ Trung tâm cần một trang giới thiệu cho **khách chưa biết gì về h
 cảm nhận học viên, và một chỗ để lại số điện thoại. Hiện toàn bộ hệ thống nằm sau đăng nhập —
 khách vãng lai không thấy được gì.
 
-Tham chiếu hình dạng: edulife.com.vn (chủ sản phẩm đưa).
+### Về trang tham chiếu
+
+Chủ sản phẩm đưa edulife.com.vn làm mẫu. Ta lấy **khuôn bố cục** — thứ vốn là quy ước chung của
+landing giáo dục, không của riêng ai: header dính có nút gọi hành động, hero căn giữa, lưới thẻ
+khoá học, băng chuyền ngang cho cảm nhận và giáo viên, dải logo đối tác, các bước đánh số, khối
+cơ sở, form liên hệ cuối trang, nút gọi nổi trên di động.
+
+**Không lấy**: chữ nghĩa, hình ảnh, logo, bảng màu hay bất kỳ phần nhận diện nào của họ. Màu
+lấy từ design token của chính hệ thống này; nội dung do từng trung tâm tự nhập. Trang dựng ra
+phải mang thương hiệu của trung tâm dùng nó, không phải bản sao của một trung tâm khác.
 
 ### Điều làm LDP khác mọi module đã có
 
@@ -43,7 +52,8 @@ Admin **chủ động chọn** đưa gì ra ngoài. Đó là điểm chính.
 
 ### Cấu trúc: khối cố định, nội dung sửa được
 
-Bố cục do mã quyết định; admin sửa **nội dung**, **bật/tắt**, và **sắp thứ tự**.
+Bố cục do mã quyết định; admin sửa **nội dung**, **bật/tắt**, và **sắp thứ tự**. Mười khối,
+sinh sẵn khi trung tâm mở màn soạn lần đầu.
 
 | Khối | Nội dung | Kiểu |
 |---|---|---|
@@ -53,6 +63,9 @@ Bố cục do mã quyết định; admin sửa **nội dung**, **bật/tắt**, 
 | `GiaoVien` | Tên · chức danh · ảnh · giới thiệu ngắn | Nhiều mục |
 | `CamNhan` | Tên người học · nội dung · ảnh | Nhiều mục |
 | `TinTuc` | Tiêu đề · tóm tắt · ảnh · ngày | Nhiều mục |
+| `QuyTrinh` | Các bước đăng ký, đánh số theo thứ tự | Nhiều mục |
+| `DoiTac` | Logo đơn vị đối tác / công nhận | Nhiều mục (chỉ ảnh) |
+| `CoSo` | Cơ sở: ảnh · tên · địa chỉ · giờ mở cửa | Nhiều mục |
 | `LienHe` | Địa chỉ · hotline · email · form đăng ký tư vấn | Một bản ghi |
 
 Không làm **page builder tự do** (kéo thả khối bất kỳ): khối lượng lớn gấp nhiều lần, và kết

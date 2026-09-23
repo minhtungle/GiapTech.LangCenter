@@ -65,3 +65,30 @@ mới phải dừng lại khai báo. Đây là giá trị thật của khuôn "d
 ngược" mà dự án dùng cho bảy bất biến kiến trúc.
 
 Mutation: bỏ lọc `DaXuatBan` ⇒ đỏ; bỏ lọc `Hien` ⇒ đỏ.
+
+
+## Bổ sung cùng ngày: dựng lại bố cục trang công khai
+
+Chủ sản phẩm đưa edulife.com.vn làm mẫu và yêu cầu dựng theo.
+
+**Lấy gì:** khuôn bố cục — header dính có nút gọi hành động, hero căn giữa, lưới thẻ khoá học,
+băng chuyền ngang cho cảm nhận và giáo viên, dải logo đối tác, các bước đánh số, khối cơ sở,
+form cuối trang, nút gọi nổi trên di động. Đây là quy ước chung của landing giáo dục, không
+phải của riêng trang nào.
+
+**Không lấy:** chữ nghĩa, hình ảnh, logo, bảng màu. Màu lấy từ design token của chính hệ thống;
+nội dung do từng trung tâm tự nhập. Trang dựng ra phải mang thương hiệu của trung tâm dùng nó,
+không phải bản sao của một trung tâm khác. Đã ghi rõ ranh giới này trong FR-30 để người sau
+không hiểu nhầm "dựng theo" thành "sao chép".
+
+**Ba khối thêm mới:** `QuyTrinh` (bước đánh số — thứ tự mục chính là số bước, không cần cột
+riêng), `DoiTac` (chỉ ảnh, không chữ — dải logo mà kèm mô tả thì thành lưới thẻ và mất hiệu
+ứng "một hàng thương hiệu"), `CoSo`.
+
+**Băng chuyền dùng CSS `scroll-snap`**, không thêm thư viện carousel: vuốt được trên di động,
+bàn phím vẫn cuộn được, và không thêm một phụ thuộc chỉ để cuộn ngang. Hai nút mũi tên chỉ là
+tiện ích cho desktop nơi không có thao tác vuốt.
+
+**Chi tiết nhỏ nhưng quan trọng:** hero luôn có lớp phủ trên ảnh nền. Không có nó thì trung tâm
+tải lên một ảnh sáng là chữ biến mất — và họ sẽ không hiểu vì sao, vì ở máy họ ảnh trông vẫn
+đẹp.

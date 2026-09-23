@@ -12,9 +12,24 @@ import { HopXacNhan } from '@/components/ui/HopXacNhan'
 /** Khớp `LoaiKhoiLdp` ở backend. Enum serialize thành CHUỖI, không phải số. */
 type LoaiKhoi =
   | 'Hero' | 'GioiThieu' | 'KhoaHoc' | 'GiaoVien' | 'CamNhan' | 'TinTuc' | 'LienHe'
+  | 'DoiTac' | 'QuyTrinh' | 'CoSo'
 
-/** Bốn loại có mục con; ba loại còn lại chỉ có nội dung của chính khối. */
-const CO_MUC_CON: LoaiKhoi[] = ['KhoaHoc', 'GiaoVien', 'CamNhan', 'TinTuc']
+/**
+ * Bảy loại có mục con; ba loại còn lại (Hero, GioiThieu, LienHe) chỉ có nội dung của chính
+ * khối. Danh sách này phải khớp phép kiểm ở `ThemMucHandler` — lệch thì giao diện hiện nút
+ * "Thêm mục" mà API từ chối.
+ */
+const CO_MUC_CON: LoaiKhoi[] = [
+  'KhoaHoc', 'GiaoVien', 'CamNhan', 'TinTuc', 'DoiTac', 'QuyTrinh', 'CoSo',
+]
+
+/** Gợi ý nhập cho từng loại khối — mỗi loại dùng các ô theo cách khác nhau. */
+const GOI_Y_MUC: Partial<Record<LoaiKhoi, string>> = {
+  DoiTac: 'ldp.goiYDoiTac',
+  QuyTrinh: 'ldp.goiYQuyTrinh',
+  CoSo: 'ldp.goiYCoSo',
+  GiaoVien: 'ldp.goiYGiaoVien',
+}
 
 interface Muc {
   id: string
@@ -370,9 +385,12 @@ function DanhSachMuc({
 
   return (
     <div className="mt-2 border-t pt-3">
-      <p className="mb-2 text-sm font-medium">
+      <p className="mb-1 text-sm font-medium">
         {t('ldp.danhSachMuc')} ({khoi.mucs.length})
       </p>
+      {GOI_Y_MUC[khoi.loai] && (
+        <p className="mb-2 text-xs text-muted-foreground">{t(GOI_Y_MUC[khoi.loai]!)}</p>
+      )}
 
       <div className="flex flex-col gap-2">
         {khoi.mucs.map((m) => (

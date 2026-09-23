@@ -12,7 +12,7 @@ namespace GiapTech.LangCenter.Application.Ldp;
 ///
 /// **Tự tạo trang nếu chưa có.** Mỗi tenant đúng một trang, và nó không có ý nghĩa gì khi
 /// vắng mặt — bắt người dùng bấm "Tạo trang" một lần rồi không bao giờ bấm lại là thêm một
-/// bước vô ích. Tạo kèm đủ 7 khối rỗng theo thứ tự mặc định.
+/// bước vô ích. Tạo kèm đủ 10 khối rỗng theo thứ tự mặc định.
 /// </summary>
 public record TrangDichQuery : IRequest<TrangDichDto>;
 
@@ -21,8 +21,9 @@ public class TrangDichHandler(IAppDbContext db) : IRequestHandler<TrangDichQuery
     /// <summary>Thứ tự khối mặc định — theo hình dạng landing thường gặp.</summary>
     private static readonly LoaiKhoiLdp[] ThuTuMacDinh =
     [
-        LoaiKhoiLdp.Hero, LoaiKhoiLdp.GioiThieu, LoaiKhoiLdp.KhoaHoc, LoaiKhoiLdp.GiaoVien,
-        LoaiKhoiLdp.CamNhan, LoaiKhoiLdp.TinTuc, LoaiKhoiLdp.LienHe
+        LoaiKhoiLdp.Hero, LoaiKhoiLdp.GioiThieu, LoaiKhoiLdp.KhoaHoc, LoaiKhoiLdp.QuyTrinh,
+        LoaiKhoiLdp.GiaoVien, LoaiKhoiLdp.CamNhan, LoaiKhoiLdp.DoiTac, LoaiKhoiLdp.TinTuc,
+        LoaiKhoiLdp.CoSo, LoaiKhoiLdp.LienHe
     ];
 
     public async Task<TrangDichDto> Handle(TrangDichQuery request, CancellationToken ct)
@@ -114,11 +115,12 @@ public class ThemMucHandler(IAppDbContext db) : IRequestHandler<ThemMucCommand, 
             .FirstOrDefaultAsync(k => k.Id == r.KhoiId, ct)
             ?? throw new AppException(MaLoi.KhongTimThay, $"Khối {r.KhoiId}");
 
-        // Bốn loại khối có nhiều mục; ba loại còn lại (Hero, GioiThieu, LienHe) chỉ có nội
+        // Bảy loại khối có nhiều mục; ba loại còn lại (Hero, GioiThieu, LienHe) chỉ có nội
         // dung của chính khối. Chặn ở đây chứ không tin giao diện — giao diện không hiện nút
         // "Thêm mục" cho ba loại kia, nhưng API vẫn phải tự bảo vệ.
         if (khoi.Loai is not (LoaiKhoiLdp.KhoaHoc or LoaiKhoiLdp.GiaoVien
-            or LoaiKhoiLdp.CamNhan or LoaiKhoiLdp.TinTuc))
+            or LoaiKhoiLdp.CamNhan or LoaiKhoiLdp.TinTuc
+            or LoaiKhoiLdp.DoiTac or LoaiKhoiLdp.QuyTrinh or LoaiKhoiLdp.CoSo))
         {
             throw new AppException(
                 MaLoi.DuLieuKhongHopLe, $"Khối {khoi.Loai} không chứa mục con");

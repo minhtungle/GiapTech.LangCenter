@@ -1055,6 +1055,10 @@ const vi = {
     chuyenCrm: 'Chuyển CRM',
     xacNhanXoaLienHe: 'Xoá liên hệ này?',
     xoaLienHeMatGi: 'Liên hệ của “{{ten}}” sẽ bị xoá. Không khôi phục được.',
+    goiYDoiTac: 'Mỗi mục là một logo. Chỉ cần ảnh và tên (dùng làm chú thích cho trình đọc màn hình).',
+    goiYQuyTrinh: 'Mỗi mục là một bước. Số bước lấy theo thứ tự, chỉ cần tiêu đề và mô tả.',
+    goiYCoSo: 'Tiêu đề = tên cơ sở · Mô tả = địa chỉ · Dòng phụ = giờ mở cửa.',
+    goiYGiaoVien: 'Ảnh hiện dạng tròn. Dòng phụ = chức danh.',
     khoi: {
       Hero: 'Banner đầu trang',
       GioiThieu: 'Giới thiệu',
@@ -1063,6 +1067,9 @@ const vi = {
       CamNhan: 'Cảm nhận học viên',
       TinTuc: 'Tin tức',
       LienHe: 'Liên hệ',
+      DoiTac: 'Đối tác & công nhận',
+      QuyTrinh: 'Quy trình đăng ký',
+      CoSo: 'Cơ sở',
     },
   },
   heThong: {

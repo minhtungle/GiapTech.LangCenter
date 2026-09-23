@@ -16,7 +16,7 @@ HRM · CRM · LMS. Chi tiết: [`docs/06-nghiep-vu/ldp.md`](docs/06-nghiep-vu/ld
 | | |
 |---|---|
 | Bảng mới | `TRANG_DICH` · `KHOI_LDP` · `MUC_LDP` · `LIEN_HE_LANDING` |
-| Khối | 7 loại, bố cục cố định — sửa nội dung, bật/tắt, sắp thứ tự |
+| Khối | **10 loại**, bố cục cố định — sửa nội dung, bật/tắt, sắp thứ tự |
 | Đường công khai | domain riêng (ADR-0008), hoặc `/t/{mã}` khi chưa trỏ DNS |
 | Endpoint ẩn danh | 10 → **14** |
 
@@ -24,6 +24,18 @@ HRM · CRM · LMS. Chi tiết: [`docs/06-nghiep-vu/ldp.md`](docs/06-nghiep-vu/ld
 nhưng nối thẳng dữ liệu nghiệp vụ ra trang công khai là mở đường rò rỉ **vĩnh viễn**: mỗi cột
 ai đó thêm vào sau này đều có nguy cơ xuất hiện trên Internet mà không ai rà. DTO công khai
 (`...CongKhaiDto`) tách hẳn DTO quản trị — không có `id`, không có khoá ảnh, không có cờ `hien`.
+
+**Bố cục trang công khai** dựng theo khuôn landing giáo dục phổ biến (chủ sản phẩm đưa
+edulife.com.vn làm tham chiếu): header dính có nút gọi hành động, hero căn giữa, lưới thẻ,
+băng chuyền ngang cho cảm nhận và giáo viên, dải logo đối tác, các bước đánh số, khối cơ sở,
+nút gọi nổi trên di động.
+
+Lấy **khuôn bố cục** — thứ vốn là quy ước chung của loại trang này. **Không** lấy chữ nghĩa,
+hình ảnh, logo hay bảng màu của trang tham chiếu: màu dùng design token của chính hệ thống,
+nội dung do từng trung tâm tự nhập. Ba khối thêm mới: `QuyTrinh` · `DoiTac` · `CoSo`.
+
+Băng chuyền dùng CSS `scroll-snap` thay vì thư viện carousel — không thêm phụ thuộc, vuốt được
+trên di động, bàn phím vẫn cuộn được.
 
 **Form liên hệ** là endpoint ẩn danh GHI, có bốn lớp: rate limit riêng 5/phút, honeypot bỏ qua
 im lặng, giới hạn độ dài ở validator, không trả dữ liệu. Lưu `LIEN_HE_LANDING` rồi người phụ

@@ -30,7 +30,24 @@ public enum LoaiKhoiLdp
     TinTuc = 5,
 
     /// <summary>Liên hệ: địa chỉ, hotline, email, form đăng ký tư vấn.</summary>
-    LienHe = 6
+    LienHe = 6,
+
+    /// <summary>
+    /// Dải logo đối tác / đơn vị công nhận (24/09/2026).
+    ///
+    /// Mỗi mục chỉ dùng `KhoaAnh` + `TieuDe` (tên để làm `alt`), không hiện mô tả — dải logo
+    /// mà kèm chữ thì thành lưới thẻ, mất hiệu ứng "một hàng thương hiệu".
+    /// </summary>
+    DoiTac = 7,
+
+    /// <summary>
+    /// Quy trình đăng ký theo bước đánh số (24/09/2026). Mỗi mục là một bước; thứ tự mục
+    /// chính là số bước, nên không cần cột số riêng.
+    /// </summary>
+    QuyTrinh = 8,
+
+    /// <summary>Cơ sở / chi nhánh: ảnh, tên, địa chỉ (ở `MoTa`), giờ mở cửa (ở `PhuDe`).</summary>
+    CoSo = 9
 }
 
 /// <summary>
@@ -102,11 +119,12 @@ public class KhoiLdp : TenantEntity
 }
 
 /// <summary>
-/// MUC_LDP — một mục trong khối nhiều mục (khoá học, giáo viên, cảm nhận, tin tức).
+/// MUC_LDP — một mục trong khối nhiều mục (khoá học, giáo viên, cảm nhận, tin tức, đối tác,
+/// quy trình, cơ sở).
 ///
-/// Dùng chung một bảng cho cả bốn loại thay vì bốn bảng: chúng có **cùng hình dạng** (tiêu đề,
-/// mô tả, ảnh, thứ tự) và khác nhau chỉ ở cách hiển thị. Bốn bảng gần giống nhau thì mỗi lần
-/// thêm một trường là sửa bốn chỗ, và ba trong bốn lần sẽ quên một chỗ.
+/// Dùng chung một bảng cho cả bảy loại thay vì bảy bảng: chúng có **cùng hình dạng** (tiêu đề,
+/// mô tả, ảnh, thứ tự) và khác nhau chỉ ở cách hiển thị. Bảy bảng gần giống nhau thì mỗi lần
+/// thêm một trường là sửa bảy chỗ, và vài lần trong đó sẽ quên một chỗ.
 /// </summary>
 public class MucLdp : TenantEntity
 {

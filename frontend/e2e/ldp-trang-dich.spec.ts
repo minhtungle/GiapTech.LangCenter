@@ -59,6 +59,25 @@ test('soạn nội dung, xuất bản, khách vãng lai xem được và gửi l
   await khach.close()
 })
 
+test('mười khối đủ mặt trong màn soạn, và khối nhiều mục thêm được mục', async ({
+  page, request,
+}) => {
+  const tt = await taoTrungTam(request, 'ldp-khoi')
+  await dangNhap(page, tt)
+  await page.goto('/ldp/noi-dung')
+
+  // Bố cục cố định: đúng 10 khối, không hơn không kém — người dùng không tự thêm loại mới.
+  await expect(page.getByText('Quy trình đăng ký')).toBeVisible()
+  await expect(page.getByText('Đối tác & công nhận')).toBeVisible()
+  await expect(page.getByText('Cơ sở', { exact: true })).toBeVisible()
+
+  // Khối QuyTrinh chứa mục con — thêm một bước và thấy nó xuất hiện.
+  const the = page.locator('div').filter({ hasText: /^Quy trình đăng ký/ }).first()
+  await the.getByPlaceholder('Tên mục mới').fill('Để lại thông tin')
+  await the.getByRole('button', { name: 'Thêm' }).click()
+  await expect(page.getByText('Để lại thông tin')).toBeVisible({ timeout: 10_000 })
+})
+
 test('gỡ xuất bản thì khách lại không xem được', async ({ page, request }) => {
   const tt = await taoTrungTam(request, 'ldp-go')
   await dangNhap(page, tt)

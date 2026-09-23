@@ -944,6 +944,10 @@ const en = {
     chuyenCrm: 'Add to CRM',
     xacNhanXoaLienHe: 'Delete this enquiry?',
     xoaLienHeMatGi: 'The enquiry from “{{ten}}” will be deleted. This cannot be undone.',
+    goiYDoiTac: 'One logo per item. Only the image and a name (used as alt text) are needed.',
+    goiYQuyTrinh: 'One step per item. Step numbers follow the order — just a title and description.',
+    goiYCoSo: 'Title = branch name · Description = address · Subtitle = opening hours.',
+    goiYGiaoVien: 'Photos show as circles. Subtitle = job title.',
     khoi: {
       Hero: 'Hero banner',
       GioiThieu: 'About',
@@ -952,6 +956,9 @@ const en = {
       CamNhan: 'Testimonials',
       TinTuc: 'News',
       LienHe: 'Contact',
+      DoiTac: 'Partners & accreditation',
+      QuyTrinh: 'How to enrol',
+      CoSo: 'Locations',
     },
   },
   heThong: {

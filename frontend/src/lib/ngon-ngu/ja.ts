@@ -944,6 +944,10 @@ const ja = {
     chuyenCrm: 'CRM へ移行',
     xacNhanXoaLienHe: 'このお問い合わせを削除しますか？',
     xoaLienHeMatGi: '「{{ten}}」さんのお問い合わせが削除されます。元に戻せません。',
+    goiYDoiTac: '1項目につきロゴ1つ。画像と名称（代替テキスト用）だけで十分です。',
+    goiYQuyTrinh: '1項目が1ステップ。番号は並び順から付くので、見出しと説明だけ入力します。',
+    goiYCoSo: '見出し＝教室名 · 説明＝住所 · サブ見出し＝営業時間。',
+    goiYGiaoVien: '写真は円形で表示されます。サブ見出し＝肩書き。',
     khoi: {
       Hero: 'ヒーローバナー',
       GioiThieu: '紹介',
@@ -952,6 +956,9 @@ const ja = {
       CamNhan: '受講者の声',
       TinTuc: 'お知らせ',
       LienHe: 'お問い合わせ',
+      DoiTac: '提携・認定',
+      QuyTrinh: '申込みの流れ',
+      CoSo: '教室',
     },
   },
   heThong: {
