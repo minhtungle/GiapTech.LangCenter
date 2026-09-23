@@ -4,6 +4,8 @@ import { AuthProvider, useAuth } from '@/lib/auth'
 import Layout from '@/components/Layout'
 import DangNhap from '@/pages/DangNhap'
 import DoiMatKhau from '@/pages/DoiMatKhau'
+import DangNhapChu from '@/pages/chu-he-thong/DangNhapChu'
+import DanhSachTrungTam from '@/pages/chu-he-thong/DanhSachTrungTam'
 import QuenMatKhau from '@/pages/QuenMatKhau'
 import DangKyTrungTam from '@/pages/DangKyTrungTam'
 import TongQuan from '@/pages/TongQuan'
@@ -104,6 +106,17 @@ export default function App() {
             <Route path="/quen-mat-khau" element={<QuenMatKhau />} />
             <Route path="/dang-ky" element={<DangKyTrungTam />} />
             <Route path="/doi-mat-khau" element={<DoiMatKhau />} />
+
+            {/*
+              Site CHỦ HỆ THỐNG (ADR-0009) — nằm NGOÀI `<CanDangNhap>` vì nó dùng một loại
+              danh tính khác hẳn: token chủ không mang `tenant_id`, và giữ trong một biến
+              riêng (`apiChu.ts`) để hai phiên không ghi đè nhau khi mở cùng tab.
+
+              Cũng KHÔNG bọc `<Layout />`: Layout gọi `useQuyen`/`useHeThong` — hai thứ tra
+              quyền theo tenant, mà tài khoản chủ không thuộc tenant nào.
+            */}
+            <Route path="/chu" element={<DangNhapChu />} />
+            <Route path="/chu/trung-tam" element={<DanhSachTrungTam />} />
 
             <Route
               element={

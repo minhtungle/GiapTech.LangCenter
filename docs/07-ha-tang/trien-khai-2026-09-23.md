@@ -97,6 +97,16 @@ git log --oneline -1                            # XEM mình đang deploy commit 
 
 ## Kiểm sau khi triển khai
 
+> **Ba luồng dưới đây PHẢI thử tay, không tin test.** Phiên 23/09/2026 có ba lỗi chỉ lộ khi
+> chạy trên PostgreSQL thật trong khi **673 test in-memory đều xanh**: khoá ngoại
+> `created_by_id`, Cascade của EF không giải được RESTRICT, và tham số không thay được vào
+> khối `DO $$`. Provider in-memory không ép khoá ngoại — chỉ `curl` thật mới bắt được.
+>
+> 1. Tạo trung tâm từ site chủ (`POST /chu-he-thong/trung-tam`)
+> 2. **Đăng nhập bằng đúng mật khẩu nó trả về** — đây là bước bắt được lệch giữa nơi băm và
+>    nơi báo lại, đúng lỗi từng khiến mọi trung tâm mới có `admin`/`123456`
+> 3. Gắn domain rồi truy cập thử bằng domain đó
+
 ```bash
 # a. API sống
 curl -s -o /dev/null -w '%{http_code}\n' https://<domain>/health          # 200
@@ -109,7 +119,31 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST \
 # c. Header bảo mật có mặt
 curl -sI https://<domain>/api/v1/tinh-nang | grep -iE 'x-frame|nosniff|strict-transport'
 
-# d. Cột mới đã có
+# d. Site chủ: đăng nhập → tạo trung tâm → đăng nhập bằng mật khẩu vừa nhận
+TOKEN=$(curl -s -X POST https://<domain-site-chu>/api/v1/chu-he-thong/dang-nhap \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"chu","matKhau":"<mật khẩu đã đặt>"}' | jq -r .accessToken)
+
+curl -s -X POST https://<domain-site-chu>/api/v1/chu-he-thong/trung-tam \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"tenTrungTam":"Kiểm thử triển khai"}'
+# → { maTrungTam, username, matKhauAdmin } — CHÉP LẠI, chỉ trả một lần
+
+curl -s -X POST https://<domain>/api/v1/auth/dang-nhap \
+  -H 'Content-Type: application/json' \
+  -d '{"maTrungTam":"<mã vừa nhận>","username":"admin","matKhau":"<mật khẩu vừa nhận>"}'
+# → 200 kèm phaiDoiMatKhau: true. KHÔNG 200 nghĩa là nơi băm và nơi báo lại đã lệch.
+
+# e. Token chủ KHÔNG gọi được API nghiệp vụ (hàng rào chính của ADR-0009)
+curl -s -o /dev/null -w '%{http_code}\n' https://<domain>/api/v1/lop-hoc \
+  -H "Authorization: Bearer $TOKEN"                                       # 401
+
+# f. Dọn tenant E2E PHẢI tắt trên production
+curl -s -o /dev/null -w '%{http_code}\n' -X POST \
+  https://<domain-site-chu>/api/v1/chu-he-thong/don-tenant-e2e \
+  -H "Authorization: Bearer $TOKEN"                                       # 404
+
+# g. Cột mới đã có
 docker compose exec -T db psql -U langcenter -d langcenter \
   -c '\d "REFRESH_TOKEN"' | grep ly_do                                     # có dòng ly_do
 

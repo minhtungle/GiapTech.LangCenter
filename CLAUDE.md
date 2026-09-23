@@ -38,9 +38,9 @@ LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 | Người dùng (hồ sơ 3 vai trò) tách khỏi tài khoản · nhóm quyền · thiết lập | **Kết thúc lớp** — enum có `DaKetThuc` nhưng chưa endpoint nào set (nợ N26) |
 | **Ba hệ thống con** HRM/CRM/LMS: bộ chuyển, sidebar lọc, tab phân quyền · URL `/hrm` `/crm` `/lms` | Số **đã thu** ở CRM chưa chảy sang sổ học phí LMS |
 | **CRM** (FR-17 → FR-20): khách hàng + view 3 tab · doanh thu đa tiền tệ · **khoá học + sản phẩm** | Hộp thoại chọn lớp chưa **sắp** lớp cùng khoá lên đầu (nợ N19, còn phần nhỏ) |
-| **HRM** đủ nghiệp vụ (FR-22 → FR-24): cơ cấu tổ chức · chức vụ · hồ sơ mở rộng (CCCD, số TK, MXH, tệp) | **Frontend site chủ hệ thống** — backend xong (ADR-0009), chưa có UI |
+| **HRM** đủ nghiệp vụ (FR-22 → FR-24): cơ cấu tổ chức · chức vụ · hồ sơ mở rộng (CCCD, số TK, MXH, tệp) | Import Excel học viên |
 | Hồ sơ con người: Nhân sự (HRM) · **Học viên quản lý tập trung ở CRM** (13/09) | **Bài tập cho khoá online** — FR-27, bước 4/4 chưa làm |
-| Lớp học: vòng đời, phân công, ghi danh, học phí riêng từng người, **gán tối đa 3 khoá** | Import Excel học viên |
+| Lớp học: vòng đời, phân công, ghi danh, học phí riêng từng người, **gán tối đa 3 khoá** | |
 | Buổi học: sinh lịch tự động; điểm danh hai nguồn; **trạng thái suy theo giờ + màu riêng** (18/09) | Dọn nhật ký cũ theo chính sách lưu giữ |
 | Bài tập, bài nộp nhiều lần, tài liệu, tệp đính kèm | Danh mục ngày nghỉ khi sinh lịch |
 | Học phí: sổ thu + công nợ tính động — **ẩn khỏi LMS 12/09, chỉ CRM nắm tiền** |  |
@@ -51,7 +51,7 @@ LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 | **FR-28 Thống kê CRM**: doanh thu theo khoá/sản phẩm/đội, phễu, công nợ, biểu đồ tăng trưởng | |
 | **FR-29 Thống kê nhân sự**: xếp hạng kinh doanh/giáo viên/trợ giảng + module tiêu chí chấm thang 5 | **LDP — landing page công khai** (FR-30), chưa bắt đầu |
 | **Nhận diện tenant qua domain** (ADR-0008): hai đường vào — domain riêng ẩn ô mã, hoặc mã trung tâm | |
-| **Site chủ hệ thống** (ADR-0009): tạo trung tâm · gắn domain · đóng nợ N3 | |
+| **Site chủ hệ thống** (ADR-0009) đủ backend + UI: `/chu` — tạo trung tâm · gắn domain · đóng nợ N3 | |
 
 Chi tiết và nợ kỹ thuật: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-quan/ke-hoach.md).
 

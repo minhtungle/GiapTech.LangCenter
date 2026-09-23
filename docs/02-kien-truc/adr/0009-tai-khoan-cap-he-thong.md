@@ -116,6 +116,25 @@ Ba thứ chỉ lộ ra khi viết code thật, đều thuộc loại "hàng rào
    (chặn quy ước) *và* loại trừ khỏi vòng lặp trong `AppDbContext` (chặn khai tường minh);
    thiếu một vế là migration vẫn sinh ra khoá ngoại.
 
+## Giao diện (23/09/2026)
+
+Hai màn, ở `/chu` và `/chu/trung-tam`, **ngoài** `<CanDangNhap>` và **không** bọc `<Layout />`
+— Layout gọi `useQuyen`/`useHeThong`, hai thứ tra quyền theo tenant mà tài khoản chủ không có.
+
+**Client HTTP riêng** (`lib/apiChu.ts`), không dùng chung `api.ts`. Hai lý do:
+
+- `api.ts` có interceptor tự làm mới token qua `/auth/lam-moi-token` rồi đá về `/dang-nhap` của
+  tenant — sai màn, và tài khoản chủ không có refresh token để làm mới.
+- Nguy hiểm hơn: dùng chung một biến token trong RAM nghĩa là mở site chủ cùng tab với một
+  phiên tenant thì hai bên **ghi đè nhau**.
+
+Token chủ cũng giữ trong RAM, không `localStorage` (cùng lý do ADR-0007, và tài khoản này còn
+đáng giá hơn). Đánh đổi **chấp nhận**: tải lại trang là phải đăng nhập lại — site dùng thưa nên
+phiền ít, đổi lại không có refresh token nào để bị trộm.
+
+Site chủ **không đa ngôn ngữ**: nó chỉ dành cho chủ sản phẩm, thêm 5 bản dịch cho hai màn là
+chi phí không đổi lại gì.
+
 ## Test bắt buộc
 
 | Test | Canh gì |
