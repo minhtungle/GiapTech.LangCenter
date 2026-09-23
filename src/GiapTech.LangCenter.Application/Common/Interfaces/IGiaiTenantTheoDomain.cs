@@ -19,6 +19,14 @@ public interface IGiaiTenantTheoDomain
     /// <param name="domain">Domain đã chuẩn hoá (thường, không scheme, không cổng).</param>
     Task<ThongTinTenantTheoDomain?> TraAsync(string domain, CancellationToken ct = default);
 
+    /// <summary>
+    /// Tra tenant theo MÃ TRUNG TÂM — cho đường công khai dự phòng `/t/{mã}` (FR-30).
+    ///
+    /// Tách khỏi <see cref="TraAsync"/> vì hai thứ có mức tin cậy khác nhau: domain do nginx
+    /// khẳng định, còn mã thì client gửi. Nơi gọi phải giới hạn theo đường dẫn.
+    /// </summary>
+    Task<Guid?> TraTheoMaAsync(string maTrungTam, CancellationToken ct = default);
+
     /// <summary>Xoá cache của một domain — gọi sau khi gắn/đổi/gỡ domain của tenant.</summary>
     void XoaCache(string domain);
 }

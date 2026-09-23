@@ -806,6 +806,8 @@ const ko = {
     HoanTat: '반 개설 확정',
     XepNhanSu: '부서에 직원 배치',
     GuiXepLop: '반 배정 요청 보내기',
+    XuatBan: '게시',
+    ChuyenCrm: 'CRM으로 이관',
   },
   tieuChi: {
     them: '평가 기준 추가',
@@ -882,6 +884,8 @@ const ko = {
     ThongKe: '통계',
     LopHocToanTrungTam: '센터의 모든 반',
     NhatKyHeThong: '시스템 로그',
+    TrangDich: '랜딩 페이지',
+    LienHeLanding: '랜딩 페이지 문의',
     PhanQuyen: '권한 관리',
     ThietLapChung: '일반 설정',
     Anh: '이미지 (로고, 커버 이미지, QR)',

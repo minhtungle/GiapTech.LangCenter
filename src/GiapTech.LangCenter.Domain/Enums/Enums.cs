@@ -120,7 +120,24 @@ public enum HanhDong
     XepNhanSu = 22,
 
     /// <summary>Gửi yêu cầu xếp lớp từ CRM sang LMS (FR-21) — tách khỏi `Sua` đơn hàng.</summary>
-    GuiXepLop = 23
+    GuiXepLop = 23,
+
+    /// <summary>
+    /// Cho nội dung trang đích **lên Internet** (FR-30).
+    ///
+    /// Tách khỏi `Sua` vì hậu quả khác hẳn: sửa sai thì sửa lại, còn xuất bản sai là người
+    /// ngoài đã đọc được. Người soạn nội dung và người quyết định công khai thường là hai
+    /// người khác nhau.
+    /// </summary>
+    XuatBan = 24,
+
+    /// <summary>
+    /// Chuyển một liên hệ từ trang đích sang khách hàng CRM (FR-30).
+    ///
+    /// Là **cầu nối LDP → CRM**, nên tách riêng: người xem danh sách liên hệ chưa chắc được
+    /// phép tạo khách hàng trong CRM.
+    /// </summary>
+    ChuyenCrm = 25
 }
 
 /// <summary>
@@ -400,7 +417,16 @@ public enum NguonKhachHang
 
     /// <summary>Khách tự tìm đến / tự đăng ký. Không có nhân viên nào phụ trách, nên đơn của
     /// khách này KHÔNG tính vào doanh số cá nhân.</summary>
-    TuDangKy = 1
+    TuDangKy = 1,
+
+    /// <summary>
+    /// Khách để lại thông tin qua **form trên trang đích công khai** (FR-30, 24/09/2026).
+    ///
+    /// Tách khỏi <see cref="TuDangKy"/> dù cùng nghĩa "không có nhân viên phụ trách": CRM cần
+    /// đo được **kênh landing** mang về bao nhiêu khách, và gộp chung thì không tách ra được.
+    /// Giống `TuDangKy`, đơn của khách này KHÔNG tính vào doanh số cá nhân.
+    /// </summary>
+    TuLanding = 2
 }
 
 /// <summary>

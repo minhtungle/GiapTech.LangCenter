@@ -911,6 +911,8 @@ const vi = {
     HoanTat: 'Hoàn tất tạo lớp',
     XepNhanSu: 'Xếp nhân sự vào phòng',
     GuiXepLop: 'Gửi yêu cầu xếp lớp',
+    XuatBan: 'Xuất bản',
+    ChuyenCrm: 'Chuyển sang CRM',
   },
   tieuChi: {
     them: 'Thêm tiêu chí',
@@ -993,6 +995,8 @@ const vi = {
     ThongKe: 'Thống kê',
     LopHocToanTrungTam: 'Mọi lớp của trung tâm',
     NhatKyHeThong: 'Nhật ký hệ thống',
+    TrangDich: 'Trang đích',
+    LienHeLanding: 'Liên hệ từ trang đích',
     PhanQuyen: 'Phân quyền',
     ThietLapChung: 'Thiết lập chung',
     Anh: 'Ảnh (logo, ảnh bìa, QR)',

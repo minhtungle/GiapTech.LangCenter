@@ -256,6 +256,22 @@ public static class ChucNang
     /// </summary>
     public const string ThongKeNhanSu = nameof(ThongKeNhanSu);
 
+    /// <summary>
+    /// Nội dung **trang đích công khai** (FR-30) — khối, mục, ảnh, cấu hình SEO.
+    ///
+    /// Một chức năng cho cả trang chứ không tách theo từng khối: người được sửa `Hero` thì
+    /// cũng được sửa `GioiThieu` — chia nhỏ hơn chỉ tạo ra ma trận quyền không ai cấu hình.
+    /// </summary>
+    public const string TrangDich = nameof(TrangDich);
+
+    /// <summary>
+    /// Liên hệ khách vãng lai để lại qua form trên trang đích (FR-30).
+    ///
+    /// Tách khỏi <see cref="TrangDich"/> vì hai việc khác người: soạn nội dung là marketing,
+    /// còn đọc số điện thoại khách là chăm sóc khách hàng.
+    /// </summary>
+    public const string LienHeLanding = nameof(LienHeLanding);
+
     public static readonly IReadOnlyList<string> TatCa =
     [
         TaiKhoan, HoSoNguoiDung, PhanQuyen, ThietLapChung, Anh, DoiMatKhauNguoiKhac,
@@ -264,7 +280,8 @@ public static class ChucNang
         LopHoc, GhiDanhLop, XepLop, BuoiHoc, DiemDanh, NhanXetBuoiHoc,
         BaiTap, BaiNopBaiTap, BaiKiemTra, BaiLamKiemTra,
         KhoaOnline, GhiDanhKhoaOnline, HocOnline,
-        TaiLieu, HocPhi, ThongKe, LopHocToanTrungTam, NhatKyHeThong
+        TaiLieu, HocPhi, ThongKe, LopHocToanTrungTam, NhatKyHeThong,
+        TrangDich, LienHeLanding
     ];
 
     /// <summary>
@@ -308,7 +325,10 @@ public static class ChucNang
         [TaiLieu] = HeThong.Lms,
         [HocPhi] = HeThong.Lms,
         [ThongKe] = HeThong.Lms,
-        [LopHocToanTrungTam] = HeThong.Lms
+        [LopHocToanTrungTam] = HeThong.Lms,
+
+        [TrangDich] = HeThong.Ldp,
+        [LienHeLanding] = HeThong.Ldp
     };
 
     /// <summary>Bốn thao tác cơ bản — phần lớn chức năng CRUD dùng nguyên bộ này.</summary>
@@ -366,6 +386,19 @@ public static class ChucNang
         [TieuChiDanhGia] = [HanhDong.Xem, HanhDong.Them, HanhDong.Sua, HanhDong.TuLam],
         // `Cham` = ghi phiếu đánh giá nhân viên kinh doanh theo kỳ.
         [ThongKeNhanSu] = [HanhDong.Xem, HanhDong.Cham],
+
+        // FR-30 — trang đích công khai.
+        //
+        // Không có `Them`/`Xoa`: mỗi tenant có ĐÚNG MỘT trang (UNIQUE ở tầng DB), nó sinh ra
+        // cùng tenant và không xoá được. Khối và mục bên trong thì sửa qua `Sua`.
+        //
+        // `XuatBan` tách khỏi `Sua`: sửa sai thì sửa lại, còn xuất bản sai là người ngoài đã
+        // đọc được.
+        [TrangDich] = [HanhDong.Xem, HanhDong.Sua, HanhDong.XuatBan],
+
+        // Liên hệ từ form: KHÔNG có `Them` — chỉ khách vãng lai tạo được, qua endpoint ẩn
+        // danh. Người trong hệ thống chỉ đọc, chuyển sang CRM, hoặc xoá rác.
+        [LienHeLanding] = [HanhDong.Xem, HanhDong.ChuyenCrm, HanhDong.Xoa],
         [KhachHang] = Crud,
         [ChamSocKhachHang] = Crud,
         // KHÔNG tách `CauHinhTien` ở đây dù giá là dữ liệu tiền: `LuuKhoaHocCommand` ghi tên,

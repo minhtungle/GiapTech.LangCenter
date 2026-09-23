@@ -80,6 +80,76 @@ public class QuanTriHeThongConfig : IEntityTypeConfiguration<QuanTriHeThong>
     }
 }
 
+public class TrangDichConfig : IEntityTypeConfiguration<TrangDich>
+{
+    public void Configure(EntityTypeBuilder<TrangDich> b)
+    {
+        b.ToTable("TRANG_DICH");
+        b.Property(x => x.TieuDeSeo).HasMaxLength(200);
+        b.Property(x => x.MoTaSeo).HasMaxLength(500);
+
+        // Mỗi trung tâm ĐÚNG MỘT trang (quy tắc #8 — UNIQUE ở tầng DB, không phải `if`).
+        b.HasIndex(x => x.TenantId).IsUnique();
+    }
+}
+
+public class KhoiLdpConfig : IEntityTypeConfiguration<KhoiLdp>
+{
+    public void Configure(EntityTypeBuilder<KhoiLdp> b)
+    {
+        b.ToTable("KHOI_LDP");
+        b.Property(x => x.TieuDe).HasMaxLength(200);
+        b.Property(x => x.MoTa).HasMaxLength(2000);
+        b.Property(x => x.KhoaAnh).HasMaxLength(500);
+        b.Property(x => x.NhanNut).HasMaxLength(100);
+        b.Property(x => x.DuongDanNut).HasMaxLength(500);
+
+        b.HasOne(x => x.TrangDich).WithMany(x => x.Khois)
+            .HasForeignKey(x => x.TrangDichId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Bố cục cố định ⇒ không thể có hai khối cùng loại trên một trang.
+        b.HasIndex(x => new { x.TrangDichId, x.Loai }).IsUnique();
+    }
+}
+
+public class MucLdpConfig : IEntityTypeConfiguration<MucLdp>
+{
+    public void Configure(EntityTypeBuilder<MucLdp> b)
+    {
+        b.ToTable("MUC_LDP");
+        b.Property(x => x.TieuDe).HasMaxLength(200).IsRequired();
+        b.Property(x => x.PhuDe).HasMaxLength(200);
+        b.Property(x => x.MoTa).HasMaxLength(2000);
+        b.Property(x => x.KhoaAnh).HasMaxLength(500);
+        b.Property(x => x.DuongDan).HasMaxLength(500);
+        b.Property(x => x.GiaNiemYet).HasPrecision(18, 2);
+
+        b.HasOne(x => x.KhoiLdp).WithMany(x => x.Mucs)
+            .HasForeignKey(x => x.KhoiLdpId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        b.HasIndex(x => new { x.KhoiLdpId, x.ThuTu });
+    }
+}
+
+public class LienHeLandingConfig : IEntityTypeConfiguration<LienHeLanding>
+{
+    public void Configure(EntityTypeBuilder<LienHeLanding> b)
+    {
+        b.ToTable("LIEN_HE_LANDING");
+        b.Property(x => x.HoTen).HasMaxLength(200).IsRequired();
+        b.Property(x => x.SoDienThoai).HasMaxLength(20).IsRequired();
+        b.Property(x => x.Email).HasMaxLength(200);
+        b.Property(x => x.QuanTam).HasMaxLength(200);
+        b.Property(x => x.LoiNhan).HasMaxLength(2000);
+
+        // KHÔNG unique theo số điện thoại: một người quan tâm hai khoá thì điền hai lần, và
+        // chặn lại sẽ làm mất liên hệ thật. Trùng thì người phụ trách tự nhận ra.
+        b.HasIndex(x => new { x.TenantId, x.DaXuLy });
+    }
+}
+
 public class NguoiDungConfig : IEntityTypeConfiguration<NguoiDung>
 {
     public void Configure(EntityTypeBuilder<NguoiDung> b)

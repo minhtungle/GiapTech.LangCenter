@@ -806,6 +806,8 @@ const zh = {
     HoanTat: '完成建班',
     XepNhanSu: '将员工编入部门',
     GuiXepLop: '提交分班申请',
+    XuatBan: '发布',
+    ChuyenCrm: '转入 CRM',
   },
   tieuChi: {
     them: '新增标准',
@@ -882,6 +884,8 @@ const zh = {
     ThongKe: '统计',
     LopHocToanTrungTam: '中心的所有班级',
     NhatKyHeThong: '系统日志',
+    TrangDich: '着陆页',
+    LienHeLanding: '着陆页咨询',
     PhanQuyen: '权限管理',
     ThietLapChung: '通用设置',
     Anh: '图片（logo、封面图、二维码）',

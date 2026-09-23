@@ -76,7 +76,7 @@ public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
     public async Task Quan_tri_vao_duoc_ca_ba_he_thong()
     {
         var admin = await Client();
-        Assert.Equal(["Hrm", "Crm", "Lms"], await HeThongCuaToi(admin));
+        Assert.Equal(["Hrm", "Crm", "Lms", "Ldp"], await HeThongCuaToi(admin));
     }
 
     /// <summary>
@@ -141,16 +141,16 @@ public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var nhoms = d.GetProperty("heThongs").EnumerateArray().ToList();
 
         // Ba hệ thống + một nhóm dùng chung.
-        Assert.Equal(4, nhoms.Count);
+        Assert.Equal(5, nhoms.Count);
         Assert.Equal(
-            ["Hrm", "Crm", "Lms", "DungChung"],
+            ["Hrm", "Crm", "Lms", "Ldp", "DungChung"],
             nhoms.Select(x => x.GetProperty("ma").GetString()));
 
         var dungChung = nhoms.Single(x => x.GetProperty("dungChung").GetBoolean());
         Assert.Equal("DungChung", dungChung.GetProperty("ma").GetString());
 
-        // Ba nhóm hệ thống không được đánh dấu dùng chung.
-        Assert.Equal(3, nhoms.Count(x => !x.GetProperty("dungChung").GetBoolean()));
+        // Các nhóm hệ thống con (nay là bốn: HRM·CRM·LMS·LDP) không được đánh dấu dùng chung.
+        Assert.Equal(4, nhoms.Count(x => !x.GetProperty("dungChung").GetBoolean()));
     }
 
     /// <summary>
@@ -481,6 +481,6 @@ public class BaHeThongTests(ApiFactory factory) : IClassFixture<ApiFactory>
             "Bearer", (await dn.Content.ReadFromJsonAsync<JsonElement>())
                 .GetProperty("accessToken").GetString());
 
-        Assert.Equal(["Hrm", "Crm", "Lms"], await HeThongCuaToi(cB));
+        Assert.Equal(["Hrm", "Crm", "Lms", "Ldp"], await HeThongCuaToi(cB));
     }
 }

@@ -43,6 +43,15 @@ public static class GioiHanTanSuat
     /// </summary>
     public const string LamMoiToken = "lam-moi-token";
 
+    /// <summary>
+    /// Form liên hệ trên trang đích (FR-30) — endpoint **ẩn danh GHI dữ liệu**.
+    ///
+    /// Chặt hơn <see cref="TraCuu"/> vì mỗi request tạo một HÀNG trong DB, không chỉ đọc.
+    /// Người thật điền form một lần, hoạ hoằn hai lần nếu gõ sai; 5/phút đã rất rộng cho họ
+    /// và rất hẹp cho bot.
+    /// </summary>
+    public const string GuiLienHe = "gui-lien-he";
+
     /// <summary>Độ dài một đoạn của cửa sổ trượt, tính bằng giây (1 phút / 6 đoạn).</summary>
     private const int GiaySauMotDoan = 10;
 
@@ -51,6 +60,9 @@ public static class GioiHanTanSuat
     // vẫn xanh. Con số phải kiểm được, không chỉ cái tên.
     public const int HanMucTraCuu = 30;
     public const int HanMucXacThuc = 10;
+
+    /// <summary>5/phút mỗi IP — xem <see cref="GuiLienHe"/>.</summary>
+    public const int HanMucGuiLienHe = 5;
 
     /// <summary>
     /// 60/phút mỗi IP. Rộng để không đăng xuất oan văn phòng dùng chung IP (xem
@@ -108,6 +120,8 @@ public static class GioiHanTanSuat
             options.AddPolicy(XacThuc, KhoaTheoIp(HanMucXacThuc, phut: 1));
 
             options.AddPolicy(LamMoiToken, KhoaTheoIp(HanMucLamMoiToken, phut: 1));
+
+            options.AddPolicy(GuiLienHe, KhoaTheoIp(HanMucGuiLienHe, phut: 1));
         });
 
         return services;

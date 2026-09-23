@@ -178,10 +178,24 @@ public class MoiEndpointPhaiDuocGacTests
           phải tuỳ chọn. Nó cũng là mục tiêu giá trị cao nhất trong mười cái — chiếm được tài
           khoản chủ là tạo được tenant, đổi domain, cấp lại mật khẩu admin của mọi trung tâm.
           Bù lại: không có luồng quên mật khẩu, và mọi thao tác ghi nhật ký.
+
+          **24/09/2026 → 14**: bốn endpoint của trang đích công khai (FR-30). Đây là **mục
+          đích của cả module**: landing mà cần đăng nhập thì không phải landing.
+
+          | Endpoint | Vì sao chấp nhận |
+          |---|---|
+          | `LdpCongKhaiController.CongKhai` | Đọc. KHÔNG nhận tham số — tenant do middleware giải từ domain, người gọi không chọn được. Chỉ trả nội dung trung tâm CỐ Ý xuất bản, qua DTO `...CongKhaiDto` tách hẳn DTO quản trị |
+          | `LdpCongKhaiController.AnhKhoi` | Đọc. Nhận **id khối**, không nhận khoá ảnh; server tự tra và chỉ tra trong trang ĐÃ XUẤT BẢN của tenant hiện tại — đúng khuôn `AuthController.Logo` |
+          | `LdpCongKhaiController.AnhMuc` | Như trên |
+          | `LdpCongKhaiController.GuiLienHe` | **GHI** — nguy hiểm nhất trong mười bốn. Bốn lớp: rate limit RIÊNG 5/phút (chặt hơn `TraCuu` vì mỗi request tạo một hàng DB), honeypot bỏ qua im lặng, giới hạn độ dài ở validator, và không trả dữ liệu gì |
+
+          Đặt trong `LdpCongKhaiController` TÁCH FILE khỏi `LdpController` (nhóm có gác): trộn
+          lẫn thì một `[AllowAnonymous]` thêm nhầm giữa danh sách `[RequirePermission]` rất khó
+          thấy khi review.
         */
         Assert.True(
-            anDanh.Count <= 10,
-            $"Có {anDanh.Count} endpoint ẩn danh (trước là 10): {string.Join(", ", anDanh)}.\n"
+            anDanh.Count <= 14,
+            $"Có {anDanh.Count} endpoint ẩn danh (trước là 14): {string.Join(", ", anDanh)}.\n"
             + "Mỗi endpoint ẩn danh là chỗ ai cũng gọi được — endpoint GHI thì còn phải có rate "
             + "limit (xem GioiHanTanSuatTests). Nếu thêm là có chủ ý, cập nhật số này kèm lý do.");
     }

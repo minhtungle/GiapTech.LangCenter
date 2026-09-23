@@ -39,6 +39,25 @@ public static class DomainRequest
     public const string KhoaSauProxy = "SAU_REVERSE_PROXY";
 
     /// <summary>
+    /// Mã trung tâm cho đường CÔNG KHAI DỰ PHÒNG `/t/{mã}` (FR-30).
+    ///
+    /// Trung tâm chưa trỏ domain riêng vẫn phải xem được landing của mình — đó là lý do
+    /// ADR-0008 giữ hai đường vào. Frontend ở `/t/{mã}` gửi mã qua header này.
+    ///
+    /// **Client TỰ ĐẶT được header này, và điều đó CHẤP NHẬN ĐƯỢC** — khác hẳn
+    /// <see cref="TenHeader"/>. Lý do: mã trung tâm không phải bí mật (nó nằm trên màn đăng
+    /// nhập của chính trung tâm đó), và thứ mở ra được chỉ là **nội dung đã xuất bản công
+    /// khai** — thứ vốn dành cho cả Internet.
+    ///
+    /// Nhưng nó CHỈ được dùng cho nhóm endpoint công khai của LDP. Dùng nó ở chỗ khác là để
+    /// client tự chọn tenant, nên middleware giới hạn theo đường dẫn.
+    /// </summary>
+    public const string TenHeaderMaTrungTam = "X-Ma-Trung-Tam";
+
+    /// <summary>Tiền tố đường dẫn duy nhất chấp nhận <see cref="TenHeaderMaTrungTam"/>.</summary>
+    public const string DuongDanCongKhai = "/api/v1/ldp";
+
+    /// <summary>
     /// Lấy domain đáng tin của request, hoặc `null` nếu không có.
     ///
     /// **Có tác dụng phụ có chủ ý:** khi không đứng sau proxy, hàm này XOÁ header khỏi

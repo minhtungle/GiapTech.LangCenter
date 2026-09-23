@@ -73,6 +73,26 @@ public class GiaiTenantTheoDomain(AppDbContext db, IMemoryCache cache) : IGiaiTe
         return ketQua;
     }
 
+    public async Task<Guid?> TraTheoMaAsync(string maTrungTam, CancellationToken ct = default)
+    {
+        if (!Domain.Common.MaTrungTam.HopLe(maTrungTam)) return null;
+
+        var ma = Domain.Common.MaTrungTam.ChuanHoa(maTrungTam);
+        var khoa = $"tenant-ma:{ma}";
+
+        if (cache.TryGetValue<Guid?>(khoa, out var daCo)) return daCo;
+
+        var id = await db.Tenants
+            .AsNoTracking()
+            .Where(t => t.MaTrungTam == ma)
+            .Select(t => (Guid?)t.Id)
+            .FirstOrDefaultAsync(ct);
+
+        // Cache cả kết quả rỗng với TTL ngắn — cùng lý do chống quét như `TraAsync`.
+        cache.Set(khoa, id, id is null ? ThoiGianSongRong : ThoiGianSong);
+        return id;
+    }
+
     public void XoaCache(string domain)
     {
         var chuan = Domain.Common.DomainTrungTam.ChuanHoa(domain) ?? string.Empty;

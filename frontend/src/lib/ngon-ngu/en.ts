@@ -806,6 +806,8 @@ const en = {
     HoanTat: 'Finalize class creation',
     XepNhanSu: 'Assign staff to departments',
     GuiXepLop: 'Send class placement requests',
+    XuatBan: 'Publish',
+    ChuyenCrm: 'Convert to CRM',
   },
   tieuChi: {
     them: 'Add criterion',
@@ -882,6 +884,8 @@ const en = {
     ThongKe: 'Statistics',
     LopHocToanTrungTam: 'All classes in the center',
     NhatKyHeThong: 'System log',
+    TrangDich: 'Landing page',
+    LienHeLanding: 'Landing page enquiries',
     PhanQuyen: 'Permissions',
     ThietLapChung: 'General settings',
     Anh: 'Images (logo, cover, QR code)',

@@ -31,6 +31,8 @@ export type HanhDong =
   | 'HoanTat'
   | 'XepNhanSu'
   | 'GuiXepLop'
+  | 'XuatBan'
+  | 'ChuyenCrm'
 
 /**
  * Tên chức năng. Không khai enum đầy đủ 16 giá trị: danh sách này thay đổi theo backend, và

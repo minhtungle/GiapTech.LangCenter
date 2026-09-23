@@ -36,6 +36,29 @@ public class TenantMiddleware(RequestDelegate next)
         // proxy, và việc đó phải xong trước khi bất kỳ ai kịp đọc nhầm.
         var domain = DomainRequest.LayDomain(context, sauProxy);
 
+        /*
+          Đường CÔNG KHAI DỰ PHÒNG `/t/{mã}` (FR-30) — chỉ khi chưa giải được bằng domain.
+
+          Domain thắng mã: trung tâm đã trỏ domain riêng thì mã gửi kèm bị bỏ qua, đúng
+          nguyên tắc "domain chốt tenant" của ADR-0008.
+
+          Giới hạn theo ĐƯỜNG DẪN là bắt buộc: header này client tự đặt được, nên cho nó tác
+          dụng ở mọi endpoint là để client tự chọn tenant. Chỉ nhóm `/api/v1/ldp` — nơi thứ
+          lộ ra đúng bằng thứ đã xuất bản công khai — mới đọc tới nó.
+        */
+        // CHỈ áp cho request CHƯA xác thực: `/api/v1/ldp` có cả endpoint quản trị (dùng JWT)
+        // lẫn endpoint công khai. Rẽ sớm ở đây mà không kiểm `IsAuthenticated` sẽ bỏ qua
+        // nhánh JWT bên dưới và làm mọi endpoint quản trị của LDP mất tenant.
+        Guid? theoMaTrungTam = null;
+        if (domain is null
+            && context.User.Identity?.IsAuthenticated != true
+            && context.Request.Path.StartsWithSegments(DomainRequest.DuongDanCongKhai))
+        {
+            var ma = context.Request.Headers[DomainRequest.TenHeaderMaTrungTam].ToString();
+            if (!string.IsNullOrWhiteSpace(ma))
+                theoMaTrungTam = await giaiTheoDomain.TraTheoMaAsync(ma, context.RequestAborted);
+        }
+
         ThongTinTenantTheoDomain? theoDomain = null;
         if (domain is not null)
         {
@@ -119,6 +142,11 @@ public class TenantMiddleware(RequestDelegate next)
             }
 
             currentTenant.Gan(tenantId);
+        }
+        else if (theoMaTrungTam is { } tenantTheoMa)
+        {
+            // Đường `/t/{mã}` — xem chú thích ở đầu hàm.
+            currentTenant.Gan(tenantTheoMa);
         }
         else if (theoDomain is not null)
         {

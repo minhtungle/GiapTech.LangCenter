@@ -19,6 +19,12 @@ public interface IAppDbContext
 
     /// <summary>Tài khoản chủ hệ thống — KHÔNG thuộc tenant nào (ADR-0009).</summary>
     DbSet<QuanTriHeThong> QuanTriHeThongs { get; }
+
+    // FR-30 — trang đích công khai.
+    DbSet<TrangDich> TrangDiches { get; }
+    DbSet<KhoiLdp> KhoiLdps { get; }
+    DbSet<MucLdp> MucLdps { get; }
+    DbSet<LienHeLanding> LienHeLandings { get; }
     DbSet<NguoiDung> NguoiDungs { get; }
     DbSet<TaiKhoan> TaiKhoans { get; }
     DbSet<HoSoGiaoVien> HoSoGiaoViens { get; }

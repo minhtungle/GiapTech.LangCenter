@@ -806,6 +806,8 @@ const ja = {
     HoanTat: 'クラス作成の完了',
     XepNhanSu: '職員の部署配属',
     GuiXepLop: 'クラス分け依頼の送信',
+    XuatBan: '公開',
+    ChuyenCrm: 'CRM へ移行',
   },
   tieuChi: {
     them: '評価基準を追加',
@@ -882,6 +884,8 @@ const ja = {
     ThongKe: '統計',
     LopHocToanTrungTam: 'センターの全クラス',
     NhatKyHeThong: 'システムログ',
+    TrangDich: 'ランディングページ',
+    LienHeLanding: 'ランディングページのお問い合わせ',
     PhanQuyen: '権限管理',
     ThietLapChung: '共通設定',
     Anh: '画像（ロゴ、カバー画像、QRコード）',

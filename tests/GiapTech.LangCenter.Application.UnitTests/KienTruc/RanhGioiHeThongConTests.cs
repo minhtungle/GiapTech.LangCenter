@@ -25,6 +25,7 @@ public class RanhGioiHeThongConTests
         ["Crm"] = "Crm",
         ["Lms"] = "DaoTao",
         ["Hrm"] = "NhanSu",
+        ["Ldp"] = "Ldp",
     };
 
     /// <summary>
@@ -68,6 +69,14 @@ public class RanhGioiHeThongConTests
             + "Lưu ý khi sửa: `BUOI_HOC.giao_vien_id = null` nghĩa là *giáo viên chính của lớp*, "
             + "nên phải rơi về `LOP_HOC.giao_vien_chinh_id` — đếm thẳng cột đó thì mọi giáo viên "
             + "ra 0 buổi.",
+
+        ["LienHeLandingCommands.cs → Crm"] =
+            "FR-30 (24/09/2026): chuyển một liên hệ từ form trang đích thành KHÁCH HÀNG CRM — "
+            + "đó chính là giá trị của landing, không có cầu nối này thì form chỉ là một bảng "
+            + "chết. Chỉ GHI một `KHACH_HANG` mới với `Nguon = TuLanding`, không đọc và không "
+            + "sửa khách hàng nào đang có, không gọi handler nào của CRM. "
+            + "Gác riêng bằng `LienHeLanding.ChuyenCrm`, tách khỏi `Xem`: đọc số điện thoại "
+            + "khách và tạo khách hàng trong CRM là hai quyền khác nhau.",
     };
 
     /// <summary>
