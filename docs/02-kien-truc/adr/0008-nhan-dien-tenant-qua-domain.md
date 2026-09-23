@@ -134,6 +134,11 @@ Thêm vào `TENANT`:
 
 Cả hai **nullable** — tenant chưa trỏ domain vẫn hoạt động đầy đủ qua đường mã.
 
+> **Ở local và trong E2E, hai cột này phải để `NULL`.** Gán `localhost:5173` vào
+> `domain_quan_tri` sẽ bật chế độ domain: màn đăng nhập ẩn ô mã và server bỏ qua mã client
+> gửi — làm hỏng cả 61 test E2E vốn đều gõ mã, và làm local chạy khác VPS đúng ở chỗ ta muốn
+> nó chạy giống. Đã thử và phải hoàn tác ngay trong lúc làm migration 23/09/2026.
+
 UNIQUE phải là **UNIQUE INDEX ở tầng DB** (quy tắc #8), không phải `if` trong handler: hai
 request song song cùng gắn một domain thì cả hai đều thấy "chưa ai dùng" và đều ghi. Thêm một
 dòng `InlineData` vào `DongThoiTests`.

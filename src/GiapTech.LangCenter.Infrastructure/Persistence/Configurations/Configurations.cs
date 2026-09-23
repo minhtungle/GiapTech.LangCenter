@@ -31,6 +31,20 @@ public class TenantConfig : IEntityTypeConfiguration<Tenant>
 
         // Mã trung tâm người dùng gõ khi đăng nhập — phải duy nhất toàn hệ thống.
         b.HasIndex(x => x.MaTrungTam).IsUnique();
+
+        // Domain riêng (ADR-0008). 253 = độ dài tối đa của tên miền theo RFC 1035.
+        b.Property(x => x.DomainQuanTri).HasMaxLength(253);
+        b.Property(x => x.DomainLanding).HasMaxLength(253);
+
+        // UNIQUE ở TẦNG DB, không phải `if` trong handler (quy tắc #8): hai request song song
+        // cùng gắn một domain thì cả hai đều thấy "chưa ai dùng" và đều ghi. Domain trùng
+        // nghĩa là hai trung tâm tranh nhau một lối vào — tenant nào được chọn sẽ tuỳ thứ tự
+        // hàng trả về, tức là rò rỉ chéo trung tâm.
+        //
+        // PostgreSQL coi NULL != NULL nên nhiều tenant cùng để trống vẫn hợp lệ — đúng ý:
+        // chưa gắn domain là trạng thái bình thường, không phải ngoại lệ.
+        b.HasIndex(x => x.DomainQuanTri).IsUnique();
+        b.HasIndex(x => x.DomainLanding).IsUnique();
     }
 }
 

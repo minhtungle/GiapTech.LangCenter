@@ -100,7 +100,7 @@ erDiagram
 
 | Bảng | Vai trò | Ghi chú |
 |---|---|---|
-| `TENANT` | Trung tâm | `ma_trung_tam` 7 ký tự, duy nhất **toàn hệ thống**. `mui_gio` (mặc định `Asia/Ho_Chi_Minh`), `so_ngay_canh_bao_no_hoc_phi` (mặc định 14) |
+| `TENANT` | Trung tâm | `ma_trung_tam` 7 ký tự, duy nhất **toàn hệ thống**. `domain_quan_tri` · `domain_landing` (ADR-0008, nullable, UNIQUE). `mui_gio` (mặc định `Asia/Ho_Chi_Minh`), `so_ngay_canh_bao_no_hoc_phi` (mặc định 14) |
 | `NGUOI_DUNG` | **Con người** | `ho_ten` bắt buộc, `loai_nguoi_dung` **chỉ để lọc và chọn hồ sơ**, không dùng phân quyền. `trang_thai_nhan_su` = còn thuộc trung tâm không. `phong_ban_id` (FR-22) đặt ở đây chứ không ở `HO_SO_NHAN_VIEN` — **mọi vai trò nhân sự** xếp được vào phòng ban, kể cả giáo viên. **12 khoá ngoại nghiệp vụ trỏ vào đây** |
 | `TAI_KHOAN` | **Đăng nhập** | `username`, `password_hash`, `phai_doi_mat_khau`, `trang_thai` = còn đăng nhập được không. `nguoi_dung_id` nullable (tài khoản kỹ thuật). **20/09/2026**: thêm `phien_hien_tai` (nullable) = `jti` của access token phát ở lần đăng nhập gần nhất — một phiên mỗi tài khoản; `null` = token cũ, cố ý CHO QUA |
 | `HO_SO_GIAO_VIEN` | Hồ sơ người dạy | Bằng cấp, chuyên môn, ngày vào làm. **Trợ giảng dùng chung** |
@@ -202,6 +202,8 @@ mọi người dạy buổi đó.
 | Ràng buộc | Bảng | Lý do |
 |---|---|---|
 | `UNIQUE(ma_trung_tam)` | `TENANT` | Mã 7 ký tự sinh tự động, duy nhất **toàn hệ thống** — xem [FR-01](../06-nghiep-vu/dang-nhap.md#mã-đội) |
+| `UNIQUE(domain_quan_tri)` | `TENANT` | Trùng domain là hai trung tâm tranh nhau một lối vào, tenant nào được chọn tuỳ thứ tự hàng trả về ⇒ rò rỉ chéo. `NULL` được phép nhiều (chưa gắn domain) — [ADR-0008](../02-kien-truc/adr/0008-nhan-dien-tenant-qua-domain.md) |
+| `UNIQUE(domain_landing)` | `TENANT` | Như trên, cho trang landing công khai |
 | `UNIQUE(tenant_id, username)` | `TAI_KHOAN` | Username duy nhất **trong phạm vi trung tâm**; hai trung tâm đều có thể có `admin` |
 | `UNIQUE(nguoi_dung_id) WHERE NOT NULL` | `TAI_KHOAN` | Một người tối đa một tài khoản — hai tài khoản cùng người thì không biết quyền nào thắng |
 | `UNIQUE(nguoi_dung_id)` | `HO_SO_*` | Quan hệ 1–1 với người |

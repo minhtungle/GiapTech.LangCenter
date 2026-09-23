@@ -26,6 +26,26 @@ public class Tenant : BaseEntity
     public string? AnhBiaUrl { get; set; }
     public string? MoTa { get; set; }
 
+    /// <summary>
+    /// Domain riêng vào màn QUẢN TRỊ của trung tâm — ví dụ `abc-langcenter.giaptex.com`
+    /// (ADR-0008, 23/09/2026). `null` = chưa gắn, trung tâm vào bằng đường mặc định và gõ mã.
+    ///
+    /// Gắn domain thì màn đăng nhập **ẩn ô mã** và server **bỏ qua mã client gửi lên** —
+    /// hai vế phải đi cùng nhau, nếu không domain chỉ là gợi ý chứ không chốt được tenant.
+    ///
+    /// Lưu dạng thường, không kèm scheme và không kèm cổng.
+    /// </summary>
+    public string? DomainQuanTri { get; set; }
+
+    /// <summary>
+    /// Domain riêng của trang LANDING công khai — ví dụ `vietgeneducation.edu.vn` (ADR-0008).
+    /// `null` = chưa gắn, xem landing qua đường dự phòng `/t/{maTrungTam}`.
+    ///
+    /// Tách khỏi <see cref="DomainQuanTri"/> vì hai thứ này thường khác nhau: landing mang
+    /// thương hiệu của trung tâm, còn quản trị là công cụ nội bộ.
+    /// </summary>
+    public string? DomainLanding { get; set; }
+
     /// <summary>Địa chỉ trung tâm.</summary>
     public string? DiaChi { get; set; }
 

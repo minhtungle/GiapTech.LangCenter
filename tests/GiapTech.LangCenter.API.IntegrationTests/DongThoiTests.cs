@@ -29,6 +29,10 @@ public class DongThoiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Theory]
     // Mã trung tâm là một nửa bộ ba đăng nhập — trùng mã là hai trung tâm cùng cửa vào.
     [InlineData("Tenant", new[] { "MaTrungTam" })]
+    // Domain riêng (ADR-0008): trùng domain là hai trung tâm tranh nhau một lối vào, và
+    // tenant nào được chọn sẽ tuỳ thứ tự hàng trả về — tức là rò rỉ chéo trung tâm.
+    [InlineData("Tenant", new[] { "DomainQuanTri" })]
+    [InlineData("Tenant", new[] { "DomainLanding" })]
     // Username chỉ duy nhất TRONG tenant, không phải toàn cục (quy tắc multi-tenant).
     // Username thuộc TÀI KHOẢN, không thuộc người (tách 07/09/2026).
     [InlineData("TaiKhoan", new[] { "TenantId", "Username" })]
