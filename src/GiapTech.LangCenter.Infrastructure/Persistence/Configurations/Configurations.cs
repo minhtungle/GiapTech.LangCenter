@@ -45,6 +45,15 @@ public class TenantConfig : IEntityTypeConfiguration<Tenant>
         // chưa gắn domain là trạng thái bình thường, không phải ngoại lệ.
         b.HasIndex(x => x.DomainQuanTri).IsUnique();
         b.HasIndex(x => x.DomainLanding).IsUnique();
+
+        // Cấu hình email riêng của trung tâm (FR-31, ADR-0010).
+        b.Property(x => x.SmtpHost).HasMaxLength(200);
+        b.Property(x => x.SmtpUser).HasMaxLength(200);
+        // 1000 ký tự: bản mã base64 của AES-GCM dài hơn bản rõ ~35% cộng nonce và tag.
+        // Mật khẩu SMTP dài nhất thực tế (API key của SendGrid) khoảng 70 ký tự.
+        b.Property(x => x.SmtpMatKhauMaHoa).HasMaxLength(1000);
+        b.Property(x => x.SmtpNguoiGui).HasMaxLength(200);
+        b.Property(x => x.SmtpTenNguoiGui).HasMaxLength(200);
     }
 }
 
@@ -147,6 +156,24 @@ public class LienHeLandingConfig : IEntityTypeConfiguration<LienHeLanding>
         // KHÔNG unique theo số điện thoại: một người quan tâm hai khoá thì điền hai lần, và
         // chặn lại sẽ làm mất liên hệ thật. Trùng thì người phụ trách tự nhận ra.
         b.HasIndex(x => new { x.TenantId, x.DaXuLy });
+    }
+}
+
+public class MauEmailConfig : IEntityTypeConfiguration<MauEmail>
+{
+    public void Configure(EntityTypeBuilder<MauEmail> b)
+    {
+        b.ToTable("MAU_EMAIL");
+
+        b.Property(x => x.TieuDe).HasMaxLength(300).IsRequired();
+        // Thân email HTML — dài, nhưng không để `text` vô hạn: một mẫu 20.000 ký tự đã là
+        // dấu hiệu người dùng dán nhầm cả trang web vào.
+        b.Property(x => x.NoiDungHtml).HasMaxLength(20000).IsRequired();
+
+        // Mỗi (tenant, loại) tối đa MỘT mẫu — UNIQUE ở tầng DB, không phải `if` trong handler
+        // (quy tắc #8). Hai request song song cùng tạo mẫu cho một loại thì cả hai đều thấy
+        // "chưa có" và đều ghi, rồi màn soạn hiện hai mẫu trùng loại.
+        b.HasIndex(x => new { x.TenantId, x.Loai }).IsUnique();
     }
 }
 

@@ -25,6 +25,9 @@ public interface IAppDbContext
     DbSet<KhoiLdp> KhoiLdps { get; }
     DbSet<MucLdp> MucLdps { get; }
     DbSet<LienHeLanding> LienHeLandings { get; }
+
+    /// <summary>Mẫu email soạn sẵn của trung tâm (FR-31).</summary>
+    DbSet<MauEmail> MauEmails { get; }
     DbSet<NguoiDung> NguoiDungs { get; }
     DbSet<TaiKhoan> TaiKhoans { get; }
     DbSet<HoSoGiaoVien> HoSoGiaoViens { get; }

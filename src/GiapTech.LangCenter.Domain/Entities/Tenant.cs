@@ -62,6 +62,37 @@ public class Tenant : BaseEntity
     /// </summary>
     public string MuiGio { get; set; } = "Asia/Ho_Chi_Minh";
 
+    // ---------------------------------------------------------------------------------
+    // Cấu hình gửi email riêng của trung tâm (FR-31, ADR-0010)
+    //
+    // Tất cả nullable: `null` = chưa cấu hình, hệ thống rơi về SMTP chung của VPS. Không bắt
+    // mọi trung tâm phải có hộp thư riêng mới gửi được email.
+    // ---------------------------------------------------------------------------------
+
+    /// <summary>Máy chủ SMTP, ví dụ `smtp.gmail.com`. `null` = dùng cấu hình chung của VPS.</summary>
+    public string? SmtpHost { get; set; }
+
+    /// <summary>Cổng. `null` ⇒ 587 (STARTTLS), cổng phổ biến nhất.</summary>
+    public int? SmtpPort { get; set; }
+
+    public string? SmtpUser { get; set; }
+
+    /// <summary>
+    /// Mật khẩu SMTP **ĐÃ MÃ HOÁ** (AES-GCM, xem <c>IMaHoaBiMat</c>).
+    ///
+    /// Tên cột nói rõ là đã mã hoá, không phải `SmtpMatKhau` trung tính: người đọc schema
+    /// phải thấy ngay điều đó, nếu không sẽ có người ghi thẳng mật khẩu thô vào.
+    ///
+    /// **Không bao giờ ra khỏi tầng Application** — API trả cờ `CoMatKhau` thay vì giá trị.
+    /// </summary>
+    public string? SmtpMatKhauMaHoa { get; set; }
+
+    /// <summary>Địa chỉ hiện ở ô "From". Thường trùng <see cref="SmtpUser"/> nhưng không bắt buộc.</summary>
+    public string? SmtpNguoiGui { get; set; }
+
+    /// <summary>Tên hiện cạnh địa chỉ, ví dụ "Trung tâm Anh ngữ ABC".</summary>
+    public string? SmtpTenNguoiGui { get; set; }
+
     /// <summary>
     /// Sau bao nhiêu ngày kể từ khai giảng thì học viên còn nợ học phí bị cảnh báo trên
     /// dashboard. Mỗi trung tâm một chính sách thu khác nhau nên để cấu hình được.

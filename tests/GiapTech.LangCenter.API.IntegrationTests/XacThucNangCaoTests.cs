@@ -281,7 +281,14 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
 /// </summary>
 public class TestEmailSender : IEmailSender
 {
-    public Task GuiAsync(string den, string tieuDe, string noiDungHtml, CancellationToken ct = default)
+    /// <summary>
+    /// `tenantId` KHÔNG dùng ở đây: bản giả này chỉ bắt token, không chọn cấu hình SMTP nào.
+    /// Nhưng tham số vẫn phải có để khớp interface — và đó là điều tốt, vì nó buộc mọi nơi
+    /// gọi phải nói rõ gửi thay mặt trung tâm nào (ADR-0010).
+    /// </summary>
+    public Task GuiAsync(
+        Guid tenantId, string den, string tieuDe, string noiDungHtml,
+        CancellationToken ct = default)
     {
         var m = System.Text.RegularExpressions.Regex.Match(noiDungHtml, @"<code>(.+?)</code>");
 

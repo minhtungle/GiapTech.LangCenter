@@ -72,6 +72,9 @@ public static class DependencyInjection
         services.AddScoped<IGhiNhatKy, NhatKy.GhiNhatKy>();
         services.AddScoped<IMuiGioTrungTam, MuiGioTrungTam>();
         services.AddSingleton<IPasswordHasher, AppPasswordHasher>();
+        // Mã hoá bí mật lưu trong DB (ADR-0010). Singleton: khoá đọc một lần lúc khởi động,
+        // không đổi giữa các request.
+        services.AddSingleton<IMaHoaBiMat, MaHoaBiMat>();
         services.AddSingleton<ITokenService, TokenService>();
         services.AddScoped<ITenantSeeder, TenantSeeder>();
         services.AddScoped<Persistence.Seed.BoKhuyetQuyenQuanTri>();

@@ -23,6 +23,7 @@ public class AppDbContext(
     public DbSet<KhoiLdp> KhoiLdps => Set<KhoiLdp>();
     public DbSet<MucLdp> MucLdps => Set<MucLdp>();
     public DbSet<LienHeLanding> LienHeLandings => Set<LienHeLanding>();
+    public DbSet<MauEmail> MauEmails => Set<MauEmail>();
     public DbSet<NguoiDung> NguoiDungs => Set<NguoiDung>();
     public DbSet<TaiKhoan> TaiKhoans => Set<TaiKhoan>();
     public DbSet<HoSoGiaoVien> HoSoGiaoViens => Set<HoSoGiaoVien>();

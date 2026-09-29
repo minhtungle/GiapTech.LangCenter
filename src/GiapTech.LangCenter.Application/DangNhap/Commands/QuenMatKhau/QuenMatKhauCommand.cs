@@ -136,7 +136,11 @@ public class QuenMatKhauHandler(
         {
             try
             {
-                await emailSender.GuiAsync(email, "Đặt lại mật khẩu LangCenter", noiDung);
+                // Truyền tenant TƯỜNG MINH (ADR-0010): luồng này chạy khi CHƯA đăng nhập
+                // nên `ICurrentTenant` rỗng — `tenant` ở đây do chính handler tra ra từ mã
+                // trung tâm người dùng gõ. Biến được closure giữ nên vẫn đúng trong Task.Run.
+                await emailSender.GuiAsync(
+                    tenant.Id, email, "Đặt lại mật khẩu LangCenter", noiDung);
             }
             catch (Exception ex)
             {

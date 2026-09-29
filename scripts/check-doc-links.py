@@ -16,7 +16,12 @@ ROOT = Path(__file__).resolve().parent.parent
 MD_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 HTML_LINK_RE = re.compile(r'(?:href|src)="([^"]+)"')
 
-SKIP_DIRS = {".git", "node_modules", "bin", "obj", "dist", ".github", ".agents", ".claude"}
+# `edu-temp`: template HTML tải về của bên thứ ba (60MB, 102 trang). Liên kết bên trong nó
+# là chuyện của tác giả template, không phải tài liệu của dự án — không loại trừ thì nó làm
+# script đỏ với 649 liên kết hỏng và che mất lỗi thật.
+SKIP_DIRS = {
+    ".git", "node_modules", "bin", "obj", "dist", ".github", ".agents", ".claude", "edu-temp",
+}
 
 
 def is_external(link: str) -> bool:
