@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using GiapTech.LangCenter.Infrastructure.ThongBao;
 using GiapTech.LangCenter.Infrastructure.Identity;
 using Microsoft.Extensions.Configuration;
 
@@ -116,4 +117,48 @@ public class MaHoaBiMatTests
     {
         Assert.False(Voi(khoa).DaCoKhoa);
     }
+}
+
+/// <summary>
+/// ADR-0010 — chọn kiểu mã hoá TLS theo số cổng SMTP.
+///
+/// Điều được canh: **cổng 465 phải là SSL ngầm, không phải STARTTLS**. Nhầm hai thứ này thì
+/// máy chủ trả `Syntax error, command unrecognized` — một thông báo không hề gợi ý nguyên
+/// nhân, và người dùng sẽ đi kiểm mật khẩu (thứ vốn đúng) thay vì kiểm cổng.
+/// </summary>
+public class BaoMatCongSmtpTests
+{
+    /// <summary>
+    /// 465 = SSL/TLS ngầm — mã hoá ngay từ byte đầu tiên.
+    ///
+    /// Đây là lý do phải bỏ `System.Net.Mail.SmtpClient`: nó chỉ làm được STARTTLS, nên cổng
+    /// 465 KHÔNG BAO GIỜ gửi được. Đã thử thật với Gmail ngày 30/09/2026.
+    /// </summary>
+    [Fact]
+    public void Cong_465_la_ssl_ngam()
+        => Assert.Equal(
+            MailKit.Security.SecureSocketOptions.SslOnConnect,
+            SmtpEmailSender.BaoMatCuaCong(465));
+
+    /// <summary>587 = STARTTLS — mở kết nối thường rồi nâng cấp. Cổng Gmail khuyến nghị.</summary>
+    [Fact]
+    public void Cong_587_la_starttls()
+        => Assert.Equal(
+            MailKit.Security.SecureSocketOptions.StartTls,
+            SmtpEmailSender.BaoMatCuaCong(587));
+
+    /// <summary>
+    /// Cổng khác ⇒ dùng TLS nếu máy chủ có, không thì vẫn gửi.
+    ///
+    /// Không ép TLS: máy chủ thư nội bộ trong LAN thường không có chứng chỉ, ép thì trung tâm
+    /// tự dựng máy chủ riêng sẽ không gửi được gì.
+    /// </summary>
+    [Theory]
+    [InlineData(25)]
+    [InlineData(2525)]
+    [InlineData(1025)]
+    public void Cong_khac_thi_dung_tls_neu_co(int cong)
+        => Assert.Equal(
+            MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable,
+            SmtpEmailSender.BaoMatCuaCong(cong));
 }

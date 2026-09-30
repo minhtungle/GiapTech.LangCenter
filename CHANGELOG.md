@@ -39,7 +39,19 @@ Bố cục email bọc trong khung `<table>` và CSS nội tuyến bằng PreMai
 trên Windows dựng HTML bằng engine của Word — không flexbox, không grid. Thanh công cụ soạn
 thảo cố ý chỉ có 6 nút, mỗi nút thừa là một cách tạo ra email vỡ trên máy người nhận.
 
-Thêm 8 test tích hợp + 9 test đơn vị. **701 test backend xanh** (601 tích hợp + 100 đơn vị).
+Thêm 8 test tích hợp + 9 test đơn vị.
+
+**Gửi thư dùng MailKit 4.18.1 (MIT), không phải `System.Net.Mail.SmtpClient`.** `SmtpClient`
+với `EnableSsl = true` chỉ làm STARTTLS nên **cổng 465 không bao giờ gửi được** (Gmail trả
+`Syntax error, command unrecognized`) — mà nhiều hosting Việt Nam chỉ mở cổng này. Kiểu mã
+hoá nay suy từ số cổng: 465 → SSL ngầm · 587 → STARTTLS · khác → TLS nếu máy chủ có.
+
+Ba mã lỗi riêng `SMTP_SAI_DANG_NHAP` · `SMTP_KHONG_KET_NOI_DUOC` · `SMTP_GUI_THAT_BAI` thay
+cho `LOI_HE_THONG` 500: nút "Gửi thử" sinh ra để chẩn đoán, trả mã chung thì nó không chẩn
+đoán được gì. Màn thiết lập in sẵn ba bước tạo **mật khẩu ứng dụng Gmail** — Google chặn
+đăng nhập SMTP bằng mật khẩu thường từ 2022, và thông báo lỗi gốc không nhắc gì tới điều đó.
+
+**708 test backend xanh** (603 tích hợp + 105 đơn vị).
 
 
 ### Added — FR-30: trang đích công khai (LDP), hệ thống con thứ tư (24/09/2026)

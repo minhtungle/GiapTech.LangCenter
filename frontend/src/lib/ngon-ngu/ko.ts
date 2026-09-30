@@ -869,6 +869,11 @@ const ko = {
     chuaCoTieuChiGd: '강의 그룹 평가 기준이 없습니다 — 수강생이 세부 항목을 채점할 수 있도록 평가 기준 탭에서 추가하세요.',
   },
   email: {
+    gmailTieuDe: 'Gmail을 쓰시나요? 먼저 ‘앱 비밀번호’를 만들어야 합니다.',
+    gmailB1: '해당 Google 계정에 2단계 인증을 켜세요(필수 — 켜지 않으면 2단계가 나타나지 않습니다).',
+    gmailB2: 'myaccount.google.com/apppasswords 에서 앱 비밀번호를 만들고 16자를 복사하세요.',
+    gmailB3: '그 16자를 아래 비밀번호 칸에 붙여 넣으세요 — Gmail 로그인 비밀번호가 아닙니다.',
+    dienSanGmail: 'Gmail 설정 채우기',
     tieuDeTrang: '이메일',
     tabThietLap: '발송 설정',
     tabMau: '이메일 템플릿',
@@ -1475,6 +1480,12 @@ const ko = {
     KHONG_TU_KHOA_TAI_KHOAN_CHINH_MINH: '현재 로그인한 계정은 스스로 잠글 수 없습니다. 체크를 해제한 뒤 다시 시도하세요.',
     QUA_NHIEU_YEU_CAU: '너무 빠르게 조작하고 있습니다. 잠시 기다린 뒤 다시 시도하세요.',
     LOI_HE_THONG: '오류가 발생했습니다. 다시 시도해 주세요',
+    SMTP_SAI_DANG_NHAP:
+      '메일 서버가 사용자 이름 또는 비밀번호를 거부했습니다. Gmail은 로그인 비밀번호가 아니라 16자리 앱 비밀번호를 입력해야 합니다.',
+    SMTP_KHONG_KET_NOI_DUOC:
+      '메일 서버에 연결할 수 없습니다. 서버 주소와 포트(587 또는 465)를 확인하세요.',
+    SMTP_GUI_THAT_BAI:
+      '로그인은 되었지만 서버가 발송을 거부했습니다. 보내는 주소가 계정과 다르거나 일일 발송 한도를 넘었을 수 있습니다.',
     USERNAME_DA_TON_TAI: '이 센터에 이미 존재하는 아이디입니다',
     QUYEN_KHONG_HOP_LE: '권한 그룹이 올바르지 않습니다',
     QUYEN_DANG_DUOC_GAN: '삭제할 수 없습니다: 이 권한 그룹이 계정에 지정되어 있습니다',

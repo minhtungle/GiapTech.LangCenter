@@ -869,6 +869,11 @@ const zh = {
     chuaCoTieuChiGd: '尚无教学组的评价标准——请在「评价标准」标签页中添加，以便学员进行细项评分。',
   },
   email: {
+    gmailTieuDe: '使用 Gmail？必须先创建“应用专用密码”。',
+    gmailB1: '为该 Google 账号开启两步验证（必需 — 未开启则没有第 2 步）。',
+    gmailB2: '前往 myaccount.google.com/apppasswords 创建应用专用密码，复制那 16 个字符。',
+    gmailB3: '将这 16 个字符粘贴到下方“密码”栏 — 不是 Gmail 登录密码。',
+    dienSanGmail: '填入 Gmail 参数',
     tieuDeTrang: '邮件',
     tabThietLap: '发送设置',
     tabMau: '邮件模板',
@@ -1475,6 +1480,12 @@ const zh = {
     KHONG_TU_KHOA_TAI_KHOAN_CHINH_MINH: '无法锁定自己当前登录的账号。请取消勾选后重试。',
     QUA_NHIEU_YEU_CAU: '您的操作过于频繁。请稍候再试。',
     LOI_HE_THONG: '发生错误，请重试',
+    SMTP_SAI_DANG_NHAP:
+      '邮件服务器拒绝了用户名或密码。使用 Gmail 时必须填写 16 位应用专用密码，而不是 Gmail 登录密码。',
+    SMTP_KHONG_KET_NOI_DUOC:
+      '无法连接邮件服务器。请检查服务器地址和端口（587 或 465）。',
+    SMTP_GUI_THAT_BAI:
+      '登录成功，但服务器拒绝发送。可能是发件地址与账号不符，或已超出当日发送限额。',
     USERNAME_DA_TON_TAI: '该用户名在本中心中已存在',
     QUYEN_KHONG_HOP_LE: '权限组无效',
     QUYEN_DANG_DUOC_GAN: '无法删除：该权限组正被分配给账号',

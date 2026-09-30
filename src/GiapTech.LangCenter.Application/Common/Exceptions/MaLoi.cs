@@ -82,4 +82,20 @@ public static class MaLoi
     public const string KhongTimThay = "KHONG_TIM_THAY";
     public const string DuLieuKhongHopLe = "DU_LIEU_KHONG_HOP_LE";
     public const string LoiHeThong = "LOI_HE_THONG";
+
+    // ----- Gửi email (FR-31) -----
+    //
+    // Tách ba mã thay vì một `LOI_HE_THONG`: nút "Gửi thử" sinh ra để CHẨN ĐOÁN cấu hình, mà
+    // trả về một mã chung thì nó không chẩn đoán được gì. Người dùng nhập mật khẩu Gmail
+    // thường (thay vì mật khẩu ứng dụng) cần biết chính xác là sai ĐĂNG NHẬP, không phải sai
+    // địa chỉ máy chủ.
+
+    /// <summary>Máy chủ từ chối tên đăng nhập/mật khẩu. Gmail: thường là chưa dùng mật khẩu ứng dụng.</summary>
+    public const string SmtpSaiDangNhap = "SMTP_SAI_DANG_NHAP";
+
+    /// <summary>Không kết nối được tới máy chủ — sai địa chỉ, sai cổng, hoặc bị chặn.</summary>
+    public const string SmtpKhongKetNoiDuoc = "SMTP_KHONG_KET_NOI_DUOC";
+
+    /// <summary>Kết nối và đăng nhập được nhưng gửi thất bại (bị từ chối, vượt hạn mức…).</summary>
+    public const string SmtpGuiThatBai = "SMTP_GUI_THAT_BAI";
 }

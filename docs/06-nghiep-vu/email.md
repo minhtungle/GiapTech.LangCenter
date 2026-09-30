@@ -81,6 +81,58 @@ Mỗi loại có sẵn một mẫu tiếng Việt viết sẵn trong mã, dùng 
 trống — trống nghĩa là email không gửi được cho tới khi có người vào soạn, mà người đó không
 biết mình cần làm việc đó.
 
+## Cấu hình thực tế: phải làm gì ở nhà cung cấp
+
+**Nhập tài khoản vào hệ thống là chưa đủ** với mọi nhà cung cấp lớn. Đây là phần người dùng
+hay mắc, nên màn thiết lập in sẵn ba bước Gmail ngay trên form.
+
+### Gmail / Google Workspace
+
+Google **chặn đăng nhập SMTP bằng mật khẩu thường từ 30/05/2022** (bỏ "Less secure app
+access"). Nhập mật khẩu Gmail vào hệ thống sẽ nhận `535-5.7.8 Username and Password not
+accepted` — và thông báo đó **không nói gì** về mật khẩu ứng dụng, nên người dùng sẽ đi đổi
+mật khẩu Gmail (thứ vốn đúng).
+
+Phải làm ở phía Google trước:
+
+1. Bật **xác minh 2 bước** cho tài khoản. Bắt buộc — không bật thì mục ở bước 2 không tồn tại.
+2. Vào `myaccount.google.com/apppasswords`, tạo **mật khẩu ứng dụng**, sao chép 16 ký tự.
+3. Dán 16 ký tự đó vào ô Mật khẩu (không phải mật khẩu đăng nhập).
+
+| Ô | Giá trị |
+|---|---|
+| Máy chủ SMTP | `smtp.gmail.com` |
+| Cổng | `587` |
+| Tên đăng nhập | địa chỉ Gmail đầy đủ |
+| Mật khẩu | 16 ký tự mật khẩu ứng dụng |
+| Địa chỉ người gửi | **cùng** địa chỉ Gmail — Gmail viết đè nếu khác |
+
+Hạn mức: Gmail thường ~500 thư/ngày, Workspace ~2.000. Vượt thì bị khoá gửi 24 giờ. Trung
+tâm gửi hàng loạt nên dùng dịch vụ chuyên (SendGrid, Amazon SES, Mailgun) thay vì Gmail.
+
+### Nhà cung cấp khác
+
+Cách làm giống nhau: lấy thông số SMTP của họ rồi điền. Nhiều nơi cũng yêu cầu mật khẩu
+riêng cho ứng dụng thay vì mật khẩu đăng nhập.
+
+**Về số cổng** — hệ thống tự suy kiểu mã hoá từ cổng, không có ô chọn riêng:
+
+| Cổng | Kiểu | Khi nào |
+|---|---|---|
+| `587` | STARTTLS | Mặc định, Gmail và phần lớn nhà cung cấp khuyến nghị |
+| `465` | SSL/TLS ngầm | Nhiều hosting Việt Nam chỉ mở cổng này |
+| khác | TLS nếu máy chủ có | Máy chủ thư nội bộ không có chứng chỉ |
+
+Đây là lý do FR-31 dùng **MailKit** chứ không `System.Net.Mail.SmtpClient`: `SmtpClient` với
+`EnableSsl = true` **chỉ làm STARTTLS**, nên cổng 465 không bao giờ gửi được — Gmail trả
+`Syntax error, command unrecognized` (thử thật 30/09/2026). Microsoft cũng khuyến nghị
+MailKit cho code mới.
+
+### Luôn bấm "Gửi thử" sau khi lưu
+
+Cấu hình sai **không** báo lỗi lúc lưu — hệ thống chỉ lưu thông số, không kết nối thử. Sai
+thì email chết im lặng và chỉ lộ ra khi học viên phàn nàn. Nút gửi thử tồn tại vì lý do đó.
+
 ## Quyền
 
 | Chức năng | Thao tác | Ghi chú |

@@ -94,6 +94,14 @@ function TabThietLap() {
   const [daLuu, setDaLuu] = useState(false)
   const [emailThu, setEmailThu] = useState('')
   const [daGuiThu, setDaGuiThu] = useState(false)
+  /*
+    Tăng để nạp lại giá trị mặc định của form (React remount theo `key`).
+
+    Dùng `key` chứ không chuyển form sang controlled: form này dùng `defaultValue` +
+    `FormData`, đổi sang controlled là viết lại toàn bộ và thêm một nguồn trạng thái phải
+    đồng bộ với server. Remount đạt đúng mục đích với một dòng.
+  */
+  const [dienGmail, setDienGmail] = useState(0)
 
   const duocSua = coQuyen('ThietLapEmail', 'Sua')
 
@@ -163,15 +171,41 @@ function TabThietLap() {
         <p className="text-sm text-muted-foreground">{t('email.dangDungSmtpChung')}</p>
       )}
 
+      {/*
+        Hướng dẫn Gmail đặt NGAY TRÊN form, không giấu trong tài liệu.
+
+        Gmail chặn đăng nhập bằng mật khẩu thường từ 2022 — nhập mật khẩu Gmail vào đây sẽ
+        báo "Username and Password not accepted", mà thông báo đó không nói gì về mật khẩu
+        ứng dụng. Người dùng sẽ đi đổi mật khẩu Gmail (thứ vốn đúng) thay vì tạo mật khẩu
+        ứng dụng. Nói trước ở đây rẻ hơn nhiều so với một buổi hỗ trợ.
+      */}
+      {duocSua && (
+        <div className="rounded-md border border-input bg-muted/40 px-3 py-2 text-sm">
+          <p className="font-medium">{t('email.gmailTieuDe')}</p>
+          <ol className="ml-4 mt-1 list-decimal space-y-0.5 text-muted-foreground">
+            <li>{t('email.gmailB1')}</li>
+            <li>{t('email.gmailB2')}</li>
+            <li>{t('email.gmailB3')}</li>
+          </ol>
+          <button
+            type="button"
+            onClick={() => setDienGmail((n) => n + 1)}
+            className="mt-2 rounded border border-input bg-background px-2 py-1 text-xs font-medium hover:bg-muted"
+          >
+            {t('email.dienSanGmail')}
+          </button>
+        </div>
+      )}
+
       <Card>
         <CardContent className="pt-6">
-          <form onSubmit={onSubmit} className="space-y-4">
+          <form key={dienGmail} onSubmit={onSubmit} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="smtpHost">{t('email.smtpHost')}</Label>
                 <Input
                   id="smtpHost" name="smtpHost" required maxLength={200}
-                  defaultValue={data?.smtpHost ?? ''}
+                  defaultValue={dienGmail > 0 ? 'smtp.gmail.com' : (data?.smtpHost ?? '')}
                   placeholder="smtp.gmail.com" disabled={!duocSua}
                 />
               </div>
@@ -179,7 +213,8 @@ function TabThietLap() {
                 <Label htmlFor="smtpPort">{t('email.smtpPort')}</Label>
                 <Input
                   id="smtpPort" name="smtpPort" type="number" required min={1} max={65535}
-                  defaultValue={data?.smtpPort ?? 587} disabled={!duocSua}
+                  defaultValue={dienGmail > 0 ? 587 : (data?.smtpPort ?? 587)}
+                  disabled={!duocSua}
                 />
               </div>
               <div className="space-y-1.5">

@@ -1,10 +1,12 @@
-using System.Net;
-using System.Net.Mail;
+using GiapTech.LangCenter.Application.Common.Exceptions;
 using GiapTech.LangCenter.Application.Common.Interfaces;
 using GiapTech.LangCenter.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.Extensions.Logging;
+using MimeKit;
 using PreMailer.Net;
 
 namespace GiapTech.LangCenter.Infrastructure.ThongBao;
@@ -47,24 +49,117 @@ public class SmtpEmailSender(
             return;
         }
 
-        using var client = new SmtpClient(cauHinh.Host)
+        var mail = new MimeMessage
         {
-            Port = cauHinh.Port,
-            EnableSsl = true,
-            Credentials = new NetworkCredential(cauHinh.User, cauHinh.MatKhau)
-        };
-
-        using var mail = new MailMessage
-        {
-            From = new MailAddress(cauHinh.NguoiGui, cauHinh.TenNguoiGui ?? cauHinh.NguoiGui),
             Subject = tieuDe,
-            Body = ChuanBiHtml(noiDungHtml),
-            IsBodyHtml = true
+            Body = new BodyBuilder { HtmlBody = ChuanBiHtml(noiDungHtml) }.ToMessageBody()
         };
-        mail.To.Add(den);
+        mail.From.Add(new MailboxAddress(cauHinh.TenNguoiGui ?? cauHinh.NguoiGui, cauHinh.NguoiGui));
+        mail.To.Add(MailboxAddress.Parse(den));
 
-        await client.SendMailAsync(mail, ct);
+        using var client = new SmtpClient
+        {
+            /*
+              Không kiểm danh sách thu hồi chứng chỉ (CRL/OCSP).
+
+              MailKit mặc định BẬT, và nó hỏng ở những mạng không ra được máy chủ CRL của
+              nhà phát hành — đã gặp ngay trên máy dev macOS ngày 30/09/2026: Gmail báo
+              "An incomplete certificate revocation check occurred" và kết nối đứt, dù cấu
+              hình hoàn toàn đúng. VPS sau firewall chặt cũng sẽ gặp y hệt.
+
+              Đánh đổi có cân nhắc: **chứng chỉ vẫn được xác thực đầy đủ** (đúng tên miền,
+              đúng chuỗi tin cậy, còn hạn) — chỉ bỏ bước hỏi "chứng chỉ này có bị thu hồi
+              sớm không". Thu hồi là sự kiện hiếm, còn việc không gửi được email vì mạng
+              không ra được CRL là chuyện thường ngày.
+
+              KHÔNG được đổi thành `ServerCertificateValidationCallback = () => true` — cái
+              đó tắt xác thực HOÀN TOÀN và mở đường cho tấn công xen giữa.
+            */
+            CheckCertificateRevocation = false,
+        };
+
+        /*
+          Đổi ngoại lệ của MailKit thành MÃ LỖI nghiệp vụ (quy tắc #3).
+
+          Vì sao tách ba mã chứ không để `LOI_HE_THONG`: nút "Gửi thử" sinh ra để CHẨN ĐOÁN
+          cấu hình. Trả một mã chung thì nó không chẩn đoán được gì, và người dùng nhập mật
+          khẩu Gmail thường (thay vì mật khẩu ứng dụng) sẽ đi kiểm địa chỉ máy chủ — thứ vốn
+          đúng. Phân biệt "sai đăng nhập" với "không kết nối được" là khác biệt giữa sửa
+          trong một phút và mò cả buổi.
+
+          Chi tiết gốc đi vào `chiTietLog` (chỉ ra log server), KHÔNG ra client: thông báo của
+          máy chủ SMTP có thể chứa tên máy chủ nội bộ và thông tin hạ tầng.
+        */
+        try
+        {
+            await client.ConnectAsync(cauHinh.Host, cauHinh.Port, BaoMatCuaCong(cauHinh.Port), ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            throw new AppException(MaLoi.SmtpKhongKetNoiDuoc,
+                $"Không kết nối được {cauHinh.Host}:{cauHinh.Port} — {ex.Message}");
+        }
+
+        // Máy chủ nội bộ có thể mở cổng không cần đăng nhập; gửi lệnh AUTH lúc đó là lỗi.
+        if (!string.IsNullOrWhiteSpace(cauHinh.User))
+        {
+            try
+            {
+                await client.AuthenticateAsync(cauHinh.User, cauHinh.MatKhau ?? "", ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                /*
+                  Bắt MỌI lỗi ở bước đăng nhập, không chỉ `AuthenticationException`.
+
+                  Thử thật với Gmail ngày 30/09/2026: cùng một mật khẩu sai mà lần ném
+                  `AuthenticationException` (535 Username and Password not accepted), lần
+                  ném `SmtpProtocolException` — Gmail ngắt kết nối khi bị thử sai nhiều lần.
+                  Bắt hẹp theo kiểu thì nửa số ca rơi xuống `LOI_HE_THONG`, đúng thứ ta đang
+                  tìm cách tránh.
+
+                  Đã tới được đây nghĩa là KẾT NỐI thành công (bước trên đã qua), nên lỗi ở
+                  bước này gần như chắc chắn là chuyện đăng nhập.
+                */
+                throw new AppException(MaLoi.SmtpSaiDangNhap,
+                    $"Máy chủ {cauHinh.Host} từ chối đăng nhập của {cauHinh.User} — "
+                    + $"{ex.GetType().Name}: {ex.Message}");
+            }
+        }
+
+        try
+        {
+            await client.SendAsync(mail, ct);
+            await client.DisconnectAsync(true, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            throw new AppException(MaLoi.SmtpGuiThatBai,
+                $"Gửi tới {den} thất bại qua {cauHinh.Host} — {ex.Message}");
+        }
     }
+
+    /// <summary>
+    /// Kiểu bảo mật suy từ **số cổng**, vì hai cổng phổ biến nói hai giao thức KHÁC nhau:
+    ///
+    /// - **465** — SSL/TLS ngầm: mã hoá ngay từ byte đầu tiên.
+    /// - **587** — STARTTLS: mở kết nối thường rồi mới nâng cấp lên TLS.
+    ///
+    /// Vì sao phải đổi từ `System.Net.Mail.SmtpClient` sang MailKit: `SmtpClient` với
+    /// `EnableSsl = true` **chỉ làm STARTTLS**, không nói được SSL ngầm. Nhập cổng 465 vào đó
+    /// thì Gmail trả `Syntax error, command unrecognized` — đã thử thật ngày 30/09/2026, và
+    /// thông báo đó không hề gợi ý nguyên nhân là sai kiểu mã hoá. Microsoft cũng khuyến nghị
+    /// MailKit thay cho `SmtpClient` ở code mới.
+    ///
+    /// Cổng khác (25, 2525, nội bộ) → `StartTlsWhenAvailable`: dùng TLS nếu máy chủ có, không
+    /// thì vẫn gửi. Máy chủ nội bộ trong LAN thường không có chứng chỉ.
+    /// </summary>
+    public static SecureSocketOptions BaoMatCuaCong(int port) => port switch
+    {
+        465 => SecureSocketOptions.SslOnConnect,
+        587 => SecureSocketOptions.StartTls,
+        _ => SecureSocketOptions.StartTlsWhenAvailable,
+    };
 
     private sealed record CauHinhSmtp(
         string Host, int Port, string? User, string? MatKhau, string NguoiGui, string? TenNguoiGui);

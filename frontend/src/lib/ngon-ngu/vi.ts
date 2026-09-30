@@ -980,6 +980,11 @@ const vi = {
       'Chưa có tiêu chí nhóm Giảng dạy — thêm ở tab Tiêu chí đánh giá để học viên chấm chi tiết.',
   },
   email: {
+    gmailTieuDe: 'Dùng Gmail? Phải tạo “mật khẩu ứng dụng” trước.',
+    gmailB1: 'Bật xác minh 2 bước cho tài khoản Google (bắt buộc — không bật thì không có bước 2).',
+    gmailB2: 'Vào myaccount.google.com/apppasswords, tạo một mật khẩu ứng dụng và sao chép 16 ký tự.',
+    gmailB3: 'Dán 16 ký tự đó vào ô Mật khẩu dưới đây — KHÔNG phải mật khẩu đăng nhập Gmail.',
+    dienSanGmail: 'Điền sẵn thông số Gmail',
     tieuDeTrang: 'Email',
     tabThietLap: 'Thiết lập gửi',
     tabMau: 'Mẫu email',
@@ -1674,6 +1679,12 @@ const vi = {
       'Không thể tự khoá tài khoản đang đăng nhập. Bỏ tích rồi thử lại.',
     QUA_NHIEU_YEU_CAU: 'Bạn thao tác quá nhanh. Chờ một chút rồi thử lại.',
     LOI_HE_THONG: 'Có lỗi xảy ra, vui lòng thử lại',
+    SMTP_SAI_DANG_NHAP:
+      'Máy chủ thư từ chối tên đăng nhập hoặc mật khẩu. Nếu dùng Gmail, phải nhập mật khẩu ứng dụng 16 ký tự chứ không phải mật khẩu đăng nhập Gmail.',
+    SMTP_KHONG_KET_NOI_DUOC:
+      'Không kết nối được tới máy chủ thư. Kiểm tra lại địa chỉ máy chủ và cổng (587 hoặc 465).',
+    SMTP_GUI_THAT_BAI:
+      'Đăng nhập được nhưng máy chủ từ chối gửi. Có thể địa chỉ người gửi không khớp tài khoản, hoặc đã vượt hạn mức gửi trong ngày.',
     USERNAME_DA_TON_TAI: 'Tên đăng nhập đã tồn tại trong trung tâm',
     QUYEN_KHONG_HOP_LE: 'Nhóm quyền không hợp lệ',
     QUYEN_DANG_DUOC_GAN: 'Không thể xóa: nhóm quyền đang được gán cho tài khoản',

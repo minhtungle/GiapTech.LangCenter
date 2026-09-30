@@ -128,6 +128,66 @@ Thư viện: **Tiptap** (MIT) ở frontend, **PreMailer.Net 2.7.4** (MIT, phát 
 backend. Cả hai miễn phí và không phụ thuộc dịch vụ ngoài — CKEditor bị loại vì GPL không hợp
 sản phẩm đóng, và bản thương mại tính phí theo số lần mở editor nên chi phí trôi theo số tenant.
 
+## Thư viện gửi: MailKit, không phải `System.Net.Mail.SmtpClient`
+
+Bổ sung 30/09/2026 sau khi gửi thử thật tới Gmail.
+
+`SmtpClient` của .NET với `EnableSsl = true` **chỉ làm STARTTLS**. Nó không nói được SSL
+ngầm, nên **cổng 465 không bao giờ gửi được** — Gmail trả `Syntax error, command
+unrecognized`, một thông báo không hề gợi ý nguyên nhân là sai kiểu mã hoá.
+
+Không thể bỏ qua: nhiều hosting Việt Nam **chỉ** mở cổng 465. Và `SmtpClient` đã được
+Microsoft đánh dấu không khuyến nghị cho code mới, chính họ chỉ sang MailKit.
+
+Dùng **MailKit 4.18.1** (MIT), suy kiểu mã hoá từ **số cổng**:
+
+| Cổng | Kiểu | Vì sao |
+|---|---|---|
+| `465` | `SslOnConnect` | SSL/TLS ngầm — mã hoá từ byte đầu |
+| `587` | `StartTls` | Mở kết nối thường rồi nâng cấp |
+| khác | `StartTlsWhenAvailable` | Máy chủ nội bộ thường không có chứng chỉ |
+
+**Không thêm ô "chọn kiểu mã hoá" trên giao diện.** Số cổng đã quyết định điều đó; hỏi thêm
+một lần nữa chỉ tạo cơ hội cho hai ô mâu thuẫn nhau, và người dùng không có cách nào biết
+mình chọn đúng hay sai.
+
+### Tắt kiểm danh sách thu hồi chứng chỉ
+
+MailKit mặc định bật `CheckCertificateRevocation`, và nó hỏng ở mạng không ra được máy chủ
+CRL/OCSP của nhà phát hành — gặp ngay trên máy dev macOS: `An incomplete certificate
+revocation check occurred`, kết nối đứt dù cấu hình đúng hoàn toàn. VPS sau firewall chặt
+cũng vậy.
+
+Đánh đổi: **chứng chỉ vẫn được xác thực đầy đủ** (đúng tên miền, đúng chuỗi tin cậy, còn
+hạn) — chỉ bỏ bước hỏi "có bị thu hồi sớm không". Thu hồi là sự kiện hiếm; mạng không ra
+được CRL là chuyện thường ngày.
+
+> **Không** được "sửa" thành `ServerCertificateValidationCallback = () => true`. Cái đó tắt
+> xác thực HOÀN TOÀN và mở đường cho tấn công xen giữa — khác hẳn về mức độ.
+
+## Lỗi cấu hình phải nói ra được
+
+Nút "Gửi thử" tồn tại để **chẩn đoán**. Trả về một mã `LOI_HE_THONG` chung thì nó không chẩn
+đoán được gì, nên tách ba mã:
+
+| Mã | Khi nào | Người dùng cần làm gì |
+|---|---|---|
+| `SMTP_SAI_DANG_NHAP` | Máy chủ từ chối tên/mật khẩu | Gmail: tạo **mật khẩu ứng dụng** 16 ký tự |
+| `SMTP_KHONG_KET_NOI_DUOC` | Không tới được máy chủ | Kiểm địa chỉ và cổng |
+| `SMTP_GUI_THAT_BAI` | Đăng nhập được, gửi bị từ chối | Địa chỉ người gửi lệch tài khoản, hoặc vượt hạn mức |
+
+Bản dịch của mã đầu **nói thẳng về mật khẩu ứng dụng Gmail**: Google chặn đăng nhập SMTP
+bằng mật khẩu thường từ 30/05/2022, nhưng thông báo gốc (`535 Username and Password not
+accepted`) không nhắc gì tới điều đó — người dùng sẽ đi đổi mật khẩu Gmail, thứ vốn đúng.
+
+Ở bước đăng nhập **bắt mọi ngoại lệ**, không riêng `AuthenticationException`: thử thật thấy
+cùng một mật khẩu sai mà Gmail lúc ném `AuthenticationException`, lúc ném
+`SmtpProtocolException` (ngắt kết nối khi bị thử sai nhiều lần). Bắt hẹp theo kiểu thì nửa số
+ca rơi xuống mã chung.
+
+Chi tiết gốc chỉ vào **log server**, không ra client — thông báo của máy chủ SMTP có thể chứa
+tên máy chủ nội bộ và thông tin hạ tầng.
+
 ## Hệ quả
 
 **Tích cực**

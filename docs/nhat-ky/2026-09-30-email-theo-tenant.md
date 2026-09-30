@@ -128,6 +128,50 @@ Mẫu email không thuộc hệ thống con nào, nó là hạ tầng gửi thư
 Nên đặt `IMauEmail` ở `Common/Interfaces/`, hiện thực ở `QuanTri/Email/`, và mỗi hệ thống con
 chỉ thấy interface. Test ranh giới xanh, không phải khai ngoại lệ nào.
 
+## Ba lỗi chỉ lộ ra khi gửi thật
+
+Hỏi "dùng Gmail thì cấu hình thế nào" hoá ra lại là câu hỏi hay: nó buộc phải gửi thử thật,
+và ba thứ hỏng lộ ra — không cái nào test in-memory bắt được.
+
+**1. Cổng 465 không bao giờ gửi được.** `System.Net.Mail.SmtpClient` với `EnableSsl = true`
+**chỉ làm STARTTLS**, không nói được SSL ngầm. Thử thật với Gmail: cổng 587 tới được bước xác
+thực, cổng 465 trả `Syntax error, command unrecognized` — một thông báo không hề gợi ý nguyên
+nhân là sai kiểu mã hoá. Nhiều hosting Việt Nam **chỉ** mở 465, nên đây không phải ca hiếm.
+
+Đổi sang **MailKit 4.18.1** (MIT — thư viện Microsoft khuyến nghị thay `SmtpClient` ở code
+mới), suy kiểu mã hoá từ số cổng: 465 → SSL ngầm, 587 → STARTTLS, còn lại → TLS nếu có.
+Không thêm ô "chọn kiểu mã hoá" trên giao diện: số cổng đã quyết định điều đó, hỏi thêm chỉ
+tạo cơ hội cho hai ô mâu thuẫn nhau.
+
+**2. Sai mật khẩu chỉ báo `LOI_HE_THONG` 500.** Nút "Gửi thử" sinh ra để CHẨN ĐOÁN, mà lại
+giấu đúng thông tin chẩn đoán. Tách ba mã: `SMTP_SAI_DANG_NHAP` · `SMTP_KHONG_KET_NOI_DUOC` ·
+`SMTP_GUI_THAT_BAI`. Bản dịch của mã đầu nói thẳng về mật khẩu ứng dụng Gmail — vì đó là
+nguyên nhân phổ biến nhất, và thông báo gốc của Gmail (`535 Username and Password not
+accepted`) không nhắc gì tới nó.
+
+Bắt **mọi** lỗi ở bước đăng nhập chứ không riêng `AuthenticationException`: thử thật thấy
+cùng một mật khẩu sai mà Gmail lúc ném `AuthenticationException`, lúc ném
+`SmtpProtocolException` (ngắt kết nối khi bị thử sai nhiều lần). Bắt hẹp theo kiểu thì nửa số
+ca rơi xuống `LOI_HE_THONG` — đúng thứ đang tìm cách tránh.
+
+**3. MailKit kiểm danh sách thu hồi chứng chỉ, và nó hỏng.** Ngay trên máy dev macOS: Gmail
+báo `An incomplete certificate revocation check occurred` và đứt kết nối, dù cấu hình hoàn
+toàn đúng. VPS sau firewall chặt cũng sẽ gặp y hệt. Tắt `CheckCertificateRevocation`.
+
+Đánh đổi có cân nhắc: **chứng chỉ vẫn được xác thực đầy đủ** — đúng tên miền, đúng chuỗi tin
+cậy, còn hạn — chỉ bỏ bước hỏi "có bị thu hồi sớm không". Thu hồi là sự kiện hiếm; mạng không
+ra được máy chủ CRL là chuyện thường ngày. Đã ghi rõ trong mã: **không** được "sửa" thành
+`ServerCertificateValidationCallback = () => true`, cái đó tắt xác thực hoàn toàn và mở đường
+cho tấn công xen giữa.
+
+### Trả lời câu hỏi gốc
+
+**Phải thiết lập thủ công ở Gmail trước** — Google chặn đăng nhập SMTP bằng mật khẩu thường
+từ 30/05/2022. Bật xác minh 2 bước → tạo mật khẩu ứng dụng → dán 16 ký tự vào hệ thống.
+
+Ba bước đó nay in **ngay trên form**, kèm nút "Điền sẵn thông số Gmail". Giấu trong tài liệu
+thì không ai đọc, và người dùng sẽ đi đổi mật khẩu Gmail (thứ vốn đúng).
+
 ## Còn lại
 
 - Tác vụ nền theo lịch cho `NhacNoHocPhi` và `NhacLichHoc`.

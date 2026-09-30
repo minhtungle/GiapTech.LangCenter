@@ -869,6 +869,11 @@ const en = {
     chuaCoTieuChiGd: 'No criteria in the Teaching group yet — add them on the Evaluation criteria tab so students can give detailed ratings.',
   },
   email: {
+    gmailTieuDe: 'Using Gmail? You must create an “app password” first.',
+    gmailB1: 'Turn on 2-Step Verification for the Google account (required — step 2 does not exist without it).',
+    gmailB2: 'Go to myaccount.google.com/apppasswords, create an app password and copy the 16 characters.',
+    gmailB3: 'Paste those 16 characters into the Password field below — NOT your Gmail login password.',
+    dienSanGmail: 'Fill in Gmail settings',
     tieuDeTrang: 'Email',
     tabThietLap: 'Sending settings',
     tabMau: 'Templates',
@@ -1475,6 +1480,12 @@ const en = {
     KHONG_TU_KHOA_TAI_KHOAN_CHINH_MINH: 'You cannot lock the account you are logged in with. Untick it and try again.',
     QUA_NHIEU_YEU_CAU: 'You are going too fast. Wait a moment and try again.',
     LOI_HE_THONG: 'Something went wrong, please try again',
+    SMTP_SAI_DANG_NHAP:
+      'The mail server rejected the username or password. For Gmail you must use the 16-character app password, not your Gmail login password.',
+    SMTP_KHONG_KET_NOI_DUOC:
+      'Could not reach the mail server. Check the server address and port (587 or 465).',
+    SMTP_GUI_THAT_BAI:
+      'Signed in, but the server refused to send. The from address may not match the account, or the daily sending limit was reached.',
     USERNAME_DA_TON_TAI: 'This username already exists in the center',
     QUYEN_KHONG_HOP_LE: 'Invalid permission group',
     QUYEN_DANG_DUOC_GAN: 'Cannot delete: the permission group is assigned to accounts',
