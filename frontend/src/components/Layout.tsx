@@ -5,7 +5,7 @@ import {
   ShieldCheck,
   BarChart3, Settings, LogOut, Home, GraduationCap, BookOpen, MonitorPlay,
   PanelLeftClose, PanelLeft, Menu, X, ScrollText, UserCog, TrendingUp,
-  LayoutGrid, Check, KeyRound, Contact, PackageOpen, BookMarked, Star, Globe, Inbox,
+  LayoutGrid, Check, KeyRound, Contact, PackageOpen, BookMarked, Star, Globe, Inbox, Mail,
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useQuyen } from '@/lib/quyen'
@@ -192,6 +192,10 @@ export default function Layout() {
         {
           to: '/quan-tri/nhat-ky', nhan: t('menu.nhatKy'), icon: ScrollText,
           can: 'NhatKyHeThong',
+        },
+        {
+          to: '/quan-tri/email', nhan: t('menu.email'), icon: Mail,
+          can: 'ThietLapEmail',
         },
       ],
     },

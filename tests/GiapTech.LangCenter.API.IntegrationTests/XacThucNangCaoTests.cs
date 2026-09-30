@@ -281,6 +281,16 @@ public class XacThucNangCaoTests(ApiFactory factory) : IClassFixture<ApiFactory>
 /// </summary>
 public class TestEmailSender : IEmailSender
 {
+    /// <summary>Thư đã "gửi", để test khẳng định nội dung thay vì chỉ biết có gọi hay không.</summary>
+    public record ThuDaGui(Guid TenantId, string Den, string TieuDe, string NoiDung);
+
+    /// <summary>
+    /// Danh sách thư đã gửi. `static` + `ConcurrentBag` vì mỗi test dựng `ApiFactory` riêng
+    /// nhưng dùng chung kiểu này; test nào đọc thì lọc theo địa chỉ nhận của chính nó, không
+    /// giả định danh sách rỗng lúc bắt đầu.
+    /// </summary>
+    public static readonly System.Collections.Concurrent.ConcurrentBag<ThuDaGui> DaGui = [];
+
     /// <summary>
     /// `tenantId` KHÔNG dùng ở đây: bản giả này chỉ bắt token, không chọn cấu hình SMTP nào.
     /// Nhưng tham số vẫn phải có để khớp interface — và đó là điều tốt, vì nó buộc mọi nơi
@@ -299,6 +309,7 @@ public class TestEmailSender : IEmailSender
             XacThucNangCaoTests.TokenThoDaGhiNhan[hash] = tokenTho;
         }
 
+        DaGui.Add(new ThuDaGui(tenantId, den, tieuDe, noiDungHtml));
         return Task.CompletedTask;
     }
 }

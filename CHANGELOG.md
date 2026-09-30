@@ -8,6 +8,40 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Added — FR-31: gửi email theo trung tâm + mẫu nội dung (30/09/2026)
+
+Mỗi trung tâm cấu hình hộp thư SMTP riêng và soạn sẵn nội dung 4 loại email.
+Chi tiết: [`docs/06-nghiep-vu/email.md`](docs/06-nghiep-vu/email.md) ·
+[ADR-0010](docs/02-kien-truc/adr/0010-cau-hinh-email-theo-tenant.md).
+
+| | |
+|---|---|
+| Bảng mới | `MAU_EMAIL` (49 → **50 bảng**) |
+| Cột mới | 6 cột `smtp_*` trên `TENANT` |
+| Chức năng quyền | `ThietLapEmail` (Xem · Sửa · **GuiThu**) · `MauEmail` (Xem · Sửa · Xoá) |
+| Soạn thảo | **Tiptap 3.31.3** (MIT) — không dùng CKEditor vì GPL/thương mại |
+
+**Mật khẩu SMTP mã hoá AES-GCM, khoá ở biến môi trường `EMAIL_KHOA_MA_HOA`** — không nằm
+trong DB, nên một bản backup rò ra ngoài vẫn không mở được hộp thư của các trung tâm. Chọn
+GCM chứ không CBC vì nó là AEAD: bản mã bị sửa sẽ bị phát hiện lúc giải mã. Chưa cấu hình
+khoá thì **từ chối lưu**, không âm thầm ghi bản rõ.
+
+**API không bao giờ trả mật khẩu**, kể cả cho quản trị viên của chính trung tâm đó — chỉ cờ
+`coMatKhau`. Để trống ô mật khẩu khi lưu = **giữ nguyên giá trị cũ** (ngoại lệ có chủ ý với
+quy tắc #1: trường này không hiển thị được nên form không gửi lại được).
+
+Mẫu nào chưa soạn thì **mẫu mặc định nằm trong mã**, danh sách duyệt theo enum chứ không theo
+bảng — loại chưa đụng tới vẫn hiện, không biến mất khỏi màn hình. Hai loại `NhacNoHocPhi` và
+`NhacLichHoc` chưa có tác vụ nền chạy theo lịch nên được đánh dấu `tuGuiDuoc: false` và màn
+soạn cảnh báo rõ, để trung tâm không soạn xong rồi ngồi đợi một email không bao giờ tới.
+
+Bố cục email bọc trong khung `<table>` và CSS nội tuyến bằng PreMailer.Net lúc GỬI: Outlook
+trên Windows dựng HTML bằng engine của Word — không flexbox, không grid. Thanh công cụ soạn
+thảo cố ý chỉ có 6 nút, mỗi nút thừa là một cách tạo ra email vỡ trên máy người nhận.
+
+Thêm 8 test tích hợp + 9 test đơn vị. **701 test backend xanh** (601 tích hợp + 100 đơn vị).
+
+
 ### Added — FR-30: trang đích công khai (LDP), hệ thống con thứ tư (24/09/2026)
 
 Mỗi trung tâm có một trang giới thiệu công khai; LDP là module soạn nội dung, song song

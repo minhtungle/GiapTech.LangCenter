@@ -26,6 +26,7 @@ một API, một database, một lần đăng nhập.
 | **LDP** | **Trang đích công khai** ([FR-30](./ldp.md)) — soạn nội dung, xuất bản, form liên hệ → CRM | ✅ Chạy |
 | **Dùng chung** | **Tổng quan** (FR-15) — màn chủ, một màn cho mọi vai trò | ✅ Chạy |
 | **Dùng chung** | FR-03 → FR-06, FR-16 (tài khoản, phân quyền, thiết lập, nhật ký) | ✅ Chạy |
+| **Dùng chung** | **Email** ([FR-31](./email.md)) — SMTP riêng từng trung tâm, 4 mẫu nội dung | ✅ Chạy |
 
 Hai điều dễ nhầm:
 

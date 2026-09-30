@@ -201,6 +201,64 @@ public class LdpTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     /// <summary>
+    /// Khách có điền email ⇒ nhận thư xác nhận dựng từ mẫu `TraLoiLienHe` (FR-31).
+    ///
+    /// Kiểm cả NỘI DUNG chứ không chỉ "có gửi hay không": biến `{{tenKhach}}` phải được thay
+    /// thật. Không có phép kiểm này thì một lỗi ở `ThayBien` sẽ gửi cho khách nguyên chuỗi
+    /// `{{tenKhach}}` giữa câu chào, và test vẫn xanh.
+    /// </summary>
+    [Fact]
+    public async Task Khach_de_lai_email_thi_nhan_thu_xac_nhan()
+    {
+        var client = factory.CreateClient();
+        const string email = "khach-nhan-thu@example.com";
+
+        var req = ReqKhach(HttpMethod.Post, "/api/v1/ldp/lien-he");
+        req.Content = JsonContent.Create(new
+        {
+            HoTen = "Trần Thị Hồi Âm",
+            SoDienThoai = "0909999888",
+            Email = email,
+        });
+        Assert.Equal(HttpStatusCode.NoContent, (await client.SendAsync(req)).StatusCode);
+
+        var thu = TestEmailSender.DaGui.SingleOrDefault(x => x.Den == email);
+
+        Assert.NotNull(thu);
+        Assert.Contains("Trần Thị Hồi Âm", thu.NoiDung);
+        // Biến đã được thay — không còn dấu ngoặc nhọn nào sót lại.
+        Assert.DoesNotContain("{{", thu.NoiDung);
+        Assert.DoesNotContain("{{", thu.TieuDe);
+    }
+
+    /// <summary>
+    /// Không điền email ⇒ **không gửi gì**, và lệnh vẫn thành công.
+    ///
+    /// Số điện thoại mới là trường bắt buộc của form; bắt buộc email chỉ để gửi được thư là
+    /// đánh đổi sai — mất khách để lấy một lá thư.
+    /// </summary>
+    [Fact]
+    public async Task Khong_dien_email_thi_khong_gui_thu_nhung_van_luu()
+    {
+        var client = factory.CreateClient();
+        var truoc = TestEmailSender.DaGui.Count;
+
+        var req = ReqKhach(HttpMethod.Post, "/api/v1/ldp/lien-he");
+        req.Content = JsonContent.Create(new
+        {
+            HoTen = "Khách Không Email",
+            SoDienThoai = "0900000111",
+        });
+        Assert.Equal(HttpStatusCode.NoContent, (await client.SendAsync(req)).StatusCode);
+
+        Assert.Equal(truoc, TestEmailSender.DaGui.Count);
+
+        var token = await TokenAdminAsync(client);
+        var ds = await client.SendAsync(Req(HttpMethod.Get, "/api/v1/ldp/lien-he", token));
+        Assert.Contains("Khách Không Email", await ds.Content.ReadAsStringAsync());
+    }
+
+    /// <summary>
     /// Honeypot: bot điền trường ẩn ⇒ **bỏ qua im lặng**, vẫn trả 204.
     ///
     /// Trả lỗi là nói cho người viết bot biết họ bị phát hiện, rồi họ sửa bot bỏ qua trường

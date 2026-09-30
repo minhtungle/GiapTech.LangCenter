@@ -136,31 +136,33 @@ public class XoaMauEmailHandler(IAppDbContext db) : IRequestHandler<XoaMauEmailC
 }
 
 /// <summary>
-/// Lấy nội dung mẫu đã thay biến — dùng bởi nơi GỬI, không phải màn soạn.
+/// Dựng nội dung mẫu đã thay biến — dùng bởi nơi GỬI, không phải màn soạn.
+///
+/// Hiện thực của <see cref="IMauEmail"/>; nơi gọi chỉ thấy interface ở `Common/` nên các hệ
+/// thống con không phải `using` sang `QuanTri/` (xem chú thích ở interface).
 ///
 /// Đặt ở đây chứ không để mỗi nơi gọi tự ghép: chúng sẽ trôi khỏi nhau, và chỗ quên dùng
 /// mẫu mặc định sẽ gửi email rỗng.
 /// </summary>
-public record LayNoiDungMauQuery(
-    LoaiMauEmail Loai,
-    IReadOnlyDictionary<string, string?> GiaTri) : IRequest<(string TieuDe, string NoiDung)>;
-
-public class LayNoiDungMauHandler(IAppDbContext db)
-    : IRequestHandler<LayNoiDungMauQuery, (string TieuDe, string NoiDung)>
+public class DungMauEmail(IAppDbContext db) : IMauEmail
 {
-    public async Task<(string TieuDe, string NoiDung)> Handle(
-        LayNoiDungMauQuery r, CancellationToken ct)
+    public async Task<(string TieuDe, string NoiDung)> DungAsync(
+        LoaiMauEmail loai,
+        IReadOnlyDictionary<string, string?> giaTri,
+        CancellationToken ct = default)
     {
+        // `DangDung == false` ⇒ bỏ qua bản đã soạn và dùng mặc định. Đó là ý nghĩa của ô tắt:
+        // giữ bản nháp để so sánh hoặc bật lại, nhưng chưa gửi bằng nó.
         var mau = await db.MauEmails
             .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.Loai == r.Loai && m.DangDung, ct);
+            .FirstOrDefaultAsync(m => m.Loai == loai && m.DangDung, ct);
 
         var (tieuDe, noiDung) = mau is not null
             ? (mau.TieuDe, mau.NoiDungHtml)
-            : MauMacDinh.Cua(r.Loai);
+            : MauMacDinh.Cua(loai);
 
         return (
-            MauMacDinh.ThayBien(r.Loai, tieuDe, r.GiaTri),
-            MauMacDinh.ThayBien(r.Loai, noiDung, r.GiaTri));
+            MauMacDinh.ThayBien(loai, tieuDe, giaTri),
+            MauMacDinh.ThayBien(loai, noiDung, giaTri));
     }
 }

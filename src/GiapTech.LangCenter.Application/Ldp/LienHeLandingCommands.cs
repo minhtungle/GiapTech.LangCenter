@@ -5,6 +5,7 @@ using GiapTech.LangCenter.Domain.Entities;
 using GiapTech.LangCenter.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace GiapTech.LangCenter.Application.Ldp;
 
@@ -43,7 +44,12 @@ public class GuiLienHeValidator : AbstractValidator<GuiLienHeCommand>
     }
 }
 
-public class GuiLienHeHandler(IAppDbContext db, ICurrentTenant tenant)
+public class GuiLienHeHandler(
+    IAppDbContext db,
+    ICurrentTenant tenant,
+    IMauEmail mauEmail,
+    IEmailSender emailSender,
+    ILogger<GuiLienHeHandler> logger)
     : IRequestHandler<GuiLienHeCommand>
 {
     public async Task Handle(GuiLienHeCommand r, CancellationToken ct)
@@ -71,6 +77,55 @@ public class GuiLienHeHandler(IAppDbContext db, ICurrentTenant tenant)
         });
 
         await db.SaveChangesAsync(ct);
+
+        await GuiThuTraLoiAsync(r, tenant.TenantId.Value, ct);
+    }
+
+    /// <summary>
+    /// Gửi thư xác nhận cho khách (mẫu `TraLoiLienHe`, FR-31).
+    ///
+    /// **Chạy SAU khi đã lưu và không bao giờ làm hỏng lệnh.** Liên hệ đã nằm trong sổ là phần
+    /// việc thật; email chỉ là phép lịch sự. Ném lỗi ở đây sẽ trả 500 cho khách vãng lai sau
+    /// khi dữ liệu ĐÃ ghi, và họ sẽ gửi lại form — sinh bản ghi trùng.
+    ///
+    /// Khác `QuenMatKhauCommand`: chỗ đó phải `Task.Run` để tránh rò rỉ qua thời gian phản hồi
+    /// (nhanh/chậm tố cáo email nào có thật). Ở đây không có bí mật nào để rò — ai cũng gửi
+    /// được form — nên `await` thẳng, đơn giản hơn và lỗi vào log đúng ngữ cảnh request.
+    /// </summary>
+    private async Task GuiThuTraLoiAsync(GuiLienHeCommand r, Guid tenantId, CancellationToken ct)
+    {
+        // Không có email thì thôi — số điện thoại mới là trường bắt buộc của form.
+        if (string.IsNullOrWhiteSpace(r.Email)) return;
+
+        try
+        {
+            // `IgnoreQueryFilters`: `TENANT` không phải `ITenantEntity` nên không bị lọc, nhưng
+            // viết rõ để người đọc không phải tự hỏi.
+            var tt = await db.Tenants
+                .AsNoTracking()
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(x => x.Id == tenantId, ct);
+
+            var (tieuDe, noiDung) = await mauEmail.DungAsync(
+                LoaiMauEmail.TraLoiLienHe,
+                new Dictionary<string, string?>
+                {
+                    ["tenKhach"] = r.HoTen.Trim(),
+                    ["tenTrungTam"] = tt?.TenTrungTam,
+                    ["hotline"] = tt?.LienHe,
+                },
+                ct);
+
+            await emailSender.GuiAsync(tenantId, r.Email.Trim(), tieuDe, noiDung, ct);
+        }
+        catch (Exception ex)
+        {
+            // Nuốt lỗi CÓ CHỦ Ý — xem chú thích ở trên. Log để người vận hành thấy cấu hình
+            // SMTP hỏng, thay vì email lặng lẽ không đi mà không ai biết.
+            logger.LogError(ex,
+                "Gửi thư trả lời liên hệ thất bại cho {Email} của tenant {TenantId}",
+                r.Email, tenantId);
+        }
     }
 }
 

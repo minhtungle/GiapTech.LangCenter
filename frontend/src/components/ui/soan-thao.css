@@ -1,0 +1,90 @@
+/*
+  Kiểu cho ô soạn thảo Tiptap (`SoanThao.tsx`).
+
+  Viết tay thay vì cài `@tailwindcss/typography`: ta chỉ cần định dạng cho SÁU thẻ mà thanh
+  công cụ tạo ra được, còn plugin kia kéo theo cả một bộ kiểu cho mọi thẻ HTML. Thêm một phụ
+  thuộc để dùng một phần trăm của nó là không đáng.
+
+  Màu lấy từ design token (`src/index.css`), không ghi cứng — ghi cứng thì chế độ tối để lại
+  một khối chữ đen trên nền đen. Đây cũng là thứ `scripts/check-token-mau.py` canh.
+
+  LƯU Ý: kiểu ở đây chỉ để NHÌN lúc soạn. Email gửi đi không mang các quy tắc này — CSS được
+  PreMailer.Net nội tuyến vào từng thẻ lúc gửi, vì Outlook bỏ qua phần lớn CSS ngoài thuộc
+  tính `style`. Nên đừng dựa vào file này để email trông ra sao ở máy người nhận.
+*/
+
+.soan-thao {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: hsl(var(--foreground));
+  overflow-y: auto;
+}
+
+.soan-thao :first-child {
+  margin-top: 0;
+}
+
+.soan-thao :last-child {
+  margin-bottom: 0;
+}
+
+.soan-thao p {
+  margin: 0.5rem 0;
+}
+
+.soan-thao h2 {
+  margin: 1rem 0 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.soan-thao h3 {
+  margin: 0.875rem 0 0.375rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.soan-thao ul,
+.soan-thao ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.soan-thao ul {
+  list-style: disc;
+}
+
+.soan-thao ol {
+  list-style: decimal;
+}
+
+.soan-thao li {
+  margin: 0.125rem 0;
+}
+
+.soan-thao a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+}
+
+.soan-thao strong {
+  font-weight: 600;
+}
+
+/*
+  Biến `{{tenHocVien}}` hiện nổi bật giữa văn bản.
+
+  Tiptap không biết gì về biến — đây chỉ là chuỗi thường. Không tô được bằng CSS thuần, nên
+  chỗ này để trống có chủ ý: người dùng nhận ra biến qua dấu ngoặc nhọn, và danh sách biến
+  luôn hiện ngay cạnh ô soạn. Dựng một extension Tiptap chỉ để tô màu là công sức lớn cho
+  một lợi ích nhỏ.
+*/
+
+/* Ô rỗng: gợi ý người dùng bắt đầu gõ, thay vì một khung trắng không rõ bấm được hay không. */
+.soan-thao p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+}

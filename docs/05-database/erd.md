@@ -1,7 +1,7 @@
 # ERD — Mô hình dữ liệu
 
-**49 bảng**, PostgreSQL (đếm bằng `information_schema` ngày 24/09/2026, sau khi thêm
-`QUAN_TRI_HE_THONG` và 4 bảng LDP). Mọi cột chuỗi có `HasMaxLength` (canh bởi
+**50 bảng**, PostgreSQL (đếm bằng `information_schema` ngày 30/09/2026, sau khi thêm
+`MAU_EMAIL` — FR-31). Mọi cột chuỗi có `HasMaxLength` (canh bởi
 `MoiEntityPhaiCoConfigTests`); ngoại lệ duy nhất là hai cột JSON của `NHAT_KY_HE_THONG`. Nội dung dưới đây khớp với schema thật (kiểm bằng
 `information_schema` sau khi áp toàn bộ migration), không phải bản thiết kế trên giấy.
 
@@ -102,7 +102,7 @@ erDiagram
 | Bảng | Vai trò | Ghi chú |
 |---|---|---|
 | `QUAN_TRI_HE_THONG` | Tài khoản **chủ sản phẩm**, đứng TRÊN mọi tenant (ADR-0009). Không có `tenant_id`, và cột audit **không** có khoá ngoại sang `NGUOI_DUNG` — bảng cấp hệ thống không phụ thuộc bảng cấp tenant | `username` UNIQUE toàn cục, `hoat_dong`, `phai_doi_mat_khau` |
-| `TENANT` | Trung tâm | `ma_trung_tam` 7 ký tự, duy nhất **toàn hệ thống**. `domain_quan_tri` · `domain_landing` (ADR-0008, nullable, UNIQUE). `mui_gio` (mặc định `Asia/Ho_Chi_Minh`), `so_ngay_canh_bao_no_hoc_phi` (mặc định 14) |
+| `TENANT` | Trung tâm | `ma_trung_tam` 7 ký tự, duy nhất **toàn hệ thống**. `domain_quan_tri` · `domain_landing` (ADR-0008, nullable, UNIQUE). `mui_gio` (mặc định `Asia/Ho_Chi_Minh`), `so_ngay_canh_bao_no_hoc_phi` (mặc định 14) | Sáu cột `smtp_*` (FR-31, ADR-0010) cấu hình hộp thư riêng của trung tâm; `smtp_mat_khau_ma_hoa` đặt tên rõ là **đã mã hoá** (AES-GCM, khoá ở biến môi trường `EMAIL_KHOA_MA_HOA`) để người đọc schema không tưởng là bản rõ.
 | `NGUOI_DUNG` | **Con người** | `ho_ten` bắt buộc, `loai_nguoi_dung` **chỉ để lọc và chọn hồ sơ**, không dùng phân quyền. `trang_thai_nhan_su` = còn thuộc trung tâm không. `phong_ban_id` (FR-22) đặt ở đây chứ không ở `HO_SO_NHAN_VIEN` — **mọi vai trò nhân sự** xếp được vào phòng ban, kể cả giáo viên. **12 khoá ngoại nghiệp vụ trỏ vào đây** |
 | `TAI_KHOAN` | **Đăng nhập** | `username`, `password_hash`, `phai_doi_mat_khau`, `trang_thai` = còn đăng nhập được không. `nguoi_dung_id` nullable (tài khoản kỹ thuật). **20/09/2026**: thêm `phien_hien_tai` (nullable) = `jti` của access token phát ở lần đăng nhập gần nhất — một phiên mỗi tài khoản; `null` = token cũ, cố ý CHO QUA |
 | `HO_SO_GIAO_VIEN` | Hồ sơ người dạy | Bằng cấp, chuyên môn, ngày vào làm. **Trợ giảng dùng chung** |
@@ -120,6 +120,7 @@ erDiagram
 | `KHOI_LDP` | Một khối trên trang đích. `UNIQUE(trang_dich_id, loai)` — bố cục cố định nên không thể có hai khối `Hero`. `hien` tắt thì khối **biến mất khỏi phản hồi công khai**, không gửi kèm cờ | 7 loại: Hero · GioiThieu · KhoaHoc · GiaoVien · CamNhan · TinTuc · LienHe |
 | `MUC_LDP` | Mục trong khối nhiều mục. **Một bảng cho cả bốn loại** (khoá học, giáo viên, cảm nhận, tin tức) vì chúng cùng hình dạng — bốn bảng gần giống nhau thì thêm một trường là sửa bốn chỗ | `gia_niem_yet` là giá MARKETING, KHÔNG nối `KHOA_HOC.gia_tien` |
 | `LIEN_HE_LANDING` | Khách vãng lai để lại qua form. **Không** ghi thẳng `KHACH_HANG`: form là endpoint ẩn danh nên nhận cả bot, ghi thẳng làm danh sách khách hàng thật bị loãng | `khach_hang_id` null cho tới khi người phụ trách bấm chuyển |
+| `MAU_EMAIL` | **Mẫu nội dung email** (FR-31). `UNIQUE(tenant_id, loai)` — mỗi loại đúng một mẫu. Trung tâm chưa soạn thì KHÔNG có hàng nào: mẫu mặc định nằm trong mã (`MauMacDinh.cs`), nên xoá hàng là quay về mặc định chứ không phải mất mẫu | `dang_dung` tắt thì giữ bản đã soạn nhưng gửi bằng mẫu mặc định |
 | `NHAT_KY_HE_THONG` | **Nhật ký thao tác** (FR-16) | Một bản ghi cho mỗi LỆNH, không phải mỗi dòng dữ liệu. Chỉ ghi thêm — không sửa, không xoá. `username`/`ho_ten` lưu **bản chụp** để đọc được cả khi tài khoản đã xoá |
 
 **Hai cột trạng thái, đừng nhầm:**
