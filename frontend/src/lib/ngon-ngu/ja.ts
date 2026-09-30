@@ -1512,6 +1512,7 @@ const ja = {
     KHONG_TU_VO_HIEU_HOA_MINH: '自分自身のアカウントを無効化することはできません',
     CHUC_NANG_KHONG_HOP_LE: '機能が無効です',
     MAT_KHAU_QUA_NGAN: 'パスワードは12文字以上で入力してください',
+    MUC_HAI_LONG_KHONG_HOP_LE: '満足度は 1〜5 の範囲で入力してください',
     MAT_KHAU_QUA_DAI: 'パスワードが長すぎます（最大128文字）',
     MAT_KHAU_MOI_TRUNG_CU: '新しいパスワードは現在のパスワードと異なるものにしてください',
     USERNAME_KY_TU_KHONG_HOP_LE: 'ユーザー名に使用できるのは英字、数字、および . _ - のみです',

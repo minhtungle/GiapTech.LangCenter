@@ -1512,6 +1512,7 @@ const ko = {
     KHONG_TU_VO_HIEU_HOA_MINH: '자신의 계정은 스스로 비활성화할 수 없습니다',
     CHUC_NANG_KHONG_HOP_LE: '기능이 올바르지 않습니다',
     MAT_KHAU_QUA_NGAN: '비밀번호는 12자 이상이어야 합니다',
+    MUC_HAI_LONG_KHONG_HOP_LE: '만족도는 1~5점 사이여야 합니다',
     MAT_KHAU_QUA_DAI: '비밀번호가 너무 깁니다 (최대 128자)',
     MAT_KHAU_MOI_TRUNG_CU: '새 비밀번호는 현재 비밀번호와 달라야 합니다',
     USERNAME_KY_TU_KHONG_HOP_LE: '아이디는 영문, 숫자와 . _ - 만 사용할 수 있습니다',

@@ -1713,6 +1713,7 @@ const vi = {
     // Số ở đây phải khớp `ChinhSachMatKhau.DoDaiToiThieu` bên backend (22/09/2026: 6 → 12).
     // Lệch thì người dùng đọc "ít nhất 6" rồi gõ 8 ký tự và bị từ chối mà không hiểu vì sao.
     MAT_KHAU_QUA_NGAN: 'Mật khẩu phải có ít nhất 12 ký tự',
+    MUC_HAI_LONG_KHONG_HOP_LE: 'Mức hài lòng phải từ 1 đến 5 sao',
     MAT_KHAU_QUA_DAI: 'Mật khẩu quá dài (tối đa 128 ký tự)',
     MAT_KHAU_MOI_TRUNG_CU: 'Mật khẩu mới phải khác mật khẩu hiện tại',
     USERNAME_KY_TU_KHONG_HOP_LE: 'Tên đăng nhập chỉ gồm chữ, số và . _ -',

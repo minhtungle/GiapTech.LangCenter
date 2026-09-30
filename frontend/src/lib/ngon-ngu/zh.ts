@@ -1512,6 +1512,7 @@ const zh = {
     KHONG_TU_VO_HIEU_HOA_MINH: '无法停用自己的账号',
     CHUC_NANG_KHONG_HOP_LE: '功能无效',
     MAT_KHAU_QUA_NGAN: '密码至少需要 12 个字符',
+    MUC_HAI_LONG_KHONG_HOP_LE: '满意度评分必须在 1 到 5 星之间',
     MAT_KHAU_QUA_DAI: '密码过长（最多 128 个字符）',
     MAT_KHAU_MOI_TRUNG_CU: '新密码必须与当前密码不同',
     USERNAME_KY_TU_KHONG_HOP_LE: '用户名只能包含字母、数字以及 . _ -',

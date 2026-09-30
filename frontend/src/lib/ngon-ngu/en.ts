@@ -1512,6 +1512,7 @@ const en = {
     KHONG_TU_VO_HIEU_HOA_MINH: 'You cannot disable your own account',
     CHUC_NANG_KHONG_HOP_LE: 'Invalid feature',
     MAT_KHAU_QUA_NGAN: 'The password must be at least 12 characters',
+    MUC_HAI_LONG_KHONG_HOP_LE: 'Satisfaction rating must be between 1 and 5 stars',
     MAT_KHAU_QUA_DAI: 'The password is too long (maximum 128 characters)',
     MAT_KHAU_MOI_TRUNG_CU: 'The new password must be different from the current one',
     USERNAME_KY_TU_KHONG_HOP_LE: 'A username may contain only letters, digits and . _ -',

@@ -233,14 +233,11 @@ api.interceptors.response.use(
   },
 )
 
-/** Mã lỗi backend trả về — frontend tự dịch (quy tắc #3). */
-export function layMaLoi(error: unknown): string {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data as { errorCode?: string } | undefined
-    if (data?.errorCode) return data.errorCode
-  }
-  return 'LOI_HE_THONG'
-}
+// `layMaLoi` tách sang `maLoi.ts` để test được ở môi trường `node`: `api.ts` chạm `window`
+// ngay lúc nạp module (dòng `import.meta.env.DEV` ở trên), mà bộ test frontend cố ý chạy
+// không có DOM — xem CLAUDE.md mục 7. Re-export để 36 màn đang `import { layMaLoi } from
+// '@/lib/api'` không phải sửa.
+export { layMaLoi } from './maLoi'
 
 /**
  * Dữ liệu kèm theo mã lỗi (`AppException.DuLieu` ở backend) — để frontend dựng câu thông báo

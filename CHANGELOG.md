@@ -8,6 +8,30 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Fixed — lỗi nhập liệu nay nói rõ sai ở đâu (30/09/2026)
+
+Tạo tài khoản với mật khẩu ngắn chỉ báo **"Dữ liệu nhập vào chưa hợp lệ"** — không nói được
+sai ô nào, sai thế nào. Người dùng không đoán được là do chính sách **12 ký tự** (nâng từ 6
+lên hôm 22/09).
+
+Nguyên nhân: FluentValidation trả hai tầng — `errorCode` là `DU_LIEU_KHONG_HOP_LE` cho mọi
+lỗi nhập liệu, còn lý do THẬT nằm trong `duLieu.truong`. `layMaLoi` chỉ đọc tầng ngoài, nên
+**25 bản dịch cụ thể đã có sẵn** trong `vi.ts` không bao giờ được dùng.
+
+Nay `layMaLoi` lấy mã cụ thể khi có: *"Mật khẩu phải có ít nhất 12 ký tự"*, *"Tên đăng nhập
+chỉ gồm chữ, số và . _ -"*. Sửa một chỗ, **36 màn** cùng được lợi.
+
+Chỉ nhận mã dạng hằng (`MAT_KHAU_QUA_NGAN`): FluentValidation trả câu tiếng Anh mặc định khi
+rule không khai `WithErrorCode`, hiện thẳng câu đó lên giao diện tiếng Việt còn tệ hơn thông
+báo chung chung.
+
+Thêm bản dịch `MUC_HAI_LONG_KHONG_HOP_LE` — mã duy nhất trong 26 mã validator còn thiếu.
+Trước đây vô hại vì không bao giờ hiện; sau thay đổi này người dùng sẽ thấy chuỗi mã thô.
+
+`layMaLoi` tách sang `maLoi.ts` để test được: `api.ts` chạm `window` ngay lúc nạp module, mà
+bộ test frontend cố ý chạy môi trường `node` không có DOM. **45 test frontend xanh** (40 → 45).
+
+
 ### Changed — FR-11/FR-12: một ô nộp cho mỗi buổi, bố cục kiểu Classroom (30/09/2026)
 
 **`BAI_NOP` chuyển từ trỏ `BAI_TAP` sang trỏ `BUOI_HOC`.** Giáo viên giao nhiều đầu việc
