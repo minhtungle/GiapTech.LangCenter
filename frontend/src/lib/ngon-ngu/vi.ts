@@ -719,6 +719,13 @@ const vi = {
     Sunday: 'CN',
   },
   hocLieu: {
+    chuaNop: 'Chưa nộp',
+    daNopTren: '{{daNop}}/{{tong}} đã nộp',
+    tienDoNop: 'Tiến độ nộp bài',
+    daTaoThemTep: 'Đã tạo “{{ten}}” — đính kèm đề bài',
+    tepDeBai: 'Tệp đề bài',
+    tepDeBaiGhiChu: 'Học viên tải được các tệp này khi làm bài.',
+    tepSauKhiTao: 'Lưu bài tập xong sẽ đính kèm được tệp đề bài.',
     luuDiem: 'Lưu điểm',
     daSuaChuaLuu: 'Đã sửa {{soLuong}} bài, chưa lưu',
     hoiLuuDiem: 'Lưu điểm và nhận xét cho {{soLuong}} bài nộp?',

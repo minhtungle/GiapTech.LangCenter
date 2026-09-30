@@ -646,6 +646,13 @@ const en = {
     Sunday: 'Sun',
   },
   hocLieu: {
+    chuaNop: 'Not submitted',
+    daNopTren: '{{daNop}}/{{tong}} submitted',
+    tienDoNop: 'Submission progress',
+    daTaoThemTep: 'Created “{{ten}}” — attach the brief',
+    tepDeBai: 'Assignment files',
+    tepDeBaiGhiChu: 'Students can download these files while working on the assignment.',
+    tepSauKhiTao: 'Save the assignment first, then you can attach files.',
     luuDiem: 'Save grades',
     daSuaChuaLuu: '{{soLuong}} submissions edited, not saved',
     hoiLuuDiem: 'Save grades and comments for {{soLuong}} submissions?',

@@ -3,6 +3,10 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using GiapTech.LangCenter.Domain.Enums;
+using GiapTech.LangCenter.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GiapTech.LangCenter.API.IntegrationTests;
 
@@ -161,6 +165,147 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var n = Assert.Single(ds!);
         Assert.Equal(2, n.GetProperty("lanNop").GetInt32());
         Assert.Equal("lần 2", n.GetProperty("noiDung").GetString());
+    }
+
+    /// <summary>
+    /// Học viên CHƯA nộp vẫn có dòng, với `id = null`.
+    ///
+    /// Bản trước chỉ trả bảng `BAI_NOP`, nên bài tập 5 học viên mà chưa ai nộp thì giáo viên
+    /// mở ra thấy bảng TRỐNG — không biết phải nhắc những ai. Đúng thứ người dạy cần nhất ở
+    /// màn này lại là thứ không hiện.
+    /// </summary>
+    [Fact]
+    public async Task Hoc_vien_chua_nop_van_hien_trong_danh_sach()
+    {
+        var admin = await Client();
+        var (_, buoi, hv) = await DungLop(admin, "chua-nop");
+
+        var tao = await admin.PostAsJsonAsync("/api/v1/bai-tap",
+            new { BuoiHocId = buoi, TieuDe = "Chưa ai nộp", MoTa = (string?)null, HanNop = (DateTimeOffset?)null });
+        var bt = await tao.Content.ReadFromJsonAsync<Guid>();
+
+        // KHÔNG nộp gì cả.
+        var ds = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/bai-tap/{bt}/bai-nop");
+
+        var dong = Assert.Single(ds!);
+        Assert.Equal(hv, dong.GetProperty("hocVienId").GetGuid());
+        // `id = null` là dấu hiệu CHƯA NỘP — không bịa Guid.Empty.
+        Assert.Equal(JsonValueKind.Null, dong.GetProperty("id").ValueKind);
+        Assert.Equal(JsonValueKind.Null, dong.GetProperty("trangThai").ValueKind);
+        Assert.Equal(JsonValueKind.Null, dong.GetProperty("thoiDiemNop").ValueKind);
+        Assert.Equal(0, dong.GetProperty("lanNop").GetInt32());
+    }
+
+    /// <summary>
+    /// Lớp có người nộp và người chưa nộp ⇒ **đủ cả hai**, mỗi người đúng một dòng.
+    ///
+    /// Đây là ca thật của việc theo dõi tiến độ: giáo viên cần thấy còn thiếu ai giữa những
+    /// người đã nộp.
+    /// </summary>
+    [Fact]
+    public async Task Danh_sach_du_ca_nguoi_nop_va_nguoi_chua_nop()
+    {
+        var admin = await Client();
+        var (lop, buoi, hvA) = await DungLop(admin, "tien-do");
+
+        // Thêm học viên thứ hai vào lớp — người này sẽ KHÔNG nộp.
+        var quyenHv = await QuyenTheoTen(admin, "Học viên");
+        var hvB = await TaoNguoiDung(admin, "hv-tien-do-2", "HocVien", [quyenHv]);
+        (await admin.PostAsJsonAsync($"/api/v1/lop-hoc/{lop}/hoc-vien",
+            new { HocVienIds = new[] { hvB } })).EnsureSuccessStatusCode();
+
+        var tao = await admin.PostAsJsonAsync("/api/v1/bai-tap",
+            new { BuoiHocId = buoi, TieuDe = "Theo dõi tiến độ", MoTa = (string?)null, HanNop = (DateTimeOffset?)null });
+        var bt = await tao.Content.ReadFromJsonAsync<Guid>();
+
+        var cHv = await Client("hv-tien-do", "matkhau123456");
+        (await cHv.PostAsJsonAsync($"/api/v1/bai-tap/{bt}/nop", new { NoiDung = "xong" }))
+            .EnsureSuccessStatusCode();
+
+        var ds = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/bai-tap/{bt}/bai-nop");
+
+        Assert.Equal(2, ds!.Count);
+
+        var daNop = ds.Single(x => x.GetProperty("hocVienId").GetGuid() == hvA);
+        var chuaNop = ds.Single(x => x.GetProperty("hocVienId").GetGuid() == hvB);
+
+        Assert.Equal(JsonValueKind.String, daNop.GetProperty("id").ValueKind);
+        Assert.Equal("xong", daNop.GetProperty("noiDung").GetString());
+
+        Assert.Equal(JsonValueKind.Null, chuaNop.GetProperty("id").ValueKind);
+    }
+
+    /// <summary>
+    /// Học viên đã GỠ khỏi lớp nhưng ĐÃ nộp bài ⇒ **vẫn hiện**.
+    ///
+    /// Bài đã nộp là việc đã làm, và nếu giáo viên đã chấm thì điểm phải xem lại được. Lọc đi
+    /// thì dữ liệu biến mất khỏi giao diện mà vẫn nằm trong DB — kiểu mất mát khó lần ra nhất.
+    ///
+    /// Chiều ngược lại: người đã gỡ và CHƯA nộp thì không hiện, vì họ không còn nghĩa vụ nộp
+    /// và hiện lên chỉ là báo động giả.
+    /// </summary>
+    [Fact]
+    public async Task Hoc_vien_da_go_khoi_lop_nhung_da_nop_thi_van_hien()
+    {
+        var admin = await Client();
+        var (lop, buoi, hv) = await DungLop(admin, "go-da-nop");
+
+        var tao = await admin.PostAsJsonAsync("/api/v1/bai-tap",
+            new { BuoiHocId = buoi, TieuDe = "Nộp rồi nghỉ", MoTa = (string?)null, HanNop = (DateTimeOffset?)null });
+        var bt = await tao.Content.ReadFromJsonAsync<Guid>();
+
+        var cHv = await Client("hv-go-da-nop", "matkhau123456");
+        (await cHv.PostAsJsonAsync($"/api/v1/bai-tap/{bt}/nop", new { NoiDung = "đã nộp trước khi nghỉ" }))
+            .EnsureSuccessStatusCode();
+
+        (await admin.DeleteAsync($"/api/v1/lop-hoc/{lop}/hoc-vien/{hv}")).EnsureSuccessStatusCode();
+
+        var ds = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/bai-tap/{bt}/bai-nop");
+
+        var dong = Assert.Single(ds!);
+        Assert.Equal(hv, dong.GetProperty("hocVienId").GetGuid());
+        Assert.Equal("đã nộp trước khi nghỉ", dong.GetProperty("noiDung").GetString());
+    }
+
+    /// <summary>
+    /// Học viên **bảo lưu / đã nghỉ** thì KHÔNG bị đòi nộp bài.
+    ///
+    /// Đặt trạng thái thẳng vào DB vì chưa endpoint nào làm được điều đó — enum
+    /// `TrangThaiHocVienTrongLop` có `BaoLuu`/`ChuyenLop`/`DaNghi` nhưng "gỡ khỏi lớp" hiện
+    /// XOÁ HẲN bản ghi, và chưa có lệnh đổi trạng thái (cùng họ với nợ N26).
+    ///
+    /// Vẫn phải canh: bộ lọc `DangHoc` trong handler nhìn thì thừa, và người sau rất dễ bỏ đi
+    /// vì "mọi bản ghi đều DangHoc mà". Đến lúc có lệnh bảo lưu thì người đã nghỉ sẽ hiện
+    /// trong danh sách chưa nộp, giáo viên đi nhắc một người không còn học — và sẽ không ai
+    /// nhớ là do dòng lọc này bị gỡ.
+    /// </summary>
+    [Fact]
+    public async Task Hoc_vien_bao_luu_khong_bi_doi_nop_bai()
+    {
+        var admin = await Client();
+        var (lop, buoi, hv) = await DungLop(admin, "bao-luu");
+
+        var tao = await admin.PostAsJsonAsync("/api/v1/bai-tap",
+            new { BuoiHocId = buoi, TieuDe = "Bảo lưu", MoTa = (string?)null, HanNop = (DateTimeOffset?)null });
+        var bt = await tao.Content.ReadFromJsonAsync<Guid>();
+
+        // Còn đang học ⇒ có trong danh sách chưa nộp.
+        var truoc = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/bai-tap/{bt}/bai-nop");
+        Assert.Single(truoc!);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var ghiDanh = await db.LopHocHocViens
+                .IgnoreQueryFilters()
+                .SingleAsync(x => x.LopHocId == lop && x.HocVienId == hv);
+            ghiDanh.TrangThai = TrangThaiHocVienTrongLop.BaoLuu;
+            await db.SaveChangesAsync();
+        }
+
+        var sau = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/bai-tap/{bt}/bai-nop");
+
+        Assert.Empty(sau!);
     }
 
     [Fact]

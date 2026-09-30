@@ -646,6 +646,13 @@ const ja = {
     Sunday: '日',
   },
   hocLieu: {
+    chuaNop: '未提出',
+    daNopTren: '{{daNop}}/{{tong}} 提出',
+    tienDoNop: '提出状況',
+    daTaoThemTep: '「{{ten}}」を作成しました — 課題ファイルを添付',
+    tepDeBai: '課題ファイル',
+    tepDeBaiGhiChu: '受講生は課題に取り組む間、これらのファイルをダウンロードできます。',
+    tepSauKhiTao: '課題を保存すると、ファイルを添付できます。',
     luuDiem: '点数を保存',
     daSuaChuaLuu: '{{soLuong}}件を編集しました（未保存）',
     hoiLuuDiem: '{{soLuong}}件の提出物の点数とコメントを保存しますか？',

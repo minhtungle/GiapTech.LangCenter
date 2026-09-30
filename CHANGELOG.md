@@ -8,6 +8,27 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Changed — FR-11/FR-12: theo dõi tiến độ nộp bài, đính kèm đề bài (30/09/2026)
+
+**Bảng bài nộp nay hiện cả học viên CHƯA nộp.** Trước đây chỉ trả bảng `BAI_NOP`, nên bài
+tập 5 học viên mà chưa ai nộp thì giáo viên mở ra thấy bảng **trống** — không biết phải nhắc
+những ai. Người chưa nộp có `id = null`, nhãn *Chưa nộp*, ô điểm khoá; đầu bảng có thanh
+tiến độ `x/y`.
+
+Hai quy tắc lọc ngược chiều nhau: học viên **bảo lưu/đã nghỉ** không bị đòi nộp (không còn
+nghĩa vụ, hiện lên là báo động giả), nhưng người đã rời lớp mà **đã nộp** thì **vẫn hiện**
+(bài đã nộp là việc đã làm, đã chấm thì điểm phải xem lại được).
+
+**Đính kèm được tệp đề bài ngay khi giao bài.** Trước đây ô đính kèm chỉ hiện lúc *sửa*, nên
+muốn có đề phải tạo xong rồi mở lại — một bước thừa mà ai cũng quên. Nay bấm Lưu → bài tập
+được tạo → form chuyển sang chế độ đính kèm tại chỗ.
+
+**Tab Bài tập của một buổi không hỏi lại buổi nào** — mặc định đúng buổi đang xem. Hỏi lại
+là mời chọn nhầm sang buổi khác, rồi bài vừa giao biến mất khỏi màn hình đang đứng.
+
+Thêm 4 test tích hợp. **712 test backend xanh** (607 tích hợp + 105 đơn vị).
+
+
 ### Added — FR-31: gửi email theo trung tâm + mẫu nội dung (30/09/2026)
 
 Mỗi trung tâm cấu hình hộp thư SMTP riêng và soạn sẵn nội dung 4 loại email.

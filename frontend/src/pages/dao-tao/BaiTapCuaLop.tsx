@@ -27,13 +27,20 @@ interface BaiTapDto {
   soHocVien: number
 }
 
+/**
+ * Một dòng trong bảng theo dõi nộp bài — mỗi học viên đang học một dòng, kể cả người chưa nộp.
+ *
+ * `id === null` nghĩa là **CHƯA NỘP**: không có bản ghi bài nộp nào. Kiểu để `null` chứ không
+ * để `string` rồi truyền chuỗi rỗng — TypeScript bắt được mọi chỗ quên xử lý, ví dụ gửi id
+ * rỗng lên endpoint chấm điểm.
+ */
 interface BaiNopDto {
-  id: string
+  id: string | null
   hocVienId: string
   hoTen: string
   lanNop: number
-  thoiDiemNop: string
-  trangThai: 'DaNop' | 'NopMuon' | 'DaCham'
+  thoiDiemNop: string | null
+  trangThai: 'DaNop' | 'NopMuon' | 'DaCham' | null
   noiDung: string | null
   diem: number | null
   nhanXet: string | null
@@ -82,6 +89,8 @@ export function BaiTapCuaLop({
   const [buoiChon, setBuoiChon] = useState<string | null>(null)
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [xemNop, setXemNop] = useState<BaiTapDto | null>(null)
+  /** Vừa tạo xong trong phiên này — form đang ở bước đính kèm, không phải sửa bài cũ. */
+  const [daTao, setDaTao] = useState(false)
 
   const { data: baiTaps = [], isLoading } = useQuery({
     queryKey: ['bai-tap', lopHocId, buoiHocId ?? null],
@@ -102,12 +111,31 @@ export function BaiTapCuaLop({
     setMoForm(false)
     setDangSua(null)
     setBuoiChon(null)
+    setDaTao(false)
     setMaLoi(null)
   }
 
+  /*
+    Tạo xong thì KHÔNG đóng form — chuyển nó sang chế độ sửa để ô đính kèm hiện ra ngay.
+
+    Tệp phải tải lên sau khi bài tập có `id` (khoá lưu trữ gắn với id), nên không thể đính kèm
+    trong cùng một bước. Đóng form rồi bắt người dùng mở lại để đính kèm là một bước thừa mà
+    ai cũng quên — rồi bài tập giao ra không có đề.
+
+    `daTao` để đổi lời văn nút và tiêu đề, cho người dùng biết bài đã được tạo và giờ là phần
+    đính kèm tuỳ chọn.
+  */
   const tao = useMutation({
-    mutationFn: (b: Record<string, unknown>) => api.post('/bai-tap', b),
-    onSuccess: () => { lamMoi(); dong() },
+    mutationFn: async (b: Record<string, unknown>) => {
+      const { data: id } = await api.post<string>('/bai-tap', b)
+      const { data: ds } = await api.get<BaiTapDto[]>('/bai-tap', { params: { lopHocId } })
+      return ds.find((x) => x.id === id) ?? null
+    },
+    onSuccess: (bt) => {
+      lamMoi()
+      if (bt) { setDangSua(bt); setDaTao(true); setMaLoi(null) }
+      else dong()   // không tìm lại được (hiếm) — đóng còn hơn treo form rỗng
+    },
     onError: (e) => setMaLoi(layMaLoi(e)),
   })
 
@@ -142,8 +170,10 @@ export function BaiTapCuaLop({
       onDongY: () => {
         if (dangSua) capNhat.mutate(body)
         else {
-          if (!buoiChon) { setMaLoi('DU_LIEU_KHONG_HOP_LE'); return }
-          tao.mutate({ ...body, buoiHocId: buoiChon })
+          // `buoiHocId` (prop) thắng: đang ở tab của một buổi thì giao đúng buổi đó.
+          const buoi = buoiHocId ?? buoiChon
+          if (!buoi) { setMaLoi('DU_LIEU_KHONG_HOP_LE'); return }
+          tao.mutate({ ...body, buoiHocId: buoi })
         }
       },
     })
@@ -237,10 +267,22 @@ export function BaiTapCuaLop({
         <Modal
           mo
           onDong={dong}
-          tieuDe={dangSua ? `${t('chung.sua')}: ${dangSua.tieuDe}` : t('hocLieu.themBaiTap')}
+          tieuDe={
+            daTao
+              ? t('hocLieu.daTaoThemTep', { ten: dangSua?.tieuDe ?? '' })
+              : dangSua
+                ? `${t('chung.sua')}: ${dangSua.tieuDe}`
+                : t('hocLieu.themBaiTap')
+          }
         >
           <form onSubmit={onSubmit} className="grid gap-4">
-            {!dangSua && (
+            {/*
+              Đang ở tab Bài tập của MỘT buổi ⇒ buổi đã biết, không hỏi lại.
+
+              Hỏi lại là mời người dùng chọn nhầm sang buổi khác, rồi bài tập vừa giao biến
+              mất khỏi màn hình họ đang đứng — và họ không hiểu vì sao.
+            */}
+            {!dangSua && !buoiHocId && (
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="buoiHocId">{t('hocLieu.buoiHoc')}</Label>
                 <SelectTimKiem
@@ -274,9 +316,9 @@ export function BaiTapCuaLop({
               />
             </div>
 
-            {dangSua && (
+            {dangSua ? (
               <div className="flex flex-col gap-1.5">
-                <Label>{t('hocLieu.tep')}</Label>
+                <Label>{t('hocLieu.tepDeBai')}</Label>
                 <ChonTep
                   loai="BaiTap"
                   doiTuongId={dangSua.id}
@@ -289,18 +331,32 @@ export function BaiTapCuaLop({
                         setDangSua(data.find((x) => x.id === dangSua.id) ?? null))
                   }}
                 />
+                <p className="text-xs text-muted-foreground">{t('hocLieu.tepDeBaiGhiChu')}</p>
               </div>
+            ) : (
+              // Chưa tạo thì chưa có id để gắn tệp. Nói trước để người dùng không đi tìm ô
+              // đính kèm rồi tưởng hệ thống không có chức năng đó.
+              <p className="rounded-md border border-input bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                {t('hocLieu.tepSauKhiTao')}
+              </p>
             )}
 
             {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={dong}>
-                {t('chung.huy')}
+                {daTao ? t('chung.dong') : t('chung.huy')}
               </Button>
-              <Button type="submit" disabled={tao.isPending || capNhat.isPending}>
-                {t('chung.luu')}
-              </Button>
+              {/*
+                Vừa tạo xong thì không còn gì để lưu — nội dung đã ghi, tệp tải lên ngay lúc
+                chọn. Giữ nút Lưu ở đó chỉ khiến người dùng bấm thêm một lần vô nghĩa và sinh
+                một lệnh cập nhật không đổi gì.
+              */}
+              {!daTao && (
+                <Button type="submit" disabled={tao.isPending || capNhat.isPending}>
+                  {t('chung.luu')}
+                </Button>
+              )}
             </div>
           </form>
         </Modal>
@@ -341,11 +397,17 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
     queryFn: async () => (await api.get<BaiNopDto[]>(`/bai-tap/${baiTap.id}/bai-nop`)).data,
   })
 
+  /*
+    Khoá state theo `hocVienId`, KHÔNG theo `id` bài nộp.
+
+    `id` nay có thể `null` (chưa nộp), mà `null` dùng làm khoá đối tượng sẽ thành chuỗi
+    `"null"` — mọi người chưa nộp gộp chung một ô và ghi đè lẫn nhau. `hocVienId` luôn có.
+  */
   const giaTri = (n: BaiNopDto) =>
-    sua[n.id] ?? { diem: n.diem?.toString() ?? '', nhanXet: n.nhanXet ?? '' }
+    sua[n.hocVienId] ?? { diem: n.diem?.toString() ?? '', nhanXet: n.nhanXet ?? '' }
 
   const doi = (n: BaiNopDto, phan: Partial<{ diem: string; nhanXet: string }>) =>
-    setSua((cu) => ({ ...cu, [n.id]: { ...giaTri(n), ...phan } }))
+    setSua((cu) => ({ ...cu, [n.hocVienId]: { ...giaTri(n), ...phan } }))
 
   const soDaSua = Object.keys(sua).length
 
@@ -353,7 +415,12 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
     mutationFn: async () => {
       // Gửi tuần tự chứ không Promise.all: mỗi lượt là một bản ghi nhật ký và một lần
       // SaveChanges; bắn 20 request song song chỉ để tiết kiệm vài trăm ms là đánh đổi sai.
-      for (const [id, v] of Object.entries(sua)) {
+      for (const [hocVienId, v] of Object.entries(sua)) {
+        // State khoá theo học viên, endpoint cần id BÀI NỘP — tra lại ở đây.
+        // Bỏ qua người chưa nộp: không có bài thì không có gì để chấm (ô của họ cũng đã khoá).
+        const id = ds.find((x) => x.hocVienId === hocVienId)?.id
+        if (!id) continue
+
         await api.post(`/bai-nop/${id}/cham`, {
           diem: v.diem === '' ? null : Number(v.diem),
           nhanXet: v.nhanXet === '' ? null : v.nhanXet,
@@ -373,10 +440,39 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
     },
   })
 
+  // Đếm từ DỮ LIỆU ĐANG HIỆN, không dùng `baiTap.soDaNop` của danh sách ngoài: hai nguồn sẽ
+  // lệch nhau sau khi có người nộp thêm mà danh sách ngoài chưa tải lại — và con số sai ở
+  // đúng chỗ người dùng đang nhìn thì tệ hơn là không có số.
+  const daNop = ds.filter((n) => n.id !== null).length
+  const tong = ds.length
+  const phanTram = tong === 0 ? 0 : Math.round((daNop / tong) * 100)
+
   return (
     <Modal mo onDong={onDong} tieuDe={`${t('hocLieu.xemBaiNop')} — ${baiTap.tieuDe}`}>
       <div className="grid gap-3">
         {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
+
+        {/* Tiến độ nộp — câu trả lời cho "còn thiếu ai", đặt ngay đầu màn. */}
+        {tong > 0 && (
+          <div className="flex items-center gap-3">
+            <div
+              className="h-2 flex-1 overflow-hidden rounded-full bg-muted"
+              role="progressbar"
+              aria-valuenow={daNop}
+              aria-valuemin={0}
+              aria-valuemax={tong}
+              aria-label={t('hocLieu.tienDoNop')}
+            >
+              <div
+                className="h-full rounded-full bg-status-ok transition-all"
+                style={{ width: `${phanTram}%` }}
+              />
+            </div>
+            <span className="shrink-0 text-sm text-muted-foreground">
+              {t('hocLieu.daNopTren', { daNop, tong })}
+            </span>
+          </div>
+        )}
 
         {ds.length === 0 ? (
           <TrangTrong thongDiep={t('chung.khongCoDuLieu')} />
@@ -394,8 +490,13 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
                 </tr>
               </thead>
               <tbody>
-                {ds.map((n) => (
-                  <tr key={n.id} className="hover:bg-muted/40">
+                {ds.map((n) => {
+                  const chuaNop = n.id === null
+                  return (
+                  <tr
+                    key={n.hocVienId}
+                    className={chuaNop ? 'bg-muted/20' : 'hover:bg-muted/40'}
+                  >
                     <Td className="font-medium">
                       {n.hoTen}
                       {n.lanNop > 1 && (
@@ -405,24 +506,39 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
                       )}
                     </Td>
                     <Td className="text-muted-foreground">
-                      {ngayGio(n.thoiDiemNop)}
-                      {n.trangThai === 'NopMuon' && (
-                        <Badge variant="loi" className="ml-2">
-                          {t('trangThaiBaiNop.NopMuon')}
-                        </Badge>
+                      {chuaNop ? (
+                        <Badge variant="cho">{t('hocLieu.chuaNop')}</Badge>
+                      ) : (
+                        <>
+                          {ngayGio(n.thoiDiemNop)}
+                          {n.trangThai === 'NopMuon' && (
+                            <Badge variant="loi" className="ml-2">
+                              {t('trangThaiBaiNop.NopMuon')}
+                            </Badge>
+                          )}
+                        </>
                       )}
                     </Td>
                     <Td>
-                      <ChonTep
-                        loai="BaiNop" doiTuongId={n.id} teps={n.teps} onDoi={() => {}} chiDoc
-                      />
+                      {chuaNop ? (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      ) : (
+                        <ChonTep
+                          loai="BaiNop" doiTuongId={n.id!} teps={n.teps} onDoi={() => {}} chiDoc
+                        />
+                      )}
                     </Td>
                     <Td>
                       {/* `value` + `onChange` (không `defaultValue`): giá trị phải nằm trong
-                          state để nút Lưu biết những gì đã sửa. */}
+                          state để nút Lưu biết những gì đã sửa.
+
+                          Chưa nộp thì KHOÁ ô: không có bài thì không có gì để chấm, và endpoint
+                          chấm cần id bài nộp — cho nhập vào ô này là mời người dùng gõ một
+                          điểm rồi mất khi bấm Lưu. */}
                       <Input
                         type="number" min={0} step="0.5"
                         className="h-8"
+                        disabled={chuaNop}
                         aria-label={`${t('hocLieu.diem')} — ${n.hoTen}`}
                         value={giaTri(n).diem}
                         onChange={(e) => doi(n, { diem: e.target.value })}
@@ -431,6 +547,7 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
                     <Td>
                       <Input
                         className="h-8"
+                        disabled={chuaNop}
                         aria-label={`${t('hocLieu.nhanXet')} — ${n.hoTen}`}
                         value={giaTri(n).nhanXet}
                         onChange={(e) => doi(n, { nhanXet: e.target.value })}
@@ -442,7 +559,8 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
                       )}
                     </Td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </Table>
           </div>

@@ -42,6 +42,31 @@ mà id nằm ngay trong danh sách bài nộp. Trả **404**, không phải 403:
 
 Giao trong một buổi học cụ thể. Có tiêu đề, mô tả, hạn nộp (tuỳ chọn), tệp đính kèm.
 
+### Hai cửa vào, cùng một dữ liệu
+
+Bài tập **luôn** thuộc về một buổi (`BAI_TAP.buoi_hoc_id` bắt buộc). Có hai chỗ xem:
+
+| Ở đâu | Thấy gì | Khi tạo |
+|---|---|---|
+| Tab **Bài tập** của lớp | **Tổng hợp mọi buổi**, có cột số buổi | Phải chọn buổi |
+| Tab **Bài tập** của buổi | Chỉ bài của buổi đó | **Mặc định buổi đang xem**, không hỏi lại |
+
+Lọc ở **server** qua `?buoiHocId=` chứ không `.filter()` trên mảng đã tải: lớp học dài có hàng
+trăm bài tập, và lọc phía client thì `queryKey` giống nhau nên hai view dùng chung cache — mở
+view buổi rồi về view lớp sẽ thấy danh sách bị cắt.
+
+Ở tab của buổi **không hỏi lại buổi nào**: hỏi là mời người dùng chọn nhầm sang buổi khác, rồi
+bài vừa giao biến mất khỏi màn hình họ đang đứng và họ không hiểu vì sao.
+
+### Đính kèm đề bài: tạo xong mới gắn được tệp
+
+Tệp gắn với bài tập qua `id`, mà `id` chỉ có sau khi tạo. Nên luồng là **hai bước trong một
+form**: bấm Lưu → bài tập được tạo → form chuyển sang chế độ đính kèm ngay tại chỗ.
+
+Không đóng form rồi bắt mở lại để đính kèm: đó là một bước thừa mà ai cũng quên, rồi bài tập
+giao ra không có đề. Cũng không chọn tệp trước rồi tải lên sau khi tạo — nếu tải tệp lỗi thì
+bài tập đã tạo rồi mà tệp thì không có, phải xử lý một trạng thái nửa vời.
+
 
 ### Chấm điểm: nhập cả bảng rồi lưu một lần
 
@@ -77,6 +102,27 @@ không có đường nhập nó.
 Nhưng **danh sách cho giáo viên chỉ hiện lần mới nhất** của mỗi học viên — trả hết thì một
 người ba dòng, giáo viên không biết chấm cái nào. Số lần nộp vẫn hiện để họ biết học viên đã
 sửa mấy lần.
+
+### Theo dõi tiến độ: người CHƯA nộp cũng có dòng
+
+Bảng bài nộp trả **mọi học viên đang học của lớp**, mỗi người đúng một dòng. Người chưa nộp
+có `id = null`, hiện nhãn *Chưa nộp* và ô điểm bị khoá. Đầu bảng có thanh tiến độ `x/y`.
+
+Bản trước chỉ trả bảng `BAI_NOP`, nên bài tập 5 học viên mà chưa ai nộp thì giáo viên mở ra
+thấy bảng **trống** — không biết phải nhắc những ai. Đúng thứ người dạy cần nhất ở màn này lại
+là thứ không hiện.
+
+`id = null` chứ không bịa `Guid.Empty`: nơi gọi buộc phải đối diện với việc "không có bài nộp"
+thay vì vô tình gửi một id không tồn tại lên endpoint chấm điểm. TypeScript ở frontend cũng
+bắt được mọi chỗ quên xử lý.
+
+Hai quy tắc lọc, **ngược chiều nhau**:
+
+- Học viên **bảo lưu / đã nghỉ** ⇒ **không** đòi nộp. Họ không còn nghĩa vụ, hiện lên là báo
+  động giả và giáo viên sẽ đi nhắc một người không còn học.
+- Học viên đã rời lớp **nhưng đã nộp** ⇒ **vẫn hiện**. Bài đã nộp là việc đã làm, và nếu đã
+  chấm thì điểm phải xem lại được. Lọc đi thì dữ liệu biến mất khỏi giao diện mà vẫn nằm
+  trong DB — kiểu mất mát khó lần ra nhất.
 
 ### Quy tắc
 

@@ -20,14 +20,27 @@ public record BaiTapDto(
     int SoDaNop,
     int SoHocVien);
 
-/// <summary>Bài nộp của một học viên — lần nộp mới nhất.</summary>
+/// <summary>
+/// Một dòng trong bảng theo dõi nộp bài — **mỗi học viên đang học đúng một dòng**, kể cả
+/// người chưa nộp.
+/// </summary>
+/// <param name="Id">
+/// Id bài nộp. **`null` = CHƯA NỘP** — không có bản ghi `BAI_NOP` nào.
+///
+/// Dùng `null` chứ không bịa một `Guid.Empty`: nơi gọi phải đối diện với việc "không có bài
+/// nộp" thay vì vô tình gửi một id không tồn tại lên endpoint chấm điểm. Trình biên dịch
+/// TypeScript cũng bắt được ở frontend.
+/// </param>
+/// <param name="LanNop">0 khi chưa nộp.</param>
+/// <param name="ThoiDiemNop">`null` khi chưa nộp.</param>
+/// <param name="TrangThai">`null` khi chưa nộp — không thêm giá trị enum `ChuaNop`, xem ghi chú ở handler.</param>
 public record BaiNopDto(
-    Guid Id,
+    Guid? Id,
     Guid HocVienId,
     string HoTen,
     int LanNop,
-    DateTimeOffset ThoiDiemNop,
-    TrangThaiBaiNop TrangThai,
+    DateTimeOffset? ThoiDiemNop,
+    TrangThaiBaiNop? TrangThai,
     string? NoiDung,
     decimal? Diem,
     string? NhanXet,
@@ -69,9 +82,17 @@ public class LayBaiTapCuaLopHandler(IAppDbContext db, IPhamViLopHoc phamVi)
 }
 
 /// <summary>
-/// Danh sách bài nộp của một bài tập — chỉ LẦN NỘP MỚI NHẤT của mỗi học viên.
+/// **Bảng theo dõi nộp bài** — mọi học viên đang học của lớp, mỗi người một dòng.
 ///
-/// Nộp nhiều lần được nên nếu trả hết thì giáo viên thấy một người ba dòng, không biết chấm cái nào.
+/// Hai điều quan trọng:
+///
+/// 1. Người ĐÃ nộp: chỉ lấy **lần nộp mới nhất**. Nộp nhiều lần được nên trả hết thì giáo
+///    viên thấy một người ba dòng và không biết chấm cái nào.
+/// 2. Người CHƯA nộp: **vẫn có dòng**, với `Id = null`.
+///
+/// Điểm 2 là lý do query này tồn tại ở dạng hiện tại. Bản trước chỉ trả bảng `BAI_NOP`, nên
+/// bài tập 5 học viên mà chưa ai nộp thì giáo viên mở ra thấy bảng TRỐNG — không biết phải
+/// nhắc những ai. Đúng thứ người dạy cần nhất ở màn này lại là thứ không hiện.
 /// </summary>
 public record LayBaiNopQuery(Guid BaiTapId) : IRequest<List<BaiNopDto>>;
 
@@ -81,6 +102,17 @@ public class LayBaiNopHandler(IAppDbContext db, IPhamViLopHoc phamVi)
     public async Task<List<BaiNopDto>> Handle(LayBaiNopQuery request, CancellationToken ct)
     {
         var bt = await TimBaiTap(db, phamVi, request.BaiTapId, HanhDong.Xem, ct);
+
+        // Danh sách người phải nộp = học viên ĐANG HỌC của lớp.
+        //
+        // Lọc `DangHoc` chứ không lấy mọi bản ghi ghi danh: người đã nghỉ hoặc bị gỡ khỏi lớp
+        // không còn nghĩa vụ nộp, hiện họ trong danh sách "chưa nộp" là báo động giả và giáo
+        // viên sẽ đi nhắc một người không còn học.
+        var hocViens = await db.LopHocHocViens
+            .Where(hv => hv.LopHocId == bt.BuoiHoc.LopHocId
+                         && hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc)
+            .Select(hv => new { hv.HocVienId, hv.HocVien.HoTen })
+            .ToListAsync(ct);
 
         var tatCa = await db.BaiNops
             .Where(n => n.BaiTapId == bt.Id)
@@ -93,14 +125,34 @@ public class LayBaiNopHandler(IAppDbContext db, IPhamViLopHoc phamVi)
             })
             .ToListAsync(ct);
 
-        return tatCa
+        var moiNhat = tatCa
             .GroupBy(n => n.HocVienId)
-            .Select(g => g.OrderByDescending(n => n.LanNop).First())
-            .OrderBy(n => n.HoTen)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(n => n.LanNop).First());
+
+        var dong = hocViens
+            .Select(hv => moiNhat.TryGetValue(hv.HocVienId, out var n)
+                ? new BaiNopDto(
+                    n.Id, n.HocVienId, n.HoTen, n.LanNop, n.ThoiDiemNop,
+                    n.TrangThai, n.NoiDung, n.Diem, n.NhanXet, n.Teps)
+                // Chưa nộp: `Id = null`, không có thời điểm, không có trạng thái.
+                : new BaiNopDto(
+                    null, hv.HocVienId, hv.HoTen, 0, null, null, null, null, null, []))
+            .ToList();
+
+        /*
+          Người đã nộp NHƯNG không còn trong danh sách đang học.
+
+          Xảy ra khi học viên nộp bài rồi nghỉ, hoặc bị chuyển lớp. Vẫn phải hiện: bài đã nộp
+          là việc đã làm, và nếu giáo viên đã chấm thì điểm đó phải xem lại được. Bỏ đi thì
+          dữ liệu biến mất khỏi giao diện mà vẫn nằm trong DB — kiểu mất mát khó lần ra nhất.
+        */
+        var ngoaiLop = moiNhat.Values
+            .Where(n => hocViens.All(hv => hv.HocVienId != n.HocVienId))
             .Select(n => new BaiNopDto(
                 n.Id, n.HocVienId, n.HoTen, n.LanNop, n.ThoiDiemNop,
-                n.TrangThai, n.NoiDung, n.Diem, n.NhanXet, n.Teps))
-            .ToList();
+                n.TrangThai, n.NoiDung, n.Diem, n.NhanXet, n.Teps));
+
+        return dong.Concat(ngoaiLop).OrderBy(x => x.HoTen).ToList();
     }
 
     /// <summary>Tìm bài tập kèm kiểm phạm vi lớp chứa nó.</summary>

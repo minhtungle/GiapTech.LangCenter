@@ -646,6 +646,13 @@ const ko = {
     Sunday: '일',
   },
   hocLieu: {
+    chuaNop: '미제출',
+    daNopTren: '{{daNop}}/{{tong}} 제출',
+    tienDoNop: '제출 현황',
+    daTaoThemTep: '“{{ten}}” 생성됨 — 과제 파일 첨부',
+    tepDeBai: '과제 파일',
+    tepDeBaiGhiChu: '수강생이 과제를 하는 동안 이 파일을 내려받을 수 있습니다.',
+    tepSauKhiTao: '과제를 저장하면 파일을 첨부할 수 있습니다.',
     luuDiem: '점수 저장',
     daSuaChuaLuu: '{{soLuong}}건 수정됨, 저장 전',
     hoiLuuDiem: '제출물 {{soLuong}}건의 점수와 평가를 저장할까요?',

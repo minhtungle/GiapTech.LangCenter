@@ -646,6 +646,13 @@ const zh = {
     Sunday: '周日',
   },
   hocLieu: {
+    chuaNop: '未提交',
+    daNopTren: '已提交 {{daNop}}/{{tong}}',
+    tienDoNop: '提交进度',
+    daTaoThemTep: '已创建“{{ten}}” — 添加题目附件',
+    tepDeBai: '题目文件',
+    tepDeBaiGhiChu: '学员做作业时可下载这些文件。',
+    tepSauKhiTao: '先保存作业，之后即可添加题目附件。',
     luuDiem: '保存分数',
     daSuaChuaLuu: '已修改 {{soLuong}} 份作业，尚未保存',
     hoiLuuDiem: '保存 {{soLuong}} 份提交作业的分数和评语？',
