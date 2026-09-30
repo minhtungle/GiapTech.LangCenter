@@ -50,6 +50,11 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-no-reply@langcenter.local}
+      # Khoá mã hoá mật khẩu SMTP riêng của từng trung tâm (FR-31, ADR-0010).
+      #
+      # Không đặt ⇒ màn thiết lập email từ chối lưu mật khẩu (cố ý — xem ADR). Để trống thay
+      # vì `:?` bắt buộc: trung tâm nào chưa dùng email riêng thì hệ thống vẫn chạy bình thường.
+      EMAIL_KHOA_MA_HOA: ${EMAIL_KHOA_MA_HOA:-}
       SMS_PROVIDER: ${SMS_PROVIDER:-}
       SMS_API_KEY: ${SMS_API_KEY:-}
       SMS_SECRET_KEY: ${SMS_SECRET_KEY:-}

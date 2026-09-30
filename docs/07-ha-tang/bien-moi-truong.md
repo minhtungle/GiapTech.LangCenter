@@ -47,6 +47,29 @@ Console MinIO (cổng 9001) không public — truy cập qua SSH tunnel khi cầ
 Dùng cho [FR-02 quên mật khẩu](../06-nghiep-vu/dang-nhap.md#fr-02--quên-mật-khẩu). Nhắc nợ học
 phí qua email ([FR-14](../06-nghiep-vu/hoc-phi.md#chưa-làm)) chưa nối.
 
+Từ [FR-31](../06-nghiep-vu/email.md) (30/09/2026) đây là **SMTP chung của VPS** — đường lui
+cho trung tâm chưa cấu hình hộp thư riêng. Cổng `587` (STARTTLS) và `465` (SSL ngầm) đều
+chạy; hệ thống suy kiểu mã hoá từ số cổng.
+
+## Khoá mã hoá mật khẩu email (FR-31)
+
+| Biến | Ý nghĩa |
+|---|---|
+| `EMAIL_KHOA_MA_HOA` | 32 byte ngẫu nhiên mã hoá base64. Sinh bằng `openssl rand -base64 32` |
+
+Mỗi trung tâm tự cấu hình hộp thư SMTP riêng ở màn **Quản trị → Email**; mật khẩu của họ
+được mã hoá **AES-GCM** bằng khoá này trước khi ghi xuống DB ([ADR-0010](../02-kien-truc/adr/0010-cau-hinh-email-theo-tenant.md)).
+
+**Khoá để ngoài DB là có chủ ý**: nằm cùng chỗ với dữ liệu nó bảo vệ thì mã hoá chỉ là thủ
+tục — một bản backup rò ra ngoài vẫn không mở được hộp thư của các trung tâm.
+
+Không đặt biến ⇒ màn thiết lập email **từ chối lưu** mật khẩu và báo trước cho người dùng.
+Cố ý: một lỗi rõ ràng lúc cấu hình tốt hơn một cơ sở dữ liệu đầy mật khẩu trần.
+
+> **Đổi khoá này = mọi mật khẩu SMTP đã lưu thành không giải mã được**, các trung tâm phải
+> nhập lại. Hệ thống không sập: nó ghi log lỗi và ngừng gửi từ hộp thư riêng — gửi bằng địa
+> chỉ khác còn tệ hơn không gửi. Sao lưu khoá cùng chỗ với các bí mật khác.
+
 ## SMS Gateway
 
 | Biến | Mô tả |
