@@ -8,6 +8,38 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Changed — FR-11/FR-12: một ô nộp cho mỗi buổi, bố cục kiểu Classroom (30/09/2026)
+
+**`BAI_NOP` chuyển từ trỏ `BAI_TAP` sang trỏ `BUOI_HOC`.** Giáo viên giao nhiều đầu việc
+trong một buổi (Writing task 1, task 2, ngữ pháp) nhưng học viên nộp **một lần** cho cả
+buổi, thường là một tệp chứa tất cả. Bắt nộp riêng từng đầu việc nghĩa là cùng một tệp tải
+lên ba lần, và giáo viên chấm ba điểm cho một buổi rồi tự cộng lại.
+
+| | Trước | Sau |
+|---|---|---|
+| Khoá ngoại | `BAI_NOP.bai_tap_id` | `BAI_NOP.buoi_hoc_id` |
+| UNIQUE | `(bai_tap_id, hoc_vien_id, lan_nop)` | `(buoi_hoc_id, hoc_vien_id, lan_nop)` |
+| Endpoint | `/bai-tap/{id}/bai-nop` · `/bai-tap/{id}/nop` | `/buoi-hoc/{id}/bai-nop` · `/buoi-hoc/{id}/nop-bai` |
+
+**Breaking change của API** — không tăng version (ADR-0003): hệ thống chưa phát hành ra
+ngoài và chỉ có một client là frontend trong cùng repo.
+
+Migration **chuyển đổi dữ liệu**, không chỉ đổi tên cột: tra ngược id buổi từ bài tập, rồi
+đánh số lại `lan_nop` cho trường hợp một học viên từng nộp cho hai đầu việc của cùng một
+buổi (giữ **mọi** bản ghi — quy tắc #1). Đã chạy thử trên bản sao DB dev có đúng ca đó.
+
+Bỏ chốt chặn `BAI_TAP_DA_CO_BAI_NOP`: nay xoá một đầu việc không đụng tới bài nộp nào. Giữ
+lại sẽ khoá cứng mọi đầu việc của buổi đã có người nộp — gõ nhầm một chữ cũng không sửa được.
+
+Thêm `BUOI_CHUA_CO_BAI_TAP`: buổi chưa giao gì thì không nộp được, tránh bài nộp lạc lõng.
+
+**Bố cục màn hình theo kiểu Google Classroom.** Ở tab Bài tập của một buổi: đề bài và tệp ở
+trên, chỗ nộp (học viên) hoặc bảng theo dõi (giáo viên) **ngay bên dưới** — bỏ hẳn nút "Xem
+bài nộp" mở hộp thoại riêng. Học viên nay có ô nộp bài ngay trên màn đó.
+
+**714 test backend xanh** (609 tích hợp + 105 đơn vị).
+
+
 ### Changed — FR-11/FR-12: theo dõi tiến độ nộp bài, đính kèm đề bài (30/09/2026)
 
 **Bảng bài nộp nay hiện cả học viên CHƯA nộp.** Trước đây chỉ trả bảng `BAI_NOP`, nên bài

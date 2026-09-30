@@ -172,6 +172,7 @@ export default function ChiTietBuoiHoc() {
         <BaiTapCuaLop
           nhung
           buoiHocId={buoi.id}
+          toiLaHocVien={buoi.toiLaHocVien}
           lopHocId={buoi.lopHocId}
           tenLop={buoi.tenLopHoc}
           onDong={() => navigate(`/lms/lop-hoc/${buoi.lopHocId}?tab=lich`)}

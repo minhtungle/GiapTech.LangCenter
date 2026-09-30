@@ -60,7 +60,7 @@ erDiagram
     BUOI_HOC ||--o{ DIEM_DANH : "điểm danh"
     BUOI_HOC ||--o{ NHAN_XET_BUOI_HOC : "học viên nhận xét"
     BUOI_HOC ||--o{ BAI_TAP : "giao bài"
-    BAI_TAP ||--o{ BAI_NOP : "nộp nhiều lần"
+    BUOI_HOC ||--o{ BAI_NOP : "nộp một lần cho cả buổi"
     BAI_KIEM_TRA ||--o{ BAI_LAM : "bài làm"
     TAI_LIEU ||--o{ TAI_LIEU_LOP_HOC : "gán lớp"
 
@@ -161,8 +161,8 @@ không phân công được họ vào lớp cũ nữa.
 
 | Bảng | Cột đáng chú ý |
 |---|---|
-| `BAI_TAP` | Gắn vào `buoi_hoc_id` |
-| `BAI_NOP` | **`lan_nop`** — nộp nhiều lần, giữ lịch sử; bài mới nhất là `MAX(lan_nop)` |
+| `BAI_TAP` | Một **đầu việc** giáo viên giao, gắn `buoi_hoc_id`. Một buổi nhiều đầu việc được |
+| `BAI_NOP` | Gắn `buoi_hoc_id` **chứ không phải `bai_tap_id`** (30/09/2026): học viên nộp MỘT lần cho cả buổi dù buổi có mấy đầu việc, nên điểm và nhận xét là của buổi. `UNIQUE(buoi_hoc_id, hoc_vien_id, lan_nop)` — nộp nhiều lần giữ lịch sử, bài mới nhất là `MAX(lan_nop)` |
 | `BAI_KIEM_TRA` | Gắn vào `lop_hoc_id`. `loai` giữ sẵn `TracNghiemOnline` cho tương lai, hiện chỉ nộp file |
 | `BAI_LAM` | `han_nop_rieng` nullable = gia hạn riêng; hạn hiệu lực = `han_nop_rieng ?? bai_kiem_tra.dong_luc` |
 | `TAI_LIEU` | Tài liệu giảng dạy của trung tâm; tệp thật nằm ở `TEP_DINH_KEM` |

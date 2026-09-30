@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { CheckCircle2, ClipboardList, Pencil, Plus, Trash2 } from 'lucide-react'
+import { CheckCircle2, Pencil, Plus, Trash2 } from 'lucide-react'
 import { api, layMaLoi } from '@/lib/api'
 import {
-  Badge, Button, CanhBaoLoi, Input, Label, Table, Td, Textarea, Th, TrangTrong,
+  Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
+  TrangTrong,
 } from '@/components/ui'
 import { Modal } from '@/components/ui/Modal'
 import { KhungNoiDung } from '@/components/ui/KhungNoiDung'
@@ -15,6 +16,7 @@ import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { ChonTep, type TepDto } from '@/components/ui/ChonTep'
 import { locale } from '@/lib/ngon-ngu/dinhDang'
 
+/** Một đầu việc giáo viên giao trong buổi. Nhiều cái được — học viên vẫn nộp một lần. */
 interface BaiTapDto {
   id: string
   buoiHocId: string
@@ -23,8 +25,6 @@ interface BaiTapDto {
   moTa: string | null
   hanNop: string | null
   teps: TepDto[]
-  soDaNop: number
-  soHocVien: number
 }
 
 /**
@@ -58,13 +58,30 @@ const ngayGio = (s: string | null) =>
     day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
   }) : '—'
 
-/** FR-11 — bài tập của một lớp. */
+/**
+ * FR-11/FR-12 — bài tập và bài nộp.
+ *
+ * ## Bố cục theo kiểu Google Classroom
+ *
+ * Ở view **một buổi**: đề bài và tệp ở trên, **danh sách nộp ngay bên dưới** — không phải
+ * bấm nút mở hộp thoại riêng. Giáo viên mở buổi ra là thấy luôn ai đã nộp, ai chưa.
+ *
+ * Ở view **cả lớp**: chỉ liệt kê đầu việc theo buổi (tổng hợp), vì "ai đã nộp" là câu hỏi
+ * của từng buổi chứ không phải của cả lớp — gộp lại thì bảng có hàng trăm dòng và không
+ * trả lời được gì.
+ *
+ * ## Một ô nộp cho cả buổi
+ *
+ * Giáo viên giao nhiều đầu việc trong buổi (Writing task 1, task 2, ngữ pháp), học viên nộp
+ * **một lần** cho cả buổi kèm tệp. Nên bảng nộp gắn với BUỔI, không gắn với từng đầu việc.
+ */
 export function BaiTapCuaLop({
   lopHocId,
   tenLop,
   onDong,
   nhung,
   buoiHocId,
+  toiLaHocVien,
 }: {
   lopHocId: string
   tenLop: string
@@ -79,6 +96,8 @@ export function BaiTapCuaLop({
    * cache — mở view buổi rồi về view lớp sẽ thấy danh sách bị cắt.
    */
   buoiHocId?: string
+  /** Người đang xem là học viên của lớp — hiện ô nộp bài thay vì bảng chấm. */
+  toiLaHocVien?: boolean
 }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -88,7 +107,6 @@ export function BaiTapCuaLop({
   const [dangSua, setDangSua] = useState<BaiTapDto | null>(null)
   const [buoiChon, setBuoiChon] = useState<string | null>(null)
   const [maLoi, setMaLoi] = useState<string | null>(null)
-  const [xemNop, setXemNop] = useState<BaiTapDto | null>(null)
   /** Vừa tạo xong trong phiên này — form đang ở bước đính kèm, không phải sửa bài cũ. */
   const [daTao, setDaTao] = useState(false)
 
@@ -121,9 +139,6 @@ export function BaiTapCuaLop({
     Tệp phải tải lên sau khi bài tập có `id` (khoá lưu trữ gắn với id), nên không thể đính kèm
     trong cùng một bước. Đóng form rồi bắt người dùng mở lại để đính kèm là một bước thừa mà
     ai cũng quên — rồi bài tập giao ra không có đề.
-
-    `daTao` để đổi lời văn nút và tiêu đề, cho người dùng biết bài đã được tạo và giờ là phần
-    đính kèm tuỳ chọn.
   */
   const tao = useMutation({
     mutationFn: async (b: Record<string, unknown>) => {
@@ -198,68 +213,37 @@ export function BaiTapCuaLop({
         ) : baiTaps.length === 0 ? (
           <TrangTrong thongDiep={t('hocLieu.chuaCoBaiTap')} />
         ) : (
-          <div className="max-h-[24rem] overflow-y-auto">
-            <Table>
-              <thead>
-                <tr>
-                  <Th className="w-16">{t('buoiHoc.thuTu')}</Th>
-                  <Th>{t('hocLieu.tieuDe')}</Th>
-                  <Th>{t('hocLieu.hanNop')}</Th>
-                  <Th>{t('hocLieu.daNop')}</Th>
-                  <Th>{t('hocLieu.tep')}</Th>
-                  <Th className="w-28" />
-                </tr>
-              </thead>
-              <tbody>
-                {baiTaps.map((bt) => (
-                  <tr key={bt.id} className="hover:bg-muted/40">
-                    <Td className="font-medium">{bt.thuTuBuoi}</Td>
-                    <Td>{bt.tieuDe}</Td>
-                    <Td className="text-muted-foreground">{ngayGio(bt.hanNop)}</Td>
-                    <Td className="text-muted-foreground">
-                      {bt.soDaNop}/{bt.soHocVien}
-                    </Td>
-                    <Td className="text-muted-foreground">{bt.teps.length}</Td>
-                    <Td>
-                      <div className="flex justify-end">
-                        <MenuThaoTac
-                          nhanMo={t('chung.thaoTac')}
-                          muc={[
-                            {
-                              nhan: t('hocLieu.xemBaiNop'),
-                              icon: ClipboardList,
-                              onChon: () => setXemNop(bt),
-                            },
-                            {
-                              nhan: t('chung.sua'),
-                              icon: Pencil,
-                              an: !coQuyen('BaiTap', 'Sua'),
-                              onChon: () => { setDangSua(bt); setMoForm(true) },
-                            },
-                            {
-                              nhan: t('chung.xoa'),
-                              icon: Trash2,
-                              nguyHiem: true,
-                              ngatNhom: true,
-                              an: !coQuyen('BaiTap', 'Xoa'),
-                              onChon: () =>
-                                hoi({
-                                  tieuDe: t('chung.xacNhanXoa'),
-                                  thongDiep: t('hocLieu.hoiXoaBaiTap', { ten: bt.tieuDe }),
-                                  nhanDongY: t('chung.xoa'),
-                                  nguyHiem: true,
-                                  onDongY: () => xoa.mutate(bt.id),
-                                }),
-                            },
-                          ]}
-                        />
-                      </div>
-                    </Td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
+          <div className="grid gap-3">
+            {baiTaps.map((bt) => (
+              <TheBaiTap
+                key={bt.id}
+                baiTap={bt}
+                onSua={() => { setDangSua(bt); setMoForm(true) }}
+                onXoa={() =>
+                  hoi({
+                    tieuDe: t('chung.xacNhanXoa'),
+                    thongDiep: t('hocLieu.hoiXoaBaiTap', { ten: bt.tieuDe }),
+                    nhanDongY: t('chung.xoa'),
+                    nguyHiem: true,
+                    onDongY: () => xoa.mutate(bt.id),
+                  })
+                }
+              />
+            ))}
           </div>
+        )}
+
+        {/*
+          Ngay dưới đề bài là chỗ NỘP (học viên) hoặc bảng theo dõi (giáo viên) — không phải
+          bấm nút mở hộp thoại riêng.
+
+          Chỉ ở view một buổi. Ở view cả lớp thì "ai đã nộp" không có nghĩa: mỗi buổi một
+          bảng riêng, gộp lại thành hàng trăm dòng mà không trả lời được câu hỏi nào.
+        */}
+        {buoiHocId && baiTaps.length > 0 && (
+          toiLaHocVien
+            ? <NopBaiCuaToi buoiHocId={buoiHocId} />
+            : coQuyen('BaiNopBaiTap', 'Xem') && <BangNopBai buoiHocId={buoiHocId} />
         )}
       </div>
 
@@ -362,15 +346,196 @@ export function BaiTapCuaLop({
         </Modal>
       )}
 
-      {xemNop && <DanhSachBaiNop baiTap={xemNop} onDong={() => setXemNop(null)} />}
       {hop}
     </KhungNoiDung>
   )
 }
 
-/** Danh sách bài nộp — chỉ lần nộp mới nhất của mỗi học viên, kèm ô chấm điểm. */
+/** Một đầu việc: tiêu đề, hạn, mô tả và tệp đề bài — hiện thẳng, không phải bấm mở. */
+function TheBaiTap({
+  baiTap,
+  onSua,
+  onXoa,
+}: {
+  baiTap: BaiTapDto
+  onSua: () => void
+  onXoa: () => void
+}) {
+  const { t } = useTranslation()
+  const { coQuyen } = useQuyen()
+
+  const quaHan = baiTap.hanNop !== null && new Date(baiTap.hanNop) < new Date()
+
+  return (
+    <Card>
+      <CardContent className="space-y-2 pt-5">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                {t('buoiHoc.thuTu')} {baiTap.thuTuBuoi}
+              </span>
+              <h3 className="font-medium">{baiTap.tieuDe}</h3>
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {t('hocLieu.hanNop')}: {ngayGio(baiTap.hanNop)}
+              {quaHan && (
+                <Badge variant="loi" className="ml-2">{t('hocLieu.quaHan')}</Badge>
+              )}
+            </p>
+          </div>
+
+          {(coQuyen('BaiTap', 'Sua') || coQuyen('BaiTap', 'Xoa')) && (
+            <MenuThaoTac
+              nhanMo={t('chung.thaoTac')}
+              muc={[
+                { nhan: t('chung.sua'), icon: Pencil, an: !coQuyen('BaiTap', 'Sua'), onChon: onSua },
+                {
+                  nhan: t('chung.xoa'), icon: Trash2, nguyHiem: true, ngatNhom: true,
+                  an: !coQuyen('BaiTap', 'Xoa'), onChon: onXoa,
+                },
+              ]}
+            />
+          )}
+        </div>
+
+        {baiTap.moTa && (
+          <p className="whitespace-pre-wrap text-sm text-muted-foreground">{baiTap.moTa}</p>
+        )}
+
+        {/* Tệp đề bài hiện ngay dưới mô tả — học viên tải về mà không phải mở thêm gì. */}
+        {baiTap.teps.length > 0 && (
+          <ChonTep loai="BaiTap" doiTuongId={baiTap.id} teps={baiTap.teps} onDoi={() => {}} chiDoc />
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 /**
- * Bảng chấm điểm bài nộp.
+ * Chỗ HỌC VIÊN nộp bài cho cả buổi.
+ *
+ * Một ô nộp duy nhất dù buổi có mấy đầu việc — nộp lại được, giữ lịch sử (`lanNop` tăng).
+ * Sau khi nộp thì hiện bài đã nộp kèm nút đính kèm tệp và điểm nếu giáo viên đã chấm.
+ */
+function NopBaiCuaToi({ buoiHocId }: { buoiHocId: string }) {
+  const { t } = useTranslation()
+  const qc = useQueryClient()
+  const { hoi, hop } = useXacNhan()
+  const [noiDung, setNoiDung] = useState('')
+  const [maLoi, setMaLoi] = useState<string | null>(null)
+
+  /*
+    Học viên đọc bài của CHÍNH MÌNH qua đúng endpoint của giáo viên.
+
+    `IPhamViLopHoc` đã lọc: học viên chỉ thấy dòng của mình, nên không cần endpoint riêng.
+    Nếu một ngày phạm vi đó hỏng thì học viên sẽ thấy bài người khác — đó là lý do
+    `PhamViHocVienTests` tồn tại.
+  */
+  const { data: ds = [] } = useQuery({
+    queryKey: ['buoi-hoc', buoiHocId, 'bai-nop'],
+    queryFn: async () => (await api.get<BaiNopDto[]>(`/buoi-hoc/${buoiHocId}/bai-nop`)).data,
+  })
+
+  const cuaToi = ds.find((n) => n.id !== null) ?? null
+
+  const nop = useMutation({
+    mutationFn: () => api.post(`/buoi-hoc/${buoiHocId}/nop-bai`, { noiDung: noiDung || null }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['buoi-hoc', buoiHocId, 'bai-nop'] })
+      setNoiDung('')
+      setMaLoi(null)
+    },
+    onError: (e) => setMaLoi(layMaLoi(e)),
+  })
+
+  return (
+    <Card>
+      <CardContent className="grid gap-3 pt-5">
+        <h3 className="font-medium">{t('hocLieu.baiCuaToi')}</h3>
+
+        {cuaToi && (
+          <div className="grid gap-2 rounded-md border border-input bg-muted/30 px-3 py-2">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-muted-foreground">
+                {t('hocLieu.daNopLuc')} {ngayGio(cuaToi.thoiDiemNop)}
+              </span>
+              {cuaToi.lanNop > 1 && (
+                <Badge variant="cho">{t('hocLieu.lanNop')} {cuaToi.lanNop}</Badge>
+              )}
+              {cuaToi.trangThai === 'NopMuon' && (
+                <Badge variant="loi">{t('trangThaiBaiNop.NopMuon')}</Badge>
+              )}
+              {cuaToi.trangThai === 'DaCham' && (
+                <Badge variant="ok">{t('trangThaiBaiNop.DaCham')}</Badge>
+              )}
+            </div>
+
+            {cuaToi.noiDung && (
+              <p className="whitespace-pre-wrap text-sm">{cuaToi.noiDung}</p>
+            )}
+
+            {/* Đính kèm được SAU khi nộp: tệp gắn với id bài nộp. */}
+            <ChonTep
+              loai="BaiNop"
+              doiTuongId={cuaToi.id!}
+              teps={cuaToi.teps}
+              onDoi={() =>
+                void qc.invalidateQueries({ queryKey: ['buoi-hoc', buoiHocId, 'bai-nop'] })
+              }
+            />
+
+            {cuaToi.diem !== null && (
+              <p className="text-sm">
+                <span className="font-medium">{t('hocLieu.diem')}: {cuaToi.diem}</span>
+                {cuaToi.nhanXet && (
+                  <span className="text-muted-foreground"> — {cuaToi.nhanXet}</span>
+                )}
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="noiDungNop">
+            {cuaToi ? t('hocLieu.nopLai') : t('hocLieu.noiDungBaiNop')}
+          </Label>
+          <Textarea
+            id="noiDungNop"
+            value={noiDung}
+            onChange={(e) => setNoiDung(e.target.value)}
+            placeholder={t('hocLieu.noiDungBaiNopGoiY')}
+          />
+          {cuaToi && (
+            <p className="text-xs text-muted-foreground">{t('hocLieu.nopLaiGhiChu')}</p>
+          )}
+        </div>
+
+        {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
+
+        <div className="flex justify-end">
+          <Button
+            disabled={nop.isPending}
+            onClick={() =>
+              hoi({
+                tieuDe: cuaToi ? t('hocLieu.nopLai') : t('hocLieu.nopBai'),
+                thongDiep: cuaToi ? t('hocLieu.hoiNopLai') : t('hocLieu.hoiNopBai'),
+                onDongY: () => nop.mutate(),
+              })
+            }
+          >
+            {cuaToi ? t('hocLieu.nopLai') : t('hocLieu.nopBai')}
+          </Button>
+        </div>
+
+        {hop}
+      </CardContent>
+    </Card>
+  )
+}
+
+/**
+ * Bảng theo dõi nộp bài của **cả buổi**, kèm ô chấm điểm.
  *
  * **Nhập cả bảng rồi bấm Lưu một lần**, không lưu theo từng ô.
  *
@@ -378,14 +543,12 @@ export function BaiTapCuaLop({
  * thao tác ghi (07/09/2026), điều đó thành ra hỏi mỗi lần rời một ô — chấm lớp 20 học viên là
  * 20 hộp thoại. Gom lại thành một lần lưu vừa hợp với việc chấm cả lớp, vừa chỉ hỏi một lần,
  * và cho người chấm sửa lại trước khi ghi.
- *
- * Phụ phẩm: có chỗ cho ô **nhận xét** — trước đây `nhanXet` chỉ được gửi lại giá trị cũ nên
- * giáo viên không có đường nhập.
  */
-function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => void }) {
+function BangNopBai({ buoiHocId }: { buoiHocId: string }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const { hoi, hop } = useXacNhan()
+  const { coQuyen } = useQuyen()
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [daLuu, setDaLuu] = useState(false)
 
@@ -393,8 +556,8 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
   const [sua, setSua] = useState<Record<string, { diem: string; nhanXet: string }>>({})
 
   const { data: ds = [] } = useQuery({
-    queryKey: ['bai-tap', baiTap.id, 'bai-nop'],
-    queryFn: async () => (await api.get<BaiNopDto[]>(`/bai-tap/${baiTap.id}/bai-nop`)).data,
+    queryKey: ['buoi-hoc', buoiHocId, 'bai-nop'],
+    queryFn: async () => (await api.get<BaiNopDto[]>(`/buoi-hoc/${buoiHocId}/bai-nop`)).data,
   })
 
   /*
@@ -410,6 +573,7 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
     setSua((cu) => ({ ...cu, [n.hocVienId]: { ...giaTri(n), ...phan } }))
 
   const soDaSua = Object.keys(sua).length
+  const duocCham = coQuyen('BaiNopBaiTap', 'Sua')
 
   const cham = useMutation({
     mutationFn: async () => {
@@ -428,7 +592,7 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
       }
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['bai-tap', baiTap.id, 'bai-nop'] })
+      void qc.invalidateQueries({ queryKey: ['buoi-hoc', buoiHocId, 'bai-nop'] })
       setSua({})
       setMaLoi(null)
       setDaLuu(true)
@@ -440,44 +604,44 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
     },
   })
 
-  // Đếm từ DỮ LIỆU ĐANG HIỆN, không dùng `baiTap.soDaNop` của danh sách ngoài: hai nguồn sẽ
-  // lệch nhau sau khi có người nộp thêm mà danh sách ngoài chưa tải lại — và con số sai ở
-  // đúng chỗ người dùng đang nhìn thì tệ hơn là không có số.
+  // Đếm từ DỮ LIỆU ĐANG HIỆN: một nguồn duy nhất cho con số, không lệch với bảng bên dưới.
   const daNop = ds.filter((n) => n.id !== null).length
   const tong = ds.length
   const phanTram = tong === 0 ? 0 : Math.round((daNop / tong) * 100)
 
   return (
-    <Modal mo onDong={onDong} tieuDe={`${t('hocLieu.xemBaiNop')} — ${baiTap.tieuDe}`}>
-      <div className="grid gap-3">
+    <Card>
+      <CardContent className="grid gap-3 pt-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-medium">{t('hocLieu.baiHocVienNop')}</h3>
+          {tong > 0 && (
+            <div className="flex min-w-[12rem] flex-1 items-center gap-3 sm:max-w-xs">
+              <div
+                className="h-2 flex-1 overflow-hidden rounded-full bg-muted"
+                role="progressbar"
+                aria-valuenow={daNop}
+                aria-valuemin={0}
+                aria-valuemax={tong}
+                aria-label={t('hocLieu.tienDoNop')}
+              >
+                <div
+                  className="h-full rounded-full bg-status-ok transition-all"
+                  style={{ width: `${phanTram}%` }}
+                />
+              </div>
+              <span className="shrink-0 text-sm text-muted-foreground">
+                {t('hocLieu.daNopTren', { daNop, tong })}
+              </span>
+            </div>
+          )}
+        </div>
+
         {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
-        {/* Tiến độ nộp — câu trả lời cho "còn thiếu ai", đặt ngay đầu màn. */}
-        {tong > 0 && (
-          <div className="flex items-center gap-3">
-            <div
-              className="h-2 flex-1 overflow-hidden rounded-full bg-muted"
-              role="progressbar"
-              aria-valuenow={daNop}
-              aria-valuemin={0}
-              aria-valuemax={tong}
-              aria-label={t('hocLieu.tienDoNop')}
-            >
-              <div
-                className="h-full rounded-full bg-status-ok transition-all"
-                style={{ width: `${phanTram}%` }}
-              />
-            </div>
-            <span className="shrink-0 text-sm text-muted-foreground">
-              {t('hocLieu.daNopTren', { daNop, tong })}
-            </span>
-          </div>
-        )}
-
         {ds.length === 0 ? (
-          <TrangTrong thongDiep={t('chung.khongCoDuLieu')} />
+          <TrangTrong thongDiep={t('hocLieu.lopChuaCoHocVien')} />
         ) : (
-          <div className="max-h-[24rem] overflow-y-auto">
+          <div className="max-h-[28rem] overflow-y-auto">
             <Table>
               <thead>
                 <tr>
@@ -538,7 +702,7 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
                       <Input
                         type="number" min={0} step="0.5"
                         className="h-8"
-                        disabled={chuaNop}
+                        disabled={chuaNop || !duocCham}
                         aria-label={`${t('hocLieu.diem')} — ${n.hoTen}`}
                         value={giaTri(n).diem}
                         onChange={(e) => doi(n, { diem: e.target.value })}
@@ -547,7 +711,7 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
                     <Td>
                       <Input
                         className="h-8"
-                        disabled={chuaNop}
+                        disabled={chuaNop || !duocCham}
                         aria-label={`${t('hocLieu.nhanXet')} — ${n.hoTen}`}
                         value={giaTri(n).nhanXet}
                         onChange={(e) => doi(n, { nhanXet: e.target.value })}
@@ -566,7 +730,7 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
           </div>
         )}
 
-        {ds.length > 0 && (
+        {duocCham && ds.length > 0 && (
           <div className="flex items-center justify-end gap-2">
             {daLuu && (
               <span className="mr-auto flex items-center gap-1 text-sm text-status-ok">
@@ -593,9 +757,9 @@ function DanhSachBaiNop({ baiTap, onDong }: { baiTap: BaiTapDto; onDong: () => v
             </Button>
           </div>
         )}
-      </div>
 
-      {hop}
-    </Modal>
+        {hop}
+      </CardContent>
+    </Card>
   )
 }

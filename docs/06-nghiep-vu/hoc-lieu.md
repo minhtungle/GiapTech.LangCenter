@@ -58,6 +58,45 @@ view buổi rồi về view lớp sẽ thấy danh sách bị cắt.
 Ở tab của buổi **không hỏi lại buổi nào**: hỏi là mời người dùng chọn nhầm sang buổi khác, rồi
 bài vừa giao biến mất khỏi màn hình họ đang đứng và họ không hiểu vì sao.
 
+### Một ô nộp cho cả buổi, không cho từng đầu việc
+
+**`BAI_NOP` gắn với `BUOI_HOC`, không gắn với `BAI_TAP`** (đổi 30/09/2026).
+
+Giáo viên giao nhiều đầu việc trong một buổi — Writing task 1, task 2, ngữ pháp — nhưng học
+viên làm xong thì nộp một lần, thường là một tệp chứa tất cả. Bắt nộp riêng từng đầu việc
+nghĩa là cùng một tệp phải tải lên ba lần, và giáo viên chấm ba điểm cho một buổi rồi tự
+cộng lại.
+
+Hệ quả: **điểm và nhận xét là của BUỔI**, không phải của từng đầu việc.
+
+| | Trước 30/09 | Sau |
+|---|---|---|
+| Khoá ngoại | `BAI_NOP.bai_tap_id` | `BAI_NOP.buoi_hoc_id` |
+| UNIQUE | `(bai_tap_id, hoc_vien_id, lan_nop)` | `(buoi_hoc_id, hoc_vien_id, lan_nop)` |
+| Endpoint | `/bai-tap/{id}/bai-nop` · `/bai-tap/{id}/nop` | `/buoi-hoc/{id}/bai-nop` · `/buoi-hoc/{id}/nop-bai` |
+| Xoá đầu việc đã có người nộp | Bị chặn | **Cho phép** — bài nộp không mất theo |
+
+Chốt chặn `BAI_TAP_DA_CO_BAI_NOP` bị **bỏ** cùng lúc. Trước đây xoá bài tập là xoá luôn bài
+đã nộp nên phải chặn; nay xoá một đầu việc không đụng tới bài nộp nào. Giữ lại sẽ thành: buổi
+có người nộp thì mọi đầu việc trong buổi bị khoá cứng, gõ nhầm một chữ trong tiêu đề cũng
+không sửa được — một ràng buộc vô nghĩa mà người dùng không đoán được lý do.
+
+**Hạn nộp của buổi = hạn SỚM NHẤT** trong các đầu việc có đặt hạn. Mỗi đầu việc có hạn riêng
+mà học viên chỉ nộp một lần nên phải quy về một mốc; lấy sớm nhất vì đã quá hạn của một đầu
+việc thì lần nộp đó đúng là muộn.
+
+Buổi **chưa giao đầu việc nào** thì không nộp được (`BUOI_CHUA_CO_BAI_TAP`) — cho nộp sẽ sinh
+bài nộp lạc lõng mà giáo viên không hiểu là nộp cho cái gì.
+
+### Bố cục màn hình: theo kiểu Google Classroom
+
+Ở tab **Bài tập của một buổi**: đề bài và tệp ở trên, chỗ nộp / bảng theo dõi **ngay bên
+dưới** — không phải bấm nút mở hộp thoại riêng. Giáo viên mở buổi ra là thấy luôn ai đã nộp,
+ai chưa; học viên thấy đề bài và ô nộp trên cùng một màn.
+
+Ở tab **Bài tập của cả lớp**: chỉ liệt kê đầu việc theo buổi. "Ai đã nộp" là câu hỏi của từng
+buổi — gộp cả lớp lại thì bảng có hàng trăm dòng và không trả lời được gì.
+
 ### Đính kèm đề bài: tạo xong mới gắn được tệp
 
 Tệp gắn với bài tập qua `id`, mà `id` chỉ có sau khi tạo. Nên luồng là **hai bước trong một
@@ -97,7 +136,7 @@ không có đường nhập nó.
 
 ### Nộp nhiều lần, giữ lịch sử
 
-`UNIQUE(bai_tap_id, hoc_vien_id, lan_nop)`. Mỗi lần nộp tạo một hàng mới với `LanNop` tăng dần.
+`UNIQUE(buoi_hoc_id, hoc_vien_id, lan_nop)`. Mỗi lần nộp tạo một hàng mới với `LanNop` tăng dần.
 
 Nhưng **danh sách cho giáo viên chỉ hiện lần mới nhất** của mỗi học viên — trả hết thì một
 người ba dòng, giáo viên không biết chấm cái nào. Số lần nộp vẫn hiện để họ biết học viên đã
@@ -132,6 +171,8 @@ Hai quy tắc lọc, **ngược chiều nhau**:
 - **Chấm điểm là endpoint riêng** (`POST /bai-nop/{id}/cham`), command cố ý **không có trường
   nội dung**: giáo viên có quyền `Sua` trên bài nộp là để chấm, không phải để sửa bài của học
   viên. Không có tham số thì không có đường lạm dụng.
+- Học viên đọc bài của **chính mình** qua đúng endpoint của giáo viên — `IPhamViLopHoc` đã
+  lọc nên không cần endpoint riêng. Canh bởi `PhamViHocVienTests`.
 
 ## FR-13 — Tài liệu
 

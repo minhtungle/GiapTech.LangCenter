@@ -47,21 +47,32 @@ public class BaiTapController(ISender sender) : ControllerBase
         return NoContent();
     }
 
-    // ---------- Bài nộp ----------
+    /*
+      ---------- Bài nộp ----------
 
-    [HttpGet("{id:guid}/bai-nop")]
+      Đường dẫn theo BUỔI HỌC (`/buoi-hoc/{id}/bai-nop`), không theo bài tập: học viên nộp
+      một lần cho cả buổi, không nộp từng đầu việc (30/09/2026).
+
+      Đây là **breaking change** của API — client cũ gọi `/bai-tap/{id}/bai-nop` sẽ nhận 404.
+      Không tăng version (ADR-0003) vì hệ thống chưa phát hành ra ngoài và chỉ có một client
+      là frontend trong cùng repo; tăng version ở đây là chi phí bảo trì hai nhánh mà không
+      ai được lợi.
+    */
+
+    [HttpGet("~/api/v{version:apiVersion}/buoi-hoc/{buoiHocId:guid}/bai-nop")]
     [RequirePermission(ChucNang.BaiNopBaiTap, HanhDong.Xem)]
-    public async Task<ActionResult<List<BaiNopDto>>> BaiNop(Guid id, CancellationToken ct)
-        => Ok(await sender.Send(new LayBaiNopQuery(id), ct));
+    public async Task<ActionResult<List<BaiNopDto>>> BaiNop(Guid buoiHocId, CancellationToken ct)
+        => Ok(await sender.Send(new LayBaiNopQuery(buoiHocId), ct));
 
     /// <summary>
-    /// Học viên nộp bài. Không nhận id học viên — lấy từ token, nên không nộp hộ được.
+    /// Học viên nộp bài **cho cả buổi**. Không nhận id học viên — lấy từ token, nên không
+    /// nộp hộ được.
     /// </summary>
-    [HttpPost("{id:guid}/nop")]
+    [HttpPost("~/api/v{version:apiVersion}/buoi-hoc/{buoiHocId:guid}/nop-bai")]
     [RequirePermission(ChucNang.BaiNopBaiTap, HanhDong.TuLam)]
     public async Task<ActionResult<Guid>> Nop(
-        Guid id, [FromBody] NopBaiBody body, CancellationToken ct)
-        => Ok(await sender.Send(new NopBaiCommand(id, body.NoiDung), ct));
+        Guid buoiHocId, [FromBody] NopBaiBody body, CancellationToken ct)
+        => Ok(await sender.Send(new NopBaiCommand(buoiHocId, body.NoiDung), ct));
 
     public record NopBaiBody(string? NoiDung);
 }

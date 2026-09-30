@@ -47,6 +47,12 @@ public class BuoiHoc : TenantEntity
 
     public ICollection<DiemDanh> DiemDanhs { get; set; } = [];
 
+    /// <summary>Đầu việc giáo viên giao trong buổi — nhiều cái được.</summary>
+    public ICollection<BaiTap> BaiTaps { get; set; } = [];
+
+    /// <summary>Bài học viên nộp cho buổi này — mỗi người một lần (nộp lại thì tăng `LanNop`).</summary>
+    public ICollection<BaiNop> BaiNops { get; set; } = [];
+
     /// <summary>
     /// Buổi đã KHOÁ — không sửa giờ, không huỷ, không xoá, không bị lịch sinh mới ghi đè.
     ///

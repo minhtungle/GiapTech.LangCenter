@@ -155,12 +155,12 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var cHv = await Client("hv-nop-nhieu", "matkhau123456");
 
-        (await cHv.PostAsJsonAsync($"/api/v1/bai-tap/{bt}/nop", new { NoiDung = "lần 1" }))
+        (await cHv.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nop-bai", new { NoiDung = "lần 1" }))
             .EnsureSuccessStatusCode();
-        (await cHv.PostAsJsonAsync($"/api/v1/bai-tap/{bt}/nop", new { NoiDung = "lần 2" }))
+        (await cHv.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nop-bai", new { NoiDung = "lần 2" }))
             .EnsureSuccessStatusCode();
 
-        var ds = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/bai-tap/{bt}/bai-nop");
+        var ds = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/buoi-hoc/{buoi}/bai-nop");
 
         var n = Assert.Single(ds!);
         Assert.Equal(2, n.GetProperty("lanNop").GetInt32());
@@ -185,7 +185,7 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var bt = await tao.Content.ReadFromJsonAsync<Guid>();
 
         // KHÔNG nộp gì cả.
-        var ds = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/bai-tap/{bt}/bai-nop");
+        var ds = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/buoi-hoc/{buoi}/bai-nop");
 
         var dong = Assert.Single(ds!);
         Assert.Equal(hv, dong.GetProperty("hocVienId").GetGuid());
@@ -219,10 +219,10 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var bt = await tao.Content.ReadFromJsonAsync<Guid>();
 
         var cHv = await Client("hv-tien-do", "matkhau123456");
-        (await cHv.PostAsJsonAsync($"/api/v1/bai-tap/{bt}/nop", new { NoiDung = "xong" }))
+        (await cHv.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nop-bai", new { NoiDung = "xong" }))
             .EnsureSuccessStatusCode();
 
-        var ds = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/bai-tap/{bt}/bai-nop");
+        var ds = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/buoi-hoc/{buoi}/bai-nop");
 
         Assert.Equal(2, ds!.Count);
 
@@ -255,12 +255,12 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var bt = await tao.Content.ReadFromJsonAsync<Guid>();
 
         var cHv = await Client("hv-go-da-nop", "matkhau123456");
-        (await cHv.PostAsJsonAsync($"/api/v1/bai-tap/{bt}/nop", new { NoiDung = "đã nộp trước khi nghỉ" }))
+        (await cHv.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nop-bai", new { NoiDung = "đã nộp trước khi nghỉ" }))
             .EnsureSuccessStatusCode();
 
         (await admin.DeleteAsync($"/api/v1/lop-hoc/{lop}/hoc-vien/{hv}")).EnsureSuccessStatusCode();
 
-        var ds = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/bai-tap/{bt}/bai-nop");
+        var ds = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/buoi-hoc/{buoi}/bai-nop");
 
         var dong = Assert.Single(ds!);
         Assert.Equal(hv, dong.GetProperty("hocVienId").GetGuid());
@@ -290,7 +290,7 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var bt = await tao.Content.ReadFromJsonAsync<Guid>();
 
         // Còn đang học ⇒ có trong danh sách chưa nộp.
-        var truoc = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/bai-tap/{bt}/bai-nop");
+        var truoc = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/buoi-hoc/{buoi}/bai-nop");
         Assert.Single(truoc!);
 
         using (var scope = factory.Services.CreateScope())
@@ -303,7 +303,7 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
             await db.SaveChangesAsync();
         }
 
-        var sau = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/bai-tap/{bt}/bai-nop");
+        var sau = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/buoi-hoc/{buoi}/bai-nop");
 
         Assert.Empty(sau!);
     }
@@ -322,33 +322,100 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var bt = await tao.Content.ReadFromJsonAsync<Guid>();
 
         var cHv = await Client("hv-nop-muon", "matkhau123456");
-        (await cHv.PostAsJsonAsync($"/api/v1/bai-tap/{bt}/nop", new { NoiDung = "muộn" }))
+        (await cHv.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nop-bai", new { NoiDung = "muộn" }))
             .EnsureSuccessStatusCode();
 
-        var ds = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/bai-tap/{bt}/bai-nop");
+        var ds = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/buoi-hoc/{buoi}/bai-nop");
         Assert.Equal("NopMuon", ds!.Single().GetProperty("trangThai").GetString());
     }
 
-    /// <summary>Xoá bài tập đã có bài nộp bị chặn — bài nộp là kết quả học tập (quy tắc #1).</summary>
+    /// <summary>
+    /// Xoá một đầu việc **KHÔNG** làm mất bài học viên đã nộp.
+    ///
+    /// Trước 30/09/2026 bài nộp gắn với từng bài tập, nên xoá bài tập là xoá luôn bài đã nộp
+    /// ⇒ phải chặn (`BAI_TAP_DA_CO_BAI_NOP`). Nay bài nộp gắn với BUỔI HỌC, xoá một đầu việc
+    /// không đụng tới bài nộp nào — giữ chốt chặn cũ sẽ khoá cứng mọi đầu việc của buổi đã có
+    /// người nộp, gõ nhầm một chữ trong tiêu đề cũng không sửa được.
+    ///
+    /// Test này canh **chiều ngược** của thay đổi đó: cho xoá, nhưng bài nộp phải còn nguyên.
+    /// Không có nó thì một lần "dọn dẹp" tương lai có thể nối lại cascade và xoá mất bài nộp
+    /// mà không ai thấy.
+    /// </summary>
     [Fact]
-    public async Task Khong_xoa_duoc_bai_tap_da_co_bai_nop()
+    public async Task Xoa_dau_viec_khong_lam_mat_bai_da_nop()
     {
         var admin = await Client();
         var (_, buoi, _) = await DungLop(admin, "xoa-bt");
 
         var tao = await admin.PostAsJsonAsync("/api/v1/bai-tap",
-            new { BuoiHocId = buoi, TieuDe = "Không xoá được", MoTa = (string?)null, HanNop = (DateTimeOffset?)null });
+            new { BuoiHocId = buoi, TieuDe = "Đầu việc sẽ xoá", MoTa = (string?)null, HanNop = (DateTimeOffset?)null });
         var bt = await tao.Content.ReadFromJsonAsync<Guid>();
 
         var cHv = await Client("hv-xoa-bt", "matkhau123456");
-        (await cHv.PostAsJsonAsync($"/api/v1/bai-tap/{bt}/nop", new { NoiDung = "bài" }))
+        (await cHv.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nop-bai", new { NoiDung = "bài đã nộp" }))
             .EnsureSuccessStatusCode();
 
-        var xoa = await admin.DeleteAsync($"/api/v1/bai-tap/{bt}");
-        Assert.Equal(HttpStatusCode.BadRequest, xoa.StatusCode);
-        Assert.Equal("BAI_TAP_DA_CO_BAI_NOP",
-            (await xoa.Content.ReadFromJsonAsync<JsonElement>())
+        (await admin.DeleteAsync($"/api/v1/bai-tap/{bt}")).EnsureSuccessStatusCode();
+
+        // Đầu việc mất, nhưng bài nộp của buổi còn nguyên kèm nội dung.
+        var ds = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/buoi-hoc/{buoi}/bai-nop");
+        var n = Assert.Single(ds!);
+        Assert.Equal("bài đã nộp", n.GetProperty("noiDung").GetString());
+    }
+
+    /// <summary>
+    /// Buổi chưa giao đầu việc nào ⇒ **không nộp được**.
+    ///
+    /// Cho nộp sẽ sinh bài nộp lạc lõng mà giáo viên không hiểu là nộp cho cái gì.
+    /// </summary>
+    [Fact]
+    public async Task Buoi_chua_co_bai_tap_thi_khong_nop_duoc()
+    {
+        var admin = await Client();
+        var (_, buoi, _) = await DungLop(admin, "chua-giao");
+
+        var cHv = await Client("hv-chua-giao", "matkhau123456");
+        var res = await cHv.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nop-bai", new { NoiDung = "nộp bừa" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        Assert.Equal("BUOI_CHUA_CO_BAI_TAP",
+            (await res.Content.ReadFromJsonAsync<JsonElement>())
                 .GetProperty("errorCode").GetString());
+    }
+
+    /// <summary>
+    /// Nhiều đầu việc trong một buổi ⇒ học viên vẫn chỉ nộp **một** lần, và bảng theo dõi
+    /// hiện đúng một dòng cho người đó.
+    ///
+    /// Đây là điều cả thay đổi này hướng tới: giáo viên giao Writing task 1, task 2, ngữ
+    /// pháp — học viên nộp một tệp cho cả buổi, giáo viên chấm một điểm.
+    /// </summary>
+    [Fact]
+    public async Task Nhieu_dau_viec_mot_buoi_van_chi_nop_mot_lan()
+    {
+        var admin = await Client();
+        var (_, buoi, _) = await DungLop(admin, "nhieu-dau-viec");
+
+        foreach (var ten in new[] { "Writing task 1", "Writing task 2", "Ngữ pháp" })
+        {
+            (await admin.PostAsJsonAsync("/api/v1/bai-tap",
+                new { BuoiHocId = buoi, TieuDe = ten, MoTa = (string?)null, HanNop = (DateTimeOffset?)null }))
+                .EnsureSuccessStatusCode();
+        }
+
+        var cHv = await Client("hv-nhieu-dau-viec", "matkhau123456");
+        (await cHv.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nop-bai", new { NoiDung = "làm cả ba" }))
+            .EnsureSuccessStatusCode();
+
+        // Ba đầu việc hiện đủ trên màn giao bài...
+        var baiTaps = await admin.GetFromJsonAsync<List<JsonElement>>(
+            $"/api/v1/bai-tap?lopHocId={(await admin.GetFromJsonAsync<JsonElement>($"/api/v1/buoi-hoc/{buoi}")).GetProperty("lopHocId").GetGuid()}");
+        Assert.Equal(3, baiTaps!.Count);
+
+        // ...nhưng bảng nộp chỉ một dòng cho học viên đó.
+        var ds = await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/buoi-hoc/{buoi}/bai-nop");
+        var n = Assert.Single(ds!);
+        Assert.Equal("làm cả ba", n.GetProperty("noiDung").GetString());
     }
 
     [Fact]
@@ -362,16 +429,16 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var bt = await tao.Content.ReadFromJsonAsync<Guid>();
 
         var cHv = await Client("hv-cham", "matkhau123456");
-        (await cHv.PostAsJsonAsync($"/api/v1/bai-tap/{bt}/nop", new { NoiDung = "bài" }))
+        (await cHv.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nop-bai", new { NoiDung = "bài" }))
             .EnsureSuccessStatusCode();
 
-        var nop = (await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/bai-tap/{bt}/bai-nop"))!
+        var nop = (await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/buoi-hoc/{buoi}/bai-nop"))!
             .Single().GetProperty("id").GetGuid();
 
         (await admin.PostAsJsonAsync($"/api/v1/bai-nop/{nop}/cham",
             new { Diem = 8.5m, NhanXet = "Tốt" })).EnsureSuccessStatusCode();
 
-        var sau = (await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/bai-tap/{bt}/bai-nop"))!
+        var sau = (await admin.GetFromJsonAsync<List<JsonElement>>($"/api/v1/buoi-hoc/{buoi}/bai-nop"))!
             .Single();
         Assert.Equal(8.5m, sau.GetProperty("diem").GetDecimal());
         Assert.Equal("DaCham", sau.GetProperty("trangThai").GetString());
@@ -402,7 +469,7 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         // HV1 nộp bài và đính kèm tệp.
         var cHv1 = await Client("hv-tep-chu-so-huu", "matkhau123456");
-        var nopRes = await cHv1.PostAsJsonAsync($"/api/v1/bai-tap/{bt}/nop", new { NoiDung = "bài" });
+        var nopRes = await cHv1.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nop-bai", new { NoiDung = "bài" });
         var nop = await nopRes.Content.ReadFromJsonAsync<Guid>();
 
         var taiTep = await cHv1.PostAsync(
@@ -438,7 +505,7 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var bt = await tao.Content.ReadFromJsonAsync<Guid>();
 
         var cHv1 = await Client("hv-dinh-kem-cheo", "matkhau123456");
-        var nop = await (await cHv1.PostAsJsonAsync($"/api/v1/bai-tap/{bt}/nop",
+        var nop = await (await cHv1.PostAsJsonAsync($"/api/v1/buoi-hoc/{buoi}/nop-bai",
             new { NoiDung = "bài" })).Content.ReadFromJsonAsync<Guid>();
 
         var cHv2 = await Client("hv-cheo-2", "matkhau123456");
@@ -501,7 +568,7 @@ public class HocLieuTests(ApiFactory factory) : IClassFixture<ApiFactory>
         b.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tok);
 
         Assert.Equal(HttpStatusCode.NotFound,
-            (await b.GetAsync($"/api/v1/bai-tap/{bt}/bai-nop")).StatusCode);
+            (await b.GetAsync($"/api/v1/buoi-hoc/{buoi}/bai-nop")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound,
             (await b.DeleteAsync($"/api/v1/bai-tap/{bt}")).StatusCode);
 

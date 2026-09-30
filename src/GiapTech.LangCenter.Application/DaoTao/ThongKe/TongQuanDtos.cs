@@ -133,8 +133,8 @@ public class LayTongQuanHandler(
             .CountAsync(ct);
 
         var baiNopChuaCham = await db.BaiNops
-            // `BAI_TAP` gắn BUỔI HỌC (không gắn lớp trực tiếp) nên phải đi qua hai chặng.
-            .Where(n => n.Diem == null && idLop.Contains(n.BaiTap.BuoiHoc.LopHocId))
+            // `BAI_NOP` gắn BUỔI HỌC (không gắn lớp trực tiếp) nên phải đi qua một chặng.
+            .Where(n => n.Diem == null && idLop.Contains(n.BuoiHoc.LopHocId))
             .CountAsync(ct);
 
         var lopHoatDong = await lopTrongPhamVi

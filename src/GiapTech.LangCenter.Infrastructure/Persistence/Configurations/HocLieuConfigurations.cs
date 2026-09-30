@@ -68,7 +68,11 @@ public class BaiTapConfig : IEntityTypeConfiguration<BaiTap>
         // Cascade khác điểm danh: bài tập được giao TRONG buổi, buổi mất thì nó vô nghĩa. Mà
         // buổi đã điểm danh vốn đã bị Restrict chặn từ trước, nên Cascade ở đây chỉ áp cho
         // buổi chưa diễn ra.
-        b.HasOne(x => x.BuoiHoc).WithMany()
+        //
+        // MỘT khai báo duy nhất cho quan hệ này: khai hai lần (một `WithMany()` một
+        // `WithMany(t => t.BaiTaps)`) làm EF coi đó là HAI quan hệ và sinh thêm cột bóng
+        // `BuoiHocId1` — lỗi này chỉ hiện ra dưới dạng một dòng cảnh báo lúc tạo migration.
+        b.HasOne(x => x.BuoiHoc).WithMany(t => t.BaiTaps)
             .HasForeignKey(x => x.BuoiHocId).OnDelete(DeleteBehavior.Cascade);
     }
 }
@@ -83,11 +87,12 @@ public class BaiNopConfig : IEntityTypeConfiguration<BaiNop>
         b.Property(x => x.Diem).HasPrecision(5, 2);
 
         // Nộp nhiều lần: khoá gồm cả LanNop. Bài mới nhất = LanNop lớn nhất.
-        b.HasIndex(x => new { x.BaiTapId, x.HocVienId, x.LanNop }).IsUnique();
+        // UNIQUE theo BUỔI, không theo bài tập: học viên nộp một lần cho cả buổi.
+        b.HasIndex(x => new { x.BuoiHocId, x.HocVienId, x.LanNop }).IsUnique();
         b.HasIndex(x => x.TenantId);
 
-        b.HasOne(x => x.BaiTap).WithMany(t => t.BaiNops)
-            .HasForeignKey(x => x.BaiTapId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(x => x.BuoiHoc).WithMany(t => t.BaiNops)
+            .HasForeignKey(x => x.BuoiHocId).OnDelete(DeleteBehavior.Cascade);
 
         // Restrict: bài đã chấm là dữ liệu học tập, không mất theo tài khoản.
         b.HasOne(x => x.HocVien).WithMany()

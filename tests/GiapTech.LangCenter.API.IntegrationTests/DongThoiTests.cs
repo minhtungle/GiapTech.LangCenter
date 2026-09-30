@@ -58,7 +58,7 @@ public class DongThoiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     // Mỗi học viên đúng một bản ghi điểm danh cho mỗi buổi.
     [InlineData("DiemDanh", new[] { "BuoiHocId", "HocVienId" })]
     // Nộp nhiều lần: khoá gồm cả LanNop, chống hai request cùng tạo một lần nộp.
-    [InlineData("BaiNop", new[] { "BaiTapId", "HocVienId", "LanNop" })]
+    [InlineData("BaiNop", new[] { "BuoiHocId", "HocVienId", "LanNop" })]
     // Bài kiểm tra KHÔNG cho nộp lại — mỗi học viên đúng một bài làm.
     [InlineData("BaiLam", new[] { "BaiKiemTraId", "HocVienId" })]
     [InlineData("TaiLieuLopHoc", new[] { "TaiLieuId", "LopHocId" })]

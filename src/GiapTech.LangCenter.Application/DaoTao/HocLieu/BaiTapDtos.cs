@@ -8,7 +8,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GiapTech.LangCenter.Application.DaoTao.HocLieu;
 
-/// <summary>FR-11 — bài tập giao trong buổi học.</summary>
+/// <summary>
+/// FR-11 — **một đầu việc** giáo viên giao trong buổi học.
+///
+/// Cố ý KHÔNG có `SoDaNop`/`SoHocVien`: học viên nộp một lần cho cả BUỔI, không nộp từng
+/// đầu việc, nên "đã nộp bao nhiêu" là con số của buổi — xem <see cref="TienDoNopDto"/>.
+/// Để hai chỗ cùng đếm sẽ cho hai con số khác nhau cho cùng một câu hỏi.
+/// </summary>
 public record BaiTapDto(
     Guid Id,
     Guid BuoiHocId,
@@ -16,9 +22,7 @@ public record BaiTapDto(
     string TieuDe,
     string? MoTa,
     DateTimeOffset? HanNop,
-    List<TepDto> Teps,
-    int SoDaNop,
-    int SoHocVien);
+    List<TepDto> Teps);
 
 /// <summary>
 /// Một dòng trong bảng theo dõi nộp bài — **mỗi học viên đang học đúng một dòng**, kể cả
@@ -72,17 +76,16 @@ public class LayBaiTapCuaLopHandler(IAppDbContext db, IPhamViLopHoc phamVi)
             .Select(bt => new BaiTapDto(
                 bt.Id, bt.BuoiHocId, bt.BuoiHoc.ThuTu, bt.TieuDe, bt.MoTa, bt.HanNop,
                 bt.Teps.Select(t => new TepDto(t.Id, t.TenGoc, t.LoaiNoiDung, t.KichThuoc))
-                    .ToList(),
-                // Đếm SỐ HỌC VIÊN đã nộp, không đếm số bài — nộp lại nhiều lần vẫn là một người.
-                bt.BaiNops.Select(n => n.HocVienId).Distinct().Count(),
-                bt.BuoiHoc.LopHoc.HocViens
-                    .Count(hv => hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc)))
+                    .ToList()))
             .ToListAsync(ct);
     }
 }
 
 /// <summary>
-/// **Bảng theo dõi nộp bài** — mọi học viên đang học của lớp, mỗi người một dòng.
+/// **Bảng theo dõi nộp bài của MỘT BUỔI HỌC** — mọi học viên đang học, mỗi người một dòng.
+///
+/// Gắn với BUỔI chứ không với từng bài tập: giáo viên giao nhiều đầu việc trong một buổi
+/// nhưng học viên nộp một lần cho cả buổi (xem <see cref="Domain.Entities.BaiNop"/>).
 ///
 /// Hai điều quan trọng:
 ///
@@ -91,31 +94,32 @@ public class LayBaiTapCuaLopHandler(IAppDbContext db, IPhamViLopHoc phamVi)
 /// 2. Người CHƯA nộp: **vẫn có dòng**, với `Id = null`.
 ///
 /// Điểm 2 là lý do query này tồn tại ở dạng hiện tại. Bản trước chỉ trả bảng `BAI_NOP`, nên
-/// bài tập 5 học viên mà chưa ai nộp thì giáo viên mở ra thấy bảng TRỐNG — không biết phải
+/// buổi có 5 học viên mà chưa ai nộp thì giáo viên mở ra thấy bảng TRỐNG — không biết phải
 /// nhắc những ai. Đúng thứ người dạy cần nhất ở màn này lại là thứ không hiện.
 /// </summary>
-public record LayBaiNopQuery(Guid BaiTapId) : IRequest<List<BaiNopDto>>;
+public record LayBaiNopQuery(Guid BuoiHocId) : IRequest<List<BaiNopDto>>;
 
 public class LayBaiNopHandler(IAppDbContext db, IPhamViLopHoc phamVi)
     : IRequestHandler<LayBaiNopQuery, List<BaiNopDto>>
 {
     public async Task<List<BaiNopDto>> Handle(LayBaiNopQuery request, CancellationToken ct)
     {
-        var bt = await TimBaiTap(db, phamVi, request.BaiTapId, HanhDong.Xem, ct);
+        var buoi = await LayBuoiHocCuaLopHandler
+            .TimBuoiTrongPhamVi(db, phamVi, request.BuoiHocId, HanhDong.Xem, ct);
 
         // Danh sách người phải nộp = học viên ĐANG HỌC của lớp.
         //
-        // Lọc `DangHoc` chứ không lấy mọi bản ghi ghi danh: người đã nghỉ hoặc bị gỡ khỏi lớp
-        // không còn nghĩa vụ nộp, hiện họ trong danh sách "chưa nộp" là báo động giả và giáo
-        // viên sẽ đi nhắc một người không còn học.
+        // Lọc `DangHoc` chứ không lấy mọi bản ghi ghi danh: người đã nghỉ hoặc bảo lưu không
+        // còn nghĩa vụ nộp, hiện họ trong danh sách "chưa nộp" là báo động giả và giáo viên
+        // sẽ đi nhắc một người không còn học.
         var hocViens = await db.LopHocHocViens
-            .Where(hv => hv.LopHocId == bt.BuoiHoc.LopHocId
+            .Where(hv => hv.LopHocId == buoi.LopHocId
                          && hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc)
             .Select(hv => new { hv.HocVienId, hv.HocVien.HoTen })
             .ToListAsync(ct);
 
         var tatCa = await db.BaiNops
-            .Where(n => n.BaiTapId == bt.Id)
+            .Where(n => n.BuoiHocId == buoi.Id)
             .Select(n => new
             {
                 n.Id, n.HocVienId, n.HocVien.HoTen, n.LanNop, n.ThoiDiemNop,
@@ -243,10 +247,20 @@ public class XoaBaiTapHandler(IAppDbContext db, IPhamViLopHoc phamVi, ILuuTruTep
     {
         var bt = await LayBaiNopHandler.TimBaiTap(db, phamVi, request.Id, HanhDong.Xoa, ct);
 
-        // Học viên đã nộp thì không xoá — bài nộp là kết quả học tập của họ (quy tắc #1).
-        if (await db.BaiNops.AnyAsync(n => n.BaiTapId == bt.Id, ct))
-            throw new AppException("BAI_TAP_DA_CO_BAI_NOP");
+        /*
+          KHÔNG còn chặn "đã có bài nộp" nữa — và đó là thay đổi có chủ ý.
 
+          Trước 30/09/2026 bài nộp gắn với từng bài tập, nên xoá bài tập là xoá luôn bài học
+          viên đã nộp (quy tắc #1) ⇒ phải chặn.
+
+          Nay bài nộp gắn với BUỔI HỌC. Xoá một đầu việc không đụng tới bài nộp nào. Giữ lại
+          chốt chặn cũ sẽ thành: buổi có người nộp thì mọi đầu việc trong buổi bị khoá cứng,
+          gõ nhầm một chữ trong tiêu đề cũng không sửa được — một ràng buộc vô nghĩa mà người
+          dùng không đoán được lý do.
+
+          Bài nộp của buổi vẫn được bảo vệ ở chỗ khác: xoá BUỔI HỌC đã điểm danh bị `Restrict`
+          chặn từ trước.
+        */
         var teps = await db.TepDinhKems.Where(t => t.BaiTapId == bt.Id).ToListAsync(ct);
         await TepDinhKemChung.XoaTeps(db, luuTru, teps, ct);
 
@@ -261,7 +275,7 @@ public class XoaBaiTapHandler(IAppDbContext db, IPhamViLopHoc phamVi, ILuuTruTep
 /// Command không nhận `hocVienId` — lấy từ token, cùng lý do với tự điểm danh: không có tham
 /// số nào để nộp hộ người khác.
 /// </summary>
-public record NopBaiCommand(Guid BaiTapId, string? NoiDung) : IRequest<Guid>;
+public record NopBaiCommand(Guid BuoiHocId, string? NoiDung) : IRequest<Guid>;
 
 public class NopBaiHandler(IAppDbContext db, ICurrentUser currentUser)
     : IRequestHandler<NopBaiCommand, Guid>
@@ -270,34 +284,51 @@ public class NopBaiHandler(IAppDbContext db, ICurrentUser currentUser)
     {
         if (currentUser.UserId is not { } uid) throw new AppException(MaLoi.ChuaXacThuc);
 
-        var bt = await db.BaiTaps
-            .Include(x => x.BuoiHoc)
-            .FirstOrDefaultAsync(x => x.Id == request.BaiTapId, ct)
-            ?? throw new KhongTimThayException($"BaiTap {request.BaiTapId}");
+        var buoi = await db.BuoiHocs
+            .FirstOrDefaultAsync(x => x.Id == request.BuoiHocId, ct)
+            ?? throw new KhongTimThayException($"BuoiHoc {request.BuoiHocId}");
 
         // Kiểm bằng bản ghi lớp-học viên, không dùng IPhamViLopHoc: phạm vi lớp còn cho cả
         // giáo viên, mà giáo viên thì không nộp bài.
         var trongLop = await db.LopHocHocViens.AnyAsync(
-            hv => hv.LopHocId == bt.BuoiHoc.LopHocId
+            hv => hv.LopHocId == buoi.LopHocId
                   && hv.HocVienId == uid
                   && hv.TrangThai == TrangThaiHocVienTrongLop.DangHoc, ct);
 
         if (!trongLop) throw new AppException("KHONG_THUOC_LOP_NAY");
 
+        // Buổi chưa giao đầu việc nào thì không có gì để nộp. Cho nộp sẽ sinh bài nộp lạc
+        // lõng mà giáo viên không hiểu là nộp cho cái gì.
+        var coBaiTap = await db.BaiTaps.AnyAsync(bt => bt.BuoiHocId == buoi.Id, ct);
+        if (!coBaiTap) throw new AppException("BUOI_CHUA_CO_BAI_TAP");
+
         var lanTruoc = await db.BaiNops
-            .Where(n => n.BaiTapId == bt.Id && n.HocVienId == uid)
+            .Where(n => n.BuoiHocId == buoi.Id && n.HocVienId == uid)
             .MaxAsync(n => (int?)n.LanNop, ct) ?? 0;
 
         var bayGio = DateTimeOffset.UtcNow;
 
+        /*
+          Hạn nộp của BUỔI = hạn SỚM NHẤT trong các đầu việc của buổi.
+
+          Mỗi đầu việc có hạn riêng, mà học viên chỉ nộp một lần — nên phải quy về một mốc.
+          Lấy sớm nhất chứ không muộn nhất: đã quá hạn của một đầu việc thì lần nộp này đúng
+          là muộn, và nói thật với giáo viên quan trọng hơn là dễ dãi với học viên.
+
+          Đầu việc không đặt hạn thì không tính vào đây (`HanNop != null`).
+        */
+        var hanSomNhat = await db.BaiTaps
+            .Where(bt => bt.BuoiHocId == buoi.Id && bt.HanNop != null)
+            .MinAsync(bt => (DateTimeOffset?)bt.HanNop, ct);
+
         var nop = new Domain.Entities.BaiNop
         {
-            BaiTapId = bt.Id,
+            BuoiHocId = buoi.Id,
             HocVienId = uid,
             LanNop = lanTruoc + 1,
             ThoiDiemNop = bayGio,
             NoiDung = request.NoiDung,
-            TrangThai = bt.HanNop is { } han && bayGio > han
+            TrangThai = hanSomNhat is { } han && bayGio > han
                 ? TrangThaiBaiNop.NopMuon
                 : TrangThaiBaiNop.DaNop
         };
@@ -325,8 +356,8 @@ public class ChamBaiNopHandler(IAppDbContext db, IPhamViLopHoc phamVi, ICurrentU
         var lopDuocPhep = await phamVi.LocTheoPhamVi(db.LopHocs.AsQueryable(), HanhDong.Sua, ct);
 
         var nop = await db.BaiNops
-            .Include(n => n.BaiTap).ThenInclude(bt => bt.BuoiHoc)
-            .Where(n => lopDuocPhep.Select(l => l.Id).Contains(n.BaiTap.BuoiHoc.LopHocId))
+            .Include(n => n.BuoiHoc)
+            .Where(n => lopDuocPhep.Select(l => l.Id).Contains(n.BuoiHoc.LopHocId))
             .FirstOrDefaultAsync(n => n.Id == request.Id, ct)
             ?? throw new KhongTimThayException($"BaiNop {request.Id}");
 
