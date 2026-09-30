@@ -2,6 +2,7 @@ using GiapTech.LangCenter.Application.Common.Interfaces;
 using GiapTech.LangCenter.Domain.Common;
 using GiapTech.LangCenter.Domain.Entities;
 using GiapTech.LangCenter.Domain.Enums;
+using GiapTech.LangCenter.Infrastructure.Identity;
 using GiapTech.LangCenter.Infrastructure.Persistence;
 using GiapTech.LangCenter.Infrastructure.Persistence.Seed;
 using Microsoft.AspNetCore.Hosting;
@@ -107,11 +108,23 @@ public class ApiFactory : WebApplicationFactory<Program>
     /// </summary>
     protected virtual bool? DatCoGioiHanTanSuat => false;
 
+    /// <summary>
+    /// Khoá mã hoá bí mật (ADR-0010) — 32 byte base64, cố định để test lặp lại được.
+    ///
+    /// `virtual` để test kiểm được đường "server CHƯA có khoá": override thành `null` thì
+    /// biến môi trường không được đặt, và lệnh lưu cấu hình email phải từ chối thay vì âm
+    /// thầm lưu mật khẩu bản rõ.
+    /// </summary>
+    protected virtual string? KhoaMaHoaEmail
+        => Convert.ToBase64String(Enumerable.Range(0, 32).Select(i => (byte)i).ToArray());
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment(MoiTruong);
 
         builder.UseSetting("JWT_SECRET", JwtSecret);
+        if (KhoaMaHoaEmail is { } khoaEmail)
+            builder.UseSetting(MaHoaBiMat.KhoaCauHinh, khoaEmail);
         builder.UseSetting("JWT_ISSUER", "langcenter-api");
         builder.UseSetting("JWT_EXPIRY_MINUTES", "60");
 

@@ -272,6 +272,23 @@ public static class ChucNang
     /// </summary>
     public const string LienHeLanding = nameof(LienHeLanding);
 
+    /// <summary>
+    /// Cấu hình gửi email của trung tâm (FR-31) — máy chủ SMTP, tài khoản, địa chỉ gửi.
+    ///
+    /// Tách khỏi <see cref="ThietLapChung"/>: người sửa tên trung tâm hay số tài khoản ngân
+    /// hàng chưa chắc được đụng vào cấu hình gửi thư — sai một ô là mọi email của trung tâm
+    /// ngừng đi, và lỗi chỉ nằm trong log.
+    /// </summary>
+    public const string ThietLapEmail = nameof(ThietLapEmail);
+
+    /// <summary>
+    /// Nội dung mẫu email (FR-31).
+    ///
+    /// Tách khỏi <see cref="ThietLapEmail"/> vì hai việc khác người: soạn câu chữ là việc của
+    /// người làm nội dung, còn nhập mật khẩu SMTP là việc của người quản trị kỹ thuật.
+    /// </summary>
+    public const string MauEmail = nameof(MauEmail);
+
     public static readonly IReadOnlyList<string> TatCa =
     [
         TaiKhoan, HoSoNguoiDung, PhanQuyen, ThietLapChung, Anh, DoiMatKhauNguoiKhac,
@@ -281,7 +298,8 @@ public static class ChucNang
         BaiTap, BaiNopBaiTap, BaiKiemTra, BaiLamKiemTra,
         KhoaOnline, GhiDanhKhoaOnline, HocOnline,
         TaiLieu, HocPhi, ThongKe, LopHocToanTrungTam, NhatKyHeThong,
-        TrangDich, LienHeLanding
+        TrangDich, LienHeLanding,
+        ThietLapEmail, MauEmail
     ];
 
     /// <summary>
@@ -399,6 +417,19 @@ public static class ChucNang
         // Liên hệ từ form: KHÔNG có `Them` — chỉ khách vãng lai tạo được, qua endpoint ẩn
         // danh. Người trong hệ thống chỉ đọc, chuyển sang CRM, hoặc xoá rác.
         [LienHeLanding] = [HanhDong.Xem, HanhDong.ChuyenCrm, HanhDong.Xoa],
+
+        // FR-31 — email.
+        //
+        // `GuiThu` tách riêng vì nó GỬI THẬT một email ra ngoài, khác hẳn sửa cấu hình trong
+        // DB. Người được xem cấu hình chưa chắc nên được bắn thư đi.
+        //
+        // Không có `Them`/`Xoa` cho ThietLapEmail: mỗi trung tâm có đúng một cấu hình, nó
+        // sinh ra cùng tenant. Xoá cấu hình là `Sua` về rỗng.
+        [ThietLapEmail] = [HanhDong.Xem, HanhDong.Sua, HanhDong.GuiThu],
+
+        // Mẫu email: không có `Them` — danh sách loại cố định trong mã, người dùng chỉ soạn
+        // nội dung cho loại đã có. `Xoa` = quay về mẫu mặc định.
+        [MauEmail] = [HanhDong.Xem, HanhDong.Sua, HanhDong.Xoa],
         [KhachHang] = Crud,
         [ChamSocKhachHang] = Crud,
         // KHÔNG tách `CauHinhTien` ở đây dù giá là dữ liệu tiền: `LuuKhoaHocCommand` ghi tên,
@@ -508,7 +539,7 @@ public static class ChucNang
     public static readonly IReadOnlyList<string> DungChung =
     [
         TaiKhoan, HoSoNguoiDung, PhanQuyen, ThietLapChung, Anh, DoiMatKhauNguoiKhac,
-        NhatKyHeThong
+        NhatKyHeThong, ThietLapEmail, MauEmail
     ];
 
     /// <summary>

@@ -137,7 +137,15 @@ public enum HanhDong
     /// Là **cầu nối LDP → CRM**, nên tách riêng: người xem danh sách liên hệ chưa chắc được
     /// phép tạo khách hàng trong CRM.
     /// </summary>
-    ChuyenCrm = 25
+    ChuyenCrm = 25,
+
+    /// <summary>
+    /// Gửi một email THỬ ra ngoài để kiểm cấu hình (FR-31).
+    ///
+    /// Tách khỏi `Sua` vì hậu quả khác: sửa cấu hình chỉ ghi DB, còn gửi thử là bắn thư thật
+    /// tới một địa chỉ thật. Người được xem cấu hình chưa chắc nên được làm điều đó.
+    /// </summary>
+    GuiThu = 26
 }
 
 /// <summary>
