@@ -8,6 +8,28 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Changed — form khách hàng chỉ hỏi thông tin liên hệ (02/10/2026)
+
+Gỡ hai ô khỏi form thêm/sửa khách hàng theo yêu cầu chủ sản phẩm:
+
+| Ô gỡ | Vì sao |
+|---|---|
+| **Hình thức thanh toán** | Thuộc tính của ĐƠN HÀNG, không phải của khách. `MuaHangCommand` đã có trường `PhuongThuc` riêng và khởi tạo `ChuyenKhoan` cứng — không đọc từ hồ sơ khách. Hỏi ở form tạo khiến sale tưởng phải khai trước khi bán được. |
+| **Nối với hồ sơ học viên** | Khách hàng CHÍNH LÀ nơi quản lý thông tin người học. Việc nối đã **tự động** từ 09/09/2026: duyệt yêu cầu xếp lớp (FR-21) tự tạo hồ sơ học viên từ dữ liệu khách rồi nối lại. Ô nhập tay là thừa. |
+
+Cột DB **giữ nguyên** — không migration, không mất dữ liệu cũ (17/32 khách đang có liên kết).
+
+**Lệnh cập nhật vẫn gửi lại giá trị cũ của hai trường này.** Đây là bẫy của quy tắc #1 ở dạng
+khó thấy nhất: lệnh ghi đè mọi trường nó nhận, mà form không còn ô đó để ai nhìn thấy mình
+vừa làm mất gì. Đã thử trên dữ liệu thật — gửi `nguoiDungId: null` xoá sạch liên kết, âm thầm.
+Canh bởi `Sua_khach_hang_khong_lam_mat_lien_ket_hoc_vien` (mutation test xác nhận nó bắt lỗi).
+
+Gỡ 3 khoá i18n thành thừa ở cả 5 ngôn ngữ; `phuongThuc` và `chuaVaoHoc` giữ lại vì màn mua
+hàng và cột bảng vẫn dùng.
+
+**715 test backend xanh** (610 tích hợp + 105 đơn vị).
+
+
 ### Fixed — lỗi nhập liệu nay nói rõ sai ở đâu (30/09/2026)
 
 Tạo tài khoản với mật khẩu ngắn chỉ báo **"Dữ liệu nhập vào chưa hợp lệ"** — không nói được

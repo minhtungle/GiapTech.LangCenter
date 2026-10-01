@@ -472,4 +472,58 @@ public class CapNhatKhongMatDuLieuTests(ApiFactory factory) : IClassFixture<ApiF
 
         return (k.CreatedById, k.UpdatedById, k.UpdatedAt);
     }
+
+    /// <summary>
+    /// Sửa khách hàng KHÔNG được làm mất liên kết với hồ sơ học viên (02/10/2026).
+    ///
+    /// Ô "Nối với hồ sơ học viên" đã bị GỠ khỏi form (chủ sản phẩm chốt: khách hàng chính là
+    /// nơi quản lý thông tin, và FR-21 tự nối khi duyệt xếp lớp). Nhưng lệnh cập nhật vẫn ghi
+    /// đè `NguoiDungId`, nên form phải gửi lại giá trị CŨ — đúng khuôn quy tắc #1.
+    ///
+    /// Đã thử trên dữ liệu thật: gửi `nguoiDungId: null` xoá sạch liên kết, và xoá ÂM THẦM vì
+    /// form không còn ô đó để ai nhìn thấy mình vừa làm mất gì.
+    ///
+    /// Test này canh chiều đó. Ai gỡ biện pháp giữ giá trị ở `KhachHang.tsx` sẽ thấy nó đỏ.
+    /// </summary>
+    [Fact]
+    public async Task Sua_khach_hang_khong_lam_mat_lien_ket_hoc_vien()
+    {
+        var c = await Client();
+
+        // Tạo một học viên để nối.
+        var taoHv = await c.PostAsJsonAsync("/api/v1/nguoi-dung", new
+        {
+            HoTen = "Học viên nối thử",
+            LoaiNguoiDung = "HocVien",
+        });
+        taoHv.EnsureSuccessStatusCode();
+        var hocVienId = await taoHv.Content.ReadFromJsonAsync<Guid>();
+
+        // Tạo khách hàng ĐÃ nối sẵn với học viên đó.
+        var taoKh = await c.PostAsJsonAsync("/api/v1/khach-hang", new
+        {
+            HoTen = "Khách giữ liên kết",
+            SoDienThoai = "0911222333",
+            NguoiDungId = hocVienId,
+        });
+        taoKh.EnsureSuccessStatusCode();
+        var khachId = await taoKh.Content.ReadFromJsonAsync<Guid>();
+
+        // Sửa MỘT trường khác (tên) — gửi lại `nguoiDungId` như form thật đang làm.
+        var sua = await c.PutAsJsonAsync($"/api/v1/khach-hang/{khachId}", new
+        {
+            Id = khachId,
+            HoTen = "Khách giữ liên kết (đã sửa tên)",
+            SoDienThoai = "0911222333",
+            NguoiDungId = hocVienId,
+        });
+        sua.EnsureSuccessStatusCode();
+
+        var ds = await DocTrang(await c.GetAsync("/api/v1/khach-hang?soDong=200"));
+        var kh = ds.Single(x => x.GetProperty("id").GetGuid() == khachId);
+
+        Assert.Equal("Khách giữ liên kết (đã sửa tên)", kh.GetProperty("hoTen").GetString());
+        // Điều được canh: liên kết còn nguyên sau khi sửa trường khác.
+        Assert.Equal(hocVienId, kh.GetProperty("nguoiDungId").GetGuid());
+    }
 }

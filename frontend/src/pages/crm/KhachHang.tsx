@@ -18,14 +18,7 @@ import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { LocDoiNhom } from '@/components/crm/LocDoiNhom'
 import { useQuyen } from '@/lib/quyen'
 import { useXacNhan } from '@/lib/xacNhan'
-import {
-  CAC_PHUONG_THUC, tien, type KhachHangDto, type PhuongThucThanhToan,
-} from './crmTypes'
-
-interface HocVienNgan {
-  id: string
-  hoTen: string
-}
+import { tien, type KhachHangDto } from './crmTypes'
 
 /**
  * FR-17 — khách hàng (CRM): người quan tâm khoá học, chưa chắc thành học viên.
@@ -53,8 +46,6 @@ export default function KhachHang() {
 
   const [moForm, setMoForm] = useState(false)
   const [dangSua, setDangSua] = useState<KhachHangDto | null>(null)
-  const [phuongThuc, setPhuongThuc] = useState<PhuongThucThanhToan>('ChuyenKhoan')
-  const [hocVienId, setHocVienId] = useState<string | null>(null)
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
 
@@ -76,20 +67,6 @@ export default function KhachHang() {
           soDong,
         },
       })).data,
-  })
-
-  /**
-   * Danh sách học viên để NỐI khách với hồ sơ học tập.
-   *
-   * `enabled: coQuyen('TaiKhoan')` — người trực tổng đài chỉ có quyền `KhachHang` sẽ nhận 403
-   * ở endpoint này; gọi vô điều kiện thì họ thấy một lỗi mạng không giải thích được.
-   */
-  const { data: hocViens = [] } = useQuery({
-    queryKey: ['hoc-vien-ngan'],
-    queryFn: async () =>
-      (await api.get<KetQuaTrang<HocVienNgan>>('/hoc-vien', { params: { soDong: 200 } }))
-        .data.duLieu,
-    enabled: coQuyen('TaiKhoan'),
   })
 
   /**
@@ -182,8 +159,22 @@ export default function KhachHang() {
         soDienThoai: String(fd.get('soDienThoai') ?? '').trim() || null,
         linkFacebook: String(fd.get('linkFacebook') ?? '').trim() || null,
         ghiChu: String(fd.get('ghiChu') ?? '').trim() || null,
-        phuongThucThanhToan: phuongThuc,
-        nguoiDungId: hocVienId,
+        /*
+          Hai trường dưới KHÔNG còn ô trên form (02/10/2026), nhưng vẫn phải gửi lại giá trị
+          CŨ khi sửa — lệnh cập nhật ghi đè mọi trường nó nhận (quy tắc #1).
+
+          Gửi `null` ở đây sẽ xoá sạch liên kết khách ↔ học viên của 17 bản ghi đang có, và
+          xoá âm thầm: form không hiện ô đó nên không ai thấy mình vừa làm mất gì.
+
+          `phuongThucThanhToan`: hình thức thanh toán là thuộc tính của ĐƠN HÀNG
+          (`MuaHangCommand.PhuongThuc`), không phải của khách — bỏ khỏi form vì gây hiểu nhầm
+          là phải khai trước khi bán. Cột DB giữ nguyên để không mất dữ liệu cũ.
+
+          `nguoiDungId`: hệ thống TỰ nối khi duyệt yêu cầu xếp lớp (FR-21, chốt 09/09/2026) —
+          nó tự tạo hồ sơ học viên từ dữ liệu khách rồi nối lại. Không cần ô nhập tay.
+        */
+        phuongThucThanhToan: dangSua?.phuongThucThanhToan ?? 'ChuyenKhoan',
+        nguoiDungId: dangSua?.nguoiDungId ?? null,
       }
       if (dangSua) await api.put(`/khach-hang/${dangSua.id}`, { ...than, id: dangSua.id })
       else await api.post('/khach-hang', than)
@@ -203,8 +194,6 @@ export default function KhachHang() {
 
   const moSua = (k: KhachHangDto) => {
     setDangSua(k)
-    setPhuongThuc(k.phuongThucThanhToan)
-    setHocVienId(k.nguoiDungId)
     setMaLoi(null)
     setMoForm(true)
   }
@@ -293,8 +282,6 @@ export default function KhachHang() {
           <Button
             onClick={() => {
               setDangSua(null)
-              setPhuongThuc('ChuyenKhoan')
-              setHocVienId(null)
               setMaLoi(null)
               setMoForm(true)
             }}
@@ -574,36 +561,6 @@ export default function KhachHang() {
               defaultValue={dangSua?.linkFacebook ?? ''}
             />
           </div>
-
-          <div>
-            <Label htmlFor="phuongThuc">{t('khachHang.phuongThuc')}</Label>
-            <SelectTimKiem
-              id="phuongThuc"
-              luaChon={CAC_PHUONG_THUC.map((p) => ({
-                giaTri: p,
-                nhan: t(`phuongThucThanhToan.${p}`),
-              }))}
-              giaTri={phuongThuc}
-              onDoi={(v) => setPhuongThuc((v as PhuongThucThanhToan) ?? 'ChuyenKhoan')}
-              choPhepXoa={false}
-            />
-            <p className="mt-1 text-xs text-muted-foreground">{t('khachHang.phuongThucGoiY')}</p>
-          </div>
-
-          {/* Nối với hồ sơ học viên — chỉ hiện khi người dùng đọc được danh sách học viên. */}
-          {coQuyen('TaiKhoan') && (
-            <div>
-              <Label htmlFor="hocVien">{t('khachHang.noiHocVien')}</Label>
-              <SelectTimKiem
-                id="hocVien"
-                luaChon={hocViens.map((h) => ({ giaTri: h.id, nhan: h.hoTen }))}
-                giaTri={hocVienId}
-                onDoi={setHocVienId}
-                placeholder={t('khachHang.chuaVaoHoc')}
-              />
-              <p className="mt-1 text-xs text-muted-foreground">{t('khachHang.noiHocVienGoiY')}</p>
-            </div>
-          )}
 
           <div>
             <Label htmlFor="ghiChu">{t('chung.ghiChu')}</Label>

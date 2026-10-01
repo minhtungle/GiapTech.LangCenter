@@ -1217,7 +1217,6 @@ const vi = {
     linkFacebook: 'Link Facebook',
     lienHe: 'Liên hệ',
     phuongThuc: 'Hình thức thanh toán',
-    phuongThucGoiY: 'Hình thức mặc định của khách này — từng đăng ký vẫn ghi riêng.',
     tinhTrang: 'Tình trạng',
     daMua: 'Đã mua',
     chuaMua: 'Chưa mua',
@@ -1234,10 +1233,6 @@ const vi = {
       + 'nên không tạo trùng một người.',
     matKhauGoiY: 'Đọc mật khẩu này cho học viên — hệ thống buộc họ đổi ở lần đăng nhập đầu.',
     chuaVaoHoc: 'Chưa vào học',
-    noiHocVien: 'Nối với hồ sơ học viên',
-    noiHocVienGoiY:
-      'Chọn khi khách đã thật sự vào học. Hai bên là CÙNG một người nhưng lưu riêng: sửa tên ở '
-      + 'đây không đổi tên học viên, và ngược lại.',
     timTheo: 'Tên, số điện thoại hoặc email',
     chuaCo: 'Chưa có khách hàng nào',
     hoiLuu: 'Lưu thông tin khách hàng? Dữ liệu hiện tại sẽ bị ghi đè.',
