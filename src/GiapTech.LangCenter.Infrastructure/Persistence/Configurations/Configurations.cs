@@ -24,6 +24,7 @@ public class TenantConfig : IEntityTypeConfiguration<Tenant>
         b.Property(x => x.SoTaiKhoan).HasMaxLength(50);
         b.Property(x => x.TenNganHang).HasMaxLength(100);
         b.Property(x => x.ChuTaiKhoan).HasMaxLength(200);
+        b.Property(x => x.DuoiTenDangNhap).HasMaxLength(100);
         b.Property(x => x.LogoUrl).HasMaxLength(500);
         b.Property(x => x.AnhBiaUrl).HasMaxLength(500);
         b.Property(x => x.AnhQrUrl).HasMaxLength(500);

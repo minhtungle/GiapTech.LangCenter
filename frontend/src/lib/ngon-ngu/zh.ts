@@ -708,6 +708,8 @@ const zh = {
     Khac: '其他',
   },
   taiKhoan: {
+    noiDuoi: '在登录名后附加 {{duoi}}',
+    noiDuoiGoiY: '如需保留短名称请取消勾选。若上方已输入后缀，系统不会重复添加。',
     tieuDe: '用户账号',
     username: '用户名',
     hoTen: '姓名',
@@ -1370,6 +1372,10 @@ const zh = {
     moTaDoanhThu: '按周期、按班级、按员工汇总的营收。与 LMS 的学费账簿不同：学费账簿记录的是某个班级的每一笔收款，营收则是汇总数字。',
   },
   thietLap: {
+    nhomDangNhap: '登录名',
+    nhomDangNhapMoTa: '仅在创建新账号时生效，不影响已有账号。',
+    duoiTenDangNhap: '登录名后缀',
+    duoiTenDangNhapGoiY: '中心不使用时请留空。创建账号时，创建者可选择是否附加该后缀。',
     hoiLuu: '保存中心设置？当前信息将被覆盖。',
     tieuDe: '通用设置',
     tenTrungTam: '中心名称',
@@ -1517,6 +1523,8 @@ const zh = {
     MAT_KHAU_QUA_DAI: '密码过长（最多 128 个字符）',
     MAT_KHAU_MOI_TRUNG_CU: '新密码必须与当前密码不同',
     USERNAME_KY_TU_KHONG_HOP_LE: '用户名只能包含字母、数字以及 . _ -',
+    DUOI_TEN_DANG_NHAP_KHONG_HOP_LE:
+      '登录名后缀必须以 @ 开头并且是有效域名，例如 @vietgeneducation.edu.vn',
     ID_KHONG_KHOP: '数据不匹配',
     NGUOI_DUOC_CHAM_KHONG_DUNG_LOP: '被评分的人员并未在本课次授课。请刷新页面后重试。',
     TRANG_THAI_KHONG_HOP_LE: '课次状态无效。',

@@ -277,4 +277,127 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
             Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
         }
     }
+    // ---------------------------------------------------------------------------------
+    // Đuôi tên đăng nhập (05/10/2026)
+    // ---------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Khai đuôi ở Thiết lập + tick "nối đuôi" ⇒ username lưu xuống là chuỗi ĐẦY ĐỦ.
+    ///
+    /// Ghép ở tầng ứng dụng chứ không ở giao diện: bất kỳ ai gọi thẳng API cũng đi qua đây,
+    /// và `UNIQUE(tenant_id, username)` kiểm đúng chuỗi cuối cùng.
+    /// </summary>
+    [Fact]
+    public async Task Tick_noi_duoi_thi_username_co_duoi_trung_tam()
+    {
+        var c = await Client(factory.MaTrungTamB);
+
+        (await c.PutAsJsonAsync("/api/v1/thiet-lap", new
+        {
+            TenTrungTam = "Trung tâm B",
+            DuoiTenDangNhap = "@vietgeneducation.edu.vn"
+        })).EnsureSuccessStatusCode();
+
+        (await c.PostAsJsonAsync("/api/v1/tai-khoan", new
+        {
+            Username = "nv.moi",
+            MatKhau = "matkhau-du-dai-12",
+            QuyenIds = Array.Empty<Guid>(),
+            NoiDuoi = true
+        })).EnsureSuccessStatusCode();
+
+        var ds = await c.GetFromJsonAsync<JsonElement>("/api/v1/tai-khoan?soDong=200");
+        var tens = ds.GetProperty("duLieu").EnumerateArray()
+            .Select(x => x.GetProperty("username").GetString()).ToList();
+
+        Assert.Contains("nv.moi@vietgeneducation.edu.vn", tens);
+        Assert.DoesNotContain("nv.moi", tens);
+    }
+
+    /// <summary>
+    /// KHÔNG tick ⇒ giữ nguyên tên ngắn, dù trung tâm đã khai đuôi.
+    ///
+    /// Đây là lý do `NoiDuoi` là lựa chọn chứ không phải ràng buộc: tài khoản `admin` sinh ra
+    /// lúc đăng ký trung tâm, khi chưa ai kịp khai đuôi nào.
+    /// </summary>
+    [Fact]
+    public async Task Khong_tick_thi_giu_nguyen_ten_ngan()
+    {
+        var c = await Client(factory.MaTrungTamC);
+
+        (await c.PutAsJsonAsync("/api/v1/thiet-lap", new
+        {
+            TenTrungTam = "Trung tâm C",
+            DuoiTenDangNhap = "@abc.edu.vn"
+        })).EnsureSuccessStatusCode();
+
+        (await c.PostAsJsonAsync("/api/v1/tai-khoan", new
+        {
+            Username = "ky.thuat",
+            MatKhau = "matkhau-du-dai-12",
+            QuyenIds = Array.Empty<Guid>(),
+            NoiDuoi = false
+        })).EnsureSuccessStatusCode();
+
+        var ds = await c.GetFromJsonAsync<JsonElement>("/api/v1/tai-khoan?soDong=200");
+        var tens = ds.GetProperty("duLieu").EnumerateArray()
+            .Select(x => x.GetProperty("username").GetString()).ToList();
+
+        Assert.Contains("ky.thuat", tens);
+        Assert.DoesNotContain("ky.thuat@abc.edu.vn", tens);
+    }
+
+    /// <summary>
+    /// Người tạo gõ sẵn cả đuôi + vẫn để tick ⇒ KHÔNG nối hai lần.
+    ///
+    /// Ca thật: form hiện sẵn đuôi để người dùng nhìn thấy, nên họ hay gõ luôn cả đuôi vào ô
+    /// rồi quên bỏ tick. Không chặn thì ra `nv1@abc.vn@abc.vn` — một username không ai đăng
+    /// nhập nổi, và không có lỗi nào báo.
+    /// </summary>
+    [Fact]
+    public async Task Go_san_ca_duoi_thi_khong_noi_hai_lan()
+    {
+        var c = await Client(factory.MaTrungTamB);
+
+        (await c.PutAsJsonAsync("/api/v1/thiet-lap", new
+        {
+            TenTrungTam = "Trung tâm B",
+            DuoiTenDangNhap = "@vietgeneducation.edu.vn"
+        })).EnsureSuccessStatusCode();
+
+        (await c.PostAsJsonAsync("/api/v1/tai-khoan", new
+        {
+            Username = "tu.go@vietgeneducation.edu.vn",
+            MatKhau = "matkhau-du-dai-12",
+            QuyenIds = Array.Empty<Guid>(),
+            NoiDuoi = true
+        })).EnsureSuccessStatusCode();
+
+        var ds = await c.GetFromJsonAsync<JsonElement>("/api/v1/tai-khoan?soDong=200");
+        var tens = ds.GetProperty("duLieu").EnumerateArray()
+            .Select(x => x.GetProperty("username").GetString()).ToList();
+
+        Assert.Contains("tu.go@vietgeneducation.edu.vn", tens);
+        Assert.DoesNotContain(
+            "tu.go@vietgeneducation.edu.vn@vietgeneducation.edu.vn", tens);
+    }
+
+    /// <summary>Đuôi không bắt đầu bằng `@` ⇒ từ chối ngay ở Thiết lập.</summary>
+    [Theory]
+    [InlineData("vietgeneducation.edu.vn")]
+    [InlineData("@")]
+    [InlineData("@có dấu.vn")]
+    public async Task Duoi_sai_dinh_dang_thi_tu_choi(string duoi)
+    {
+        var c = await Client(factory.MaTrungTamC);
+
+        var res = await c.PutAsJsonAsync("/api/v1/thiet-lap", new
+        {
+            TenTrungTam = "Trung tâm C",
+            DuoiTenDangNhap = duoi
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
 }

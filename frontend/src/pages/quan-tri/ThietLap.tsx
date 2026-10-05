@@ -18,6 +18,7 @@ interface ThietLapDto {
   moTa: string | null
   diaChi: string | null
   lienHe: string | null
+  duoiTenDangNhap: string | null
   soTaiKhoan: string | null
   tenNganHang: string | null
   chuTaiKhoan: string | null
@@ -95,6 +96,8 @@ export default function ThietLap() {
       // xoá lại hiện giá trị cũ sau khi tải lại — trông như không lưu được.
       diaChi: (fd.get('diaChi') as string) ?? '',
       lienHe: (fd.get('lienHe') as string) ?? '',
+      // Đuôi tên đăng nhập. Cùng quy ước: chuỗi rỗng = trung tâm thôi dùng đuôi.
+      duoiTenDangNhap: (fd.get('duoiTenDangNhap') as string) ?? '',
       // Thông tin chuyển khoản. Cùng quy ước: chuỗi rỗng = xoá, không gửi null.
       soTaiKhoan: (fd.get('soTaiKhoan') as string) ?? '',
       tenNganHang: (fd.get('tenNganHang') as string) ?? '',
@@ -181,6 +184,29 @@ export default function ThietLap() {
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label htmlFor="moTa">{t('thietLap.moTa')}</Label>
             <Textarea id="moTa" name="moTa" defaultValue={data?.moTa ?? ''} />
+          </div>
+
+          {/* Đuôi tên đăng nhập — nhóm riêng vì nó đổi cách người dùng ĐĂNG NHẬP, khác hẳn
+              mấy ô mô tả bên trên. */}
+          <div className="sm:col-span-2">
+            <h3 className="text-sm font-semibold">{t('thietLap.nhomDangNhap')}</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {t('thietLap.nhomDangNhapMoTa')}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label htmlFor="duoiTenDangNhap">{t('thietLap.duoiTenDangNhap')}</Label>
+            <Input
+              id="duoiTenDangNhap"
+              name="duoiTenDangNhap"
+              maxLength={100}
+              placeholder="@vietgeneducation.edu.vn"
+              defaultValue={data?.duoiTenDangNhap ?? ''}
+            />
+            <p className="text-xs text-muted-foreground">
+              {t('thietLap.duoiTenDangNhapGoiY')}
+            </p>
           </div>
 
           {/* Nhóm chuyển khoản. Tách riêng và nói rõ mức riêng tư: số tài khoản không phải

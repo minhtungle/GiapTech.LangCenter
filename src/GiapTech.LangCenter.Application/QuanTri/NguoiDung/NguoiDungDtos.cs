@@ -254,7 +254,9 @@ public class LayDanhSachNguoiDungHandler(IAppDbContext db, IPhamViLopHoc phamVi)
 /// (học viên nhỏ tuổi, giáo viên thỉnh giảng).
 /// </summary>
 public record TaiKhoanKemTheo(
-    string Username, string MatKhau, List<Guid> QuyenIds, bool PhaiDoiMatKhau = true);
+    string Username, string MatKhau, List<Guid> QuyenIds, bool PhaiDoiMatKhau = true,
+    /// <summary>Nối đuôi tên đăng nhập của trung tâm — xem `DuoiTenDangNhapHelper`.</summary>
+    bool NoiDuoi = false);
 
 public record TaoNguoiDungCommand(
     string HoTen, string? Email, string? SoDienThoai, string? DiaChi,
@@ -310,13 +312,15 @@ public class TaoNguoiDungValidator : AbstractValidator<TaoNguoiDungCommand>
         When(x => x.TaiKhoan is not null, () =>
         {
             RuleFor(x => x.TaiKhoan!.Username).NotEmpty().MaximumLength(100)
-                .Matches("^[a-zA-Z0-9._-]+$").WithErrorCode("USERNAME_KY_TU_KHONG_HOP_LE");
+                .Matches("^[a-zA-Z0-9._-]+(@[a-zA-Z0-9.-]+)?$")
+                .WithErrorCode("USERNAME_KY_TU_KHONG_HOP_LE");
             RuleFor(x => x.TaiKhoan!.MatKhau).ApDungChinhSach();
         });
     }
 }
 
-public class TaoNguoiDungHandler(IAppDbContext db, IPasswordHasher hasher)
+public class TaoNguoiDungHandler(
+    IAppDbContext db, IPasswordHasher hasher, ICurrentTenant currentTenant)
     : IRequestHandler<TaoNguoiDungCommand, Guid>
 {
     /// <summary>
@@ -378,7 +382,9 @@ public class TaoNguoiDungHandler(IAppDbContext db, IPasswordHasher hasher)
 
         if (request.TaiKhoan is { } tk)
         {
-            var username = tk.Username.Trim();
+            // Ghép TRƯỚC khi kiểm trùng — cùng lý do với `TaoTaiKhoanHandler`.
+            var username = await TaiKhoan.DuoiTenDangNhapHelper.GhepAsync(
+                db, currentTenant.TenantId, tk.Username, tk.NoiDuoi, ct);
 
             if (await db.TaiKhoans.AnyAsync(u => u.Username == username, ct))
                 throw new AppException("USERNAME_DA_TON_TAI");

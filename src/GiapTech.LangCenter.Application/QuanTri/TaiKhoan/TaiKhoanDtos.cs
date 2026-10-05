@@ -77,24 +77,37 @@ public record TaoTaiKhoanCommand(
     /// hợp và seed.
     /// </summary>
     Guid? NguoiDungId,
-    List<Guid> QuyenIds, bool PhaiDoiMatKhau = true) : IRequest<Guid>;
+    List<Guid> QuyenIds, bool PhaiDoiMatKhau = true,
+    /// <summary>
+    /// Nối đuôi tên đăng nhập của trung tâm (vd `@vietgeneducation.edu.vn`) vào username.
+    ///
+    /// Mặc định `false` để client cũ và `TenantSeeder` tạo `admin` không bị đổi tên ngoài ý
+    /// muốn — trung tâm vừa đăng ký còn chưa khai đuôi nào.
+    /// </summary>
+    bool NoiDuoi = false) : IRequest<Guid>;
 
 public class TaoTaiKhoanValidator : AbstractValidator<TaoTaiKhoanCommand>
 {
     public TaoTaiKhoanValidator()
     {
         RuleFor(x => x.Username).NotEmpty().MaximumLength(100)
-            .Matches("^[a-zA-Z0-9._-]+$").WithErrorCode("USERNAME_KY_TU_KHONG_HOP_LE");
+            .Matches("^[a-zA-Z0-9._-]+(@[a-zA-Z0-9.-]+)?$")
+                .WithErrorCode("USERNAME_KY_TU_KHONG_HOP_LE");
         RuleFor(x => x.MatKhau).ApDungChinhSach();
     }
 }
 
-public class TaoTaiKhoanHandler(IAppDbContext db, IPasswordHasher hasher)
+public class TaoTaiKhoanHandler(
+    IAppDbContext db, IPasswordHasher hasher, ICurrentTenant currentTenant)
     : IRequestHandler<TaoTaiKhoanCommand, Guid>
 {
     public async Task<Guid> Handle(TaoTaiKhoanCommand request, CancellationToken ct)
     {
-        var username = request.Username.Trim();
+        // Ghép TRƯỚC khi kiểm trùng: `UNIQUE(tenant_id, username)` ở DB kiểm trên chuỗi đã
+        // lưu, nên kiểm trên chuỗi chưa ghép sẽ cho qua hai tài khoản rồi nổ ở tầng DB với
+        // thông báo khó hiểu.
+        var username = await DuoiTenDangNhapHelper.GhepAsync(
+            db, currentTenant.TenantId, request.Username, request.NoiDuoi, ct);
 
         // Username chỉ duy nhất TRONG tenant — query filter đã giới hạn phạm vi nên
         // kiểm tra này tự động đúng phạm vi. DB cũng có UNIQUE(tenant_id, username) chặn

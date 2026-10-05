@@ -708,6 +708,8 @@ const ko = {
     Khac: '기타',
   },
   taiKhoan: {
+    noiDuoi: '아이디에 {{duoi}} 붙이기',
+    noiDuoiGoiY: '짧은 이름을 쓰려면 체크를 해제하세요. 위에 접미사를 직접 입력했다면 중복해서 붙이지 않습니다.',
     tieuDe: '사용자 계정',
     username: '아이디',
     hoTen: '성명',
@@ -1370,6 +1372,10 @@ const ko = {
     moTaDoanhThu: '기간별, 반별, 담당자별로 집계한 매출입니다. LMS의 수강료 장부와는 다릅니다: 수강료 장부는 한 반의 개별 수납 내역이고, 매출은 집계된 수치입니다.',
   },
   thietLap: {
+    nhomDangNhap: '로그인 아이디',
+    nhomDangNhapMoTa: '새 계정을 만들 때 적용되며 기존 계정에는 영향이 없습니다.',
+    duoiTenDangNhap: '아이디 접미사',
+    duoiTenDangNhapGoiY: '사용하지 않으면 비워 두세요. 계정 생성 시 접미사를 붙일지 선택할 수 있습니다.',
     hoiLuu: '센터 설정을 저장할까요? 현재 정보는 덮어쓰여집니다.',
     tieuDe: '일반 설정',
     tenTrungTam: '센터 이름',
@@ -1517,6 +1523,8 @@ const ko = {
     MAT_KHAU_QUA_DAI: '비밀번호가 너무 깁니다 (최대 128자)',
     MAT_KHAU_MOI_TRUNG_CU: '새 비밀번호는 현재 비밀번호와 달라야 합니다',
     USERNAME_KY_TU_KHONG_HOP_LE: '아이디는 영문, 숫자와 . _ - 만 사용할 수 있습니다',
+    DUOI_TEN_DANG_NHAP_KHONG_HOP_LE:
+      '로그인 아이디 접미사는 @로 시작하는 올바른 도메인이어야 합니다. 예: @vietgeneducation.edu.vn',
     ID_KHONG_KHOP: '데이터가 일치하지 않습니다',
     NGUOI_DUOC_CHAM_KHONG_DUNG_LOP: '평가 대상자가 이 수업을 진행하지 않았습니다. 페이지를 새로 고친 뒤 다시 시도하세요.',
     TRANG_THAI_KHONG_HOP_LE: '수업 상태가 올바르지 않습니다.',

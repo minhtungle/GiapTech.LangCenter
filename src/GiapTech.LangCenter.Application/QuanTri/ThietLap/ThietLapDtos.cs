@@ -22,7 +22,9 @@ public record ThietLapDto(
     string? SoTaiKhoan = null,
     string? TenNganHang = null,
     string? ChuTaiKhoan = null,
-    string? AnhQrUrl = null);
+    string? AnhQrUrl = null,
+    /// <summary>Đuôi tự nối vào tên đăng nhập khi tạo tài khoản. null = trung tâm không dùng.</summary>
+    string? DuoiTenDangNhap = null);
 
 public record LayThietLapQuery : IRequest<ThietLapDto>;
 
@@ -43,7 +45,8 @@ public class LayThietLapHandler(IAppDbContext db, ICurrentTenant tenant)
                 t.Id, t.MaTrungTam, t.TenTrungTam, t.TenVietTat,
                 t.LogoUrl, t.AnhBiaUrl, t.MoTa,
                 t.DiaChi, t.LienHe,
-                t.SoTaiKhoan, t.TenNganHang, t.ChuTaiKhoan, t.AnhQrUrl)
+                t.SoTaiKhoan, t.TenNganHang, t.ChuTaiKhoan, t.AnhQrUrl,
+                t.DuoiTenDangNhap)
             : throw new KhongTimThayException($"Tenant {tid}");
     }
 }
@@ -59,7 +62,9 @@ public record CapNhatThietLapCommand(
     string? SoTaiKhoan = null,
     string? TenNganHang = null,
     string? ChuTaiKhoan = null,
-    string? AnhQrUrl = null) : IRequest;
+    string? AnhQrUrl = null,
+    /// <summary>Cùng quy ước: null = giữ nguyên, chuỗi rỗng = trung tâm thôi dùng đuôi.</summary>
+    string? DuoiTenDangNhap = null) : IRequest;
 
 public class CapNhatThietLapValidator : AbstractValidator<CapNhatThietLapCommand>
 {
@@ -71,6 +76,12 @@ public class CapNhatThietLapValidator : AbstractValidator<CapNhatThietLapCommand
         RuleFor(x => x.LienHe).MaximumLength(200);
         RuleFor(x => x.SoTaiKhoan).MaximumLength(50);
         RuleFor(x => x.TenNganHang).MaximumLength(100);
+        // Phải bắt đầu bằng `@` và là tên miền hợp lệ. Không có `@` thì người tạo tài khoản
+        // tick "nối đuôi" sẽ ra `nv1vietgeneducation.edu.vn` — sai mà không có lỗi nào.
+        RuleFor(x => x.DuoiTenDangNhap)
+            .MaximumLength(100)
+            .Matches("^@[a-zA-Z0-9.-]+$").WithErrorCode("DUOI_TEN_DANG_NHAP_KHONG_HOP_LE")
+            .When(x => !string.IsNullOrWhiteSpace(x.DuoiTenDangNhap));
         RuleFor(x => x.ChuTaiKhoan).MaximumLength(200);
     }
 }
@@ -111,6 +122,8 @@ public class CapNhatThietLapHandler(IAppDbContext db, ICurrentTenant tenant)
             t.TenNganHang = string.IsNullOrWhiteSpace(nh) ? null : nh.Trim();
         if (request.ChuTaiKhoan is { } ctk)
             t.ChuTaiKhoan = string.IsNullOrWhiteSpace(ctk) ? null : ctk.Trim();
+        if (request.DuoiTenDangNhap is { } duoi)
+            t.DuoiTenDangNhap = string.IsNullOrWhiteSpace(duoi) ? null : duoi.Trim();
 
         // Ba khoá ảnh: cùng quy ước — chuỗi rỗng = người dùng gỡ ảnh.
         if (request.LogoUrl is { } lg) t.LogoUrl = string.IsNullOrWhiteSpace(lg) ? null : lg;

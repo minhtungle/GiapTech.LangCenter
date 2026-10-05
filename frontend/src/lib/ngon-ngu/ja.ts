@@ -708,6 +708,8 @@ const ja = {
     Khac: 'その他',
   },
   taiKhoan: {
+    noiDuoi: 'ログイン名に {{duoi}} を付ける',
+    noiDuoiGoiY: '短い名前にする場合はチェックを外します。上の欄にサフィックスを入力済みの場合、重ねて付きません。',
     tieuDe: 'ユーザーアカウント',
     username: 'ログインID',
     hoTen: '氏名',
@@ -1370,6 +1372,10 @@ const ja = {
     moTaDoanhThu: '期間別、クラス別、担当者別に集計した売上です。LMS の入金記録とは異なります。入金記録はあるクラスの個別の入金であり、売上は集計値です。',
   },
   thietLap: {
+    nhomDangNhap: 'ログイン名',
+    nhomDangNhapMoTa: '新規アカウント作成時に適用されます。既存のアカウントには影響しません。',
+    duoiTenDangNhap: 'ログイン名のサフィックス',
+    duoiTenDangNhapGoiY: '使用しない場合は空欄にします。アカウント作成時に付けるかどうかを選べます。',
     hoiLuu: 'センターの設定を保存しますか？現在の情報は上書きされます。',
     tieuDe: '共通設定',
     tenTrungTam: 'センター名',
@@ -1517,6 +1523,8 @@ const ja = {
     MAT_KHAU_QUA_DAI: 'パスワードが長すぎます（最大128文字）',
     MAT_KHAU_MOI_TRUNG_CU: '新しいパスワードは現在のパスワードと異なるものにしてください',
     USERNAME_KY_TU_KHONG_HOP_LE: 'ユーザー名に使用できるのは英字、数字、および . _ - のみです',
+    DUOI_TEN_DANG_NHAP_KHONG_HOP_LE:
+      'ログイン名のサフィックスは @ で始まる有効なドメインである必要があります（例: @vietgeneducation.edu.vn）',
     ID_KHONG_KHOP: 'データが一致しません',
     NGUOI_DUOC_CHAM_KHONG_DUNG_LOP: '採点対象者はこの授業を担当していません。ページを再読み込みしてから再度お試しください。',
     TRANG_THAI_KHONG_HOP_LE: '授業のステータスが正しくありません。',

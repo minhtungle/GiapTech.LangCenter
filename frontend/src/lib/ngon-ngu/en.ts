@@ -708,6 +708,8 @@ const en = {
     Khac: 'Other',
   },
   taiKhoan: {
+    noiDuoi: 'Append {{duoi}} to the username',
+    noiDuoiGoiY: 'Untick to keep a short name. If you already typed the suffix above, it will not be added twice.',
     tieuDe: 'User accounts',
     username: 'Username',
     hoTen: 'Full name',
@@ -1370,6 +1372,10 @@ const en = {
     moTaDoanhThu: 'Revenue aggregated by period, by class and by staff member. Different from the tuition receipt book in LMS: the receipt book holds each individual payment for one class, while revenue is the aggregated figure.',
   },
   thietLap: {
+    nhomDangNhap: 'Login names',
+    nhomDangNhapMoTa: 'Applies when creating new accounts. Existing accounts are unaffected.',
+    duoiTenDangNhap: 'Username suffix',
+    duoiTenDangNhapGoiY: 'Leave blank if your centre does not use one. When creating an account, the creator chooses whether to append it.',
     hoiLuu: 'Save the center settings? The current information will be overwritten.',
     tieuDe: 'General settings',
     tenTrungTam: 'Center name',
@@ -1517,6 +1523,8 @@ const en = {
     MAT_KHAU_QUA_DAI: 'The password is too long (maximum 128 characters)',
     MAT_KHAU_MOI_TRUNG_CU: 'The new password must be different from the current one',
     USERNAME_KY_TU_KHONG_HOP_LE: 'A username may contain only letters, digits and . _ -',
+    DUOI_TEN_DANG_NHAP_KHONG_HOP_LE:
+      'The username suffix must start with @ and be a valid domain, e.g. @vietgeneducation.edu.vn',
     ID_KHONG_KHOP: 'The data does not match',
     NGUOI_DUOC_CHAM_KHONG_DUNG_LOP: 'The person being rated did not lead this session. Reload the page and try again.',
     TRANG_THAI_KHONG_HOP_LE: 'Invalid session status.',

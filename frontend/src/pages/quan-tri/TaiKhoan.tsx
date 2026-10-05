@@ -49,6 +49,13 @@ export default function TaiKhoan() {
 
   const [moForm, setMoForm] = useState(false)
   const [dangSua, setDangSua] = useState<TaiKhoanDto | null>(null)
+  /**
+   * Nối đuôi tên đăng nhập của trung tâm vào username đang gõ.
+   *
+   * Tick sẵn khi trung tâm ĐÃ khai đuôi — đó là ý định thường gặp, còn tài khoản không đuôi
+   * là ngoại lệ. Trung tâm chưa khai đuôi thì ô không hiện, giá trị `false` không ảnh hưởng.
+   */
+  const [noiDuoi, setNoiDuoi] = useState(true)
   const [nguoiChon, setNguoiChon] = useState<string | null>(null)
   const [quyenChon, setQuyenChon] = useState<string[]>([])
   const [trangThai, setTrangThai] = useState<'HoatDong' | 'VoHieuHoa'>('HoatDong')
@@ -69,6 +76,18 @@ export default function TaiKhoan() {
   const { data: quyens } = useQuery({
     queryKey: ['quyen'],
     queryFn: async () => (await api.get<QuyenNgan[]>('/quyen')).data,
+  })
+
+  /**
+   * Thiết lập trung tâm — chỉ cần `duoiTenDangNhap` để dựng ô "nối đuôi".
+   *
+   * Dùng CHUNG `queryKey` với màn Thiết lập: hai màn đọc một endpoint, khoá khác nhau thì
+   * đổi đuôi ở Thiết lập xong sang đây vẫn thấy giá trị cũ cho tới khi tải lại trang.
+   */
+  const { data: thietLap } = useQuery({
+    queryKey: ['thiet-lap'],
+    queryFn: async () =>
+      (await api.get<{ duoiTenDangNhap: string | null }>('/thiet-lap')).data,
   })
 
   /**
@@ -117,6 +136,7 @@ export default function TaiKhoan() {
           nguoiDungId: nguoiChon,
           quyenIds: quyenChon,
           phaiDoiMatKhau: buocDoiMk,
+          noiDuoi,
         })
       }
     },
@@ -330,6 +350,24 @@ export default function TaiKhoan() {
               <div>
                 <Label htmlFor="username">{t('taiKhoan.username')} *</Label>
                 <Input id="username" name="username" required />
+                {/* Chỉ hiện khi trung tâm đã khai đuôi ở Thiết lập chung — không khai thì ô
+                    này vô nghĩa và chỉ làm form rối. */}
+                {thietLap?.duoiTenDangNhap && (
+                  <>
+                    <label className="mt-1.5 flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-[hsl(var(--primary))]"
+                        checked={noiDuoi}
+                        onChange={(e) => setNoiDuoi(e.target.checked)}
+                      />
+                      {t('taiKhoan.noiDuoi', { duoi: thietLap.duoiTenDangNhap })}
+                    </label>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {t('taiKhoan.noiDuoiGoiY')}
+                    </p>
+                  </>
+                )}
               </div>
               <div>
                 <Label htmlFor="matKhau">{t('taiKhoan.matKhau')} *</Label>

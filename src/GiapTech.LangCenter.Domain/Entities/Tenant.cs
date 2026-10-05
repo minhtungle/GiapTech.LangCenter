@@ -99,6 +99,23 @@ public class Tenant : BaseEntity
     /// </summary>
     public int SoNgayCanhBaoNoHocPhi { get; set; } = 14;
 
+    /// <summary>
+    /// Đuôi tự nối vào tên đăng nhập khi tạo tài khoản, ví dụ <c>@vietgeneducation.edu.vn</c>.
+    ///
+    /// null / rỗng = trung tâm không dùng đuôi, tên đăng nhập giữ nguyên như người tạo gõ.
+    ///
+    /// ## Chỉ là GỢI Ý lúc tạo, không phải ràng buộc
+    ///
+    /// Người tạo tài khoản **chọn được** có nối hay không ở từng tài khoản. Lý do: tài khoản
+    /// `admin` đầu tiên sinh ra lúc đăng ký trung tâm, khi chưa ai kịp khai đuôi — bắt buộc
+    /// nối sẽ chặn chính luồng tạo trung tâm.
+    ///
+    /// Giá trị lưu vào <c>TAI_KHOAN.username</c> là chuỗi ĐẦY ĐỦ sau khi nối. Đăng nhập so
+    /// khớp chính xác chuỗi đó, nên người dùng gõ đủ cả đuôi — không có bước đoán thêm ở
+    /// `DangNhapCommand`, và `UNIQUE(tenant_id, username)` vẫn đúng nguyên nghĩa.
+    /// </summary>
+    public string? DuoiTenDangNhap { get; set; }
+
     // --- Thông tin chuyển khoản ---
     //
     // Chỉ để HIỂN THỊ cho người học biết chuyển tiền vào đâu. Hệ thống KHÔNG xử lý tiền:

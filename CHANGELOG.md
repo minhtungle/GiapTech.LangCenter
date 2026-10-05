@@ -8,6 +8,33 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Added — đuôi tên đăng nhập theo trung tâm (05/10/2026)
+
+Thiết lập chung có thêm ô **đuôi tên đăng nhập** (ví dụ `@vietgeneducation.edu.vn`). Khai rồi
+thì khi tạo tài khoản, gõ `nv1` sẽ lưu thành `nv1@vietgeneducation.edu.vn`.
+
+Người tạo **chọn được có nối hay không** — ô tick trên form, mặc định bật, chỉ hiện khi trung
+tâm đã khai đuôi. Tài khoản kỹ thuật hoặc nick ngắn cố ý thì bỏ tick.
+
+**Nối ở tầng Application** (`DuoiTenDangNhapHelper.GhepAsync`), không ở form và không ở DB:
+
+- Ở form thì **hai** đường tạo tài khoản (màn Tài khoản và màn tạo người kèm tài khoản) phải
+  tự ghép, và ai gọi thẳng API đều bỏ qua được.
+- Ở DB thì `UNIQUE(tenant_id, username)` kiểm trên chuỗi **chưa** nối, nên hai người cùng phần
+  đầu vẫn lọt. Nối **trước** khi kiểm trùng mới đúng.
+
+Gõ sẵn cả đuôi vào ô (`nv1@vietgeneducation.edu.vn`) thì **không nối lần hai** — form điền sẵn
+đuôi để người dùng nhìn thấy nên đây là thao tác hay gặp, không phải ca hiếm.
+
+Đuôi **không áp dụng ngược** cho tài khoản đã có: đổi username của người đang dùng là đổi thứ
+họ gõ mỗi sáng, phải là quyết định tường minh chứ không phải hệ quả của một lần sửa thiết lập
+(quy tắc #1).
+
+Kèm theo: `username` nay cho phép ký tự `@` — `^[a-zA-Z0-9._-]+(@[a-zA-Z0-9.-]+)?$`, nới ở
+**cả hai** validator (`TaoTaiKhoanCommand` và `TaoNguoiDungCommand`).
+
+Migration `ThemDuoiTenDangNhap` — thêm cột `TENANT.duoi_ten_dang_nhap` (nullable, 100 ký tự).
+
 ### Added — xác nhận "đã nhận đủ tiền" cho từng đơn (05/10/2026)
 
 Form **bổ sung thanh toán** có thêm ô *"Đã nhận đủ tiền cho đơn này"*, giống ô đã có ở form

@@ -781,6 +781,8 @@ const vi = {
     Khac: 'Khác',
   },
   taiKhoan: {
+    noiDuoi: 'Nối {{duoi}} vào tên đăng nhập',
+    noiDuoiGoiY: 'Bỏ tick nếu muốn giữ tên ngắn. Gõ sẵn cả đuôi vào ô trên thì hệ thống không nối thêm lần nữa.',
     tieuDe: 'Tài khoản người dùng',
     username: 'Tên đăng nhập',
     hoTen: 'Họ và tên',
@@ -1542,6 +1544,10 @@ const vi = {
       + 'phí là từng khoản thu của một lớp, doanh thu là số tổng hợp.',
   },
   thietLap: {
+    nhomDangNhap: 'Tên đăng nhập',
+    nhomDangNhapMoTa: 'Áp dụng khi tạo tài khoản mới. Không ảnh hưởng tài khoản đã có.',
+    duoiTenDangNhap: 'Đuôi tên đăng nhập',
+    duoiTenDangNhapGoiY: 'Để trống nếu trung tâm không dùng. Khi tạo tài khoản, người tạo chọn có nối đuôi này hay không.',
     hoiLuu: 'Lưu thiết lập trung tâm? Thông tin hiện tại sẽ bị ghi đè.',
     tieuDe: 'Thiết lập chung',
     tenTrungTam: 'Tên trung tâm',
@@ -1716,6 +1722,8 @@ const vi = {
     MAT_KHAU_QUA_DAI: 'Mật khẩu quá dài (tối đa 128 ký tự)',
     MAT_KHAU_MOI_TRUNG_CU: 'Mật khẩu mới phải khác mật khẩu hiện tại',
     USERNAME_KY_TU_KHONG_HOP_LE: 'Tên đăng nhập chỉ gồm chữ, số và . _ -',
+    DUOI_TEN_DANG_NHAP_KHONG_HOP_LE:
+      'Đuôi tên đăng nhập phải bắt đầu bằng @ và là tên miền hợp lệ, ví dụ @vietgeneducation.edu.vn',
     ID_KHONG_KHOP: 'Dữ liệu không khớp',
     NGUOI_DUOC_CHAM_KHONG_DUNG_LOP:
       'Người được chấm không đứng lớp buổi này. Tải lại trang rồi thử lại.',

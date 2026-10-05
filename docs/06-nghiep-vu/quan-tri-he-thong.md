@@ -68,6 +68,28 @@ trạng thái, và **`nguoi_dung_id` (nullable)** trỏ tới người sở hữ
 - `nguoi_dung_id` **nullable**: tài khoản kỹ thuật (tích hợp, seed) không gắn con người nào.
 - Chỉ **Admin** đổi được mật khẩu cho tài khoản khác. Người dùng thường chỉ đổi của chính mình.
 - **Vô hiệu hoá tài khoản không đụng tới người dùng.** Đây chính là mục tiêu của việc tách bảng.
+
+### Đuôi tên đăng nhập (05/10)
+
+Trung tâm khai một đuôi ở [FR-06](#fr-06--thiết-lập-chung) (ví dụ `@vietgeneducation.edu.vn`).
+Khi tạo tài khoản, người tạo gõ `nv1` và hệ thống lưu `nv1@vietgeneducation.edu.vn`.
+
+**Người tạo chọn được có nối hay không** — ô tick trên form, mặc định bật. Tài khoản kỹ thuật
+hoặc một nick ngắn cố ý thì bỏ tick. Ô chỉ hiện khi trung tâm đã khai đuôi.
+
+Ba trường hợp **không** nối, xử lý ở `DuoiTenDangNhapHelper.GhepAsync`:
+
+1. Người tạo bỏ tick.
+2. Trung tâm chưa khai đuôi.
+3. Username gõ vào **đã chứa `@`** — form điền sẵn đuôi để nhìn thấy, nên người dùng hay gõ
+   luôn cả đuôi rồi vẫn để tick; không chặn thì ra `nv1@abc.com@abc.com`.
+
+**Nối ở tầng Application, không ở form và không ở DB.** Ở form thì hai màn tạo tài khoản
+(FR-04 và FR-03 tạo người kèm tài khoản) phải tự ghép, và ai gọi thẳng API đều bỏ qua được.
+Ở DB thì `UNIQUE(tenant_id, username)` kiểm trên chuỗi **chưa** nối, nên hai người cùng phần
+đầu vẫn lọt. Nối trước khi kiểm trùng là chỗ duy nhất mọi đường đi qua.
+
+Username vì thế cho phép ký tự `@`: `^[a-zA-Z0-9._-]+(@[a-zA-Z0-9.-]+)?$`.
 - Nhóm quyền gán cho **tài khoản**, không phải người — quyền là chuyện đăng nhập.
 
 ### Xoá dữ liệu
@@ -103,6 +125,7 @@ Thông tin trung tâm, khớp đúng các cột của bảng `TENANT`:
 | Liên hệ | `dia_chi`, `lien_he` |
 | Chuyển khoản | `so_tai_khoan`, `ten_ngan_hang`, `chu_tai_khoan`, `anh_qr_url` |
 | Vận hành | `mui_gio` (mặc định `Asia/Ho_Chi_Minh`), `so_ngay_canh_bao_no_hoc_phi` (mặc định 14) |
+| Tên đăng nhập | `duoi_ten_dang_nhap` (nullable, ví dụ `@vietgeneducation.edu.vn`) |
 
 `ma_trung_tam` **không sửa được** — nó là thứ người dùng gõ khi đăng nhập; đổi mã là làm mọi
 người trong trung tâm không vào được hệ thống.
@@ -115,6 +138,10 @@ người trong trung tâm không vào được hệ thống.
   [buổi học & điểm danh](buoi-hoc-diem-danh.md).
 - **`so_ngay_canh_bao_no_hoc_phi`** là ngưỡng để bảng công nợ đánh dấu "quá hạn". Admin tự cấu
   hình chứ không hard-code, vì chính sách nhắc nợ mỗi trung tâm mỗi khác.
+- **`duoi_ten_dang_nhap`** là đuôi hệ thống tự nối vào username khi tạo tài khoản mới
+  (05/10/2026) — xem [FR-04](#đuôi-tên-đăng-nhập-0510). Khai ở đây, **không** áp dụng ngược
+  cho tài khoản đã có: đổi username của người đang dùng là đổi thứ họ gõ mỗi sáng, phải là
+  quyết định tường minh chứ không phải hệ quả của một lần sửa thiết lập (quy tắc #1).
 
 ### Quy tắc
 
