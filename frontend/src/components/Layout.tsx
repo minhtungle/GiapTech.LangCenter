@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -51,6 +51,14 @@ export default function Layout() {
   useEffect(() => setMoMobile(false), [location.pathname])
 
   /**
+   * Tiền tố đích khi người dùng ĐANG tự bấm bộ chuyển (`null` = không có).
+   *
+   * `useRef` chứ không `useState`: đây là cờ điều phối giữa hai effect, đổi nó không được làm
+   * render thêm lần nào — mà render thêm chính là thứ đang gây nhấp nháy.
+   */
+  const dangTuChuyen = useRef<string | null>(null)
+
+  /**
    * URL THẮNG lựa chọn đã lưu: mở link `/crm/...` thì hệ thống phải nhảy sang CRM.
    *
    * Không có bước này thì mở bookmark (hoặc link đồng nghiệp gửi) sẽ hiện sidebar của hệ thống
@@ -58,6 +66,16 @@ export default function Layout() {
    * đường dẫn hiện tại không có trong menu đang hiện. Gặp thật 08/09/2026 khi lái UI.
    */
   useEffect(() => {
+    // Người dùng vừa bấm bộ chuyển: lựa chọn của họ thắng, URL đang trên đường đi tới đích.
+    //
+    // Không có chốt này thì effect chạy trong lúc `navigate()` chưa đổi xong `location`, thấy
+    // đường dẫn CŨ và ghi đè lựa chọn vừa bấm — xem ghi chú ở `doiHeThong`.
+    if (dangTuChuyen.current) {
+      // Nhả chốt khi URL đã tới hệ thống vừa chọn; giữ nguyên nếu điều hướng chưa xong.
+      if (location.pathname.startsWith(dangTuChuyen.current)) dangTuChuyen.current = null
+      return
+    }
+
     // Cả ba hệ thống con nay đều có tiền tố (LMS thêm `/lms` ngày 10/09/2026), nên chỉ cần
     // một bảng tra. Trước đó LMS phải liệt kê tường minh 5 đường và thêm màn mới mà quên khai
     // thì sidebar hiện sai hệ thống con — lỗi im lặng, không có lỗi biên dịch.
@@ -239,11 +257,27 @@ export default function Layout() {
    * và ghi đè về `Crm` sau 16ms — bộ chuyển như chết trên MỌI trang thuộc hệ thống. Đo được
    * bằng cách chặn `Storage.prototype.setItem`: hai lần ghi liên tiếp "Hrm" rồi "Crm".
    *
-   * Điều hướng làm URL và lựa chọn nói cùng một chuyện, nên effect kia không còn gì để sửa.
+   * ## THỨ TỰ quan trọng: điều hướng TRƯỚC, ghi lựa chọn SAU (06/10/2026)
+   *
+   * Lần sửa 09/09 gọi `doi()` trước rồi `navigate()`. Hai việc đó KHÔNG xảy ra cùng lúc: React
+   * xử lý `doi()` (đổi state) và render lại ngay, trong khi `navigate()` còn chưa đổi xong
+   * `location`. Effect "URL thắng" chạy ở giữa, thấy URL vẫn là `/crm/...` nên ghi đè về `Crm`,
+   * rồi điều hướng tới nơi làm nó ghi `Hrm` lần nữa — **ba lần ghi cho một cú bấm**, sidebar
+   * nhấp nháy qua lại. Đo được bằng stack trace của `Storage.setItem`: lần 1 từ `doiHeThong`,
+   * lần 2 và 3 từ chính effect này.
+   *
+   * Điều hướng trước thì `location` đã là `/hrm/...` khi effect chạy, nên nó suy ra đúng `Hrm`
+   * và điều kiện `suyRa !== heThong.hienTai` không còn đúng — không ghi thêm lần nào.
+   *
+   * Khi `dich` là `/` (hệ thống đích chưa có mục nào hiện được) thì URL không mang tiền tố, nên
+   * effect không suy ra gì và `doi()` vẫn là thứ duy nhất quyết định — vẫn đúng.
    */
   const doiHeThong = (ma: MaHeThong) => {
-    heThong.doi(ma)
     const dich = trangDauCua(ma)
+    // Khoá effect "URL thắng" cho tới khi điều hướng tới nơi. Dùng tiền tố `/hrm` `/crm`… chứ
+    // không đường dẫn đầy đủ: đích có thể là route con, chỉ cần biết đã sang hệ thống đó chưa.
+    dangTuChuyen.current = dich ? `/${dich.split('/')[1]}` : null
+    heThong.doi(ma)
     // `/` (Tổng quan) thuộc mọi hệ thống nên không kéo lựa chọn về đâu — đích an toàn khi hệ
     // thống đích chưa có mục nào hiện được.
     navigate(dich ?? '/')

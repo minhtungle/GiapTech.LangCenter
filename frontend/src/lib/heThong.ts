@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api } from './api'
 import { useAuth } from './auth'
 
@@ -12,6 +12,9 @@ const KHOA = 'lms_he_thong'
 
 /** Sự kiện nội bộ: đổi hệ thống ở một component phải cập nhật mọi component đang dùng hook. */
 const SU_KIEN_DOI = 'lms:doi-he-thong'
+
+/** Mảng rỗng dùng chung — xem ghi chú ở `duocPhep`. */
+const RONG: MaHeThong[] = []
 
 function doc(): MaHeThong | null {
   try {
@@ -48,7 +51,9 @@ export function useHeThong() {
     retry: false,
   })
 
-  const duocPhep = data ?? []
+  // `data ?? []` sinh mảng RỖNG MỚI mỗi lần render khi query chưa xong, làm `useMemo` ở cuối
+  // mất tác dụng. Hằng dùng chung giữ tham chiếu ổn định.
+  const duocPhep = data ?? RONG
 
   const [daChon, setDaChon] = useState<MaHeThong | null>(doc)
 
@@ -82,13 +87,28 @@ export function useHeThong() {
     window.dispatchEvent(new Event(SU_KIEN_DOI))
   }, [])
 
-  return {
-    /** Chưa biết vào được hệ thống nào (đang tải). */
-    dangTai: isLoading,
-    hienTai,
-    duocPhep,
-    doi,
-    /** Chỉ hiện bộ chuyển khi có từ 2 hệ thống — một nút một lựa chọn là nhiễu. */
-    coTheChuyen: duocPhep.length > 1,
-  }
+  /**
+   * `useMemo` để object trả về giữ nguyên tham chiếu giữa các lần render.
+   *
+   * `Layout.tsx` đặt cả object này vào mảng phụ thuộc của `useEffect`. Trả object literal mới
+   * mỗi render thì effect đó chạy lại sau MỌI render — lãng phí, và làm mọi lỗi liên quan tới
+   * thứ tự effect khó lần ra hơn.
+   *
+   * **Không** phải đây là nguyên nhân nhấp nháy 06/10/2026. Lúc đầu tôi nghĩ vậy, nhưng đo
+   * bằng stack trace của `Storage.setItem` thì thủ phạm là thứ tự giữa `navigate()` và
+   * effect "URL thắng" — xem ghi chú ở `doiHeThong` trong `Layout.tsx`. `useMemo` ở đây không
+   * tự nó sửa được lỗi đó; giữ lại vì nó đúng, không phải vì nó chữa.
+   */
+  return useMemo(
+    () => ({
+      /** Chưa biết vào được hệ thống nào (đang tải). */
+      dangTai: isLoading,
+      hienTai,
+      duocPhep,
+      doi,
+      /** Chỉ hiện bộ chuyển khi có từ 2 hệ thống — một nút một lựa chọn là nhiễu. */
+      coTheChuyen: duocPhep.length > 1,
+    }),
+    [isLoading, hienTai, duocPhep, doi],
+  )
 }
