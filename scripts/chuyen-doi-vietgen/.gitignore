@@ -1,0 +1,9 @@
+# Dữ liệu cá nhân thật của VIETGEN Academy (email, SĐT, STK ngân hàng) — KHÔNG commit.
+du-lieu/
+# Sinh ra từ dữ liệu thật — chứa họ tên, username, mật khẩu tạm.
+mat-khau-tam-*.csv
+chuyen-doi/danh-sach-tai-khoan.csv
+chuyen-doi/bao-cao-lam-sach.csv
+chuyen-doi/01-chuyen-doi.sql
+chuyen-doi/ky-vong.json
+__pycache__/

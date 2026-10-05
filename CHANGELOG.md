@@ -8,6 +8,39 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Added — bộ chuyển dữ liệu VIETGEN Academy (06/10/2026)
+
+`scripts/chuyen-doi-vietgen/` — chuyển tài khoản · phân quyền · đơn hàng · doanh thu của trung
+tâm VIETGEN Academy từ hệ cũ (SQL Server, export JSON) sang một trung tâm mới trong LangCenter.
+
+**Không sửa một dòng code nào của LangCenter.** Schema, phân quyền và 11 quy tắc là chuẩn; dữ
+liệu cũ biến đổi cho khớp, thứ gì không có chỗ chứa thì không chuyển (chỉ tiêu doanh thu tháng,
+cấp bậc NS-1…NS-5, giới tính, quyền xem từng khách).
+
+Nạp bằng **SQL thẳng, không qua EF**: `SaveChanges` luôn ghi `created_at = now`, nạp qua EF là
+mất trục thời gian của mọi báo cáo doanh thu. Một giao dịch, chỉ `INSERT`, và 5 chốt an toàn
+chặn nếu trung tâm đích không còn trắng (quy tắc #1).
+
+Mật khẩu MD5 **không chuyển**: `password_hash` là chuỗi giữ chỗ không hợp lệ (`KiemTra` bắt
+`FormatException` → đăng nhập bị từ chối), mật khẩu thật đặt qua API để chính LangCenter băm.
+
+Đã chạy thử đầu-cuối trên DB riêng: 173 người · 145 tài khoản hoạt động · 939 khách · 1056 đơn ·
+1115 lần thu · 15.273.437.000đ — khớp 14/14 chỉ số kỳ vọng, 97 cặp quyền không có ô chết.
+
+Tài liệu: [`docs/07-ha-tang/chuyen-du-lieu-vietgen.md`](docs/07-ha-tang/chuyen-du-lieu-vietgen.md)
+(checklist chạy thật trên VPS + phương án quay lui) và
+[`prompt-chuyen-du-lieu-vietgen.md`](docs/07-ha-tang/prompt-chuyen-du-lieu-vietgen.md)
+(prompt copy & dán cho Claude trên VPS).
+
+`02-dat-mat-khau-tam.sh` nay đọc `POSTGRES_USER` / `POSTGRES_DB` từ môi trường: VPS dùng
+`langcenter_app`, dev dùng `langcenter`. Hard-code một trong hai thì môi trường kia lỗi xác thực
+**sau khi `01` đã nạp xong** — đúng lúc khó quay lui nhất.
+
+Trên VPS, `01-chuyen-doi.sql` được **sinh tại chỗ** từ `du-lieu/` chứ không `scp` lên: file SQL
+bị `.gitignore` chặn nên `git pull` không có nó, và sinh tại chỗ thì sửa luật làm sạch xong chạy
+lại là đủ, không sợ bản trên VPS là bản cũ. Đã giả lập trọn quy trình từ thư mục ngoài repo —
+bản sinh ra giống bản đã kiểm thử từng byte.
+
 ### Changed — Thiết lập chung chia ba tab, ba đuôi tên đăng nhập (05/10/2026)
 
 **Thiết lập chung** chia ba tab: *Trung tâm* · *Đăng nhập* · *Chuyển khoản*.

@@ -11,6 +11,8 @@
 | Prompt giao cho Claude trên VPS (copy & dán) | [prompt-trien-khai-vps.md](prompt-trien-khai-vps.md) |
 | Giải thích từng biến trong `.env.example` | [bien-moi-truong.md](bien-moi-truong.md) |
 | Runbook xử lý sự cố (VPS down, DB đầy, restore) | [runbook.md](runbook.md) |
+| **Chuyển dữ liệu VIETGEN Academy** từ hệ cũ sang (checklist + quay lui) | [chuyen-du-lieu-vietgen.md](chuyen-du-lieu-vietgen.md) |
+| Prompt giao cho Claude trên VPS để **chuyển dữ liệu** (copy & dán) | [prompt-chuyen-du-lieu-vietgen.md](prompt-chuyen-du-lieu-vietgen.md) |
 
 ## Sơ đồ triển khai
 
