@@ -65,8 +65,30 @@ kiện `!noiDuoi` thì `Khong_tick_thi_giu_nguyen_ten_ngan` đỏ. Cả hai muta
 Muốn viết test cho hàm đọc mã lỗi thì không import được `api.ts` — nó dựng axios instance và
 đăng ký interceptor ngay lúc import, cần `window`. Tách hàm thuần ra file riêng.
 
+### "70+ tài khoản" thật ra là 13
+
+Ghi chú trong phiên trước nói phải đổi tên "70+ tài khoản dev". Đếm trên DB: **13 tài khoản**,
+76 **người dùng**. 63 người còn lại là học viên demo không có tài khoản — con số 76 bị đọc
+nhầm thành số tài khoản, và cảnh báo "thay đổi lớn" vì thế phóng đại hơn thực tế.
+
+## Đã chạy trên DB dev
+
+Hai migration đã áp. Kiểm sau khi áp: 13 tài khoản · 76 người dùng · 72 lần thu · **17 liên
+kết khách hàng ↔ người dùng** — khớp đúng con số đã khôi phục sau sự cố ở trên.
+
+13 nick của W686AE9 đã nối đuôi `@vietgeneducation.edu.vn` bằng
+`scripts/them-duoi-ten-dang-nhap-dev.sh` (xem trước mặc định, `GHI=1` mới ghi, sao lưu tên cũ
+ra CSV trước khi UPDATE). Thử đăng nhập lại 5 vai trò — đều 200 với tên đầy đủ, 400 với tên
+ngắn. Đúng thiết kế: `DangNhapCommand` **không** đoán thêm đuôi, nên `UNIQUE(tenant_id,
+username)` giữ nguyên nghĩa.
+
+Script `UPDATE` thẳng DB chứ không gọi API, vì **không có endpoint nào đổi username** — cố ý,
+ở production đổi username là việc phải cân nhắc từng ca. Khác với mật khẩu (ghi hash tay là
+tự cài thuật toán băm thứ hai), username là chuỗi thô nên UPDATE không làm lệch gì.
+
+Trước đó đã thử ba ca tạo tài khoản trên hệ thống thật: tick → nối, bỏ tick → giữ nguyên, gõ
+sẵn cả đuôi + vẫn tick → không nối hai lần. Cả ba đúng, rồi dọn tài khoản thử.
+
 ## Việc kế tiếp
 
-- **Đổi 70+ tài khoản dev của W686AE9 sang đuôi mới** — chủ sản phẩm đã chốt làm. Chưa chạy
-  được vì Docker Desktop đang tắt, mà cả hai migration hôm nay cũng chưa áp vào DB dev.
-- Hai migration chờ áp: `XacNhanDuTienChoLanThu`, `ThemDuoiTenDangNhap`.
+- `frontend/edu-temp/` (60MB, chưa theo dõi) vẫn chờ quyết định về giấy phép và cách dùng.

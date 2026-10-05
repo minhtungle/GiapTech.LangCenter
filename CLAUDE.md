@@ -353,6 +353,11 @@ MA_TRUNG_TAM=W686AE9 MAT_KHAU_MOI=123456 ADMIN_PASS='...' \
 
 Mọi nick dùng chung mật khẩu **`123456`** (đồng bộ 16/09/2026, xem script ở trên).
 
+> **Đổi 05/10/2026:** mọi nick nay mang đuôi **`@vietgeneducation.edu.vn`** — đăng nhập phải
+> gõ **đủ cả đuôi** (`admin@vietgeneducation.edu.vn`), gõ `admin` sẽ 400. Cột *Nick* dưới đây
+> ghi phần đầu cho gọn. Đổi bằng `scripts/them-duoi-ten-dang-nhap-dev.sh`, tên cũ sao lưu
+> trong `/tmp/username-truoc-khi-noi-duoi-W686AE9-*.csv`.
+
 | Nick | Vai trò | Người |
 |---|---|---|
 | `admin` | Nhân viên khác | Quản trị viên |
