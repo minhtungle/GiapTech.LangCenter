@@ -8,6 +8,33 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Added — xác nhận "đã nhận đủ tiền" cho từng đơn (05/10/2026)
+
+Form **bổ sung thanh toán** có thêm ô *"Đã nhận đủ tiền cho đơn này"*, giống ô đã có ở form
+ghi đơn nhưng mang nghĩa khác.
+
+**Vì sao cần cột riêng khi "còn thiếu" đã tính được.** Phép trừ `cam kết − đã thu` trả lời
+"còn thiếu bao nhiêu TIỀN"; nó không trả lời "trung tâm còn đòi nữa không". Hai câu lệch nhau
+ở những ca thường gặp: miễn phần lẻ, giảm giá sau khi chốt đơn, khách trả bằng hiện vật, xoá
+nợ. Không phân biệt được thì những đơn đó nằm mãi trong danh sách nhắc nợ.
+
+| Hỏi gì | Đọc gì |
+|---|---|
+| Còn thiếu bao nhiêu tiền | `ConThieu` — vẫn là số thật, kể cả khi đã xác nhận đủ |
+| Đơn này còn phải đòi không | `DaXacNhanDuTien` — thống kê công nợ và nhắc nợ đọc cờ này |
+
+Màn chi tiết khách nay có **bốn** trạng thái thay vì ba: *Đã đóng đủ* · *Đã đủ — miễn X* ·
+*Thiếu X* · *Chưa đóng*. Đơn đã xác nhận đủ ẩn nút "Bổ sung thanh toán".
+
+Ô **không tick sẵn**: xác nhận đủ tiền là quyết định có hậu quả, người thu phải chủ động chọn.
+
+Migration **chỉ thêm cột** `xac_nhan_du_tien` với mặc định `false` — mọi lần thu đang có giữ
+nguyên nghĩa, công nợ vẫn suy từ phép trừ như trước (quy tắc #1). Không migration dữ liệu.
+
+Thêm 3 test, cả hai mutant (quên gán cờ · DTO luôn trả false) đều bị bắt.
+**718 test backend xanh** (613 tích hợp + 105 đơn vị).
+
+
 ### Changed — form khách hàng chỉ hỏi thông tin liên hệ (02/10/2026)
 
 Gỡ hai ô khỏi form thêm/sửa khách hàng theo yêu cầu chủ sản phẩm:

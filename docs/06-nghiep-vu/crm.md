@@ -257,6 +257,37 @@ lẫn đơn vị trong cùng một đăng ký thì phép trừ "còn thiếu" th
 **Doanh thu vẫn tính trên CAM KẾT**, không trên tiền đã thu. Hai con số trả lời hai câu khác
 nhau: bán được bao nhiêu, và đã cầm về bao nhiêu. Màn Doanh thu hiện cả hai.
 
+### "Còn thiếu bao nhiêu TIỀN" ≠ "còn phải ĐÒI không" (05/10/2026)
+
+Phép trừ `cam kết − đã thu` trả lời câu thứ nhất. Nó **không** trả lời được câu thứ hai, và hai
+câu lệch nhau ở những ca rất thường gặp:
+
+- Miễn phần lẻ (khách đóng 9.500.000 cho đơn 10.000.000, trung tâm bỏ qua 500 nghìn)
+- Giảm giá sau khi đã chốt đơn
+- Khách trả bằng hiện vật, hoặc quản lý quyết định xoá nợ
+
+Không phân biệt được thì những đơn đó **nằm mãi trong danh sách nhắc nợ**, và người bán phải
+nhớ bằng đầu đơn nào "thực ra xong rồi" — thứ không ai nhớ nổi sau vài tháng.
+
+Nên mỗi lần thu có cờ **`xac_nhan_du_tien`**: người thu tích vào khi không còn đòi thêm. Form
+bổ sung thanh toán có ô *"Đã nhận đủ tiền cho đơn này"*, **không tick sẵn** — xác nhận đủ tiền
+là quyết định có hậu quả (đơn rời khỏi danh sách nhắc nợ), người thu phải chủ động chọn.
+
+| | Đọc gì |
+|---|---|
+| "Khách còn thiếu bao nhiêu tiền" | `ConThieu` — vẫn là số thật, kể cả khi đã xác nhận đủ |
+| "Đơn này còn phải đòi không" | `DaXacNhanDuTien` — thống kê công nợ và nhắc nợ đọc cờ này |
+
+Màn chi tiết khách hiện **bốn** trạng thái thay vì ba: *Đã đóng đủ* · *Đã đủ — miễn X* ·
+*Thiếu X* · *Chưa đóng*. Đơn đã xác nhận đủ thì **ẩn nút "Bổ sung thanh toán"** — mời đóng
+thêm một đơn vừa được miễn là mâu thuẫn; sửa lại thì vào sổ thu sửa chính lần thu đã đánh dấu.
+
+Cột thêm với mặc định `false`, nên **mọi lần thu cũ giữ nguyên nghĩa** "chỉ là một lần đóng
+tiền" và công nợ vẫn suy từ phép trừ như trước (quy tắc #1).
+
+Canh bởi `CrmTests.Xac_nhan_du_tien_thi_don_het_no_du_so_tien_chua_khop`,
+`Khong_danh_dau_thi_don_van_la_no`, `Sua_lan_thu_gui_lai_co_thi_giu_nguyen_xac_nhan`.
+
 ### Quy tắc
 
 - Khách chưa có đăng ký nào thì **không** xuất hiện ở màn Doanh thu.

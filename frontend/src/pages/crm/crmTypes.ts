@@ -151,6 +151,8 @@ export interface LanThuDto {
   phuongThuc: PhuongThucThanhToan
   ghiChu: string | null
   tenNguoiThu: string | null
+  /** Lần thu này được đánh dấu "đã nhận đủ tiền cho đơn". */
+  xacNhanDuTien: boolean
 }
 
 export interface DangKyKemThuDto {
@@ -168,8 +170,19 @@ export interface DangKyKemThuDto {
   ngayDangKy: string
   ghiChu: string | null
   daThu: number
-  /** `soTien − daThu`, tính động ở backend. ≤ 0 = đã đóng đủ. */
+  /**
+   * `soTien − daThu`, tính động ở backend. ≤ 0 = đã đóng đủ.
+   *
+   * Vẫn là số TIỀN thật còn thiếu kể cả khi đơn đã được xác nhận đủ — người bán cần thấy mình
+   * đã miễn bao nhiêu. Câu "còn phải đòi không" đọc ở `daXacNhanDuTien`.
+   */
   conThieu: number
+  /**
+   * Có lần thu nào được đánh dấu **đã đủ** chưa.
+   *
+   * true ⇒ đơn KHÔNG còn nợ dù `conThieu > 0` (miễn phần lẻ, giảm giá sau khi chốt, xoá nợ).
+   */
+  daXacNhanDuTien: boolean
   cacLanThu: LanThuDto[]
   /** FR-21 — mọi lần gửi yêu cầu xếp lớp, mới nhất trước. Rỗng = chưa gửi lần nào. */
   cacLanGuiXepLop: LanGuiXepLopDto[]

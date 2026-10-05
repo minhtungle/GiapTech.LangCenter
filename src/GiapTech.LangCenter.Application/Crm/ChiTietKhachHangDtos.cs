@@ -178,8 +178,21 @@ public record DangKyKemThuDto(
     string? GhiChu,
     /// <summary>Tổng đã thu — cùng đơn vị tiền với đăng ký.</summary>
     decimal DaThu,
-    /// <summary>`SoTien − DaThu`, **tính động**. ≤ 0 = đã đóng đủ.</summary>
+    /// <summary>
+    /// `SoTien − DaThu`, **tính động**. ≤ 0 = đã đóng đủ.
+    ///
+    /// Vẫn là số TIỀN thật còn thiếu, kể cả khi đơn đã được xác nhận đủ: người bán cần thấy
+    /// con số đó để biết mình đã miễn bao nhiêu. Câu hỏi "còn phải đòi không" trả lời bằng
+    /// <see cref="DaXacNhanDuTien"/>.
+    /// </summary>
     decimal ConThieu,
+    /// <summary>
+    /// Có lần thu nào được người thu đánh dấu **đã đủ** chưa (xem `ThuTienDangKy.XacNhanDuTien`).
+    ///
+    /// true ⇒ đơn này KHÔNG còn nợ, dù `ConThieu > 0` — miễn phần lẻ, giảm giá sau khi chốt,
+    /// hoặc xoá nợ. Thống kê công nợ và danh sách nhắc nợ đọc cờ này, không đọc phép trừ.
+    /// </summary>
+    bool DaXacNhanDuTien,
     List<LanThuDto> CacLanThu,
     /// <summary>
     /// **Mọi lần** gửi yêu cầu xếp lớp (FR-21), mới nhất trước. Rỗng = chưa gửi lần nào.
@@ -261,7 +274,9 @@ public record LanThuDto(
     DateTimeOffset NgayThu,
     PhuongThucThanhToan PhuongThuc,
     string? GhiChu,
-    string? TenNguoiThu);
+    string? TenNguoiThu,
+    /// <summary>Lần thu này được đánh dấu "đã nhận đủ tiền cho đơn" — xem `ThuTienDangKy.XacNhanDuTien`.</summary>
+    bool XacNhanDuTien);
 
 public record LayDangKyCuaKhachQuery(Guid KhachHangId) : IRequest<List<DangKyKemThuDto>>;
 
@@ -319,11 +334,13 @@ public class LayDangKyCuaKhachHandler(IAppDbContext db)
                 d.NgayDangKy, d.GhiChu,
                 d.CacLanThu.Sum(t => t.SoTien),
                 d.SoTien - d.CacLanThu.Sum(t => t.SoTien),
+                d.CacLanThu.Any(t => t.XacNhanDuTien),
                 d.CacLanThu
                     .OrderByDescending(t => t.NgayThu)
                     .Select(t => new LanThuDto(
                         t.Id, t.SoTien, t.NgayThu, t.PhuongThuc, t.GhiChu,
-                        t.NguoiThu == null ? null : t.NguoiThu.HoTen))
+                        t.NguoiThu == null ? null : t.NguoiThu.HoTen,
+                        t.XacNhanDuTien))
                     .ToList(),
                 d.CacYeuCauXepLop
                     // Mới nhất TRƯỚC: người bán quan tâm lần gửi gần nhất, các lần cũ là bối cảnh.
@@ -364,7 +381,12 @@ public record LuuThuTienCommand(
     /// Chỉ khi TẠO mới, không khi sửa: sửa một lần thu cũ không phải là một lần liên hệ khách.
     /// Mặc định true vì bổ sung thanh toán luôn là một lần tiếp xúc thật.
     /// </summary>
-    bool GhiChamSoc = true) : IRequest<Guid>;
+    bool GhiChamSoc = true,
+    /// <summary>
+    /// Người thu xác nhận đơn coi như đã thu đủ, kể cả khi tổng thu chưa bằng cam kết
+    /// (miễn phần lẻ, giảm giá sau khi chốt, xoá nợ). Xem `ThuTienDangKy.XacNhanDuTien`.
+    /// </summary>
+    bool XacNhanDuTien = false) : IRequest<Guid>;
 
 public class LuuThuTienValidator : AbstractValidator<LuuThuTienCommand>
 {
@@ -423,6 +445,7 @@ public class LuuThuTienHandler(IAppDbContext db, ICurrentUser currentUser)
         thu.NgayThu = request.NgayThu;
         thu.PhuongThuc = request.PhuongThuc;
         thu.GhiChu = string.IsNullOrWhiteSpace(request.GhiChu) ? null : request.GhiChu.Trim();
+        thu.XacNhanDuTien = request.XacNhanDuTien;
 
         // Bổ sung thanh toán ghi kèm một dòng chăm sóc — cùng lý do với lệnh mua hàng: người
         // bán sau phải thấy được "khách đã đóng thêm khi nào, ai nhận".
@@ -439,7 +462,10 @@ public class LuuThuTienHandler(IAppDbContext db, ICurrentUser currentUser)
                 KhachHangId = dk.KhachHangId,
                 ThoiDiem = request.NgayThu,
                 HinhThuc = HinhThucChamSoc.Khac,
-                NoiDung = conThieu <= 0
+                // `XacNhanDuTien` thắng phép trừ: người thu đã nói đơn này xong, nên dòng
+                // lịch sử phải nói đúng điều đó — nếu không, người đọc sau thấy "còn thiếu"
+                // trong khi hệ thống coi là đủ, và không hiểu bên nào đúng.
+                NoiDung = conThieu <= 0 || request.XacNhanDuTien
                     ? $"Đóng thêm {request.SoTien:N0} cho {tenMatHang} — đã đủ"
                     : $"Đóng thêm {request.SoTien:N0} cho {tenMatHang} — còn thiếu {conThieu:N0}",
                 // Đã mua rồi thì đóng thêm không đổi vị trí trong phễu.

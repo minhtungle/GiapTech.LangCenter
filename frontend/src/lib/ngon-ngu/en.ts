@@ -1159,6 +1159,9 @@ const en = {
     ngayMua: 'Purchase date',
     noiDungMuaGoiY: 'Leave empty and the system writes "Bought <item name>" automatically',
     daThuDu: 'Payment received in full',
+    xacNhanDuTien: 'This order is paid in full',
+    xacNhanDuTienGoiY:
+      'Tick when nothing more will be collected — even if the total received is below the commitment (rounding waived, discount, debt written off). The order leaves the reminder list.',
     daThuDuGoiY: 'Tick this and the system records a single payment for the full amount above. Untick it if the customer pays in installments — use the "Amount paid" tab to record each one.',
     hoiMuaHang: 'Record this order? The system will add one revenue entry and one care history entry.',
     suaChamSoc: 'Edit care interaction',
@@ -1176,6 +1179,7 @@ const en = {
     camKet: 'Committed',
     daThu: 'Collected',
     daDu: 'Paid in full',
+    daDuMien: 'Settled — {{so}} waived',
     chuaDong: 'Not paid',
     thieu: '{{so}} short',
     ghiThu: 'Record a payment',

@@ -891,6 +891,14 @@ function TabKhoaHoc({ khachHangId }: { khachHangId: string }) {
   const [thuCho, setThuCho] = useState<DangKyKemThuDto | null>(null)
   const [dangSuaThu, setDangSuaThu] = useState<LanThuDto | null>(null)
   const [phuongThuc, setPhuongThuc] = useState<PhuongThucThanhToan>('ChuyenKhoan')
+  /**
+   * "Đã nhận đủ tiền cho đơn này" — KHÔNG tự suy từ số tiền.
+   *
+   * Phép trừ `soTien − đã thu` trả lời "còn thiếu bao nhiêu TIỀN"; ô này trả lời "trung tâm
+   * còn đòi nữa không". Hai câu lệch nhau khi miễn phần lẻ, giảm giá sau khi chốt đơn, hoặc
+   * quản lý xoá nợ — những ca mà số tiền mãi không khớp nhưng đơn thì xong rồi.
+   */
+  const [xacNhanDuTien, setXacNhanDuTien] = useState(false)
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [moMuaHang, setMoMuaHang] = useState(false)
   /** Id các đơn đang mở sổ thu — mở nhiều đơn cùng lúc để so sánh được. */
@@ -919,6 +927,7 @@ function TabKhoaHoc({ khachHangId }: { khachHangId: string }) {
         ngayThu: `${String(fd.get('ngayThu'))}T00:00:00Z`,
         phuongThuc,
         ghiChu: String(fd.get('ghiChu') ?? '').trim() || null,
+        xacNhanDuTien,
       }
       if (dangSuaThu)
         await api.put(`/doanh-thu/thu-tien/${dangSuaThu.id}`, { ...than, id: dangSuaThu.id })
@@ -1024,12 +1033,18 @@ function TabKhoaHoc({ khachHangId }: { khachHangId: string }) {
                     onGhiThu={() => {
                       setDangSuaThu(null)
                       setPhuongThuc('ChuyenKhoan')
+                      // Không tick sẵn: xác nhận đủ tiền là quyết định có hậu quả (đơn rời
+                      // khỏi danh sách nhắc nợ), người thu phải chủ động chọn.
+                      setXacNhanDuTien(false)
                       setMaLoi(null)
                       setThuCho(d)
                     }}
                     onSuaThu={(lt) => {
                       setDangSuaThu(lt)
                       setPhuongThuc(lt.phuongThuc)
+                      // Lấy lại giá trị ĐÃ LƯU (quy tắc #1): lệnh cập nhật ghi đè trường này,
+                      // để `false` cứng sẽ âm thầm bỏ xác nhận mỗi lần sửa một lần thu cũ.
+                      setXacNhanDuTien(lt.xacNhanDuTien)
                       setMaLoi(null)
                       setThuCho(d)
                     }}
@@ -1222,6 +1237,25 @@ function TabKhoaHoc({ khachHangId }: { khachHangId: string }) {
               <Input id="ghiChuThu" name="ghiChu" defaultValue={dangSuaThu?.ghiChu ?? ''} />
             </div>
 
+            {/*
+              Dấu xác nhận, KHÔNG đụng vào ô số tiền (chốt 05/10/2026).
+
+              Nó trả lời câu "trung tâm còn đòi đơn này nữa không" — thứ phép trừ không trả lời
+              được khi miễn phần lẻ hay xoá nợ. Thống kê công nợ và danh sách nhắc nợ đọc cờ này.
+            */}
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-[hsl(var(--primary))]"
+                checked={xacNhanDuTien}
+                onChange={(e) => setXacNhanDuTien(e.target.checked)}
+              />
+              {t('chiTietKhach.xacNhanDuTien')}
+            </label>
+            <p className="text-xs text-muted-foreground">
+              {t('chiTietKhach.xacNhanDuTienGoiY')}
+            </p>
+
             {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
             <div className="flex justify-end gap-2">
@@ -1316,9 +1350,17 @@ function DongDonHang({
               </Badge>
             )}
 
-            {/* Ba trạng thái, không hai: đã đủ · đã đóng một phần · CHƯA đóng gì. Hiện
-                "0,00 CA$" cho đơn chưa thu đồng nào thì nhìn giống một số tiền bình thường. */}
-            {d.conThieu <= 0 ? (
+            {/* Bốn trạng thái. Hiện "0,00 CA$" cho đơn chưa thu đồng nào thì nhìn giống một
+                số tiền bình thường, nên "Chưa đóng" tách riêng.
+
+                `daXacNhanDuTien` XÉT TRƯỚC phép trừ: người thu đã chốt đơn này xong thì nó
+                không còn là nợ, dù số tiền chưa khớp (miễn phần lẻ, giảm giá, xoá nợ). Vẫn
+                hiện số đã miễn để người bán thấy mình đã bỏ qua bao nhiêu. */}
+            {d.daXacNhanDuTien && d.conThieu > 0 ? (
+              <Badge variant="ok">
+                {t('chiTietKhach.daDuMien', { so: tien(d.conThieu, d.donViTien) })}
+              </Badge>
+            ) : d.conThieu <= 0 ? (
               <Badge variant="ok">{t('chiTietKhach.daDu')}</Badge>
             ) : d.daThu <= 0 ? (
               <Badge variant="loi">{t('chiTietKhach.chuaDong')}</Badge>
@@ -1328,9 +1370,13 @@ function DongDonHang({
               </Badge>
             )}
 
-            {/* BỔ SUNG THANH TOÁN — chỉ đơn còn thiếu. Một lần bấm sinh một lần doanh thu mới
-                và một lần chăm sóc mới (backend làm trong cùng transaction). */}
-            {coQuyen('DoanhThu', 'Them') && d.conThieu > 0 && (
+            {/* BỔ SUNG THANH TOÁN — chỉ đơn còn thiếu VÀ chưa được chốt đủ. Một lần bấm sinh
+                một lần doanh thu mới và một lần chăm sóc mới (backend làm trong cùng
+                transaction).
+
+                Ẩn khi đã xác nhận đủ: mời đóng thêm một đơn vừa được miễn là mâu thuẫn. Cần
+                sửa lại thì vào sổ thu, sửa chính lần thu đã đánh dấu. */}
+            {coQuyen('DoanhThu', 'Them') && d.conThieu > 0 && !d.daXacNhanDuTien && (
               <Button size="sm" onClick={onGhiThu}>
                 <Plus className="h-4 w-4" />
                 {t('chiTietKhach.boSungThanhToan')}

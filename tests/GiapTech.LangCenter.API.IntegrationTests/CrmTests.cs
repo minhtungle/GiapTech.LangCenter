@@ -597,6 +597,118 @@ public class CrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     /// <summary>
+    /// Người thu đánh dấu "đã nhận đủ" ⇒ đơn hết nợ, DÙ số tiền chưa khớp cam kết.
+    ///
+    /// Ca thật: miễn phần lẻ, giảm giá sau khi đã chốt đơn, hoặc quản lý xoá nợ. Phép trừ
+    /// `soTien − đã thu` trả lời "còn thiếu bao nhiêu TIỀN", không trả lời "trung tâm còn đòi
+    /// nữa không" — hai câu đó lệch nhau ở đúng những ca này.
+    ///
+    /// `conThieu` VẪN giữ số tiền thật còn thiếu: người bán cần thấy mình đã miễn bao nhiêu.
+    /// Cờ `daXacNhanDuTien` mới là thứ thống kê công nợ và danh sách nhắc nợ đọc.
+    /// </summary>
+    [Fact]
+    public async Task Xac_nhan_du_tien_thi_don_het_no_du_so_tien_chua_khop()
+    {
+        var c = await Client();
+        var khoa = await TaoKhoa(c, "Khoá miễn phần lẻ", 10_000_000m);
+        var khach = await TaoKhach(c, "Khách được miễn");
+        var dk = await TaoDangKy(c, khach, khoa, 10_000_000m);
+
+        async Task<JsonElement> Xem() =>
+            (await c.GetFromJsonAsync<List<JsonElement>>(
+                $"/api/v1/khach-hang/{khach}/dang-ky"))!.Single();
+
+        // Đóng 9.5 triệu, miễn 500 nghìn còn lại.
+        (await c.PostAsJsonAsync($"/api/v1/doanh-thu/{dk}/thu-tien", new
+        {
+            SoTien = 9_500_000m,
+            NgayThu = new DateTimeOffset(2026, 10, 5, 0, 0, 0, TimeSpan.Zero),
+            XacNhanDuTien = true
+        })).EnsureSuccessStatusCode();
+
+        var d = await Xem();
+
+        // Số tiền thật vẫn còn thiếu — không bị làm tròn hay giấu đi.
+        Assert.Equal(9_500_000m, d.GetProperty("daThu").GetDecimal());
+        Assert.Equal(500_000m, d.GetProperty("conThieu").GetDecimal());
+
+        // Nhưng đơn KHÔNG còn là nợ.
+        Assert.True(d.GetProperty("daXacNhanDuTien").GetBoolean());
+        Assert.True(d.GetProperty("cacLanThu").EnumerateArray()
+            .Single().GetProperty("xacNhanDuTien").GetBoolean());
+    }
+
+    /// <summary>
+    /// Không đánh dấu ⇒ đơn vẫn là nợ. Chiều ngược của test trên.
+    ///
+    /// Giữ mặc định `false` là điều kiện để mọi lần thu CŨ không đổi nghĩa khi thêm cột
+    /// (quy tắc #1) — 85 bản ghi đang có vẫn tính nợ bằng phép trừ như trước.
+    /// </summary>
+    [Fact]
+    public async Task Khong_danh_dau_thi_don_van_la_no()
+    {
+        var c = await Client();
+        var khoa = await TaoKhoa(c, "Khoá đóng thiếu", 10_000_000m);
+        var khach = await TaoKhach(c, "Khách còn nợ");
+        var dk = await TaoDangKy(c, khach, khoa, 10_000_000m);
+
+        (await c.PostAsJsonAsync($"/api/v1/doanh-thu/{dk}/thu-tien", new
+        {
+            SoTien = 9_500_000m,
+            NgayThu = new DateTimeOffset(2026, 10, 5, 0, 0, 0, TimeSpan.Zero)
+        })).EnsureSuccessStatusCode();
+
+        var d = (await c.GetFromJsonAsync<List<JsonElement>>(
+            $"/api/v1/khach-hang/{khach}/dang-ky"))!.Single();
+
+        Assert.Equal(500_000m, d.GetProperty("conThieu").GetDecimal());
+        Assert.False(d.GetProperty("daXacNhanDuTien").GetBoolean());
+    }
+
+    /// <summary>
+    /// Sửa một lần thu đã đánh dấu mà KHÔNG gửi lại cờ ⇒ cờ bị xoá.
+    ///
+    /// Đây là bẫy quy tắc #1 ở dạng khó thấy: lệnh cập nhật ghi đè mọi trường nó nhận. Form
+    /// phải nạp lại giá trị đã lưu khi mở (đã làm ở `ChiTietKhachHang.tsx`, `onSuaThu`).
+    ///
+    /// Test này canh phía API: gửi lại cờ thì cờ còn, nên khi ai đó sửa form mà quên nạp lại,
+    /// chiều ngược sẽ lộ ra.
+    /// </summary>
+    [Fact]
+    public async Task Sua_lan_thu_gui_lai_co_thi_giu_nguyen_xac_nhan()
+    {
+        var c = await Client();
+        var khoa = await TaoKhoa(c, "Khoá giữ cờ xác nhận", 10_000_000m);
+        var khach = await TaoKhach(c, "Khách giữ cờ xác nhận");
+        var dk = await TaoDangKy(c, khach, khoa, 10_000_000m);
+
+        var tao = await c.PostAsJsonAsync($"/api/v1/doanh-thu/{dk}/thu-tien", new
+        {
+            SoTien = 9_500_000m,
+            NgayThu = new DateTimeOffset(2026, 10, 5, 0, 0, 0, TimeSpan.Zero),
+            XacNhanDuTien = true
+        });
+        tao.EnsureSuccessStatusCode();
+        var thuId = await tao.Content.ReadFromJsonAsync<Guid>();
+
+        // Sửa ghi chú, GỬI LẠI cờ như form thật đang làm.
+        (await c.PutAsJsonAsync($"/api/v1/doanh-thu/thu-tien/{thuId}", new
+        {
+            Id = thuId,
+            DangKyId = dk,
+            SoTien = 9_500_000m,
+            NgayThu = new DateTimeOffset(2026, 10, 5, 0, 0, 0, TimeSpan.Zero),
+            GhiChu = "Đã sửa ghi chú",
+            XacNhanDuTien = true
+        })).EnsureSuccessStatusCode();
+
+        var d = (await c.GetFromJsonAsync<List<JsonElement>>(
+            $"/api/v1/khach-hang/{khach}/dang-ky"))!.Single();
+
+        Assert.True(d.GetProperty("daXacNhanDuTien").GetBoolean());
+    }
+
+    /// <summary>
     /// **Đăng ký là CAM KẾT, không phải đã thu.** Khách đóng nhiều đợt; "còn thiếu" tính động.
     /// </summary>
     [Fact]

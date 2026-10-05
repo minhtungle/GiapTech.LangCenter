@@ -109,6 +109,23 @@ public class ThuTienDangKy : TenantEntity
 
     public string? GhiChu { get; set; }
 
+    /// <summary>
+    /// Người thu XÁC NHẬN đơn này coi như đã thu đủ, dù số tiền cộng lại chưa bằng cam kết.
+    ///
+    /// ## Vì sao cần cột riêng khi "còn thiếu" đã tính được
+    ///
+    /// Phép trừ `SoTien - SUM(đã thu)` trả lời "còn thiếu bao nhiêu TIỀN", không trả lời "trung
+    /// tâm còn đòi nữa không". Hai câu đó lệch nhau ở những ca thật: miễn phần lẻ, giảm giá sau
+    /// khi đã chốt đơn, khách trả bằng hiện vật, hoặc quản lý quyết định xoá nợ.
+    ///
+    /// Không có cột này thì những đơn đó mãi nằm trong danh sách nhắc nợ, và người bán phải nhớ
+    /// bằng đầu đơn nào "thực ra xong rồi" — thứ không ai nhớ nổi sau vài tháng.
+    ///
+    /// Mặc định `false`: mọi lần thu cũ giữ nguyên nghĩa "chỉ là một lần đóng tiền", công nợ
+    /// vẫn suy từ phép trừ như trước (quy tắc #1 — thêm cột không đổi nghĩa dữ liệu đang có).
+    /// </summary>
+    public bool XacNhanDuTien { get; set; }
+
     public Guid? NguoiThuId { get; set; }
     public NguoiDung? NguoiThu { get; set; }
 }

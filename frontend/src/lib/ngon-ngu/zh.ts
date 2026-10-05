@@ -1159,6 +1159,9 @@ const zh = {
     ngayMua: '购买日期',
     noiDungMuaGoiY: '留空则系统自动记为「购买 <商品名称>」',
     daThuDu: '已全额收款',
+    xacNhanDuTien: '本订单已收齐款项',
+    xacNhanDuTienGoiY:
+      '不再追收时勾选 — 即使实收金额低于约定金额（免零头、折扣、免除欠款）。该订单将不再出现在催款名单中。',
     daThuDuGoiY: '勾选此项，系统会直接记录一笔金额为上述全额的收款。如果客户分期缴纳，请取消勾选——到「已缴金额」标签页逐笔登记。',
     hoiMuaHang: '登记这笔订单？系统将添加一条营收记录和一条维护记录。',
     suaChamSoc: '编辑维护记录',
@@ -1176,6 +1179,7 @@ const zh = {
     camKet: '承诺金额',
     daThu: '已收',
     daDu: '已缴清',
+    daDuMien: '已结清 — 免除 {{so}}',
     chuaDong: '未缴纳',
     thieu: '尚缺 {{so}}',
     ghiThu: '登记收款',

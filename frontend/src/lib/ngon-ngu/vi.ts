@@ -1292,6 +1292,9 @@ const vi = {
     ngayMua: 'Ngày mua',
     noiDungMuaGoiY: 'Để trống thì hệ thống tự ghi "Mua <tên mặt hàng>"',
     daThuDu: 'Đã nhận đủ tiền',
+    xacNhanDuTien: 'Đã nhận đủ tiền cho đơn này',
+    xacNhanDuTienGoiY:
+      'Tích khi không còn đòi thêm — kể cả khi tổng thu chưa bằng cam kết (miễn phần lẻ, giảm giá, xoá nợ). Đơn sẽ không còn trong danh sách nhắc nợ.',
     daThuDuGoiY:
       'Tích ô này thì hệ thống ghi luôn một lần thu đủ số tiền trên. Bỏ tích nếu khách đóng '
       + 'nhiều đợt — vào tab "Số tiền đã đóng" để ghi từng đợt.',
@@ -1314,6 +1317,7 @@ const vi = {
     camKet: 'Cam kết',
     daThu: 'Đã thu',
     daDu: 'Đã đóng đủ',
+    daDuMien: 'Đã đủ — miễn {{so}}',
     chuaDong: 'Chưa đóng',
     thieu: 'Thiếu {{so}}',
     ghiThu: 'Ghi thu tiền',
