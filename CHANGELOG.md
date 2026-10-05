@@ -8,6 +8,34 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Changed — Thiết lập chung chia ba tab, ba đuôi tên đăng nhập (05/10/2026)
+
+**Thiết lập chung** chia ba tab: *Trung tâm* · *Đăng nhập* · *Chuyển khoản*.
+
+Ba tab nằm trong **cùng một `<form>`** và tab ẩn **không gỡ khỏi DOM**, chỉ ẩn bằng CSS. Gỡ
+khỏi DOM thì `FormData` mất trường, `?? ''` biến nó thành chuỗi rỗng, và **lưu tab Trung tâm
+sẽ xoá sạch thông tin chuyển khoản** — lỗi 16/08/2026 mặc áo mới (quy tắc #1). Hệ quả cố ý:
+một nút Lưu cho cả ba tab, nói rõ bằng một dòng cạnh nút.
+
+Dùng class `hidden` chứ không thuộc tính `hidden` của HTML: nhóm đang hiện cần
+`display: contents` để các ô con nhận grid của form, mà `display: contents` **ghi đè**
+`display: none` của thuộc tính `hidden` ⇒ tab ẩn vẫn hiện nguyên. Bắt được khi chụp màn thật.
+
+**Đuôi tên đăng nhập: một → ba.** Trung tâm khai tối đa ba đuôi (nhân sự · học viên · tên miền
+cũ). Form tạo tài khoản đổi từ ô tick sang **ô chọn** liệt kê các đuôi đã khai cộng mục
+*"— Không nối đuôi —"*; `TaoTaiKhoanCommand.NoiDuoi` (bool) thành `DuoiSo` (int?, 1-3 hoặc
+null).
+
+Chọn ô đuôi đang để trống thì **giữ tên ngắn**, không rơi về đuôi thứ nhất — `?? DuoiTenDangNhap`
+là cái bẫy dễ viết nhất và nó sai âm thầm: người tạo chọn ô 3 nhưng nhận đuôi ô 1.
+
+Ba cột trên `TENANT` chứ không bảng riêng: ba giá trị cố định, không thuộc tính nào đi kèm,
+bảng riêng chỉ thêm một join cho mọi lần tạo tài khoản. Cột cũ giữ nguyên tên nên trung tâm đã
+khai đuôi không mất dữ liệu.
+
+Migration `ThemHaiDuoiTenDangNhap` — `TENANT.duoi_ten_dang_nhap_2` và `_3` (nullable, 100).
+`HasColumnName` tường minh vì quy ước tự sinh cho ra `duoi_ten_dang_nhap2`, dính số vào chữ.
+
 ### Added — đuôi tên đăng nhập theo trung tâm (05/10/2026)
 
 Thiết lập chung có thêm ô **đuôi tên đăng nhập** (ví dụ `@vietgeneducation.edu.vn`). Khai rồi

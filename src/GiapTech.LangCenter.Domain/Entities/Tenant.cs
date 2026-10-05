@@ -113,8 +113,26 @@ public class Tenant : BaseEntity
     /// Giá trị lưu vào <c>TAI_KHOAN.username</c> là chuỗi ĐẦY ĐỦ sau khi nối. Đăng nhập so
     /// khớp chính xác chuỗi đó, nên người dùng gõ đủ cả đuôi — không có bước đoán thêm ở
     /// `DangNhapCommand`, và `UNIQUE(tenant_id, username)` vẫn đúng nguyên nghĩa.
+    ///
+    /// ## Ba đuôi, ba cột (05/10/2026)
+    ///
+    /// Trung tâm khai tối đa **ba** đuôi — thường là một cho nhân sự, một cho học viên, một
+    /// cho tên miền cũ còn dùng. Người tạo tài khoản chọn một trong ba, hoặc không nối.
+    ///
+    /// Ba cột chứ không bảng riêng: ba giá trị cố định, không có thứ tự nghiệp vụ, không có
+    /// thuộc tính nào khác đi kèm. Bảng riêng sẽ thêm một join cho mọi lần tạo tài khoản mà
+    /// không đổi được gì về khả năng. Nếu sau này cần đuôi thứ tư trở lên thì mới tách bảng.
+    ///
+    /// <see cref="DuoiTenDangNhap"/> là đuôi thứ nhất — giữ nguyên tên cột cũ để các trung
+    /// tâm đã khai đuôi không mất dữ liệu (quy tắc #1).
     /// </summary>
     public string? DuoiTenDangNhap { get; set; }
+
+    /// <summary>Đuôi tên đăng nhập thứ hai — xem <see cref="DuoiTenDangNhap"/>.</summary>
+    public string? DuoiTenDangNhap2 { get; set; }
+
+    /// <summary>Đuôi tên đăng nhập thứ ba — xem <see cref="DuoiTenDangNhap"/>.</summary>
+    public string? DuoiTenDangNhap3 { get; set; }
 
     // --- Thông tin chuyển khoản ---
     //

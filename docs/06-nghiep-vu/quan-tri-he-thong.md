@@ -71,18 +71,21 @@ trạng thái, và **`nguoi_dung_id` (nullable)** trỏ tới người sở hữ
 
 ### Đuôi tên đăng nhập (05/10)
 
-Trung tâm khai một đuôi ở [FR-06](#fr-06--thiết-lập-chung) (ví dụ `@vietgeneducation.edu.vn`).
-Khi tạo tài khoản, người tạo gõ `nv1` và hệ thống lưu `nv1@vietgeneducation.edu.vn`.
+Trung tâm khai **tối đa ba** đuôi ở [FR-06](#fr-06--thiết-lập-chung) — thường một cho nhân sự,
+một cho học viên, một cho tên miền cũ còn dùng. Khi tạo tài khoản, người tạo gõ `nv1`, chọn một
+đuôi, và hệ thống lưu `nv1@vietgeneducation.edu.vn`.
 
-**Người tạo chọn được có nối hay không** — ô tick trên form, mặc định bật. Tài khoản kỹ thuật
-hoặc một nick ngắn cố ý thì bỏ tick. Ô chỉ hiện khi trung tâm đã khai đuôi.
+**Người tạo chọn đuôi nào ở ô chọn trên form**, mặc định đuôi 1. Ô chọn liệt kê các đuôi đã
+khai cộng mục *"— Không nối đuôi —"* cho tài khoản kỹ thuật hoặc nick ngắn cố ý. Ô chỉ hiện khi
+trung tâm đã khai ít nhất một đuôi.
 
 Ba trường hợp **không** nối, xử lý ở `DuoiTenDangNhapHelper.GhepAsync`:
 
-1. Người tạo bỏ tick.
-2. Trung tâm chưa khai đuôi.
-3. Username gõ vào **đã chứa `@`** — form điền sẵn đuôi để nhìn thấy, nên người dùng hay gõ
-   luôn cả đuôi rồi vẫn để tick; không chặn thì ra `nv1@abc.com@abc.com`.
+1. Người tạo chọn *"Không nối đuôi"* (`DuoiSo = null`).
+2. Ô đuôi được chọn đang để trống ở thiết lập — **giữ tên ngắn**, không rơi về đuôi thứ nhất.
+   Rơi về đuôi thứ nhất là cái bẫy dễ viết nhất (`?? DuoiTenDangNhap`) và nó sai âm thầm.
+3. Username gõ vào **đã chứa `@`** — form hiện sẵn đuôi để nhìn thấy, nên người dùng hay gõ
+   luôn cả đuôi rồi quên đổi ô chọn; không chặn thì ra `nv1@abc.com@abc.com`.
 
 **Nối ở tầng Application, không ở form và không ở DB.** Ở form thì hai màn tạo tài khoản
 (FR-04 và FR-03 tạo người kèm tài khoản) phải tự ghép, và ai gọi thẳng API đều bỏ qua được.
@@ -125,10 +128,23 @@ Thông tin trung tâm, khớp đúng các cột của bảng `TENANT`:
 | Liên hệ | `dia_chi`, `lien_he` |
 | Chuyển khoản | `so_tai_khoan`, `ten_ngan_hang`, `chu_tai_khoan`, `anh_qr_url` |
 | Vận hành | `mui_gio` (mặc định `Asia/Ho_Chi_Minh`), `so_ngay_canh_bao_no_hoc_phi` (mặc định 14) |
-| Tên đăng nhập | `duoi_ten_dang_nhap` (nullable, ví dụ `@vietgeneducation.edu.vn`) |
+| Tên đăng nhập | `duoi_ten_dang_nhap` · `duoi_ten_dang_nhap_2` · `duoi_ten_dang_nhap_3` (nullable) |
 
 `ma_trung_tam` **không sửa được** — nó là thứ người dùng gõ khi đăng nhập; đổi mã là làm mọi
 người trong trung tâm không vào được hệ thống.
+
+### Ba tab, một form, một nút Lưu (05/10/2026)
+
+Màn chia ba tab theo bảng trên: **Trung tâm** · **Đăng nhập** · **Chuyển khoản**.
+
+Ba tab nằm trong **cùng một `<form>`**, và tab không hiện chỉ bị ẩn bằng CSS chứ **không gỡ
+khỏi DOM**. Lý do là quy tắc #1: `PUT /thiet-lap` ghi đè mọi trường nó nhận, mà client dựng dữ
+liệu từ `FormData`. Gỡ tab ẩn khỏi DOM thì `fd.get('soTaiKhoan')` trả `null` khi người dùng
+đang đứng ở tab khác, và `?? ''` biến nó thành chuỗi rỗng ⇒ **lưu tab Trung tâm xoá sạch thông
+tin chuyển khoản**. Đó đúng là lỗi 16/08/2026 mặc áo mới.
+
+Hệ quả cố ý: **một nút Lưu cho cả ba tab** — sửa ở tab nào, bấm Lưu ở đâu cũng lưu tất cả. Nói
+rõ bằng một dòng cạnh nút, thay vì giả vờ ba tab độc lập.
 
 ### Hai trường vận hành, dễ bị coi nhẹ
 

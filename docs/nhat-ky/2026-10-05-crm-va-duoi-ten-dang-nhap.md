@@ -89,6 +89,52 @@ tự cài thuật toán băm thứ hai), username là chuỗi thô nên UPDATE k
 Trước đó đã thử ba ca tạo tài khoản trên hệ thống thật: tick → nối, bỏ tick → giữ nguyên, gõ
 sẵn cả đuôi + vẫn tick → không nối hai lần. Cả ba đúng, rồi dọn tài khoản thử.
 
+## Đợt sau: ba tab + ba đuôi
+
+Chủ sản phẩm yêu cầu thêm hai thứ: Thiết lập chung chia tab theo mục, và đuôi tên đăng nhập
+cho phép ba loại để lúc tạo tài khoản chọn.
+
+### Tab ẩn KHÔNG được gỡ khỏi DOM
+
+Trang Thiết lập dùng **một `<form>`** và dựng dữ liệu từ `FormData`. Chia tab theo kiểu thường
+thấy — tab nào hiện thì render tab ấy — sẽ làm `fd.get('soTaiKhoan')` trả `null` khi đang đứng
+ở tab khác, rồi `?? ''` biến nó thành chuỗi rỗng, và **lưu tab Trung tâm xoá sạch thông tin
+chuyển khoản**.
+
+Đây là lỗi 16/08/2026 đến từ hướng thứ ba: không phải quên thêm ô, không phải cố ý bỏ ô, mà là
+**ô vẫn còn trên màn nhưng không còn trong DOM**. Giải: ba tab trong cùng một form, tab ẩn chỉ
+ẩn bằng CSS. Hệ quả cố ý là một nút Lưu cho cả ba tab — nói rõ bằng một dòng cạnh nút, thay vì
+giả vờ ba tab độc lập.
+
+Đã thử thật trên giao diện: điền số tài khoản ở tab 3, sửa tên viết tắt ở tab 1, bấm Lưu từ
+tab 1 — cả hai đều vào DB, đuôi ở tab 2 không mất.
+
+### `display: contents` ghi đè thuộc tính `hidden`
+
+Lần đầu tôi viết `<div hidden={tab !== 'x'} className="contents">`. Chụp màn thì tab Đăng nhập
+hiện nguyên cả nội dung tab Trung tâm: nhóm cần `display: contents` để các ô con nhận grid của
+`<form>`, mà `display: contents` **thắng** `display: none` mà thuộc tính `hidden` đặt ra. Hai
+luật tranh nhau, không lỗi nào báo. Giải: đổi hẳn giá trị `display` theo tab
+(`tab === 'x' ? 'contents' : 'hidden'`) thay vì chồng hai cơ chế.
+
+Chỉ chụp màn mới thấy — `tsc`, lint và test đều xanh.
+
+### Ba cột, không bảng riêng
+
+Ba giá trị cố định, không thứ tự nghiệp vụ, không thuộc tính nào đi kèm. Bảng riêng sẽ thêm một
+join cho **mọi** lần tạo tài khoản mà không đổi được gì về khả năng. Cột thứ nhất giữ nguyên
+tên nên trung tâm đã khai đuôi không mất dữ liệu.
+
+Tên cột phải khai `HasColumnName` tường minh: quy ước tự sinh cho ra `duoi_ten_dang_nhap2`,
+dính số vào chữ. Không có tiền lệ nào trong 50 bảng để theo, nên chọn `_2` cho dễ đọc.
+
+### Cái bẫy `?? DuoiTenDangNhap`
+
+Chọn ô đuôi mà trung tâm để trống thì **giữ tên ngắn**, không rơi về đuôi thứ nhất. Rơi về ô 1
+là dòng dễ viết nhất và sai âm thầm: người tạo chọn ô 3 nhưng nhận đuôi ô 1, không lỗi nào báo.
+Viết test cho ca này trước, rồi mutation test xác nhận — cả hai mutant (`?? DuoiTenDangNhap` và
+đọc nhầm cột) đều chết.
+
 ## Việc kế tiếp
 
 - `frontend/edu-temp/` (60MB, chưa theo dõi) vẫn chờ quyết định về giấy phép và cách dùng.

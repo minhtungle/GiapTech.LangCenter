@@ -255,8 +255,8 @@ public class LayDanhSachNguoiDungHandler(IAppDbContext db, IPhamViLopHoc phamVi)
 /// </summary>
 public record TaiKhoanKemTheo(
     string Username, string MatKhau, List<Guid> QuyenIds, bool PhaiDoiMatKhau = true,
-    /// <summary>Nối đuôi tên đăng nhập của trung tâm — xem `DuoiTenDangNhapHelper`.</summary>
-    bool NoiDuoi = false);
+    /// <summary>Đuôi tên đăng nhập chọn (1-3), null = không nối — xem `DuoiTenDangNhapHelper`.</summary>
+    int? DuoiSo = null);
 
 public record TaoNguoiDungCommand(
     string HoTen, string? Email, string? SoDienThoai, string? DiaChi,
@@ -384,7 +384,7 @@ public class TaoNguoiDungHandler(
         {
             // Ghép TRƯỚC khi kiểm trùng — cùng lý do với `TaoTaiKhoanHandler`.
             var username = await TaiKhoan.DuoiTenDangNhapHelper.GhepAsync(
-                db, currentTenant.TenantId, tk.Username, tk.NoiDuoi, ct);
+                db, currentTenant.TenantId, tk.Username, tk.DuoiSo, ct);
 
             if (await db.TaiKhoans.AnyAsync(u => u.Username == username, ct))
                 throw new AppException("USERNAME_DA_TON_TAI");

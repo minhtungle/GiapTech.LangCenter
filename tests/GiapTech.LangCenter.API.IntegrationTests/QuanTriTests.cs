@@ -282,13 +282,13 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
     // ---------------------------------------------------------------------------------
 
     /// <summary>
-    /// Khai đuôi ở Thiết lập + tick "nối đuôi" ⇒ username lưu xuống là chuỗi ĐẦY ĐỦ.
+    /// Khai đuôi ở Thiết lập + chọn đuôi đó ⇒ username lưu xuống là chuỗi ĐẦY ĐỦ.
     ///
     /// Ghép ở tầng ứng dụng chứ không ở giao diện: bất kỳ ai gọi thẳng API cũng đi qua đây,
     /// và `UNIQUE(tenant_id, username)` kiểm đúng chuỗi cuối cùng.
     /// </summary>
     [Fact]
-    public async Task Tick_noi_duoi_thi_username_co_duoi_trung_tam()
+    public async Task Chon_duoi_thi_username_co_duoi_trung_tam()
     {
         var c = await Client(factory.MaTrungTamB);
 
@@ -303,7 +303,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
             Username = "nv.moi",
             MatKhau = "matkhau-du-dai-12",
             QuyenIds = Array.Empty<Guid>(),
-            NoiDuoi = true
+            DuoiSo = 1
         })).EnsureSuccessStatusCode();
 
         var ds = await c.GetFromJsonAsync<JsonElement>("/api/v1/tai-khoan?soDong=200");
@@ -315,13 +315,13 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     /// <summary>
-    /// KHÔNG tick ⇒ giữ nguyên tên ngắn, dù trung tâm đã khai đuôi.
+    /// Chọn "không nối" ⇒ giữ nguyên tên ngắn, dù trung tâm đã khai đuôi.
     ///
-    /// Đây là lý do `NoiDuoi` là lựa chọn chứ không phải ràng buộc: tài khoản `admin` sinh ra
+    /// Đây là lý do `DuoiSo` là lựa chọn chứ không phải ràng buộc: tài khoản `admin` sinh ra
     /// lúc đăng ký trung tâm, khi chưa ai kịp khai đuôi nào.
     /// </summary>
     [Fact]
-    public async Task Khong_tick_thi_giu_nguyen_ten_ngan()
+    public async Task Chon_khong_noi_thi_giu_nguyen_ten_ngan()
     {
         var c = await Client(factory.MaTrungTamC);
 
@@ -336,7 +336,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
             Username = "ky.thuat",
             MatKhau = "matkhau-du-dai-12",
             QuyenIds = Array.Empty<Guid>(),
-            NoiDuoi = false
+            DuoiSo = (int?)null
         })).EnsureSuccessStatusCode();
 
         var ds = await c.GetFromJsonAsync<JsonElement>("/api/v1/tai-khoan?soDong=200");
@@ -348,10 +348,10 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     /// <summary>
-    /// Người tạo gõ sẵn cả đuôi + vẫn để tick ⇒ KHÔNG nối hai lần.
+    /// Người tạo gõ sẵn cả đuôi + vẫn chọn đuôi ⇒ KHÔNG nối hai lần.
     ///
     /// Ca thật: form hiện sẵn đuôi để người dùng nhìn thấy, nên họ hay gõ luôn cả đuôi vào ô
-    /// rồi quên bỏ tick. Không chặn thì ra `nv1@abc.vn@abc.vn` — một username không ai đăng
+    /// rồi quên đổi ô chọn về "không nối". Không chặn thì ra `nv1@abc.vn@abc.vn` — một username không ai đăng
     /// nhập nổi, và không có lỗi nào báo.
     /// </summary>
     [Fact]
@@ -370,7 +370,7 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
             Username = "tu.go@vietgeneducation.edu.vn",
             MatKhau = "matkhau-du-dai-12",
             QuyenIds = Array.Empty<Guid>(),
-            NoiDuoi = true
+            DuoiSo = 1
         })).EnsureSuccessStatusCode();
 
         var ds = await c.GetFromJsonAsync<JsonElement>("/api/v1/tai-khoan?soDong=200");
@@ -382,20 +382,131 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
             "tu.go@vietgeneducation.edu.vn@vietgeneducation.edu.vn", tens);
     }
 
-    /// <summary>Đuôi không bắt đầu bằng `@` ⇒ từ chối ngay ở Thiết lập.</summary>
+    /// <summary>
+    /// Ba đuôi, chọn đuôi nào thì nối đuôi ấy.
+    ///
+    /// Test này là lý do ô thứ hai và thứ ba không được coi là "hạng hai": chúng đi vào
+    /// username y hệt ô thứ nhất. Lấy nhầm cột — ví dụ luôn đọc `DuoiTenDangNhap` — sẽ cho
+    /// mọi tài khoản cùng một đuôi mà không có lỗi nào báo.
+    /// </summary>
     [Theory]
-    [InlineData("vietgeneducation.edu.vn")]
-    [InlineData("@")]
-    [InlineData("@có dấu.vn")]
-    public async Task Duoi_sai_dinh_dang_thi_tu_choi(string duoi)
+    [InlineData(1, "@nhan-su.vn")]
+    [InlineData(2, "@hoc-vien.vn")]
+    [InlineData(3, "@cong-tac-vien.vn")]
+    public async Task Chon_duoi_nao_thi_noi_duoi_ay(int duoiSo, string duoiMongDoi)
+    {
+        var c = await Client(factory.MaTrungTamB);
+
+        (await c.PutAsJsonAsync("/api/v1/thiet-lap", new
+        {
+            TenTrungTam = "Trung tâm B",
+            DuoiTenDangNhap = "@nhan-su.vn",
+            DuoiTenDangNhap2 = "@hoc-vien.vn",
+            DuoiTenDangNhap3 = "@cong-tac-vien.vn"
+        })).EnsureSuccessStatusCode();
+
+        var ten = $"ba.duoi{duoiSo}";
+        (await c.PostAsJsonAsync("/api/v1/tai-khoan", new
+        {
+            Username = ten,
+            MatKhau = "matkhau-du-dai-12",
+            QuyenIds = Array.Empty<Guid>(),
+            DuoiSo = duoiSo
+        })).EnsureSuccessStatusCode();
+
+        var ds = await c.GetFromJsonAsync<JsonElement>("/api/v1/tai-khoan?soDong=200");
+        var tens = ds.GetProperty("duLieu").EnumerateArray()
+            .Select(x => x.GetProperty("username").GetString()).ToList();
+
+        Assert.Contains(ten + duoiMongDoi, tens);
+    }
+
+    /// <summary>
+    /// Chọn ô đuôi mà trung tâm để trống ⇒ giữ nguyên tên ngắn, KHÔNG rơi về đuôi thứ nhất.
+    ///
+    /// Rơi về đuôi thứ nhất là cái bẫy dễ viết nhất (`?? DuoiTenDangNhap`), và nó sai âm
+    /// thầm: người tạo chọn ô 3 nhưng nhận đuôi của ô 1, không có lỗi nào báo.
+    /// </summary>
+    [Fact]
+    public async Task Chon_o_duoi_de_trong_thi_giu_ten_ngan()
     {
         var c = await Client(factory.MaTrungTamC);
 
-        var res = await c.PutAsJsonAsync("/api/v1/thiet-lap", new
+        (await c.PutAsJsonAsync("/api/v1/thiet-lap", new
         {
             TenTrungTam = "Trung tâm C",
-            DuoiTenDangNhap = duoi
-        });
+            DuoiTenDangNhap = "@co-khai.vn",
+            DuoiTenDangNhap2 = "",
+            DuoiTenDangNhap3 = ""
+        })).EnsureSuccessStatusCode();
+
+        (await c.PostAsJsonAsync("/api/v1/tai-khoan", new
+        {
+            Username = "chon.o.trong",
+            MatKhau = "matkhau-du-dai-12",
+            QuyenIds = Array.Empty<Guid>(),
+            DuoiSo = 3
+        })).EnsureSuccessStatusCode();
+
+        var ds = await c.GetFromJsonAsync<JsonElement>("/api/v1/tai-khoan?soDong=200");
+        var tens = ds.GetProperty("duLieu").EnumerateArray()
+            .Select(x => x.GetProperty("username").GetString()).ToList();
+
+        Assert.Contains("chon.o.trong", tens);
+        Assert.DoesNotContain("chon.o.trong@co-khai.vn", tens);
+    }
+
+    /// <summary>
+    /// Sửa đuôi thứ hai KHÔNG làm mất đuôi thứ nhất và thứ ba (quy tắc #1).
+    ///
+    /// Ba ô nằm trên cùng một tab nên dễ tưởng chúng luôn được gửi cùng nhau; nhưng client
+    /// cũ chỉ biết một ô, và quy ước `null = giữ nguyên` phải đúng cho cả ba.
+    /// </summary>
+    [Fact]
+    public async Task Sua_mot_duoi_khong_lam_mat_hai_duoi_kia()
+    {
+        var c = await Client(factory.MaTrungTamB);
+
+        (await c.PutAsJsonAsync("/api/v1/thiet-lap", new
+        {
+            TenTrungTam = "Trung tâm B",
+            DuoiTenDangNhap = "@mot.vn",
+            DuoiTenDangNhap2 = "@hai.vn",
+            DuoiTenDangNhap3 = "@ba.vn"
+        })).EnsureSuccessStatusCode();
+
+        // Client chỉ gửi ô thứ hai — hai ô kia là `null`, nghĩa là "không gửi".
+        (await c.PutAsJsonAsync("/api/v1/thiet-lap", new
+        {
+            TenTrungTam = "Trung tâm B",
+            DuoiTenDangNhap2 = "@hai-moi.vn"
+        })).EnsureSuccessStatusCode();
+
+        var tl = await c.GetFromJsonAsync<JsonElement>("/api/v1/thiet-lap");
+        Assert.Equal("@mot.vn", tl.GetProperty("duoiTenDangNhap").GetString());
+        Assert.Equal("@hai-moi.vn", tl.GetProperty("duoiTenDangNhap2").GetString());
+        Assert.Equal("@ba.vn", tl.GetProperty("duoiTenDangNhap3").GetString());
+    }
+
+    /// <summary>Đuôi không bắt đầu bằng `@` ⇒ từ chối ngay ở Thiết lập.</summary>
+    [Theory]
+    [InlineData(1, "vietgeneducation.edu.vn")]
+    [InlineData(1, "@")]
+    [InlineData(1, "@có dấu.vn")]
+    [InlineData(2, "khong-co-a-cong.vn")]
+    [InlineData(3, "@có dấu.vn")]
+    public async Task Duoi_sai_dinh_dang_thi_tu_choi(int o, string duoi)
+    {
+        var c = await Client(factory.MaTrungTamC);
+
+        object than = o switch
+        {
+            1 => new { TenTrungTam = "Trung tâm C", DuoiTenDangNhap = duoi },
+            2 => new { TenTrungTam = "Trung tâm C", DuoiTenDangNhap2 = duoi },
+            _ => new { TenTrungTam = "Trung tâm C", DuoiTenDangNhap3 = duoi },
+        };
+
+        var res = await c.PutAsJsonAsync("/api/v1/thiet-lap", than);
 
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
     }

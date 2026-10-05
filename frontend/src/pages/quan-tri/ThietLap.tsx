@@ -19,14 +19,31 @@ interface ThietLapDto {
   diaChi: string | null
   lienHe: string | null
   duoiTenDangNhap: string | null
+  duoiTenDangNhap2: string | null
+  duoiTenDangNhap3: string | null
   soTaiKhoan: string | null
   tenNganHang: string | null
   chuTaiKhoan: string | null
   anhQrUrl: string | null
 }
 
+type Tab = 'trung-tam' | 'dang-nhap' | 'chuyen-khoan'
+
 /**
- * FR-06 — thiết lập chung của trung tâm.
+ * FR-06 — thiết lập chung của trung tâm, chia ba tab (05/10/2026).
+ *
+ * ## Ba tab nhưng MỘT form — và tab ẩn KHÔNG unmount
+ *
+ * Đây là chỗ dễ sai nhất của trang này. Lệnh `PUT /thiet-lap` ghi đè mọi trường nó nhận, và
+ * `onSubmit` dựng dữ liệu từ `FormData` của thẻ `<form>`. Nếu tab ẩn bị gỡ khỏi DOM thì
+ * `fd.get('soTaiKhoan')` trả `null` khi đang đứng ở tab khác ⇒ `?? ''` biến nó thành chuỗi
+ * rỗng ⇒ **lưu tab Trung tâm sẽ xoá sạch thông tin chuyển khoản**.
+ *
+ * Đó đúng là lỗi 16/08/2026 mặc áo mới (quy tắc #1). Nên ba tab nằm trong cùng một `<form>`,
+ * và tab không hiện chỉ bị ẩn bằng `hidden` — input vẫn ở trong DOM, vẫn vào `FormData`.
+ *
+ * Hệ quả cố ý: **một nút Lưu cho cả ba tab**. Người dùng sửa ở tab nào, bấm Lưu ở đâu cũng
+ * lưu tất cả — đúng với cách dữ liệu thực sự được gửi đi, thay vì giả vờ ba tab độc lập.
  *
  * `max-w-5xl` chứ không `max-w-2xl`: đo 21/08 trên màn 1440px thì form chỉ rộng 650px và bỏ
  * trống hoàn toàn nửa phải, nên trang cao 1420px với viewport 800px — phải cuộn hai lần cho
@@ -41,6 +58,7 @@ export default function ThietLap() {
   const { hoi, hop } = useXacNhan()
   const qc = useQueryClient()
   const { capNhatTenTrungTam } = useAuth()
+  const [tab, setTab] = useState<Tab>('trung-tam')
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [daLuu, setDaLuu] = useState(false)
   const [qrNhap, setQrNhap] = useState<string | null | undefined>(undefined)
@@ -96,8 +114,10 @@ export default function ThietLap() {
       // xoá lại hiện giá trị cũ sau khi tải lại — trông như không lưu được.
       diaChi: (fd.get('diaChi') as string) ?? '',
       lienHe: (fd.get('lienHe') as string) ?? '',
-      // Đuôi tên đăng nhập. Cùng quy ước: chuỗi rỗng = trung tâm thôi dùng đuôi.
+      // Ba đuôi tên đăng nhập. Cùng quy ước: chuỗi rỗng = trung tâm thôi dùng đuôi đó.
       duoiTenDangNhap: (fd.get('duoiTenDangNhap') as string) ?? '',
+      duoiTenDangNhap2: (fd.get('duoiTenDangNhap2') as string) ?? '',
+      duoiTenDangNhap3: (fd.get('duoiTenDangNhap3') as string) ?? '',
       // Thông tin chuyển khoản. Cùng quy ước: chuỗi rỗng = xoá, không gửi null.
       soTaiKhoan: (fd.get('soTaiKhoan') as string) ?? '',
       tenNganHang: (fd.get('tenNganHang') as string) ?? '',
@@ -117,7 +137,38 @@ export default function ThietLap() {
     // `max-w-5xl` chứ không `max-w-2xl` — xem ghi chú ở đầu component.
     <Card className="max-w-5xl">
       <CardContent className="pt-5">
+        {/* Thanh tab nằm NGOÀI <form> về mặt thị giác nhưng trong cùng Card — nó chỉ đổi tab
+            nào hiện, không đụng tới dữ liệu. */}
+        <div className="mb-4 flex flex-wrap gap-1 rounded-lg border border-border p-1">
+          {([
+            ['trung-tam', 'thietLap.tabTrungTam'],
+            ['dang-nhap', 'thietLap.tabDangNhap'],
+            ['chuyen-khoan', 'thietLap.tabChuyenKhoan'],
+          ] as const).map(([ma, khoa]) => (
+            <button
+              key={ma}
+              type="button"
+              onClick={() => setTab(ma)}
+              className={
+                'rounded-md px-3 py-1.5 text-sm font-medium transition-colors '
+                + (tab === ma
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-muted')
+              }
+            >
+              {t(khoa)}
+            </button>
+          ))}
+        </div>
+
         <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
+          {/* Ẩn bằng CSS, KHÔNG gỡ khỏi DOM — xem ghi chú ở đầu component.
+
+              Dùng class `hidden` chứ không thuộc tính `hidden` của HTML: nhóm đang hiện cần
+              `display: contents` để các ô con nhận grid của <form>, mà `display: contents`
+              ghi đè `display: none` mà thuộc tính `hidden` đặt ra ⇒ tab ẩn vẫn hiện nguyên.
+              Đổi hẳn giá trị `display` theo tab thì không có hai luật tranh nhau. */}
+          <div className={tab === 'trung-tam' ? 'contents' : 'hidden'}>
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label htmlFor="maTrungTam">{t('thietLap.maTrungTam')}</Label>
             <Input id="maTrungTam" value={data?.maTrungTam ?? ''} disabled />
@@ -186,8 +237,9 @@ export default function ThietLap() {
             <Textarea id="moTa" name="moTa" defaultValue={data?.moTa ?? ''} />
           </div>
 
-          {/* Đuôi tên đăng nhập — nhóm riêng vì nó đổi cách người dùng ĐĂNG NHẬP, khác hẳn
-              mấy ô mô tả bên trên. */}
+          </div>
+
+          <div className={tab === 'dang-nhap' ? 'contents' : 'hidden'}>
           <div className="sm:col-span-2">
             <h3 className="text-sm font-semibold">{t('thietLap.nhomDangNhap')}</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
@@ -195,23 +247,37 @@ export default function ThietLap() {
             </p>
           </div>
 
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
-            <Label htmlFor="duoiTenDangNhap">{t('thietLap.duoiTenDangNhap')}</Label>
-            <Input
-              id="duoiTenDangNhap"
-              name="duoiTenDangNhap"
-              maxLength={100}
-              placeholder="@vietgeneducation.edu.vn"
-              defaultValue={data?.duoiTenDangNhap ?? ''}
-            />
+          {/* Ba ô đuôi. Đánh số 1-2-3 chứ không "chính / phụ": người tạo tài khoản chọn ô nào
+              thì nối đuôi ô ấy, không ô nào ưu tiên hơn ô nào. */}
+          {([
+            ['duoiTenDangNhap', data?.duoiTenDangNhap, '@vietgeneducation.edu.vn'],
+            ['duoiTenDangNhap2', data?.duoiTenDangNhap2, '@hocvien.vietgen.edu.vn'],
+            ['duoiTenDangNhap3', data?.duoiTenDangNhap3, '@ctv.vietgen.edu.vn'],
+          ] as const).map(([ten, giaTri, goiY], i) => (
+            <div key={ten} className="flex flex-col gap-1.5 sm:col-span-2">
+              <Label htmlFor={ten}>
+                {t('thietLap.duoiTenDangNhapSo', { so: i + 1 })}
+              </Label>
+              <Input
+                id={ten}
+                name={ten}
+                maxLength={100}
+                placeholder={goiY}
+                defaultValue={giaTri ?? ''}
+              />
+            </div>
+          ))}
+
+          <div className="sm:col-span-2">
             <p className="text-xs text-muted-foreground">
               {t('thietLap.duoiTenDangNhapGoiY')}
             </p>
           </div>
+          </div>
 
-          {/* Nhóm chuyển khoản. Tách riêng và nói rõ mức riêng tư: số tài khoản không phải
-              thông tin để hiện công khai như tên hay logo — đặt cạnh nhau mà không phân biệt
-              thì người dùng tưởng cả hai nhóm cùng mức. */}
+          <div className={tab === 'chuyen-khoan' ? 'contents' : 'hidden'}>
+          {/* Nhóm chuyển khoản. Nói rõ mức riêng tư: số tài khoản không phải thông tin để
+              hiện công khai như tên hay logo. */}
           <div className="sm:col-span-2">
             <h3 className="text-sm font-semibold">{t('thietLap.nhomChuyenKhoan')}</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
@@ -264,6 +330,8 @@ export default function ThietLap() {
             <p className="text-xs text-muted-foreground">{t('thietLap.anhQrGoiY')}</p>
           </div>
 
+          </div>
+
           {maLoi && (
             <div className="sm:col-span-2">
               <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>
@@ -275,6 +343,7 @@ export default function ThietLap() {
               {t('chung.luu')}
             </Button>
             {daLuu && <span className="text-sm text-status-ok">{t('chung.daLuu')}</span>}
+            <span className="text-xs text-muted-foreground">{t('thietLap.luuCaBaTab')}</span>
           </div>
         </form>
       </CardContent>

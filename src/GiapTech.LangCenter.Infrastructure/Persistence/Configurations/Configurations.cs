@@ -25,6 +25,10 @@ public class TenantConfig : IEntityTypeConfiguration<Tenant>
         b.Property(x => x.TenNganHang).HasMaxLength(100);
         b.Property(x => x.ChuTaiKhoan).HasMaxLength(200);
         b.Property(x => x.DuoiTenDangNhap).HasMaxLength(100);
+        // `HasColumnName` tường minh: quy ước tự sinh cho ra `duoi_ten_dang_nhap2`, dính số
+        // vào chữ. Gạch dưới trước số đọc rõ hơn và khớp lối đặt tên của các cột còn lại.
+        b.Property(x => x.DuoiTenDangNhap2).HasMaxLength(100).HasColumnName("duoi_ten_dang_nhap_2");
+        b.Property(x => x.DuoiTenDangNhap3).HasMaxLength(100).HasColumnName("duoi_ten_dang_nhap_3");
         b.Property(x => x.LogoUrl).HasMaxLength(500);
         b.Property(x => x.AnhBiaUrl).HasMaxLength(500);
         b.Property(x => x.AnhQrUrl).HasMaxLength(500);

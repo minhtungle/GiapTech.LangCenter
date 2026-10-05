@@ -79,12 +79,13 @@ public record TaoTaiKhoanCommand(
     Guid? NguoiDungId,
     List<Guid> QuyenIds, bool PhaiDoiMatKhau = true,
     /// <summary>
-    /// Nối đuôi tên đăng nhập của trung tâm (vd `@vietgeneducation.edu.vn`) vào username.
+    /// Đuôi tên đăng nhập người tạo chọn: 1, 2 hoặc 3 (trung tâm khai tối đa ba đuôi ở thiết
+    /// lập chung). `null` = không nối đuôi.
     ///
-    /// Mặc định `false` để client cũ và `TenantSeeder` tạo `admin` không bị đổi tên ngoài ý
+    /// Mặc định `null` để client cũ và `TenantSeeder` tạo `admin` không bị đổi tên ngoài ý
     /// muốn — trung tâm vừa đăng ký còn chưa khai đuôi nào.
     /// </summary>
-    bool NoiDuoi = false) : IRequest<Guid>;
+    int? DuoiSo = null) : IRequest<Guid>;
 
 public class TaoTaiKhoanValidator : AbstractValidator<TaoTaiKhoanCommand>
 {
@@ -107,7 +108,7 @@ public class TaoTaiKhoanHandler(
         // lưu, nên kiểm trên chuỗi chưa ghép sẽ cho qua hai tài khoản rồi nổ ở tầng DB với
         // thông báo khó hiểu.
         var username = await DuoiTenDangNhapHelper.GhepAsync(
-            db, currentTenant.TenantId, request.Username, request.NoiDuoi, ct);
+            db, currentTenant.TenantId, request.Username, request.DuoiSo, ct);
 
         // Username chỉ duy nhất TRONG tenant — query filter đã giới hạn phạm vi nên
         // kiểm tra này tự động đúng phạm vi. DB cũng có UNIQUE(tenant_id, username) chặn

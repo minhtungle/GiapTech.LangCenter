@@ -37,6 +37,14 @@ interface QuyenNgan {
  * Chỉ thông tin để vào hệ thống. Họ tên, ngày sinh, hồ sơ vai trò nằm ở tab Người dùng —
  * tách từ 07/09/2026 để vô hiệu hoá tài khoản không đụng tới dữ liệu người dùng.
  */
+/**
+ * Giá trị của mục "không nối đuôi" trong ô chọn.
+ *
+ * Chuỗi chứ không `''`: `SelectTimKiem` coi chuỗi rỗng là "chưa chọn gì" và sẽ hiện
+ * placeholder, nên người dùng không thấy mình đã chủ động chọn không nối.
+ */
+const KHONG_NOI_DUOI = 'khong-noi'
+
 export default function TaiKhoan() {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -50,12 +58,14 @@ export default function TaiKhoan() {
   const [moForm, setMoForm] = useState(false)
   const [dangSua, setDangSua] = useState<TaiKhoanDto | null>(null)
   /**
-   * Nối đuôi tên đăng nhập của trung tâm vào username đang gõ.
+   * Đuôi tên đăng nhập người tạo chọn: 1, 2, 3 — hoặc `null` = không nối.
    *
-   * Tick sẵn khi trung tâm ĐÃ khai đuôi — đó là ý định thường gặp, còn tài khoản không đuôi
-   * là ngoại lệ. Trung tâm chưa khai đuôi thì ô không hiện, giá trị `false` không ảnh hưởng.
+   * Mặc định đuôi 1 vì trung tâm nào khai đuôi cũng khai ô đầu trước, và nối đuôi là ý định
+   * thường gặp; tài khoản không đuôi (kỹ thuật) là ngoại lệ. Trung tâm chưa khai đuôi nào
+   * thì ô chọn không hiện và giá trị này không đi tới đâu — `GhepAsync` vẫn trả tên ngắn vì
+   * ô tương ứng rỗng.
    */
-  const [noiDuoi, setNoiDuoi] = useState(true)
+  const [duoiSo, setDuoiSo] = useState<number | null>(1)
   const [nguoiChon, setNguoiChon] = useState<string | null>(null)
   const [quyenChon, setQuyenChon] = useState<string[]>([])
   const [trangThai, setTrangThai] = useState<'HoatDong' | 'VoHieuHoa'>('HoatDong')
@@ -79,7 +89,7 @@ export default function TaiKhoan() {
   })
 
   /**
-   * Thiết lập trung tâm — chỉ cần `duoiTenDangNhap` để dựng ô "nối đuôi".
+   * Thiết lập trung tâm — chỉ cần ba đuôi để dựng ô chọn.
    *
    * Dùng CHUNG `queryKey` với màn Thiết lập: hai màn đọc một endpoint, khoá khác nhau thì
    * đổi đuôi ở Thiết lập xong sang đây vẫn thấy giá trị cũ cho tới khi tải lại trang.
@@ -87,8 +97,26 @@ export default function TaiKhoan() {
   const { data: thietLap } = useQuery({
     queryKey: ['thiet-lap'],
     queryFn: async () =>
-      (await api.get<{ duoiTenDangNhap: string | null }>('/thiet-lap')).data,
+      (await api.get<{
+        duoiTenDangNhap: string | null
+        duoiTenDangNhap2: string | null
+        duoiTenDangNhap3: string | null
+      }>('/thiet-lap')).data,
   })
+
+  /**
+   * Các đuôi trung tâm ĐÃ khai, kèm số thứ tự gốc.
+   *
+   * Giữ số gốc chứ không đánh lại từ 1: backend chọn cột theo số này, nên khai ô 1 và ô 3 mà
+   * đánh lại thành 1-2 sẽ nối nhầm đuôi — và nhầm im lặng, không lỗi nào báo.
+   */
+  const duoiDaKhai = [
+    thietLap?.duoiTenDangNhap,
+    thietLap?.duoiTenDangNhap2,
+    thietLap?.duoiTenDangNhap3,
+  ]
+    .map((duoi, i) => ({ so: i + 1, duoi }))
+    .filter((x): x is { so: number; duoi: string } => !!x.duoi)
 
   /**
    * Người dùng để gán tài khoản — lấy nhiều để đủ chọn; danh sách này cũng dùng ở màn Lớp học.
@@ -136,7 +164,7 @@ export default function TaiKhoan() {
           nguoiDungId: nguoiChon,
           quyenIds: quyenChon,
           phaiDoiMatKhau: buocDoiMk,
-          noiDuoi,
+          duoiSo,
         })
       }
     },
@@ -194,6 +222,7 @@ export default function TaiKhoan() {
               setQuyenChon([])
               setTrangThai('HoatDong')
               setBuocDoiMk(true)
+              setDuoiSo(1)
               setMaLoi(null)
               setMoForm(true)
             }}
@@ -350,23 +379,29 @@ export default function TaiKhoan() {
               <div>
                 <Label htmlFor="username">{t('taiKhoan.username')} *</Label>
                 <Input id="username" name="username" required />
-                {/* Chỉ hiện khi trung tâm đã khai đuôi ở Thiết lập chung — không khai thì ô
-                    này vô nghĩa và chỉ làm form rối. */}
-                {thietLap?.duoiTenDangNhap && (
-                  <>
-                    <label className="mt-1.5 flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 accent-[hsl(var(--primary))]"
-                        checked={noiDuoi}
-                        onChange={(e) => setNoiDuoi(e.target.checked)}
-                      />
-                      {t('taiKhoan.noiDuoi', { duoi: thietLap.duoiTenDangNhap })}
-                    </label>
+                {/* Chỉ hiện khi trung tâm đã khai ít nhất một đuôi ở Thiết lập chung —
+                    không khai thì ô này vô nghĩa và chỉ làm form rối. */}
+                {duoiDaKhai.length > 0 && (
+                  <div className="mt-1.5">
+                    <Label htmlFor="duoiSo">{t('taiKhoan.duoiTenDangNhap')}</Label>
+                    <SelectTimKiem
+                      id="duoiSo"
+                      luaChon={[
+                        ...duoiDaKhai.map((x) => ({ giaTri: String(x.so), nhan: x.duoi })),
+                        // Mục "không nối" nằm trong CÙNG ô chọn chứ không là ô tick riêng:
+                        // chỉ có một quyết định ở đây, nên chỉ nên có một chỗ để quyết.
+                        { giaTri: KHONG_NOI_DUOI, nhan: t('taiKhoan.khongNoiDuoi') },
+                      ]}
+                      giaTri={duoiSo === null ? KHONG_NOI_DUOI : String(duoiSo)}
+                      onDoi={(v) =>
+                        setDuoiSo(v === KHONG_NOI_DUOI || !v ? null : Number(v))
+                      }
+                      choPhepXoa={false}
+                    />
                     <p className="mt-1 text-xs text-muted-foreground">
                       {t('taiKhoan.noiDuoiGoiY')}
                     </p>
-                  </>
+                  </div>
                 )}
               </div>
               <div>
