@@ -36,6 +36,16 @@ public class TenantMiddleware(RequestDelegate next)
         // proxy, và việc đó phải xong trước khi bất kỳ ai kịp đọc nhầm.
         var domain = DomainRequest.LayDomain(context, sauProxy);
 
+        // Domain CỔNG CHUNG (vd. langcenter.giaptech.site) phục vụ MỌI trung tâm chưa trỏ
+        // domain riêng — người dùng đăng nhập bằng mã trung tâm như trước ADR-0008. Domain
+        // này không thể "gắn" cho 1 tenant cụ thể trong DB, nên phải loại trừ khỏi bước tra
+        // domain dưới đây; nếu không mọi request qua nó sẽ bị chặn DOMAIN_CHUA_GAN dù đúng
+        // thiết kế là chạy nhánh JWT/mã trung tâm.
+        var domainCongChung = (config.GetValue(DomainRequest.KhoaDomainCongChung, string.Empty) ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (domain is not null && domainCongChung.Contains(domain, StringComparer.OrdinalIgnoreCase))
+            domain = null;
+
         /*
           Đường CÔNG KHAI DỰ PHÒNG `/t/{mã}` (FR-30) — chỉ khi chưa giải được bằng domain.
 
