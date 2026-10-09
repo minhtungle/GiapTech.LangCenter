@@ -1,4 +1,5 @@
 using FluentValidation;
+using GiapTech.LangCenter.Application.Common;
 using GiapTech.LangCenter.Application.Common.Exceptions;
 using GiapTech.LangCenter.Application.Common.Interfaces;
 using MediatR;
@@ -26,11 +27,19 @@ public record ThietLapDto(
     /// <summary>Đuôi tự nối vào tên đăng nhập khi tạo tài khoản. null = trung tâm không dùng.</summary>
     string? DuoiTenDangNhap = null,
     string? DuoiTenDangNhap2 = null,
-    string? DuoiTenDangNhap3 = null);
+    string? DuoiTenDangNhap3 = null,
+    /// <summary>
+    /// Mật khẩu mặc định ở dạng RÕ, giải mã khi đọc.
+    ///
+    /// Khác hẳn `ThietLapEmailDto` vốn chỉ trả cờ `CoMatKhau`: chủ sản phẩm chốt cho admin
+    /// xem lại (09/10/2026) vì họ phải đọc mật khẩu này cho người dùng mới. Endpoint gác
+    /// bằng `ThietLapChung.Xem` — không phải ai cũng mở được màn này.
+    /// </summary>
+    string? MatKhauMacDinh = null);
 
 public record LayThietLapQuery : IRequest<ThietLapDto>;
 
-public class LayThietLapHandler(IAppDbContext db, ICurrentTenant tenant)
+public class LayThietLapHandler(IAppDbContext db, ICurrentTenant tenant, IMaHoaBiMat maHoa)
     : IRequestHandler<LayThietLapQuery, ThietLapDto>
 {
     public async Task<ThietLapDto> Handle(LayThietLapQuery request, CancellationToken ct)
@@ -48,7 +57,10 @@ public class LayThietLapHandler(IAppDbContext db, ICurrentTenant tenant)
                 t.LogoUrl, t.AnhBiaUrl, t.MoTa,
                 t.DiaChi, t.LienHe,
                 t.SoTaiKhoan, t.TenNganHang, t.ChuTaiKhoan, t.AnhQrUrl,
-                t.DuoiTenDangNhap, t.DuoiTenDangNhap2, t.DuoiTenDangNhap3)
+                t.DuoiTenDangNhap, t.DuoiTenDangNhap2, t.DuoiTenDangNhap3,
+                // Bản mã hỏng (đổi khoá mã hoá) → `GiaiMa` trả null, màn hiện ô trống thay vì
+                // nổ 500. Admin nhập lại là xong.
+                t.MatKhauMacDinhMaHoa is null ? null : maHoa.GiaiMa(t.MatKhauMacDinhMaHoa))
             : throw new KhongTimThayException($"Tenant {tid}");
     }
 }
@@ -68,7 +80,9 @@ public record CapNhatThietLapCommand(
     /// <summary>Cùng quy ước: null = giữ nguyên, chuỗi rỗng = trung tâm thôi dùng đuôi.</summary>
     string? DuoiTenDangNhap = null,
     string? DuoiTenDangNhap2 = null,
-    string? DuoiTenDangNhap3 = null) : IRequest;
+    string? DuoiTenDangNhap3 = null,
+    /// <summary>Cùng quy ước: null = giữ nguyên, chuỗi rỗng = thôi dùng mật khẩu mặc định.</summary>
+    string? MatKhauMacDinh = null) : IRequest;
 
 public class CapNhatThietLapValidator : AbstractValidator<CapNhatThietLapCommand>
 {
@@ -101,10 +115,16 @@ public class CapNhatThietLapValidator : AbstractValidator<CapNhatThietLapCommand
             .Matches(MauDuoi).WithErrorCode("DUOI_TEN_DANG_NHAP_KHONG_HOP_LE")
             .When(x => !string.IsNullOrWhiteSpace(x.DuoiTenDangNhap3));
         RuleFor(x => x.ChuTaiKhoan).MaximumLength(200);
+        // Cùng chính sách với mọi chỗ nhận mật khẩu mới: đặt mặc định yếu hơn mức tối thiểu
+        // thì mọi tài khoản tạo từ nó đều yếu, và lỗi chỉ lộ ra lúc người dùng đăng nhập.
+        //
+        // Chuỗi rỗng = thôi dùng, nên chỉ áp luật khi có giá trị.
+        RuleFor(x => x.MatKhauMacDinh!).ApDungChinhSach()
+            .When(x => !string.IsNullOrWhiteSpace(x.MatKhauMacDinh));
     }
 }
 
-public class CapNhatThietLapHandler(IAppDbContext db, ICurrentTenant tenant)
+public class CapNhatThietLapHandler(IAppDbContext db, ICurrentTenant tenant, IMaHoaBiMat maHoa)
     : IRequestHandler<CapNhatThietLapCommand>
 {
     public async Task Handle(CapNhatThietLapCommand request, CancellationToken ct)
@@ -146,6 +166,8 @@ public class CapNhatThietLapHandler(IAppDbContext db, ICurrentTenant tenant)
             t.DuoiTenDangNhap2 = string.IsNullOrWhiteSpace(duoi2) ? null : duoi2.Trim();
         if (request.DuoiTenDangNhap3 is { } duoi3)
             t.DuoiTenDangNhap3 = string.IsNullOrWhiteSpace(duoi3) ? null : duoi3.Trim();
+        if (request.MatKhauMacDinh is { } mk)
+            t.MatKhauMacDinhMaHoa = string.IsNullOrWhiteSpace(mk) ? null : maHoa.MaHoa(mk);
 
         // Ba khoá ảnh: cùng quy ước — chuỗi rỗng = người dùng gỡ ảnh.
         if (request.LogoUrl is { } lg) t.LogoUrl = string.IsNullOrWhiteSpace(lg) ? null : lg;

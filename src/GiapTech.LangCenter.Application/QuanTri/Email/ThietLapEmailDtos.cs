@@ -173,7 +173,6 @@ public class GuiEmailThuHandler(IEmailSender emailSender, ICurrentTenant tenant)
             tenantId,
             r.DenEmail.Trim(),
             "Email thử từ hệ thống quản lý trung tâm",
-            "<p>Nếu bạn nhận được email này, cấu hình gửi thư của trung tâm đã hoạt động.</p>",
-            ct);
+            "<p>Nếu bạn nhận được email này, cấu hình gửi thư của trung tâm đã hoạt động.</p>", ct: ct);
     }
 }

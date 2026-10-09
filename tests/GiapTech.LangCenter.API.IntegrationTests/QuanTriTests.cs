@@ -2,6 +2,9 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using GiapTech.LangCenter.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GiapTech.LangCenter.API.IntegrationTests;
 
@@ -511,4 +514,310 @@ public class QuanTriTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
     }
 
+
+    // ---------------------------------------------------------------------------------
+    // Sửa tên đăng nhập (08/10/2026)
+    // ---------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Đổi username xong thì đăng nhập bằng tên MỚI được, tên CŨ thì không.
+    ///
+    /// Kiểm cả hai chiều: chỉ kiểm tên mới vào được thì một lệnh "thêm tài khoản" cũng qua.
+    /// </summary>
+    [Fact]
+    public async Task Doi_username_thi_ten_cu_khong_dang_nhap_duoc()
+    {
+        var c = await Client(factory.MaTrungTamB);
+        var quyen = await QuyenDauTien(c);
+
+        var tao = await c.PostAsJsonAsync("/api/v1/tai-khoan", new
+        {
+            Username = "truoc.khi.doi",
+            MatKhau = "matkhau-du-dai-12",
+            QuyenIds = new[] { quyen },
+    });
+    tao.EnsureSuccessStatusCode();
+    var id = await tao.Content.ReadFromJsonAsync<Guid>();
+
+        (await c.PutAsJsonAsync($"/api/v1/tai-khoan/{id}", new
+        {
+            Id = id,
+            QuyenIds = new[] { quyen },
+            TrangThai = "HoatDong",
+            Username = "sau.khi.doi",
+        })).EnsureSuccessStatusCode();
+
+        var moi = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap", new
+        {
+            MaTrungTam = factory.MaTrungTamB, Username = "sau.khi.doi",
+            MatKhau = "matkhau-du-dai-12",
+        });
+        Assert.Equal(HttpStatusCode.OK, moi.StatusCode);
+
+        var cu = await c.PostAsJsonAsync("/api/v1/auth/dang-nhap", new
+        {
+            MaTrungTam = factory.MaTrungTamB, Username = "truoc.khi.doi",
+            MatKhau = "matkhau-du-dai-12",
+        });
+        Assert.NotEqual(HttpStatusCode.OK, cu.StatusCode);
+    }
+
+    /// <summary>
+    /// Đổi username sang tên đã có người dùng ⇒ từ chối, KHÔNG ghi đè.
+    ///
+    /// `UNIQUE(tenant_id, username)` là chốt cuối, nhưng handler phải trả mã lỗi đọc được
+    /// thay vì để lỗi DB lọt lên thành 500.
+    /// </summary>
+    [Fact]
+    public async Task Doi_username_trung_voi_nick_khac_thi_tu_choi()
+    {
+        var c = await Client(factory.MaTrungTamC);
+        var quyen = await QuyenDauTien(c);
+
+        foreach (var ten in new[] { "nick.mot", "nick.hai" })
+            (await c.PostAsJsonAsync("/api/v1/tai-khoan", new
+            {
+                Username = ten, MatKhau = "matkhau-du-dai-12", QuyenIds = new[] { quyen },
+            })).EnsureSuccessStatusCode();
+
+        var ds = await c.GetFromJsonAsync<JsonElement>("/api/v1/tai-khoan?soDong=200");
+        var id = ds.GetProperty("duLieu").EnumerateArray()
+            .First(x => x.GetProperty("username").GetString() == "nick.hai")
+            .GetProperty("id").GetGuid();
+
+        var res = await c.PutAsJsonAsync($"/api/v1/tai-khoan/{id}", new
+        {
+            Id = id, QuyenIds = new[] { quyen }, TrangThai = "HoatDong",
+            Username = "nick.mot",
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+
+        // Quan trọng hơn mã lỗi: hàng cũ KHÔNG bị đụng.
+        var sau = await c.GetFromJsonAsync<JsonElement>("/api/v1/tai-khoan?soDong=200");
+        var tens = sau.GetProperty("duLieu").EnumerateArray()
+            .Select(x => x.GetProperty("username").GetString()).ToList();
+        Assert.Contains("nick.mot", tens);
+        Assert.Contains("nick.hai", tens);
+    }
+
+    /// <summary>
+    /// KHÔNG gửi `username` ⇒ giữ nguyên tên, và các trường khác vẫn sửa được (quy tắc #1).
+    ///
+    /// Đây là ca của client cũ: nó không biết trường mới nên không gửi, và nó phải tiếp tục
+    /// sửa được quyền/trạng thái mà không âm thầm xoá tên đăng nhập.
+    /// </summary>
+    [Fact]
+    public async Task Khong_gui_username_thi_giu_nguyen_ten()
+    {
+        var c = await Client(factory.MaTrungTamB);
+        var quyen = await QuyenDauTien(c);
+
+        var tao = await c.PostAsJsonAsync("/api/v1/tai-khoan", new
+        {
+            Username = "giu.nguyen.ten",
+            MatKhau = "matkhau-du-dai-12",
+            QuyenIds = Array.Empty<Guid>(),
+    });
+    tao.EnsureSuccessStatusCode();
+    var id = await tao.Content.ReadFromJsonAsync<Guid>();
+
+        // Chỉ đổi quyền, không gửi Username.
+        (await c.PutAsJsonAsync($"/api/v1/tai-khoan/{id}", new
+        {
+            Id = id, QuyenIds = new[] { quyen }, TrangThai = "HoatDong",
+        })).EnsureSuccessStatusCode();
+
+        var ds = await c.GetFromJsonAsync<JsonElement>("/api/v1/tai-khoan?soDong=200");
+        var tk = ds.GetProperty("duLieu").EnumerateArray()
+            .First(x => x.GetProperty("id").GetGuid() == id);
+
+        Assert.Equal("giu.nguyen.ten", tk.GetProperty("username").GetString());
+        Assert.Single(tk.GetProperty("quyenIds").EnumerateArray());
+    }
+
+    /// <summary>Username sai định dạng ⇒ từ chối, cùng luật với lúc tạo.</summary>
+    [Theory]
+    [InlineData("có dấu")]
+    [InlineData("khoang trang")]
+    [InlineData("")]
+    public async Task Doi_username_sai_dinh_dang_thi_tu_choi(string ten)
+    {
+        var c = await Client(factory.MaTrungTamC);
+        var quyen = await QuyenDauTien(c);
+
+        var tao = await c.PostAsJsonAsync("/api/v1/tai-khoan", new
+        {
+            Username = $"hople{Guid.NewGuid():N}"[..20],
+            MatKhau = "matkhau-du-dai-12", QuyenIds = new[] { quyen },
+    });
+    tao.EnsureSuccessStatusCode();
+    var id = await tao.Content.ReadFromJsonAsync<Guid>();
+
+        var res = await c.PutAsJsonAsync($"/api/v1/tai-khoan/{id}", new
+        {
+            Id = id, QuyenIds = new[] { quyen }, TrangThai = "HoatDong", Username = ten,
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    // ---------------------------------------------------------------------------------
+    // Lọc danh sách tài khoản (08/10/2026)
+    // ---------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Bốn bộ lọc, mỗi cái thu hẹp đúng tập của nó.
+    ///
+    /// Kiểm cả chiều ngược (`coNguoiDung=false`): lọc chỉ trả đúng một nhóm thì một bộ lọc
+    /// hỏng luôn trả rỗng cũng "đậu".
+    /// </summary>
+    [Fact]
+    public async Task Loc_tai_khoan_theo_tung_tieu_chi()
+    {
+        var c = await Client(factory.MaTrungTamC);
+        var quyen = await QuyenDauTien(c);
+
+        (await c.PostAsJsonAsync("/api/v1/tai-khoan", new
+        {
+            Username = "loc.ky.thuat", MatKhau = "matkhau-du-dai-12",
+            NguoiDungId = (Guid?)null, QuyenIds = new[] { quyen },
+        })).EnsureSuccessStatusCode();
+
+        async Task<List<string>> Loc(string qs)
+        {
+            var r = await c.GetFromJsonAsync<JsonElement>($"/api/v1/tai-khoan?soDong=200&{qs}");
+            return r.GetProperty("duLieu").EnumerateArray()
+                .Select(x => x.GetProperty("username").GetString()!).ToList();
+        }
+
+        // Không gắn người: phải có tài khoản kỹ thuật vừa tạo.
+        Assert.Contains("loc.ky.thuat", await Loc("coNguoiDung=false"));
+        // Chiều ngược: nó KHÔNG được xuất hiện trong nhóm "có gắn người".
+        Assert.DoesNotContain("loc.ky.thuat", await Loc("coNguoiDung=true"));
+
+        // Theo nhóm quyền.
+        Assert.Contains("loc.ky.thuat", await Loc($"quyenId={quyen}"));
+
+        // Tài khoản mới tạo luôn `phaiDoiMatKhau = true`.
+        Assert.Contains("loc.ky.thuat", await Loc("phaiDoiMatKhau=true"));
+        Assert.DoesNotContain("loc.ky.thuat", await Loc("phaiDoiMatKhau=false"));
+
+        // Theo trạng thái.
+        Assert.Contains("loc.ky.thuat", await Loc("trangThai=HoatDong"));
+    }
+
+    private static async Task<Guid> QuyenDauTien(HttpClient c)
+    {
+        var ds = await c.GetFromJsonAsync<List<JsonElement>>("/api/v1/quyen");
+        return ds!.First().GetProperty("id").GetGuid();
+    }
+
+    // ---------------------------------------------------------------------------------
+    // Mật khẩu mặc định cho tài khoản mới (09/10/2026)
+    // ---------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Lưu rồi đọc lại ra ĐÚNG mật khẩu — nó được mã hoá AES-GCM trong DB nhưng API trả bản rõ.
+    ///
+    /// Khác `ThietLapEmailDto` vốn chỉ trả cờ `CoMatKhau`: chủ sản phẩm chốt cho admin xem
+    /// lại, vì họ phải đọc mật khẩu này cho người dùng mới.
+    /// </summary>
+    [Fact]
+    public async Task Mat_khau_mac_dinh_luu_roi_doc_lai_duoc()
+    {
+        var c = await Client(factory.MaTrungTamB);
+
+        (await c.PutAsJsonAsync("/api/v1/thiet-lap", new
+        {
+            TenTrungTam = "Trung tâm B",
+            MatKhauMacDinh = "MatKhauChung@2026",
+        })).EnsureSuccessStatusCode();
+
+        var tl = await c.GetFromJsonAsync<JsonElement>("/api/v1/thiet-lap");
+        Assert.Equal("MatKhauChung@2026", tl.GetProperty("matKhauMacDinh").GetString());
+    }
+
+    /// <summary>
+    /// Trong DB phải là BẢN MÃ, không phải bản rõ.
+    ///
+    /// Test trên chỉ chứng minh đọc lại được — nếu handler lưu thẳng bản rõ thì nó cũng đậu.
+    /// Đây là chiều ngược: ai mở DB ra không đọc được mật khẩu.
+    /// </summary>
+    [Fact]
+    public async Task Mat_khau_mac_dinh_luu_trong_DB_la_ban_ma()
+    {
+        var c = await Client(factory.MaTrungTamC);
+
+        (await c.PutAsJsonAsync("/api/v1/thiet-lap", new
+        {
+            TenTrungTam = "Trung tâm C",
+            MatKhauMacDinh = "ChuoiDeNhanRa@2026",
+        })).EnsureSuccessStatusCode();
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var luu = await db.Tenants
+            .Where(t => t.MaTrungTam == factory.MaTrungTamC)
+            .Select(t => t.MatKhauMacDinhMaHoa)
+            .FirstAsync();
+
+        Assert.NotNull(luu);
+        Assert.DoesNotContain("ChuoiDeNhanRa", luu);
+    }
+
+    /// <summary>
+    /// Mật khẩu mặc định phải qua CÙNG chính sách với mọi mật khẩu khác.
+    ///
+    /// Đặt mặc định yếu hơn mức tối thiểu thì mọi tài khoản tạo từ nó đều yếu, mà lỗi chỉ lộ
+    /// ra lúc người dùng đăng nhập — quá muộn.
+    /// </summary>
+    [Fact]
+    public async Task Mat_khau_mac_dinh_qua_ngan_thi_tu_choi()
+    {
+        var c = await Client(factory.MaTrungTamB);
+
+        var res = await c.PutAsJsonAsync("/api/v1/thiet-lap", new
+        {
+            TenTrungTam = "Trung tâm B",
+            MatKhauMacDinh = "ngan",
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    /// <summary>
+    /// KHÔNG gửi `matKhauMacDinh` ⇒ giữ nguyên; gửi chuỗi RỖNG ⇒ thôi dùng.
+    ///
+    /// Hai nghĩa khác nhau của "không có giá trị" — quy ước `null = giữ nguyên` của quy tắc
+    /// #1. Lẫn hai thứ này thì client cũ sẽ âm thầm xoá mật khẩu mặc định mỗi lần lưu.
+    /// </summary>
+    [Fact]
+    public async Task Null_giu_nguyen_chuoi_rong_thi_xoa_mat_khau_mac_dinh()
+    {
+        var c = await Client(factory.MaTrungTamC);
+
+        (await c.PutAsJsonAsync("/api/v1/thiet-lap", new
+        {
+            TenTrungTam = "Trung tâm C", MatKhauMacDinh = "GiuNguyenNhe@2026",
+        })).EnsureSuccessStatusCode();
+
+        // Client cũ: không biết trường này nên không gửi.
+        (await c.PutAsJsonAsync("/api/v1/thiet-lap", new
+        {
+            TenTrungTam = "Trung tâm C đổi tên",
+        })).EnsureSuccessStatusCode();
+
+        var giu = await c.GetFromJsonAsync<JsonElement>("/api/v1/thiet-lap");
+        Assert.Equal("GiuNguyenNhe@2026", giu.GetProperty("matKhauMacDinh").GetString());
+
+        // Chuỗi rỗng = chủ động thôi dùng.
+        (await c.PutAsJsonAsync("/api/v1/thiet-lap", new
+        {
+            TenTrungTam = "Trung tâm C đổi tên", MatKhauMacDinh = "",
+        })).EnsureSuccessStatusCode();
+
+        var xoa = await c.GetFromJsonAsync<JsonElement>("/api/v1/thiet-lap");
+        Assert.Equal(JsonValueKind.Null, xoa.GetProperty("matKhauMacDinh").ValueKind);
+    }
 }

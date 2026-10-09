@@ -93,6 +93,8 @@ public static class DependencyInjection
         // request sau — đúng kiểu rò rỉ chéo mà quy tắc #2 cấm.
         services.AddScoped<ILuuTruAnh, MinioLuuTruAnh>();
         services.AddScoped<ILuuTruTep, MinioLuuTruTep>();
+        // Không giữ trạng thái nào — `Singleton` cũng được, nhưng `Scoped` cho đồng nhất.
+        services.AddScoped<IPhoiDocx, Phoi.PhoiDocx>();
 
         return services;
     }

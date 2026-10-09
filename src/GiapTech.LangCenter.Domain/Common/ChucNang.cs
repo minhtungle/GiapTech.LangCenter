@@ -202,6 +202,19 @@ public static class ChucNang
     public const string ChamSocKhachHang = nameof(ChamSocKhachHang);
 
     /// <summary>
+    /// Gửi email cho khách hàng và xem lịch sử thư đã gửi (08/10/2026).
+    ///
+    /// Tách khỏi <see cref="ThietLapEmail"/>: quyền kia là **cấu hình hộp thư của trung tâm**
+    /// (máy chủ, mật khẩu SMTP) — việc của quản trị. Quyền này là **liên hệ với khách** —
+    /// việc hằng ngày của người bán. Gộp lại thì muốn cho sale gửi thư phải mở luôn cả màn
+    /// cấu hình SMTP cho họ.
+    ///
+    /// Tách khỏi <see cref="ChamSocKhachHang"/>: ghi lại một cuộc gọi đã xảy ra khác hẳn
+    /// **bắn một email thật ra ngoài** — thư gửi nhầm không thu hồi được.
+    /// </summary>
+    public const string EmailKhachHang = nameof(EmailKhachHang);
+
+    /// <summary>
     /// Thống kê doanh thu toàn trung tâm (FR-28) — theo cá nhân, đội nhóm, mặt hàng.
     ///
     /// Tách khỏi <see cref="DoanhThu"/>: `DoanhThu.Xem` cho xem đơn của một khách, còn đây là
@@ -289,17 +302,33 @@ public static class ChucNang
     /// </summary>
     public const string MauEmail = nameof(MauEmail);
 
+    /// <summary>
+    /// Thiết lập file — mẫu văn bản IN RA GIẤY (hợp đồng, phiếu thu, giấy chứng nhận…) có biến
+    /// điền theo đối tượng. Dựng khung 08/10/2026; nghiệp vụ soạn/điền biến/in làm sau.
+    ///
+    /// Tách khỏi <see cref="MauEmail"/> dù cùng là "mẫu có biến": email GỬI ĐI qua SMTP và
+    /// không thu hồi được, còn phôi tài liệu IN RA cho người cầm. Khác người làm, khác hậu
+    /// quả khi sai.
+    ///
+    /// Hằng <see cref="MauEmail"/> GIỮ NGUYÊN TÊN dù nhãn đã đổi thành "Thiết lập email":
+    /// chuỗi đó nằm trong `QUYEN_CHUC_NANG.ten_chuc_nang` của mọi trung tâm đang chạy, đổi nó
+    /// là làm các ô quyền đã cấp trỏ vào một tên không tồn tại (quy tắc #1). Lý do ấy áp cho
+    /// cả hằng này: nhãn đã đổi hai lần trong hai ngày ("Phôi tài liệu" → "Thiết lập file"),
+    /// còn `PhoiTaiLieu` thì không được đổi theo. Đổi nhãn là việc của `i18n.ts`.
+    /// </summary>
+    public const string PhoiTaiLieu = nameof(PhoiTaiLieu);
+
     public static readonly IReadOnlyList<string> TatCa =
     [
         TaiKhoan, HoSoNguoiDung, PhanQuyen, ThietLapChung, Anh, DoiMatKhauNguoiKhac,
         NhanSu, ChucVu, PhongBan, TieuChiDanhGia, ThongKeNhanSu,
-        DoanhThu, ThongKeDoanhThu, KhachHang, ChamSocKhachHang, KhoaHoc, SanPham,
+        DoanhThu, ThongKeDoanhThu, KhachHang, ChamSocKhachHang, EmailKhachHang, KhoaHoc, SanPham,
         LopHoc, GhiDanhLop, XepLop, BuoiHoc, DiemDanh, NhanXetBuoiHoc,
         BaiTap, BaiNopBaiTap, BaiKiemTra, BaiLamKiemTra,
         KhoaOnline, GhiDanhKhoaOnline, HocOnline,
         TaiLieu, HocPhi, ThongKe, LopHocToanTrungTam, NhatKyHeThong,
         TrangDich, LienHeLanding,
-        ThietLapEmail, MauEmail
+        ThietLapEmail, MauEmail, PhoiTaiLieu
     ];
 
     /// <summary>
@@ -323,6 +352,7 @@ public static class ChucNang
         [DoanhThu] = HeThong.Crm,
         [ThongKeDoanhThu] = HeThong.Crm,
         [ChamSocKhachHang] = HeThong.Crm,
+        [EmailKhachHang] = HeThong.Crm,
         [KhachHang] = HeThong.Crm,
         [KhoaHoc] = HeThong.Crm,
         [SanPham] = HeThong.Crm,
@@ -430,8 +460,15 @@ public static class ChucNang
         // Mẫu email: không có `Them` — danh sách loại cố định trong mã, người dùng chỉ soạn
         // nội dung cho loại đã có. `Xoa` = quay về mẫu mặc định.
         [MauEmail] = [HanhDong.Xem, HanhDong.Sua, HanhDong.Xoa],
+        // Khung rỗng (08/10/2026): khai đủ CRUD vì phôi là danh mục người dùng tự thêm/sửa/
+        // xoá — khác `MauEmail` vốn có danh sách loại cố định trong mã.
+        [PhoiTaiLieu] = Crud,
         [KhachHang] = Crud,
         [ChamSocKhachHang] = Crud,
+        // Chỉ `Xem` (lịch sử thư) và `GuiThu`. KHÔNG có Them/Sua/Xoa: lịch sử email là dấu
+        // vết của việc đã xảy ra — sửa hay xoá được thì nó hết là bằng chứng. Thư sinh ra
+        // bằng `GuiThu`, không phải bằng `Them`.
+        [EmailKhachHang] = [HanhDong.Xem, HanhDong.GuiThu],
         // KHÔNG tách `CauHinhTien` ở đây dù giá là dữ liệu tiền: `LuuKhoaHocCommand` ghi tên,
         // ghi chú và giá trong MỘT lệnh, nên attribute không tách được hai việc đó. Muốn tách
         // thật thì phải tách lệnh trước — ghi vào nợ kỹ thuật, đừng khai một ô không gác gì.
@@ -518,6 +555,10 @@ public static class ChucNang
         (LopHocToanTrungTam, HanhDong.Sua),
         // Đọc dữ liệu cá nhân của người khác — xem chú thích cặp Xem/TuLam
         (NhanXetBuoiHoc, HanhDong.Xem),
+        // Bắn thư THẬT ra ngoài, tới địa chỉ của khách, và gửi được hàng loạt. Thư đã đi thì
+        // không thu hồi được — khác hẳn `ThietLapEmail.GuiThu` vốn chỉ tự gửi cho mình một
+        // thư kiểm tra cấu hình.
+        (EmailKhachHang, HanhDong.GuiThu),
     ];
 
     /// <summary>
@@ -539,7 +580,7 @@ public static class ChucNang
     public static readonly IReadOnlyList<string> DungChung =
     [
         TaiKhoan, HoSoNguoiDung, PhanQuyen, ThietLapChung, Anh, DoiMatKhauNguoiKhac,
-        NhatKyHeThong, ThietLapEmail, MauEmail
+        NhatKyHeThong, ThietLapEmail, MauEmail, PhoiTaiLieu
     ];
 
     /// <summary>

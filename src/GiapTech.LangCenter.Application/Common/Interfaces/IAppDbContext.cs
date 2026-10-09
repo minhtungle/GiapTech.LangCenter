@@ -28,6 +28,9 @@ public interface IAppDbContext
 
     /// <summary>Mẫu email soạn sẵn của trung tâm (FR-31).</summary>
     DbSet<MauEmail> MauEmails { get; }
+    DbSet<LichSuEmail> LichSuEmails { get; }
+    DbSet<PhoiTaiLieu> PhoiTaiLieus { get; }
+    DbSet<BanXuatPhoi> BanXuatPhois { get; }
     DbSet<NguoiDung> NguoiDungs { get; }
     DbSet<TaiKhoan> TaiKhoans { get; }
     DbSet<HoSoGiaoVien> HoSoGiaoViens { get; }

@@ -6,6 +6,7 @@ import {
   BarChart3, Settings, LogOut, Home, GraduationCap, BookOpen, MonitorPlay,
   PanelLeftClose, PanelLeft, Menu, X, ScrollText, UserCog, TrendingUp,
   LayoutGrid, Check, KeyRound, Contact, PackageOpen, BookMarked, Star, Globe, Inbox, Mail,
+  FileText,
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useQuyen } from '@/lib/quyen'
@@ -214,6 +215,10 @@ export default function Layout() {
         {
           to: '/quan-tri/email', nhan: t('menu.email'), icon: Mail,
           can: 'ThietLapEmail',
+        },
+        {
+          to: '/quan-tri/phoi-tai-lieu', nhan: t('menu.phoiTaiLieu'), icon: FileText,
+          can: 'PhoiTaiLieu',
         },
       ],
     },

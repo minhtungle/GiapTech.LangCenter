@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft, ChevronDown, ChevronRight, ExternalLink, Pencil, Plus, Send, ShoppingCart,
-  Trash2,
+  Trash2, CheckCircle2, XCircle,
 } from 'lucide-react'
 import { api, layMaLoi, type KetQuaTrang } from '@/lib/api'
 import {
@@ -14,6 +14,7 @@ import {
 import { Modal } from '@/components/ui/Modal'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
+import { SoanThao } from '@/components/ui/SoanThao'
 import { useQuyen } from '@/lib/quyen'
 import { useXacNhan } from '@/lib/xacNhan'
 import {
@@ -35,6 +36,7 @@ const CAC_TAB = [
   { ma: 'thong-tin', khoa: 'chiTietKhach.tabThongTin', can: undefined },
   { ma: 'cham-soc', khoa: 'chiTietKhach.tabChamSoc', can: undefined },
   { ma: 'mua-hang', khoa: 'donHang.lichSu', can: 'DoanhThu' },
+  { ma: 'email', khoa: 'emailKhach.tab', can: 'EmailKhachHang' },
 ] as const
 
 type Tab = (typeof CAC_TAB)[number]['ma']
@@ -100,6 +102,7 @@ export default function ChiTietKhachHang() {
       {tab === 'thong-tin' && <TabThongTin kh={kh} onXong={() => navigate(0)} />}
       {tab === 'cham-soc' && <TabChamSoc khachHangId={kh.id} />}
       {tab === 'mua-hang' && <TabKhoaHoc khachHangId={kh.id} />}
+      {tab === 'email' && <TabEmail kh={kh} />}
     </div>
   )
 }
@@ -1558,6 +1561,297 @@ function DongDonHang({
         )}
       </CardContent>
     </Card>
+  )
+}
+
+interface LichSuEmailDto {
+  id: string
+  denEmail: string
+  tieuDe: string
+  noiDungHtml: string
+  thanhCong: boolean
+  maLoi: string | null
+  tenNguoiGui: string | null
+  ngayGui: string
+}
+
+type LoaiMau = 'ChaoMungHocVien' | 'TraLoiLienHe' | 'NhacNoHocPhi' | 'NhacLichHoc'
+
+interface BanXuatKemPhoiDto {
+  id: string
+  tenTep: string
+  tenPhoi: string
+  ngayXuat: string
+}
+
+interface MauApDungDto {
+  loai: LoaiMau
+  tieuDe: string
+  noiDungHtml: string
+  conBienChuaThay: string[]
+}
+
+/**
+ * Tab Email — danh sách thư đã gửi là MÀN CHÍNH, soạn thư nằm trong modal (08/10/2026).
+ *
+ * Đổi từ bố cục "form trên, danh sách dưới": form soạn thư cao gần một màn, nên nó đẩy lịch
+ * sử xuống dưới nếp gấp. Mà việc mở tab này thường là để **tra đã nói gì với khách**, không
+ * phải để viết thư mới — nên thứ cần thấy ngay là danh sách.
+ */
+function TabEmail({ kh }: { kh: ChiTietKhachHangDto }) {
+  const { t } = useTranslation()
+  const { coQuyen } = useQuyen()
+  const [moSoan, setMoSoan] = useState(false)
+
+  const { data: ls, isLoading } = useQuery({
+    queryKey: ['lich-su-email', kh.id],
+    queryFn: async () =>
+      (await api.get<KetQuaTrang<LichSuEmailDto>>(`/khach-hang/${kh.id}/email`,
+        { params: { soDong: 50 } })).data,
+  })
+
+  const guiDuoc = coQuyen('EmailKhachHang', 'GuiThu')
+  const coEmail = !!kh.email?.trim()
+
+  return (
+    <Card>
+      <CardContent className="pt-5">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold">{t('emailKhach.lichSu')}</h3>
+          {guiDuoc && (
+            <Button onClick={() => setMoSoan(true)} disabled={!coEmail}>
+              <Send className="h-4 w-4" />
+              {t('emailKhach.soanThu')}
+            </Button>
+          )}
+        </div>
+
+        {/* Nói trước khi họ bấm, không để soạn xong mới biết không gửi được. */}
+        {guiDuoc && !coEmail && (
+          <div className="mb-3">
+            <CanhBaoLoi>{t('emailKhach.khachChuaCoEmail')}</CanhBaoLoi>
+          </div>
+        )}
+
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">{t('chung.dangTai')}</p>
+        ) : !ls?.duLieu.length ? (
+          <TrangTrong thongDiep={t('emailKhach.chuaGuiThuNao')} />
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <Th>{t('emailKhach.ngayGui')}</Th>
+                <Th>{t('emailKhach.tieuDe')}</Th>
+                <Th>{t('emailKhach.nguoiGui')}</Th>
+                <Th>{t('emailKhach.trangThai')}</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {ls.duLieu.map((x) => (
+                <tr key={x.id}>
+                  <Td className="whitespace-nowrap">{gioNgayVN(x.ngayGui)}</Td>
+                  <Td>
+                    <div>{x.tieuDe}</div>
+                    <div className="text-xs text-muted-foreground">{x.denEmail}</div>
+                  </Td>
+                  <Td>{x.tenNguoiGui ?? '—'}</Td>
+                  <Td>
+                    {x.thanhCong ? (
+                      <span className="inline-flex items-center gap-1 text-status-ok">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        {t('emailKhach.thanhCong')}
+                      </span>
+                    ) : (
+                      /* Hiện cả lần hỏng kèm lý do: người bán cần biết thư KHÔNG tới nơi,
+                         nếu không họ ngồi chờ phản hồi cho thư chưa từng rời máy chủ. */
+                      <span className="inline-flex items-center gap-1 text-status-loi">
+                        <XCircle className="h-3.5 w-3.5" />
+                        {x.maLoi
+                          ? t(`loi.${x.maLoi}`, t('emailKhach.thatBai'))
+                          : t('emailKhach.thatBai')}
+                      </span>
+                    )}
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+
+        {moSoan && (
+          <ModalSoanThu kh={kh} onDong={() => setMoSoan(false)} />
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+/** Modal soạn thư — tách khỏi `TabEmail` để nó chỉ tải mẫu khi người dùng thật sự mở. */
+function ModalSoanThu({
+  kh, onDong,
+}: { kh: ChiTietKhachHangDto; onDong: () => void }) {
+  const { t } = useTranslation()
+  const { coQuyen } = useQuyen()
+  const qc = useQueryClient()
+  const coQuyenPhoi = coQuyen('PhoiTaiLieu', 'Xem')
+  const [mauChon, setMauChon] = useState<string>('')
+  const [tieuDe, setTieuDe] = useState('')
+  const [noiDung, setNoiDung] = useState('')
+  const [maLoi, setMaLoi] = useState<string | null>(null)
+  const [loiGui, setLoiGui] = useState<string | null>(null)
+  const [dinhKem, setDinhKem] = useState<string[]>([])
+
+  /**
+   * Bản đã xuất từ phôi tài liệu, để đính kèm thư.
+   *
+   * Chỉ tải khi người dùng CÓ quyền xem phôi — không thì endpoint trả 403 và màn soạn thư
+   * hiện lỗi đỏ cho một tính năng họ không dùng tới.
+   */
+  const { data: banXuats } = useQuery({
+    queryKey: ['ban-xuat-gan-day'],
+    queryFn: async () =>
+      (await api.get<BanXuatKemPhoiDto[]>('/phoi-tai-lieu/ban-xuat')).data,
+    enabled: coQuyenPhoi,
+  })
+
+  const { data: maus } = useQuery({
+    queryKey: ['mau-email-khach', kh.id],
+    queryFn: async () =>
+      (await api.get<MauApDungDto[]>(`/khach-hang/${kh.id}/mau-email`)).data,
+  })
+
+  const mauDangChon = maus?.find((m) => m.loai === mauChon)
+
+  /**
+   * Áp mẫu = GHI ĐÈ cả tiêu đề và nội dung đang có.
+   *
+   * Có hỏi lại khi người dùng đã gõ dở: mẫu ghi đè mất công họ vừa viết, và đó là thao tác
+   * không hoàn lại được trong form này (quy tắc #1 ở mức giao diện).
+   */
+  const apMau = (loai: string) => {
+    const m = maus?.find((x) => x.loai === loai)
+    const dangGoDo = tieuDe.trim() || noiDung.replace(/<[^>]*>/g, '').trim()
+    if (m && dangGoDo && !window.confirm(t('emailKhach.hoiGhiDeMau'))) return
+    setMauChon(loai)
+    if (m) { setTieuDe(m.tieuDe); setNoiDung(m.noiDungHtml) }
+  }
+
+  const gui = useMutation({
+    mutationFn: async () =>
+      (await api.post<{ soThanhCong: number; soLoi: number; khachLoi: string[] }>(
+        '/khach-hang/email',
+        {
+          khachHangIds: [kh.id],
+          tieuDe: tieuDe.trim(),
+          noiDungHtml: noiDung,
+          banXuatIds: dinhKem.length ? dinhKem : null,
+        })).data,
+    onSuccess: (kq) => {
+      void qc.invalidateQueries({ queryKey: ['lich-su-email', kh.id] })
+      // Gửi một người nên `khachLoi` tối đa một phần tử — hiện thẳng lý do thay vì
+      // "0 thành công", thứ không nói được vì sao.
+      if (kq.soThanhCong > 0) {
+        onDong()
+        return
+      }
+      // Gửi được 0 người: giữ modal mở và hiện lý do ngay trong form, đừng đóng rồi để
+      // người dùng tự đoán vì sao thư không đi.
+      setMaLoi(null)
+      setLoiGui(kq.khachLoi[0] ?? t('emailKhach.thatBai'))
+    },
+    onError: (e) => { setMaLoi(layMaLoi(e)); setLoiGui(null) },
+  })
+
+  return (
+    <Modal mo onDong={onDong} tieuDe={t('emailKhach.soanThu')} rong="xl">
+      <div className="grid gap-3">
+        <div className="text-sm text-muted-foreground">
+          {t('emailKhach.guiToi')}: <strong className="text-foreground">{kh.email}</strong>
+        </div>
+
+        <div className="grid gap-1.5">
+          <Label htmlFor="mauMail">{t('emailKhach.chonMau')}</Label>
+          <SelectTimKiem
+            id="mauMail"
+            luaChon={[
+              { giaTri: '', nhan: t('emailKhach.tuSoan') },
+              ...(maus ?? []).map((m) => ({
+                giaTri: m.loai, nhan: t(`email.loai.${m.loai}`),
+              })),
+            ]}
+            giaTri={mauChon}
+            onDoi={(v) => apMau(v ?? '')}
+            choPhepXoa={false}
+          />
+          {/* Mẫu đòi biến mà khách hàng không có (tên lớp, số tiền nợ) — nói rõ chỗ phải
+              tự điền, thay vì để người gửi phát hiện sau khi khách đã nhận thư. */}
+          {!!mauDangChon?.conBienChuaThay.length && (
+            <p className="text-xs text-status-cho">
+              {t('emailKhach.conBienChuaThay', {
+                bien: mauDangChon.conBienChuaThay.map((b) => `{{${b}}}`).join(', '),
+              })}
+            </p>
+          )}
+        </div>
+
+        <div className="grid gap-1.5">
+          <Label htmlFor="tieuDeMail">{t('emailKhach.tieuDe')}</Label>
+          <Input
+            id="tieuDeMail"
+            value={tieuDe}
+            maxLength={300}
+            onChange={(e) => setTieuDe(e.target.value)}
+            placeholder={t('emailKhach.tieuDeGoiY')}
+          />
+        </div>
+
+        <div className="grid gap-1.5">
+          <Label>{t('emailKhach.noiDung')}</Label>
+          <SoanThao giaTri={noiDung} onDoi={setNoiDung} doCao="min-h-[12rem]" />
+        </div>
+
+        {/* Đính kèm bản đã xuất từ phôi tài liệu. Ẩn hẳn khi trung tâm chưa xuất bản nào —
+            một ô chọn rỗng chỉ làm form dài thêm. */}
+        {coQuyenPhoi && !!banXuats?.length && (
+          <div className="grid gap-1.5">
+            <Label>{t('emailKhach.dinhKem')}</Label>
+            <div className="max-h-40 overflow-y-auto rounded-md border border-border p-2">
+              {banXuats.map((b) => (
+                <label key={b.id} className="flex items-center gap-2 py-1 text-sm">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-[hsl(var(--primary))]"
+                    checked={dinhKem.includes(b.id)}
+                    onChange={(e) => setDinhKem(e.target.checked
+                      ? [...dinhKem, b.id]
+                      : dinhKem.filter((x) => x !== b.id))}
+                  />
+                  <span>{b.tenTep}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {b.tenPhoi} · {gioNgayVN(b.ngayXuat)}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
+        {loiGui && <CanhBaoLoi>{loiGui}</CanhBaoLoi>}
+
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={onDong}>{t('chung.huy')}</Button>
+          <Button
+            onClick={() => gui.mutate()}
+            disabled={gui.isPending || !tieuDe.trim() || !noiDung.trim()}
+          >
+            <Send className="h-4 w-4" />
+            {gui.isPending ? t('emailKhach.dangGui') : t('emailKhach.gui')}
+          </Button>
+        </div>
+      </div>
+    </Modal>
   )
 }
 

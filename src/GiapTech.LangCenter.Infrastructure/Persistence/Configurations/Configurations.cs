@@ -29,6 +29,9 @@ public class TenantConfig : IEntityTypeConfiguration<Tenant>
         // vào chữ. Gạch dưới trước số đọc rõ hơn và khớp lối đặt tên của các cột còn lại.
         b.Property(x => x.DuoiTenDangNhap2).HasMaxLength(100).HasColumnName("duoi_ten_dang_nhap_2");
         b.Property(x => x.DuoiTenDangNhap3).HasMaxLength(100).HasColumnName("duoi_ten_dang_nhap_3");
+        // Bản mã AES-GCM dài hơn bản rõ (nonce + tag + base64) — 500 đủ cho mật khẩu 128 ký
+        // tự, mức trần của `ChinhSachMatKhau`.
+        b.Property(x => x.MatKhauMacDinhMaHoa).HasMaxLength(500);
         b.Property(x => x.LogoUrl).HasMaxLength(500);
         b.Property(x => x.AnhBiaUrl).HasMaxLength(500);
         b.Property(x => x.AnhQrUrl).HasMaxLength(500);
@@ -179,6 +182,76 @@ public class MauEmailConfig : IEntityTypeConfiguration<MauEmail>
         // (quy tắc #8). Hai request song song cùng tạo mẫu cho một loại thì cả hai đều thấy
         // "chưa có" và đều ghi, rồi màn soạn hiện hai mẫu trùng loại.
         b.HasIndex(x => new { x.TenantId, x.Loai }).IsUnique();
+    }
+}
+
+public class PhoiTaiLieuConfig : IEntityTypeConfiguration<PhoiTaiLieu>
+{
+    public void Configure(EntityTypeBuilder<PhoiTaiLieu> b)
+    {
+        b.ToTable("PHOI_TAI_LIEU");
+
+        b.Property(x => x.Ten).HasMaxLength(200).IsRequired();
+        b.Property(x => x.MoTa).HasMaxLength(1000);
+        b.Property(x => x.KhoaTep).HasMaxLength(500).IsRequired();
+        b.Property(x => x.TenTepGoc).HasMaxLength(300).IsRequired();
+        // JSON danh sách key + giá trị mặc định. 20.000 đủ cho ~200 key kèm giá trị; dài hơn
+        // là dấu hiệu phôi đang bị dùng sai cách, không phải nhu cầu thật.
+        b.Property(x => x.KeysJson).HasMaxLength(20000).IsRequired();
+
+        // Trùng tên phôi làm người dùng chọn nhầm lúc xuất — UNIQUE ở tầng DB (quy tắc #8).
+        b.HasIndex(x => new { x.TenantId, x.Ten }).IsUnique();
+    }
+}
+
+public class BanXuatPhoiConfig : IEntityTypeConfiguration<BanXuatPhoi>
+{
+    public void Configure(EntityTypeBuilder<BanXuatPhoi> b)
+    {
+        b.ToTable("BAN_XUAT_PHOI");
+
+        b.Property(x => x.KhoaTep).HasMaxLength(500).IsRequired();
+        b.Property(x => x.TenTep).HasMaxLength(300).IsRequired();
+        b.Property(x => x.GiaTriJson).HasMaxLength(20000).IsRequired();
+
+        b.HasIndex(x => new { x.TenantId, x.PhoiTaiLieuId, x.CreatedAt });
+
+        // `Restrict`: xoá phôi mà mất các bản đã xuất là mất bằng chứng đã đưa cho khách cái
+        // gì. Muốn xoá phôi thì phải xử lý bản xuất một cách có ý thức.
+        b.HasOne(x => x.PhoiTaiLieu).WithMany(p => p.BanXuats)
+            .HasForeignKey(x => x.PhoiTaiLieuId).OnDelete(DeleteBehavior.Restrict);
+
+        b.HasOne(x => x.NguoiXuat).WithMany()
+            .HasForeignKey(x => x.NguoiXuatId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public class LichSuEmailConfig : IEntityTypeConfiguration<LichSuEmail>
+{
+    public void Configure(EntityTypeBuilder<LichSuEmail> b)
+    {
+        b.ToTable("LICH_SU_EMAIL");
+
+        b.Property(x => x.DenEmail).HasMaxLength(256).IsRequired();
+        b.Property(x => x.TieuDe).HasMaxLength(300).IsRequired();
+        // Cùng giới hạn với MAU_EMAIL: nội dung gửi đi sinh ra từ mẫu nên không thể dài hơn.
+        b.Property(x => x.NoiDungHtml).HasMaxLength(20000).IsRequired();
+        b.Property(x => x.MaLoi).HasMaxLength(100);
+
+        // Tra cứu luôn theo khách và theo thứ tự thời gian — tab Email của một khách hỏi đúng
+        // câu "thư gửi cho người này, mới nhất trước".
+        b.HasIndex(x => new { x.TenantId, x.KhachHangId, x.CreatedAt });
+
+        // `Restrict`: xoá khách mà mất dấu vết đã liên hệ là mất bằng chứng, không phải dọn
+        // rác. Muốn xoá khách thì phải xử lý lịch sử một cách có ý thức.
+        b.HasOne(x => x.KhachHang).WithMany()
+            .HasForeignKey(x => x.KhachHangId).OnDelete(DeleteBehavior.Restrict);
+
+        // Người gửi nghỉ việc thì hồ sơ vẫn còn (NGUOI_DUNG sống lâu hơn TAI_KHOAN), nên
+        // `Restrict` ở đây không chặn gì trong thực tế — nhưng nó chặn việc xoá cứng một
+        // người còn dấu vết thao tác.
+        b.HasOne(x => x.NguoiGui).WithMany()
+            .HasForeignKey(x => x.NguoiGuiId).OnDelete(DeleteBehavior.Restrict);
     }
 }
 

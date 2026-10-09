@@ -27,6 +27,7 @@ public class MaTranQuyenPhaiKhopThucTeTests
     /// </summary>
     private static readonly Dictionary<string, string> ChuaDungNhungCoLyDo = new()
     {
+
         ["LopHocToanTrungTam.Xem"] =
             "Quyền PHẠM VI, không phải quyền gọi endpoint. `IPhamViLopHoc` đọc nó để quyết "
             + "định thấy lớp mình dạy hay toàn trung tâm. Xem `ChucNang.PhamViDuLieu`.",

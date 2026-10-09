@@ -1,7 +1,7 @@
 # ERD — Mô hình dữ liệu
 
-**50 bảng**, PostgreSQL (đếm bằng `information_schema` ngày 30/09/2026, sau khi thêm
-`MAU_EMAIL` — FR-31). Mọi cột chuỗi có `HasMaxLength` (canh bởi
+**53 bảng**, PostgreSQL (đếm bằng `information_schema` ngày 09/10/2026, sau khi thêm
+`LICH_SU_EMAIL`, `PHOI_TAI_LIEU` và `BAN_XUAT_PHOI`). Mọi cột chuỗi có `HasMaxLength` (canh bởi
 `MoiEntityPhaiCoConfigTests`); ngoại lệ duy nhất là hai cột JSON của `NHAT_KY_HE_THONG`. Nội dung dưới đây khớp với schema thật (kiểm bằng
 `information_schema` sau khi áp toàn bộ migration), không phải bản thiết kế trên giấy.
 
@@ -121,6 +121,9 @@ erDiagram
 | `MUC_LDP` | Mục trong khối nhiều mục. **Một bảng cho cả bốn loại** (khoá học, giáo viên, cảm nhận, tin tức) vì chúng cùng hình dạng — bốn bảng gần giống nhau thì thêm một trường là sửa bốn chỗ | `gia_niem_yet` là giá MARKETING, KHÔNG nối `KHOA_HOC.gia_tien` |
 | `LIEN_HE_LANDING` | Khách vãng lai để lại qua form. **Không** ghi thẳng `KHACH_HANG`: form là endpoint ẩn danh nên nhận cả bot, ghi thẳng làm danh sách khách hàng thật bị loãng | `khach_hang_id` null cho tới khi người phụ trách bấm chuyển |
 | `MAU_EMAIL` | **Mẫu nội dung email** (FR-31). `UNIQUE(tenant_id, loai)` — mỗi loại đúng một mẫu. Trung tâm chưa soạn thì KHÔNG có hàng nào: mẫu mặc định nằm trong mã (`MauMacDinh.cs`), nên xoá hàng là quay về mặc định chứ không phải mất mẫu | `dang_dung` tắt thì giữ bản đã soạn nhưng gửi bằng mẫu mặc định |
+| `LICH_SU_EMAIL` | **Thư đã gửi cho khách** (09/10/2026). Lưu cả nội dung HTML đã gửi, không phải con trỏ tới mẫu: mẫu sửa được, mở lại sau ba tháng sẽ thấy nội dung HIỆN TẠI chứ không phải thứ khách đã nhận. Index `(tenant_id, khach_hang_id, created_at)` | Ghi cả lần GỬI HỎNG kèm `ma_loi` — người bán cần biết thư không tới nơi. FK `Restrict` tới `KHACH_HANG` |
+| `PHOI_TAI_LIEU` | **Phôi .docx có biến `{{key}}`** (09/10/2026, nhãn giao diện "Thiết lập file"). `keys_json` lưu danh sách key + giá trị mặc định dạng JSON; `UNIQUE(tenant_id, ten)` | Thay tệp thì đọc lại key từ tệp mới — key biến mất kéo theo giá trị mặc định của nó. Giới hạn 10 MB (chặt hơn 20 MB của kho tệp chung) |
+| `BAN_XUAT_PHOI` | **Một lần xuất file đã điền giá trị**. Giữ `gia_tri_json` để biết bản đó điền gì | FK `Restrict` tới `PHOI_TAI_LIEU`: xoá phôi mà mất bản đã xuất là mất bằng chứng đã đưa cho khách cái gì |
 | `NHAT_KY_HE_THONG` | **Nhật ký thao tác** (FR-16) | Một bản ghi cho mỗi LỆNH, không phải mỗi dòng dữ liệu. Chỉ ghi thêm — không sửa, không xoá. `username`/`ho_ten` lưu **bản chụp** để đọc được cả khi tài khoản đã xoá |
 
 **Hai cột trạng thái, đừng nhầm:**

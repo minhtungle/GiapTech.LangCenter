@@ -31,7 +31,7 @@ là đường frontend, API vẫn là `/api/v1/hoc-vien`.
 Tách ra từ một ứng dụng quản lý CLB đá bóng (04/09/2026), giữ toàn bộ tầng hệ thống. Nghiệp vụ
 LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 
-**30 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 731 test backend · 45 frontend · 48 E2E xanh.
+**30 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 762 test backend · 45 frontend · 48 E2E xanh.
 
 | Đã chạy đầu-cuối | Chưa có |
 |---|---|
@@ -115,7 +115,7 @@ Chi tiết và nợ kỹ thuật: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong
 | **Tiến độ, lộ trình, nợ kỹ thuật** | [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-quan/ke-hoach.md) |
 | Tổng quan nghiệp vụ, đọc 1 mạch | [`docs/01-tong-quan/tong-thuat.md`](docs/01-tong-quan/tong-thuat.md) |
 | **30 mã FR** theo module | [`docs/06-nghiep-vu/`](docs/06-nghiep-vu/README.md) |
-| **ERD 50 bảng** + ràng buộc + hành vi xoá | [`docs/05-database/erd.md`](docs/05-database/erd.md) |
+| **ERD 53 bảng** + ràng buộc + hành vi xoá | [`docs/05-database/erd.md`](docs/05-database/erd.md) |
 | **Nhật ký theo ngày** (bối cảnh git log không có) | [`docs/nhat-ky/`](./docs/nhat-ky/README.md) |
 | Clean Architecture, luật phụ thuộc | [`docs/03-backend/clean-architecture.md`](docs/03-backend/clean-architecture.md) |
 | **Quy ước viết mã** (đặt tên, null, chú thích, test) | [`docs/08-quy-uoc/quy-uoc-code.md`](docs/08-quy-uoc/quy-uoc-code.md) |
@@ -272,7 +272,7 @@ Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 ```bash
 # --- Backend ---
 dotnet build          # 0 warning — TreatWarningsAsErrors đang bật
-dotnet test           # 731 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
+dotnet test           # 762 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
                       #           quản trị, lớp học, điểm danh, học liệu, học phí
 
 # Chạy API cần 2 biến bắt buộc (thiếu là 500 lúc đăng nhập / tải ảnh, không phải lúc khởi động):
@@ -327,7 +327,7 @@ docker run -d --name lms-pg -e POSTGRES_PASSWORD=devpass -e POSTGRES_USER=langce
 export ConnectionStrings__Default="Host=localhost;Port=55432;Database=langcenter;Username=langcenter;Password=devpass"
 dotnet ef database update --project src/GiapTech.LangCenter.Infrastructure \
   --startup-project src/GiapTech.LangCenter.API
-# → 50 bảng (17 hệ thống + 33 nghiệp vụ; +MAU_EMAIL 30/09) — xem docs/05-database/erd.md
+# → 53 bảng (+LICH_SU_EMAIL, PHOI_TAI_LIEU, BAN_XUAT_PHOI 09/10) — xem docs/05-database/erd.md
 
 # Tạo trung tâm thử — endpoint ẩn danh, mã 7 ký tự do hệ thống sinh.
 # CẦN `CHO_TU_DANG_KY=true` lúc chạy API, nếu không endpoint trả 404 (mặc định TẮT từ

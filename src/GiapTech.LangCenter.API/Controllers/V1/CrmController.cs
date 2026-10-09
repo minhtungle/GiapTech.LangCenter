@@ -118,6 +118,44 @@ public class KhachHangController(ISender sender) : ControllerBase
     public async Task<ActionResult<List<DangKyKemThuDto>>> DangKyCuaKhach(
         Guid id, CancellationToken ct)
         => Ok(await sender.Send(new LayDangKyCuaKhachQuery(id), ct));
+
+    /// <summary>Lịch sử email đã gửi cho khách này (08/10/2026).</summary>
+    [HttpGet("{id:guid}/email")]
+    [RequirePermission(ChucNang.EmailKhachHang, HanhDong.Xem)]
+    public async Task<ActionResult<KetQuaTrang<LichSuEmailDto>>> LichSuEmail(
+        Guid id, [FromQuery] int trang = 1, [FromQuery] int soDong = 20,
+        CancellationToken ct = default)
+        => Ok(await sender.Send(new LayLichSuEmailQuery(id, trang, soDong), ct));
+
+    /// <summary>
+    /// Mẫu email đã thay biến sẵn theo khách này — để điền vào form soạn thư.
+    ///
+    /// Thay biến ở BACKEND chứ không để frontend ghép: tên biến và danh sách biến hợp lệ của
+    /// mỗi loại là quy ước của backend (`MauMacDinh.BienCuaLoai`). Frontend tự ghép thì hai
+    /// bên trôi khỏi nhau ngay lần thêm biến đầu tiên.
+    /// </summary>
+    [HttpGet("{id:guid}/mau-email")]
+    [RequirePermission(ChucNang.EmailKhachHang, HanhDong.GuiThu)]
+    public async Task<ActionResult<IReadOnlyList<MauApDungDto>>> MauChoKhach(
+        Guid id, CancellationToken ct)
+        => Ok(await sender.Send(new LayMauChoKhachQuery(id), ct));
+
+    /// <summary>
+    /// Gửi email cho một hoặc nhiều khách.
+    ///
+    /// Quyền RIÊNG `EmailKhachHang.GuiThu` — nó bắn thư THẬT tới địa chỉ của khách và gửi
+    /// được hàng loạt. Khác `ThietLapEmail.GuiThu` vốn chỉ tự gửi một thư kiểm tra cấu hình.
+    ///
+    /// Trả `200` kèm số gửi được / số hỏng thay vì `204`: một địa chỉ hỏng không làm cả đợt
+    /// thất bại, nên người gửi cần biết chính xác ai chưa nhận được.
+    /// </summary>
+    [HttpPost("email")]
+    [RequirePermission(ChucNang.EmailKhachHang, HanhDong.GuiThu)]
+    [ProducesResponseType<KetQuaGuiEmailDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<KetQuaGuiEmailDto>> GuiEmail(
+        [FromBody] GuiEmailKhachHangCommand command, CancellationToken ct)
+        => Ok(await sender.Send(command, ct));
 }
 
 /// <summary>FR-19 — danh mục khoá học bán ra (CRM).</summary>
