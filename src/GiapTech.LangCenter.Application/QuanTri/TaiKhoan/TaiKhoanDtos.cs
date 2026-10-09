@@ -27,9 +27,20 @@ public record TaiKhoanDto(
 
 // ---------- Queries ----------
 
+/// <param name="QuyenId">Lọc theo nhóm quyền — "ai đang có quyền gì".</param>
+/// <param name="CoNguoiDung">
+/// `true` = chỉ tài khoản gắn người thật; `false` = chỉ tài khoản kỹ thuật (tích hợp, seed).
+/// </param>
+/// <param name="PhaiDoiMatKhau">
+/// `true` = chưa ai đăng nhập lần nào kể từ khi được cấp. Sau một đợt chuyển dữ liệu, đây là
+/// cách biết ai chưa nhận được tài khoản.
+/// </param>
 public record LayDanhSachTaiKhoanQuery(
     string? TimKiem = null,
     TrangThaiNguoiDung? TrangThai = null,
+    Guid? QuyenId = null,
+    bool? CoNguoiDung = null,
+    bool? PhaiDoiMatKhau = null,
     ThamSoTrang? Trang = null) : IRequest<KetQuaTrang<TaiKhoanDto>>;
 
 public class LayDanhSachTaiKhoanHandler(IAppDbContext db)
@@ -49,6 +60,16 @@ public class LayDanhSachTaiKhoanHandler(IAppDbContext db)
         }
 
         if (request.TrangThai is { } tt) q = q.Where(u => u.TrangThai == tt);
+
+        if (request.QuyenId is { } qid)
+            q = q.Where(u => u.NguoiDungQuyens.Any(nq => nq.QuyenId == qid));
+
+        // `is true` / `is false` chứ không `== true`: `null` nghĩa là KHÔNG lọc, khác hẳn
+        // "lọc những cái false".
+        if (request.CoNguoiDung is true) q = q.Where(u => u.NguoiDungId != null);
+        else if (request.CoNguoiDung is false) q = q.Where(u => u.NguoiDungId == null);
+
+        if (request.PhaiDoiMatKhau is { } pd) q = q.Where(u => u.PhaiDoiMatKhau == pd);
 
         var tong = await q.CountAsync(ct);
 
@@ -169,12 +190,27 @@ public class TaoTaiKhoanHandler(
 /// Sửa tài khoản: gán người sở hữu, đổi nhóm quyền, bật/tắt hiệu lực.
 /// **Không** sửa được username và mật khẩu (đổi mật khẩu có lệnh riêng).
 /// </summary>
+/// <param name="Username">
+/// Tên đăng nhập mới. **`null` = không đổi** (quy ước `null = giữ nguyên` của quy tắc #1).
+///
+/// Đổi username là đổi thứ người dùng gõ mỗi sáng, nên nó KHÔNG đi kèm mọi lần lưu form:
+/// client cũ không biết trường này vẫn sửa được quyền và trạng thái mà không đụng tên.
+/// </param>
 public record CapNhatTaiKhoanCommand(
-    Guid Id, Guid? NguoiDungId, List<Guid> QuyenIds, TrangThaiNguoiDung TrangThai) : IRequest;
+    Guid Id, Guid? NguoiDungId, List<Guid> QuyenIds, TrangThaiNguoiDung TrangThai,
+    string? Username = null) : IRequest;
 
 public class CapNhatTaiKhoanValidator : AbstractValidator<CapNhatTaiKhoanCommand>
 {
-    public CapNhatTaiKhoanValidator() => RuleFor(x => x.Id).NotEmpty();
+    public CapNhatTaiKhoanValidator()
+    {
+        RuleFor(x => x.Id).NotEmpty();
+        // Cùng luật với lúc tạo — nếu không, sửa sẽ đặt được tên mà tạo thì không.
+        RuleFor(x => x.Username!).NotEmpty().MaximumLength(100)
+            .Matches("^[a-zA-Z0-9._-]+(@[a-zA-Z0-9.-]+)?$")
+                .WithErrorCode("USERNAME_KY_TU_KHONG_HOP_LE")
+            .When(x => x.Username is not null);
+    }
 }
 
 public class CapNhatTaiKhoanHandler(
@@ -215,6 +251,41 @@ public class CapNhatTaiKhoanHandler(
             request.TrangThai == TrangThaiNguoiDung.HoatDong
             && await ChotConNguoiQuanTri.CoQuyenPhanQuyenAsync(db, request.QuyenIds, ct);
         await ChotConNguoiQuanTri.KiemAsync(db, request.Id, conQuyenPhanQuyen, ct);
+
+        /*
+          Đổi tên đăng nhập (08/10/2026).
+
+          `null` = không gửi = giữ nguyên. So sánh phân biệt hoa/thường vì đăng nhập cũng so
+          khớp chính xác: đổi `Admin` thành `admin` LÀ một thay đổi thật.
+
+          Không nối đuôi tên đăng nhập của trung tâm ở đây: đuôi là gợi ý lúc TẠO, còn sửa là
+          thao tác có chủ đích trên một tên cụ thể — tự nối thêm sẽ cho ra cái tên người sửa
+          không gõ.
+        */
+        var doiTen = request.Username is { } tenMoi
+            && !string.Equals(tenMoi.Trim(), taiKhoan.Username, StringComparison.Ordinal);
+
+        if (doiTen)
+        {
+            var tenMoi2 = request.Username!.Trim();
+
+            // Query Filter đã giới hạn theo tenant nên phép kiểm này đúng phạm vi
+            // `UNIQUE(tenant_id, username)`. DB vẫn là chốt cuối (quy tắc #8).
+            if (await db.TaiKhoans.AnyAsync(u => u.Username == tenMoi2 && u.Id != request.Id, ct))
+                throw new AppException("USERNAME_DA_TON_TAI");
+
+            taiKhoan.Username = tenMoi2;
+
+            /*
+              Đá phiên đang mở: người dùng phải đăng nhập lại bằng tên mới.
+
+              Lý do không giữ phiên dù `PhienDuyNhatMiddleware` gác bằng `jti` chứ không bằng
+              username: token đang cầm mang claim `ClaimTypes.Name` là tên CŨ, và nhật ký thao
+              tác ghi username từ claim đó (`GhiNhatKy`). Giữ phiên nghĩa là mọi thao tác tới
+              lúc token hết hạn đều được ghi dưới cái tên không còn tồn tại.
+            */
+            taiKhoan.PhienHienTai = null;
+        }
 
         taiKhoan.NguoiDungId = request.NguoiDungId;
         taiKhoan.TrangThai = request.TrangThai;

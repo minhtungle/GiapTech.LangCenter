@@ -3,17 +3,20 @@ using System;
 using GiapTech.LangCenter.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace GiapTech.LangCenter.Infrastructure.Migrations
+namespace GiapTech.LangCenter.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261008104051_ThemLichSuEmail")]
+    partial class ThemLichSuEmail
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -417,80 +420,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasDatabaseName("ix_bai_tap_updated_by_id");
 
                     b.ToTable("BAI_TAP", (string)null);
-                });
-
-            modelBuilder.Entity("GiapTech.LangCenter.Domain.Entities.BanXuatPhoi", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
-                    b.Property<string>("GiaTriJson")
-                        .IsRequired()
-                        .HasMaxLength(20000)
-                        .HasColumnType("character varying(20000)")
-                        .HasColumnName("gia_tri_json");
-
-                    b.Property<string>("KhoaTep")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("khoa_tep");
-
-                    b.Property<Guid?>("NguoiXuatId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("nguoi_xuat_id");
-
-                    b.Property<Guid>("PhoiTaiLieuId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("phoi_tai_lieu_id");
-
-                    b.Property<string>("TenTep")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)")
-                        .HasColumnName("ten_tep");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_ban_xuat_phoi");
-
-                    b.HasIndex("CreatedById")
-                        .HasDatabaseName("ix_ban_xuat_phoi_created_by_id");
-
-                    b.HasIndex("NguoiXuatId")
-                        .HasDatabaseName("ix_ban_xuat_phoi_nguoi_xuat_id");
-
-                    b.HasIndex("PhoiTaiLieuId")
-                        .HasDatabaseName("ix_ban_xuat_phoi_phoi_tai_lieu_id");
-
-                    b.HasIndex("UpdatedById")
-                        .HasDatabaseName("ix_ban_xuat_phoi_updated_by_id");
-
-                    b.HasIndex("TenantId", "PhoiTaiLieuId", "CreatedAt")
-                        .HasDatabaseName("ix_ban_xuat_phoi_tenant_id_phoi_tai_lieu_id_created_at");
-
-                    b.ToTable("BAN_XUAT_PHOI", (string)null);
                 });
 
             modelBuilder.Entity("GiapTech.LangCenter.Domain.Entities.BuoiHoc", b =>
@@ -2750,82 +2679,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.ToTable("PHIEU_DANH_GIA_NHAN_VIEN", (string)null);
                 });
 
-            modelBuilder.Entity("GiapTech.LangCenter.Domain.Entities.PhoiTaiLieu", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_id");
-
-                    b.Property<bool>("DangDung")
-                        .HasColumnType("boolean")
-                        .HasColumnName("dang_dung");
-
-                    b.Property<string>("KeysJson")
-                        .IsRequired()
-                        .HasMaxLength(20000)
-                        .HasColumnType("character varying(20000)")
-                        .HasColumnName("keys_json");
-
-                    b.Property<string>("KhoaTep")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("khoa_tep");
-
-                    b.Property<string>("MoTa")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("mo_ta");
-
-                    b.Property<string>("Ten")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("ten");
-
-                    b.Property<string>("TenTepGoc")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)")
-                        .HasColumnName("ten_tep_goc");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_phoi_tai_lieu");
-
-                    b.HasIndex("CreatedById")
-                        .HasDatabaseName("ix_phoi_tai_lieu_created_by_id");
-
-                    b.HasIndex("UpdatedById")
-                        .HasDatabaseName("ix_phoi_tai_lieu_updated_by_id");
-
-                    b.HasIndex("TenantId", "Ten")
-                        .IsUnique()
-                        .HasDatabaseName("ix_phoi_tai_lieu_tenant_id_ten");
-
-                    b.ToTable("PHOI_TAI_LIEU", (string)null);
-                });
-
             modelBuilder.Entity("GiapTech.LangCenter.Domain.Entities.PhongBan", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3515,11 +3368,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("character(7)")
                         .HasColumnName("ma_trung_tam")
                         .IsFixedLength();
-
-                    b.Property<string>("MatKhauMacDinhMaHoa")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("mat_khau_mac_dinh_ma_hoa");
 
                     b.Property<string>("MoTa")
                         .HasMaxLength(1000)
@@ -4351,42 +4199,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Navigation("BuoiHoc");
 
                     b.Navigation("CreatedBy");
-
-                    b.Navigation("UpdatedBy");
-                });
-
-            modelBuilder.Entity("GiapTech.LangCenter.Domain.Entities.BanXuatPhoi", b =>
-                {
-                    b.HasOne("GiapTech.LangCenter.Domain.Entities.NguoiDung", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("fk_ban_xuat_phoi_nguoi_dungs_created_by_id");
-
-                    b.HasOne("GiapTech.LangCenter.Domain.Entities.NguoiDung", "NguoiXuat")
-                        .WithMany()
-                        .HasForeignKey("NguoiXuatId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_ban_xuat_phoi_nguoi_dungs_nguoi_xuat_id");
-
-                    b.HasOne("GiapTech.LangCenter.Domain.Entities.PhoiTaiLieu", "PhoiTaiLieu")
-                        .WithMany("BanXuats")
-                        .HasForeignKey("PhoiTaiLieuId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_ban_xuat_phoi_phoi_tai_lieus_phoi_tai_lieu_id");
-
-                    b.HasOne("GiapTech.LangCenter.Domain.Entities.NguoiDung", "UpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("UpdatedById")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("fk_ban_xuat_phoi_nguoi_dungs_updated_by_id");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("NguoiXuat");
-
-                    b.Navigation("PhoiTaiLieu");
 
                     b.Navigation("UpdatedBy");
                 });
@@ -5332,25 +5144,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Navigation("UpdatedBy");
                 });
 
-            modelBuilder.Entity("GiapTech.LangCenter.Domain.Entities.PhoiTaiLieu", b =>
-                {
-                    b.HasOne("GiapTech.LangCenter.Domain.Entities.NguoiDung", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("fk_phoi_tai_lieu_nguoi_dung_created_by_id");
-
-                    b.HasOne("GiapTech.LangCenter.Domain.Entities.NguoiDung", "UpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("UpdatedById")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("fk_phoi_tai_lieu_nguoi_dung_updated_by_id");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("UpdatedBy");
-                });
-
             modelBuilder.Entity("GiapTech.LangCenter.Domain.Entities.PhongBan", b =>
                 {
                     b.HasOne("GiapTech.LangCenter.Domain.Entities.NguoiDung", "CreatedBy")
@@ -5982,11 +5775,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
             modelBuilder.Entity("GiapTech.LangCenter.Domain.Entities.PhieuDanhGiaNhanVien", b =>
                 {
                     b.Navigation("Diems");
-                });
-
-            modelBuilder.Entity("GiapTech.LangCenter.Domain.Entities.PhoiTaiLieu", b =>
-                {
-                    b.Navigation("BanXuats");
                 });
 
             modelBuilder.Entity("GiapTech.LangCenter.Domain.Entities.PhongBan", b =>

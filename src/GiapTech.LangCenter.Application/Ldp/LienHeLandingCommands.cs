@@ -116,7 +116,7 @@ public class GuiLienHeHandler(
                 },
                 ct);
 
-            await emailSender.GuiAsync(tenantId, r.Email.Trim(), tieuDe, noiDung, ct);
+            await emailSender.GuiAsync(tenantId, r.Email.Trim(), tieuDe, noiDung, ct: ct);
         }
         catch (Exception ex)
         {

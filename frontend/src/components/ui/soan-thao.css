@@ -88,3 +88,47 @@
   color: hsl(var(--muted-foreground));
   pointer-events: none;
 }
+
+/*
+  Bảng trong ô soạn (09/10/2026).
+
+  Phải có kiểu ở ĐÂY dù `TableKit` đã đặt thuộc tính `border` trên thẻ: thuộc tính HTML đó
+  dành cho trình đọc mail (Outlook bỏ qua phần lớn CSS), còn lúc soạn thì trình duyệt hiện
+  theo CSS. Thiếu khối này, người dùng chèn bảng xong thấy chữ dính liền nhau không rõ ô nào
+  — tưởng chèn hỏng.
+*/
+.soan-thao table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0 0 14px;
+  table-layout: fixed;
+}
+
+.soan-thao th,
+.soan-thao td {
+  border: 1px solid hsl(var(--border));
+  padding: 6px 8px;
+  vertical-align: top;
+  /* Ô rỗng vẫn phải chiếm chỗ, nếu không bảng mới chèn trông như một đường kẻ. */
+  min-width: 2rem;
+}
+
+.soan-thao th {
+  background: hsl(var(--muted));
+  font-weight: 600;
+  text-align: left;
+}
+
+/* Ô đang đặt con trỏ — để người dùng biết nút thêm/xoá dòng sẽ tác động vào đâu. */
+.soan-thao .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: hsl(var(--primary) / 0.08);
+  pointer-events: none;
+}
+
+.soan-thao td,
+.soan-thao th {
+  position: relative;
+}

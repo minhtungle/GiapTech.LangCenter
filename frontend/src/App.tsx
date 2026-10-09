@@ -36,6 +36,7 @@ import ChiTietQuyen from '@/pages/quan-tri/phan-quyen/ChiTietQuyen'
 import ThietLap from '@/pages/quan-tri/ThietLap'
 import NhatKy from '@/pages/quan-tri/NhatKy'
 import Email from '@/pages/quan-tri/Email'
+import PhoiTaiLieu from '@/pages/quan-tri/PhoiTaiLieu'
 import { DangXuLy } from '@/components/ui/DangXuLy'
 import { LinhVat } from '@/components/LinhVat'
 
@@ -223,6 +224,7 @@ export default function App() {
               <Route path="/quan-tri/thiet-lap" element={<ThietLap />} />
               <Route path="/quan-tri/nhat-ky" element={<NhatKy />} />
               <Route path="/quan-tri/email" element={<Email />} />
+              <Route path="/quan-tri/phoi-tai-lieu" element={<PhoiTaiLieu />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

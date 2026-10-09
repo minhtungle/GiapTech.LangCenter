@@ -74,11 +74,15 @@ public class TaiKhoanController(ISender sender) : ControllerBase
     public async Task<ActionResult<KetQuaTrang<TaiKhoanDto>>> DanhSach(
         [FromQuery] string? timKiem,
         [FromQuery] TrangThaiNguoiDung? trangThai,
+        [FromQuery] Guid? quyenId,
+        [FromQuery] bool? coNguoiDung,
+        [FromQuery] bool? phaiDoiMatKhau,
         [FromQuery] int trang = 1,
         [FromQuery] int soDong = 20,
         CancellationToken ct = default)
-        => Ok(await sender.Send(
-            new LayDanhSachTaiKhoanQuery(timKiem, trangThai, new ThamSoTrang(trang, soDong)), ct));
+        => Ok(await sender.Send(new LayDanhSachTaiKhoanQuery(
+            timKiem, trangThai, quyenId, coNguoiDung, phaiDoiMatKhau,
+            new ThamSoTrang(trang, soDong)), ct));
 
     [HttpPost]
     [RequirePermission(ChucNang.TaiKhoan, HanhDong.Them)]

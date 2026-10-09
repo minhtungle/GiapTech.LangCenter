@@ -54,6 +54,12 @@ export default function TaiKhoan() {
   const [trang, setTrang] = useState(1)
   const [soDong, setSoDong] = useState(20)
   const [timKiem, setTimKiem] = useState('')
+  // Bộ lọc danh sách (08/10/2026). Chuỗi rỗng = không lọc, để một ô Select rỗng không phải
+  // mang nghĩa "lọc những cái rỗng".
+  const [locTrangThai, setLocTrangThai] = useState('')
+  const [locQuyen, setLocQuyen] = useState('')
+  const [locCoNguoi, setLocCoNguoi] = useState('')
+  const [locDoiMk, setLocDoiMk] = useState('')
 
   const [moForm, setMoForm] = useState(false)
   const [dangSua, setDangSua] = useState<TaiKhoanDto | null>(null)
@@ -76,10 +82,17 @@ export default function TaiKhoan() {
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
 
   const { data: kq = trangRong<TaiKhoanDto>(), isLoading } = useQuery({
-    queryKey: ['tai-khoan', timKiem, trang, soDong],
+    queryKey: ['tai-khoan', timKiem, locTrangThai, locQuyen, locCoNguoi, locDoiMk, trang, soDong],
     queryFn: async () =>
       (await api.get<KetQuaTrang<TaiKhoanDto>>('/tai-khoan', {
-        params: { timKiem: timKiem || undefined, trang, soDong },
+        params: {
+          timKiem: timKiem || undefined,
+          trangThai: locTrangThai || undefined,
+          quyenId: locQuyen || undefined,
+          coNguoiDung: locCoNguoi || undefined,
+          phaiDoiMatKhau: locDoiMk || undefined,
+          trang, soDong,
+        },
       })).data,
   })
 
@@ -101,6 +114,7 @@ export default function TaiKhoan() {
         duoiTenDangNhap: string | null
         duoiTenDangNhap2: string | null
         duoiTenDangNhap3: string | null
+        matKhauMacDinh: string | null
       }>('/thiet-lap')).data,
   })
 
@@ -151,11 +165,15 @@ export default function TaiKhoan() {
   const luu = useMutation({
     mutationFn: async (fd: FormData) => {
       if (dangSua) {
+        const tenMoi = String(fd.get('username') ?? '').trim()
         await api.put(`/tai-khoan/${dangSua.id}`, {
           id: dangSua.id,
           nguoiDungId: nguoiChon,
           quyenIds: quyenChon,
           trangThai,
+          // Chỉ gửi khi THẬT SỰ đổi: backend hiểu `null` = giữ nguyên, nên gửi lại tên cũ
+          // mỗi lần lưu sẽ đá phiên của người đó dù không ai đổi gì.
+          username: tenMoi && tenMoi !== dangSua.username ? tenMoi : null,
         })
       } else {
         await api.post('/tai-khoan', {
@@ -211,6 +229,67 @@ export default function TaiKhoan() {
               setTrang(1)
             }}
             placeholder={t('taiKhoan.username')}
+          />
+        </div>
+
+        {/* Bốn bộ lọc. Mỗi ô có mục "tất cả" ở đầu vì bỏ trống một Select trông giống lỗi
+            tải dữ liệu hơn là "không lọc". */}
+        <div className="w-44">
+          <Label htmlFor="loc-tt">{t('taiKhoan.trangThai')}</Label>
+          <SelectTimKiem
+            id="loc-tt"
+            luaChon={[
+              { giaTri: '', nhan: t('taiKhoan.locTatCa') },
+              { giaTri: 'HoatDong', nhan: t('taiKhoan.HoatDong') },
+              { giaTri: 'VoHieuHoa', nhan: t('taiKhoan.VoHieuHoa') },
+            ]}
+            giaTri={locTrangThai}
+            onDoi={(v) => { setLocTrangThai(v ?? ''); setTrang(1) }}
+            choPhepXoa={false}
+          />
+        </div>
+
+        <div className="w-48">
+          <Label htmlFor="loc-quyen">{t('taiKhoan.nhomQuyen')}</Label>
+          <SelectTimKiem
+            id="loc-quyen"
+            luaChon={[
+              { giaTri: '', nhan: t('taiKhoan.locTatCa') },
+              ...(quyens ?? []).map((q) => ({ giaTri: q.id, nhan: q.tenQuyen })),
+            ]}
+            giaTri={locQuyen}
+            onDoi={(v) => { setLocQuyen(v ?? ''); setTrang(1) }}
+            choPhepXoa={false}
+          />
+        </div>
+
+        <div className="w-44">
+          <Label htmlFor="loc-nguoi">{t('nguoiDung.nguoiSoHuu')}</Label>
+          <SelectTimKiem
+            id="loc-nguoi"
+            luaChon={[
+              { giaTri: '', nhan: t('taiKhoan.locTatCa') },
+              { giaTri: 'true', nhan: t('taiKhoan.locCoGanNguoi') },
+              { giaTri: 'false', nhan: t('taiKhoan.locKhongGanAi') },
+            ]}
+            giaTri={locCoNguoi}
+            onDoi={(v) => { setLocCoNguoi(v ?? ''); setTrang(1) }}
+            choPhepXoa={false}
+          />
+        </div>
+
+        <div className="w-48">
+          <Label htmlFor="loc-mk">{t('taiKhoan.locDoiMatKhau')}</Label>
+          <SelectTimKiem
+            id="loc-mk"
+            luaChon={[
+              { giaTri: '', nhan: t('taiKhoan.locTatCa') },
+              { giaTri: 'true', nhan: t('taiKhoan.locChuaDangNhap') },
+              { giaTri: 'false', nhan: t('taiKhoan.locDaDangNhap') },
+            ]}
+            giaTri={locDoiMk}
+            onDoi={(v) => { setLocDoiMk(v ?? ''); setTrang(1) }}
+            choPhepXoa={false}
           />
         </div>
 
@@ -359,21 +438,37 @@ export default function TaiKhoan() {
           onSubmit={(e) => {
             e.preventDefault()
             const fd = new FormData(e.currentTarget)
-            const ten = dangSua ? dangSua.username : String(fd.get('username'))
+            // Tên LẤY TỪ FORM, kể cả khi sửa: hộp xác nhận phải nói đúng thứ sắp lưu, không
+            // phải tên cũ — người dùng vừa đổi tên mà hộp hỏi "lưu <tên cũ>?" là nói sai.
+            const ten = String(fd.get('username') ?? '').trim() || dangSua?.username || ''
+            // Đổi tên đăng nhập đá phiên đang mở, nên hỏi rõ hệ quả thay vì câu "lưu?" chung.
+            const doiTen = !!dangSua && ten !== dangSua.username
             hoi({
               tieuDe: dangSua ? t('chung.xacNhanLuu') : t('chung.xacNhanThem'),
-              thongDiep: dangSua
-                ? t('chung.hoiLuu', { ten })
-                : t('chung.hoiThem', { ten }),
+              thongDiep: doiTen
+                ? t('taiKhoan.hoiDoiUsername', { cu: dangSua!.username, moi: ten })
+                : dangSua
+                  ? t('chung.hoiLuu', { ten })
+                  : t('chung.hoiThem', { ten }),
               onDongY: () => luu.mutate(fd),
             })
           }}
           className="space-y-4"
         >
           {dangSua ? (
-            <p className="text-sm text-muted-foreground">
-              {t('taiKhoan.username')}: <strong>{dangSua.username}</strong>
-            </p>
+            <div>
+              <Label htmlFor="username">{t('taiKhoan.username')}</Label>
+              <Input
+                id="username"
+                name="username"
+                defaultValue={dangSua.username}
+                maxLength={100}
+                required
+              />
+              <p className="mt-1 text-xs text-status-cho">
+                {t('taiKhoan.doiUsernameLuuY')}
+              </p>
+            </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -406,7 +501,31 @@ export default function TaiKhoan() {
               </div>
               <div>
                 <Label htmlFor="matKhau">{t('taiKhoan.matKhau')} *</Label>
-                <Input id="matKhau" name="matKhau" type="password" minLength={DO_DAI_MAT_KHAU_TOI_THIEU} required />
+                {/*
+                  Điền sẵn mật khẩu mặc định của trung tâm (09/10/2026), vẫn sửa được.
+
+                  `key` buộc React dựng lại ô khi mật khẩu mặc định tải xong: `defaultValue`
+                  chỉ đọc ở lần dựng đầu, mà query `/thiet-lap` thường về SAU khi form đã mở
+                  — không có `key` thì ô mãi trống dù đã khai mặc định.
+
+                  `type="text"` khi có mặc định: người tạo cần ĐỌC được mật khẩu để đọc cho
+                  người dùng mới. Che đi thì họ phải sang màn Thiết lập xem lại.
+                */}
+                <Input
+                  key={thietLap?.matKhauMacDinh ?? 'trong'}
+                  id="matKhau"
+                  name="matKhau"
+                  type={thietLap?.matKhauMacDinh ? 'text' : 'password'}
+                  defaultValue={thietLap?.matKhauMacDinh ?? ''}
+                  minLength={DO_DAI_MAT_KHAU_TOI_THIEU}
+                  autoComplete="off"
+                  required
+                />
+                {thietLap?.matKhauMacDinh && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t('taiKhoan.dungMatKhauMacDinh')}
+                  </p>
+                )}
               </div>
             </div>
           )}

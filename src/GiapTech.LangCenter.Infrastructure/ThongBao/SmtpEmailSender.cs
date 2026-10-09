@@ -35,6 +35,7 @@ public class SmtpEmailSender(
 {
     public async Task GuiAsync(
         Guid tenantId, string den, string tieuDe, string noiDungHtml,
+        IReadOnlyList<TepGuiKem>? dinhKem = null,
         CancellationToken ct = default)
     {
         var cauHinh = await LayCauHinh(tenantId, ct);
@@ -49,10 +50,22 @@ public class SmtpEmailSender(
             return;
         }
 
+        var than = new BodyBuilder { HtmlBody = ChuanBiHtml(noiDungHtml) };
+        foreach (var t in dinhKem ?? [])
+        {
+            // `ContentType.Parse` ném khi chuỗi hỏng; rơi về octet-stream thay vì làm cả lần
+            // gửi thất bại — người nhận vẫn mở được tệp bằng đuôi tên.
+            ContentType loai;
+            try { loai = ContentType.Parse(t.LoaiNoiDung); }
+            catch (ParseException) { loai = new ContentType("application", "octet-stream"); }
+
+            than.Attachments.Add(t.TenTep, t.NoiDung, loai);
+        }
+
         var mail = new MimeMessage
         {
             Subject = tieuDe,
-            Body = new BodyBuilder { HtmlBody = ChuanBiHtml(noiDungHtml) }.ToMessageBody()
+            Body = than.ToMessageBody()
         };
         mail.From.Add(new MailboxAddress(cauHinh.TenNguoiGui ?? cauHinh.NguoiGui, cauHinh.NguoiGui));
         mail.To.Add(MailboxAddress.Parse(den));

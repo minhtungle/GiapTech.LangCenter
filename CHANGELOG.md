@@ -8,6 +8,66 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Added — Thiết lập file: phôi .docx có biến, xuất bản in (09/10/2026)
+
+Màn **Thiết lập file** (`/quan-tri/phoi-tai-lieu`): tải phôi .docx lên, hệ thống đọc danh sách
+key `{{...}}` trong tệp, đặt giá trị mặc định, xuất file đã điền, xem trước ngay trong hệ thống
+và đính kèm vào mail gửi khách.
+
+**Word CẮT RỜI `{{key}}` thành nhiều `<w:r>`** — đo trên phôi thật: 0 key tìm thấy trên XML
+thô, 4 key sau khi gỡ thẻ, vì Word chèn `<w:proofErr>` vào giữa. Nên `xml.Replace("{{key}}",…)`
+không khớp gì cả; phải nối nội dung mọi `<w:t>` trong một `<w:p>` rồi mới thay.
+
+**Không thêm thư viện docx nào** — `System.IO.Compression` + regex làm được, đã chứng minh
+trên phôi thật. Preview dùng **Mammoth.js** ở trình duyệt (theo `GiapTech.BindingDocx`), nạp
+bằng `import()` động nên 1,9 MB không nằm trong gói chính.
+
+Giới hạn **10 MB** riêng cho phôi, chặt hơn mức 20 MB của kho tệp chung — mức đó dành cho file
+nghe của học liệu, hạ xuống sẽ chặn nhầm module khác.
+
+Bảng mới: `PHOI_TAI_LIEU`, `BAN_XUAT_PHOI`. Bản đã xuất lưu lại thay vì chỉ cho tải: khi khách
+hỏi "bản anh đưa tôi ghi gì", câu trả lời phải là đúng tệp đã đưa.
+
+### Added — gửi email cho khách hàng (08/10/2026)
+
+Tab **Email** ở chi tiết khách hàng: soạn thư (chọn một trong 4 mẫu để điền sẵn), gửi, xem
+lịch sử. Bảng `LICH_SU_EMAIL` lưu **nội dung đã gửi**, không phải con trỏ tới mẫu — mẫu sửa
+được, mở lại sau ba tháng sẽ thấy nội dung hiện tại chứ không phải thứ khách đã nhận.
+
+Ghi lịch sử cả lần **gửi hỏng**: người bán cần biết thư không tới nơi, nếu không họ ngồi chờ
+phản hồi cho một email chưa bao giờ rời máy chủ. Một địa chỉ hỏng không làm cả đợt chết — trả
+`{soThanhCong, soLoi, khachLoi}`.
+
+Quyền riêng `EmailKhachHang` (`Xem` + `GuiThu`), tách khỏi `ThietLapEmail` (cấu hình SMTP —
+việc quản trị) và khỏi `ChamSocKhachHang` (ghi cuộc gọi đã xảy ra ≠ bắn thư thật ra ngoài).
+
+### Added — trình soạn email đầy đủ (09/10/2026)
+
+6 nút thành 27 (32 khi con trỏ trong bảng): gạch chân · gạch ngang · căn lề · cỡ chữ · màu
+chữ · màu nền · bảng · hoàn tác/làm lại.
+
+Tiêu chí chọn nút vẫn là **"Outlook có dựng được không"** — và kiểm bằng test, không bằng suy
+luận: 8 test chạy HTML y hệt Tiptap sinh ra qua chính `ChuanBiHtml`, khẳng định mọi định dạng
+sống sót qua PreMailer.
+
+Vẫn không thêm: màu tự do (bảng màu chọn sẵn — chữ xám nhạt trên nền tối là không đọc được,
+mà người soạn không bao giờ thấy), cỡ chữ tuỳ ý, ảnh.
+
+### Added — sửa tên đăng nhập, lọc tài khoản, mật khẩu mặc định
+
+**Sửa được tên đăng nhập** ở form tài khoản. Đổi tên **đá phiên đang mở**: token đang cầm mang
+claim tên cũ, và nhật ký thao tác ghi username từ claim đó — giữ phiên nghĩa là mọi thao tác
+tới lúc token hết hạn đều ghi dưới cái tên không còn tồn tại.
+
+**4 bộ lọc** cho màn tài khoản: trạng thái · nhóm quyền · có gắn người · lần đăng nhập đầu.
+
+**Mật khẩu mặc định** cho tài khoản mới (Thiết lập → Đăng nhập), **mã hoá AES-GCM** chứ không
+băm: đây là giá trị điền sẵn vào form mà admin phải đọc lại được để đọc cho người dùng mới.
+Áp cùng chính sách mật khẩu — đặt mặc định yếu thì mọi tài khoản tạo từ nó đều yếu, mà lỗi chỉ
+lộ ra lúc người dùng đăng nhập.
+
+Migration: `ThemLichSuEmail`, `ThemPhoiTaiLieu`, `ThemMatKhauMacDinh`.
+
 ### Added — bộ chuyển dữ liệu VIETGEN Academy (06/10/2026)
 
 `scripts/chuyen-doi-vietgen/` — chuyển tài khoản · phân quyền · đơn hàng · doanh thu của trung

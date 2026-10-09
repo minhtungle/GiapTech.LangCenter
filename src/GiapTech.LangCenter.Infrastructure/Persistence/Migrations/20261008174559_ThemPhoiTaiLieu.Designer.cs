@@ -3,17 +3,20 @@ using System;
 using GiapTech.LangCenter.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace GiapTech.LangCenter.Infrastructure.Migrations
+namespace GiapTech.LangCenter.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261008174559_ThemPhoiTaiLieu")]
+    partial class ThemPhoiTaiLieu
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -3515,11 +3518,6 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("character(7)")
                         .HasColumnName("ma_trung_tam")
                         .IsFixedLength();
-
-                    b.Property<string>("MatKhauMacDinhMaHoa")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("mat_khau_mac_dinh_ma_hoa");
 
                     b.Property<string>("MoTa")
                         .HasMaxLength(1000)

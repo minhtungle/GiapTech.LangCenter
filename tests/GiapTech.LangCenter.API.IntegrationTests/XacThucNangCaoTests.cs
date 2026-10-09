@@ -291,6 +291,9 @@ public class TestEmailSender : IEmailSender
     /// </summary>
     public static readonly System.Collections.Concurrent.ConcurrentBag<ThuDaGui> DaGui = [];
 
+    /// <summary>Số tệp đính kèm của lần gửi gần nhất (09/10/2026).</summary>
+    public static int SoDinhKemLanCuoi { get; private set; }
+
     /// <summary>
     /// `tenantId` KHÔNG dùng ở đây: bản giả này chỉ bắt token, không chọn cấu hình SMTP nào.
     /// Nhưng tham số vẫn phải có để khớp interface — và đó là điều tốt, vì nó buộc mọi nơi
@@ -298,8 +301,12 @@ public class TestEmailSender : IEmailSender
     /// </summary>
     public Task GuiAsync(
         Guid tenantId, string den, string tieuDe, string noiDungHtml,
+        IReadOnlyList<TepGuiKem>? dinhKem = null,
         CancellationToken ct = default)
     {
+        // Ghi lại số tệp đính kèm để test khẳng định được "có gửi kèm file hay không".
+        SoDinhKemLanCuoi = dinhKem?.Count ?? 0;
+
         var m = System.Text.RegularExpressions.Regex.Match(noiDungHtml, @"<code>(.+?)</code>");
 
         if (m.Success)

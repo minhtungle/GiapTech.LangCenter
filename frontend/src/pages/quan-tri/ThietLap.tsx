@@ -21,6 +21,7 @@ interface ThietLapDto {
   duoiTenDangNhap: string | null
   duoiTenDangNhap2: string | null
   duoiTenDangNhap3: string | null
+  matKhauMacDinh: string | null
   soTaiKhoan: string | null
   tenNganHang: string | null
   chuTaiKhoan: string | null
@@ -59,6 +60,7 @@ export default function ThietLap() {
   const qc = useQueryClient()
   const { capNhatTenTrungTam } = useAuth()
   const [tab, setTab] = useState<Tab>('trung-tam')
+  const [hienMatKhau, setHienMatKhau] = useState(false)
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [daLuu, setDaLuu] = useState(false)
   const [qrNhap, setQrNhap] = useState<string | null | undefined>(undefined)
@@ -118,6 +120,8 @@ export default function ThietLap() {
       duoiTenDangNhap: (fd.get('duoiTenDangNhap') as string) ?? '',
       duoiTenDangNhap2: (fd.get('duoiTenDangNhap2') as string) ?? '',
       duoiTenDangNhap3: (fd.get('duoiTenDangNhap3') as string) ?? '',
+      // Mật khẩu mặc định cho tài khoản tạo mới. Cùng quy ước: chuỗi rỗng = thôi dùng.
+      matKhauMacDinh: (fd.get('matKhauMacDinh') as string) ?? '',
       // Thông tin chuyển khoản. Cùng quy ước: chuỗi rỗng = xoá, không gửi null.
       soTaiKhoan: (fd.get('soTaiKhoan') as string) ?? '',
       tenNganHang: (fd.get('tenNganHang') as string) ?? '',
@@ -271,6 +275,34 @@ export default function ThietLap() {
           <div className="sm:col-span-2">
             <p className="text-xs text-muted-foreground">
               {t('thietLap.duoiTenDangNhapGoiY')}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label htmlFor="matKhauMacDinh">{t('thietLap.matKhauMacDinh')}</Label>
+            <div className="flex gap-2">
+              <Input
+                id="matKhauMacDinh"
+                name="matKhauMacDinh"
+                // `text` chứ không `password`: chủ sản phẩm chốt cho admin XEM LẠI mật khẩu
+                // này (09/10/2026) — họ phải đọc nó cho người dùng mới. Che đi thì mỗi lần
+                // cần lại phải đặt mật khẩu khác, và mật khẩu cũ thành rác không ai biết.
+                type={hienMatKhau ? 'text' : 'password'}
+                maxLength={128}
+                defaultValue={data?.matKhauMacDinh ?? ''}
+                placeholder={t('thietLap.matKhauMacDinhGoiY')}
+                autoComplete="off"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setHienMatKhau(!hienMatKhau)}
+              >
+                {hienMatKhau ? t('thietLap.anMatKhau') : t('thietLap.hienMatKhau')}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t('thietLap.matKhauMacDinhLuuY')}
             </p>
           </div>
           </div>

@@ -1,5 +1,13 @@
 namespace GiapTech.LangCenter.Application.Common.Interfaces;
 
+/// <summary>
+/// Tệp gửi kèm email (09/10/2026).
+///
+/// Cầm sẵn `byte[]` chứ không `Stream`: gửi hàng loạt dùng lại cùng tệp cho nhiều người nhận,
+/// mà `Stream` đọc hết một lần là người thứ hai nhận tệp rỗng — hỏng im lặng, không lỗi nào.
+/// </summary>
+public record TepGuiKem(string TenTep, string LoaiNoiDung, byte[] NoiDung);
+
 /// <summary>Gửi email (FR-02 quên mật khẩu, FR-31 cấu hình theo trung tâm).</summary>
 public interface IEmailSender
 {
@@ -19,6 +27,7 @@ public interface IEmailSender
     /// </summary>
     Task GuiAsync(
         Guid tenantId, string den, string tieuDe, string noiDungHtml,
+        IReadOnlyList<TepGuiKem>? dinhKem = null,
         CancellationToken ct = default);
 }
 

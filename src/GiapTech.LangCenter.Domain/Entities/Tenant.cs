@@ -134,6 +134,27 @@ public class Tenant : BaseEntity
     /// <summary>Đuôi tên đăng nhập thứ ba — xem <see cref="DuoiTenDangNhap"/>.</summary>
     public string? DuoiTenDangNhap3 { get; set; }
 
+    /// <summary>
+    /// Mật khẩu mặc định cho tài khoản tạo mới, **đã mã hoá AES-GCM** (09/10/2026).
+    ///
+    /// Tên cột nói rõ là đã mã hoá, cùng lối với `smtp_mat_khau_ma_hoa` — để người đọc schema
+    /// không tưởng đây là bản rõ.
+    ///
+    /// ## Vì sao MÃ HOÁ chứ không BĂM
+    ///
+    /// Mật khẩu tài khoản thì băm (một chiều, không ai đọc lại được). Nhưng đây không phải
+    /// mật khẩu để xác thực — nó là **giá trị điền sẵn vào form**, và admin phải đọc lại được
+    /// để đọc cho người dùng mới. Băm là đúng cho `TAI_KHOAN.password_hash`; ở đây sẽ làm
+    /// trường này vô dụng.
+    ///
+    /// Đánh đổi đã chấp nhận: ai lấy được cả DB lẫn `EMAIL_KHOA_MA_HOA` thì đọc được chuỗi
+    /// này. Nhưng nó chỉ là mật khẩu TẠM — mọi tài khoản tạo mới đều bật `phai_doi_mat_khau`,
+    /// nên người dùng đổi ngay lần đăng nhập đầu.
+    ///
+    /// null = trung tâm chưa khai; lúc tạo tài khoản admin tự gõ như trước.
+    /// </summary>
+    public string? MatKhauMacDinhMaHoa { get; set; }
+
     // --- Thông tin chuyển khoản ---
     //
     // Chỉ để HIỂN THỊ cho người học biết chuyển tiền vào đâu. Hệ thống KHÔNG xử lý tiền:
