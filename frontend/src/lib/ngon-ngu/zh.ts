@@ -749,6 +749,7 @@ const zh = {
     duoiTenDangNhap: '用户名后缀',
     khongNoiDuoi: '— 不加后缀 —',
     noiDuoiGoiY: '选择“不加后缀”可保留短用户名。若上方已输入完整后缀，系统不会重复添加。',
+    chuaKhaiDuoi: '尚未设置登录名后缀。请在「通用设置 → 登录」中添加，新账号即可自动附加。',
     tieuDe: '用户账号',
     username: '用户名',
     hoTen: '姓名',

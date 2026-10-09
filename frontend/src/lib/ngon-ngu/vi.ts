@@ -822,6 +822,7 @@ const vi = {
     duoiTenDangNhap: 'Đuôi tên đăng nhập',
     khongNoiDuoi: '— Không nối đuôi —',
     noiDuoiGoiY: 'Chọn "không nối đuôi" để giữ tên ngắn. Gõ sẵn cả đuôi vào ô trên thì hệ thống không nối thêm lần nữa.',
+    chuaKhaiDuoi: 'Chưa khai đuôi tên đăng nhập. Khai ở Thiết lập chung → Đăng nhập để tài khoản mới tự nối đuôi.',
     tieuDe: 'Tài khoản người dùng',
     username: 'Tên đăng nhập',
     hoTen: 'Họ và tên',

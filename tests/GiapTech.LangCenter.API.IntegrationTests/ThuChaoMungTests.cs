@@ -72,6 +72,10 @@ public class ThuChaoMungTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Contains("0911222333", thu.NoiDung);
         Assert.Contains("Học viên", thu.NoiDung);
 
+        // Link đăng nhập: không có nó thì người nhận cầm tên và mật khẩu mà không biết gõ
+        // đâu vào trình duyệt (chủ sản phẩm báo 09/10/2026).
+        Assert.Contains("https://test.langcenter.local/dang-nhap", thu.NoiDung);
+
         // Biến đã được thay hết — sót `{{...}}` nghĩa là khai thiếu ở `MauMacDinh.BienCuaLoai`.
         Assert.DoesNotContain("{{", thu.NoiDung);
         Assert.DoesNotContain("{{", thu.TieuDe);

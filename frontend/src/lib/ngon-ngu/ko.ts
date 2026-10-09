@@ -749,6 +749,7 @@ const ko = {
     duoiTenDangNhap: '아이디 접미사',
     khongNoiDuoi: '— 접미사 없음 —',
     noiDuoiGoiY: '짧은 아이디를 쓰려면 "접미사 없음"을 고르세요. 위 칸에 접미사까지 입력했다면 시스템이 다시 붙이지 않습니다.',
+    chuaKhaiDuoi: '로그인 이름 접미사가 아직 없습니다. 설정 → 로그인에서 추가하면 새 계정에 자동으로 붙습니다.',
     tieuDe: '사용자 계정',
     username: '아이디',
     hoTen: '성명',

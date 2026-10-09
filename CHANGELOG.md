@@ -8,6 +8,21 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Fixed — Thư chào mừng có link đăng nhập; ô chọn đuôi nói rõ khi chưa khai (09/10/2026)
+
+Chủ sản phẩm báo hai điểm sau khi dùng thật:
+
+**Thư không có link.** Người nhận cầm tên đăng nhập và mật khẩu tạm mà không biết gõ địa chỉ
+nào vào trình duyệt. Thêm biến `{{duongDanDangNhap}}`: ưu tiên domain riêng của trung tâm
+(ADR-0008), chưa gắn thì rơi về `APP_BASE_URL`. Giá trị đi qua interface `IDiaChiUngDung` vì
+`Application` không đọc `IConfiguration` (quy tắc #10).
+
+Trước đây **không email nào của hệ thống có link** — thư quên mật khẩu cũng chỉ gửi mã.
+
+**Ô chọn đuôi biến mất không giải thích.** Nó chỉ hiện khi trung tâm đã khai đuôi, mà chưa
+khai thì không có gì chỉ ra tính năng tồn tại. Nay hiện một dòng chỉ đường tới Thiết lập
+chung → Đăng nhập.
+
 ### Added — Thư báo tài khoản + hồ sơ khi tạo người dùng (09/10/2026)
 
 Tạo người dùng kèm tài khoản (`POST /nguoi-dung`) hoặc cấp tài khoản cho người đã có hồ sơ

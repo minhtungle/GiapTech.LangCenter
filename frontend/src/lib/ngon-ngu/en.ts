@@ -749,6 +749,7 @@ const en = {
     duoiTenDangNhap: 'Username suffix',
     khongNoiDuoi: '— No suffix —',
     noiDuoiGoiY: 'Choose "no suffix" to keep the short name. If you already typed the suffix above, the system will not add it again.',
+    chuaKhaiDuoi: 'No username suffix declared yet. Add one in Settings → Login so new accounts get it automatically.',
     tieuDe: 'User accounts',
     username: 'Username',
     hoTen: 'Full name',

@@ -125,6 +125,9 @@ public class ApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("JWT_SECRET", JwtSecret);
         if (KhoaMaHoaEmail is { } khoaEmail)
             builder.UseSetting(MaHoaBiMat.KhoaCauHinh, khoaEmail);
+        // Địa chỉ gốc để thư chào mừng dựng được link đăng nhập (09/10/2026).
+        builder.UseSetting(
+            Infrastructure.Identity.DiaChiUngDung.KhoaCauHinh, "https://test.langcenter.local");
         builder.UseSetting("JWT_ISSUER", "langcenter-api");
         builder.UseSetting("JWT_EXPIRY_MINUTES", "60");
 

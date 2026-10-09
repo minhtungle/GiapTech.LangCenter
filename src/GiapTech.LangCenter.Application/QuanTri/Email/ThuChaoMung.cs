@@ -15,6 +15,7 @@ public class ThuChaoMung(
     ICurrentTenant currentTenant,
     IMauEmail mauEmail,
     IEmailSender emailSender,
+    IDiaChiUngDung diaChi,
     ILogger<ThuChaoMung> logger) : IThuChaoMung
 {
     public async Task GuiAsync(
@@ -54,6 +55,7 @@ public class ThuChaoMung(
                     ["emailHoSo"] = nd.Email,
                     ["soDienThoai"] = KhongTrong(nd.SoDienThoai),
                     ["ngaySinh"] = nd.NgaySinh?.ToString("dd/MM/yyyy") ?? "—",
+                    ["duongDanDangNhap"] = DuongDanDangNhap(tt?.DomainQuanTri),
                 },
                 ct);
 
@@ -70,6 +72,27 @@ public class ThuChaoMung(
     }
 
     private static string KhongTrong(string? s) => string.IsNullOrWhiteSpace(s) ? "—" : s.Trim();
+
+    /// <summary>
+    /// Địa chỉ người nhận bấm vào để đăng nhập.
+    ///
+    /// Ưu tiên **domain riêng của trung tâm** (ADR-0008): vào bằng domain riêng thì trang
+    /// đăng nhập ẩn ô mã trung tâm, người dùng chỉ phải gõ tên và mật khẩu.
+    ///
+    /// Chưa gắn domain riêng thì rơi về `APP_BASE_URL` — địa chỉ chung của hệ thống, nơi
+    /// người dùng phải gõ thêm mã trung tâm (thư đã ghi sẵn mã ở trên).
+    ///
+    /// Không cấu hình gì thì trả chuỗi rỗng, và `ThayBien` sẽ thay bằng rỗng — dòng link
+    /// thành trống. Đó là lý do nơi gọi phải kiểm: xem <see cref="GuiAsync"/>.
+    /// </summary>
+    private string DuongDanDangNhap(string? domainQuanTri)
+    {
+        if (!string.IsNullOrWhiteSpace(domainQuanTri))
+            return $"https://{domainQuanTri.Trim().TrimEnd('/')}/dang-nhap";
+
+        var goc = diaChi.Goc;
+        return goc is null ? string.Empty : $"{goc}/dang-nhap";
+    }
 
     /// <summary>
     /// Nhãn vai trò tiếng Việt cho thân email.

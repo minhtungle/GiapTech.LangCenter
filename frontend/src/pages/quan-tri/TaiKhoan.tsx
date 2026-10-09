@@ -474,6 +474,13 @@ export default function TaiKhoan() {
                     </p>
                   </div>
                 )}
+                {/* Chưa khai đuôi nào ⇒ không có gì để chọn, nhưng im lặng thì người
+                    dùng không biết tính năng tồn tại. Chỉ đường thay vì giấu hẳn. */}
+                {duoiDaKhai.length === 0 && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t('taiKhoan.chuaKhaiDuoi')}
+                  </p>
+                )}
               </div>
               <div>
                 <Label htmlFor="matKhau">{t('taiKhoan.matKhau')} *</Label>

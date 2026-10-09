@@ -46,7 +46,7 @@ riêng. Thêm loại mà không có chỗ gọi thì đó là mẫu chết.
 
 | Mã | Khi nào gửi | Biến dùng được |
 |---|---|---|
-| `ChaoMungHocVien` | Tạo người dùng kèm tài khoản, hoặc cấp tài khoản cho người đã có hồ sơ — người tạo **tích chọn** mới gửi | `tenHocVien` · `tenTrungTam` · `maTrungTam` · `tenDangNhap` · `matKhauTam` · `vaiTro` · `emailHoSo` · `soDienThoai` · `ngaySinh` |
+| `ChaoMungHocVien` | Tạo người dùng kèm tài khoản, hoặc cấp tài khoản cho người đã có hồ sơ — người tạo **tích chọn** mới gửi | `tenHocVien` · `tenTrungTam` · `maTrungTam` · `tenDangNhap` · `matKhauTam` · `vaiTro` · `emailHoSo` · `soDienThoai` · `ngaySinh` · `duongDanDangNhap` |
 | `TraLoiLienHe` | Khách điền form trang đích (FR-30) | `tenKhach` · `tenTrungTam` · `hotline` |
 | `NhacNoHocPhi` | *(cần job nền — đợt sau)* | `tenHocVien` · `tenLop` · `soTienConThieu` · `hanDong` |
 | `NhacLichHoc` | *(cần job nền — đợt sau)* | `tenHocVien` · `tenLop` · `thoiGian` · `phongHoc` · `tenGiaoVien` |
@@ -77,6 +77,15 @@ trung tâm cần gọi gấp.
 3. **Lỗi gửi KHÔNG làm hỏng lệnh.** Người và tài khoản đã ghi xong; ném lỗi sẽ trả 500 cho một
    lệnh đã thành công, và người tạo bấm Lưu lần nữa sẽ nhận `USERNAME_DA_TON_TAI` rồi tưởng
    mình làm sai. Lỗi SMTP vào log. Cùng lựa chọn với `GuiLienHeHandler`.
+
+**Link đăng nhập** (`{{duongDanDangNhap}}`, thêm 09/10/2026 theo phản hồi chủ sản phẩm): ưu
+tiên domain riêng của trung tâm (ADR-0008 — vào bằng domain riêng thì trang đăng nhập ẩn ô mã
+trung tâm), chưa gắn domain thì rơi về biến môi trường `APP_BASE_URL`. **Thiếu cả hai thì
+dòng link rỗng** — người nhận cầm tên đăng nhập và mật khẩu mà không biết gõ đâu vào trình
+duyệt, nên đặt `APP_BASE_URL` là bắt buộc khi triển khai.
+
+`Application` không đọc `IConfiguration` (quy tắc #10), nên giá trị đi qua interface
+`IDiaChiUngDung`, hiện thực ở `Infrastructure`.
 
 Hồ sơ không có email thì **không gửi và không báo lỗi** — ca thường gặp, không phải sự cố. Giao
 diện khoá sẵn ô tích và nói rõ vì sao, để người dùng không tưởng chức năng hỏng.

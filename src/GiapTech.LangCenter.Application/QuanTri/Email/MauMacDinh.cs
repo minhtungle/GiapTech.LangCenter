@@ -37,7 +37,7 @@ public static class MauMacDinh
             // số điện thoại vào lúc trung tâm cần gọi gấp.
             [LoaiMauEmail.ChaoMungHocVien] =
                 ["tenHocVien", "tenTrungTam", "maTrungTam", "tenDangNhap", "matKhauTam",
-                 "vaiTro", "emailHoSo", "soDienThoai", "ngaySinh"],
+                 "vaiTro", "emailHoSo", "soDienThoai", "ngaySinh", "duongDanDangNhap"],
             [LoaiMauEmail.TraLoiLienHe] =
                 ["tenKhach", "tenTrungTam", "hotline"],
             [LoaiMauEmail.NhacNoHocPhi] =
@@ -59,6 +59,7 @@ public static class MauMacDinh
               Tên đăng nhập: <strong>{{tenDangNhap}}</strong><br>
               Mật khẩu tạm: <strong>{{matKhauTam}}</strong>
             </p>
+            <p>Đăng nhập tại: <a href="{{duongDanDangNhap}}">{{duongDanDangNhap}}</a></p>
             <p>Bạn sẽ được yêu cầu đổi mật khẩu ở lần đăng nhập đầu tiên.</p>
             <p>Hồ sơ chúng tôi đang lưu của bạn:</p>
             <p>

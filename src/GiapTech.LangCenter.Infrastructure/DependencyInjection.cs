@@ -75,6 +75,9 @@ public static class DependencyInjection
         // Mã hoá bí mật lưu trong DB (ADR-0010). Singleton: khoá đọc một lần lúc khởi động,
         // không đổi giữa các request.
         services.AddSingleton<IMaHoaBiMat, MaHoaBiMat>();
+
+        // Địa chỉ gốc để dựng link trong email (09/10/2026) — đọc từ APP_BASE_URL.
+        services.AddSingleton<IDiaChiUngDung, DiaChiUngDung>();
         services.AddSingleton<ITokenService, TokenService>();
         services.AddScoped<ITenantSeeder, TenantSeeder>();
         services.AddScoped<Persistence.Seed.BoKhuyetQuyenQuanTri>();
