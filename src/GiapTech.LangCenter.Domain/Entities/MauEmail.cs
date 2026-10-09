@@ -11,7 +11,13 @@ namespace GiapTech.LangCenter.Domain.Entities;
 /// </summary>
 public enum LoaiMauEmail
 {
-    /// <summary>Cấp tài khoản cho học viên mới. Gửi ngay, đã có chỗ gọi.</summary>
+    /// <summary>
+    /// Cấp tài khoản cho người dùng mới. Gửi ngay khi người tạo tích chọn ở form Người dùng
+    /// (nối thật 09/10/2026 — trước đó mẫu này có sẵn nhưng chưa nơi nào gọi).
+    ///
+    /// Không riêng học viên: giáo viên, trợ giảng và nhân viên được cấp tài khoản cũng nhận
+    /// thư này. Tên enum giữ nguyên vì nó đã nằm trong DB của các trung tâm đang chạy.
+    /// </summary>
     ChaoMungHocVien = 0,
 
     /// <summary>Khách điền form trên trang đích (FR-30). Gửi ngay, đã có chỗ gọi.</summary>

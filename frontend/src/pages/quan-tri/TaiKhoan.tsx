@@ -77,6 +77,7 @@ export default function TaiKhoan() {
   const [trangThai, setTrangThai] = useState<'HoatDong' | 'VoHieuHoa'>('HoatDong')
   // Mặc định BẬT: tài khoản do người khác tạo hộ thì mật khẩu ban đầu người tạo cũng biết.
   const [buocDoiMk, setBuocDoiMk] = useState(true)
+  const [guiEmail, setGuiEmail] = useState(false)
   const [datLaiCho, setDatLaiCho] = useState<TaiKhoanDto | null>(null)
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
@@ -183,6 +184,8 @@ export default function TaiKhoan() {
           quyenIds: quyenChon,
           phaiDoiMatKhau: buocDoiMk,
           duoiSo,
+          // Chỉ gửi khi người được chọn CÓ email thật — xem ghi chú ở màn Người dùng.
+          guiEmailThongBao: guiEmail && !!emailNguoiChon,
         })
       }
     },
@@ -209,6 +212,11 @@ export default function TaiKhoan() {
     onSuccess: lamMoi,
     onError: (e) => setMaLoiBang(layMaLoi(e)),
   })
+
+  // Email của người đang chọn — quyết định có gửi thư được không. Lấy từ danh sách đã tải
+  // sẵn, không gọi thêm API.
+  const emailNguoiChon =
+    (nguoiDungs ?? []).find((n) => n.id === nguoiChon)?.email?.trim() || null
 
   const luaChonNguoi = (nguoiDungs ?? []).map((n) => ({
     giaTri: n.id,
@@ -572,15 +580,39 @@ export default function TaiKhoan() {
               </p>
             </div>
           ) : (
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={buocDoiMk}
-                onChange={(e) => setBuocDoiMk(e.target.checked)}
-                className="h-4 w-4 rounded border-input"
-              />
-              {t('taiKhoan.buocDoiMatKhau')}
-            </label>
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={buocDoiMk}
+                  onChange={(e) => setBuocDoiMk(e.target.checked)}
+                  className="h-4 w-4 rounded border-input"
+                />
+                {t('taiKhoan.buocDoiMatKhau')}
+              </label>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={guiEmail && !!emailNguoiChon}
+                    disabled={!emailNguoiChon}
+                    onChange={(e) => setGuiEmail(e.target.checked)}
+                    className="h-4 w-4 rounded border-input disabled:opacity-50"
+                  />
+                  <span className={emailNguoiChon ? undefined : 'text-muted-foreground'}>
+                    {t('taiKhoan.guiEmailThongBao')}
+                  </span>
+                </label>
+                {/* Hiện ĐỊA CHỈ sẽ nhận thư, không chỉ nói "sẽ gửi": mật khẩu tạm gửi nhầm
+                    chỗ là không thu hồi được, nên người bấm phải thấy nó đi đâu. */}
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {emailNguoiChon
+                    ? `${t('taiKhoan.guiEmailThongBaoMoTa')} → ${emailNguoiChon}`
+                    : t('taiKhoan.guiEmailCanHoSoCoEmail')}
+                </p>
+              </div>
+            </div>
           )}
 
           {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}

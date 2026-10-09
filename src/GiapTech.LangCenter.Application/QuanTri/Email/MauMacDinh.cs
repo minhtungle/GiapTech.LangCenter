@@ -32,8 +32,12 @@ public static class MauMacDinh
     public static readonly IReadOnlyDictionary<LoaiMauEmail, string[]> BienCuaLoai =
         new Dictionary<LoaiMauEmail, string[]>
         {
+            // Năm biến đầu là thông tin ĐĂNG NHẬP; bốn biến sau là HỒ SƠ đã khai hộ người
+            // được tạo (09/10/2026) — để họ soát lại và báo sai ngay, thay vì phát hiện sai
+            // số điện thoại vào lúc trung tâm cần gọi gấp.
             [LoaiMauEmail.ChaoMungHocVien] =
-                ["tenHocVien", "tenTrungTam", "maTrungTam", "tenDangNhap", "matKhauTam"],
+                ["tenHocVien", "tenTrungTam", "maTrungTam", "tenDangNhap", "matKhauTam",
+                 "vaiTro", "emailHoSo", "soDienThoai", "ngaySinh"],
             [LoaiMauEmail.TraLoiLienHe] =
                 ["tenKhach", "tenTrungTam", "hotline"],
             [LoaiMauEmail.NhacNoHocPhi] =
@@ -49,13 +53,21 @@ public static class MauMacDinh
             "Chào mừng bạn đến với {{tenTrungTam}}",
             """
             <p>Chào {{tenHocVien}},</p>
-            <p>Tài khoản học tập của bạn tại <strong>{{tenTrungTam}}</strong> đã sẵn sàng.</p>
+            <p>Tài khoản của bạn tại <strong>{{tenTrungTam}}</strong> đã sẵn sàng.</p>
             <p>
               Mã trung tâm: <strong>{{maTrungTam}}</strong><br>
               Tên đăng nhập: <strong>{{tenDangNhap}}</strong><br>
               Mật khẩu tạm: <strong>{{matKhauTam}}</strong>
             </p>
             <p>Bạn sẽ được yêu cầu đổi mật khẩu ở lần đăng nhập đầu tiên.</p>
+            <p>Hồ sơ chúng tôi đang lưu của bạn:</p>
+            <p>
+              Vai trò: {{vaiTro}}<br>
+              Email: {{emailHoSo}}<br>
+              Điện thoại: {{soDienThoai}}<br>
+              Ngày sinh: {{ngaySinh}}
+            </p>
+            <p>Nếu có thông tin nào chưa đúng, bạn báo lại giúp trung tâm nhé.</p>
             <p>Chúc bạn học tốt!</p>
             """),
 

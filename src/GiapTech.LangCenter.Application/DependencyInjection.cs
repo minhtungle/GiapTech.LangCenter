@@ -25,6 +25,10 @@ public static class DependencyInjection
         // `IAppDbContext`, không chạm hạ tầng ngoài nào.
         services.AddScoped<IMauEmail, DungMauEmail>();
 
+        // Thư chào mừng (09/10/2026). Cùng lý do đặt ở đây: chỉ đọc DbSet và hai interface
+        // đã đăng ký, không chạm hạ tầng ngoài nào.
+        services.AddScoped<IThuChaoMung, ThuChaoMung>();
+
         return services;
     }
 }

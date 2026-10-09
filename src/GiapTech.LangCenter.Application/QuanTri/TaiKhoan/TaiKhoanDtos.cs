@@ -106,7 +106,15 @@ public record TaoTaiKhoanCommand(
     /// Mặc định `null` để client cũ và `TenantSeeder` tạo `admin` không bị đổi tên ngoài ý
     /// muốn — trung tâm vừa đăng ký còn chưa khai đuôi nào.
     /// </summary>
-    int? DuoiSo = null) : IRequest<Guid>;
+    int? DuoiSo = null,
+    /// <summary>
+    /// Gửi email báo thông tin đăng nhập + hồ sơ cho chủ tài khoản (09/10/2026).
+    ///
+    /// Chỉ gửi được khi `NguoiDungId` có và hồ sơ người đó có email — tài khoản kỹ thuật
+    /// không gắn ai thì không có địa chỉ nào để gửi. Mặc định `false`, xem
+    /// <see cref="NguoiDung.TaiKhoanKemTheo.GuiEmailThongBao"/>.
+    /// </summary>
+    bool GuiEmailThongBao = false) : IRequest<Guid>;
 
 public class TaoTaiKhoanValidator : AbstractValidator<TaoTaiKhoanCommand>
 {
@@ -120,7 +128,8 @@ public class TaoTaiKhoanValidator : AbstractValidator<TaoTaiKhoanCommand>
 }
 
 public class TaoTaiKhoanHandler(
-    IAppDbContext db, IPasswordHasher hasher, ICurrentTenant currentTenant)
+    IAppDbContext db, IPasswordHasher hasher, ICurrentTenant currentTenant,
+    IThuChaoMung thuChaoMung)
     : IRequestHandler<TaoTaiKhoanCommand, Guid>
 {
     public async Task<Guid> Handle(TaoTaiKhoanCommand request, CancellationToken ct)
@@ -169,6 +178,11 @@ public class TaoTaiKhoanHandler(
         }
 
         await db.SaveChangesAsync(ct);
+
+        // SAU khi lưu, không bao giờ làm hỏng lệnh — xem `IThuChaoMung`.
+        if (request.GuiEmailThongBao && request.NguoiDungId is { } nguoiNhan)
+            await thuChaoMung.GuiAsync(nguoiNhan, username, request.MatKhau, ct);
+
         return taiKhoan.Id;
     }
 

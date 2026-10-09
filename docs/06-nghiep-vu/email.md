@@ -46,7 +46,7 @@ riêng. Thêm loại mà không có chỗ gọi thì đó là mẫu chết.
 
 | Mã | Khi nào gửi | Biến dùng được |
 |---|---|---|
-| `ChaoMungHocVien` | Cấp tài khoản cho học viên | `tenHocVien` · `tenTrungTam` · `maTrungTam` · `tenDangNhap` · `matKhauTam` |
+| `ChaoMungHocVien` | Tạo người dùng kèm tài khoản, hoặc cấp tài khoản cho người đã có hồ sơ — người tạo **tích chọn** mới gửi | `tenHocVien` · `tenTrungTam` · `maTrungTam` · `tenDangNhap` · `matKhauTam` · `vaiTro` · `emailHoSo` · `soDienThoai` · `ngaySinh` |
 | `TraLoiLienHe` | Khách điền form trang đích (FR-30) | `tenKhach` · `tenTrungTam` · `hotline` |
 | `NhacNoHocPhi` | *(cần job nền — đợt sau)* | `tenHocVien` · `tenLop` · `soTienConThieu` · `hanDong` |
 | `NhacLichHoc` | *(cần job nền — đợt sau)* | `tenHocVien` · `tenLop` · `thoiGian` · `phongHoc` · `tenGiaoVien` |
@@ -56,6 +56,33 @@ Người dùng vẫn soạn trước được; khi job nền xong thì chúng ch
 
 Đưa chúng vào danh mục ngay từ đầu chứ không đợi, vì thêm loại sau nghĩa là trung tâm phải
 quay lại soạn thêm — còn có sẵn thì họ soạn một lần.
+
+### Thư báo tài khoản khi tạo người dùng (09/10/2026)
+
+Hai đường tạo tài khoản đều gửi được, qua chung một service `IThuChaoMung`:
+
+- **Tạo người kèm tài khoản** — `POST /api/v1/nguoi-dung`, cờ `taiKhoan.guiEmailThongBao`;
+- **Cấp tài khoản cho người đã có hồ sơ** — `POST /api/v1/tai-khoan`, cờ `guiEmailThongBao`.
+
+Thư gồm **bộ ba đăng nhập** (mã trung tâm · tên đăng nhập · mật khẩu tạm) và **hồ sơ** đã khai
+hộ người đó, để họ soát lại và báo sai ngay — thay vì phát hiện sai số điện thoại vào lúc
+trung tâm cần gọi gấp.
+
+**Ba quyết định đáng biết:**
+
+1. **Mặc định TẮT.** Gửi email không rút lại được: mật khẩu tạm đã nằm trong hộp thư người ta.
+   Nên người tạo phải tích chọn; client cũ và `TenantSeeder` không vô tình gửi.
+2. **Gửi trong handler, không để gửi lại sau.** Thư mang mật khẩu dạng rõ, mà hệ thống chỉ lưu
+   hash — qua khỏi lệnh tạo là không ai đọc lại được. Muốn gửi lại thì phải đặt lại mật khẩu.
+3. **Lỗi gửi KHÔNG làm hỏng lệnh.** Người và tài khoản đã ghi xong; ném lỗi sẽ trả 500 cho một
+   lệnh đã thành công, và người tạo bấm Lưu lần nữa sẽ nhận `USERNAME_DA_TON_TAI` rồi tưởng
+   mình làm sai. Lỗi SMTP vào log. Cùng lựa chọn với `GuiLienHeHandler`.
+
+Hồ sơ không có email thì **không gửi và không báo lỗi** — ca thường gặp, không phải sự cố. Giao
+diện khoá sẵn ô tích và nói rõ vì sao, để người dùng không tưởng chức năng hỏng.
+
+Tên đăng nhập trong thư là tên **đã ghép đuôi**: trung tâm khai đuôi thì đăng nhập phải gõ đủ
+cả đuôi, gửi tên thô là gửi một tên không tồn tại. Canh bởi `ThuChaoMungTests`.
 
 ### Biến thay thế
 

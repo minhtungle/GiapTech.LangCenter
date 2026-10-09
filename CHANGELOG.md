@@ -8,6 +8,32 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Added — Thư báo tài khoản + hồ sơ khi tạo người dùng (09/10/2026)
+
+Tạo người dùng kèm tài khoản (`POST /nguoi-dung`) hoặc cấp tài khoản cho người đã có hồ sơ
+(`POST /tai-khoan`) nay **tích chọn được "gửi email báo thông tin"**. Thư dựng từ mẫu
+`ChaoMungHocVien` (FR-31) — mẫu đã có từ 30/09 nhưng tới nay chưa nơi nào gọi.
+
+Thư gồm bộ ba đăng nhập (mã trung tâm · tên đăng nhập · mật khẩu tạm) và hồ sơ đã khai hộ, để
+người nhận soát lại. Thêm 4 biến mẫu: `vaiTro` · `emailHoSo` · `soDienThoai` · `ngaySinh`.
+
+**Mặc định TẮT.** Gửi email không rút lại được — mật khẩu tạm đã nằm trong hộp thư người ta.
+Người tạo phải tích chọn; client cũ và `TenantSeeder` không vô tình gửi.
+
+**Gửi trong handler**, vì thư mang mật khẩu dạng rõ mà hệ thống chỉ lưu hash: qua khỏi lệnh
+tạo là không đọc lại được. **Lỗi gửi không làm hỏng lệnh** — người và tài khoản đã ghi xong,
+ném lỗi sẽ trả 500 cho một lệnh đã thành công rồi đẩy người tạo vào `USERNAME_DA_TON_TAI` khi
+họ thử lại.
+
+Hai đường tạo dùng chung service `IThuChaoMung` thay vì mỗi nơi tự ghép chuỗi — hai bản sẽ
+trôi khỏi nhau, sửa nội dung một chỗ thì chỗ kia vẫn gửi bản cũ.
+
+Hồ sơ không có email ⇒ không gửi, không báo lỗi; giao diện khoá sẵn ô tích và nói rõ vì sao.
+Tên đăng nhập trong thư là tên **đã ghép đuôi** — gửi tên thô là gửi một tên không tồn tại.
+
+5 test mới (`ThuChaoMungTests`), đã kiểm bằng đột biến: lật mặc định thành `true` và gửi tên
+thô đều làm test đỏ.
+
 ### Added — Thiết lập file: phôi .docx có biến, xuất bản in (09/10/2026)
 
 Màn **Thiết lập file** (`/quan-tri/phoi-tai-lieu`): tải phôi .docx lên, hệ thống đọc danh sách

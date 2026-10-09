@@ -849,6 +849,10 @@ const vi = {
     themTaiKhoan: 'Thêm tài khoản',
     suaTaiKhoan: 'Cập nhật tài khoản',
     buocDoiMatKhau: 'Bắt buộc đổi mật khẩu ở lần đăng nhập đầu',
+    guiEmailThongBao: 'Gửi email báo thông tin tài khoản và hồ sơ',
+    guiEmailThongBaoMoTa: 'Thư gồm mã trung tâm, tên đăng nhập, mật khẩu tạm và hồ sơ đã khai.',
+    guiEmailCanEmail: 'Điền email ở phần thông tin chung để gửi được thư.',
+    guiEmailCanHoSoCoEmail: 'Hồ sơ người được chọn chưa có email nên không gửi được.',
     phaiDoiMatKhau: 'Cần đổi mật khẩu',
     // Khoá theo TÊN ENUM để t(`taiKhoan.${trangThai}`) tra thẳng được.
     hoiXoa:

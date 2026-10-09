@@ -54,7 +54,7 @@ LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 | **Nhận diện tenant qua domain** (ADR-0008): hai đường vào — domain riêng ẩn ô mã, hoặc mã trung tâm | |
 | **Site chủ hệ thống** (ADR-0009) đủ backend + UI: `/chu` — tạo trung tâm · gắn domain · đóng nợ N3 | |
 | **FR-30 LDP**: soạn nội dung 7 khối · xuất bản · trang công khai `/t/{mã}` · form liên hệ → CRM | |
-| **FR-31 Email**: SMTP riêng từng trung tâm (mật khẩu mã hoá AES-GCM) · 4 mẫu nội dung soạn bằng Tiptap | **Thư chào mừng học viên** — cần đổi luồng tạo tài khoản trước |
+| **FR-31 Email**: SMTP riêng từng trung tâm (mật khẩu mã hoá AES-GCM) · 4 mẫu nội dung soạn bằng Tiptap · **thư báo tài khoản + hồ sơ khi tạo người dùng** (09/10) | |
 
 Chi tiết và nợ kỹ thuật: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-quan/ke-hoach.md).
 

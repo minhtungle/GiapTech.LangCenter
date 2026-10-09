@@ -3,6 +3,7 @@ using GiapTech.LangCenter.Application.Common;
 using GiapTech.LangCenter.Application.Common.Exceptions;
 using GiapTech.LangCenter.Application.Common.Interfaces;
 using GiapTech.LangCenter.Application.Common.Models;
+using GiapTech.LangCenter.Domain.Entities;
 using GiapTech.LangCenter.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -256,7 +257,19 @@ public class LayDanhSachNguoiDungHandler(IAppDbContext db, IPhamViLopHoc phamVi)
 public record TaiKhoanKemTheo(
     string Username, string MatKhau, List<Guid> QuyenIds, bool PhaiDoiMatKhau = true,
     /// <summary>Đuôi tên đăng nhập chọn (1-3), null = không nối — xem `DuoiTenDangNhapHelper`.</summary>
-    int? DuoiSo = null);
+    int? DuoiSo = null,
+    /// <summary>
+    /// Gửi email báo thông tin đăng nhập + hồ sơ cho người vừa được tạo (09/10/2026, mẫu
+    /// `ChaoMungHocVien` của FR-31).
+    ///
+    /// **Mặc định `false`.** Gửi email là hành động ra ngoài hệ thống và không rút lại được —
+    /// mật khẩu tạm đã nằm trong hộp thư người ta rồi. Nên nó phải do người tạo tích chọn,
+    /// không mặc định bật cho client cũ và `TenantSeeder`.
+    ///
+    /// Bật mà hồ sơ không có email thì **không phải lỗi**: lệnh vẫn tạo người và tài khoản,
+    /// chỉ không gửi gì. Ném lỗi ở đây sẽ huỷ cả tài khoản vì một thứ phụ.
+    /// </summary>
+    bool GuiEmailThongBao = false);
 
 public record TaoNguoiDungCommand(
     string HoTen, string? Email, string? SoDienThoai, string? DiaChi,
@@ -320,7 +333,8 @@ public class TaoNguoiDungValidator : AbstractValidator<TaoNguoiDungCommand>
 }
 
 public class TaoNguoiDungHandler(
-    IAppDbContext db, IPasswordHasher hasher, ICurrentTenant currentTenant)
+    IAppDbContext db, IPasswordHasher hasher, ICurrentTenant currentTenant,
+    IThuChaoMung thuChaoMung)
     : IRequestHandler<TaoNguoiDungCommand, Guid>
 {
     /// <summary>
@@ -380,10 +394,14 @@ public class TaoNguoiDungHandler(
 
         await NoiKhachHang(db, nd.Id, request.KhachHangId, ct);
 
+        // Khai ngoài khối: thư chào mừng gửi SAU `SaveChanges` cần đúng tên đã ghép đuôi,
+        // không phải tên thô người tạo gõ.
+        string? usernameDaGhep = null;
+
         if (request.TaiKhoan is { } tk)
         {
             // Ghép TRƯỚC khi kiểm trùng — cùng lý do với `TaoTaiKhoanHandler`.
-            var username = await TaiKhoan.DuoiTenDangNhapHelper.GhepAsync(
+            var username = usernameDaGhep = await TaiKhoan.DuoiTenDangNhapHelper.GhepAsync(
                 db, currentTenant.TenantId, tk.Username, tk.DuoiSo, ct);
 
             if (await db.TaiKhoans.AnyAsync(u => u.Username == username, ct))
@@ -412,6 +430,11 @@ public class TaoNguoiDungHandler(
 
         // Một SaveChanges duy nhất: người và tài khoản cùng sống hoặc cùng không.
         await db.SaveChangesAsync(ct);
+
+        // SAU khi lưu, không bao giờ làm hỏng lệnh — xem `IThuChaoMung`.
+        if (request.TaiKhoan is { GuiEmailThongBao: true } tkGui)
+            await thuChaoMung.GuiAsync(nd.Id, usernameDaGhep!, tkGui.MatKhau, ct);
+
         return nd.Id;
     }
 

@@ -193,6 +193,10 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
   const [taoTaiKhoan, setTaoTaiKhoan] = useState(false)
   const [quyenChon, setQuyenChon] = useState<string[]>([])
   const [buocDoiMk, setBuocDoiMk] = useState(true)
+  const [guiEmail, setGuiEmail] = useState(false)
+  // Theo dõi ô email để biết có gửi thư được không. Ô email là uncontrolled
+  // (`defaultValue`), nên phải nghe `onChange` chứ không đọc được từ state nào sẵn có.
+  const [coEmail, setCoEmail] = useState(false)
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
   /** Phòng ban đang chọn trên form (FR-22) — null = chưa xếp vào cơ cấu. */
@@ -355,6 +359,9 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
             matKhau: String(fd.get('matKhau')),
             quyenIds: quyenChon,
             phaiDoiMatKhau: buocDoiMk,
+            // Chỉ gửi khi CÓ email thật: tích chọn rồi xoá ô email đi thì cờ phải tắt theo,
+            // không để backend nhận `true` rồi im lặng không gửi gì.
+            guiEmailThongBao: guiEmail && coEmail,
           }
         }
         await api.post(phamVi.duong, than)
@@ -697,7 +704,13 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
             </div>
             <div>
               <Label htmlFor="email">{t('taiKhoan.email')}</Label>
-              <Input id="email" name="email" type="email" defaultValue={dangSua?.email ?? ''} />
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                defaultValue={dangSua?.email ?? ''}
+                onChange={(e) => setCoEmail(!!e.target.value.trim())}
+              />
             </div>
             {dangSua && (
               <div>
@@ -972,6 +985,28 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
                     />
                     {t('taiKhoan.buocDoiMatKhau')}
                   </label>
+
+                  <div className="sm:col-span-2">
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={guiEmail && coEmail}
+                        disabled={!coEmail}
+                        onChange={(e) => setGuiEmail(e.target.checked)}
+                        className="h-4 w-4 rounded border-input disabled:opacity-50"
+                      />
+                      <span className={coEmail ? undefined : 'text-muted-foreground'}>
+                        {t('taiKhoan.guiEmailThongBao')}
+                      </span>
+                    </label>
+                    {/* Nói rõ VÌ SAO ô bị khoá — ô xám không giải thích thì người dùng tưởng
+                        chức năng hỏng, thay vì biết mình cần điền email ở trên. */}
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {coEmail
+                        ? t('taiKhoan.guiEmailThongBaoMoTa')
+                        : t('taiKhoan.guiEmailCanEmail')}
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">

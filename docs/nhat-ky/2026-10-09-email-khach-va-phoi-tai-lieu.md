@@ -105,6 +105,47 @@ Bài học: đo trước, đừng sửa theo giả thuyết đầu tiên nghe h�
 Đăng nhập thất bại, tôi tưởng API trỏ nhầm DB. Truy ra: chính tôi đã đổi đuôi cho cả 174 tài
 khoản khi nạp dữ liệu VIETGEN — tên đúng là `admin@vietgeneducation.edu.vn`.
 
+## Thư báo tài khoản khi tạo người dùng
+
+Mẫu `ChaoMungHocVien` có từ 30/09 nhưng **chưa nơi nào gọi** — enum ghi "đã có chỗ gọi" và
+`TuGuiDuoc()` trả `true`, tức giao diện vẫn nói với người dùng là mẫu này tự gửi. Nay nối thật.
+
+### Mặc định TẮT, và vì sao điều đó quan trọng hơn vẻ ngoài của nó
+
+Gửi email là hành động **không rút lại được**: mật khẩu tạm đã nằm trong hộp thư người ta rồi.
+Nên ô tích mặc định không chọn, và cờ ở DTO mặc định `false` — client cũ với `TenantSeeder`
+tạo `admin` không vô tình gửi thư cho ai.
+
+Test canh điều này (`Khong_tich_chon_thi_khong_gui_du_co_email`) là test quan trọng nhất của
+đợt. Kiểm bằng đột biến: lật mặc định thành `true` ⇒ đỏ đúng test đó.
+
+### Vì sao gửi trong handler chứ không làm nút "gửi lại"
+
+Thư mang **mật khẩu dạng rõ**, mà hệ thống chỉ lưu hash. Qua khỏi lệnh tạo là không ai đọc lại
+được nữa — muốn gửi lại thì phải đặt lại mật khẩu trước. Nên hoặc gửi ngay trong handler, hoặc
+không gửi được.
+
+### Lỗi gửi không được làm hỏng lệnh
+
+Người và tài khoản đã `SaveChanges` xong. Ném lỗi ở đây trả 500 cho một lệnh **đã thành công**,
+và người tạo sẽ bấm Lưu lần nữa — lần này nhận `USERNAME_DA_TON_TAI` và tưởng mình làm sai gì
+đó. Nuốt lỗi, ghi log. Cùng lựa chọn với `GuiLienHeHandler`, cùng lý do.
+
+### Một service chung cho hai đường tạo
+
+Có hai đường: tạo người kèm tài khoản, và cấp tài khoản cho người đã có hồ sơ. Viết logic hai
+lần thì hai bản sẽ trôi khỏi nhau — sửa nội dung thư ở một chỗ, chỗ kia vẫn gửi bản cũ mà
+không ai biết. Nên tách `IThuChaoMung`, cùng lý do `IMauEmail` đã nêu cho chính nó.
+
+Lần đầu tôi viết thẳng vào `TaoNguoiDungHandler` rồi mới nhận ra đường thứ hai cũng cần — gỡ
+ra thành service trước khi commit.
+
+### Tên đăng nhập trong thư phải là tên ĐÃ GHÉP ĐUÔI
+
+Trung tâm khai đuôi thì DB lưu `ten@duoi` và đăng nhập phải gõ đủ. Gửi tên thô là gửi một tên
+đăng nhập **không tồn tại**: người nhận thử mãi không vào được, không hiểu vì sao, và không ai
+nghĩ ra để kiểm tra lá thư. Đột biến kiểm: đổi sang gửi `request.TaiKhoan.Username` ⇒ đỏ.
+
 ## Việc kế tiếp
 
 - Gửi mail HÀNG LOẠT từ màn danh sách khách: backend đã nhận `khachHangIds` nhiều phần tử

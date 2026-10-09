@@ -42,6 +42,9 @@ public class DanhSachMauEmailHandler(IAppDbContext db)
     /// `NhacNoHocPhi` và `NhacLichHoc` cần job nền chạy theo lịch — hệ thống chưa có. Giao
     /// diện phải nói rõ điều đó, nếu không trung tâm soạn xong rồi ngồi đợi một email không
     /// bao giờ tới.
+    ///
+    /// `ChaoMungHocVien` nối thật 09/10/2026 (`IThuChaoMung`). Trước đó cờ này đã trả `true`
+    /// trong khi không nơi nào gọi — giao diện nói mẫu tự gửi mà thực tế không.
     /// </summary>
     private static bool TuGuiDuoc(LoaiMauEmail loai) =>
         loai is LoaiMauEmail.ChaoMungHocVien or LoaiMauEmail.TraLoiLienHe;
