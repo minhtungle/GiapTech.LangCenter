@@ -14,6 +14,9 @@ import { PhanTrang } from '@/components/ui/PhanTrang'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 import type { NguoiDungDto } from './NguoiDung'
+import {
+  KHONG_NOI_DUOI, duoiDaKhaiCua, useThietLapTaoTaiKhoan,
+} from '@/lib/taoTaiKhoan'
 
 interface TaiKhoanDto {
   id: string
@@ -37,14 +40,6 @@ interface QuyenNgan {
  * Chỉ thông tin để vào hệ thống. Họ tên, ngày sinh, hồ sơ vai trò nằm ở tab Người dùng —
  * tách từ 07/09/2026 để vô hiệu hoá tài khoản không đụng tới dữ liệu người dùng.
  */
-/**
- * Giá trị của mục "không nối đuôi" trong ô chọn.
- *
- * Chuỗi chứ không `''`: `SelectTimKiem` coi chuỗi rỗng là "chưa chọn gì" và sẽ hiện
- * placeholder, nên người dùng không thấy mình đã chủ động chọn không nối.
- */
-const KHONG_NOI_DUOI = 'khong-noi'
-
 export default function TaiKhoan() {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -102,36 +97,9 @@ export default function TaiKhoan() {
     queryFn: async () => (await api.get<QuyenNgan[]>('/quyen')).data,
   })
 
-  /**
-   * Thiết lập trung tâm — chỉ cần ba đuôi để dựng ô chọn.
-   *
-   * Dùng CHUNG `queryKey` với màn Thiết lập: hai màn đọc một endpoint, khoá khác nhau thì
-   * đổi đuôi ở Thiết lập xong sang đây vẫn thấy giá trị cũ cho tới khi tải lại trang.
-   */
-  const { data: thietLap } = useQuery({
-    queryKey: ['thiet-lap'],
-    queryFn: async () =>
-      (await api.get<{
-        duoiTenDangNhap: string | null
-        duoiTenDangNhap2: string | null
-        duoiTenDangNhap3: string | null
-        matKhauMacDinh: string | null
-      }>('/thiet-lap')).data,
-  })
-
-  /**
-   * Các đuôi trung tâm ĐÃ khai, kèm số thứ tự gốc.
-   *
-   * Giữ số gốc chứ không đánh lại từ 1: backend chọn cột theo số này, nên khai ô 1 và ô 3 mà
-   * đánh lại thành 1-2 sẽ nối nhầm đuôi — và nhầm im lặng, không lỗi nào báo.
-   */
-  const duoiDaKhai = [
-    thietLap?.duoiTenDangNhap,
-    thietLap?.duoiTenDangNhap2,
-    thietLap?.duoiTenDangNhap3,
-  ]
-    .map((duoi, i) => ({ so: i + 1, duoi }))
-    .filter((x): x is { so: number; duoi: string } => !!x.duoi)
+  // Thiết lập trung tâm (đuôi + mật khẩu mặc định) — dùng chung với màn Người dùng.
+  const { data: thietLap } = useThietLapTaoTaiKhoan()
+  const duoiDaKhai = duoiDaKhaiCua(thietLap)
 
   /**
    * Người dùng để gán tài khoản — lấy nhiều để đủ chọn; danh sách này cũng dùng ở màn Lớp học.

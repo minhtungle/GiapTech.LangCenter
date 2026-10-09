@@ -14,6 +14,9 @@ import { Modal, ModalChan } from '@/components/ui/Modal'
 import { PhanTrang } from '@/components/ui/PhanTrang'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
+import {
+  KHONG_NOI_DUOI, duoiDaKhaiCua, useThietLapTaoTaiKhoan,
+} from '@/lib/taoTaiKhoan'
 
 /** FR-22 — một node của cây cơ cấu tổ chức. */
 /** Tag vai trò phòng ban — khớp `TagVaiTroPhongBan` ở backend. */
@@ -193,6 +196,7 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
   const [taoTaiKhoan, setTaoTaiKhoan] = useState(false)
   const [quyenChon, setQuyenChon] = useState<string[]>([])
   const [buocDoiMk, setBuocDoiMk] = useState(true)
+  const [duoiSo, setDuoiSo] = useState<number | null>(1)
   const [guiEmail, setGuiEmail] = useState(false)
   // Theo dõi ô email để biết có gửi thư được không. Ô email là uncontrolled
   // (`defaultValue`), nên phải nghe `onChange` chứ không đọc được từ state nào sẵn có.
@@ -232,6 +236,11 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
     queryKey: ['quyen'],
     queryFn: async () => (await api.get<QuyenNgan[]>('/quyen')).data,
   })
+
+  // Đuôi tên đăng nhập + mật khẩu mặc định — cùng nguồn với màn Tài khoản, để hai màn tạo
+  // tài khoản không hành xử khác nhau (sửa 09/10/2026: màn này trước đó thiếu cả hai).
+  const { data: thietLap } = useThietLapTaoTaiKhoan()
+  const duoiDaKhai = duoiDaKhaiCua(thietLap)
 
   /**
    * Cây phòng ban, làm phẳng để đưa vào select (FR-22).
@@ -359,6 +368,7 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
             matKhau: String(fd.get('matKhau')),
             quyenIds: quyenChon,
             phaiDoiMatKhau: buocDoiMk,
+            duoiSo,
             // Chỉ gửi khi CÓ email thật: tích chọn rồi xoá ô email đi thì cờ phải tắt theo,
             // không để backend nhận `true` rồi im lặng không gửi gì.
             guiEmailThongBao: guiEmail && coEmail,
@@ -956,16 +966,58 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
                   <div>
                     <Label htmlFor="username">{t('taiKhoan.username')} *</Label>
                     <Input id="username" name="username" required={taoTaiKhoan} />
+                    {/* Chỉ hiện khi trung tâm đã khai ít nhất một đuôi ở Thiết lập chung —
+                        không khai thì ô này vô nghĩa và chỉ làm form rối. */}
+                    {duoiDaKhai.length > 0 && (
+                      <div className="mt-1.5">
+                        <Label htmlFor="duoiSo">{t('taiKhoan.duoiTenDangNhap')}</Label>
+                        <SelectTimKiem
+                          id="duoiSo"
+                          luaChon={[
+                            ...duoiDaKhai.map((x) => ({ giaTri: String(x.so), nhan: x.duoi })),
+                            // Mục "không nối" nằm trong CÙNG ô chọn chứ không là ô tick
+                            // riêng: chỉ có một quyết định ở đây, nên một chỗ để quyết.
+                            { giaTri: KHONG_NOI_DUOI, nhan: t('taiKhoan.khongNoiDuoi') },
+                          ]}
+                          giaTri={duoiSo === null ? KHONG_NOI_DUOI : String(duoiSo)}
+                          onDoi={(v) =>
+                            setDuoiSo(v === KHONG_NOI_DUOI || !v ? null : Number(v))
+                          }
+                          choPhepXoa={false}
+                        />
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {t('taiKhoan.noiDuoiGoiY')}
+                        </p>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="matKhau">{t('taiKhoan.matKhau')} *</Label>
+                    {/*
+                      Điền sẵn mật khẩu mặc định của trung tâm, vẫn sửa được.
+
+                      `key` buộc React dựng lại ô khi mật khẩu mặc định tải xong:
+                      `defaultValue` chỉ đọc ở lần dựng đầu, mà query `/thiet-lap` thường về
+                      SAU khi form đã mở — không có `key` thì ô mãi trống dù đã khai mặc định.
+
+                      `type="text"` khi có mặc định: người tạo cần ĐỌC được mật khẩu để đọc
+                      cho người dùng mới. Che đi thì họ phải sang màn Thiết lập xem lại.
+                    */}
                     <Input
+                      key={thietLap?.matKhauMacDinh ?? 'trong'}
                       id="matKhau"
                       name="matKhau"
-                      type="password"
+                      type={thietLap?.matKhauMacDinh ? 'text' : 'password'}
+                      defaultValue={thietLap?.matKhauMacDinh ?? ''}
                       minLength={DO_DAI_MAT_KHAU_TOI_THIEU}
+                      autoComplete="off"
                       required={taoTaiKhoan}
                     />
+                    {thietLap?.matKhauMacDinh && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {t('taiKhoan.dungMatKhauMacDinh')}
+                      </p>
+                    )}
                   </div>
                   <div className="sm:col-span-2">
                     <Label htmlFor="quyenIds">{t('taiKhoan.quyen')}</Label>
