@@ -60,6 +60,35 @@ Chi tiết và nợ kỹ thuật: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong
 
 ---
 
+## 1b. Làm việc cho nhanh và rẻ
+
+> Thêm 09/10/2026 sau khi chủ sản phẩm nhận xét phiên làm việc dài và tốn hơn bình thường.
+> Đo đạc ở mục [Chạy test cho rẻ](#chạy-test-cho-rẻ).
+
+**Bộ test đầy đủ tốn ~3 phút, build chỉ 6 giây.** Chạy `dotnet test` sau mỗi lần sửa là cách
+đốt thời gian nhanh nhất. Thứ tự đúng: `dotnet build` → test của tầng vừa sửa → bộ đầy đủ
+**một lần** trước khi commit.
+
+**Hỏi gộp, đừng hỏi lắt nhắt.** Một lần `AskUserQuestion` với 2–4 câu rẻ hơn nhiều so với bốn
+lượt hỏi–đáp, và chủ sản phẩm thấy được toàn cảnh quyết định thay vì từng mảnh.
+
+**Đọc có mục tiêu.** `grep -n` vào đúng ký hiệu cần tìm rồi `sed -n 'a,bp'` đoạn quanh nó, thay
+vì `Read` cả file 1.800 dòng. Biết tên hàm thì tra thẳng, đừng duyệt thư mục.
+
+**Chụp màn khi nó trả lời được câu mà test không trả lời được** — bố cục, màu, thứ tự hiển
+thị. Ba lỗi thật tìm ra nhờ chụp màn (xem nhật ký 09/10): `display: contents` ghi đè `hidden`,
+giao diện hứa giữ `{{key}}` nhưng gửi `""`, emoji hiện thành ô vuông. Nhưng chụp lại sau mỗi
+thay đổi nhỏ thì chỉ tốn thời gian — một lần ở cuối là đủ.
+
+**Sửa theo phép đo, đừng theo giả thuyết đầu tiên.** Lỗi nhấp nháy bộ chuyển hệ thống con:
+chẩn đoán đầu nghe rất hợp lý (object mới mỗi render), sửa xong **vẫn hỏng**, sửa lần hai vẫn
+hỏng. Chỉ khi lấy stack trace mới ra thủ phạm thật. Hai lần sửa mò đó tốn hơn một lần đo.
+
+**Dọn ngay sau khi thử.** File tạm trong `/tmp/claude-501` và script `.mjs` trong `frontend/`
+phải xoá khi xong — không thì lần commit sau phải lọc chúng ra khỏi `git add`.
+
+---
+
 ## 2. Mười một quy tắc bất di bất dịch
 
 1. **Cập nhật hệ thống KHÔNG được ảnh hưởng dữ liệu hiện có.** Nếu một thay đổi bắt buộc phải
@@ -271,7 +300,9 @@ Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 
 ```bash
 # --- Backend ---
-dotnet build          # 0 warning — TreatWarningsAsErrors đang bật
+dotnet build          # 0 warning — TreatWarningsAsErrors đang bật  (~6 giây)
+
+# BỘ TEST ĐẦY ĐỦ TỐN ~3 PHÚT. Đừng chạy nó sau mỗi lần sửa — xem "Chạy test cho rẻ" dưới.
 dotnet test           # 762 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
                       #           quản trị, lớp học, điểm danh, học liệu, học phí
 
@@ -370,6 +401,32 @@ Mọi nick dùng chung mật khẩu **`123456`** (đồng bộ 16/09/2026, xem s
 `hv1` là học viên **duy nhất** có tài khoản **và** đang trong lớp — dùng nó để thử luồng học viên
 (tự điểm danh, nhận xét buổi học, chấm tiêu chí giảng dạy). 49 học viên còn lại là dữ liệu demo,
 chưa có tài khoản.
+
+### Chạy test cho rẻ
+
+Đo 09/10/2026 trên máy 8 nhân:
+
+| Lệnh | Thời gian | Khi nào dùng |
+|---|---|---|
+| `dotnet build` | ~6 giây | Sau **mỗi** lần sửa code |
+| `dotnet test tests/GiapTech.LangCenter.Application.UnitTests` | ~9 giây | Sau khi sửa `Domain`/`Application`; gồm cả 7 test kiến trúc |
+| `dotnet test --filter "FullyQualifiedName~TenTest"` | 10–25 giây | Khi đang sửa đúng một chỗ |
+| `dotnet test` (đầy đủ) | **~3 phút** | **Chỉ trước khi commit** |
+
+**Vì sao integration chậm:** 54 class test, mỗi class dựng **một host ASP.NET riêng** (DI +
+seed DB in-memory). Cách ly đó là chủ ý — mỗi factory một DB theo GUID, nên test này không
+ảnh hưởng test kia. Giá phải trả là 54 lần khởi động.
+
+**Đã thử `xunit.runner.json` với `maxParallelThreads: 8` và GỠ ĐI.** Đo ba lần: 201s · 192s
+có cấu hình, 196s không có — nằm trong nhiễu. Con số "nhanh hơn 24%" ở lần đo đầu là do cache
+build lạnh, không phải do cấu hình. xUnit vốn đã chạy song song giữa các collection, mà mỗi
+class là một collection, nên không còn gì để song song thêm.
+
+Muốn nhanh hơn thật thì phải **gộp host** bằng `[CollectionDefinition]` — nhưng lúc đó các
+class dùng chung DB in-memory, và đó là đánh đổi về cách ly test, phải hỏi chủ sản phẩm trước.
+
+**Kiểm tra rẻ, chạy thoải mái:** `check-nhan-phan-quyen.py` (0,1s) · `check-i18n-keys.py`
+(1s) · `check-token-mau.py` và `check-doc-links.py` (~3s) · `npx tsc -b --noEmit` (13s).
 
 ### Thêm migration
 
