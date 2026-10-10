@@ -13,6 +13,7 @@
 | Runbook xử lý sự cố (VPS down, DB đầy, restore) | [runbook.md](runbook.md) |
 | **Chuyển dữ liệu VIETGEN Academy** từ hệ cũ sang (checklist + quay lui) | [chuyen-du-lieu-vietgen.md](chuyen-du-lieu-vietgen.md) |
 | Prompt giao cho Claude trên VPS để **chuyển dữ liệu** (copy & dán) | [prompt-chuyen-du-lieu-vietgen.md](prompt-chuyen-du-lieu-vietgen.md) |
+| Prompt giao cho Claude trên VPS để **gắn hộp thư** (copy & dán) | [prompt-gan-email-vps.md](prompt-gan-email-vps.md) |
 
 ## Sơ đồ triển khai
 
