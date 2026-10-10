@@ -31,6 +31,8 @@ services:
       SAU_REVERSE_PROXY: "true"
       # Domain cổng chung phục vụ mọi trung tâm qua mã trung tâm — xem bien-moi-truong.md
       DOMAIN_CONG_CHUNG: ${DOMAIN_CONG_CHUNG:-}
+      # Link trong email (thư chào mừng) — .env.example đã khai nhưng compose chưa truyền vào
+      APP_BASE_URL: ${APP_BASE_URL:-}
       # Host là TÊN SERVICE trong network nội bộ, không phải localhost.
       ConnectionStrings__Default: >-
         Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
