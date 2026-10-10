@@ -351,14 +351,14 @@ export default function KhachHang() {
               <Table>
                 <thead>
                   <tr>
-                    <Th>{t('khachHang.hoTen')}</Th>
+                    <Th dinh="dau">{t('khachHang.hoTen')}</Th>
                     <Th>{t('khachHang.lienHe')}</Th>
                     <Th>{t('khachHang.phuTrach')}</Th>
                     <Th>{t('khachHang.phuongThuc')}</Th>
                     <Th className="text-right">{t('khachHang.soKhoa')}</Th>
                     <Th className="text-right">{t('khachHang.tongMua')}</Th>
                     <Th>{t('khachHang.hocVien')}</Th>
-                    <Th />
+                    <Th dinh="cuoi" />
                   </tr>
                 </thead>
                 <tbody>
@@ -368,7 +368,7 @@ export default function KhachHang() {
                       className="cursor-pointer hover:bg-muted/40"
                       onClick={() => navigate(`/crm/khach-hang/${k.id}`)}
                     >
-                      <Td>
+                      <Td dinh="dau">
                         <div className="font-medium">{k.hoTen}</div>
                         {k.ghiChu && (
                           <div
@@ -434,7 +434,7 @@ export default function KhachHang() {
                         )}
                       </Td>
                       {/* Chặn nổi bọt: bấm menu không được đồng thời mở view chi tiết. */}
-                      <Td onClick={(e) => e.stopPropagation()}>
+                      <Td dinh="cuoi" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end">
                           <MenuThaoTac
                             nhanMo={t('chung.thaoTac')}

@@ -546,13 +546,13 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
           <Table>
             <thead>
               <tr>
-                <Th>{t('taiKhoan.hoTen')}</Th>
+                <Th dinh="dau">{t('taiKhoan.hoTen')}</Th>
                 <Th>{t('taiKhoan.loaiNguoiDung')}</Th>
                 <Th>{t('nguoiDung.hoSo')}</Th>
                 <Th>{t('taiKhoan.email')}</Th>
                 <Th>{t('nguoiDung.taiKhoan')}</Th>
                 <Th>{t('nguoiDung.trangThaiNhanSu')}</Th>
-                <Th />
+                <Th dinh="cuoi" />
               </tr>
             </thead>
             <tbody>
@@ -567,7 +567,7 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
                   }
                   className={phamVi.duongChiTiet ? 'cursor-pointer hover:bg-muted/40' : undefined}
                 >
-                  <Td className="font-medium">{u.hoTen}</Td>
+                  <Td dinh="dau" className="font-medium">{u.hoTen}</Td>
                   <Td>{t(`loaiNguoiDung.${u.loaiNguoiDung}`)}</Td>
                   <Td className="text-muted-foreground">
                     {laGiaoVien(u.loaiNguoiDung)
@@ -594,7 +594,7 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
                       {t(`nguoiDung.${u.trangThaiNhanSu}`)}
                     </Badge>
                   </Td>
-                  <Td>
+                  <Td dinh="cuoi">
                     {/* Chặn nổi bọt: bấm "Sửa"/"Xoá" trong dòng bấm-được sẽ vừa mở modal vừa
                         điều hướng sang view chi tiết. */}
                     <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>

@@ -161,20 +161,20 @@ export default function SanPham() {
               <Table>
                 <thead>
                   <tr>
-                    <Th>{t('sanPham.tenSp')}</Th>
+                    <Th dinh="dau">{t('sanPham.tenSp')}</Th>
                     <Th className="text-right">{t('sanPham.giaTien')}</Th>
                     <Th>{t('sanPham.donViTinh')}</Th>
                     <Th className="text-right">{t('sanPham.soDonHang')}</Th>
                     <Th className="text-right">{t('sanPham.tongSoLuongBan')}</Th>
                     <Th>{t('sanPham.trangThaiBan')}</Th>
                     <Th>{t('chung.ghiChu')}</Th>
-                    <Th />
+                    <Th dinh="cuoi" />
                   </tr>
                 </thead>
                 <tbody>
                   {kq.duLieu.map((k) => (
                     <tr key={k.id} className="hover:bg-muted/40">
-                      <Td className="font-medium">{k.ten}</Td>
+                      <Td dinh="dau" className="font-medium">{k.ten}</Td>
                       <Td className="text-right">{tien(k.giaTien, k.donViTien)}</Td>
                       <Td className="text-muted-foreground">{k.donViTinh ?? '—'}</Td>
                       <Td className="text-right text-muted-foreground">{k.soDonHang}</Td>
@@ -187,7 +187,7 @@ export default function SanPham() {
                       <Td className="max-w-xs truncate text-muted-foreground" title={k.ghiChu ?? ''}>
                         {k.ghiChu || '—'}
                       </Td>
-                      <Td>
+                      <Td dinh="cuoi">
                         <div className="flex justify-end">
                           <MenuThaoTac
                             nhanMo={t('chung.thaoTac')}

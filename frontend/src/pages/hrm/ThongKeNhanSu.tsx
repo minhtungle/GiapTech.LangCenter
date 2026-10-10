@@ -225,7 +225,7 @@ export default function ThongKeNhanSu() {
                 <Table>
                   <thead>
                     <tr>
-                      <Th>{t('thongKeNs.hoTen')}</Th>
+                      <Th dinh="dau">{t('thongKeNs.hoTen')}</Th>
                       <Th>{t('crmLoc.doiNhom')}</Th>
                       <Th className="text-right">{t('thongKe.tongDoanhThu')}</Th>
                       <Th className="text-right">{t('thongKe.soDon')}</Th>
@@ -237,7 +237,7 @@ export default function ThongKeNhanSu() {
                   <tbody>
                     {tk.kinhDoanh.map((nv) => (
                       <tr key={nv.id} className="hover:bg-muted/40">
-                        <Td className="font-medium">{nv.hoTen}</Td>
+                        <Td dinh="dau" className="font-medium">{nv.hoTen}</Td>
                         <Td className="text-muted-foreground">{nv.tenPhongBan ?? '—'}</Td>
                         <Td className="text-right font-medium">{tienGon(nv.doanhThu)}</Td>
                         <Td className="text-right">{nv.soDon}</Td>

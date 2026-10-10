@@ -319,19 +319,19 @@ export default function LopHoc() {
               <Table>
                 <thead>
                   <tr>
-                    <Th>{t('lopHoc.ten')}</Th>
+                    <Th dinh="dau">{t('lopHoc.ten')}</Th>
                     <Th>{t('lopHoc.giaoVienChinh')}</Th>
                     <Th>{t('lopHoc.hinhThuc')}</Th>
                     <Th>{t('lopHoc.soHocVien')}</Th>
                     <Th>{t('lopHoc.ngayKhaiGiang')}</Th>
                     <Th>{t('lopHoc.trangThai')}</Th>
-                    <Th className="w-40" />
+                    <Th dinh="cuoi" className="w-40" />
                   </tr>
                 </thead>
                 <tbody>
                   {data.map((l) => (
                     <tr key={l.id} className="hover:bg-muted/40">
-                      <Td className="font-medium">
+                      <Td dinh="dau" className="font-medium">
                         {/* Bấm thẳng tên lớp là thao tác tự nhiên nhất — menu chỉ để dành
                             cho những việc không đoán được. */}
                         <Link
@@ -355,7 +355,7 @@ export default function LopHoc() {
                           {t(`trangThaiLopHoc.${l.trangThai}`)}
                         </Badge>
                       </Td>
-                      <Td>
+                      <Td dinh="cuoi">
                         <div className="flex justify-end">
                           <MenuThaoTac
                             nhanMo={t('chung.thaoTac')}

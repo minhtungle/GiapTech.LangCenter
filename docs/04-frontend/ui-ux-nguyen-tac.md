@@ -142,6 +142,47 @@ thêm mới sau đó sẽ thấy sẵn lỗi của thao tác trước, không li
 Tách `maLoi` (lỗi trong form) và `maLoiTrang` (lỗi thao tác trên trang), và dọn `maLoiTrang`
 mỗi khi mở form.
 
+### Bảng rộng: cuộn ngang thay vì bóp cột (10/10/2026)
+
+Trước đó `Table` chỉ có `w-full`, nên bảng **luôn vừa khung** — và `overflow-x-auto` sẵn có
+không bao giờ kích hoạt. Thay vào đó cột tự bóp, chữ xuống dòng.
+
+Đo màn Doanh thu (10 cột) ở ba bề rộng:
+
+| Bề rộng | Khung | Bảng | Tràn? |
+|---|---|---|---|
+| 1440 | 1134 | 1132 | không |
+| 1280 | 974 | 972 | **không** |
+| 1024 | 718 | 954 | có |
+
+Ở 1280 — bề rộng laptop phổ biến nhất — bảng vừa khít một cách tệ hại: "Hình thức thanh toán"
+vỡ 3 dòng, mỗi hàng cao 3 lần cần thiết, màn 900px chỉ thấy **4 dòng dữ liệu**.
+
+Nay `Table` có `min-w-[56rem]` + `whitespace-nowrap`: bảng đạt bề rộng thật, hẹp hơn thì cuộn.
+Sau khi sửa: bảng 1177px trong khung 972px, hàng cao 53px, **8 dòng** trên cùng màn hình.
+
+Bảng ít cột (≤ 4) truyền `rongToiThieu=""` để tắt — ép `min-width` chỉ tạo thanh cuộn thừa.
+Ô cần xuống dòng (ghi chú dài) tự đặt `whitespace-normal`.
+
+**Đừng bọc `Table` trong một `div` có `overflow-x-auto` nữa**: khung ngoài nuốt mất thanh cuộn
+của khung trong, cột dính hết tác dụng, và `scrollLeft` kẹt ở 0 (đã gặp thật ở màn Doanh thu).
+
+### Khoá cột đầu và cột thao tác (10/10/2026)
+
+`<Th dinh="dau">` / `<Td dinh="dau">` cho cột đầu, `dinh="cuoi"` cho cột thao tác.
+
+- **Cột đầu** (tên người, tên lớp): cuộn sang phải vẫn biết dòng đang đọc là của ai.
+- **Cột thao tác**: nút sửa/xoá luôn trong tầm bấm.
+
+Hai điều kiện để dùng:
+
+1. Bảng phải **≥ 7 cột** — bảng hẹp không cuộn thì cột dính chỉ thêm đường kẻ thừa.
+2. Cột cuối phải **thật sự là thao tác**. Màn Học phí có `<Th />` ở cuối nhưng đó là cột
+   **trạng thái**, khoá nó là sai — đã thử rồi hoàn tác.
+
+Ô dính mang nền ĐỤC (`bg-card`) nên không ăn `hover:bg-muted/40` của `<tr>`; `lopDinh` xử lý
+riêng bằng `[tr:hover_&]`. Bỏ qua thì rê chuột sáng cả hàng trừ hai cột dính, trông như lỗi.
+
 ### Bảng chỉ đúng khi ma trận ĐẶC và nhãn NGẮN
 
 Bài học từ ma trận phân quyền (14/09/2026). Nó là bảng chức năng × thao tác, và hỏng dần khi

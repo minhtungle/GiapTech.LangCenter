@@ -8,6 +8,32 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Changed — Bảng rộng cuộn ngang thay vì bóp cột; khoá cột đầu và cột thao tác (10/10/2026)
+
+Chủ sản phẩm đề nghị cho ẩn bớt cột + cuộn ngang + khoá cột. **Đo trước khi làm** và kết quả
+đổi hướng giải pháp:
+
+- **Cuộn ngang đã có sẵn** — `Table` bọc mọi bảng trong `overflow-x-auto` từ đầu.
+- **Chỉ 1/29 bảng có ≥ 9 cột** (con số "14 cột" đếm ban đầu là sai: đó là hai bảng 6+8 cột
+  trong cùng file Học phí).
+- **Vấn đề thật**: bảng chỉ có `w-full` nên LUÔN vừa khung, cuộn ngang không bao giờ kích
+  hoạt. Đo ở 1280px: bảng 972 trong khung 974 — không tràn, nhưng mọi cột bị bóp, "Hình thức
+  thanh toán" vỡ 3 dòng, màn 900px chỉ thấy 4 dòng dữ liệu.
+
+Nên **không làm cơ chế ẩn cột** (thêm state, thêm UI, thêm chỗ hỏng cho đúng một bảng) mà sửa
+ba thứ rẻ hơn:
+
+1. `Table` thêm `min-w-[56rem]` + `whitespace-nowrap` ⇒ bảng đạt bề rộng thật, hẹp hơn thì
+   cuộn. Sau khi sửa: 1177px trong khung 972px, hàng 53px, **8 dòng** thay vì 4.
+2. `Th`/`Td` nhận `dinh="dau"` / `dinh="cuoi"` để khoá cột — áp dụng cho **7 bảng ≥ 7 cột**.
+   Màn Học phí đã thử rồi hoàn tác: cột cuối ở đó là trạng thái, không phải thao tác.
+3. Màn Doanh thu ẩn **"% giá gốc"** và **"Quy đổi VND"** khi dữ liệu đang hiện toàn VND và
+   toàn đúng giá niêm yết — trên dữ liệu VIETGEN là 1056/1056 đơn. Suy từ dữ liệu chứ không
+   xoá hẳn: trung tâm khác bán EUR hoặc có chiết khấu thì hai cột lại cần.
+
+Cũng gỡ một `div.overflow-x-auto` thừa bọc ngoài `Table` ở màn Doanh thu: khung ngoài nuốt mất
+thanh cuộn của khung trong, làm `scrollLeft` kẹt ở 0 và cột dính vô tác dụng.
+
 ### Added — Màn Doanh thu hiện số ĐÃ THU; cột Phụ trách ở Doanh thu và Khách hàng (10/10/2026)
 
 **Đã thu.** Chủ sản phẩm báo "bổ sung thanh toán thì chưa ghi nhận ở module Doanh thu".

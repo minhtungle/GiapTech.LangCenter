@@ -91,6 +91,17 @@ export default function DoanhThu() {
       })).data,
   })
 
+  /*
+    Hai cột có đáng chiếm chỗ không — suy từ dữ liệu ĐANG HIỆN.
+
+    Tính trên trang hiện tại là đủ và đúng: nó quyết định bảng trước mắt người dùng trông thế
+    nào, không phải một sự thật toàn cục. Sang trang có đơn EUR thì cột hiện lại.
+  */
+  const coNgoaiTe = kq.duLieu.some((d) => d.donViTien !== 'VND')
+  const coGiamGia = kq.duLieu.some(
+    (d) => d.phanTramTrenGiaGoc !== null && Math.round(d.phanTramTrenGiaGoc) !== 100,
+  )
+
   /**
    * Tổng hợp trên TOÀN BỘ tập lọc — endpoint riêng, không cộng trên trang đang xem.
    *
@@ -443,26 +454,36 @@ export default function DoanhThu() {
           ) : kq.duLieu.length === 0 ? (
             <TrangTrong thongDiep={t('donHang.chuaCo')} />
           ) : (
-            <div className="overflow-x-auto">
+            // KHÔNG đặt `overflow-x-auto` ở div này: `Table` đã có khung cuộn riêng, bọc
+            // thêm một khung nữa thì khung ngoài nuốt mất thanh cuộn và cột dính hết tác
+            // dụng (đo 10/10/2026: bảng tràn 1177/974 nhưng scrollLeft luôn = 0).
+            <div>
               <Table>
                 <thead>
                   <tr>
-                    <Th>{t('doanhThu.khachHang')}</Th>
+                    <Th dinh="dau">{t('doanhThu.khachHang')}</Th>
                     <Th>{t('doanhThu.phuTrach')}</Th>
                     <Th>{t('doanhThu.matHang')}</Th>
                     <Th className="text-right">{t('doanhThu.giaGoc')}</Th>
                     <Th className="text-right">{t('doanhThu.soTien')}</Th>
-                    <Th className="text-right">{t('doanhThu.phanTram')}</Th>
-                    <Th className="text-right">{t('doanhThu.quyDoiVnd')}</Th>
+                    {/* Hai cột này THỪA khi mọi dòng đang hiện đều VND và đều đúng giá
+                        niêm yết: "Quy đổi VND" lặp lại y hệt "Số tiền thu", "% giá gốc"
+                        toàn 100%. Trên dữ liệu VIETGEN: 1056/1056 đơn rơi vào ca này, nên
+                        hai cột chỉ chiếm chỗ và góp phần bóp các cột còn lại.
+
+                        Suy từ DỮ LIỆU đang hiện chứ không xoá hẳn: trung tâm khác có thể bán
+                        bằng EUR hoặc chiết khấu, lúc đó hai cột lại cần. */}
+                    {coGiamGia && <Th className="text-right">{t('doanhThu.phanTram')}</Th>}
+                    {coNgoaiTe && <Th className="text-right">{t('doanhThu.quyDoiVnd')}</Th>}
                     <Th>{t('doanhThu.ngayDangKy')}</Th>
                     <Th>{t('khachHang.phuongThuc')}</Th>
-                    <Th />
+                    <Th dinh="cuoi" />
                   </tr>
                 </thead>
                 <tbody>
                   {kq.duLieu.map((d) => (
                     <tr key={d.id} className="hover:bg-muted/40">
-                      <Td>
+                      <Td dinh="dau">
                         <div className="font-medium">{d.tenKhachHang}</div>
                         <div className="flex gap-2 text-xs text-muted-foreground">
                           {d.soDienThoai && <span>{d.soDienThoai}</span>}
@@ -527,24 +548,30 @@ export default function DoanhThu() {
                           {t('doanhThu.daThu')} {tien(d.daThu, d.donViTien)}
                         </div>
                       </Td>
-                      <Td className="text-right">
-                        <Badge variant={mauPhanTram(d.phanTramTrenGiaGoc)}>
-                          {phanTram(d.phanTramTrenGiaGoc)}
-                        </Badge>
-                      </Td>
-                      <Td className="text-right text-muted-foreground">
-                        {tien(d.quyDoiVnd)}
-                        {d.donViTien !== 'VND' && (
-                          <div className="text-xs">
-                            {t('doanhThu.tyGiaNgan', { ty: d.tyGiaVeVnd.toLocaleString(locale()) })}
-                          </div>
-                        )}
-                      </Td>
+                      {coGiamGia && (
+                        <Td className="text-right">
+                          <Badge variant={mauPhanTram(d.phanTramTrenGiaGoc)}>
+                            {phanTram(d.phanTramTrenGiaGoc)}
+                          </Badge>
+                        </Td>
+                      )}
+                      {coNgoaiTe && (
+                        <Td className="text-right text-muted-foreground">
+                          {tien(d.quyDoiVnd)}
+                          {d.donViTien !== 'VND' && (
+                            <div className="text-xs">
+                              {t('doanhThu.tyGiaNgan', {
+                                ty: d.tyGiaVeVnd.toLocaleString(locale()),
+                              })}
+                            </div>
+                          )}
+                        </Td>
+                      )}
                       <Td className="text-muted-foreground">{ngayVN(d.ngayDangKy)}</Td>
                       <Td className="text-muted-foreground">
                         {t(`phuongThucThanhToan.${d.phuongThuc}`)}
                       </Td>
-                      <Td>
+                      <Td dinh="cuoi">
                         <div className="flex justify-end">
                           <MenuThaoTac
                             nhanMo={t('chung.thaoTac')}

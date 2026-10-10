@@ -155,10 +155,19 @@ export function CanhBaoLoi({ children }: { children: React.ReactNode }) {
 export function Table({
   className,
   caoToiDa,
+  rongToiThieu = 'min-w-[56rem]',
   ...props
 }: React.TableHTMLAttributes<HTMLTableElement> & {
   /** Lớp Tailwind giới hạn chiều cao, ví dụ `max-h-[22rem]`. Bỏ trống = không giới hạn. */
   caoToiDa?: string
+  /**
+   * Bề rộng TỐI THIỂU của bảng (10/10/2026). Hẹp hơn mức này thì khung cuộn ngang, thay vì
+   * bóp cột lại.
+   *
+   * Bảng ít cột (≤ 4) nên truyền `''` để tắt: chúng vừa thoải mái ở mọi bề rộng, ép
+   * `min-width` chỉ tạo thanh cuộn thừa.
+   */
+  rongToiThieu?: string
 }) {
   return (
     <div
@@ -170,8 +179,23 @@ export function Table({
       <table
         className={cn(
           'w-full caption-bottom text-sm',
+          /*
+            Bề rộng tự nhiên thay vì bóp cột (10/10/2026).
+
+            Trước đó bảng chỉ có `w-full` nên nó LUÔN vừa khung: đo màn Doanh thu ở bề rộng
+            1280 thì bảng 972px trong khung 974px — không tràn, nên `overflow-x-auto` không
+            bao giờ kích hoạt. Thay vào đó mọi cột tự bóp và chữ xuống dòng: "Hình thức thanh
+            toán" vỡ 3 dòng, mỗi hàng cao gấp ~3 lần, màn 900px chỉ thấy 4 dòng dữ liệu.
+
+            `min-w-*` + `whitespace-nowrap` làm bảng đạt bề rộng thật của nội dung; hẹp hơn thì
+            cuộn ngang — thanh cuộn vốn đã có sẵn, nay mới thật sự dùng được.
+
+            Ô nào CẦN xuống dòng (ghi chú dài) thì tự đặt `whitespace-normal` ở `Td` của nó.
+          */
+          rongToiThieu,
+          '[&_th]:whitespace-nowrap [&_td]:whitespace-nowrap',
           // Header dính chỉ có nghĩa khi khung cuộn được.
-          caoToiDa && '[&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10',
+          caoToiDa && '[&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-20',
           className,
         )}
         {...props}
@@ -180,11 +204,44 @@ export function Table({
   )
 }
 
-export function Th({ className, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
+/**
+ * Cột DÍNH khi cuộn ngang (10/10/2026).
+ *
+ * - `'dau'` — cột đầu (tên người, tên lớp…): cuộn sang phải vẫn biết dòng đang đọc là của ai.
+ * - `'cuoi'` — cột thao tác: nút sửa/xoá luôn trong tầm bấm, không phải cuộn ngược về cuối.
+ *
+ * **Phải có nền đục**, nếu không nội dung cuộn qua sẽ lộ ra phía sau. Dùng `bg-card` cho ô
+ * dữ liệu và `bg-muted` cho header — khớp nền thật của hàng thay vì bán trong suốt
+ * (`bg-muted/50` để lộ chữ bên dưới khi cuộn).
+ */
+type CotDinh = 'dau' | 'cuoi'
+
+function lopDinh(dinh: CotDinh | undefined, laHeader: boolean) {
+  if (!dinh) return undefined
+  return cn(
+    'sticky z-10',
+    dinh === 'dau' ? 'left-0' : 'right-0',
+    // Ô dính có nền ĐỤC riêng nên KHÔNG ăn `hover:bg-muted/40` của <tr>. Không xử lý thì
+    // rê chuột sáng cả hàng trừ hai cột dính — trông như lỗi render. `group-hover` không
+    // dùng được vì <tr> ở các màn không khai `group`, nên bám theo `:hover` của hàng cha.
+    laHeader ? 'bg-muted' : 'bg-card [tr:hover_&]:bg-[hsl(var(--muted))]',
+    // Đường kẻ phân tách để mắt thấy rõ chỗ nội dung chui xuống dưới cột dính.
+    dinh === 'dau' ? 'border-r border-border' : 'border-l border-border',
+  )
+}
+
+export function Th({
+  className,
+  dinh,
+  ...props
+}: React.ThHTMLAttributes<HTMLTableCellElement> & { dinh?: CotDinh }) {
   return (
     <th
       className={cn(
         'h-9 border-b border-border bg-muted/50 px-3 text-left align-middle text-xs font-semibold text-muted-foreground',
+        // Header vừa dính ngang vừa dính dọc ⇒ z cao hơn ô dữ liệu dính (z-10).
+        lopDinh(dinh, true),
+        dinh && 'z-30',
         className,
       )}
       {...props}
@@ -192,8 +249,21 @@ export function Th({ className, ...props }: React.ThHTMLAttributes<HTMLTableCell
   )
 }
 
-export function Td({ className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
-  return <td className={cn('border-b border-border px-3 py-2 align-middle', className)} {...props} />
+export function Td({
+  className,
+  dinh,
+  ...props
+}: React.TdHTMLAttributes<HTMLTableCellElement> & { dinh?: CotDinh }) {
+  return (
+    <td
+      className={cn(
+        'border-b border-border px-3 py-2 align-middle',
+        lopDinh(dinh, false),
+        className,
+      )}
+      {...props}
+    />
+  )
 }
 
 export function Badge({

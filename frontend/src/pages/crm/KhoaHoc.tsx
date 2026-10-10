@@ -161,19 +161,19 @@ export default function KhoaHoc() {
               <Table>
                 <thead>
                   <tr>
-                    <Th>{t('khoaHoc.tenKhoa')}</Th>
+                    <Th dinh="dau">{t('khoaHoc.tenKhoa')}</Th>
                     <Th className="text-right">{t('khoaHoc.giaTien')}</Th>
                     <Th className="text-right">{t('khoaHoc.soBuoi')}</Th>
                     <Th className="text-right">{t('khoaHoc.soDangKy')}</Th>
                     <Th>{t('khoaHoc.trangThaiBan')}</Th>
                     <Th>{t('chung.ghiChu')}</Th>
-                    <Th />
+                    <Th dinh="cuoi" />
                   </tr>
                 </thead>
                 <tbody>
                   {kq.duLieu.map((k) => (
                     <tr key={k.id} className="hover:bg-muted/40">
-                      <Td className="font-medium">{k.ten}</Td>
+                      <Td dinh="dau" className="font-medium">{k.ten}</Td>
                       <Td className="text-right">{tien(k.giaTien, k.donViTien)}</Td>
                       <Td className="text-right text-muted-foreground">{k.soBuoi}</Td>
                       <Td className="text-right text-muted-foreground">{k.soDangKy}</Td>
@@ -185,7 +185,7 @@ export default function KhoaHoc() {
                       <Td className="max-w-xs truncate text-muted-foreground" title={k.ghiChu ?? ''}>
                         {k.ghiChu || '—'}
                       </Td>
-                      <Td>
+                      <Td dinh="cuoi">
                         <div className="flex justify-end">
                           <MenuThaoTac
                             nhanMo={t('chung.thaoTac')}
