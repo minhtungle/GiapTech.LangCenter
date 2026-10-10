@@ -64,6 +64,106 @@ public class CrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
         return await res.Content.ReadFromJsonAsync<Guid>();
     }
 
+    // ---------- Lần thu gốc khi tạo đơn ở màn Doanh thu (10/10/2026) ----------
+
+    /// <summary>
+    /// Tích "đã nhận đủ tiền" khi tạo đơn ở màn Doanh thu ⇒ đơn có **lần thu gốc**.
+    ///
+    /// Chủ sản phẩm báo 10/10/2026: mở lịch sử một đơn đã mua thì không thấy lần thanh toán
+    /// đầu tiên. Nguyên nhân: `LuuDangKyCommand` không có cờ này, nên MỌI đơn tạo ở màn Doanh
+    /// thu đều "chưa thu" dù tiền đã nhận — và nằm mãi trong danh sách công nợ.
+    /// `MuaHangCommand` (màn Chi tiết khách hàng) đã có cờ này từ đầu; hai đường tạo đơn hành
+    /// xử khác nhau là lý do lỗi tồn tại lâu mà không ai thấy.
+    /// </summary>
+    [Fact]
+    public async Task Tao_don_tich_da_thu_du_thi_co_lan_thu_goc()
+    {
+        var c = await Client();
+        var khach = await TaoKhach(c, "Khách Có Lần Thu Gốc");
+        var khoa = await TaoKhoa(c, "Khoá có lần thu gốc", 10_000_000m);
+
+        var res = await c.PostAsJsonAsync("/api/v1/doanh-thu", new
+        {
+            KhachHangId = khach, KhoaHocId = khoa, SoTien = 10_000_000m,
+            DonViTien = "VND", TyGiaVeVnd = 1m,
+            NgayDangKy = new DateTimeOffset(2026, 10, 10, 9, 0, 0, TimeSpan.Zero),
+            DaThuDu = true
+        });
+        res.EnsureSuccessStatusCode();
+
+        var don = (await c.GetFromJsonAsync<List<JsonElement>>(
+            $"/api/v1/khach-hang/{khach}/dang-ky"))!.Single();
+
+        var lanThu = don.GetProperty("cacLanThu").EnumerateArray().ToList();
+        Assert.Single(lanThu);
+        Assert.Equal(10_000_000m, lanThu[0].GetProperty("soTien").GetDecimal());
+
+        // Và đơn hết nợ — đây là hệ quả người dùng thấy: không còn bị nhắc đòi tiền.
+        Assert.Equal(10_000_000m, don.GetProperty("daThu").GetDecimal());
+        Assert.Equal(0m, don.GetProperty("conThieu").GetDecimal());
+    }
+
+    /// <summary>
+    /// **Không** tích ⇒ không có lần thu nào. Đây là ca "khách đóng nhiều đợt", ghi từng đợt
+    /// riêng sau — hành vi cũ phải giữ nguyên.
+    /// </summary>
+    [Fact]
+    public async Task Tao_don_khong_tich_thi_khong_co_lan_thu()
+    {
+        var c = await Client();
+        var khach = await TaoKhach(c, "Khách Chưa Thu Đồng Nào");
+        var khoa = await TaoKhoa(c, "Khoá chưa thu đồng nào", 8_000_000m);
+        await TaoDangKy(c, khach, khoa, 8_000_000m);
+
+        var don = (await c.GetFromJsonAsync<List<JsonElement>>(
+            $"/api/v1/khach-hang/{khach}/dang-ky"))!.Single();
+
+        Assert.Empty(don.GetProperty("cacLanThu").EnumerateArray());
+        Assert.Equal(8_000_000m, don.GetProperty("conThieu").GetDecimal());
+    }
+
+    /// <summary>
+    /// **SỬA đơn KHÔNG được đẻ thêm lần thu** — kể cả khi client gửi `DaThuDu = true`.
+    ///
+    /// Quy tắc #1: các lần thu đã có là dữ liệu người dùng nhập tay. Sửa tổng tiền đơn mà
+    /// thêm một lần thu bằng cả tổng thì vừa sai số liệu vừa phá lịch sử thanh toán.
+    /// </summary>
+    [Fact]
+    public async Task Sua_don_khong_tao_them_lan_thu()
+    {
+        var c = await Client();
+        var khach = await TaoKhach(c, "Khách Sửa Đơn");
+        var khoa = await TaoKhoa(c, "Khoá sửa đơn", 5_000_000m);
+
+        var tao = await c.PostAsJsonAsync("/api/v1/doanh-thu", new
+        {
+            KhachHangId = khach, KhoaHocId = khoa, SoTien = 5_000_000m,
+            DonViTien = "VND", TyGiaVeVnd = 1m,
+            NgayDangKy = new DateTimeOffset(2026, 10, 10, 9, 0, 0, TimeSpan.Zero),
+            DaThuDu = true
+        });
+        tao.EnsureSuccessStatusCode();
+        var donId = await tao.Content.ReadFromJsonAsync<Guid>();
+
+        var sua = await c.PutAsJsonAsync($"/api/v1/doanh-thu/{donId}", new
+        {
+            Id = donId,
+            KhachHangId = khach, KhoaHocId = khoa, SoTien = 6_000_000m,
+            DonViTien = "VND", TyGiaVeVnd = 1m,
+            NgayDangKy = new DateTimeOffset(2026, 10, 10, 9, 0, 0, TimeSpan.Zero),
+            DaThuDu = true
+        });
+        sua.EnsureSuccessStatusCode();
+
+        var don = (await c.GetFromJsonAsync<List<JsonElement>>(
+            $"/api/v1/khach-hang/{khach}/dang-ky"))!.Single();
+
+        // VẪN đúng MỘT lần thu, giá trị gốc không đổi.
+        var lanThu = don.GetProperty("cacLanThu").EnumerateArray().ToList();
+        Assert.Single(lanThu);
+        Assert.Equal(5_000_000m, lanThu[0].GetProperty("soTien").GetDecimal());
+    }
+
     // ---------- FR-19 Khoá học ----------
 
     [Fact]

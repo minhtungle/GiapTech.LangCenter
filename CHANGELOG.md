@@ -8,6 +8,28 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Fixed — Đơn tạo ở màn Doanh thu không có lần thu gốc (10/10/2026)
+
+Chủ sản phẩm báo: bấm vào khoá học/sản phẩm đã mua trong lịch sử đơn hàng thì **không thấy
+lần thanh toán đầu tiên** — lần làm phát sinh chính đơn đó.
+
+Nguyên nhân: đơn hàng tạo được từ **hai** màn, và chúng hành xử khác nhau.
+`MuaHangCommand` (màn Chi tiết khách hàng) có cờ `DaThuDu` để ghi luôn lần thu gốc;
+`LuuDangKyCommand` (màn Doanh thu) **không có cờ đó**, nên mọi đơn tạo ở đây đều "chưa thu"
+dù tiền đã nhận — và nằm mãi trong danh sách công nợ.
+
+Nay hai đường tạo đơn hành xử giống nhau. Hai ràng buộc:
+
+- **Chỉ khi TẠO MỚI** — lệnh sửa đi qua cùng handler, đẻ thêm lần thu khi sửa sẽ phá lịch sử
+  thanh toán người dùng nhập tay (quy tắc #1);
+- **Chỉ khi `SoTien > 0`** — đơn 0đ (tặng, học thử) không có gì để thu.
+
+3 test mới trong `CrmTests`, gồm test chiều ngược "sửa đơn không đẻ thêm lần thu". Kiểm bằng
+đột biến: bỏ nhánh ghi lần thu ⇒ 2 test đỏ; bỏ điều kiện `taoMoi` ⇒ test chiều ngược đỏ.
+
+**Đơn CŨ không vá tự động** — không có cách nào biết đơn nào đã thu tiền thật, đơn nào là nợ
+thật; đoán sai sẽ tạo ra lần thu không tồn tại. Người dùng tự ghi bổ sung vào sổ thu.
+
 ### Fixed — Thư chào mừng có link đăng nhập; ô chọn đuôi nói rõ khi chưa khai (09/10/2026)
 
 Chủ sản phẩm báo hai điểm sau khi dùng thật:

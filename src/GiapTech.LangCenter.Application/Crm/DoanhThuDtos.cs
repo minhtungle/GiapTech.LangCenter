@@ -236,7 +236,19 @@ public record LuuDangKyCommand(
     /// <summary>Mua sản phẩm — để null nếu mua khoá học.</summary>
     Guid? SanPhamId = null,
     /// <summary>Số lượng; khoá học luôn 1.</summary>
-    int SoLuong = 1) : IRequest<Guid>;
+    int SoLuong = 1,
+    /// <summary>
+    /// Ghi luôn một lần thu đủ số tiền khi **TẠO MỚI** đơn (10/10/2026).
+    ///
+    /// Trước đây màn Doanh thu không có cờ này, nên đơn tạo ở đây **không bao giờ có lần thu
+    /// gốc**: mở lịch sử đơn ra chỉ thấy "chưa thu" dù tiền đã nhận, và đơn nằm mãi trong
+    /// danh sách công nợ. Màn Chi tiết khách hàng (`MuaHangCommand`) đã có cờ này từ đầu —
+    /// hai đường tạo đơn hành xử khác nhau là lý do lỗi này tồn tại mà không ai thấy.
+    ///
+    /// **Chỉ áp dụng khi tạo mới.** Khi SỬA đơn, cờ bị bỏ qua: các lần thu đã có là dữ liệu
+    /// riêng, sửa tổng tiền đơn không được đụng vào chúng (quy tắc #1).
+    /// </summary>
+    bool DaThuDu = false) : IRequest<Guid>;
 
 public class LuuDangKyValidator : AbstractValidator<LuuDangKyCommand>
 {
@@ -263,7 +275,8 @@ public class LuuDangKyValidator : AbstractValidator<LuuDangKyCommand>
     }
 }
 
-public class LuuDangKyHandler(IAppDbContext db) : IRequestHandler<LuuDangKyCommand, Guid>
+public class LuuDangKyHandler(IAppDbContext db, ICurrentUser currentUser)
+    : IRequestHandler<LuuDangKyCommand, Guid>
 {
     public async Task<Guid> Handle(LuuDangKyCommand request, CancellationToken ct)
     {
@@ -290,6 +303,7 @@ public class LuuDangKyHandler(IAppDbContext db) : IRequestHandler<LuuDangKyComma
         }
 
         Domain.Entities.DangKyKhoaHoc dk;
+        var taoMoi = request.Id is null;
         if (request.Id is { } id)
         {
             dk = await db.DangKyKhoaHocs.FirstOrDefaultAsync(d => d.Id == id, ct)
@@ -318,6 +332,28 @@ public class LuuDangKyHandler(IAppDbContext db) : IRequestHandler<LuuDangKyComma
         dk.NgayDangKy = request.NgayDangKy;
         dk.PhuongThuc = request.PhuongThuc;
         dk.GhiChu = string.IsNullOrWhiteSpace(request.GhiChu) ? null : request.GhiChu.Trim();
+
+        /*
+          Lần thu GỐC — chỉ khi TẠO MỚI và người bán tích "đã nhận đủ tiền".
+
+          `taoMoi` chứ không chỉ `DaThuDu`: lệnh sửa cũng đi qua đây, và sửa một đơn đã có 3
+          lần thu mà thêm lần thứ 4 bằng cả tổng tiền thì vừa sai số liệu vừa phá dữ liệu
+          người dùng đã nhập (quy tắc #1).
+
+          `SoTien > 0` vì đơn 0đ (tặng, học thử) không có gì để thu — ghi một dòng 0đ chỉ làm
+          rối lịch sử.
+        */
+        if (taoMoi && request.DaThuDu && request.SoTien > 0)
+        {
+            db.ThuTienDangKys.Add(new Domain.Entities.ThuTienDangKy
+            {
+                DangKy = dk,
+                SoTien = request.SoTien,
+                NgayThu = request.NgayDangKy,
+                PhuongThuc = request.PhuongThuc,
+                NguoiThuId = currentUser.UserId
+            });
+        }
 
         await db.SaveChangesAsync(ct);
         return dk.Id;

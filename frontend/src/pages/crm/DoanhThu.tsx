@@ -64,6 +64,9 @@ export default function DoanhThu() {
   const [donVi, setDonVi] = useState<DonViTien>('VND')
   const [tyGia, setTyGia] = useState('1')
   const [phuongThuc, setPhuongThuc] = useState<PhuongThucThanhToan>('ChuyenKhoan')
+  // Ghi luôn lần thu gốc khi tạo đơn. Mặc định BẬT: phần lớn đơn ghi ở màn này là đơn đã thu
+  // tiền xong, và trước 10/10/2026 màn này không ghi lần thu nào nên đơn nào cũng "chưa thu".
+  const [daThuDu, setDaThuDu] = useState(true)
   const [maLoi, setMaLoi] = useState<string | null>(null)
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
 
@@ -186,7 +189,8 @@ export default function DoanhThu() {
         ghiChu: String(fd.get('ghiChu') ?? '').trim() || null,
       }
       if (dangSua) await api.put(`/doanh-thu/${dangSua.id}`, { ...than, id: dangSua.id })
-      else await api.post('/doanh-thu', than)
+      // `daThuDu` chỉ đi kèm lệnh TẠO — backend bỏ qua nó khi sửa, gửi lên chỉ gây hiểu nhầm.
+      else await api.post('/doanh-thu', { ...than, daThuDu })
     },
     onSuccess: () => {
       lamMoi()
@@ -227,6 +231,7 @@ export default function DoanhThu() {
     setDonVi('VND')
     setTyGia('1')
     setPhuongThuc('ChuyenKhoan')
+    setDaThuDu(true)
     setMaLoi(null)
     setMoForm(true)
   }
@@ -744,6 +749,25 @@ export default function DoanhThu() {
             <Label htmlFor="ghiChu">{t('chung.ghiChu')}</Label>
             <Textarea id="ghiChu" name="ghiChu" rows={2} defaultValue={dangSua?.ghiChu ?? ''} />
           </div>
+
+          {/* Chỉ khi TẠO MỚI: sửa đơn thì các lần thu đã có là dữ liệu riêng, không đụng
+              vào (quy tắc #1) — và backend cũng bỏ qua cờ này khi sửa. */}
+          {!dangSua && (
+            <div>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-[hsl(var(--primary))]"
+                  checked={daThuDu}
+                  onChange={(e) => setDaThuDu(e.target.checked)}
+                />
+                {t('chiTietKhach.daThuDu')}
+              </label>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t('chiTietKhach.daThuDuGoiY')}
+              </p>
+            </div>
+          )}
 
           {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 

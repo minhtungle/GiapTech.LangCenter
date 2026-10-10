@@ -79,6 +79,30 @@ và bằng cách nào.
 Hệ quả kèm theo: trạng thái phễu tự thành **Đã mua**, người bán không phải nhớ chọn. Nội dung
 chăm sóc để trống thì hệ thống tự ghi `Mua <tên mặt hàng> × <số lượng>`.
 
+### Hai đường tạo đơn, cùng một hành vi (sửa 10/10/2026)
+
+Đơn hàng tạo được từ **hai** màn, và trước 10/10/2026 chúng hành xử khác nhau:
+
+| Màn | Lệnh | Ghi lần thu gốc? |
+|---|---|---|
+| Chi tiết khách hàng | `POST /khach-hang/{id}/mua-hang` | Có — cờ `DaThuDu` |
+| Doanh thu | `POST /doanh-thu` | **Không, dù tiền đã nhận** |
+
+Hệ quả: đơn tạo ở màn Doanh thu mở lịch sử ra luôn thấy "chưa thu lần nào", và nằm mãi trong
+danh sách công nợ dù khách đã trả đủ. Chủ sản phẩm phát hiện khi bấm vào một khoá đã mua và
+không thấy **lần thanh toán gốc** — lần làm phát sinh chính đơn đó.
+
+Nay `LuuDangKyCommand` có cờ `DaThuDu` giống lệnh mua hàng. Hai ràng buộc:
+
+- **Chỉ khi TẠO MỚI.** Lệnh sửa đi qua cùng handler; sửa một đơn đã có 3 lần thu mà đẻ thêm
+  lần thứ 4 bằng cả tổng tiền thì vừa sai số vừa phá dữ liệu người dùng nhập tay (quy tắc #1).
+- **Chỉ khi `SoTien > 0`.** Đơn 0đ (tặng, học thử) không có gì để thu.
+
+Canh bởi ba test trong `CrmTests`, gồm cả test chiều ngược "sửa đơn không đẻ thêm lần thu".
+
+**Đơn CŨ không được vá tự động**: không có cách nào biết đơn nào đã thu tiền thật, đơn nào là
+nợ thật — đoán sai sẽ tạo ra lần thu không tồn tại. Người dùng tự vào sổ thu ghi bổ sung.
+
 **Không gộp dòng doanh thu của cùng một khách** — mỗi lần mua là một sự kiện riêng, có ngày và
 mức giá riêng.
 
