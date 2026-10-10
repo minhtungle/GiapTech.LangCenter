@@ -1170,6 +1170,8 @@ const en = {
     theoNguoiMangKhach: 'Team and staff member are counted by WHO BROUGHT THE CUSTOMER IN — the same basis as the Statistics screen. Self-registered customers belong to no team.',
   },
   khachHang: {
+    phuTrach: 'Owner',
+    chuaCoPhuTrach: 'Unassigned',
     them: 'Add customer',
     sua: 'Edit customer',
     hoTen: 'Full name',
@@ -1453,6 +1455,10 @@ const en = {
     chuaCo: 'No orders yet',
   },
   doanhThu: {
+    daThu: 'Collected',
+    conThieuTong: '{{so}} outstanding',
+    phuTrach: 'Owner',
+    chuaCoPhuTrach: 'Unassigned',
     them: 'Add registration',
     sua: 'Edit registration',
     khachHang: 'Customer',

@@ -8,6 +8,23 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Added — Màn Doanh thu hiện số ĐÃ THU; cột Phụ trách ở Doanh thu và Khách hàng (10/10/2026)
+
+**Đã thu.** Chủ sản phẩm báo "bổ sung thanh toán thì chưa ghi nhận ở module Doanh thu".
+Doanh thu tính trên **cam kết** (`so_tien` của đăng ký) là chủ ý và không đổi — nhưng màn này
+trước đó **không hiện số đã thu ở đâu cả**, nên thêm tiền xong quay lại không thấy gì khác.
+
+Nay `DangKyDto.DaThu` hiện ngay dưới số cam kết trong bảng (đỏ khi chưa đủ), và
+`TongHopDoanhThuDto.DaThuVnd` là một ô riêng cạnh tổng cam kết kèm phần còn thiếu.
+
+**Cột Phụ trách** ở cả màn Doanh thu và màn Khách hàng: tên nhân viên, đội nhóm ở dòng phụ.
+Mốc là **người mang khách về** (`KhachHang.CreatedById`) — cùng mốc với bộ lọc đội nhóm/nhân
+viên đã có trên chính hai màn đó và với màn Thống kê CRM. Lấy theo người nhập đơn sẽ làm cột
+hiện một tên còn bộ lọc ngay cạnh lọc theo tên khác.
+
+2 test mới trong `CrmTests`, gồm test khẳng định hai màn trả về CÙNG một người phụ trách. Kiểm
+bằng đột biến: trả cứng `DaThu = 0` ⇒ test đỏ.
+
 ### Fixed — Đơn tạo ở màn Doanh thu không có lần thu gốc (10/10/2026)
 
 Chủ sản phẩm báo: bấm vào khoá học/sản phẩm đã mua trong lịch sử đơn hàng thì **không thấy

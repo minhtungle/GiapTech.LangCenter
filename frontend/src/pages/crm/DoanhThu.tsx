@@ -270,6 +270,22 @@ export default function DoanhThu() {
               )}
             </CardContent>
           </Card>
+          {/* ĐÃ THU đứng cạnh tổng cam kết: hai con số trả lời hai câu khác nhau — bán
+              được bao nhiêu, và đã cầm về bao nhiêu. Thiếu ô này thì bổ sung thanh toán
+              xong màn Doanh thu không đổi gì (chủ sản phẩm báo 10/10/2026). */}
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                {t('doanhThu.daThu')}
+              </p>
+              <p className="mt-1 text-2xl font-semibold">{tien(tongHop.daThuVnd)}</p>
+              {tongHop.daThuVnd < tongHop.tongVnd && (
+                <p className="mt-1 text-xs text-warning">
+                  {t('doanhThu.conThieuTong', { so: tien(tongHop.tongVnd - tongHop.daThuVnd) })}
+                </p>
+              )}
+            </CardContent>
+          </Card>
           <Card>
             <CardContent className="pt-6">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -432,6 +448,7 @@ export default function DoanhThu() {
                 <thead>
                   <tr>
                     <Th>{t('doanhThu.khachHang')}</Th>
+                    <Th>{t('doanhThu.phuTrach')}</Th>
                     <Th>{t('doanhThu.matHang')}</Th>
                     <Th className="text-right">{t('doanhThu.giaGoc')}</Th>
                     <Th className="text-right">{t('doanhThu.soTien')}</Th>
@@ -462,6 +479,23 @@ export default function DoanhThu() {
                           )}
                         </div>
                       </Td>
+                      {/* Phụ trách = NGƯỜI MANG KHÁCH VỀ, cùng mốc với bộ lọc đội nhóm /
+                          nhân viên ngay trên bảng. Tên trên, đội nhóm dưới dạng phụ — đội
+                          nhóm là bối cảnh, không phải thứ người đọc quét theo. */}
+                      <Td>
+                        {d.tenNguoiPhuTrach ? (
+                          <>
+                            <div>{d.tenNguoiPhuTrach}</div>
+                            {d.tenDoiNhom && (
+                              <div className="text-xs text-muted-foreground">{d.tenDoiNhom}</div>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            {t('doanhThu.chuaCoPhuTrach')}
+                          </span>
+                        )}
+                      </Td>
                       <Td>
                         <div className="flex items-center gap-1.5">
                           <span>{d.tenMatHang}</span>
@@ -480,7 +514,19 @@ export default function DoanhThu() {
                       <Td className="text-right text-muted-foreground">
                         {tien(d.giaGoc, d.donViTien)}
                       </Td>
-                      <Td className="text-right font-medium">{tien(d.soTien, d.donViTien)}</Td>
+                      {/* Cam kết là con số chính (doanh thu tính trên nó); ĐÃ THU đi kèm
+                          ngay dưới. Thiếu dòng này thì bổ sung thanh toán xong quay lại màn
+                          Doanh thu không thấy gì đổi — chủ sản phẩm báo 10/10/2026. */}
+                      <Td className="text-right font-medium">
+                        {tien(d.soTien, d.donViTien)}
+                        <div
+                          className={`text-xs font-normal ${
+                            d.daThu >= d.soTien ? 'text-muted-foreground' : 'text-warning'
+                          }`}
+                        >
+                          {t('doanhThu.daThu')} {tien(d.daThu, d.donViTien)}
+                        </div>
+                      </Td>
                       <Td className="text-right">
                         <Badge variant={mauPhanTram(d.phanTramTrenGiaGoc)}>
                           {phanTram(d.phanTramTrenGiaGoc)}

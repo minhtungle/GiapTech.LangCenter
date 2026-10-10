@@ -43,7 +43,27 @@ public record DangKyDto(
     decimal? PhanTramTrenGiaGoc,
     DateTimeOffset NgayDangKy,
     PhuongThucThanhToan PhuongThuc,
-    string? GhiChu);
+    string? GhiChu,
+    /// <summary>
+    /// Tổng **đã thu thật** của đơn (10/10/2026) — `SUM(THU_TIEN_DANG_KY.so_tien)`.
+    ///
+    /// Doanh thu của màn này tính trên **cam kết** (`SoTien`), không trên tiền đã thu — xem
+    /// "Đăng ký là CAM KẾT" ở `docs/06-nghiep-vu/crm.md`. Nhưng trước 10/10/2026 màn này
+    /// **không hiện số đã thu ở đâu cả**, nên bổ sung một lần thu xong quay lại đây thì không
+    /// có gì đổi, và người dùng tưởng hệ thống không ghi nhận.
+    ///
+    /// Cùng đơn vị tiền với `SoTien` — thu tiền bắt buộc cùng đơn vị với đăng ký.
+    /// </summary>
+    decimal DaThu,
+    /// <summary>
+    /// Người **mang khách về** (`KhachHang.CreatedById`) và đội nhóm của họ (10/10/2026).
+    ///
+    /// Cùng mốc với bộ lọc `PhongBanId`/`NhanVienId` của chính query này và với màn Thống kê
+    /// CRM. Lấy theo người NHẬP ĐƠN sẽ lệch khỏi bộ lọc ngay bên cạnh.
+    /// </summary>
+    string? TenNguoiPhuTrach,
+    /// <summary>Đội nhóm của người phụ trách. `null` khi họ chưa được xếp phòng ban.</summary>
+    string? TenDoiNhom);
 
 /// <summary>Tổng hợp doanh thu của tập đăng ký đang lọc.</summary>
 public record TongHopDoanhThuDto(
@@ -51,6 +71,17 @@ public record TongHopDoanhThuDto(
     int SoKhachHang,
     /// <summary>Tổng quy về VND — con số duy nhất cộng được khi có nhiều đơn vị tiền.</summary>
     decimal TongVnd,
+    /// <summary>
+    /// Tổng **đã thu thật**, quy về VND (10/10/2026).
+    ///
+    /// Đi cạnh <see cref="TongVnd"/> để trả lời hai câu khác nhau: bán được bao nhiêu, và đã
+    /// cầm về bao nhiêu. Thiếu nó thì màn Doanh thu không phản ánh gì khi người dùng bổ sung
+    /// một lần thu, và họ tưởng hệ thống không ghi nhận.
+    ///
+    /// Quy đổi bằng `TyGiaVeVnd` của ĐĂNG KÝ chứ không tỷ giá hôm nay — cùng cơ sở với
+    /// `TongVnd`, nếu không hai con số không trừ được cho nhau.
+    /// </summary>
+    decimal DaThuVnd,
     /// <summary>Tách theo đơn vị tiền, để người bán đối chiếu với sổ thực tế của họ.</summary>
     List<TongTheoDonViDto> TheoDonVi);
 
@@ -111,7 +142,12 @@ public class LayDoanhThuHandler(IAppDbContext db)
                 d.GiaGoc, d.SoTien, d.DonViTien, d.TyGiaVeVnd,
                 d.SoTien * d.TyGiaVeVnd,
                 d.GiaGoc == 0 ? null : d.SoTien / d.GiaGoc * 100m,
-                d.NgayDangKy, d.PhuongThuc, d.GhiChu))
+                d.NgayDangKy, d.PhuongThuc, d.GhiChu,
+                d.CacLanThu.Sum(t => t.SoTien),
+                d.KhachHang.CreatedBy == null ? null : d.KhachHang.CreatedBy.HoTen,
+                d.KhachHang.CreatedBy == null || d.KhachHang.CreatedBy.PhongBan == null
+                    ? null
+                    : d.KhachHang.CreatedBy.PhongBan.Ten))
             .ToListAsync(ct);
 
         return new KetQuaTrang<DangKyDto>(duLieu, tong, trang.TrangHopLe, trang.SoDongHopLe);
@@ -166,10 +202,16 @@ public class LayTongHopDoanhThuHandler(IAppDbContext db)
                 g.Sum(d => d.SoTien * d.TyGiaVeVnd)))
             .ToListAsync(ct);
 
+        // Quy đổi theo tỷ giá CỦA ĐĂNG KÝ, cùng cơ sở với `TongVnd`.
+        var daThuVnd = await q
+            .SelectMany(d => d.CacLanThu.Select(t => t.SoTien * d.TyGiaVeVnd))
+            .SumAsync(ct);
+
         return new TongHopDoanhThuDto(
             await q.CountAsync(ct),
             await q.Select(d => d.KhachHangId).Distinct().CountAsync(ct),
             theoDonVi.Sum(x => x.TongVnd),
+            daThuVnd,
             theoDonVi.OrderBy(x => x.DonViTien).ToList());
     }
 }

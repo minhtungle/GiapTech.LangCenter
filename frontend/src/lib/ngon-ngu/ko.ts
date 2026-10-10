@@ -1170,6 +1170,8 @@ const ko = {
     theoNguoiMangKhach: '팀과 담당자는 고객을 유치한 사람을 기준으로 집계합니다 — 통계 화면과 같은 기준입니다. 고객이 직접 등록한 경우는 어느 팀에도 속하지 않습니다.',
   },
   khachHang: {
+    phuTrach: '담당자',
+    chuaCoPhuTrach: '미지정',
     them: '고객 추가',
     sua: '고객 수정',
     hoTen: '이름',
@@ -1453,6 +1455,10 @@ const ko = {
     chuaCo: '등록된 주문이 없습니다',
   },
   doanhThu: {
+    daThu: '수금액',
+    conThieuTong: '{{so}} 미수',
+    phuTrach: '담당자',
+    chuaCoPhuTrach: '미지정',
     them: '등록 추가',
     sua: '등록 수정',
     khachHang: '고객',

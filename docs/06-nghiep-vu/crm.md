@@ -281,6 +281,27 @@ lẫn đơn vị trong cùng một đăng ký thì phép trừ "còn thiếu" th
 **Doanh thu vẫn tính trên CAM KẾT**, không trên tiền đã thu. Hai con số trả lời hai câu khác
 nhau: bán được bao nhiêu, và đã cầm về bao nhiêu. Màn Doanh thu hiện cả hai.
 
+> **Sửa 10/10/2026:** câu trên đã đúng về chủ ý nhưng SAI về thực tế — màn Doanh thu khi đó
+> **không hiện số đã thu ở đâu cả**, cả trong bảng lẫn ô tổng hợp. Hệ quả: bổ sung một lần
+> thu xong quay lại màn này thì không có gì đổi, và chủ sản phẩm báo "bổ sung thanh toán
+> chưa ghi nhận doanh thu".
+>
+> Nay `DangKyDto.DaThu` hiện ngay dưới số cam kết trong bảng, và `TongHopDoanhThuDto.DaThuVnd`
+> là một ô riêng cạnh tổng cam kết, kèm phần còn thiếu. Doanh thu **vẫn** tính trên cam kết —
+> đó không phải thứ cần sửa.
+
+### Cột "phụ trách" (10/10/2026)
+
+Màn Doanh thu và màn Khách hàng đều có cột **Phụ trách**: tên nhân viên, đội nhóm ở dòng phụ
+bên dưới.
+
+Mốc là **người mang khách về** (`KhachHang.CreatedById`), **không** phải người nhập đơn — cùng
+mốc với bộ lọc đội nhóm/nhân viên đã có sẵn trên chính hai màn đó và với màn Thống kê CRM.
+Chọn mốc khác thì cột hiện một tên còn bộ lọc ngay cạnh lọc theo tên khác, và không ai biết
+tin con số nào.
+
+Khách do chuyển dữ liệu hay seed tạo thì không có người tạo ⇒ hiện "Chưa rõ", không để trống.
+
 ### "Còn thiếu bao nhiêu TIỀN" ≠ "còn phải ĐÒI không" (05/10/2026)
 
 Phép trừ `cam kết − đã thu` trả lời câu thứ nhất. Nó **không** trả lời được câu thứ hai, và hai

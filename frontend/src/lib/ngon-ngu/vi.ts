@@ -1299,6 +1299,8 @@ const vi = {
       + 'Khách tự đăng ký không thuộc đội nào.',
   },
   khachHang: {
+    phuTrach: 'Phụ trách',
+    chuaCoPhuTrach: 'Chưa rõ',
     them: 'Thêm khách hàng',
     sua: 'Sửa khách hàng',
     hoTen: 'Họ tên',
@@ -1621,6 +1623,10 @@ const vi = {
   },
 
   doanhThu: {
+    daThu: 'Đã thu',
+    conThieuTong: 'Còn thiếu {{so}}',
+    phuTrach: 'Phụ trách',
+    chuaCoPhuTrach: 'Chưa rõ',
     them: 'Thêm đăng ký',
     sua: 'Sửa đăng ký',
     khachHang: 'Khách hàng',

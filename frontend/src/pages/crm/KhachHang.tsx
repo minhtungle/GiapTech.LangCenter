@@ -353,6 +353,7 @@ export default function KhachHang() {
                   <tr>
                     <Th>{t('khachHang.hoTen')}</Th>
                     <Th>{t('khachHang.lienHe')}</Th>
+                    <Th>{t('khachHang.phuTrach')}</Th>
                     <Th>{t('khachHang.phuongThuc')}</Th>
                     <Th className="text-right">{t('khachHang.soKhoa')}</Th>
                     <Th className="text-right">{t('khachHang.tongMua')}</Th>
@@ -395,6 +396,22 @@ export default function KhachHang() {
                           )}
                           {!k.soDienThoai && !k.email && !k.linkFacebook && '—'}
                         </div>
+                      </Td>
+                      {/* Phụ trách = NGƯỜI MANG KHÁCH VỀ (`CreatedById`), cùng mốc với bộ
+                          lọc đội nhóm / nhân viên của màn này và với màn Thống kê CRM. */}
+                      <Td>
+                        {k.tenNguoiPhuTrach ? (
+                          <>
+                            <div>{k.tenNguoiPhuTrach}</div>
+                            {k.tenDoiNhom && (
+                              <div className="text-xs text-muted-foreground">{k.tenDoiNhom}</div>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            {t('khachHang.chuaCoPhuTrach')}
+                          </span>
+                        )}
                       </Td>
                       <Td className="text-muted-foreground">
                         {t(`phuongThucThanhToan.${k.phuongThucThanhToan}`)}

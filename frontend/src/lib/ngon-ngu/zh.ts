@@ -1170,6 +1170,8 @@ const zh = {
     theoNguoiMangKhach: '团队和员工均按「带来客户的人」统计——与统计页面口径一致。客户自行注册的不归属任何团队。',
   },
   khachHang: {
+    phuTrach: '负责人',
+    chuaCoPhuTrach: '未分配',
     them: '新增客户',
     sua: '编辑客户',
     hoTen: '姓名',
@@ -1453,6 +1455,10 @@ const zh = {
     chuaCo: '尚无任何订单',
   },
   doanhThu: {
+    daThu: '已收',
+    conThieuTong: '尚欠 {{so}}',
+    phuTrach: '负责人',
+    chuaCoPhuTrach: '未分配',
     them: '新增报名',
     sua: '编辑报名',
     khachHang: '客户',

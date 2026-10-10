@@ -28,7 +28,19 @@ public record KhachHangDto(
     /// Để ở đây chứ không bắt UI tự cộng: mỗi đăng ký một đơn vị tiền khác nhau, cộng ở client
     /// thì hoặc sai hoặc phải nhân đôi công thức quy đổi.
     /// </summary>
-    decimal TongMuaVnd);
+    decimal TongMuaVnd,
+    /// <summary>
+    /// Người **mang khách về** (`CreatedById`) và đội nhóm của họ (10/10/2026).
+    ///
+    /// Cùng mốc với bộ lọc đội nhóm / nhân viên đã có ở màn này và với màn Thống kê CRM —
+    /// chọn mốc khác (người sửa gần nhất, người nhập đơn) thì cột hiện một tên còn bộ lọc
+    /// lọc theo tên khác, và không ai biết số nào đúng.
+    ///
+    /// `null` khi khách do hệ thống tạo (chuyển dữ liệu, seed) hoặc người tạo đã bị xoá hồ sơ.
+    /// </summary>
+    string? TenNguoiPhuTrach,
+    /// <summary>Đội nhóm của người phụ trách. `null` khi họ chưa được xếp phòng ban.</summary>
+    string? TenDoiNhom);
 
 // ---------- Queries ----------
 
@@ -143,7 +155,11 @@ public class LayDanhSachKhachHangHandler(IAppDbContext db, IMuiGioTrungTam muiGi
                 k.NguoiDung == null ? null : k.NguoiDung.HoTen,
                 k.DangKys.Count,
                 // Quy đổi ngay trong SQL: cả hai cột đã chụp nên phép nhân này bất biến.
-                k.DangKys.Sum(d => d.SoTien * d.TyGiaVeVnd)))
+                k.DangKys.Sum(d => d.SoTien * d.TyGiaVeVnd),
+                k.CreatedBy == null ? null : k.CreatedBy.HoTen,
+                k.CreatedBy == null || k.CreatedBy.PhongBan == null
+                    ? null
+                    : k.CreatedBy.PhongBan.Ten))
             .ToListAsync(ct);
 
         return new KetQuaTrang<KhachHangDto>(duLieu, tong, trang.TrangHopLe, trang.SoDongHopLe);

@@ -164,6 +164,87 @@ public class CrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(5_000_000m, lanThu[0].GetProperty("soTien").GetDecimal());
     }
 
+    // ---------- Cột "đã thu" và "phụ trách" ở màn Doanh thu (10/10/2026) ----------
+
+    /// <summary>
+    /// Bổ sung một lần thu ⇒ **`DaThu` của đơn và tổng hợp đổi theo**.
+    ///
+    /// Chủ sản phẩm báo 10/10/2026: "bổ sung thanh toán thì chưa ghi nhận ở module Doanh thu".
+    /// Doanh thu vẫn tính trên CAM KẾT (`SoTien`) — đó là chủ ý, xem `docs/06-nghiep-vu/crm.md`
+    /// — nhưng màn này trước đó **không hiện số đã thu ở đâu cả**, nên thêm tiền xong quay lại
+    /// không thấy gì đổi và người dùng tưởng hệ thống không ghi nhận.
+    /// </summary>
+    [Fact]
+    public async Task Bo_sung_thanh_toan_thi_da_thu_o_man_doanh_thu_doi_theo()
+    {
+        var c = await Client();
+        var khach = await TaoKhach(c, "Khách Theo Dõi Đã Thu");
+        var khoa = await TaoKhoa(c, "Khoá theo dõi đã thu", 10_000_000m);
+        var don = await TaoDangKy(c, khach, khoa, 10_000_000m);
+
+        // Chưa thu đồng nào.
+        var truoc = (await c.GetFromJsonAsync<JsonElement>(
+            $"/api/v1/doanh-thu?khachHangId={khach}"))
+            .GetProperty("duLieu").EnumerateArray().Single();
+        Assert.Equal(0m, truoc.GetProperty("daThu").GetDecimal());
+
+        // Bổ sung 4 triệu.
+        var thu = await c.PostAsJsonAsync($"/api/v1/doanh-thu/{don}/thu-tien", new
+        {
+            DangKyId = don, SoTien = 4_000_000m,
+            NgayThu = new DateTimeOffset(2026, 10, 10, 9, 0, 0, TimeSpan.Zero),
+            PhuongThuc = "ChuyenKhoan"
+        });
+        thu.EnsureSuccessStatusCode();
+
+        var sau = (await c.GetFromJsonAsync<JsonElement>(
+            $"/api/v1/doanh-thu?khachHangId={khach}"))
+            .GetProperty("duLieu").EnumerateArray().Single();
+        Assert.Equal(4_000_000m, sau.GetProperty("daThu").GetDecimal());
+
+        // Cam kết KHÔNG đổi — doanh thu tính trên cam kết, đây là chiều ngược của test.
+        Assert.Equal(10_000_000m, sau.GetProperty("soTien").GetDecimal());
+
+        // Ô tổng hợp cũng đổi, nếu không thì con số to nhất trên màn vẫn đứng im.
+        var th = await c.GetFromJsonAsync<JsonElement>(
+            $"/api/v1/doanh-thu/tong-hop?khachHangId={khach}");
+        Assert.Equal(4_000_000m, th.GetProperty("daThuVnd").GetDecimal());
+        Assert.Equal(10_000_000m, th.GetProperty("tongVnd").GetDecimal());
+    }
+
+    /// <summary>
+    /// Cột "phụ trách" = **người mang khách về**, kèm đội nhóm — ở cả màn Doanh thu lẫn
+    /// màn Khách hàng.
+    ///
+    /// Cùng mốc với bộ lọc `PhongBanId`/`NhanVienId` đã có. Lấy theo người NHẬP ĐƠN sẽ làm
+    /// cột hiện một tên còn bộ lọc ngay cạnh lọc theo tên khác.
+    /// </summary>
+    [Fact]
+    public async Task Cot_phu_trach_lay_theo_nguoi_mang_khach_ve()
+    {
+        var c = await Client();
+        var khach = await TaoKhach(c, "Khách Có Người Phụ Trách");
+        var khoa = await TaoKhoa(c, "Khoá có người phụ trách", 5_000_000m);
+        await TaoDangKy(c, khach, khoa, 5_000_000m);
+
+        var don = (await c.GetFromJsonAsync<JsonElement>(
+            $"/api/v1/doanh-thu?khachHangId={khach}"))
+            .GetProperty("duLieu").EnumerateArray().Single();
+
+        // `manager` là người gọi API nên cũng là người mang khách về.
+        Assert.False(string.IsNullOrWhiteSpace(
+            don.GetProperty("tenNguoiPhuTrach").GetString()));
+
+        var kh = (await c.GetFromJsonAsync<JsonElement>($"/api/v1/khach-hang?soDong=200"))
+            .GetProperty("duLieu").EnumerateArray()
+            .Single(x => x.GetProperty("id").GetGuid() == khach);
+
+        // Hai màn phải ra CÙNG một người — lệch nhau thì người dùng không biết tin màn nào.
+        Assert.Equal(
+            don.GetProperty("tenNguoiPhuTrach").GetString(),
+            kh.GetProperty("tenNguoiPhuTrach").GetString());
+    }
+
     // ---------- FR-19 Khoá học ----------
 
     [Fact]

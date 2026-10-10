@@ -1170,6 +1170,8 @@ const ja = {
     theoNguoiMangKhach: 'チームと職員は「顧客を獲得した人」を基準に集計します — 統計画面と同じ基準です。自己登録の顧客はどのチームにも属しません。',
   },
   khachHang: {
+    phuTrach: '担当者',
+    chuaCoPhuTrach: '未割り当て',
     them: '顧客を追加',
     sua: '顧客を編集',
     hoTen: '氏名',
@@ -1453,6 +1455,10 @@ const ja = {
     chuaCo: '注文がまだありません',
   },
   doanhThu: {
+    daThu: '入金済み',
+    conThieuTong: '未収 {{so}}',
+    phuTrach: '担当者',
+    chuaCoPhuTrach: '未割り当て',
     them: '申込を追加',
     sua: '申込を編集',
     khachHang: '顧客',

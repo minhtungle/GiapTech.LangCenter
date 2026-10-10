@@ -21,6 +21,10 @@ export interface KhachHangDto {
   tenHocVien: string | null
   soDangKy: number
   tongMuaVnd: number
+  /** Người mang khách về (CreatedById) — null khi khách do chuyển dữ liệu/seed tạo. */
+  tenNguoiPhuTrach: string | null
+  /** Đội nhóm của người phụ trách — null khi họ chưa được xếp phòng ban. */
+  tenDoiNhom: string | null
 }
 
 export type LoaiDonHang = 'KhoaHoc' | 'SanPham'
@@ -78,12 +82,20 @@ export interface DangKyDto {
   ngayDangKy: string
   phuongThuc: PhuongThucThanhToan
   ghiChu: string | null
+  /** Tổng đã thu thật của đơn — cùng đơn vị tiền với `soTien`. */
+  daThu: number
+  /** Người mang khách về (KhachHang.CreatedById). */
+  tenNguoiPhuTrach: string | null
+  /** Đội nhóm của người phụ trách. */
+  tenDoiNhom: string | null
 }
 
 export interface TongHopDoanhThuDto {
   soDangKy: number
   soKhachHang: number
   tongVnd: number
+  /** Tổng đã thu thật, quy về VND bằng tỷ giá của đăng ký. */
+  daThuVnd: number
   theoDonVi: { donViTien: DonViTien; tong: number; tongVnd: number }[]
 }
 
