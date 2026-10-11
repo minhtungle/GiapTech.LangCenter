@@ -9,6 +9,26 @@
  * giữ nguyên — xem `danhSach.ts`.
  */
 const ko = {
+  danhMucNgonNgu: {
+    them: "언어 추가",
+    sua: "언어 수정",
+    ten: "언어 이름",
+    thuTu: "정렬 순서",
+    thuTuGoiY: "숫자가 작을수록 선택 목록에서 앞에 옵니다. 같으면 이름순입니다.",
+    soKhoaHoc: "과정",
+    soSanPham: "상품",
+    trangThai: "상태",
+    dangDung: "사용 중",
+    ngungDung: "사용 중지",
+    conDung: "이 언어를 계속 사용",
+    conDungGoiY: "체크를 해제하면 새 과정 선택 목록에서 숨기되 기존 과정의 라벨은 유지합니다.",
+    chuaCo: "아직 언어가 없습니다. 「영어」, 「독일어」 등을 추가해 과정과 상품을 분류하세요.",
+    giaiThich: "과정과 상품에 언어를 지정하면 고객과 매출을 언어별로 필터링할 수 있습니다.",
+    hoiXoa: "언어 “{{ten}}”을(를) 삭제할까요?",
+    khongXoaDuocDangDung: "{{so}}개 과정/상품에서 사용 중이라 삭제할 수 없습니다. 「계속 사용」 체크를 해제하면 기존 라벨을 유지한 채 중지됩니다.",
+    tatCa: "모든 언어",
+    chuaGan: "언어 미지정",
+  },
   chung: {
     khongXoaDuocDaBan: '주문 {{so}}건이 있어 삭제할 수 없습니다. 「판매 중」 체크를 해제하면 이력을 유지한 채 판매만 중단됩니다.',
     daThem: '추가되었습니다',
@@ -148,6 +168,7 @@ const ko = {
     xemTruocLuuY: '미리 보기는 내용과 키 위치만 보여 줍니다 — 글꼴, 여백, 페이지 나눔, 머리글/바닥글은 유지되지 않습니다. 실제 인쇄 모습은 파일을 내려받아 확인하세요.',
   },
   menu: {
+    ngonNgu: "언어",
     tongQuan: '대시보드',
     daoTao: '교육',
     nhanSu: '인사',

@@ -9,6 +9,26 @@
  * giữ nguyên — xem `danhSach.ts`.
  */
 const zh = {
+  danhMucNgonNgu: {
+    them: "添加语言",
+    sua: "编辑语言",
+    ten: "语言名称",
+    thuTu: "排序",
+    thuTuGoiY: "数字小的排在前面；相同则按名称排序。",
+    soKhoaHoc: "课程",
+    soSanPham: "产品",
+    trangThai: "状态",
+    dangDung: "使用中",
+    ngungDung: "已停用",
+    conDung: "仍使用此语言",
+    conDungGoiY: "取消勾选后新建课程时不再显示，但旧课程的标签保留。",
+    chuaCo: "尚无语言。添加「英语」「德语」等来分类课程和产品。",
+    giaiThich: "为课程和产品标记语言，即可按语言筛选客户与营收。",
+    hoiXoa: "删除语言「{{ten}}」？",
+    khongXoaDuocDangDung: "已被 {{so}} 个课程/产品使用，无法删除。取消勾选「仍使用」可停用并保留现有标签。",
+    tatCa: "全部语言",
+    chuaGan: "未设置语言",
+  },
   chung: {
     khongXoaDuocDaBan: '已有 {{so}} 笔订单，无法删除。取消勾选「仍在销售」可停售并保留历史。',
     daThem: '已添加',
@@ -148,6 +168,7 @@ const zh = {
     xemTruocLuuY: '预览仅显示内容和键的位置 — 不保留字体、页边距、分页或页眉页脚。请下载文件查看实际打印效果。',
   },
   menu: {
+    ngonNgu: "语言",
     tongQuan: '总览',
     daoTao: '教学培训',
     nhanSu: '人事',

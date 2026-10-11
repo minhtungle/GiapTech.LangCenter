@@ -22,6 +22,7 @@ import KhachHang from '@/pages/crm/KhachHang'
 import ChiTietKhachHang from '@/pages/crm/ChiTietKhachHang'
 import KhoaHoc from '@/pages/crm/KhoaHoc'
 import SanPham from '@/pages/crm/SanPham'
+import NgonNgu from '@/pages/crm/NgonNgu'
 import KhoaOnline from '@/pages/dao-tao/KhoaOnline'
 import ChiTietKhoaOnline from '@/pages/dao-tao/ChiTietKhoaOnline'
 import TaiLieu from '@/pages/dao-tao/TaiLieu'
@@ -235,6 +236,7 @@ export default function App() {
               <Route path="/crm/doanh-thu" element={<DoanhThu />} />
               <Route path="/crm/khoa-hoc" element={<KhoaHoc />} />
               <Route path="/crm/san-pham" element={<SanPham />} />
+              <Route path="/crm/ngon-ngu" element={<NgonNgu />} />
 
               {/* LMS — tiền tố `/lms` cho đồng nhất với `/hrm`, `/crm` (10/09/2026). */}
               <Route path="/lms/lop-hoc" element={<LopHoc />} />

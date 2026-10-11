@@ -8,6 +8,26 @@
  * chỉ tồn tại ở một ngôn ngữ và không ai phát hiện.
  */
 const vi = {
+  danhMucNgonNgu: {
+    them: "Thêm ngôn ngữ",
+    sua: "Sửa ngôn ngữ",
+    ten: "Tên ngôn ngữ",
+    thuTu: "Thứ tự",
+    thuTuGoiY: "Số nhỏ đứng trước trong ô chọn. Bằng nhau thì xếp theo tên.",
+    soKhoaHoc: "Khoá học",
+    soSanPham: "Sản phẩm",
+    trangThai: "Trạng thái",
+    dangDung: "Đang dùng",
+    ngungDung: "Ngừng dùng",
+    conDung: "Còn dùng ngôn ngữ này",
+    conDungGoiY: "Bỏ tích để ẩn khỏi ô chọn khi tạo khoá học mới, mà vẫn giữ nhãn ở các khoá cũ.",
+    chuaCo: "Chưa có ngôn ngữ nào. Thêm “Tiếng Anh”, “Tiếng Đức”… để phân loại khoá học và sản phẩm.",
+    giaiThich: "Gắn ngôn ngữ cho khoá học và sản phẩm để lọc khách hàng, doanh thu theo ngôn ngữ.",
+    hoiXoa: "Xoá ngôn ngữ “{{ten}}”?",
+    khongXoaDuocDangDung: "Đang gắn cho {{so}} khoá học / sản phẩm — không xoá được. Bỏ tích “Còn dùng” để ngừng dùng mà vẫn giữ nhãn cũ.",
+    tatCa: "Tất cả ngôn ngữ",
+    chuaGan: "Chưa gắn ngôn ngữ",
+  },
   chung: {
     khongXoaDuocDaBan: 'Đã có {{so}} đơn hàng — không xoá được. Bỏ tích "Còn bán" để ngừng bán mà vẫn giữ lịch sử.',
     daThem: 'Đã thêm',
@@ -165,6 +185,7 @@ const vi = {
     xemTruocLuuY: 'Bản xem trước chỉ hiện nội dung và vị trí các key — không giữ font, căn lề, ngắt trang hay header/footer. Tải file về để xem bản in thật.',
   },
   menu: {
+    ngonNgu: "Ngôn ngữ",
     tongQuan: 'Tổng quan',
     daoTao: 'Đào tạo',
     nhanSu: 'Nhân sự',

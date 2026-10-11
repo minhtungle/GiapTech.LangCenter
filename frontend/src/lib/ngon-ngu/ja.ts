@@ -9,6 +9,26 @@
  * giữ nguyên — xem `danhSach.ts`.
  */
 const ja = {
+  danhMucNgonNgu: {
+    them: "言語を追加",
+    sua: "言語を編集",
+    ten: "言語名",
+    thuTu: "並び順",
+    thuTuGoiY: "数字が小さいほど選択肢の上に表示されます。同じ場合は名前順です。",
+    soKhoaHoc: "コース",
+    soSanPham: "商品",
+    trangThai: "状態",
+    dangDung: "使用中",
+    ngungDung: "停止中",
+    conDung: "この言語を使い続ける",
+    conDungGoiY: "チェックを外すと新規コースの選択肢から隠れますが、既存コースのラベルは残ります。",
+    chuaCo: "まだ言語がありません。「英語」「ドイツ語」などを追加してコースと商品を分類しましょう。",
+    giaiThich: "コースと商品に言語を付けると、顧客や売上を言語別に絞り込めます。",
+    hoiXoa: "言語「{{ten}}」を削除しますか？",
+    khongXoaDuocDangDung: "{{so}} 件のコース/商品で使用中のため削除できません。「使い続ける」のチェックを外すと既存ラベルを保ったまま停止できます。",
+    tatCa: "すべての言語",
+    chuaGan: "言語未設定",
+  },
   chung: {
     khongXoaDuocDaBan: '注文が {{so}} 件あるため削除できません。「販売中」のチェックを外すと履歴を保ったまま販売を停止できます。',
     daThem: '追加しました',
@@ -148,6 +168,7 @@ const ja = {
     xemTruocLuuY: 'プレビューは内容とキーの位置のみを表示します — フォント、余白、改ページ、ヘッダー／フッターは保持されません。実際の印刷体裁はファイルをダウンロードしてご確認ください。',
   },
   menu: {
+    ngonNgu: "言語",
     tongQuan: 'ダッシュボード',
     daoTao: '教務',
     nhanSu: '人事',

@@ -9,6 +9,26 @@
  * giữ nguyên — xem `danhSach.ts`.
  */
 const en = {
+  danhMucNgonNgu: {
+    them: "Add language",
+    sua: "Edit language",
+    ten: "Language name",
+    thuTu: "Order",
+    thuTuGoiY: "Lower numbers come first in pickers. Ties are sorted by name.",
+    soKhoaHoc: "Courses",
+    soSanPham: "Products",
+    trangThai: "Status",
+    dangDung: "In use",
+    ngungDung: "Retired",
+    conDung: "Still using this language",
+    conDungGoiY: "Untick to hide it from pickers for new courses, while keeping the label on existing ones.",
+    chuaCo: "No languages yet. Add “English”, “German”… to classify courses and products.",
+    giaiThich: "Tag courses and products with a language to filter customers and revenue by it.",
+    hoiXoa: "Delete language “{{ten}}”?",
+    khongXoaDuocDangDung: "Used by {{so}} courses/products — cannot delete. Untick “Still using” to retire it while keeping existing labels.",
+    tatCa: "All languages",
+    chuaGan: "No language set",
+  },
   chung: {
     khongXoaDuocDaBan: '{{so}} orders exist — cannot delete. Untick "Still selling" to stop selling while keeping history.',
     daThem: 'Added',
@@ -148,6 +168,7 @@ const en = {
     xemTruocLuuY: 'The preview shows content and key positions only — fonts, margins, page breaks and headers/footers are not preserved. Download the file to see the real print layout.',
   },
   menu: {
+    ngonNgu: "Languages",
     tongQuan: 'Overview',
     daoTao: 'Training',
     nhanSu: 'Staff',

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  ShieldCheck,
+  ShieldCheck, Languages,
   BarChart3, Settings, LogOut, Home, GraduationCap, BookOpen, MonitorPlay,
   PanelLeftClose, PanelLeft, Menu, X, ScrollText, UserCog, TrendingUp,
   LayoutGrid, Check, KeyRound, Contact, PackageOpen, BookMarked, Star, Globe, Inbox, Mail,
@@ -164,6 +164,7 @@ export default function Layout() {
         { to: '/crm/doanh-thu', nhan: t('menu.doanhThu'), icon: TrendingUp, can: 'DoanhThu' },
         { to: '/crm/khoa-hoc', nhan: t('menu.khoaHoc'), icon: PackageOpen, can: 'KhoaHoc' },
         { to: '/crm/san-pham', nhan: t('menu.sanPham'), icon: BookMarked, can: 'SanPham' },
+        { to: '/crm/ngon-ngu', nhan: t('menu.ngonNgu'), icon: Languages, can: 'NgonNgu' },
         // FR-28 — gác bằng `DoanhThu` như chính endpoint: đây là số tiền toàn trung tâm,
         // người trực tổng đài có quyền khách hàng không nên thấy doanh số cả đội.
         { to: '/crm/thong-ke', nhan: t('menu.thongKeCrm'), icon: BarChart3, can: 'DoanhThu' },
