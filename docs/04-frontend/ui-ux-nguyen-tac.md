@@ -142,6 +142,27 @@ thêm mới sau đó sẽ thấy sẵn lỗi của thao tác trước, không li
 Tách `maLoi` (lỗi trong form) và `maLoiTrang` (lỗi thao tác trên trang), và dọn `maLoiTrang`
 mỗi khi mở form.
 
+### `<dialog>` không unmount — modal phải dựng lại nội dung mỗi lần mở (11/10/2026)
+
+`<Modal>` dựng bằng `<dialog>` nên đóng modal **không gỡ nó khỏi DOM**, chỉ đổi thuộc tính
+`open`. Mà React chỉ đọc `defaultValue` ở lần dựng **đầu tiên**.
+
+Hệ quả: mọi ô uncontrolled giữ giá trị của lần mở trước. Mở sửa khoá A rồi mở sửa khoá B thì
+giá tiền, số buổi… vẫn là của A — và người dùng bấm Lưu là **ghi đè dữ liệu B bằng số của A**.
+
+Chủ sản phẩm báo 11/10/2026: danh sách ghi 7.275.000đ / 15 buổi, modal hiện 0đ / 40 buổi.
+Đếm ra **15+ màn, 70+ ô `defaultValue`** cùng dính.
+
+Sửa trong chính `Modal`: `key` đổi theo số lần mở ⇒ React dựng lại cây con ⇒ `defaultValue`
+đọc lại. Một chỗ sửa, mọi modal hưởng, form viết sau này tự đúng.
+
+Hai cách còn lại đều tệ hơn: đổi 70+ ô sang controlled (dài, dễ sót, mỗi ô mới lại phải nhớ),
+hoặc gắn `key` ở từng nơi gọi `<Modal>` (cũng 20+ chỗ phải nhớ).
+
+**`tsc`, `npm run build` và vitest đều XANH với lỗi này** — JSX hợp lệ, kiểu đúng, không phép
+tính nào sai. Chỉ lộ ra khi thật sự mở modal hai lần trong trình duyệt. Nên nó được canh bằng
+E2E (`modal-dien-lai-du-lieu.spec.ts`), không phải unit test.
+
 ### Phản hồi sau thao tác: vòng xoay khi chạy, thông báo khi xong (11/10/2026)
 
 Chủ sản phẩm báo: gửi mail trông như **treo máy**, và nhiều thao tác xong mà không biết có

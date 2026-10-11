@@ -8,6 +8,24 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Fixed — Modal sửa dùng lại dữ liệu của lần mở trước (11/10/2026)
+
+Chủ sản phẩm báo màn Khoá học: danh sách ghi 7.275.000đ / 15 buổi nhưng modal hiện 0đ / 40
+buổi — số của lần nhập trước đó.
+
+`<Modal>` dựng bằng `<dialog>` nên đóng modal **không gỡ khỏi DOM**, chỉ đổi `open`. React chỉ
+đọc `defaultValue` ở lần dựng đầu tiên ⇒ mọi ô uncontrolled giữ giá trị cũ. Nguy hiểm hơn cả
+hiển thị sai: bấm Lưu là **ghi đè dữ liệu dòng này bằng số của dòng khác**.
+
+Không riêng Khoá học — đếm ra **15+ màn, 70+ ô `defaultValue`** cùng dính.
+
+Sửa trong chính `Modal` bằng `key` đổi theo số lần mở: một chỗ, mọi modal hưởng, form viết sau
+này tự đúng. Đổi 70+ ô sang controlled hoặc gắn `key` ở 20+ nơi gọi đều dễ sót hơn.
+
+`tsc`, `npm run build` và vitest đều xanh với lỗi này, nên canh bằng **E2E**
+(`modal-dien-lai-du-lieu.spec.ts`). Kiểm bằng đột biến: bỏ `key` ⇒ test đỏ đúng triệu chứng
+("Expected: Khoá Alpha, Received: Khoá Beta").
+
 ### Fixed — Xoá doanh thu nổ 500 (11/10/2026)
 
 Chủ sản phẩm báo "xoá doanh thu đang gặp lỗi". Dựng lại được ngay: **HTTP 500

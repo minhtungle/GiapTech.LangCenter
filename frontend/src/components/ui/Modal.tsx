@@ -63,6 +63,32 @@ export function Modal({
 }) {
   const ref = React.useRef<HTMLDialogElement>(null)
 
+  /*
+    Đếm số lần MỞ, dùng làm `key` cho phần nội dung (11/10/2026).
+
+    ## Lỗi nó sửa
+
+    `<dialog>` không bị unmount khi đóng — nó chỉ đổi thuộc tính `open`. Mà React chỉ đọc
+    `defaultValue` ở lần dựng ĐẦU TIÊN, nên mọi ô uncontrolled giữ nguyên giá trị của lần mở
+    trước: mở sửa khoá A rồi sửa khoá B thì ô giá tiền, số buổi… vẫn là của A.
+
+    Chủ sản phẩm báo 11/10/2026 với màn Khoá học (danh sách ghi 7.275.000đ/15 buổi, modal hiện
+    0đ/40 buổi — số của lần nhập trước). Đếm ra 15+ màn, 70+ ô `defaultValue` cùng dính.
+
+    ## Vì sao sửa ở ĐÂY
+
+    Đổi `key` là ép React dựng lại cây con ⇒ mọi `defaultValue` đọc lại. Một chỗ sửa, mọi
+    modal hưởng, và form viết sau này tự đúng.
+
+    Cách còn lại là đổi 70+ ô sang controlled: dài, dễ sót, và mỗi lần thêm ô mới lại phải
+    nhớ. Hoặc gắn `key` ở từng nơi gọi `<Modal>` — cũng là 20+ chỗ phải nhớ.
+  */
+  const [lanMo, setLanMo] = React.useState(0)
+
+  React.useEffect(() => {
+    if (mo) setLanMo((n) => n + 1)
+  }, [mo])
+
   React.useEffect(() => {
     const d = ref.current
     if (!d) return
@@ -155,7 +181,10 @@ export function Modal({
         SelectTimKiem (position: absolute) bị cắt và phải cuộn mới thấy. Thay vào đó giới hạn
         chiều cao chính dialog và cho cả dialog cuộn — dropdown vẫn nổi lên trên bình thường.
       */}
-      <div className="p-4">{children}</div>
+      {/* `key` đổi mỗi lần mở ⇒ nội dung dựng lại ⇒ `defaultValue` đọc lại. Xem `lanMo`. */}
+      <div key={lanMo} className="p-4">
+        {children}
+      </div>
     </dialog>
   )
 }
