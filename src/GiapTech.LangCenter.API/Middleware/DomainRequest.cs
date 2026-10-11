@@ -39,6 +39,14 @@ public static class DomainRequest
     public const string KhoaSauProxy = "SAU_REVERSE_PROXY";
 
     /// <summary>
+    /// Cấu hình: danh sách domain "cổng chung" (phân cách dấu phẩy), phục vụ mọi trung tâm
+    /// chưa trỏ domain riêng qua đường mã trung tâm — không tra được theo domain nên phải loại
+    /// trừ khỏi <see cref="GiapTech.LangCenter.API.Middleware.TenantMiddleware"/>, xem chú
+    /// thích tại đó.
+    /// </summary>
+    public const string KhoaDomainCongChung = "DOMAIN_CONG_CHUNG";
+
+    /// <summary>
     /// Mã trung tâm cho đường CÔNG KHAI DỰ PHÒNG `/t/{mã}` (FR-30).
     ///
     /// Trung tâm chưa trỏ domain riêng vẫn phải xem được landing của mình — đó là lý do
