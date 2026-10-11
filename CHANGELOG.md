@@ -8,6 +8,23 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Fixed — MỌI modal hiện cùng lúc, chồng lên nhau (11/10/2026)
+
+Chủ sản phẩm báo "các modal đồng loạt lỗi hiển thị". Lỗi do chính thay đổi sticky
+header/footer vài phút trước: tôi thêm class `flex` vào `<dialog>`.
+
+`<dialog>` chưa mở có `display: none` **do trình duyệt đặt**. Class `flex` không điều kiện ghi
+đè cái đó ⇒ mọi modal trong trang hiện cùng lúc. Đo được **2 dialog `display: flex` trong khi
+0 cái có thuộc tính `open`**.
+
+Nhìn ảnh thì tưởng "modal mất tiêu đề" — thực ra là hộp xác nhận của modal khác đang nằm đè
+lên, che mất tiêu đề và nội dung bên dưới.
+
+Sửa: `open:flex` thay `flex`. Kiểm 5 màn, tất cả đều 0 dialog hiện khi chưa mở.
+
+Ghi thêm vào mục "⚠️ Sửa component DÙNG CHUNG": `<dialog>` + class `display` là bẫy riêng,
+luôn dùng biến thể `open:`.
+
 ### Fixed — Tiêu đề và hàng nút của modal đứng yên khi cuộn (11/10/2026)
 
 Chủ sản phẩm báo header/footer modal không cố định, kèm nhận xét **"bạn đang làm phần này lỗi

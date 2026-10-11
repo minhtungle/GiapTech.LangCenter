@@ -177,6 +177,13 @@ một dòng ở đó là sửa đồng thời 50 màn — tiện khi đúng, và
    kiểu đúng, không phép tính nào sai. Phải mở trình duyệt và **đo**: `getBoundingClientRect`,
    `elementFromPoint`, `scrollTop`. Ảnh chụp để nhìn, số đo để kết luận.
 
+**`<dialog>` + class `display` là bẫy riêng, nhớ kỹ**: `<dialog>` chưa mở có `display: none`
+do trình duyệt đặt. Một class `flex`/`grid`/`block` **không điều kiện** sẽ ghi đè cái đó, và
+**mọi modal trong trang hiện cùng lúc chồng lên nhau**. Đã xảy ra 11/10/2026: đo được 2 dialog
+`display: flex` trong khi 0 cái có thuộc tính `open`; nhìn ảnh thì tưởng "modal mất tiêu đề",
+thực ra là hộp xác nhận của modal khác đang đè lên. **Luôn dùng biến thể `open:`** —
+`open:flex`, không `flex`.
+
 **Và đừng tin một phép đo duy nhất**: `elementFromPoint` ở tâm dropdown từng báo "bị đè" trong
 khi ảnh chụp cho thấy nó hiện đầy đủ — selector bắt nhầm phần tử. Số đo mâu thuẫn với ảnh thì
 nhìn ảnh.

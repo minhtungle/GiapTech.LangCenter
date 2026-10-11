@@ -156,7 +156,17 @@ export function Modal({
           Trước đó cả dialog cuộn nên tiêu đề trôi mất, và nút Lưu phải cuộn xuống đáy mới
           bấm được — chủ sản phẩm báo 11/10/2026.
         */
-        'flex max-h-[calc(100dvh-4rem)] flex-col overflow-hidden',
+        /*
+          `open:flex` chứ KHÔNG `flex` trần — lỗi nghiêm trọng 11/10/2026.
+
+          `<dialog>` chưa mở có `display: none` do trình duyệt đặt. Một class `flex` không
+          điều kiện GHI ĐÈ cái đó, nên MỌI modal trong trang hiện cùng lúc, chồng lên nhau:
+          đo được 2 dialog `display: flex` trong khi 0 cái có thuộc tính `open`.
+
+          Nhìn ảnh thì tưởng "modal mất tiêu đề" — thực ra là hộp xác nhận của modal khác
+          đang nằm đè lên. Biến thể `open:` chỉ áp khi dialog thật sự mở.
+        */
+        'max-h-[calc(100dvh-4rem)] flex-col overflow-hidden open:flex',
         rong === 'sm' && 'max-w-sm',
         rong === 'md' && 'max-w-xl',
         rong === 'lg' && 'max-w-3xl',
