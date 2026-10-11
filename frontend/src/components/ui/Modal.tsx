@@ -149,8 +149,14 @@ export function Modal({
         'backdrop:bg-black/40 backdrop:backdrop-blur-[1px]',
         // Lớp dưới mờ đi khi có modal mở trên nó (xem `capNhatLopTrenCung`).
         'transition-opacity duration-150',
-        // Cuộn ở cấp dialog, không ở thân — xem chú thích bên dưới.
-        'max-h-[calc(100dvh-4rem)] overflow-y-auto',
+        /*
+          Khung ngoài KHÔNG cuộn: `flex flex-col` + `overflow-hidden` để thân cuộn riêng,
+          nhờ đó tiêu đề và hàng nút ĐỨNG YÊN khi form dài (11/10/2026).
+
+          Trước đó cả dialog cuộn nên tiêu đề trôi mất, và nút Lưu phải cuộn xuống đáy mới
+          bấm được — chủ sản phẩm báo 11/10/2026.
+        */
+        'flex max-h-[calc(100dvh-4rem)] flex-col overflow-hidden',
         rong === 'sm' && 'max-w-sm',
         rong === 'md' && 'max-w-xl',
         rong === 'lg' && 'max-w-3xl',
@@ -159,7 +165,9 @@ export function Modal({
         rong === 'xl' && 'max-w-6xl',
       )}
     >
-      <div className="flex items-start justify-between gap-4 border-b border-border p-4">
+      {/* `shrink-0`: trong flex cột, phần tử mặc định CO LẠI khi chỗ không đủ — tiêu đề sẽ
+          bị bóp dẹt thay vì thân cuộn. */}
+      <div className="flex shrink-0 items-start justify-between gap-4 border-b border-border p-4">
         <div>
           <h2 className="text-base font-semibold">{tieuDe}</h2>
           {moTa && <p className="mt-0.5 text-sm text-muted-foreground">{moTa}</p>}
@@ -177,9 +185,12 @@ export function Modal({
       </div>
 
       {/*
-        KHÔNG dùng overflow-y-auto ở đây: nó tạo scroll container, khiến dropdown của
-        SelectTimKiem (position: absolute) bị cắt và phải cuộn mới thấy. Thay vào đó giới hạn
-        chiều cao chính dialog và cho cả dialog cuộn — dropdown vẫn nổi lên trên bình thường.
+        Thân là vùng CUỘN (đổi 11/10/2026 — trước đó cuộn ở cấp dialog).
+
+        Chú thích cũ ở đây cảnh báo `overflow-y-auto` sẽ cắt dropdown của `SelectTimKiem` vì
+        nó dùng `position: absolute`. Cảnh báo đó **không còn đúng**: `SelectTimKiem` và
+        `MenuThaoTac` nay đều dựng khung thả xuống bằng `position: fixed` với toạ độ viewport,
+        nên không bị khung cuộn nào cắt. Đã kiểm lại trước khi đổi.
       */}
       {/* `key` đổi mỗi lần mở ⇒ nội dung dựng lại ⇒ `defaultValue` đọc lại. Xem `lanMo`. */}
       {/*
@@ -196,7 +207,10 @@ export function Modal({
         `gap-4` chứ không `gap-3`: nhãn + ô nhập cao 56px, khe 12px làm hai trường dính vào
         nhau tới mức khó nhìn ra đâu là nhãn của ô nào.
       */}
-      <div key={lanMo} className="p-4 [&>.grid]:gap-4 [&>form]:gap-4">
+      <div
+        key={lanMo}
+        className="flex-1 overflow-y-auto p-4 [&>.grid]:gap-4 [&>form]:gap-4"
+      >
         {children}
       </div>
     </dialog>
@@ -213,7 +227,22 @@ export function ModalChan({ children }: { children: React.ReactNode }) {
       `mt-2` chứ không `mt-4`: hàng nút nằm trong `grid gap-3/gap-4` của form nên đã có sẵn
       khoảng cách; cộng thêm mt-4 thành khe hở to hơn hẳn mọi khe khác trong modal.
     */
-    <div className="-mx-4 mt-2 flex justify-end gap-2 border-t border-border px-4 pt-4">
+    /*
+      `sticky bottom-0`: hàng nút nằm TRONG vùng cuộn (mỗi màn tự đặt `<ModalChan>` trong
+      `children`, nên `Modal` không pin nó từ ngoài được). Sticky giữ nó dính đáy khung
+      cuộn — form dài vẫn thấy nút Lưu mà không phải cuộn xuống đáy (11/10/2026).
+
+      `bg-card` BẮT BUỘC: nền trong suốt thì nội dung cuộn qua sẽ lộ ra dưới hàng nút.
+
+      `-mx-4 px-4` + `-mb-4 pb-4`: kéo ra sát mép khung cuộn để đường kẻ chạy hết bề ngang
+      và không hở một dải nền ở đáy khi cuộn tới cuối.
+    */
+    <div
+      className={cn(
+        'sticky bottom-0 z-10 -mx-4 -mb-4 mt-2 flex justify-end gap-2',
+        'border-t border-border bg-card px-4 pb-4 pt-4',
+      )}
+    >
       {children}
     </div>
   )

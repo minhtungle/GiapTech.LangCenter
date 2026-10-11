@@ -8,6 +8,29 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Fixed — Tiêu đề và hàng nút của modal đứng yên khi cuộn (11/10/2026)
+
+Chủ sản phẩm báo header/footer modal không cố định, kèm nhận xét **"bạn đang làm phần này lỗi
+phần khác"**.
+
+Lỗi này **có sẵn từ trước**, không do thay đổi hôm nay: cả `<dialog>` cuộn nên tiêu đề trôi
+mất và nút Lưu phải cuộn xuống đáy mới bấm được. Nhưng việc tôi cho đường kẻ chân modal chạy
+hết bề ngang làm nó đập vào mắt.
+
+Đổi sang ba tầng: dialog `flex flex-col overflow-hidden` · tiêu đề `shrink-0` · thân
+`flex-1 overflow-y-auto` · `ModalChan` `sticky bottom-0 bg-card`.
+
+Chú thích cũ trong `Modal` cảnh báo *"KHÔNG dùng overflow-y-auto, sẽ cắt dropdown của
+SelectTimKiem"* — **đã lạc hậu**: `SelectTimKiem` và `MenuThaoTac` nay dùng `position: fixed`
+với toạ độ viewport. Kiểm lại trên trình duyệt trước khi đổi, và sửa luôn chú thích.
+
+Đo: cuộn 438px mà tiêu đề đứng yên `top: 33`, nút Lưu `top: 583`. Dropdown Phòng ban mở trong
+modal đã cuộn vẫn hiện đủ 7 mục, không bị cắt.
+
+**Thêm mục "⚠️ Sửa component DÙNG CHUNG"** vào `docs/04-frontend/ui-ux-nguyen-tac.md`: bảng ba
+sự cố liên tiếp (khoá cột bảng ⇒ menu bị đè ⇒ portal ⇒ bấm-ngoài sai) và bốn câu phải trả lời
+trước khi sửa component có 30–50 nơi gọi.
+
 ### Changed — Bố cục modal cân đối ở mọi màn (11/10/2026)
 
 Chủ sản phẩm báo "nhiều modal bố trí chưa cân đối". Đếm ra **77 khung lưới** trong các modal

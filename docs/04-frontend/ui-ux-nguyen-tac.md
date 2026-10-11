@@ -142,6 +142,45 @@ thêm mới sau đó sẽ thấy sẵn lỗi của thao tác trước, không li
 Tách `maLoi` (lỗi trong form) và `maLoiTrang` (lỗi thao tác trên trang), và dọn `maLoiTrang`
 mỗi khi mở form.
 
+### ⚠️ Sửa component DÙNG CHUNG: đọc hết mục này trước khi đổi
+
+> Thêm 11/10/2026 sau khi chủ sản phẩm nhận xét: *"bạn đang làm phần này lỗi phần khác"*.
+> Ba lần liên tiếp một thay đổi ở component dùng chung làm hỏng thứ đang chạy tốt.
+
+`Modal`, `Table`, `MenuThaoTac`, `Button`, `SelectTimKiem` mỗi cái có **30–50 nơi gọi**. Sửa
+một dòng ở đó là sửa đồng thời 50 màn — tiện khi đúng, và hỏng 50 màn khi sai.
+
+**Chuỗi sự cố thật, mỗi cái sinh ra từ cái trước:**
+
+| Thay đổi | Hỏng cái gì | Vì sao không thấy trước |
+|---|---|---|
+| Khoá cột bảng bằng `sticky` | Menu thao tác chui xuống dưới các dòng | `sticky` tạo *stacking context*, `z-50` hết tác dụng |
+| Menu đưa ra `document.body` | "Bấm ngoài thì đóng" tính nhầm cả bấm vào menu | Menu không còn nằm trong `boc` để `contains()` thấy |
+| `ModalChan` kẻ hết bề ngang | Lộ ra tiêu đề/nút trôi khi cuộn | Đường kẻ rõ hơn làm lỗi sẵn có đập vào mắt |
+
+**Bốn câu phải trả lời trước khi sửa component dùng chung:**
+
+1. **Thay đổi này tạo stacking context hay scroll container mới không?**
+   `position: sticky/fixed`, `overflow` khác `visible`, `transform`, `filter`, `opacity < 1`
+   đều tạo. Thứ nổi lên trên (dropdown, menu, tooltip) sẽ bị nhốt hoặc bị cắt.
+
+2. **Có phần tử nào đang định vị theo phần tử tôi đang đổi không?**
+   `getBoundingClientRect`, `contains()`, `closest()`, `parentElement` — đổi cây DOM là đổi
+   kết quả của chúng. Grep tên component trước khi đổi cấu trúc.
+
+3. **Chú thích cũ ở chỗ tôi sắp sửa có còn đúng không?**
+   `Modal` từng ghi *"KHÔNG dùng overflow-y-auto, sẽ cắt dropdown của SelectTimKiem"* — đúng
+   lúc viết, **sai từ khi** `SelectTimKiem` đổi sang `position: fixed`. Kiểm lại trước khi
+   tin, và **sửa luôn chú thích** nếu nó đã lạc hậu.
+
+4. **Kiểm bằng cái gì?** `tsc`/`build`/vitest **không bắt được** loại lỗi này — JSX hợp lệ,
+   kiểu đúng, không phép tính nào sai. Phải mở trình duyệt và **đo**: `getBoundingClientRect`,
+   `elementFromPoint`, `scrollTop`. Ảnh chụp để nhìn, số đo để kết luận.
+
+**Và đừng tin một phép đo duy nhất**: `elementFromPoint` ở tâm dropdown từng báo "bị đè" trong
+khi ảnh chụp cho thấy nó hiện đầy đủ — selector bắt nhầm phần tử. Số đo mâu thuẫn với ảnh thì
+nhìn ảnh.
+
 ### Bố cục modal: một mức khoảng cách, ô lẻ kéo hết hàng (11/10/2026)
 
 Chủ sản phẩm báo "nhiều modal bố trí chưa cân đối". Đếm ra **77 khung lưới** trong các modal
@@ -164,6 +203,30 @@ lưới đã tự chiếm 2 cột nên nó mới là `last-child`. Luật cũ nh
 hai ô đó hẹp hơn hẳn các ô cùng hàng (192px so với 263px).
 
 Đo sau khi sửa: cả 4 ô lọc đều **263px**, ô lẻ **542px**.
+
+### Modal: tiêu đề và hàng nút ĐỨNG YÊN, chỉ thân cuộn (11/10/2026)
+
+Trước đó cả `<dialog>` cuộn (`max-h` + `overflow-y-auto` ở cấp ngoài), nên form dài làm tiêu
+đề trôi mất và nút Lưu phải cuộn xuống đáy mới bấm được.
+
+Cấu trúc nay là **ba tầng**, đừng phá:
+
+```
+<dialog>                     flex flex-col overflow-hidden max-h-[...]
+  ├─ tiêu đề                 shrink-0          ← không co khi thân dài
+  └─ thân                    flex-1 overflow-y-auto   ← CHỈ chỗ này cuộn
+       └─ <ModalChan>        sticky bottom-0 bg-card  ← dính đáy khung cuộn
+```
+
+**`ModalChan` phải `sticky`, không `fixed`**: mỗi màn tự đặt nó trong `children` nên `Modal`
+không pin được từ ngoài. Và nó **bắt buộc có `bg-card`** — nền trong suốt thì nội dung cuộn
+qua lộ ra dưới hàng nút.
+
+**`shrink-0` ở tiêu đề là bắt buộc**: trong flex cột, phần tử mặc định co lại khi thiếu chỗ,
+nên thiếu nó thì tiêu đề bị bóp dẹt thay vì thân cuộn.
+
+Đo sau khi sửa (form Người dùng, viewport 700px): cuộn 438px mà tiêu đề đứng yên ở `top: 33`,
+nút Lưu đứng yên ở `top: 583`.
 
 ### `<dialog>` không unmount — modal phải dựng lại nội dung mỗi lần mở (11/10/2026)
 
