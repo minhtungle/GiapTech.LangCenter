@@ -182,7 +182,21 @@ export function Modal({
         chiều cao chính dialog và cho cả dialog cuộn — dropdown vẫn nổi lên trên bình thường.
       */}
       {/* `key` đổi mỗi lần mở ⇒ nội dung dựng lại ⇒ `defaultValue` đọc lại. Xem `lanMo`. */}
-      <div key={lanMo} className="p-4">
+      {/*
+        Khoảng cách CHUẨN cho mọi modal (11/10/2026).
+
+        Chủ sản phẩm báo "nhiều modal bố trí chưa cân đối". Đếm ra 77 khung lưới trong các
+        modal dùng 6 mức gap khác nhau (gap-1.5, gap-2, gap-3, gap-4…), nên mỗi modal thưa
+        dày một kiểu.
+
+        `[&>form]:gap-4` + `[&>.grid]:gap-4` đặt một mức duy nhất ở ĐÂY thay vì sửa 77 chỗ:
+        một chỗ sửa, mọi modal đều theo, và form viết sau này tự đúng. Màn nào thật sự cần
+        khác thì vẫn ghi đè được vì class của chính nó cụ thể hơn.
+
+        `gap-4` chứ không `gap-3`: nhãn + ô nhập cao 56px, khe 12px làm hai trường dính vào
+        nhau tới mức khó nhìn ra đâu là nhãn của ô nào.
+      */}
+      <div key={lanMo} className="p-4 [&>.grid]:gap-4 [&>form]:gap-4">
         {children}
       </div>
     </dialog>
@@ -192,6 +206,15 @@ export function Modal({
 /** Hàng nút ở chân modal — luôn phải/trái nhất quán giữa các màn. */
 export function ModalChan({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-4 flex justify-end gap-2 border-t border-border pt-4">{children}</div>
+    /*
+      `-mx-4 px-4`: đường kẻ chạy HẾT bề ngang modal thay vì thụt vào theo lề nội dung —
+      kẻ thụt trông như một gạch ngang lạc giữa form, không ra ranh giới (11/10/2026).
+
+      `mt-2` chứ không `mt-4`: hàng nút nằm trong `grid gap-3/gap-4` của form nên đã có sẵn
+      khoảng cách; cộng thêm mt-4 thành khe hở to hơn hẳn mọi khe khác trong modal.
+    */
+    <div className="-mx-4 mt-2 flex justify-end gap-2 border-t border-border px-4 pt-4">
+      {children}
+    </div>
   )
 }

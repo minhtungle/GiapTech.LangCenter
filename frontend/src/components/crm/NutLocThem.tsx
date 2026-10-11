@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { Modal, ModalChan } from '@/components/ui/Modal'
+import { cn } from '@/lib/utils'
 
 /**
  * Nút "Lọc thêm" mở **modal** chứa các bộ lọc phụ (11/10/2026).
@@ -55,8 +56,25 @@ export function NutLocThem({
         {/*
           Không có nút "Áp dụng": mỗi ô lọc đổi là bảng lọc ngay, nên người dùng thấy kết quả
           mà không phải đóng modal lại. Nút dưới chỉ để đóng.
+
+          Ô LẺ cuối cùng kéo hết hàng thay vì đứng trơ nửa bên trái cạnh một khoảng trống
+          bằng chính nó (11/10/2026 — chủ sản phẩm báo ô "Hình thức thanh toán" lẻ loi).
+
+          Nhắm vào `div` cuối chứ không `*:last-child`: dòng chú thích `<p>` ở cuối đã tự
+          chiếm 2 cột, nên nó mới là `last-child` — đo thấy ô lọc vẫn 263px còn chú thích
+          542px, tức luật cũ nhắm trượt.
+
+          Làm bằng CSS chứ không đếm `children` trong JS: mỗi màn truyền số ô khác nhau, và
+          vài ô còn hiện có điều kiện — đếm trong JS sẽ sai ngay khi một ô ẩn đi.
         */}
-        <div className="grid gap-3 sm:grid-cols-2">{children}</div>
+        <div
+          className={cn(
+            'grid gap-4 sm:grid-cols-2',
+            '[&>div:last-of-type:nth-child(odd)]:sm:col-span-2',
+          )}
+        >
+          {children}
+        </div>
 
         <ModalChan>
           {soLocDangBat > 0 && (

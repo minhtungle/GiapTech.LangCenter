@@ -8,6 +8,24 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Changed — Bố cục modal cân đối ở mọi màn (11/10/2026)
+
+Chủ sản phẩm báo "nhiều modal bố trí chưa cân đối". Đếm ra **77 khung lưới** trong các modal
+dùng **6 mức gap khác nhau** — mỗi modal thưa dày một kiểu.
+
+Sửa ở **component dùng chung**, không sửa 77 chỗ gọi: `Modal` đặt một mức `gap-4` cho mọi
+form/lưới con, `ModalChan` cho đường kẻ chạy hết bề ngang và bỏ khe thừa, `NutLocThem` cho ô
+lọc lẻ cuối cùng kéo hết hàng. Một chỗ sửa, mọi modal theo, form viết sau này tự đúng.
+
+Hai phép đo chỉ ra lỗi mà nhìn ảnh không thấy rõ:
+
+- Ô lẻ phải nhắm `div:last-of-type` chứ không `*:last-child` — dòng chú thích `<p>` ở cuối đã
+  tự chiếm 2 cột nên nó mới là `last-child`, luật đầu tiên tôi viết nhắm trượt (ô lọc vẫn
+  263px trong khi chú thích 542px).
+- `LocDoiNhom` hard-code `w-48` làm hai ô đó hẹp hơn các ô cùng hàng (192px so với 263px).
+
+Sau khi sửa: cả 4 ô lọc đều **263px**, ô lẻ **542px** lấp hết hàng.
+
 ### Added — Danh mục ngôn ngữ, lọc theo ngôn ngữ, bộ lọc gom vào modal (11/10/2026)
 
 **Danh mục ngôn ngữ** (`/crm/ngon-ngu`): bảng `NGON_NGU` riêng, không enum — mỗi trung tâm

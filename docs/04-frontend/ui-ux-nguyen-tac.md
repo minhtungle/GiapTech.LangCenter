@@ -142,6 +142,29 @@ thêm mới sau đó sẽ thấy sẵn lỗi của thao tác trước, không li
 Tách `maLoi` (lỗi trong form) và `maLoiTrang` (lỗi thao tác trên trang), và dọn `maLoiTrang`
 mỗi khi mở form.
 
+### Bố cục modal: một mức khoảng cách, ô lẻ kéo hết hàng (11/10/2026)
+
+Chủ sản phẩm báo "nhiều modal bố trí chưa cân đối". Đếm ra **77 khung lưới** trong các modal
+dùng **6 mức gap khác nhau** (`gap-1.5`, `gap-2`, `gap-3`, `gap-4`…) — mỗi modal thưa dày một
+kiểu.
+
+Ba thứ sửa, tất cả đặt ở **component dùng chung** thay vì 77 chỗ gọi:
+
+| Sửa ở đâu | Làm gì |
+|---|---|
+| `Modal` | `[&>form]:gap-4` + `[&>.grid]:gap-4` — một mức khoảng cách cho mọi modal |
+| `ModalChan` | `-mx-4 px-4` cho đường kẻ chạy hết bề ngang; `mt-2` thay `mt-4` vì form đã có gap sẵn |
+| `NutLocThem` | Ô lọc lẻ cuối cùng kéo hết hàng |
+
+**Ô lẻ phải nhắm `div:last-of-type`, không phải `*:last-child`**: dòng chú thích `<p>` ở cuối
+lưới đã tự chiếm 2 cột nên nó mới là `last-child`. Luật cũ nhắm trượt — đo thấy ô lọc vẫn
+263px trong khi chú thích 542px.
+
+**`LocDoiNhom` bỏ `w-48` cố định**, dùng `w-full` để khung chứa quyết định. Bề rộng cứng làm
+hai ô đó hẹp hơn hẳn các ô cùng hàng (192px so với 263px).
+
+Đo sau khi sửa: cả 4 ô lọc đều **263px**, ô lẻ **542px**.
+
 ### `<dialog>` không unmount — modal phải dựng lại nội dung mỗi lần mở (11/10/2026)
 
 `<Modal>` dựng bằng `<dialog>` nên đóng modal **không gỡ nó khỏi DOM**, chỉ đổi thuộc tính

@@ -38,6 +38,15 @@ interface NguoiDungNgan {
  * nhân viên thu hẹp theo). Viết hai bản là hai bản sẽ trôi khỏi nhau — đúng bài học của
  * `KhungNoiDung`.
  */
+/*
+  Hai ô dùng `w-full` chứ không `w-48` cố định (11/10/2026).
+
+  Component này nằm trong LƯỚI của modal "Lọc thêm". Bề rộng cứng làm hai ô này hẹp hơn hẳn
+  các ô cùng hàng — đo được 192px so với 263px, nhìn ra ngay là lệch.
+
+  `w-full` để khung chứa quyết định: trong lưới thì lấp đúng một ô, trong hàng flex thì co
+  theo chỗ còn lại.
+*/
 export function LocDoiNhom({
   phongBanId,
   nhanVienId,
@@ -103,7 +112,7 @@ export function LocDoiNhom({
 
   return (
     <>
-      <div className="w-48">
+      <div className="w-full">
         <Label htmlFor="loc-doi">{t('crmLoc.doiNhom')}</Label>
         <SelectTimKiem
           id="loc-doi"
@@ -141,7 +150,7 @@ export function LocDoiNhom({
         )}
       </div>
 
-      <div className="w-48">
+      <div className="w-full">
         <Label htmlFor="loc-nv">{t('crmLoc.nhanVien')}</Label>
         <SelectTimKiem
           id="loc-nv"
