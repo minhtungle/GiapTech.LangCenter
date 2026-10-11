@@ -411,6 +411,29 @@ public class XoaDangKyHandler(IAppDbContext db) : IRequestHandler<XoaDangKyComma
         var dk = await db.DangKyKhoaHocs.FirstOrDefaultAsync(d => d.Id == request.Id, ct)
                  ?? throw new KhongTimThayException($"DangKyKhoaHoc {request.Id}");
 
+        /*
+          Còn lần thu ⇒ CHẶN, và nói rõ phải làm gì (11/10/2026).
+
+          FK `THU_TIEN_DANG_KY → DANG_KY_KHOA_HOC` là `Restrict` CÓ CHỦ Ý: dữ liệu tiền không
+          được biến mất theo đơn. Nhưng handler này không kiểm gì cả, nên lệnh xoá rơi thẳng
+          xuống DB và nổ `23503` — client nhận 500 `LOI_HE_THONG`, người dùng không hiểu vì
+          sao và cũng không biết là phải xoá các lần thu trước.
+
+          Trên dữ liệu thật: 1029/1056 đơn có lần thu, tức gần như MỌI lệnh xoá đều 500.
+
+          KHÔNG đổi sang Cascade: xoá một đơn mà cuốn theo sổ thu tiền là mất dấu vết tiền đã
+          nhận — đúng thứ `Restrict` dựng ra để chặn.
+
+          Cùng khuôn với `XoaKhoaHocHandler`, nơi đã xử lý đúng bẫy này từ trước.
+        */
+        if (await db.ThuTienDangKys.AnyAsync(t => t.DangKyId == dk.Id, ct))
+            throw new AppException("DON_HANG_DA_CO_LAN_THU");
+
+        // FK thứ HAI cũng Restrict: yêu cầu xếp lớp là vết bàn giao CRM → LMS. Không kiểm thì
+        // đơn đã gửi sang đào tạo cũng nổ 500 y hệt, chỉ là hiếm gặp hơn nên lâu mới lộ.
+        if (await db.YeuCauXepLops.AnyAsync(y => y.DangKyId == dk.Id, ct))
+            throw new AppException("DON_HANG_DA_GUI_XEP_LOP");
+
         db.DangKyKhoaHocs.Remove(dk);
         await db.SaveChangesAsync(ct);
     }

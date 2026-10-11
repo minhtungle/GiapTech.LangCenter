@@ -1732,6 +1732,11 @@ const vi = {
     KHACH_HANG_DA_NOI_HO_SO_KHAC:
       'Khách hàng này đã được nối với một hồ sơ khác. Hãy mở hồ sơ đó thay vì tạo hồ sơ mới.',
     KHOA_HOC_TRUNG_TEN: 'Tên khoá học đã tồn tại',
+    DON_HANG_DA_CO_LAN_THU:
+      'Đơn này đã ghi nhận tiền thu, không xoá được. Xoá từng lần thu ở phần "Số tiền đã đóng" '
+      + 'của khách rồi mới xoá đơn — để không mất dấu vết tiền đã nhận.',
+    DON_HANG_DA_GUI_XEP_LOP:
+      'Đơn này đã gửi yêu cầu xếp lớp sang đào tạo, không xoá được. Huỷ yêu cầu xếp lớp trước.',
     KHOA_HOC_DA_CO_DANG_KY:
       'Khoá học này đã có đăng ký, không xoá được. Bỏ tích "Còn bán khoá này" để ngừng bán mà '
       + 'vẫn giữ lịch sử đơn hàng.',

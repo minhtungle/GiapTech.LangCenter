@@ -290,6 +290,30 @@ nhau: bán được bao nhiêu, và đã cầm về bao nhiêu. Màn Doanh thu h
 > là một ô riêng cạnh tổng cam kết, kèm phần còn thiếu. Doanh thu **vẫn** tính trên cam kết —
 > đó không phải thứ cần sửa.
 
+### Xoá đơn hàng: chặn khi còn dấu vết tiền (11/10/2026)
+
+`DANG_KY_KHOA_HOC` có **hai** khoá ngoại `Restrict` trỏ vào, cả hai đều có chủ ý:
+
+| Bảng | Vì sao Restrict |
+|---|---|
+| `THU_TIEN_DANG_KY` | Dữ liệu tiền không được biến mất theo đơn |
+| `YEU_CAU_XEP_LOP` | Yêu cầu là vết bàn giao CRM → LMS |
+
+Nhưng `XoaDangKyHandler` **không kiểm gì cả**, nên lệnh xoá rơi thẳng xuống DB và nổ `23503`;
+client nhận **500 `LOI_HE_THONG`**, người dùng không hiểu vì sao và cũng không biết phải xoá
+các lần thu trước. Trên dữ liệu thật 1029/1056 đơn có lần thu, tức gần như **mọi** lệnh xoá
+đều 500.
+
+Nay chặn ở handler với mã lỗi nói rõ phải làm gì: `DON_HANG_DA_CO_LAN_THU` và
+`DON_HANG_DA_GUI_XEP_LOP`.
+
+**Không đổi sang Cascade**: xoá một đơn mà cuốn theo sổ thu tiền là mất dấu vết tiền đã nhận —
+đúng thứ `Restrict` dựng ra để chặn. Muốn xoá đơn thì xoá từng lần thu trước, một cách có ý thức.
+
+Cùng khuôn với `XoaKhoaHocHandler` — nơi đã xử lý đúng bẫy này từ trước, chỉ là handler xoá
+đơn không được làm theo. Canh bởi hai test trong `CrmTests`, gồm test chiều ngược "đơn chưa
+thu vẫn xoá được".
+
 ### Cột "phụ trách" (10/10/2026)
 
 Màn Doanh thu và màn Khách hàng đều có cột **Phụ trách**: tên nhân viên, đội nhóm ở dòng phụ

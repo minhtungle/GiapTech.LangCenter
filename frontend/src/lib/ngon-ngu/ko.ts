@@ -1551,6 +1551,10 @@ const ko = {
     KHONG_XAC_DINH_DUOC_NGUOI_DUNG: '현재 사용자를 확인할 수 없습니다.',
     KHACH_HANG_DA_NOI_HO_SO_KHAC: '이 고객은 이미 다른 정보와 연결되어 있습니다. 새로 만들지 말고 해당 정보를 여세요.',
     KHOA_HOC_TRUNG_TEN: '이미 존재하는 과정명입니다',
+    DON_HANG_DA_CO_LAN_THU:
+      '이 주문에는 수금 기록이 있어 삭제할 수 없습니다. 고객의 「납부 금액」에서 각 수금을 먼저 삭제하세요.',
+    DON_HANG_DA_GUI_XEP_LOP:
+      '이 주문은 교육팀에 반 배정 요청이 전송되어 삭제할 수 없습니다. 배정 요청을 먼저 취소하세요.',
     KHOA_HOC_DA_CO_DANG_KY: '이 과정은 이미 등록 건이 있어 삭제할 수 없습니다. "이 과정을 계속 판매" 체크를 해제하면 주문 이력은 유지한 채 판매만 중지됩니다.',
     KHOA_HOC_KHONG_HOP_LE: '과정이 올바르지 않습니다',
     SAN_PHAM_KHONG_HOP_LE: '상품이 올바르지 않습니다',

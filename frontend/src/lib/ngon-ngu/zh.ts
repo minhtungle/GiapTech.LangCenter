@@ -1551,6 +1551,10 @@ const zh = {
     KHONG_XAC_DINH_DUOC_NGUOI_DUNG: '无法确定当前用户。',
     KHACH_HANG_DA_NOI_HO_SO_KHAC: '该客户已关联到另一份档案。请打开那份档案，而不要新建档案。',
     KHOA_HOC_TRUNG_TEN: '课程名称已存在',
+    DON_HANG_DA_CO_LAN_THU:
+      '此订单已有收款记录，无法删除。请先在客户的「已付金额」中逐笔删除收款，以免丢失收款记录。',
+    DON_HANG_DA_GUI_XEP_LOP:
+      '此订单已发送至教务排班，无法删除。请先取消排班申请。',
     KHOA_HOC_DA_CO_DANG_KY: '该课程已有报名，无法删除。请取消勾选「继续销售该课程」以停售，同时保留订单历史。',
     KHOA_HOC_KHONG_HOP_LE: '课程无效',
     SAN_PHAM_KHONG_HOP_LE: '产品无效',

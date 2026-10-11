@@ -245,6 +245,68 @@ public class CrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
             kh.GetProperty("tenNguoiPhuTrach").GetString());
     }
 
+    // ---------- Xoá đơn hàng (11/10/2026) ----------
+
+    /// <summary>
+    /// Đơn **đã có lần thu** ⇒ chặn bằng mã lỗi đọc được, KHÔNG để nổ 500.
+    ///
+    /// Chủ sản phẩm báo 11/10/2026 "xoá doanh thu đang gặp lỗi". Nguyên nhân: FK
+    /// `THU_TIEN_DANG_KY → DANG_KY_KHOA_HOC` là `Restrict` có chủ ý (tiền không biến mất theo
+    /// đơn), nhưng handler không kiểm gì nên lệnh rơi xuống DB và nổ `23503` — client nhận
+    /// 500 `LOI_HE_THONG`, người dùng không biết phải làm gì.
+    ///
+    /// Trên dữ liệu thật: 1029/1056 đơn có lần thu, tức gần như MỌI lệnh xoá đều 500.
+    /// </summary>
+    [Fact]
+    public async Task Xoa_don_da_co_lan_thu_thi_bao_loi_ro_rang()
+    {
+        var c = await Client();
+        var khach = await TaoKhach(c, "Khách Đơn Có Lần Thu");
+        var khoa = await TaoKhoa(c, "Khoá đơn có lần thu", 4_000_000m);
+
+        var tao = await c.PostAsJsonAsync("/api/v1/doanh-thu", new
+        {
+            KhachHangId = khach, KhoaHocId = khoa, SoTien = 4_000_000m,
+            DonViTien = "VND", TyGiaVeVnd = 1m,
+            NgayDangKy = new DateTimeOffset(2026, 10, 11, 9, 0, 0, TimeSpan.Zero),
+            DaThuDu = true
+        });
+        tao.EnsureSuccessStatusCode();
+        var donId = await tao.Content.ReadFromJsonAsync<Guid>();
+
+        var xoa = await c.DeleteAsync($"/api/v1/doanh-thu/{donId}");
+
+        // 400 kèm mã lỗi, KHÔNG phải 500.
+        Assert.Equal(HttpStatusCode.BadRequest, xoa.StatusCode);
+        Assert.Contains("DON_HANG_DA_CO_LAN_THU", await xoa.Content.ReadAsStringAsync());
+
+        // Và đơn VẪN CÒN — lệnh bị chặn thì không được xoá nửa vời.
+        var ds = (await c.GetFromJsonAsync<JsonElement>($"/api/v1/doanh-thu?khachHangId={khach}"))
+            .GetProperty("duLieu").EnumerateArray().ToList();
+        Assert.Single(ds);
+    }
+
+    /// <summary>
+    /// Đơn **chưa thu đồng nào** ⇒ xoá được bình thường.
+    ///
+    /// Chiều ngược của test trên: chặn quá tay thì người dùng không xoá nổi đơn nhập nhầm.
+    /// </summary>
+    [Fact]
+    public async Task Xoa_don_chua_thu_thi_van_xoa_duoc()
+    {
+        var c = await Client();
+        var khach = await TaoKhach(c, "Khách Đơn Chưa Thu");
+        var khoa = await TaoKhoa(c, "Khoá đơn chưa thu", 3_000_000m);
+        var donId = await TaoDangKy(c, khach, khoa, 3_000_000m);
+
+        var xoa = await c.DeleteAsync($"/api/v1/doanh-thu/{donId}");
+        xoa.EnsureSuccessStatusCode();
+
+        var ds = (await c.GetFromJsonAsync<JsonElement>($"/api/v1/doanh-thu?khachHangId={khach}"))
+            .GetProperty("duLieu").EnumerateArray().ToList();
+        Assert.Empty(ds);
+    }
+
     // ---------- FR-19 Khoá học ----------
 
     [Fact]

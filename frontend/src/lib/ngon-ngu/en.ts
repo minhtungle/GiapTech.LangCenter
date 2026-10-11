@@ -1551,6 +1551,11 @@ const en = {
     KHONG_XAC_DINH_DUOC_NGUOI_DUNG: 'The current user could not be identified.',
     KHACH_HANG_DA_NOI_HO_SO_KHAC: 'This customer is already linked to another profile. Open that profile instead of creating a new one.',
     KHOA_HOC_TRUNG_TEN: 'A course with this name already exists',
+    DON_HANG_DA_CO_LAN_THU:
+      'This order has recorded payments and cannot be deleted. Remove each payment under the '
+      + "customer's \"Amount paid\" section first, so the record of money received is not lost.",
+    DON_HANG_DA_GUI_XEP_LOP:
+      'This order has been sent to training for class placement and cannot be deleted. Cancel the placement request first.',
     KHOA_HOC_DA_CO_DANG_KY: 'This course already has registrations and cannot be deleted. Untick "Still selling this course" to stop selling it while keeping the order history.',
     KHOA_HOC_KHONG_HOP_LE: 'Invalid course',
     SAN_PHAM_KHONG_HOP_LE: 'Invalid product',

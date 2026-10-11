@@ -8,6 +8,25 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Fixed — Xoá doanh thu nổ 500 (11/10/2026)
+
+Chủ sản phẩm báo "xoá doanh thu đang gặp lỗi". Dựng lại được ngay: **HTTP 500
+`LOI_HE_THONG`**, log là PostgreSQL `23503` vi phạm khoá ngoại
+`fk_thu_tien_dang_ky_dang_ky_khoa_hoc_dang_ky_id`.
+
+`THU_TIEN_DANG_KY → DANG_KY_KHOA_HOC` là `Restrict` **có chủ ý** (tiền không biến mất theo
+đơn), nhưng `XoaDangKyHandler` không kiểm gì nên lệnh rơi thẳng xuống DB. Trên dữ liệu thật
+1029/1056 đơn có lần thu ⇒ gần như **mọi** lệnh xoá đều 500.
+
+Nay chặn ở handler với mã lỗi đọc được: `DON_HANG_DA_CO_LAN_THU`. Phát hiện thêm khoá ngoại
+`Restrict` **thứ hai** (`YEU_CAU_XEP_LOP`) cũng nổ y hệt, hiếm gặp hơn nên lâu mới lộ —
+chặn luôn bằng `DON_HANG_DA_GUI_XEP_LOP`.
+
+**Không đổi sang Cascade**: cuốn theo sổ thu tiền là mất dấu vết tiền đã nhận, đúng thứ
+`Restrict` dựng ra để chặn. Thông báo lỗi chỉ rõ phải xoá từng lần thu trước.
+
+2 test mới, gồm chiều ngược "đơn chưa thu vẫn xoá được". Kiểm bằng đột biến: bỏ guard ⇒ đỏ.
+
 ### Added — Vòng xoay khi đang chạy, thông báo khi xong (11/10/2026)
 
 Chủ sản phẩm báo: gửi mail trông như **treo máy**, và nhiều thao tác xong mà không biết có
