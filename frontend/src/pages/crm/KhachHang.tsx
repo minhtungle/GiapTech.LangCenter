@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
-  ExternalLink, Eye, KeyRound, Pencil, Plus, SlidersHorizontal, Trash2,
+  ExternalLink, Eye, KeyRound, Pencil, Plus, Trash2,
 } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import {
@@ -16,6 +16,8 @@ import { PhanTrang } from '@/components/ui/PhanTrang'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { LocDoiNhom } from '@/components/crm/LocDoiNhom'
+import { NutLocThem } from '@/components/crm/NutLocThem'
+import type { NgonNguDto } from './NgonNgu'
 import { useQuyen } from '@/lib/quyen'
 import { useXacNhan } from '@/lib/xacNhan'
 import { tien, type KhachHangDto } from './crmTypes'
@@ -42,7 +44,7 @@ export default function KhachHang() {
   const [nguon, setNguon] = useState<string | null>(null)
   const [tuNgay, setTuNgay] = useState('')
   const [denNgay, setDenNgay] = useState('')
-  const [moLocThem, setMoLocThem] = useState(false)
+  const [locNgonNgu, setLocNgonNgu] = useState<string | null>(null)
 
   const [moForm, setMoForm] = useState(false)
   const [dangSua, setDangSua] = useState<KhachHangDto | null>(null)
@@ -51,7 +53,7 @@ export default function KhachHang() {
 
   const { data: kq = trangRong<KhachHangDto>(), isLoading } = useQuery({
     queryKey: ['khach-hang', timKiem, locMua, phongBanId, nhanVienId, nguon,
-               tuNgay, denNgay, trang, soDong],
+               tuNgay, denNgay, locNgonNgu, trang, soDong],
     queryFn: async () =>
       (await api.get<KetQuaTrang<KhachHangDto>>('/khach-hang', {
         params: {
@@ -63,10 +65,18 @@ export default function KhachHang() {
           // Ngày lọc theo NGÀY TẠO HỒ SƠ khách, không phải ngày mua.
           tuNgay: tuNgay || undefined,
           denNgay: denNgay || undefined,
+          ngonNguId: locNgonNgu || undefined,
           trang,
           soDong,
         },
       })).data,
+  })
+
+  // Ngôn ngữ cho ô lọc — lấy CẢ mục đã tắt: khách mua từ trước vẫn gắn ngôn ngữ đó, nên
+  // vẫn phải lọc ra được.
+  const { data: dsNgonNgu = [] } = useQuery({
+    queryKey: ['ngon-ngu'],
+    queryFn: async () => (await api.get<NgonNguDto[]>('/ngon-ngu')).data,
   })
 
   /**
@@ -204,10 +214,11 @@ export default function KhachHang() {
    * KHÔNG đếm `timKiem` và `locMua`: hai ô đó luôn hiện trên màn nên người dùng tự thấy.
    * Đếm chúng làm con số trên nút không khớp với panel mở ra.
    */
-  const soLocDangBat = [phongBanId, nhanVienId, nguon, tuNgay || null, denNgay || null]
+  const soLocDangBat = [phongBanId, nhanVienId, nguon, tuNgay || null, denNgay || null, locNgonNgu]
     .filter(Boolean).length
 
   const xoaLoc = () => {
+    setLocNgonNgu(null)
     setPhongBanId(null)
     setNhanVienId(null)
     setNguon(null)
@@ -257,25 +268,60 @@ export default function KhachHang() {
             Số bộ lọc đang bật hiện trên nút: đóng panel lại mà vẫn còn lọc thì bảng bên dưới
             ít dòng một cách không giải thích được — đây là chỗ người dùng dễ tưởng mất dữ liệu.
           */}
-          <Button
-            variant="outline"
-            onClick={() => setMoLocThem((x) => !x)}
-            aria-expanded={moLocThem}
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-            {t('crmLoc.locThem')}
-            {soLocDangBat > 0 && (
-              <span className="ml-1 rounded-full bg-primary px-1.5 text-xs text-primary-foreground">
-                {soLocDangBat}
-              </span>
-            )}
-          </Button>
+          <NutLocThem soLocDangBat={soLocDangBat} onXoaLoc={xoaLoc}>
+            <LocDoiNhom
+              phongBanId={phongBanId}
+              nhanVienId={nhanVienId}
+              onDoiPhongBan={(v) => { setPhongBanId(v); setTrang(1) }}
+              onDoiNhanVien={(v) => { setNhanVienId(v); setTrang(1) }}
+            />
 
-          {soLocDangBat > 0 && (
-            <Button variant="ghost" onClick={xoaLoc}>
-              {t('crmLoc.xoaLoc')}
-            </Button>
-          )}
+            <div>
+              <Label htmlFor="loc-ngon-ngu">{t('danhMucNgonNgu.ten')}</Label>
+              <SelectTimKiem
+                id="loc-ngon-ngu"
+                luaChon={dsNgonNgu.map((n) => ({ giaTri: n.id, nhan: n.ten }))}
+                giaTri={locNgonNgu}
+                onDoi={(v) => { setLocNgonNgu(v); setTrang(1) }}
+                placeholder={t('danhMucNgonNgu.tatCa')}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="loc-nguon">{t('crmLoc.nguon')}</Label>
+              <SelectTimKiem
+                id="loc-nguon"
+                luaChon={[
+                  { giaTri: 'NhanVienTao', nhan: t('crmLoc.nguonNhanVien') },
+                  { giaTri: 'TuDangKy', nhan: t('crmLoc.nguonTuDangKy') },
+                ]}
+                giaTri={nguon}
+                onDoi={(v) => { setNguon(v); setTrang(1) }}
+                placeholder={t('chung.tatCa')}
+              />
+            </div>
+
+            {/* Ngày TẠO HỒ SƠ, không phải ngày mua — nhãn nói rõ để không ai đọc nhầm thành
+                doanh thu theo kỳ. */}
+            <div>
+              <Label htmlFor="loc-tu">{t('crmLoc.taoTuNgay')}</Label>
+              <Input
+                id="loc-tu"
+                type="date"
+                value={tuNgay}
+                onChange={(e) => { setTuNgay(e.target.value); setTrang(1) }}
+              />
+            </div>
+            <div>
+              <Label htmlFor="loc-den">{t('crmLoc.denNgay')}</Label>
+              <Input
+                id="loc-den"
+                type="date"
+                value={denNgay}
+                onChange={(e) => { setDenNgay(e.target.value); setTrang(1) }}
+              />
+            </div>
+          </NutLocThem>
         </div>
 
         {coQuyen('KhachHang', 'Them') && (
@@ -292,51 +338,6 @@ export default function KhachHang() {
         )}
       </div>
 
-      {moLocThem && (
-        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-muted/30 p-3">
-          <LocDoiNhom
-            phongBanId={phongBanId}
-            nhanVienId={nhanVienId}
-            onDoiPhongBan={(v) => { setPhongBanId(v); setTrang(1) }}
-            onDoiNhanVien={(v) => { setNhanVienId(v); setTrang(1) }}
-          />
-
-          <div className="w-44">
-            <Label htmlFor="loc-nguon">{t('crmLoc.nguon')}</Label>
-            <SelectTimKiem
-              id="loc-nguon"
-              luaChon={[
-                { giaTri: 'NhanVienTao', nhan: t('crmLoc.nguonNhanVien') },
-                { giaTri: 'TuDangKy', nhan: t('crmLoc.nguonTuDangKy') },
-              ]}
-              giaTri={nguon}
-              onDoi={(v) => { setNguon(v); setTrang(1) }}
-              placeholder={t('chung.tatCa')}
-            />
-          </div>
-
-          {/* Ngày TẠO HỒ SƠ, không phải ngày mua — nhãn nói rõ để không ai đọc nhầm thành
-              doanh thu theo kỳ. */}
-          <div className="w-40">
-            <Label htmlFor="loc-tu">{t('crmLoc.taoTuNgay')}</Label>
-            <Input
-              id="loc-tu"
-              type="date"
-              value={tuNgay}
-              onChange={(e) => { setTuNgay(e.target.value); setTrang(1) }}
-            />
-          </div>
-          <div className="w-40">
-            <Label htmlFor="loc-den">{t('crmLoc.denNgay')}</Label>
-            <Input
-              id="loc-den"
-              type="date"
-              value={denNgay}
-              onChange={(e) => { setDenNgay(e.target.value); setTrang(1) }}
-            />
-          </div>
-        </div>
-      )}
 
       {maLoiBang && <CanhBaoLoi>{t(`loi.${maLoiBang}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 

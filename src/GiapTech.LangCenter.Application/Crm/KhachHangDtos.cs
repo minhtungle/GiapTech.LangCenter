@@ -63,6 +63,14 @@ public record LayDanhSachKhachHangQuery(
     /// Dùng ĐÚNG mốc mà màn Thống kê CRM dùng — xem `ThongKeCrmDtos`. Nếu lọc theo người NHẬP
     /// đơn thì hai màn ra số khác nhau cho cùng một đội, và không ai biết số nào đúng.
     /// </summary>
+    /// <summary>
+    /// Lọc khách theo **ngôn ngữ đã mua** (11/10/2026): khách có ít nhất một đơn mà mặt hàng
+    /// thuộc ngôn ngữ này.
+    ///
+    /// Trả lời câu "ai đang học tiếng Đức" — trước đây phải mở từng khách ra xem đơn.
+    /// Khách chưa mua gì tự nhiên rơi ra khỏi bộ lọc, đúng ý.
+    /// </summary>
+    Guid? NgonNguId = null,
     Guid? PhongBanId = null,
     /// <summary>Lọc theo **nhân viên** mang khách về (`KhachHang.CreatedById`).</summary>
     Guid? NhanVienId = null,
@@ -95,6 +103,11 @@ public class LayDanhSachKhachHangHandler(IAppDbContext db, IMuiGioTrungTam muiGi
                              || (k.SoDienThoai != null && k.SoDienThoai.Contains(tu))
                              || (k.Email != null && k.Email.ToLower().Contains(tu)));
         }
+
+        if (request.NgonNguId is { } nn)
+            q = q.Where(k => k.DangKys.Any(d =>
+                (d.KhoaHoc != null && d.KhoaHoc.NgonNguId == nn)
+                || (d.SanPham != null && d.SanPham.NgonNguId == nn)));
 
         if (request.DaMua is { } daMua)
             q = daMua ? q.Where(k => k.DangKys.Any()) : q.Where(k => !k.DangKys.Any());

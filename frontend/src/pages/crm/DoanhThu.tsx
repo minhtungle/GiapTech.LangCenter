@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ExternalLink, Pencil, Plus, SlidersHorizontal, Trash2 } from 'lucide-react'
+import { ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react'
 import { api, layMaLoi, trangRong, type KetQuaTrang } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
@@ -20,6 +20,8 @@ import {
   type LoaiDonHang,
 } from './crmTypes'
 import { LocDoiNhom } from '@/components/crm/LocDoiNhom'
+import { NutLocThem } from '@/components/crm/NutLocThem'
+import type { NgonNguDto } from './NgonNgu'
 import { locale } from '@/lib/ngon-ngu/dinhDang'
 
 /**
@@ -42,7 +44,7 @@ export default function DoanhThu() {
   const [phongBanId, setPhongBanId] = useState<string | null>(null)
   const [nhanVienId, setNhanVienId] = useState<string | null>(null)
   const [locPhuongThuc, setLocPhuongThuc] = useState<string | null>(null)
-  const [moLocThem, setMoLocThem] = useState(false)
+  const [locNgonNgu, setLocNgonNgu] = useState<string | null>(null)
   const [tuNgay, setTuNgay] = useState('')
   const [denNgay, setDenNgay] = useState('')
 
@@ -79,6 +81,7 @@ export default function DoanhThu() {
     phongBanId: phongBanId || undefined,
     nhanVienId: nhanVienId || undefined,
     phuongThuc: locPhuongThuc || undefined,
+    ngonNguId: locNgonNgu || undefined,
     tuNgay: tuNgay || undefined,
     denNgay: denNgay ? `${denNgay}T23:59:59Z` : undefined,
   }
@@ -131,6 +134,12 @@ export default function DoanhThu() {
 
   // Danh sách sản phẩm để LỌC. Màn này trước chỉ lọc được theo khoá học, dù đơn hàng chứa cả
   // hai loại (khoá và sản phẩm) từ FR-20 — nên doanh thu bán sách không tra cứu riêng được.
+  // Lấy CẢ ngôn ngữ đã tắt: đơn cũ vẫn gắn ngôn ngữ đó nên vẫn phải lọc ra được.
+  const { data: dsNgonNgu = [] } = useQuery({
+    queryKey: ['ngon-ngu'],
+    queryFn: async () => (await api.get<NgonNguDto[]>('/ngon-ngu')).data,
+  })
+
   const { data: sanPhams = [] } = useQuery({
     queryKey: ['san-pham-ngan'],
     queryFn: async () =>
@@ -251,13 +260,15 @@ export default function DoanhThu() {
    * Số bộ lọc NÂNG CAO đang bật. Không đếm các ô luôn hiện trên hàng đầu (tìm kiếm, khoá học,
    * khoảng ngày) — người dùng tự thấy chúng, đếm vào làm số trên nút không khớp panel.
    */
-  const soLocDangBat = [phongBanId, nhanVienId, locSanPham, locPhuongThuc].filter(Boolean).length
+  const soLocDangBat = [phongBanId, nhanVienId, locSanPham, locPhuongThuc, locNgonNgu]
+    .filter(Boolean).length
 
   const xoaLoc = () => {
     setPhongBanId(null)
     setNhanVienId(null)
     setLocSanPham(null)
     setLocPhuongThuc(null)
+    setLocNgonNgu(null)
     setTrang(1)
   }
 
@@ -373,38 +384,7 @@ export default function DoanhThu() {
 
           {/* Bốn ô lọc nữa bày hết ra hàng này thì vỡ bố cục — ẩn sau nút (nguyên tắc UI/UX
               mục 1). Số trên nút cho biết còn bộ lọc đang bật khi panel đã đóng. */}
-          <Button
-            variant="outline"
-            onClick={() => setMoLocThem((x) => !x)}
-            aria-expanded={moLocThem}
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-            {t('crmLoc.locThem')}
-            {soLocDangBat > 0 && (
-              <span className="ml-1 rounded-full bg-primary px-1.5 text-xs text-primary-foreground">
-                {soLocDangBat}
-              </span>
-            )}
-          </Button>
-
-          {soLocDangBat > 0 && (
-            <Button variant="ghost" onClick={xoaLoc}>
-              {t('crmLoc.xoaLoc')}
-            </Button>
-          )}
-        </div>
-
-        {coQuyen('DoanhThu', 'Them') && (
-          <Button onClick={moThem}>
-            <Plus className="h-4 w-4" />
-            {t('donHang.ghiDon')}
-          </Button>
-        )}
-      </div>
-
-      {moLocThem && (
-        <div className="rounded-lg border border-border bg-muted/30 p-3">
-          <div className="flex flex-wrap items-end gap-3">
+          <NutLocThem soLocDangBat={soLocDangBat} onXoaLoc={xoaLoc}>
             <LocDoiNhom
               phongBanId={phongBanId}
               nhanVienId={nhanVienId}
@@ -412,7 +392,18 @@ export default function DoanhThu() {
               onDoiNhanVien={(v) => { setNhanVienId(v); setTrang(1) }}
             />
 
-            <div className="w-52">
+            <div>
+              <Label htmlFor="loc-ngon-ngu">{t('danhMucNgonNgu.ten')}</Label>
+              <SelectTimKiem
+                id="loc-ngon-ngu"
+                luaChon={dsNgonNgu.map((n) => ({ giaTri: n.id, nhan: n.ten }))}
+                giaTri={locNgonNgu}
+                onDoi={(v) => { setLocNgonNgu(v); setTrang(1) }}
+                placeholder={t('danhMucNgonNgu.tatCa')}
+              />
+            </div>
+
+            <div>
               <Label htmlFor="loc-sp">{t('crmLoc.sanPham')}</Label>
               <SelectTimKiem
                 id="loc-sp"
@@ -423,7 +414,7 @@ export default function DoanhThu() {
               />
             </div>
 
-            <div className="w-44">
+            <div>
               <Label htmlFor="loc-pt">{t('crmLoc.hinhThuc')}</Label>
               <SelectTimKiem
                 id="loc-pt"
@@ -435,15 +426,23 @@ export default function DoanhThu() {
                 placeholder={t('chung.tatCa')}
               />
             </div>
-          </div>
 
-          {/* Nói rõ mốc quy đơn: người đọc cần biết "đội nhóm" nghĩa là đội của người MANG
-              KHÁCH VỀ, không phải người nhập đơn — nếu không họ sẽ đối chiếu sai với sổ tay. */}
-          <p className="mt-2.5 text-xs text-muted-foreground">
-            {t('crmLoc.theoNguoiMangKhach')}
-          </p>
+            {/* Nói rõ mốc quy đơn: "đội nhóm" nghĩa là đội của người MANG KHÁCH VỀ, không
+                phải người nhập đơn — nếu không họ sẽ đối chiếu sai với sổ tay. */}
+            <p className="text-xs text-muted-foreground sm:col-span-2">
+              {t('crmLoc.theoNguoiMangKhach')}
+            </p>
+          </NutLocThem>
         </div>
-      )}
+
+        {coQuyen('DoanhThu', 'Them') && (
+          <Button onClick={moThem}>
+            <Plus className="h-4 w-4" />
+            {t('donHang.ghiDon')}
+          </Button>
+        )}
+      </div>
+
 
       {maLoiBang && <CanhBaoLoi>{t(`loi.${maLoiBang}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 

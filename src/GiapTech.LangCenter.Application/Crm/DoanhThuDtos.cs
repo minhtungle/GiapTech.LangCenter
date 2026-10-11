@@ -109,6 +109,14 @@ public record LayDoanhThuQuery(
     Guid? PhongBanId = null,
     /// <summary>Lọc theo **nhân viên** mang khách về (`KhachHang.CreatedById`).</summary>
     Guid? NhanVienId = null,
+    /// <summary>
+    /// Lọc theo **ngôn ngữ** của mặt hàng trong đơn (11/10/2026).
+    ///
+    /// Đơn mua khoá học thì xét ngôn ngữ của khoá; đơn mua sản phẩm thì xét của sản phẩm.
+    /// Mặt hàng chưa gắn ngôn ngữ sẽ rơi ra khỏi bộ lọc — đúng ý: lọc "tiếng Đức" không nên
+    /// trả về thứ chưa ai phân loại.
+    /// </summary>
+    Guid? NgonNguId = null,
     /// <summary>Lọc theo hình thức thanh toán — để đối chiếu tiền mặt với sao kê.</summary>
     PhuongThucThanhToan? PhuongThuc = null) : IRequest<KetQuaTrang<DangKyDto>>;
 
@@ -170,6 +178,7 @@ public record LayTongHopDoanhThuQuery(
     LoaiDonHang? Loai = null,
     Guid? PhongBanId = null,
     Guid? NhanVienId = null,
+    Guid? NgonNguId = null,
     PhuongThucThanhToan? PhuongThuc = null) : IRequest<TongHopDoanhThuDto>;
 
 public class LayTongHopDoanhThuHandler(IAppDbContext db)
@@ -192,6 +201,7 @@ public class LayTongHopDoanhThuHandler(IAppDbContext db)
             Loai: request.Loai,
             PhongBanId: request.PhongBanId,
             NhanVienId: request.NhanVienId,
+            NgonNguId: request.NgonNguId,
             PhuongThuc: request.PhuongThuc));
 
         var theoDonVi = await q
@@ -251,6 +261,13 @@ internal static class DoanhThuChung
                              && d.KhachHang.CreatedBy.PhongBanId == pb);
 
         if (r.NhanVienId is { } nv) q = q.Where(d => d.KhachHang.CreatedById == nv);
+
+        // Ngôn ngữ nằm ở MẶT HÀNG, không ở đơn — nên phải xét cả hai nhánh. Đơn khoá học
+        // có `SanPham == null` và ngược lại, nên không có chuyện một đơn khớp cả hai.
+        if (r.NgonNguId is { } nn)
+            q = q.Where(d =>
+                (d.KhoaHoc != null && d.KhoaHoc.NgonNguId == nn)
+                || (d.SanPham != null && d.SanPham.NgonNguId == nn));
 
         if (r.PhuongThuc is { } pt) q = q.Where(d => d.PhuongThuc == pt);
 

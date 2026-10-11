@@ -8,6 +8,29 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Added — Danh mục ngôn ngữ, lọc theo ngôn ngữ, bộ lọc gom vào modal (11/10/2026)
+
+**Danh mục ngôn ngữ** (`/crm/ngon-ngu`): bảng `NGON_NGU` riêng, không enum — mỗi trung tâm
+dạy một bộ ngôn ngữ khác nhau và bộ đó đổi theo thời gian. Khoá học và sản phẩm trỏ tới bằng
+khoá ngoại, nên đổi tên là một lần ghi thay vì sửa mọi hàng.
+
+`ngon_ngu_id` **nullable**: 52 khoá học hiện có giữ nguyên, chưa gắn, và lọc "Tất cả" vẫn thấy
+(chốt với chủ sản phẩm — quy tắc #1).
+
+**Lọc theo ngôn ngữ** ở màn Doanh thu và Khách hàng. Ngôn ngữ nằm ở *mặt hàng*, không ở đơn,
+nên bộ lọc đi qua một cấp nữa; khách lọc được vì "có ít nhất một đơn thuộc ngôn ngữ đó".
+
+Kiểm trên dữ liệu thật: gắn một khoá ⇒ doanh thu 1057 → 224 đơn, khách 939 → 201.
+
+**Bộ lọc gom vào modal** (`NutLocThem`): panel cũ mở xuống đẩy bảng khỏi màn hình — bật lọc
+xong phải cuộn mới thấy kết quả. Modal đè lên, đóng lại là bảng vẫn ở chỗ cũ. Vẫn giữ con số
+trên nút vì đóng modal rồi thì không còn gì cho thấy đang lọc.
+
+**Nút xoá hiện kèm lý do** thay vì ẩn hẳn (`MucThaoTac.khoa`): ẩn thì người dùng không biết
+chức năng tồn tại và tự hỏi vì sao mục này xoá được còn mục kia thì không.
+
+4 test mới. Kiểm bằng đột biến: bỏ nhánh lọc ngôn ngữ ⇒ test đỏ.
+
 ### Fixed — Rà soát toàn bộ: state cha đọng giữa hai lần mở form (11/10/2026)
 
 Rà có hệ thống sau khi sửa lỗi modal, vì `key` chỉ dựng lại ô `defaultValue` — **state ở

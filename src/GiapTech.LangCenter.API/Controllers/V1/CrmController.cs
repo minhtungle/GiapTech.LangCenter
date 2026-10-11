@@ -28,6 +28,7 @@ public class KhachHangController(ISender sender) : ControllerBase
         [FromQuery] NguonKhachHang? nguon = null,
         [FromQuery] DateTimeOffset? tuNgay = null,
         [FromQuery] DateTimeOffset? denNgay = null,
+        [FromQuery] Guid? ngonNguId = null,
         CancellationToken ct = default)
         => Ok(await sender.Send(new LayDanhSachKhachHangQuery(
             TimKiem: timKiem,
@@ -38,7 +39,8 @@ public class KhachHangController(ISender sender) : ControllerBase
             NhanVienId: nhanVienId,
             Nguon: nguon,
             TuNgay: tuNgay,
-            DenNgay: denNgay), ct));
+            DenNgay: denNgay,
+            NgonNguId: ngonNguId), ct));
 
     [HttpPost]
     [RequirePermission(ChucNang.KhachHang, HanhDong.Them)]
@@ -300,6 +302,7 @@ public class DoanhThuController(ISender sender) : ControllerBase
         [FromQuery] LoaiDonHang? loai,
         [FromQuery] Guid? phongBanId,
         [FromQuery] Guid? nhanVienId,
+        [FromQuery] Guid? ngonNguId,
         [FromQuery] PhuongThucThanhToan? phuongThuc,
         [FromQuery] int trang = 1,
         [FromQuery] int soDong = 20,
@@ -318,6 +321,7 @@ public class DoanhThuController(ISender sender) : ControllerBase
             Loai: loai,
             PhongBanId: phongBanId,
             NhanVienId: nhanVienId,
+            NgonNguId: ngonNguId,
             PhuongThuc: phuongThuc), ct));
 
     /// <summary>
@@ -336,6 +340,7 @@ public class DoanhThuController(ISender sender) : ControllerBase
         [FromQuery] LoaiDonHang? loai,
         [FromQuery] Guid? phongBanId,
         [FromQuery] Guid? nhanVienId,
+        [FromQuery] Guid? ngonNguId,
         [FromQuery] PhuongThucThanhToan? phuongThuc,
         CancellationToken ct = default)
         => Ok(await sender.Send(new LayTongHopDoanhThuQuery(
@@ -348,6 +353,7 @@ public class DoanhThuController(ISender sender) : ControllerBase
             Loai: loai,
             PhongBanId: phongBanId,
             NhanVienId: nhanVienId,
+            NgonNguId: ngonNguId,
             PhuongThuc: phuongThuc), ct));
 
     [HttpPost]

@@ -307,6 +307,90 @@ public class CrmTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Empty(ds);
     }
 
+    // ---------- Lọc theo ngôn ngữ (11/10/2026) ----------
+
+    /// <summary>
+    /// Lọc doanh thu và khách hàng theo **ngôn ngữ của mặt hàng**.
+    ///
+    /// Ngôn ngữ nằm ở khoá học / sản phẩm, không ở đơn — nên bộ lọc phải đi qua một cấp nữa.
+    /// Canh cả hai chiều: đơn thuộc ngôn ngữ được lọc thì PHẢI ra, đơn của khoá chưa gắn
+    /// ngôn ngữ thì KHÔNG được lọt vào (lọc "tiếng Đức" không nên trả về thứ chưa ai phân loại).
+    /// </summary>
+    [Fact]
+    public async Task Loc_doanh_thu_va_khach_theo_ngon_ngu()
+    {
+        var c = await Client();
+
+        var nn = await c.PostAsJsonAsync("/api/v1/ngon-ngu",
+            new { Ten = "Tiếng Đức lọc", ThuTu = 1 });
+        nn.EnsureSuccessStatusCode();
+        var nnId = await nn.Content.ReadFromJsonAsync<Guid>();
+
+        // Khoá CÓ gắn ngôn ngữ + khách mua nó.
+        var khoaCo = await c.PostAsJsonAsync("/api/v1/khoa-hoc", new
+        {
+            Ten = "Khoá tiếng Đức", GiaTien = 9_000_000m, DonViTien = "VND",
+            SoBuoi = 30, DangBan = true, NgonNguId = nnId
+        });
+        khoaCo.EnsureSuccessStatusCode();
+        var khoaCoId = await khoaCo.Content.ReadFromJsonAsync<Guid>();
+        var khachCo = await TaoKhach(c, "Khách Học Đức");
+        await TaoDangKy(c, khachCo, khoaCoId, 9_000_000m);
+
+        // Khoá CHƯA gắn ngôn ngữ + khách mua nó — phải nằm ngoài bộ lọc.
+        var khoaKhong = await TaoKhoa(c, "Khoá chưa gắn ngôn ngữ", 5_000_000m);
+        var khachKhong = await TaoKhach(c, "Khách Khoá Chưa Gắn");
+        await TaoDangKy(c, khachKhong, khoaKhong, 5_000_000m);
+
+        var don = (await c.GetFromJsonAsync<JsonElement>(
+                $"/api/v1/doanh-thu?ngonNguId={nnId}&soDong=100"))
+            .GetProperty("duLieu").EnumerateArray().ToList();
+
+        Assert.Single(don);
+        Assert.Equal("Khoá tiếng Đức", don[0].GetProperty("tenMatHang").GetString());
+
+        var khach = (await c.GetFromJsonAsync<JsonElement>(
+                $"/api/v1/khach-hang?ngonNguId={nnId}&soDong=200"))
+            .GetProperty("duLieu").EnumerateArray().ToList();
+
+        Assert.Single(khach);
+        Assert.Equal("Khách Học Đức", khach[0].GetProperty("hoTen").GetString());
+    }
+
+    /// <summary>
+    /// Xoá ngôn ngữ **đang được khoá học dùng** ⇒ chặn kèm mã lỗi.
+    ///
+    /// FK là `SetNull` nên xoá sẽ KHÔNG nổ ở tầng DB — nó âm thầm gỡ nhãn của mọi khoá đang
+    /// gắn. Không có lỗi nào, chỉ là hôm sau bộ lọc trống và không ai biết vì sao.
+    /// </summary>
+    [Fact]
+    public async Task Xoa_ngon_ngu_dang_duoc_dung_thi_bi_chan()
+    {
+        var c = await Client();
+
+        var nn = await c.PostAsJsonAsync("/api/v1/ngon-ngu",
+            new { Ten = "Tiếng Nhật chặn xoá", ThuTu = 2 });
+        nn.EnsureSuccessStatusCode();
+        var nnId = await nn.Content.ReadFromJsonAsync<Guid>();
+
+        var khoa = await c.PostAsJsonAsync("/api/v1/khoa-hoc", new
+        {
+            Ten = "Khoá tiếng Nhật", GiaTien = 7_000_000m, DonViTien = "VND",
+            SoBuoi = 20, DangBan = true, NgonNguId = nnId
+        });
+        khoa.EnsureSuccessStatusCode();
+
+        var xoa = await c.DeleteAsync($"/api/v1/ngon-ngu/{nnId}");
+        Assert.Equal(HttpStatusCode.BadRequest, xoa.StatusCode);
+        Assert.Contains("NGON_NGU_DANG_DUOC_DUNG", await xoa.Content.ReadAsStringAsync());
+
+        // Và khoá học VẪN giữ nhãn — lệnh bị chặn thì không được gỡ nửa vời.
+        var ds = (await c.GetFromJsonAsync<JsonElement>("/api/v1/khoa-hoc?soDong=100"))
+            .GetProperty("duLieu").EnumerateArray()
+            .Single(k => k.GetProperty("ten").GetString() == "Khoá tiếng Nhật");
+        Assert.Equal("Tiếng Nhật chặn xoá", ds.GetProperty("tenNgonNgu").GetString());
+    }
+
     // ---------- FR-19 Khoá học ----------
 
     [Fact]
