@@ -390,14 +390,44 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
     onError: (e) => setMaLoiBang(layMaLoi(e)),
   })
 
+  /**
+   * Đặt lại MỌI state của form về mặc định (11/10/2026).
+   *
+   * `Modal` đã có `key` để dựng lại các ô `defaultValue`, nhưng state ở component CHA nằm
+   * NGOÀI modal nên key không chạm tới. Hệ quả đã đo được: sửa một người có liên kết MXH,
+   * bấm Huỷ, rồi mở "Thêm" — dòng MXH của người kia **vẫn còn đó**, và lưu là gán nhầm
+   * liên kết cho người mới.
+   *
+   * Gom vào một hàm thay vì liệt kê ở từng đường mở: hai danh sách sẽ trôi khỏi nhau: đường
+   * "Thêm" trước đây đặt lại `TaoTaiKhoan`/`QuyenChon` nhưng quên `PhongBan`/`ChucVu`/`Mxhs`,
+   * còn `moSua` thì ngược lại.
+   */
+  const datLaiForm = () => {
+    setLoai(phamVi.vaiTro[0])
+    setPhongBan(null)
+    setChucVu(null)
+    setMxhs([])
+    setNhanSu('DangLamViec')
+    setTaoTaiKhoan(false)
+    setQuyenChon([])
+    setBuocDoiMk(true)
+    setDuoiSo(1)
+    setGuiEmail(false)
+    setCoEmail(false)
+    setMaLoi(null)
+  }
+
   const moSua = (u: NguoiDungDto) => {
+    // Về mặc định TRƯỚC rồi mới gán giá trị của người đang sửa: thiếu bước này thì state nào
+    // `moSua` không nhắc tới sẽ mang theo giá trị của lần mở trước.
+    datLaiForm()
     setDangSua(u)
     setLoai(u.loaiNguoiDung)
     setPhongBan(u.phongBanId ?? null)
     setChucVu(u.chucVuId ?? null)
     setMxhs(u.lienKetMxhs.map((m) => ({ loai: m.loai, duongDan: m.duongDan })))
     setNhanSu(u.trangThaiNhanSu)
-    setMaLoi(null)
+    setCoEmail(!!u.email)
     setMoForm(true)
   }
 
@@ -520,12 +550,7 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
           <Button
             onClick={() => {
               setDangSua(null)
-              setLoai(phamVi.vaiTro[0])
-              setNhanSu('DangLamViec')
-              setTaoTaiKhoan(false)
-              setQuyenChon([])
-              setBuocDoiMk(true)
-              setMaLoi(null)
+              datLaiForm()
               setMoForm(true)
             }}
           >

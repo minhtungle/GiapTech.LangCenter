@@ -8,6 +8,26 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Fixed — Rà soát toàn bộ: state cha đọng giữa hai lần mở form (11/10/2026)
+
+Rà có hệ thống sau khi sửa lỗi modal, vì `key` chỉ dựng lại ô `defaultValue` — **state ở
+component CHA nằm ngoài modal nên key không chạm tới**.
+
+Quét 29 màn có `<Modal>`, so state mà `moSua` đặt với state mà đường "Thêm mới" đặt lại. Ra
+một lỗi thật ở màn **Người dùng**: `PhongBan`, `ChucVu`, `Mxhs` chỉ được đặt khi SỬA, không
+được xoá khi THÊM.
+
+Dựng lại được: sửa một người, thêm một liên kết MXH, bấm Huỷ, mở "Thêm" ⇒ **dòng MXH của
+người kia vẫn còn**, lưu là gán nhầm liên kết cho người mới.
+
+Gom về một hàm `datLaiForm()` dùng cho cả hai đường, thay vì hai danh sách song song — đó
+chính là cách chúng trôi khỏi nhau: đường "Thêm" đặt lại `TaoTaiKhoan`/`QuyenChon` nhưng quên
+`PhongBan`/`ChucVu`/`Mxhs`, còn `moSua` thì ngược lại.
+
+Các màn còn lại đã kiểm và **không dính**: `KhoaHoc`/`SanPham` đối xứng sẵn; `PhoiTaiLieu`
+dùng `{mo && <Modal/>}` nên unmount thật; `moSo`/`hocVienChon` là state hiển thị, giữ lại là
+đúng.
+
 ### Fixed — Modal sửa dùng lại dữ liệu của lần mở trước (11/10/2026)
 
 Chủ sản phẩm báo màn Khoá học: danh sách ghi 7.275.000đ / 15 buổi nhưng modal hiện 0đ / 40
