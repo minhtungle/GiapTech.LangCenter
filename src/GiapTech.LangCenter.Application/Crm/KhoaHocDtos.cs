@@ -18,7 +18,11 @@ public record KhoaHocDto(
     int SoBuoi,
     bool DangBan,
     /// <summary>Số đăng ký đã bán — để UI biết khoá nào không xoá được.</summary>
-    int SoDangKy);
+    int SoDangKy,
+    /// <summary>Ngôn ngữ đang gắn — `null` = chưa gắn (mục có trước 11/10/2026).</summary>
+    Guid? NgonNguId,
+    /// <summary>Tên ngôn ngữ, để bảng hiện được mà không phải gọi thêm API.</summary>
+    string? TenNgonNgu);
 
 // ---------- Queries ----------
 
@@ -52,7 +56,9 @@ public class LayDanhSachKhoaHocHandler(IAppDbContext db)
             .Take(trang.SoDongHopLe)
             .Select(k => new KhoaHocDto(
                 k.Id, k.Ten, k.GhiChu, k.GiaTien, k.DonViTien, k.SoBuoi, k.DangBan,
-                k.DangKys.Count))
+                k.DangKys.Count,
+                k.NgonNguId,
+                k.NgonNgu == null ? null : k.NgonNgu.Ten))
             .ToListAsync(ct);
 
         return new KetQuaTrang<KhoaHocDto>(duLieu, tong, trang.TrangHopLe, trang.SoDongHopLe);
@@ -68,7 +74,9 @@ public record LuuKhoaHocCommand(
     decimal GiaTien,
     DonViTien DonViTien,
     int SoBuoi,
-    bool DangBan = true) : IRequest<Guid>;
+    bool DangBan = true,
+    /// <summary>Ngôn ngữ (11/10/2026). `null` = không gắn — hợp lệ, không bắt buộc.</summary>
+    Guid? NgonNguId = null) : IRequest<Guid>;
 
 public class LuuKhoaHocValidator : AbstractValidator<LuuKhoaHocCommand>
 {
@@ -114,6 +122,14 @@ public class LuuKhoaHocHandler(IAppDbContext db) : IRequestHandler<LuuKhoaHocCom
         khoa.DonViTien = request.DonViTien;
         khoa.SoBuoi = request.SoBuoi;
         khoa.DangBan = request.DangBan;
+
+        // Ngôn ngữ lạ (của trung tâm khác) ⇒ chặn. Query Filter đã giới hạn phạm vi nên
+        // `AnyAsync` ở đây tự động đúng tenant; không kiểm thì id lạ được gán âm thầm.
+        if (request.NgonNguId is { } nnId
+            && !await db.NgonNgus.AnyAsync(n => n.Id == nnId, ct))
+            throw new AppException("NGON_NGU_KHONG_HOP_LE");
+
+        khoa.NgonNguId = request.NgonNguId;
 
         await db.SaveChangesAsync(ct);
         return khoa.Id;

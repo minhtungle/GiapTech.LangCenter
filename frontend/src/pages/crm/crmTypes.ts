@@ -41,6 +41,9 @@ export interface SanPhamDto {
   /** > 0 = không xoá được, chỉ ngừng bán. */
   soDonHang: number
   tongSoLuongBan: number
+  /** Ngôn ngữ đang gắn — null = chưa gắn (mục có trước 11/10/2026). */
+  ngonNguId: string | null
+  tenNgonNgu: string | null
 }
 
 export interface KhoaHocDto {
@@ -53,6 +56,9 @@ export interface KhoaHocDto {
   dangBan: boolean
   /** > 0 = không xoá được, chỉ ngừng bán. */
   soDangKy: number
+  /** Ngôn ngữ đang gắn — null = chưa gắn (mục có trước 11/10/2026). */
+  ngonNguId: string | null
+  tenNgonNgu: string | null
 }
 
 export interface DangKyDto {

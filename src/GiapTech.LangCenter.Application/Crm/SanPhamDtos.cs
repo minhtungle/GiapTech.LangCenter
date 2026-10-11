@@ -20,7 +20,11 @@ public record SanPhamDto(
     /// <summary>Số đơn đã bán — để UI biết sản phẩm nào không xoá được.</summary>
     int SoDonHang,
     /// <summary>Tổng số lượng đã bán ra, để biết mặt hàng nào chạy.</summary>
-    int TongSoLuongBan);
+    int TongSoLuongBan,
+    /// <summary>Ngôn ngữ đang gắn — `null` = chưa gắn (mục có trước 11/10/2026).</summary>
+    Guid? NgonNguId,
+    /// <summary>Tên ngôn ngữ, để bảng hiện được mà không phải gọi thêm API.</summary>
+    string? TenNgonNgu);
 
 public record LayDanhSachSanPhamQuery(
     string? TimKiem = null,
@@ -54,7 +58,9 @@ public class LayDanhSachSanPhamHandler(IAppDbContext db)
                 s.Id, s.Ten, s.GhiChu, s.GiaTien, s.DonViTien, s.DonViTinh, s.DangBan,
                 s.DonHangs.Count,
                 // `Sum` trên tập rỗng trả 0 trong SQL, không cần xử lý riêng.
-                s.DonHangs.Sum(d => d.SoLuong)))
+                s.DonHangs.Sum(d => d.SoLuong),
+                s.NgonNguId,
+                s.NgonNgu == null ? null : s.NgonNgu.Ten))
             .ToListAsync(ct);
 
         return new KetQuaTrang<SanPhamDto>(duLieu, tong, trang.TrangHopLe, trang.SoDongHopLe);
@@ -68,7 +74,9 @@ public record LuuSanPhamCommand(
     decimal GiaTien,
     DonViTien DonViTien,
     string? DonViTinh,
-    bool DangBan = true) : IRequest<Guid>;
+    bool DangBan = true,
+    /// <summary>Ngôn ngữ (11/10/2026). `null` = không gắn — hợp lệ, không bắt buộc.</summary>
+    Guid? NgonNguId = null) : IRequest<Guid>;
 
 public class LuuSanPhamValidator : AbstractValidator<LuuSanPhamCommand>
 {
@@ -113,6 +121,14 @@ public class LuuSanPhamHandler(IAppDbContext db) : IRequestHandler<LuuSanPhamCom
         sp.DonViTinh = string.IsNullOrWhiteSpace(request.DonViTinh)
             ? null : request.DonViTinh.Trim();
         sp.DangBan = request.DangBan;
+
+        // Ngôn ngữ lạ (của trung tâm khác) ⇒ chặn. Query Filter đã giới hạn phạm vi nên
+        // `AnyAsync` ở đây tự động đúng tenant; không kiểm thì id lạ được gán âm thầm.
+        if (request.NgonNguId is { } nnId
+            && !await db.NgonNgus.AnyAsync(n => n.Id == nnId, ct))
+            throw new AppException("NGON_NGU_KHONG_HOP_LE");
+
+        sp.NgonNguId = request.NgonNguId;
 
         await db.SaveChangesAsync(ct);
         return sp.Id;

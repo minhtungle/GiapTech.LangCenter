@@ -12,6 +12,7 @@ import { PhanTrang } from '@/components/ui/PhanTrang'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { useQuyen } from '@/lib/quyen'
+import type { NgonNguDto } from './NgonNgu'
 import { useXacNhan } from '@/lib/xacNhan'
 import { CAC_DON_VI, tien, type DonViTien, type KhoaHocDto } from './crmTypes'
 
@@ -37,6 +38,7 @@ export default function KhoaHoc() {
   const [donVi, setDonVi] = useState<DonViTien>('VND')
   const [dangBan, setDangBan] = useState(true)
   const [maLoi, setMaLoi] = useState<string | null>(null)
+  const [ngonNgu, setNgonNgu] = useState<string | null>(null)
   const [maLoiBang, setMaLoiBang] = useState<string | null>(null)
 
   const { data: kq = trangRong<KhoaHocDto>(), isLoading } = useQuery({
@@ -50,6 +52,14 @@ export default function KhoaHoc() {
           soDong,
         },
       })).data,
+  })
+
+  // Chỉ ngôn ngữ CÒN DÙNG: mục đã tắt không nên hiện khi tạo mới, nhưng vẫn giữ nhãn ở các
+  // mục cũ đang gắn nó.
+  const { data: dsNgonNgu = [] } = useQuery({
+    queryKey: ['ngon-ngu', 'dang-dung'],
+    queryFn: async () =>
+      (await api.get<NgonNguDto[]>('/ngon-ngu', { params: { chiDangDung: true } })).data,
   })
 
   const lamMoi = () => {
@@ -73,6 +83,7 @@ export default function KhoaHoc() {
         donViTien: donVi,
         soBuoi: Number(fd.get('soBuoi')),
         dangBan,
+        ngonNguId: ngonNgu,
       }
       if (dangSua) await api.put(`/khoa-hoc/${dangSua.id}`, { ...than, id: dangSua.id })
       else await api.post('/khoa-hoc', than)
@@ -94,6 +105,7 @@ export default function KhoaHoc() {
     setDangSua(k)
     setDonVi(k.donViTien)
     setDangBan(k.dangBan)
+    setNgonNgu(k.ngonNguId)
     setMaLoi(null)
     setMoForm(true)
   }
@@ -138,6 +150,7 @@ export default function KhoaHoc() {
               setDangSua(null)
               setDonVi('VND')
               setDangBan(true)
+              setNgonNgu(null)
               setMaLoi(null)
               setMoForm(true)
             }}
@@ -162,6 +175,7 @@ export default function KhoaHoc() {
                 <thead>
                   <tr>
                     <Th dinh="dau">{t('khoaHoc.tenKhoa')}</Th>
+                    <Th>{t('danhMucNgonNgu.ten')}</Th>
                     <Th className="text-right">{t('khoaHoc.giaTien')}</Th>
                     <Th className="text-right">{t('khoaHoc.soBuoi')}</Th>
                     <Th className="text-right">{t('khoaHoc.soDangKy')}</Th>
@@ -174,6 +188,7 @@ export default function KhoaHoc() {
                   {kq.duLieu.map((k) => (
                     <tr key={k.id} className="hover:bg-muted/40">
                       <Td dinh="dau" className="font-medium">{k.ten}</Td>
+                      <Td className="text-muted-foreground">{k.tenNgonNgu ?? '—'}</Td>
                       <Td className="text-right">{tien(k.giaTien, k.donViTien)}</Td>
                       <Td className="text-right text-muted-foreground">{k.soBuoi}</Td>
                       <Td className="text-right text-muted-foreground">{k.soDangKy}</Td>
@@ -304,6 +319,18 @@ export default function KhoaHoc() {
             </div>
           </div>
 
+          {/* Chỉ hiện khi trung tâm đã khai ngôn ngữ — chưa khai thì ô rỗng chỉ làm rối. */}
+          {dsNgonNgu.length > 0 && (
+            <div>
+              <Label htmlFor="ngonNgu">{t('danhMucNgonNgu.ten')}</Label>
+              <SelectTimKiem
+                id="ngonNgu"
+                luaChon={dsNgonNgu.map((n) => ({ giaTri: n.id, nhan: n.ten }))}
+                giaTri={ngonNgu}
+                onDoi={setNgonNgu}
+              />
+            </div>
+          )}
           <div>
             <Label htmlFor="ghiChu">{t('chung.ghiChu')}</Label>
             <Textarea id="ghiChu" name="ghiChu" rows={3} defaultValue={dangSua?.ghiChu ?? ''} />
