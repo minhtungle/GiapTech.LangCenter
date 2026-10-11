@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 import { MoreHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -33,6 +34,8 @@ export function MenuThaoTac({
   const [mo, setMo] = React.useState(false)
   const [viTri, setViTri] = React.useState({ top: 0, right: 0 })
   const boc = React.useRef<HTMLDivElement>(null)
+  /** Menu nằm ngoài `boc` vì dựng qua portal — cần ref riêng để biết "bấm trong menu". */
+  const menu = React.useRef<HTMLDivElement>(null)
   const nut = React.useRef<HTMLButtonElement>(null)
 
   const hienThi = muc.filter((m) => !m.an)
@@ -44,7 +47,12 @@ export function MenuThaoTac({
   React.useEffect(() => {
     if (!mo) return
     const bamNgoai = (e: MouseEvent) => {
-      if (boc.current && !boc.current.contains(e.target as Node)) setMo(false)
+      // Phải kiểm CẢ hai: từ 11/10/2026 menu dựng ở `document.body` qua portal nên nó KHÔNG
+      // còn nằm trong `boc` — chỉ kiểm `boc` thì bấm vào chính mục menu cũng tính là "bấm
+      // ngoài", và menu đóng ngay ở `mousedown` trước khi `click` kịp chạy.
+      const trong =
+        boc.current?.contains(e.target as Node) || menu.current?.contains(e.target as Node)
+      if (!trong) setMo(false)
     }
     const phim = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -110,8 +118,22 @@ export function MenuThaoTac({
         <MoreHorizontal className="h-4 w-4" />
       </button>
 
-      {mo && (
+      {/*
+        Dựng menu ở `document.body` qua portal, KHÔNG để trong ô bảng (11/10/2026).
+
+        Cột thao tác dùng `position: sticky` để dính khi cuộn ngang. Mà `sticky` tạo ra một
+        **stacking context** mới: `z-50` của menu chỉ so với anh em trong chính ô đó, không
+        so được với các dòng khác của bảng. Hệ quả: menu mở ra bị các dòng bên dưới đè lên —
+        chủ sản phẩm báo 11/10/2026.
+
+        `fixed` không cứu được: nó định vị theo viewport nhưng vẫn nằm TRONG stacking context
+        của ô. Chỉ có đưa hẳn ra ngoài cây DOM của bảng mới thoát.
+
+        Toạ độ đã tính sẵn theo viewport (`viTri`) nên chuyển chỗ dựng không đổi vị trí hiện.
+      */}
+      {mo && createPortal(
         <div
+          ref={menu}
           role="menu"
           style={{ top: viTri.top, right: viTri.right }}
           className={cn(
@@ -140,7 +162,8 @@ export function MenuThaoTac({
               </button>
             </React.Fragment>
           ))}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )
