@@ -201,9 +201,13 @@ export default function KhoaHoc() {
                                 icon: Trash2,
                                 nguyHiem: true,
                                 ngatNhom: true,
-                                // Khoá đã bán không xoá được (FK Restrict) — ẩn nút thay vì
-                                // để người dùng bấm rồi nhận lỗi.
-                                an: !coQuyen('KhoaHoc', 'Xoa') || k.soDangKy > 0,
+                                an: !coQuyen('KhoaHoc', 'Xoa'),
+                                // HIỆN kèm lý do thay vì ẩn: ẩn thì người dùng không biết
+                                // vì sao mục này xoá được còn mục kia thì không.
+                                khoa:
+                                  k.soDangKy > 0
+                                    ? t('chung.khongXoaDuocDaBan', { so: k.soDangKy })
+                                    : undefined,
                                 onChon: () =>
                                   hoi({
                                     tieuDe: t('chung.xacNhanXoa'),

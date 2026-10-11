@@ -72,6 +72,7 @@ public class AppDbContext(
 
     // CRM (FR-17 → FR-19)
     public DbSet<KhachHang> KhachHangs => Set<KhachHang>();
+    public DbSet<NgonNgu> NgonNgus => Set<NgonNgu>();
     public DbSet<KhoaHoc> KhoaHocs => Set<KhoaHoc>();
     public DbSet<SanPham> SanPhams => Set<SanPham>();
     public DbSet<DangKyKhoaHoc> DangKyKhoaHocs => Set<DangKyKhoaHoc>();

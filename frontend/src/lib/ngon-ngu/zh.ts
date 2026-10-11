@@ -10,6 +10,7 @@
  */
 const zh = {
   chung: {
+    khongXoaDuocDaBan: '已有 {{so}} 笔订单，无法删除。取消勾选「仍在销售」可停售并保留历史。',
     daThem: '已添加',
     daXoa: '已删除',
     daGuiThongBao: '已发送',
@@ -1035,6 +1036,7 @@ const zh = {
     xoaBang: '删除表格',
   },
   chucNang: {
+    NgonNgu: '语言',
     TaiKhoan: '登录账号',
     HoSoNguoiDung: '用户档案',
     LopHoc: '班级',

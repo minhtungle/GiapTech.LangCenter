@@ -12,6 +12,14 @@ export interface MucThaoTac {
   /** Chèn đường kẻ NGAY TRÊN mục này, tách nhóm phá huỷ khỏi nhóm thường. */
   ngatNhom?: boolean
   an?: boolean
+  /**
+   * Hiện nhưng KHOÁ, kèm lý do (11/10/2026).
+   *
+   * Khác `an`: ẩn hẳn thì người dùng không biết chức năng tồn tại, và tự hỏi vì sao khoá này
+   * xoá được còn khoá kia thì không. Hiện kèm lý do ("đã có 40 đơn hàng") trả lời luôn câu
+   * hỏi đó, và chỉ đường sang việc nên làm thay thế.
+   */
+  khoa?: string
 }
 
 /**
@@ -86,7 +94,9 @@ export function MenuThaoTac({
   const tinhViTri = () => {
     const r = nut.current?.getBoundingClientRect()
     if (!r) return
-    const cao = hienThi.length * 34 + 8
+    // +28 cho mỗi dòng lý do của mục bị khoá, nếu không menu bị tính thiếu chiều cao và
+    // lật hướng sai khi ở gần đáy màn.
+    const cao = hienThi.length * 34 + hienThi.filter((m) => m.khoa).length * 28 + 8
     const canDuoi = window.innerHeight - r.bottom
     setViTri({
       top: canDuoi < cao + 16 ? r.top - cao - 4 : r.bottom + 4,
@@ -146,20 +156,28 @@ export function MenuThaoTac({
               <button
                 type="button"
                 role="menuitem"
+                disabled={!!m.khoa}
                 onClick={() => {
                   setMo(false)
                   m.onChon()
                 }}
                 className={cn(
                   'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm',
-                  'transition-colors hover:bg-muted focus-visible:bg-muted',
-                  'focus-visible:outline-none',
-                  m.nguyHiem && 'text-destructive',
+                  'transition-colors focus-visible:outline-none',
+                  m.khoa
+                    ? 'cursor-not-allowed opacity-50'
+                    : 'hover:bg-muted focus-visible:bg-muted',
+                  m.nguyHiem && !m.khoa && 'text-destructive',
                 )}
               >
                 {m.icon && <m.icon className="h-4 w-4 shrink-0" />}
                 <span className="truncate">{m.nhan}</span>
               </button>
+              {/* Lý do nằm NGAY DƯỚI mục bị khoá, không phải tooltip: tooltip chỉ hiện khi
+                  rê chuột, mà nút đã `disabled` thì nhiều trình duyệt không bắn sự kiện rê. */}
+              {m.khoa && (
+                <p className="px-2 pb-1 text-xs leading-snug text-muted-foreground">{m.khoa}</p>
+              )}
             </React.Fragment>
           ))}
         </div>,

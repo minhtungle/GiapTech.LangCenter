@@ -10,6 +10,7 @@
  */
 const ko = {
   chung: {
+    khongXoaDuocDaBan: '주문 {{so}}건이 있어 삭제할 수 없습니다. 「판매 중」 체크를 해제하면 이력을 유지한 채 판매만 중단됩니다.',
     daThem: '추가되었습니다',
     daXoa: '삭제되었습니다',
     daGuiThongBao: '전송되었습니다',
@@ -1035,6 +1036,7 @@ const ko = {
     xoaBang: '표 삭제',
   },
   chucNang: {
+    NgonNgu: '언어',
     TaiKhoan: '로그인 계정',
     HoSoNguoiDung: '사용자 정보',
     LopHoc: '반',

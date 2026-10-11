@@ -9,6 +9,7 @@
  */
 const vi = {
   chung: {
+    khongXoaDuocDaBan: 'Đã có {{so}} đơn hàng — không xoá được. Bỏ tích "Còn bán" để ngừng bán mà vẫn giữ lịch sử.',
     daThem: 'Đã thêm',
     daXoa: 'Đã xoá',
     daGuiThongBao: 'Đã gửi',
@@ -1146,6 +1147,7 @@ const vi = {
     xoaBang: 'Xoá bảng',
   },
   chucNang: {
+    NgonNgu: 'Ngôn ngữ',
     TaiKhoan: 'Tài khoản đăng nhập',
     HoSoNguoiDung: 'Hồ sơ người dùng',
     LopHoc: 'Lớp học',

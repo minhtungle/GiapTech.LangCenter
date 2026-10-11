@@ -10,6 +10,7 @@
  */
 const ja = {
   chung: {
+    khongXoaDuocDaBan: '注文が {{so}} 件あるため削除できません。「販売中」のチェックを外すと履歴を保ったまま販売を停止できます。',
     daThem: '追加しました',
     daXoa: '削除しました',
     daGuiThongBao: '送信しました',
@@ -1035,6 +1036,7 @@ const ja = {
     xoaBang: '表を削除',
   },
   chucNang: {
+    NgonNgu: '言語',
     TaiKhoan: 'ログインアカウント',
     HoSoNguoiDung: 'ユーザープロフィール',
     LopHoc: 'クラス',

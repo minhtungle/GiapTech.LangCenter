@@ -196,6 +196,49 @@ public class KhoaHocController(ISender sender) : ControllerBase
     }
 }
 
+/// <summary>
+/// Danh mục ngôn ngữ giảng dạy (11/10/2026) — phân loại khoá học và sản phẩm để lọc khách
+/// hàng / doanh thu theo ngôn ngữ.
+/// </summary>
+[ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/ngon-ngu")]
+public class NgonNguController(ISender sender) : ControllerBase
+{
+    /// <param name="chiDangDung">
+    /// `true` = chỉ ngôn ngữ còn dùng, dành cho ô chọn ở form khoá học. Màn quản trị để
+    /// `false` (mặc định) để thấy cả mục đã tắt mà bật lại.
+    /// </param>
+    [HttpGet]
+    [RequirePermission(ChucNang.NgonNgu, HanhDong.Xem)]
+    public async Task<ActionResult<List<NgonNguDto>>> DanhSach(
+        [FromQuery] bool chiDangDung = false, CancellationToken ct = default)
+        => Ok(await sender.Send(new LayDanhSachNgonNguQuery(chiDangDung), ct));
+
+    [HttpPost]
+    [RequirePermission(ChucNang.NgonNgu, HanhDong.Them)]
+    public async Task<ActionResult<Guid>> Tao(
+        [FromBody] LuuNgonNguCommand command, CancellationToken ct)
+        => Ok(await sender.Send(command with { Id = null }, ct));
+
+    [HttpPut("{id:guid}")]
+    [RequirePermission(ChucNang.NgonNgu, HanhDong.Sua)]
+    public async Task<IActionResult> CapNhat(
+        Guid id, [FromBody] LuuNgonNguCommand command, CancellationToken ct)
+    {
+        await sender.Send(command with { Id = id }, ct);
+        return NoContent();
+    }
+
+    [HttpDelete("{id:guid}")]
+    [RequirePermission(ChucNang.NgonNgu, HanhDong.Xoa)]
+    public async Task<IActionResult> Xoa(Guid id, CancellationToken ct)
+    {
+        await sender.Send(new XoaNgonNguCommand(id), ct);
+        return NoContent();
+    }
+}
+
 /// <summary>FR-20 — danh mục sản phẩm bán kèm: sách, học cụ (CRM).</summary>
 [ApiController]
 [ApiVersion("1.0")]

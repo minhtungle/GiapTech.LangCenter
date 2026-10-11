@@ -76,6 +76,7 @@ public interface IAppDbContext
 
     // CRM (FR-17 → FR-19)
     DbSet<KhachHang> KhachHangs { get; }
+    DbSet<NgonNgu> NgonNgus { get; }
     DbSet<KhoaHoc> KhoaHocs { get; }
     DbSet<SanPham> SanPhams { get; }
     DbSet<DangKyKhoaHoc> DangKyKhoaHocs { get; }

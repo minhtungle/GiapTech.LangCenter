@@ -131,6 +131,42 @@ public class ThuTienDangKy : TenantEntity
 }
 
 /// <summary>
+/// NGON_NGU — danh mục ngôn ngữ giảng dạy của trung tâm (11/10/2026).
+///
+/// ## Vì sao là BẢNG, không phải enum trong mã
+///
+/// Mỗi trung tâm dạy một bộ ngôn ngữ khác nhau, và bộ đó đổi theo thời gian: thêm tiếng Nhật
+/// khi mở bộ môn mới, bỏ tiếng Pháp khi đóng. Enum thì mỗi lần đổi phải sửa mã và triển khai
+/// lại — việc của lập trình viên cho một quyết định của người vận hành.
+///
+/// ## Vì sao khoá học/sản phẩm trỏ tới đây thay vì lưu chuỗi
+///
+/// Lưu chuỗi `"Tiếng Đức"` thì đổi tên thành `"Tiếng Đức (Goethe)"` phải sửa mọi hàng, và chỉ
+/// cần một chỗ gõ sai hoa thường là bộ lọc tách thành hai nhóm. Khoá ngoại làm việc đổi tên
+/// thành một lần ghi.
+/// </summary>
+public class NgonNgu : TenantEntity
+{
+    /// <summary>Tên hiển thị: "Tiếng Đức", "Tiếng Anh"… Duy nhất trong trung tâm.</summary>
+    public string Ten { get; set; } = null!;
+
+    /// <summary>
+    /// Thứ tự hiện trong ô chọn. Nhỏ hơn đứng trước; bằng nhau thì theo tên.
+    ///
+    /// Trung tâm dạy chính tiếng Đức muốn nó đứng đầu thay vì chờ chữ T của bảng chữ cái.
+    /// </summary>
+    public int ThuTu { get; set; }
+
+    /// <summary>
+    /// false = thôi dùng. **Không xoá ngôn ngữ đã gắn khoá học** — xem `XoaNgonNguHandler`.
+    /// </summary>
+    public bool DangDung { get; set; } = true;
+
+    public ICollection<KhoaHoc> KhoaHocs { get; set; } = [];
+    public ICollection<SanPham> SanPhams { get; set; } = [];
+}
+
+/// <summary>
 /// KHOA_HOC — danh mục SẢN PHẨM bán ra (FR-19).
 ///
 /// Khác <see cref="LopHoc"/>: khoá học là sản phẩm bán đi bán lại, lớp học là một **lần mở** cụ
@@ -153,6 +189,14 @@ public class KhoaHoc : TenantEntity
 
     /// <summary>false = ngừng bán. Không xoá khoá đã bán — đơn cũ phải giữ được tên khoá.</summary>
     public bool DangBan { get; set; } = true;
+
+    /// <summary>
+    /// Ngôn ngữ giảng dạy (11/10/2026). **`null` = chưa gắn** — mọi khoá có trước ngày này
+    /// đều rơi vào trạng thái đó, và lọc "Tất cả" vẫn thấy chúng (quy tắc #1: không đụng dữ
+    /// liệu hiện có).
+    /// </summary>
+    public Guid? NgonNguId { get; set; }
+    public NgonNgu? NgonNgu { get; set; }
 
     public ICollection<DangKyKhoaHoc> DangKys { get; set; } = [];
 }
@@ -179,6 +223,10 @@ public class SanPham : TenantEntity
     public string? DonViTinh { get; set; }
 
     public bool DangBan { get; set; } = true;
+
+    /// <summary>Ngôn ngữ liên quan (sách tiếng Đức…). `null` = chưa gắn / không gắn với ngôn ngữ nào.</summary>
+    public Guid? NgonNguId { get; set; }
+    public NgonNgu? NgonNgu { get; set; }
 
     public ICollection<DangKyKhoaHoc> DonHangs { get; set; } = [];
 }

@@ -203,9 +203,13 @@ export default function SanPham() {
                                 icon: Trash2,
                                 nguyHiem: true,
                                 ngatNhom: true,
-                                // Khoá đã bán không xoá được (FK Restrict) — ẩn nút thay vì
-                                // để người dùng bấm rồi nhận lỗi.
-                                an: !coQuyen('SanPham', 'Xoa') || k.soDonHang > 0,
+                                an: !coQuyen('SanPham', 'Xoa'),
+                                // HIỆN kèm lý do thay vì ẩn: ẩn thì người dùng không biết
+                                // vì sao mục này xoá được còn mục kia thì không.
+                                khoa:
+                                  k.soDonHang > 0
+                                    ? t('chung.khongXoaDuocDaBan', { so: k.soDonHang })
+                                    : undefined,
                                 onChon: () =>
                                   hoi({
                                     tieuDe: t('chung.xacNhanXoa'),

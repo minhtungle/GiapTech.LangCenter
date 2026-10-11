@@ -113,6 +113,16 @@ public static class ChucNang
     /// </summary>
     public const string SanPham = nameof(SanPham);
 
+    /// <summary>
+    /// Danh mục ngôn ngữ giảng dạy (11/10/2026) — dùng để phân loại khoá học và sản phẩm,
+    /// rồi lọc khách hàng / doanh thu theo đó.
+    ///
+    /// Tách khỏi <see cref="KhoaHoc"/>: đây là **danh mục nền** hiếm khi đổi, do người quản
+    /// lý khai một lần; còn khoá học thì nhân viên kinh doanh sửa giá thường xuyên. Gộp
+    /// quyền thì ai sửa được giá cũng xoá được cả danh mục ngôn ngữ của trung tâm.
+    /// </summary>
+    public const string NgonNgu = nameof(NgonNgu);
+
     // ---------- Nghiệp vụ đào tạo ----------
 
     public const string LopHoc = nameof(LopHoc);
@@ -323,6 +333,7 @@ public static class ChucNang
         TaiKhoan, HoSoNguoiDung, PhanQuyen, ThietLapChung, Anh, DoiMatKhauNguoiKhac,
         NhanSu, ChucVu, PhongBan, TieuChiDanhGia, ThongKeNhanSu,
         DoanhThu, ThongKeDoanhThu, KhachHang, ChamSocKhachHang, EmailKhachHang, KhoaHoc, SanPham,
+        NgonNgu,
         LopHoc, GhiDanhLop, XepLop, BuoiHoc, DiemDanh, NhanXetBuoiHoc,
         BaiTap, BaiNopBaiTap, BaiKiemTra, BaiLamKiemTra,
         KhoaOnline, GhiDanhKhoaOnline, HocOnline,
@@ -356,6 +367,7 @@ public static class ChucNang
         [KhachHang] = HeThong.Crm,
         [KhoaHoc] = HeThong.Crm,
         [SanPham] = HeThong.Crm,
+        [NgonNgu] = HeThong.Crm,
 
         [LopHoc] = HeThong.Lms,
         [GhiDanhLop] = HeThong.Lms,
@@ -474,6 +486,8 @@ public static class ChucNang
         // thật thì phải tách lệnh trước — ghi vào nợ kỹ thuật, đừng khai một ô không gác gì.
         [KhoaHoc] = Crud,
         [SanPham] = Crud,
+        // Crud đủ: danh mục nền chỉ có thêm/sửa/xoá, không có thao tác nghiệp vụ riêng.
+        [NgonNgu] = Crud,
 
         // ---------- LMS ----------
         [LopHoc] = [HanhDong.Xem, HanhDong.Them, HanhDong.Sua, HanhDong.Xoa,

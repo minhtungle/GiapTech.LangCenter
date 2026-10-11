@@ -10,6 +10,7 @@
  */
 const en = {
   chung: {
+    khongXoaDuocDaBan: '{{so}} orders exist — cannot delete. Untick "Still selling" to stop selling while keeping history.',
     daThem: 'Added',
     daXoa: 'Deleted',
     daGuiThongBao: 'Sent',
@@ -1035,6 +1036,7 @@ const en = {
     xoaBang: 'Delete table',
   },
   chucNang: {
+    NgonNgu: 'Languages',
     TaiKhoan: 'Login accounts',
     HoSoNguoiDung: 'Person profiles',
     LopHoc: 'Classes',

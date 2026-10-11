@@ -42,6 +42,24 @@ public class KhachHangConfig : IEntityTypeConfiguration<KhachHang>
     }
 }
 
+public class NgonNguConfig : IEntityTypeConfiguration<NgonNgu>
+{
+    public void Configure(EntityTypeBuilder<NgonNgu> b)
+    {
+        b.ToTable("NGON_NGU");
+
+        b.Property(x => x.Ten).HasMaxLength(100).IsRequired();
+
+        b.HasIndex(x => x.TenantId);
+
+        // Tên duy nhất TRONG trung tâm (quy tắc #8) — hai mục "Tiếng Đức" làm bộ lọc tách
+        // đôi và không ai biết chọn cái nào.
+        b.HasIndex(x => new { x.TenantId, x.Ten })
+            .IsUnique()
+            .HasDatabaseName("ux_ngon_ngu_tenant_ten");
+    }
+}
+
 public class KhoaHocConfig : IEntityTypeConfiguration<KhoaHoc>
 {
     public void Configure(EntityTypeBuilder<KhoaHoc> b)
@@ -57,6 +75,12 @@ public class KhoaHocConfig : IEntityTypeConfiguration<KhoaHoc>
 
         b.HasIndex(x => x.TenantId);
         b.HasIndex(x => new { x.TenantId, x.Ten }).IsUnique();
+        // SetNull: xoá một ngôn ngữ thì khoá học KHÔNG biến mất, chỉ mất nhãn ngôn ngữ.
+        // Restrict sẽ chặn xoá ngôn ngữ dùng sai, mà Cascade thì xoá luôn cả khoá học —
+        // cả hai đều tệ hơn là để khoá học quay về trạng thái "chưa gắn".
+        b.HasOne(x => x.NgonNgu).WithMany(x => x.KhoaHocs)
+            .HasForeignKey(x => x.NgonNguId).OnDelete(DeleteBehavior.SetNull);
+
     }
 }
 
@@ -74,6 +98,12 @@ public class SanPhamConfig : IEntityTypeConfiguration<SanPham>
 
         b.HasIndex(x => x.TenantId);
         b.HasIndex(x => new { x.TenantId, x.Ten }).IsUnique();
+        // SetNull: xoá một ngôn ngữ thì khoá học KHÔNG biến mất, chỉ mất nhãn ngôn ngữ.
+        // Restrict sẽ chặn xoá ngôn ngữ dùng sai, mà Cascade thì xoá luôn cả khoá học —
+        // cả hai đều tệ hơn là để khoá học quay về trạng thái "chưa gắn".
+        b.HasOne(x => x.NgonNgu).WithMany(x => x.SanPhams)
+            .HasForeignKey(x => x.NgonNguId).OnDelete(DeleteBehavior.SetNull);
+
     }
 }
 

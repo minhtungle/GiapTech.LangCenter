@@ -1317,6 +1317,10 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("gia_tien");
 
+                    b.Property<Guid?>("NgonNguId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ngon_ngu_id");
+
                     b.Property<int>("SoBuoi")
                         .HasColumnType("integer")
                         .HasColumnName("so_buoi");
@@ -1344,6 +1348,9 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
 
                     b.HasIndex("CreatedById")
                         .HasDatabaseName("ix_khoa_hoc_created_by_id");
+
+                    b.HasIndex("NgonNguId")
+                        .HasDatabaseName("ix_khoa_hoc_ngon_ngu_id");
 
                     b.HasIndex("TenantId")
                         .HasDatabaseName("ix_khoa_hoc_tenant_id");
@@ -2338,6 +2345,66 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.ToTable("MUC_LDP", (string)null);
                 });
 
+            modelBuilder.Entity("GiapTech.LangCenter.Domain.Entities.NgonNgu", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_id");
+
+                    b.Property<bool>("DangDung")
+                        .HasColumnType("boolean")
+                        .HasColumnName("dang_dung");
+
+                    b.Property<string>("Ten")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("ten");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<int>("ThuTu")
+                        .HasColumnType("integer")
+                        .HasColumnName("thu_tu");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ngon_ngu");
+
+                    b.HasIndex("CreatedById")
+                        .HasDatabaseName("ix_ngon_ngu_created_by_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_ngon_ngu_tenant_id");
+
+                    b.HasIndex("UpdatedById")
+                        .HasDatabaseName("ix_ngon_ngu_updated_by_id");
+
+                    b.HasIndex("TenantId", "Ten")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ngon_ngu_tenant_ten");
+
+                    b.ToTable("NGON_NGU", (string)null);
+                });
+
             modelBuilder.Entity("GiapTech.LangCenter.Domain.Entities.NguoiDung", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3202,6 +3269,10 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("gia_tien");
 
+                    b.Property<Guid?>("NgonNguId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ngon_ngu_id");
+
                     b.Property<string>("Ten")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -3225,6 +3296,9 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
 
                     b.HasIndex("CreatedById")
                         .HasDatabaseName("ix_san_pham_created_by_id");
+
+                    b.HasIndex("NgonNguId")
+                        .HasDatabaseName("ix_san_pham_ngon_ngu_id");
 
                     b.HasIndex("TenantId")
                         .HasDatabaseName("ix_san_pham_tenant_id");
@@ -4743,6 +4817,12 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_khoa_hoc_nguoi_dungs_created_by_id");
 
+                    b.HasOne("GiapTech.LangCenter.Domain.Entities.NgonNgu", "NgonNgu")
+                        .WithMany("KhoaHocs")
+                        .HasForeignKey("NgonNguId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_khoa_hoc_ngon_ngus_ngon_ngu_id");
+
                     b.HasOne("GiapTech.LangCenter.Domain.Entities.NguoiDung", "UpdatedBy")
                         .WithMany()
                         .HasForeignKey("UpdatedById")
@@ -4750,6 +4830,8 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasConstraintName("fk_khoa_hoc_nguoi_dungs_updated_by_id");
 
                     b.Navigation("CreatedBy");
+
+                    b.Navigation("NgonNgu");
 
                     b.Navigation("UpdatedBy");
                 });
@@ -5159,6 +5241,25 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Navigation("UpdatedBy");
                 });
 
+            modelBuilder.Entity("GiapTech.LangCenter.Domain.Entities.NgonNgu", b =>
+                {
+                    b.HasOne("GiapTech.LangCenter.Domain.Entities.NguoiDung", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_ngon_ngu_nguoi_dungs_created_by_id");
+
+                    b.HasOne("GiapTech.LangCenter.Domain.Entities.NguoiDung", "UpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("UpdatedById")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_ngon_ngu_nguoi_dungs_updated_by_id");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("UpdatedBy");
+                });
+
             modelBuilder.Entity("GiapTech.LangCenter.Domain.Entities.NguoiDung", b =>
                 {
                     b.HasOne("GiapTech.LangCenter.Domain.Entities.ChucVu", "ChucVu")
@@ -5478,6 +5579,12 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_san_pham_nguoi_dung_created_by_id");
 
+                    b.HasOne("GiapTech.LangCenter.Domain.Entities.NgonNgu", "NgonNgu")
+                        .WithMany("SanPhams")
+                        .HasForeignKey("NgonNguId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_san_pham_ngon_ngu_ngon_ngu_id");
+
                     b.HasOne("GiapTech.LangCenter.Domain.Entities.NguoiDung", "UpdatedBy")
                         .WithMany()
                         .HasForeignKey("UpdatedById")
@@ -5485,6 +5592,8 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                         .HasConstraintName("fk_san_pham_nguoi_dung_updated_by_id");
 
                     b.Navigation("CreatedBy");
+
+                    b.Navigation("NgonNgu");
 
                     b.Navigation("UpdatedBy");
                 });
@@ -5957,6 +6066,13 @@ namespace GiapTech.LangCenter.Infrastructure.Migrations
                     b.Navigation("KhoaHocs");
 
                     b.Navigation("TroGiangs");
+                });
+
+            modelBuilder.Entity("GiapTech.LangCenter.Domain.Entities.NgonNgu", b =>
+                {
+                    b.Navigation("KhoaHocs");
+
+                    b.Navigation("SanPhams");
                 });
 
             modelBuilder.Entity("GiapTech.LangCenter.Domain.Entities.NguoiDung", b =>
