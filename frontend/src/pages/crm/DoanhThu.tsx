@@ -848,7 +848,7 @@ export default function DoanhThu() {
             <Button type="button" variant="outline" onClick={dong}>
               {t('chung.huy')}
             </Button>
-            <Button type="submit" disabled={luu.isPending || !khachId || !matHangId}>
+            <Button type="submit" dangXuLy={luu.isPending} disabled={!khachId || !matHangId}>
               {t('chung.luu')}
             </Button>
           </div>

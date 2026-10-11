@@ -142,6 +142,48 @@ thêm mới sau đó sẽ thấy sẵn lỗi của thao tác trước, không li
 Tách `maLoi` (lỗi trong form) và `maLoiTrang` (lỗi thao tác trên trang), và dọn `maLoiTrang`
 mỗi khi mở form.
 
+### Phản hồi sau thao tác: vòng xoay khi chạy, thông báo khi xong (11/10/2026)
+
+Chủ sản phẩm báo: gửi mail trông như **treo máy**, và nhiều thao tác xong mà không biết có
+thành công không.
+
+**Đo trước khi sửa**: 58/65 lệnh ghi (`onSuccess`) không báo gì khi xong — chỉ 7 lệnh có.
+
+Hai thứ bổ sung, mỗi thứ trả lời một câu:
+
+| Câu hỏi của người dùng | Thứ trả lời |
+|---|---|
+| "Bấm rồi, nó có chạy không?" | **Vòng xoay trên nút** (`<Button dangXuLy>`) |
+| "Chạy xong rồi, có thành công không?" | **Thông báo nổi** góc dưới phải |
+
+#### Vì sao nút cần vòng xoay, trong khi đã có thanh tiến trình trên đỉnh
+
+Thanh đó mảnh 2px, chỉ hiện sau 250ms, và nằm **xa chỗ vừa bấm**. Nút là nơi mắt đang nhìn.
+
+Đổi NHÃN thôi chưa đủ: màn gửi mail đã đổi thành "Đang gửi…" từ trước mà vẫn bị đọc nhầm là
+treo — **chữ tĩnh vẫn trông như đứng hình**. Phải có thứ chuyển động.
+
+`dangXuLy` tự khoá nút luôn, nên nơi gọi không phải viết thêm `disabled` — và quan trọng hơn
+là không thể QUÊN viết: bấm hai lần gửi hai email.
+
+Với `prefers-reduced-motion`, vòng xoay **quay chậm lại chứ không dừng hẳn** (khác các animation
+khác trong dự án): dừng hẳn thì nút chỉ còn mờ đi — đúng trạng thái bị đọc nhầm là treo.
+
+#### Thông báo đặt ở MutationCache, không rải vào từng `onSuccess`
+
+Một chỗ duy nhất (`App.tsx`) thấy mọi lệnh ghi của cả app. Sửa 58 chỗ thì vừa dài vừa chắc
+chắn sót, và lệnh viết sau này lại quên tiếp.
+
+Nhãn suy từ **phương thức HTTP**: `delete` → "Đã xoá", còn lại → "Đã lưu". Bắt 19 lệnh xoá tự
+khai thì sót ngay từ đầu. Canh bởi `thongBao.test.ts`.
+
+Màn nào **đã có phản hồi riêng** khai `meta: { tuBao: true }` để không nhận hai lời xác nhận
+chồng nhau — hiện có hai: gửi mail khách (modal hiện số thư đi được / số lỗi) và nhận xét buổi
+học (có dòng "đã gửi" riêng).
+
+**Không báo LỖI qua thông báo nổi** cho lỗi biểu mẫu: lỗi phải nằm cạnh ô gây lỗi để người
+dùng biết sửa ở đâu, và `CanhBaoLoi` trong form đã làm việc đó.
+
 ### Bảng rộng: cuộn ngang thay vì bóp cột (10/10/2026)
 
 Trước đó `Table` chỉ có `w-full`, nên bảng **luôn vừa khung** — và `overflow-x-auto` sẵn có

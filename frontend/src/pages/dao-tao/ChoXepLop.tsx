@@ -377,7 +377,7 @@ export default function ChoXepLop({ nhung = false }: { nhung?: boolean } = {}) {
               <Button type="button" variant="outline" onClick={() => setTuChoiCho(null)}>
                 {t('chung.huy')}
               </Button>
-              <Button type="submit" variant="destructive" disabled={tuChoi.isPending}>
+              <Button type="submit" variant="destructive" dangXuLy={tuChoi.isPending}>
                 {t('xepLop.tuChoi')}
               </Button>
             </div>

@@ -202,7 +202,7 @@ export default function KhoaOnline() {
             <Button type="button" variant="outline" onClick={() => setMoForm(false)}>
               {t('chung.huy')}
             </Button>
-            <Button type="submit" disabled={tao.isPending}>
+            <Button type="submit" dangXuLy={tao.isPending}>
               {t('chung.luu')}
             </Button>
           </div>

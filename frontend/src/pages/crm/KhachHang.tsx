@@ -590,7 +590,7 @@ export default function KhachHang() {
             <Button type="button" variant="outline" onClick={dong}>
               {t('chung.huy')}
             </Button>
-            <Button type="submit" disabled={luu.isPending}>
+            <Button type="submit" dangXuLy={luu.isPending}>
               {t('chung.luu')}
             </Button>
           </div>
@@ -686,7 +686,7 @@ export default function KhachHang() {
 
             </Button>
 
-            <Button type="submit" disabled={capTaiKhoan.isPending}>
+            <Button type="submit" dangXuLy={capTaiKhoan.isPending}>
 
               {t('chung.luu')}
 

@@ -138,6 +138,17 @@
 */
 
 /* Vạch tiến trình chạy qua lại ở mép trên — xem `DangXuLy`. */
+/*
+  Vòng xoay "đang xử lý" trên nút (11/10/2026).
+
+  0.7s: đủ nhanh để trông sống động, đủ chậm để không thành vệt nhoè.
+*/
+@keyframes xoay {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes chay-ngang {
   0% {
     transform: translateX(-100%) scaleX(0.4);
@@ -230,6 +241,15 @@
     vẫn gây triệu chứng. Thanh tiến trình vẫn HIỆN (chỉ đứng yên) để không mất tín hiệu "đang
     tải"; linh vật thì đứng im một chỗ.
   */
+  /*
+    Vòng xoay trên nút là tín hiệu DUY NHẤT nói "đang chạy" ở chỗ người dùng đang nhìn —
+    tắt hẳn thì nút chỉ còn mờ đi, đúng trạng thái mà chủ sản phẩm đọc nhầm là treo.
+    Nên quay thật chậm thay vì dừng: vẫn thấy có chuyển động, mà không giật.
+  */
+  .animate-\[xoay_0\.7s_linear_infinite\] {
+    animation-duration: 3s !important;
+  }
+
   .animate-\[chay-ngang_1\.4s_ease-in-out_infinite\],
   .animate-\[di-ngang_38s_linear_infinite\],
   .animate-\[lat-mat_38s_steps\(1\,end\)_infinite\],

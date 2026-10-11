@@ -311,7 +311,7 @@ export default function ChiTietQuyen() {
         </Button>
         {duocSua && (
           <Button
-            disabled={luu.isPending || !tenQuyen}
+            dangXuLy={luu.isPending} disabled={!tenQuyen}
             onClick={() =>
               hoi({
                 tieuDe: t('chung.xacNhanLuu'),

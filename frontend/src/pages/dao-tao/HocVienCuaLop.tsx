@@ -342,7 +342,7 @@ export function HocVienCuaLop({
                     </span>
                     <Button
                       size="sm"
-                      disabled={duyet.isPending}
+                      dangXuLy={duyet.isPending}
                       onClick={() =>
                         hoi({
                           tieuDe: t('xepLop.duyetVaoLop'),

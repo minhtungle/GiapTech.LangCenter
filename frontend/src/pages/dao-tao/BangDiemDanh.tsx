@@ -316,7 +316,7 @@ export function BangDiemDanh({
           <Button
             variant="outline"
             className={duocChot ? '' : 'hidden'}
-            disabled={chot.isPending || buoi.trangThai === 'DaHoanThanh'}
+            dangXuLy={chot.isPending} disabled={buoi.trangThai === 'DaHoanThanh'}
             onClick={() =>
               hoi({
                 tieuDe: t('buoiHoc.chotBuoi'),
@@ -335,7 +335,7 @@ export function BangDiemDanh({
               cho bấm chỉ để nhận 400 là bắt người dùng đi một vòng vô nghĩa. `title` nói lý do
               nút bị mờ, nếu không thì nút disabled trông như màn bị treo.
             */
-            disabled={luu.isPending || ds.length === 0 || thieuLyDo.length > 0}
+            dangXuLy={luu.isPending} disabled={ds.length === 0 || thieuLyDo.length > 0}
             title={thieuLyDo.length > 0 ? t('diemDanh.thieuLyDoNgan') : undefined}
             onClick={() =>
               hoi({

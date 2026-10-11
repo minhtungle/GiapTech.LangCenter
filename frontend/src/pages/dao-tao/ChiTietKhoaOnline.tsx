@@ -493,7 +493,7 @@ export default function ChiTietKhoaOnline() {
             <Button type="button" variant="outline" onClick={() => setSuaKhoa(false)}>
               {t('chung.huy')}
             </Button>
-            <Button type="submit" disabled={luuKhoa.isPending}>
+            <Button type="submit" dangXuLy={luuKhoa.isPending}>
               {t('chung.luu')}
             </Button>
           </div>
@@ -571,7 +571,7 @@ export default function ChiTietKhoaOnline() {
             <Button type="button" variant="outline" onClick={() => setFormBai(null)}>
               {t('chung.huy')}
             </Button>
-            <Button type="submit" disabled={luuBai.isPending}>
+            <Button type="submit" dangXuLy={luuBai.isPending}>
               {t('chung.luu')}
             </Button>
           </div>
@@ -614,7 +614,7 @@ export default function ChiTietKhoaOnline() {
             <Button type="button" variant="outline" onClick={() => setFormCap(false)}>
               {t('chung.huy')}
             </Button>
-            <Button type="submit" disabled={capQuyen.isPending || hocVienChon.length === 0}>
+            <Button type="submit" dangXuLy={capQuyen.isPending} disabled={hocVienChon.length === 0}>
               {t('chung.luu')}
             </Button>
           </div>

@@ -493,6 +493,7 @@ export function LichVaDiemDanh({
               <button
                 key={tt}
                 type="button"
+                // <button> thuần, không phải component Button — không có prop dangXuLy.
                 disabled={datTrangThai.isPending}
                 onClick={() =>
                   trangThaiCho && datTrangThai.mutate({ id: trangThaiCho.id, trangThai: tt })
@@ -755,7 +756,7 @@ function FormSinhLich({
           <Button type="button" variant="outline" onClick={onDong}>
             {t('chung.huy')}
           </Button>
-          <Button type="submit" disabled={sinh.isPending}>
+          <Button type="submit" dangXuLy={sinh.isPending}>
             {t('buoiHoc.sinhLich')}
           </Button>
         </div>

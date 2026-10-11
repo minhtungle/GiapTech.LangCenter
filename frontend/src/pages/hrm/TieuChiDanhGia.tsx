@@ -253,7 +253,7 @@ export default function TieuChiDanhGia() {
             <Button type="button" variant="outline" onClick={() => setMoForm(false)}>
               {t('chung.huy')}
             </Button>
-            <Button type="submit" disabled={luu.isPending}>{t('chung.luu')}</Button>
+            <Button type="submit" dangXuLy={luu.isPending}>{t('chung.luu')}</Button>
           </div>
         </form>
       </Modal>

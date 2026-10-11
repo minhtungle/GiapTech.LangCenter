@@ -9,6 +9,10 @@
  */
 const vi = {
   chung: {
+    daThem: 'Đã thêm',
+    daXoa: 'Đã xoá',
+    daGuiThongBao: 'Đã gửi',
+    daCapNhat: 'Đã cập nhật',
     // Tiêu đề tab khi chưa biết trung tâm nào — xem `nhanDienTab.ts`.
     tieuDeTab: 'LangCenter — Quản lý trung tâm ngoại ngữ',
     xacNhanLuu: 'Xác nhận lưu',

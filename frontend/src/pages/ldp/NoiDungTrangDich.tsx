@@ -114,7 +114,7 @@ export default function NoiDungTrangDich() {
         {duocXuatBan && (
           <Button
             variant={data.daXuatBan ? 'outline' : 'primary'}
-            disabled={xuatBan.isPending}
+            dangXuLy={xuatBan.isPending}
             onClick={() => xuatBan.mutate(!data.daXuatBan)}
           >
             {data.daXuatBan ? t('ldp.goXuatBan') : t('ldp.xuatBan')}
@@ -193,7 +193,7 @@ function SeoCard({
         </div>
         {duocSua && (
           <div className="flex justify-end">
-            <Button size="sm" disabled={luu.isPending} onClick={() => luu.mutate()}>
+            <Button size="sm" dangXuLy={luu.isPending} onClick={() => luu.mutate()}>
               {t('chung.luu')}
             </Button>
           </div>
@@ -287,7 +287,7 @@ function KhoiCard({
             <Button
               variant="ghost" size="sm"
               title={khoi.hien ? t('ldp.tatKhoi') : t('ldp.batKhoi')}
-              disabled={doiTrangThai.isPending}
+              dangXuLy={doiTrangThai.isPending}
               onClick={() => doiTrangThai.mutate()}
             >
               {khoi.hien ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
@@ -345,7 +345,7 @@ function KhoiCard({
 
         {duocSua && (
           <div className="flex justify-end">
-            <Button size="sm" disabled={luu.isPending} onClick={() => luu.mutate()}>
+            <Button size="sm" dangXuLy={luu.isPending} onClick={() => luu.mutate()}>
               {t('chung.luu')}
             </Button>
           </div>
@@ -519,7 +519,7 @@ function MucHang({
           />
           {duocSua && (
             <div className="flex justify-end">
-              <Button size="sm" disabled={luu.isPending} onClick={() => luu.mutate()}>
+              <Button size="sm" dangXuLy={luu.isPending} onClick={() => luu.mutate()}>
                 {t('chung.luu')}
               </Button>
             </div>

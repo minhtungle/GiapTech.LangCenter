@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/lib/auth'
 import Layout from '@/components/Layout'
@@ -38,9 +38,54 @@ import NhatKy from '@/pages/quan-tri/NhatKy'
 import Email from '@/pages/quan-tri/Email'
 import PhoiTaiLieu from '@/pages/quan-tri/PhoiTaiLieu'
 import { DangXuLy } from '@/components/ui/DangXuLy'
+import i18n from '@/lib/i18n'
+import { khoaNhanThanhCong, NhaCungCapThongBao, thongBaoNgoaiReact } from '@/lib/thongBao'
 import { LinhVat } from '@/components/LinhVat'
 
+/**
+ * Báo "đã lưu" cho MỌI lệnh ghi, ở một chỗ duy nhất (11/10/2026).
+ *
+ * ## Vì sao ở đây chứ không sửa 58 chỗ `onSuccess`
+ *
+ * Đo 11/10/2026: 58/65 lệnh ghi không báo gì khi xong. Sửa từng chỗ thì vừa dài vừa chắc
+ * chắn sót, và lệnh viết sau này lại quên tiếp. `MutationCache` thấy mọi lệnh của cả app,
+ * nên thêm một lệnh mới là tự có thông báo.
+ *
+ * ## Lệnh nào TỰ báo thì bỏ qua
+ *
+ * Màn nào đã có thông báo riêng (gửi mail hiện kết quả ngay trong modal) sẽ khai
+ * `meta: { tuBao: true }` để không nhận hai lời xác nhận chồng nhau.
+ *
+ * ## Vì sao không báo LỖI ở đây
+ *
+ * Lỗi của biểu mẫu phải nằm cạnh ô gây lỗi, và từng màn đã làm việc đó bằng `CanhBaoLoi`.
+ * Bắn thêm toast lỗi sẽ thành hai thông báo cho cùng một sự việc, ở hai chỗ khác nhau.
+ */
+const mutationCache = new MutationCache({
+  onSuccess: (duLieu, _bien, _ctx, mutation) => {
+    const meta = mutation.options.meta as { tuBao?: boolean; nhanThanhCong?: string } | undefined
+    if (meta?.tuBao) return
+
+    if (meta?.nhanThanhCong) {
+      thongBaoNgoaiReact().ok(meta.nhanThanhCong)
+      return
+    }
+
+    /*
+      Suy nhãn từ PHƯƠNG THỨC HTTP thay vì bắt 19 lệnh xoá tự khai.
+
+      Axios trả `config.method` trong kết quả, nên "Đã xoá" / "Đã lưu" tự đúng — kể cả với
+      lệnh viết sau này. Bắt khai tay thì hoặc sót ngay, hoặc sót dần theo thời gian.
+
+      Lệnh không qua axios (hoặc trả về undefined) rơi về "Đã lưu" — nhãn chung, không sai.
+    */
+    const method = (duLieu as { config?: { method?: string } } | undefined)?.config?.method
+    thongBaoNgoaiReact().ok(i18n.t(khoaNhanThanhCong(method)))
+  },
+})
+
 const queryClient = new QueryClient({
+  mutationCache,
   defaultOptions: {
     queries: {
       // Không tự thử lại lỗi 401/403: interceptor đã lo làm mới token, thử lại chỉ
@@ -102,7 +147,13 @@ export default function App() {
       */}
       <DangXuLy />
 
-      <BrowserRouter>
+      {/*
+        Thông báo nổi bọc TOÀN BỘ app: mọi màn gọi `useThongBao()` được, kể cả màn đăng nhập
+        ngoài `AuthProvider`. Khung thông báo tự nằm `fixed` góc dưới phải nên vị trí trong
+        cây component không ảnh hưởng chỗ nó hiện.
+      */}
+      <NhaCungCapThongBao>
+        <BrowserRouter>
         <AuthProvider>
           <LinhVat />
 
@@ -229,8 +280,9 @@ export default function App() {
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </AuthProvider>
-      </BrowserRouter>
+          </AuthProvider>
+        </BrowserRouter>
+      </NhaCungCapThongBao>
     </QueryClientProvider>
   )
 }

@@ -371,7 +371,7 @@ export default function ThietLap() {
           )}
 
           <div className="flex items-center gap-3 sm:col-span-2">
-            <Button type="submit" disabled={luu.isPending}>
+            <Button type="submit" dangXuLy={luu.isPending}>
               {t('chung.luu')}
             </Button>
             {daLuu && <span className="text-sm text-status-ok">{t('chung.daLuu')}</span>}

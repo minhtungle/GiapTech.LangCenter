@@ -337,7 +337,7 @@ export function BaiTapCuaLop({
                 một lệnh cập nhật không đổi gì.
               */}
               {!daTao && (
-                <Button type="submit" disabled={tao.isPending || capNhat.isPending}>
+                <Button type="submit" dangXuLy={tao.isPending} disabled={capNhat.isPending}>
                   {t('chung.luu')}
                 </Button>
               )}
@@ -515,7 +515,7 @@ function NopBaiCuaToi({ buoiHocId }: { buoiHocId: string }) {
 
         <div className="flex justify-end">
           <Button
-            disabled={nop.isPending}
+            dangXuLy={nop.isPending}
             onClick={() =>
               hoi({
                 tieuDe: cuaToi ? t('hocLieu.nopLai') : t('hocLieu.nopBai'),

@@ -255,7 +255,7 @@ function TabThietLap() {
 
             {duocSua && (
               <div className="flex flex-wrap items-center gap-2">
-                <Button type="submit" disabled={luu.isPending}>
+                <Button type="submit" dangXuLy={luu.isPending}>
                   {luu.isPending ? t('chung.luu') : t('chung.luu')}
                 </Button>
                 {daLuu && (
@@ -305,7 +305,7 @@ function TabThietLap() {
               </div>
               <Button
                 type="button" variant="outline"
-                disabled={guiThu.isPending || emailThu.trim() === ''}
+                dangXuLy={guiThu.isPending} disabled={emailThu.trim() === ''}
                 onClick={() => guiThu.mutate(emailThu.trim())}
               >
                 {guiThu.isPending ? t('email.dangGui') : t('email.guiThu')}
@@ -484,7 +484,7 @@ function TabMau() {
           {duocSua && (
             <div className="flex flex-wrap items-center gap-2">
               <Button
-                type="button" disabled={luu.isPending}
+                type="button" dangXuLy={luu.isPending}
                 onClick={() =>
                   luu.mutate({ loai: mau.loai, tieuDe, noiDungHtml: noiDung, dangDung })
                 }

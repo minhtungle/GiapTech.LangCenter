@@ -300,7 +300,7 @@ function HopSuaDomain({
 
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={dong}>Huỷ</Button>
-          <Button disabled={luu.isPending} onClick={() => luu.mutate()}>
+          <Button dangXuLy={luu.isPending} onClick={() => luu.mutate()}>
             {luu.isPending ? 'Đang lưu…' : 'Lưu'}
           </Button>
         </div>

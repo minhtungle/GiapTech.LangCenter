@@ -321,7 +321,7 @@ export default function SanPham() {
             <Button type="button" variant="outline" onClick={dong}>
               {t('chung.huy')}
             </Button>
-            <Button type="submit" disabled={luu.isPending}>
+            <Button type="submit" dangXuLy={luu.isPending}>
               {t('chung.luu')}
             </Button>
           </div>

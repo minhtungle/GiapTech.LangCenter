@@ -285,7 +285,7 @@ function ModalTao({ onDong, onXong }: { onDong: () => void; onXong: () => void }
           <Button variant="outline" onClick={onDong}>{t('chung.huy')}</Button>
           <Button
             onClick={() => tao.mutate()}
-            disabled={tao.isPending || !ten.trim() || !tenTep}
+            dangXuLy={tao.isPending} disabled={!ten.trim() || !tenTep}
           >
             <Upload className="h-4 w-4" />
             {tao.isPending ? t('phoiTaiLieu.dangTaiLen') : t('phoiTaiLieu.taiLen')}
@@ -389,7 +389,7 @@ function ModalSua({
           <div>
             <Button
               variant="outline" onClick={() => thayTep.mutate()}
-              disabled={thayTep.isPending}
+              dangXuLy={thayTep.isPending}
             >
               {thayTep.isPending ? t('phoiTaiLieu.dangTaiLen') : t('phoiTaiLieu.thayTep')}
             </Button>
@@ -400,7 +400,7 @@ function ModalSua({
 
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onDong}>{t('chung.huy')}</Button>
-          <Button onClick={() => luu.mutate()} disabled={luu.isPending || !ten.trim()}>
+          <Button onClick={() => luu.mutate()} dangXuLy={luu.isPending} disabled={!ten.trim()}>
             {t('chung.luu')}
           </Button>
         </div>
@@ -509,7 +509,7 @@ function ModalXuat({
             <Eye className="h-4 w-4" />
             {moXem ? t('phoiTaiLieu.anXemTruoc') : t('phoiTaiLieu.xemTruoc')}
           </Button>
-          <Button onClick={() => xuat.mutate()} disabled={xuat.isPending}>
+          <Button onClick={() => xuat.mutate()} dangXuLy={xuat.isPending}>
             <Download className="h-4 w-4" />
             {xuat.isPending ? t('phoiTaiLieu.dangXuat') : t('phoiTaiLieu.xuatFile')}
           </Button>

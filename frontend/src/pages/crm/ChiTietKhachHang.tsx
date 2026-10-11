@@ -297,7 +297,7 @@ function TabThongTin({ kh, onXong }: { kh: ChiTietKhachHangDto; onXong: () => vo
             >
               {t('chung.huy')}
             </Button>
-            <Button type="submit" disabled={luu.isPending}>
+            <Button type="submit" dangXuLy={luu.isPending}>
               {t('chung.luu')}
             </Button>
           </div>
@@ -541,7 +541,7 @@ function TabChamSoc({ khachHangId }: { khachHangId: string }) {
             <Button type="button" variant="outline" onClick={dong}>
               {t('chung.huy')}
             </Button>
-            <Button type="submit" disabled={luu.isPending}>
+            <Button type="submit" dangXuLy={luu.isPending}>
               {t('chung.luu')}
             </Button>
           </div>
@@ -862,7 +862,7 @@ function FormMuaHang({
           <Button type="button" variant="outline" onClick={onDong}>
             {t('chung.huy')}
           </Button>
-          <Button type="submit" disabled={mua.isPending || !matHangId}>
+          <Button type="submit" dangXuLy={mua.isPending} disabled={!matHangId}>
             {t('chung.luu')}
           </Button>
         </div>
@@ -1156,7 +1156,7 @@ function TabKhoaHoc({ khachHangId }: { khachHangId: string }) {
               <Button type="button" variant="outline" onClick={() => setGuiCho(null)}>
                 {t('chung.huy')}
               </Button>
-              <Button type="submit" disabled={guiYeuCau.isPending}>
+              <Button type="submit" dangXuLy={guiYeuCau.isPending}>
                 <Send className="h-4 w-4" />
                 {t('chiTietKhach.guiYeuCau')}
               </Button>
@@ -1272,7 +1272,7 @@ function TabKhoaHoc({ khachHangId }: { khachHangId: string }) {
               >
                 {t('chung.huy')}
               </Button>
-              <Button type="submit" disabled={luuThu.isPending}>
+              <Button type="submit" dangXuLy={luuThu.isPending}>
                 {t('chung.luu')}
               </Button>
             </div>
@@ -1738,6 +1738,9 @@ function ModalSoanThu({
   }
 
   const gui = useMutation({
+    // Modal tự hiện kết quả chi tiết (bao nhiêu thư đi được, bao nhiêu lỗi, lỗi ở khách
+    // nào) — chi tiết hơn hẳn một dòng "Đã gửi".
+    meta: { tuBao: true },
     mutationFn: async () =>
       (await api.post<{ soThanhCong: number; soLoi: number; khachLoi: string[] }>(
         '/khach-hang/email',
@@ -1844,7 +1847,7 @@ function ModalSoanThu({
           <Button variant="outline" onClick={onDong}>{t('chung.huy')}</Button>
           <Button
             onClick={() => gui.mutate()}
-            disabled={gui.isPending || !tieuDe.trim() || !noiDung.trim()}
+            dangXuLy={gui.isPending} disabled={!tieuDe.trim() || !noiDung.trim()}
           >
             <Send className="h-4 w-4" />
             {gui.isPending ? t('emailKhach.dangGui') : t('emailKhach.gui')}

@@ -96,7 +96,7 @@ export default function LienHeTrangDich() {
                           coQuyen('LienHeLanding', 'ChuyenCrm') && (
                             <Button
                               variant="outline" size="sm"
-                              disabled={chuyen.isPending}
+                              dangXuLy={chuyen.isPending}
                               onClick={() => chuyen.mutate(l.id)}
                             >
                               <UserPlus className="h-4 w-4" />

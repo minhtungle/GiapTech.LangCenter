@@ -596,7 +596,7 @@ export default function TaiKhoan() {
             <Button type="button" variant="outline" onClick={dong}>
               {t('chung.huy')}
             </Button>
-            <Button type="submit" disabled={luu.isPending}>
+            <Button type="submit" dangXuLy={luu.isPending}>
               {t('chung.luu')}
             </Button>
           </ModalChan>
@@ -636,7 +636,7 @@ export default function TaiKhoan() {
             <Button type="button" variant="outline" onClick={() => setDatLaiCho(null)}>
               {t('chung.huy')}
             </Button>
-            <Button type="submit" disabled={datLaiMk.isPending}>
+            <Button type="submit" dangXuLy={datLaiMk.isPending}>
               {t('chung.luu')}
             </Button>
           </ModalChan>

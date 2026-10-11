@@ -154,6 +154,9 @@ export function NhanXetBuoiHoc({
   }, [cuaToi])
 
   const gui = useMutation({
+    // Màn này đã có dòng "đã gửi" riêng ngay dưới nút — thêm toast là hai lời xác nhận cho
+    // cùng một việc.
+    meta: { tuBao: true },
     mutationFn: () =>
       api.post(`/buoi-hoc/${buoiHocId}/nhan-xet`, {
         noiDung: noiDung.trim(),
@@ -326,7 +329,7 @@ export function NhanXetBuoiHoc({
               </span>
             )}
             <Button
-              disabled={gui.isPending || !noiDung.trim()}
+              dangXuLy={gui.isPending} disabled={!noiDung.trim()}
               onClick={() =>
                 hoi({
                   tieuDe: cuaToi ? t('nhanXetBuoi.capNhat') : t('nhanXetBuoi.gui'),

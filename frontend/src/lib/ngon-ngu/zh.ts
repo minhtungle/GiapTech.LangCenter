@@ -10,6 +10,10 @@
  */
 const zh = {
   chung: {
+    daThem: '已添加',
+    daXoa: '已删除',
+    daGuiThongBao: '已发送',
+    daCapNhat: '已更新',
     tieuDeTab: 'LangCenter — 语言中心管理系统',
     xacNhanLuu: '确认保存',
     xemChiTiet: '查看详情',

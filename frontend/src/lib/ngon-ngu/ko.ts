@@ -10,6 +10,10 @@
  */
 const ko = {
   chung: {
+    daThem: '추가되었습니다',
+    daXoa: '삭제되었습니다',
+    daGuiThongBao: '전송되었습니다',
+    daCapNhat: '수정되었습니다',
     tieuDeTab: 'LangCenter — 어학 센터 관리',
     xacNhanLuu: '저장 확인',
     xemChiTiet: '상세 보기',

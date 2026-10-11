@@ -10,6 +10,10 @@
  */
 const ja = {
   chung: {
+    daThem: '追加しました',
+    daXoa: '削除しました',
+    daGuiThongBao: '送信しました',
+    daCapNhat: '更新しました',
     tieuDeTab: 'LangCenter — 語学センター管理システム',
     xacNhanLuu: '保存の確認',
     xemChiTiet: '詳細を見る',

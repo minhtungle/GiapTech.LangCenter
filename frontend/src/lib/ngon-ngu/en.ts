@@ -10,6 +10,10 @@
  */
 const en = {
   chung: {
+    daThem: 'Added',
+    daXoa: 'Deleted',
+    daGuiThongBao: 'Sent',
+    daCapNhat: 'Updated',
     tieuDeTab: 'LangCenter — Language center management',
     xacNhanLuu: 'Confirm save',
     xemChiTiet: 'View details',

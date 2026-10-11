@@ -114,10 +114,10 @@ export default function PhanQuyen() {
           {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
           <ModalChan>
-            <Button variant="outline" onClick={() => setMoForm(false)} disabled={tao.isPending}>
+            <Button variant="outline" onClick={() => setMoForm(false)} dangXuLy={tao.isPending}>
               {t('chung.huy')}
             </Button>
-            <Button onClick={() => tao.mutate()} disabled={tao.isPending || !tenQuyen}>
+            <Button onClick={() => tao.mutate()} dangXuLy={tao.isPending} disabled={!tenQuyen}>
               {tao.isPending ? t('chung.dangTai') : t('quyen.taoVaCauHinh')}
             </Button>
           </ModalChan>

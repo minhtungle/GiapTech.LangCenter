@@ -7,15 +7,58 @@ import { cn } from '@/lib/utils'
   theo docs/04-frontend/ui-ux-nguyen-tac.md.
 */
 
+/**
+ * Vòng quay "đang xử lý" (11/10/2026).
+ *
+ * `currentColor` để nó tự ăn màu chữ của nút — nút primary chữ trắng thì vòng trắng, nút
+ * outline chữ đậm thì vòng đậm. Hard-code màu sẽ tàng hình trên một trong hai.
+ */
+export function VongXoay({ className }: { className?: string }) {
+  return (
+    <svg
+      className={cn('animate-[xoay_0.7s_linear_infinite]', className)}
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden
+    >
+      {/* Vành mờ làm nền để thấy rõ phần sáng đang chạy quanh nó. */}
+      <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeOpacity="0.25" strokeWidth="2" />
+      <path
+        d="M14.5 8a6.5 6.5 0 0 0-6.5-6.5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
 export const Button = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement> & {
     variant?: 'primary' | 'outline' | 'ghost' | 'destructive'
     size?: 'sm' | 'md'
+    /**
+     * Đang chạy lệnh — hiện vòng xoay và tự khoá nút (11/10/2026).
+     *
+     * ## Vì sao cần, trong khi đã có thanh tiến trình trên đỉnh màn
+     *
+     * Thanh đó mảnh 2px và chỉ hiện sau 250ms, nằm xa chỗ người dùng vừa bấm. Chủ sản phẩm
+     * báo 11/10/2026: gửi mail (bắt tay SMTP thật, mất vài giây) trông như hệ thống treo.
+     *
+     * Nút mới là chỗ mắt đang nhìn. Đổi NHÃN thôi thì chưa đủ — chữ tĩnh vẫn đọc như đứng
+     * hình; phải có thứ **chuyển động** mới nói được "đang chạy, chưa chết".
+     *
+     * Tự khoá luôn: nơi gọi không phải viết `disabled={x.isPending}` nữa, và quan trọng hơn
+     * là không thể QUÊN viết — bấm hai lần gửi hai email.
+     */
+    dangXuLy?: boolean
   }
->(({ className, variant = 'primary', size = 'md', ...props }, ref) => (
+>(({ className, variant = 'primary', size = 'md', dangXuLy, disabled, children, ...props }, ref) => (
   <button
     ref={ref}
+    disabled={disabled || dangXuLy}
+    aria-busy={dangXuLy || undefined}
     className={cn(
       'inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
@@ -29,7 +72,10 @@ export const Button = React.forwardRef<
       className,
     )}
     {...props}
-  />
+  >
+    {dangXuLy && <VongXoay className={size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'} />}
+    {children}
+  </button>
 ))
 Button.displayName = 'Button'
 

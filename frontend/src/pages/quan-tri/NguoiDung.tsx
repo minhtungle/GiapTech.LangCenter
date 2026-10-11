@@ -1081,7 +1081,7 @@ export default function NguoiDung({ phamVi }: { phamVi: PhamViNguoiDung }) {
             <Button type="button" variant="outline" onClick={dong}>
               {t('chung.huy')}
             </Button>
-            <Button type="submit" disabled={luu.isPending}>
+            <Button type="submit" dangXuLy={luu.isPending}>
               {t('chung.luu')}
             </Button>
           </ModalChan>

@@ -290,7 +290,7 @@ export default function TaiLieu({ lopHocId }: { lopHocId?: string } = {}) {
               <Button type="button" variant="outline" onClick={dong}>
                 {dangSua ? t('chung.dong') : t('chung.huy')}
               </Button>
-              <Button type="submit" disabled={tao.isPending || capNhat.isPending}>
+              <Button type="submit" dangXuLy={tao.isPending} disabled={capNhat.isPending}>
                 {t('chung.luu')}
               </Button>
             </div>

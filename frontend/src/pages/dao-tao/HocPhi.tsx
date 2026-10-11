@@ -537,7 +537,7 @@ export default function HocPhi({ lopHocId }: { lopHocId?: string } = {}) {
             </Button>
             <Button
               type="submit"
-              disabled={luu.isPending || (!dangSua && (!lopChon || !hocVienChon))}
+              dangXuLy={luu.isPending} disabled={(!dangSua && (!lopChon || !hocVienChon))}
             >
               {t('chung.luu')}
             </Button>

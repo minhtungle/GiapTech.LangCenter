@@ -425,7 +425,7 @@ export default function LopHoc() {
                           key={l.id}
                           size="sm"
                           variant="outline"
-                          disabled={hoanTat.isPending}
+                          dangXuLy={hoanTat.isPending}
                           onClick={() => hoanTat.mutate(l)}
                         >
                           {t('lopHoc.hoanTat')}: {l.ten}

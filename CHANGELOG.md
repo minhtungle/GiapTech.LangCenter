@@ -8,6 +8,28 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Added — Vòng xoay khi đang chạy, thông báo khi xong (11/10/2026)
+
+Chủ sản phẩm báo: gửi mail trông như **treo máy**, và nhiều thao tác xong mà không biết có
+thành công không.
+
+**Đo trước khi sửa**: 58/65 lệnh ghi không báo gì khi xong — chỉ 7 lệnh có.
+
+**Vòng xoay trên nút** (`<Button dangXuLy>`, 50 nút). Thanh tiến trình trên đỉnh màn đã có từ
+22/09 nhưng mảnh 2px, chỉ hiện sau 250ms và nằm xa chỗ vừa bấm. Màn gửi mail thậm chí đã đổi
+nhãn thành "Đang gửi…" mà vẫn bị đọc nhầm là treo — chữ tĩnh vẫn trông như đứng hình.
+`dangXuLy` tự khoá nút, nên không thể quên `disabled` rồi bấm hai lần gửi hai email.
+
+**Thông báo nổi** góc dưới phải, đặt ở `MutationCache` nên **một chỗ phủ mọi lệnh ghi** —
+kể cả lệnh viết sau này. Nhãn suy từ phương thức HTTP (`delete` → "Đã xoá"), không bắt 19 lệnh
+xoá tự khai. Màn đã có phản hồi riêng khai `meta: { tuBao: true }` để không nhận hai lời xác
+nhận chồng nhau.
+
+Với `prefers-reduced-motion`, vòng xoay quay chậm lại chứ không dừng hẳn — dừng hẳn thì nút
+chỉ còn mờ đi, đúng trạng thái bị đọc nhầm là treo.
+
+6 test mới (`thongBao.test.ts`). Kiểm bằng đột biến: bỏ `toLowerCase()` ⇒ test đỏ.
+
 ### Changed — Bảng rộng cuộn ngang thay vì bóp cột; khoá cột đầu và cột thao tác (10/10/2026)
 
 Chủ sản phẩm đề nghị cho ẩn bớt cột + cuộn ngang + khoá cột. **Đo trước khi làm** và kết quả
