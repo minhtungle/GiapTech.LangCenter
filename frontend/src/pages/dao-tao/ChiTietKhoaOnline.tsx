@@ -10,7 +10,7 @@ import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
   TrangTrong,
 } from '@/components/ui'
-import { Modal } from '@/components/ui/Modal'
+import { Modal, ModalChan } from '@/components/ui/Modal'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 import { useQuyen } from '@/lib/quyen'
 import { useXacNhan } from '@/lib/xacNhan'
@@ -441,7 +441,7 @@ export default function ChiTietKhoaOnline() {
               <span className="text-muted-foreground">{t('khoaOnline.baiTrong')}</span>
             )}
           </div>
-          <div className="flex justify-end gap-2">
+          <ModalChan>
             <Button variant="outline" onClick={() => setDangDoc(null)}>
               {t('chung.dong')}
             </Button>
@@ -451,7 +451,7 @@ export default function ChiTietKhoaOnline() {
                 {t('khoaOnline.danhDauDaHoc')}
               </Button>
             )}
-          </div>
+          </ModalChan>
         </div>
       </Modal>
 
@@ -489,14 +489,14 @@ export default function ChiTietKhoaOnline() {
               onDoi={(v) => setTrangThai((v as TrangThaiKhoaOnline) ?? 'Nhap')}
             />
           </div>
-          <div className="flex justify-end gap-2">
+          <ModalChan>
             <Button type="button" variant="outline" onClick={() => setSuaKhoa(false)}>
               {t('chung.huy')}
             </Button>
             <Button type="submit" dangXuLy={luuKhoa.isPending}>
               {t('chung.luu')}
             </Button>
-          </div>
+          </ModalChan>
         </form>
       </Modal>
 
@@ -567,14 +567,14 @@ export default function ChiTietKhoaOnline() {
               </span>
             </span>
           </label>
-          <div className="flex justify-end gap-2">
+          <ModalChan>
             <Button type="button" variant="outline" onClick={() => setFormBai(null)}>
               {t('chung.huy')}
             </Button>
             <Button type="submit" dangXuLy={luuBai.isPending}>
               {t('chung.luu')}
             </Button>
-          </div>
+          </ModalChan>
         </form>
       </Modal>
 
@@ -610,14 +610,14 @@ export default function ChiTietKhoaOnline() {
             <Label htmlFor="ghiChu">{t('khoaOnline.ghiChuCap')}</Label>
             <Input id="ghiChu" name="ghiChu" maxLength={500} placeholder={t('khoaOnline.ghiChuVd')} />
           </div>
-          <div className="flex justify-end gap-2">
+          <ModalChan>
             <Button type="button" variant="outline" onClick={() => setFormCap(false)}>
               {t('chung.huy')}
             </Button>
             <Button type="submit" dangXuLy={capQuyen.isPending} disabled={hocVienChon.length === 0}>
               {t('chung.luu')}
             </Button>
-          </div>
+          </ModalChan>
         </form>
       </Modal>
 

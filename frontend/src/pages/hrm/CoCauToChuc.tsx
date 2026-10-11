@@ -9,7 +9,7 @@ import { api, layMaLoi } from '@/lib/api'
 import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Textarea, TrangTrong,
 } from '@/components/ui'
-import { Modal } from '@/components/ui/Modal'
+import { Modal, ModalChan } from '@/components/ui/Modal'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { SelectTimKiem, SelectTimKiemNhieu } from '@/components/ui/SelectTimKiem'
 import { useQuyen } from '@/lib/quyen'
@@ -515,14 +515,14 @@ export default function CoCauToChuc() {
 
           {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
-          <div className="flex justify-end gap-2">
+          <ModalChan>
             <Button type="button" variant="outline" onClick={() => setMoForm(false)}>
               {t('chung.huy')}
             </Button>
             <Button type="submit" dangXuLy={luu.isPending}>
               {t('chung.luu')}
             </Button>
-          </div>
+          </ModalChan>
         </form>
       </Modal>
 
@@ -554,7 +554,7 @@ export default function CoCauToChuc() {
 
             {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
-            <div className="flex justify-end gap-2">
+            <ModalChan>
               <Button type="button" variant="outline" onClick={() => setXepVao(null)}>
                 {t('chung.huy')}
               </Button>
@@ -573,7 +573,7 @@ export default function CoCauToChuc() {
               >
                 {t('chung.them')}
               </Button>
-            </div>
+            </ModalChan>
           </div>
         )}
       </Modal>

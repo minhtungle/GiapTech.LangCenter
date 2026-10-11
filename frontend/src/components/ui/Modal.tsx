@@ -61,6 +61,25 @@ export function Modal({
   chanDoiKhiXuLy?: boolean
   rong?: 'sm' | 'md' | 'lg' | 'xl'
 }) {
+  /*
+    Tách `<ModalChan>` ra khỏi `children` để dựng nó làm ANH EM của thân.
+
+    ## Vì sao phải tách thay vì bắt nơi gọi truyền prop riêng
+
+    31 chỗ đang viết `<ModalChan>` bên trong `children`, mà 4 trong số đó nằm TRONG `<form>`
+    để nút `type="submit"` chạy được. Bắt chúng đổi hết sang prop `chan` là 31 lần sửa tay,
+    và chỗ nào quên thì chân modal lại cuộn theo — đúng lỗi đang sửa.
+
+    Tách ở đây thì nơi gọi không đổi một dòng nào, và form viết sau này tự đúng.
+
+    ## Nút submit vẫn chạy
+
+    `ModalChan` gắn `form` của chính nó qua `formId` (xem dưới), nên nút nằm ngoài `<form>`
+    vẫn submit đúng form đó — thuộc tính `form="id"` của HTML, không phải mẹo.
+  */
+  const idForm = React.useId()
+  const { than, chan } = React.useMemo(() => tachChan(children, idForm), [children, idForm])
+
   const ref = React.useRef<HTMLDialogElement>(null)
 
   /*
@@ -217,12 +236,25 @@ export function Modal({
         `gap-4` chứ không `gap-3`: nhãn + ô nhập cao 56px, khe 12px làm hai trường dính vào
         nhau tới mức khó nhìn ra đâu là nhãn của ô nào.
       */}
+      {/*
+        THÂN — vùng cuộn duy nhất. `min-h-0` bắt buộc: trong flex column, phần tử con mặc
+        định có `min-height: auto` nên nó KHÔNG co nhỏ hơn nội dung, và `overflow-y-auto`
+        không bao giờ kích hoạt — thân cứ dài ra, đẩy chân modal xuống khỏi màn hình.
+      */}
       <div
         key={lanMo}
-        className="flex-1 overflow-y-auto p-4 [&>.grid]:gap-4 [&>form]:gap-4"
+        className="min-h-0 flex-1 overflow-y-auto p-4 [&>.grid]:gap-4 [&>form]:gap-4"
       >
-        {children}
+        {than}
       </div>
+
+      {/*
+        CHÂN — anh em thật của thân, nằm NGOÀI vùng cuộn nên đứng yên tuyệt đối.
+
+        `Modal` tự tách `<ModalChan>` ra khỏi `children` (xem `tachChan`), nên 31 chỗ gọi
+        không phải sửa gì: chúng vẫn viết `<ModalChan>` ở trong form như cũ.
+      */}
+      {chan}
     </dialog>
   )
 }
@@ -238,22 +270,86 @@ export function ModalChan({ children }: { children: React.ReactNode }) {
       khoảng cách; cộng thêm mt-4 thành khe hở to hơn hẳn mọi khe khác trong modal.
     */
     /*
-      `sticky bottom-0`: hàng nút nằm TRONG vùng cuộn (mỗi màn tự đặt `<ModalChan>` trong
-      `children`, nên `Modal` không pin nó từ ngoài được). Sticky giữ nó dính đáy khung
-      cuộn — form dài vẫn thấy nút Lưu mà không phải cuộn xuống đáy (11/10/2026).
-
-      `bg-card` BẮT BUỘC: nền trong suốt thì nội dung cuộn qua sẽ lộ ra dưới hàng nút.
-
-      `-mx-4 px-4` + `-mb-4 pb-4`: kéo ra sát mép khung cuộn để đường kẻ chạy hết bề ngang
-      và không hở một dải nền ở đáy khi cuộn tới cuối.
+      Chân modal là ANH EM của thân (từ 11/10/2026), không còn nằm trong vùng cuộn — nên
+      không cần `sticky` nữa, nó đứng yên theo đúng cấu trúc.
     */
-    <div
-      className={cn(
-        'sticky bottom-0 z-10 -mx-4 -mb-4 mt-2 flex justify-end gap-2',
-        'border-t border-border bg-card px-4 pb-4 pt-4',
-      )}
-    >
+    <div className="flex shrink-0 justify-end gap-2 border-t border-border px-4 py-3">
       {children}
     </div>
   )
+}
+
+/**
+ * Đi tìm `<ModalChan>` trong cây `children` và tách nó ra.
+ *
+ * Chỉ tìm ở **hai cấp**: `children` trực tiếp, và con của một `<form>`/`<div>` bọc ngoài —
+ * đó là hai cách 31 chỗ gọi đang viết. Đệ quy sâu hơn sẽ bắt nhầm `<ModalChan>` của modal
+ * lồng bên trong (màn Phân quyền có modal trong modal).
+ *
+ * Không tìm thấy thì trả `chan: null` và giữ nguyên `children` — modal không có hàng nút
+ * (xem trước tài liệu, danh sách bản xuất) vẫn chạy bình thường.
+ */
+function tachChan(
+  children: React.ReactNode,
+  idForm: string,
+): { than: React.ReactNode; chan: React.ReactNode } {
+  // Dùng ô chứa thay vì biến trực tiếp: TS không theo được phép gán trong closure và sẽ thu
+  // hẹp biến thành `never` ngay sau `if`.
+  const tim: { chan: React.ReactElement | null; trongForm: boolean } = {
+    chan: null,
+    trongForm: false,
+  }
+
+  const quet = (node: React.ReactNode): React.ReactNode => {
+    if (!React.isValidElement(node)) return node
+
+    if (node.type === ModalChan) {
+      tim.chan = node
+      return null
+    }
+
+    // Bọc trong <form> hoặc <div>: nhòm vào con của nó, nhưng KHÔNG đi sâu hơn.
+    const props = node.props as { children?: React.ReactNode }
+    if ((node.type === 'form' || node.type === 'div') && props.children) {
+      const con = React.Children.toArray(props.children)
+      const viTri = con.findIndex((x) => React.isValidElement(x) && x.type === ModalChan)
+      if (viTri !== -1) {
+        tim.chan = con[viTri] as React.ReactElement
+        // Chân vừa bị tách KHỎI `<form>` ⇒ nút `type="submit"` trong đó mất liên kết.
+        // Gắn `id` cho form để nối lại bằng thuộc tính `form` của HTML.
+        if (node.type === 'form') tim.trongForm = true
+        return React.cloneElement(
+          node,
+          (node.type === 'form' ? { ...props, id: idForm } : props) as never,
+          ...con.filter((_, k) => k !== viTri),
+        )
+      }
+    }
+
+    return node
+  }
+
+  const than = React.Children.map(children, quet)
+
+  /*
+    Nút submit nằm ngoài form vẫn submit được nhờ thuộc tính `form="<id>"` của HTML — chuẩn
+    HTML5, không phải mẹo. Chỉ gắn khi chân THẬT SỰ bị tách khỏi một `<form>`; chân vốn nằm
+    ngoài form (modal chỉ có nút Đóng) thì không cần.
+  */
+  if (!tim.chan) return { than, chan: null }
+  if (!tim.trongForm) return { than, chan: tim.chan }
+
+  const chanProps = tim.chan.props as { children?: React.ReactNode }
+  const chan = React.cloneElement(
+    tim.chan,
+    chanProps as never,
+    React.Children.map(chanProps.children, (nut) => {
+      if (!React.isValidElement(nut)) return nut
+      const p = nut.props as { type?: string; form?: string }
+      if (p.type !== 'submit' || p.form) return nut
+      return React.cloneElement(nut, { form: idForm } as never)
+    }),
+  )
+
+  return { than, chan }
 }

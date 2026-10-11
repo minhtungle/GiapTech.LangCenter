@@ -10,7 +10,7 @@ import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
   TrangTrong,
 } from '@/components/ui'
-import { Modal } from '@/components/ui/Modal'
+import { Modal, ModalChan } from '@/components/ui/Modal'
 import { PhanTrang } from '@/components/ui/PhanTrang'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { HopXacNhan } from '@/components/ui/HopXacNhan'
@@ -373,14 +373,14 @@ export default function ChoXepLop({ nhung = false }: { nhung?: boolean } = {}) {
 
             {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
-            <div className="flex justify-end gap-2">
+            <ModalChan>
               <Button type="button" variant="outline" onClick={() => setTuChoiCho(null)}>
                 {t('chung.huy')}
               </Button>
               <Button type="submit" variant="destructive" dangXuLy={tuChoi.isPending}>
                 {t('xepLop.tuChoi')}
               </Button>
-            </div>
+            </ModalChan>
           </form>
         )}
       </Modal>
@@ -422,7 +422,7 @@ export default function ChoXepLop({ nhung = false }: { nhung?: boolean } = {}) {
 
             {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
-            <div className="flex justify-end gap-2">
+            <ModalChan>
               <Button
                 type="button"
                 variant="outline"
@@ -450,7 +450,7 @@ export default function ChoXepLop({ nhung = false }: { nhung?: boolean } = {}) {
               >
                 {t('xepLop.duyet')}
               </Button>
-            </div>
+            </ModalChan>
           </div>
         )}
       </Modal>

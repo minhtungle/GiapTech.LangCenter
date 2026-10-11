@@ -6,7 +6,7 @@ import { api, layMaLoi } from '@/lib/api'
 import {
   Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Th, Textarea, TrangTrong,
 } from '@/components/ui'
-import { Modal } from '@/components/ui/Modal'
+import { Modal, ModalChan } from '@/components/ui/Modal'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { XemTruocDocx } from '@/components/ui/XemTruocDocx'
 import { useQuyen } from '@/lib/quyen'
@@ -281,7 +281,7 @@ function ModalTao({ onDong, onXong }: { onDong: () => void; onXong: () => void }
 
         {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
-        <div className="flex justify-end gap-2">
+        <ModalChan>
           <Button variant="outline" onClick={onDong}>{t('chung.huy')}</Button>
           <Button
             onClick={() => tao.mutate()}
@@ -290,7 +290,7 @@ function ModalTao({ onDong, onXong }: { onDong: () => void; onXong: () => void }
             <Upload className="h-4 w-4" />
             {tao.isPending ? t('phoiTaiLieu.dangTaiLen') : t('phoiTaiLieu.taiLen')}
           </Button>
-        </div>
+        </ModalChan>
       </div>
     </Modal>
   )
@@ -398,12 +398,12 @@ function ModalSua({
 
         {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
-        <div className="flex justify-end gap-2">
+        <ModalChan>
           <Button variant="outline" onClick={onDong}>{t('chung.huy')}</Button>
           <Button onClick={() => luu.mutate()} dangXuLy={luu.isPending} disabled={!ten.trim()}>
             {t('chung.luu')}
           </Button>
-        </div>
+        </ModalChan>
       </div>
     </Modal>
   )
@@ -503,7 +503,7 @@ function ModalXuat({
 
         {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
-        <div className="flex justify-end gap-2">
+        <ModalChan>
           <Button variant="outline" onClick={onDong}>{t('chung.huy')}</Button>
           <Button variant="outline" onClick={() => setMoXem(!moXem)}>
             <Eye className="h-4 w-4" />
@@ -513,7 +513,7 @@ function ModalXuat({
             <Download className="h-4 w-4" />
             {xuat.isPending ? t('phoiTaiLieu.dangXuat') : t('phoiTaiLieu.xuatFile')}
           </Button>
-        </div>
+        </ModalChan>
       </div>
     </Modal>
   )

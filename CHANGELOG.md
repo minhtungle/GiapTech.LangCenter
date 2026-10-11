@@ -8,6 +8,27 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Changed — Modal dựng lại theo chuẩn header · body · footer (11/10/2026)
+
+Chủ sản phẩm chỉ ra cách làm đúng và nhận xét tôi đang **chắp vá**: `sticky bottom-0` chỉ là
+mẹo giữ footer trong vùng cuộn, không phải cấu trúc đúng.
+
+Dựng lại ba phần thật: header `shrink-0` · body `min-h-0 flex-1 overflow-y-auto` · footer
+`shrink-0` **ngoài vùng cuộn**.
+
+`min-h-0` là mấu chốt: trong flex column, con mặc định `min-height: auto` nên không co nhỏ
+hơn nội dung — thiếu nó thì `overflow-y-auto` không bao giờ kích hoạt.
+
+**`Modal` tự tách `<ModalChan>`** khỏi `children` rồi dựng làm anh em của body, nên 31 chỗ
+gọi không phải sửa. Nút `type="submit"` bị tách khỏi `<form>` vẫn chạy nhờ `form="<id>"` —
+thuộc tính chuẩn HTML5.
+
+Phát hiện thêm: **20/30 file tự viết hàng nút** `<div className="flex justify-end gap-2">`
+thay vì `<ModalChan>`, nên chỉ một phần ba modal có footer cố định. Đã chuyển hết 28 chỗ.
+
+Kiểm: 4 màn đều 3 phần, footer ngoài vùng cuộn; cuộn 414px mà tiêu đề và nút đứng yên; tạo
+được bản ghi qua form dài lẫn màn vừa chuyển đổi.
+
 ### Fixed — MỌI modal hiện cùng lúc, chồng lên nhau (11/10/2026)
 
 Chủ sản phẩm báo "các modal đồng loạt lỗi hiển thị". Lỗi do chính thay đổi sticky

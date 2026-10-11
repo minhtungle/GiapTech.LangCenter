@@ -11,7 +11,7 @@ import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
   TrangTrong,
 } from '@/components/ui'
-import { Modal } from '@/components/ui/Modal'
+import { Modal, ModalChan } from '@/components/ui/Modal'
 import { PhanTrang } from '@/components/ui/PhanTrang'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
@@ -587,14 +587,14 @@ export default function KhachHang() {
 
           {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
-          <div className="flex justify-end gap-2">
+          <ModalChan>
             <Button type="button" variant="outline" onClick={dong}>
               {t('chung.huy')}
             </Button>
             <Button type="submit" dangXuLy={luu.isPending}>
               {t('chung.luu')}
             </Button>
-          </div>
+          </ModalChan>
         </form>
       </Modal>
 
@@ -679,7 +679,7 @@ export default function KhachHang() {
 
           </div>
 
-          <div className="flex justify-end gap-2">
+          <ModalChan>
 
             <Button type="button" variant="outline" onClick={() => setCapTkCho(null)}>
 
@@ -693,7 +693,7 @@ export default function KhachHang() {
 
             </Button>
 
-          </div>
+          </ModalChan>
 
         </form>
 

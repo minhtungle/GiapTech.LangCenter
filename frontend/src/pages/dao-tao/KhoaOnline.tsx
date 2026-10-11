@@ -8,7 +8,7 @@ import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
   TrangTrong,
 } from '@/components/ui'
-import { Modal } from '@/components/ui/Modal'
+import { Modal, ModalChan } from '@/components/ui/Modal'
 import { PhanTrang } from '@/components/ui/PhanTrang'
 import { useQuyen } from '@/lib/quyen'
 import { useXacNhan } from '@/lib/xacNhan'
@@ -198,14 +198,14 @@ export default function KhoaOnline() {
           </div>
           {/* Khoá luôn tạo ở trạng thái Nháp — nói rõ để không ai tưởng tạo xong là bán được. */}
           <p className="text-xs text-muted-foreground">{t('khoaOnline.taoRaLaNhap')}</p>
-          <div className="flex justify-end gap-2">
+          <ModalChan>
             <Button type="button" variant="outline" onClick={() => setMoForm(false)}>
               {t('chung.huy')}
             </Button>
             <Button type="submit" dangXuLy={tao.isPending}>
               {t('chung.luu')}
             </Button>
-          </div>
+          </ModalChan>
         </form>
       </Modal>
       {hop}

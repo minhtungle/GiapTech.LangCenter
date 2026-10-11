@@ -7,7 +7,7 @@ import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
   TrangTrong,
 } from '@/components/ui'
-import { Modal } from '@/components/ui/Modal'
+import { Modal, ModalChan } from '@/components/ui/Modal'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { useQuyen } from '@/lib/quyen'
@@ -249,12 +249,12 @@ export default function TieuChiDanhGia() {
 
           {maLoiForm && <CanhBaoLoi>{t(`loi.${maLoiForm}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
-          <div className="flex justify-end gap-2">
+          <ModalChan>
             <Button type="button" variant="outline" onClick={() => setMoForm(false)}>
               {t('chung.huy')}
             </Button>
             <Button type="submit" dangXuLy={luu.isPending}>{t('chung.luu')}</Button>
-          </div>
+          </ModalChan>
         </form>
       </Modal>
 

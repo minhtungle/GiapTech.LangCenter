@@ -11,7 +11,7 @@ import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
   TrangTrong,
 } from '@/components/ui'
-import { Modal } from '@/components/ui/Modal'
+import { Modal, ModalChan } from '@/components/ui/Modal'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { SelectTimKiem } from '@/components/ui/SelectTimKiem'
 import { SoanThao } from '@/components/ui/SoanThao'
@@ -286,7 +286,7 @@ function TabThongTin({ kh, onXong }: { kh: ChiTietKhachHangDto; onXong: () => vo
 
           {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
-          <div className="flex justify-end gap-2">
+          <ModalChan>
             <Button
               type="button"
               variant="outline"
@@ -300,7 +300,7 @@ function TabThongTin({ kh, onXong }: { kh: ChiTietKhachHangDto; onXong: () => vo
             <Button type="submit" dangXuLy={luu.isPending}>
               {t('chung.luu')}
             </Button>
-          </div>
+          </ModalChan>
         </form>
       </Modal>
 
@@ -537,14 +537,14 @@ function TabChamSoc({ khachHangId }: { khachHangId: string }) {
 
           {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
-          <div className="flex justify-end gap-2">
+          <ModalChan>
             <Button type="button" variant="outline" onClick={dong}>
               {t('chung.huy')}
             </Button>
             <Button type="submit" dangXuLy={luu.isPending}>
               {t('chung.luu')}
             </Button>
-          </div>
+          </ModalChan>
         </form>
       </Modal>
 
@@ -858,14 +858,14 @@ function FormMuaHang({
 
         {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
-        <div className="flex justify-end gap-2">
+        <ModalChan>
           <Button type="button" variant="outline" onClick={onDong}>
             {t('chung.huy')}
           </Button>
           <Button type="submit" dangXuLy={mua.isPending} disabled={!matHangId}>
             {t('chung.luu')}
           </Button>
-        </div>
+        </ModalChan>
       </form>
 
       {hop}
@@ -1152,7 +1152,7 @@ function TabKhoaHoc({ khachHangId }: { khachHangId: string }) {
 
             {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
-            <div className="flex justify-end gap-2">
+            <ModalChan>
               <Button type="button" variant="outline" onClick={() => setGuiCho(null)}>
                 {t('chung.huy')}
               </Button>
@@ -1160,7 +1160,7 @@ function TabKhoaHoc({ khachHangId }: { khachHangId: string }) {
                 <Send className="h-4 w-4" />
                 {t('chiTietKhach.guiYeuCau')}
               </Button>
-            </div>
+            </ModalChan>
           </form>
         )}
       </Modal>
@@ -1261,7 +1261,7 @@ function TabKhoaHoc({ khachHangId }: { khachHangId: string }) {
 
             {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
-            <div className="flex justify-end gap-2">
+            <ModalChan>
               <Button
                 type="button"
                 variant="outline"
@@ -1275,7 +1275,7 @@ function TabKhoaHoc({ khachHangId }: { khachHangId: string }) {
               <Button type="submit" dangXuLy={luuThu.isPending}>
                 {t('chung.luu')}
               </Button>
-            </div>
+            </ModalChan>
           </form>
         )}
       </Modal>
@@ -1843,7 +1843,7 @@ function ModalSoanThu({
         {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
         {loiGui && <CanhBaoLoi>{loiGui}</CanhBaoLoi>}
 
-        <div className="flex justify-end gap-2">
+        <ModalChan>
           <Button variant="outline" onClick={onDong}>{t('chung.huy')}</Button>
           <Button
             onClick={() => gui.mutate()}
@@ -1852,7 +1852,7 @@ function ModalSoanThu({
             <Send className="h-4 w-4" />
             {gui.isPending ? t('emailKhach.dangGui') : t('emailKhach.gui')}
           </Button>
-        </div>
+        </ModalChan>
       </div>
     </Modal>
   )

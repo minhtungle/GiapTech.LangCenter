@@ -9,7 +9,7 @@ import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
   TrangTrong,
 } from '@/components/ui'
-import { Modal } from '@/components/ui/Modal'
+import { Modal, ModalChan } from '@/components/ui/Modal'
 import { HopXacNhan } from '@/components/ui/HopXacNhan'
 import { PhanTrang } from '@/components/ui/PhanTrang'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
@@ -531,7 +531,7 @@ export default function HocPhi({ lopHocId }: { lopHocId?: string } = {}) {
 
           {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
-          <div className="flex justify-end gap-2">
+          <ModalChan>
             <Button type="button" variant="outline" onClick={dong}>
               {t('chung.huy')}
             </Button>
@@ -541,7 +541,7 @@ export default function HocPhi({ lopHocId }: { lopHocId?: string } = {}) {
             >
               {t('chung.luu')}
             </Button>
-          </div>
+          </ModalChan>
         </form>
       </Modal>
 

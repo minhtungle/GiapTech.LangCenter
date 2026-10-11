@@ -7,7 +7,7 @@ import {
   Badge, Button, CanhBaoLoi, Card, CardContent, Input, Label, Table, Td, Textarea, Th,
   TrangTrong,
 } from '@/components/ui'
-import { Modal } from '@/components/ui/Modal'
+import { Modal, ModalChan } from '@/components/ui/Modal'
 import { KhungNoiDung } from '@/components/ui/KhungNoiDung'
 import { MenuThaoTac } from '@/components/ui/MenuThaoTac'
 import { useQuyen } from '@/lib/quyen'
@@ -327,7 +327,7 @@ export function BaiTapCuaLop({
 
             {maLoi && <CanhBaoLoi>{t(`loi.${maLoi}`, t('loi.LOI_HE_THONG'))}</CanhBaoLoi>}
 
-            <div className="flex justify-end gap-2">
+            <ModalChan>
               <Button type="button" variant="outline" onClick={dong}>
                 {daTao ? t('chung.dong') : t('chung.huy')}
               </Button>
@@ -341,7 +341,7 @@ export function BaiTapCuaLop({
                   {t('chung.luu')}
                 </Button>
               )}
-            </div>
+            </ModalChan>
           </form>
         </Modal>
       )}

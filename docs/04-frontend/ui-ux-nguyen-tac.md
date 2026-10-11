@@ -211,6 +211,34 @@ hai ô đó hẹp hơn hẳn các ô cùng hàng (192px so với 263px).
 
 Đo sau khi sửa: cả 4 ô lọc đều **263px**, ô lẻ **542px**.
 
+### Modal: ba phần header · body · footer (chuẩn, 11/10/2026)
+
+Chủ sản phẩm chỉ ra cách làm đúng: *"modal chia thành header, body, footer; header và footer
+cố định, body nội dung dài thì cho scroll"*. Đúng chuẩn chung, và là cách duy nhất không phải
+chắp vá.
+
+```
+<dialog>              flex flex-col overflow-hidden max-h-[...]   (open:flex!)
+  ├─ header           shrink-0
+  ├─ body             min-h-0 flex-1 overflow-y-auto   ← CHỈ chỗ này cuộn
+  └─ footer           shrink-0                          ← anh em THẬT, không sticky
+```
+
+**`min-h-0` ở body là bắt buộc.** Trong flex column, con mặc định có `min-height: auto` nên
+nó **không co nhỏ hơn nội dung** — `overflow-y-auto` không bao giờ kích hoạt, body cứ dài ra
+và đẩy footer xuống khỏi màn hình. Đây là lỗi kinh điển của flexbox, không phải chuyện riêng
+của dự án này.
+
+**`<ModalChan>` viết ở đâu cũng được.** `Modal` tự tách nó khỏi `children` (hàm `tachChan`)
+rồi dựng làm anh em của body. 31 chỗ gọi không phải sửa, và form viết sau này tự đúng.
+
+**Nút submit vẫn chạy khi footer ra ngoài `<form>`**: `Modal` gắn `id` cho form và thêm
+`form="<id>"` vào nút `type="submit"` — thuộc tính chuẩn HTML5, không phải mẹo.
+
+**Mọi hàng nút trong modal dùng `<ModalChan>`**, đừng tự viết `<div className="flex
+justify-end gap-2">`. Trước 11/10/2026 có **20/30 file tự viết**, nên chỉ một phần ba số modal
+có footer cố định — đã chuyển hết 28 chỗ.
+
 ### Modal: tiêu đề và hàng nút ĐỨNG YÊN, chỉ thân cuộn (11/10/2026)
 
 Trước đó cả `<dialog>` cuộn (`max-h` + `overflow-y-auto` ở cấp ngoài), nên form dài làm tiêu
