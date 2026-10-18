@@ -333,3 +333,90 @@ Mục 2 đáng lo hơn: axios xử lý **mọi** request của giao diện. Nân
 | 1 | **Blocklist mật khẩu phổ biến** — nợ từ 22/09, chưa làm | Thấp |
 | 2 | `ChongDoMatKhau` dùng `IMemoryCache` nên **chỉ đúng khi một bản API**. Hiện `docker-compose.yml` chạy đúng một bản nên an toàn; **nhân bản API thì phải chuyển sang Redis** trước, nếu không khoá tài khoản mất tác dụng | Thấp (cao nếu scale) |
 
+---
+
+# Rà soát lần 3 — 18/10/2026, SOI RIÊNG LUỒNG ĐĂNG NHẬP
+
+> Lần này **tấn công thật vào API đang chạy**, không chỉ đọc mã: giả mạo JWT, đổi claim, đo
+> kênh thời gian, thử đẩy phiên, thử mật khẩu yếu.
+
+## Kết luận ngắn
+
+**Không phá được.** Mọi phép thử giả mạo và vượt quyền đều bị chặn. Tìm thấy **một điểm yếu
+thật** (đã biết từ 22/09 nhưng nay có bằng chứng cụ thể): mật khẩu mặc định yếu được chấp nhận.
+
+## Đã tấn công, bị chặn hết
+
+| Phép thử | Kết quả |
+|---|---|
+| JWT `alg: none` | **401** |
+| JWT giữ header, thay chữ ký | **401** |
+| Đổi `tenant_id` trong payload, giữ chữ ký cũ | **401** |
+| Tự kéo dài `exp` | **401** |
+| Token của phiên **đã bị đẩy ra** | **401** ngay request kế tiếp |
+| Gọi refresh không kèm CSRF token | **400 `CSRF_KHONG_HOP_LE`** |
+| Access token **sau khi đăng xuất** | **401** (đăng xuất có hiệu lực ở server) |
+
+## Kênh thời gian — đo thật, 25 lần mỗi ca
+
+| Ca | Trung vị |
+|---|---|
+| Tenant không tồn tại | 5,5 ms |
+| User không tồn tại | 9,4 ms |
+| User có, sai mật khẩu | 13,3 ms |
+
+Chênh **7,8 ms** — nhiễu mạng đủ che. `hasher.BamGia()` (băm giả) ở cả hai nhánh "không có
+tenant" và "không có user" đang làm đúng việc của nó.
+
+> Thứ tự vẫn đơn điệu tăng. Ở LAN sạch và đo hàng nghìn lần thì về lý thuyết còn phân biệt
+> được — nhưng đã có khoá tài khoản 10 lần/15 phút chặn trước, nên không nâng mức.
+
+## Khoá tài khoản — xác nhận hoạt động
+
+12 lần sai liên tiếp: 9 lần `400`, từ lần 10 là `429` (rate limit IP). Khi tắt rate limit để
+đo riêng, tài khoản trả `TAI_KHOAN_BI_KHOA_TAM`.
+
+**Khoá theo TỪNG tài khoản, không phải toàn hệ thống** — đã kiểm: tài khoản khác vẫn đăng
+nhập bình thường trong lúc tài khoản kia bị khoá. Đúng thiết kế: một người bị tấn công không
+làm cả trung tâm không vào được.
+
+## Cookie phiên — đọc header thật
+
+```
+lms_rt=...;  path=/api/v1/auth;  samesite=lax;  httponly
+lms_csrf=...; path=/;             samesite=lax
+```
+
+- `httponly` trên cookie refresh ⇒ XSS không đọc được phiên.
+- `path=/api/v1/auth` ⇒ không gửi kèm mọi request nghiệp vụ.
+- `lms_csrf` **cố ý đọc được** — đó là nửa còn lại của double-submit.
+- **Không có `Secure`** ở đây vì đang chạy Development trên `http://localhost`.
+  `CookiePhien.cs:66` đặt `Secure = !moiTruong.IsDevelopment()` nên **production có**.
+
+## ⚠️ Điểm yếu tìm được: mật khẩu mặc định yếu được chấp nhận
+
+`ChinhSachMatKhau` chỉ kiểm **độ dài 12–128**, không có blocklist. Thử thật trên API:
+
+| Mật khẩu | Kết quả |
+|---|---|
+| `123456789012` | **204 — chấp nhận** |
+| `password1234` | **204 — chấp nhận** |
+| `aaaaaaaaaaaa` | **204 — chấp nhận** |
+
+Đáng lo hơn một mật khẩu cá nhân yếu, vì đây là **mật khẩu mặc định** phát cho mọi tài khoản
+mới của trung tâm: đặt `123456789012` một lần là mọi học viên được cấp tài khoản đều dùng
+chung mật khẩu đoán được.
+
+**Giảm nhẹ hiện có:** buộc đổi mật khẩu ở lần đăng nhập đầu, khoá tài khoản sau 10 lần sai,
+rate limit theo IP. Nên **chưa phải lỗ hổng khai thác được ngay**, nhưng là lớp phòng thủ còn
+thiếu.
+
+**Đề xuất:** chặn danh sách ~200 mật khẩu phổ biến nhất + chuỗi lặp/tăng dần, áp cho cả
+`matKhauMacDinh` và đổi mật khẩu. Rẻ: một mảng hằng + một `Must()` trong validator sẵn có.
+
+## Nợ mang sang (không đổi)
+
+1. **Blocklist mật khẩu phổ biến** — nay có bằng chứng cụ thể ở trên.
+2. **`ChongDoMatKhau` dùng `IMemoryCache`** nên chỉ đúng khi một bản API. Đã kiểm lại:
+   `docker-compose.yml` chạy đúng một bản ⇒ hiện an toàn. Nhân bản thì phải chuyển Redis.
+
