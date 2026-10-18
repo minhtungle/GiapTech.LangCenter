@@ -8,6 +8,25 @@ Tiến độ và lộ trình: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-qua
 
 ## [Unreleased]
 
+### Security — Vá 2 lỗ hổng thư viện, rà soát toàn hệ thống (18/10/2026)
+
+Rà soát lần 2 (lần 1 ngày 22/09 chỉ soi luồng đăng nhập; từ đó thêm email, phôi tài liệu,
+ngôn ngữ — chưa thứ nào được rà).
+
+**Đã vá:**
+
+- `System.Security.Cryptography.Pkcs 10.0.0` → **10.0.13** (GHSA-846f-f764-76mx, CVSS 7.5).
+  MimeKit kéo về. Rủi ro thực tế thấp vì dự án chỉ gửi SMTP, không xác minh chữ ký S/MIME —
+  vẫn ghim để lần rà sau không đỏ.
+- `axios 1.19.0` → **1.20.0**: 12 advisory, nhiều lỗi *prototype pollution* ở fetch adapter,
+  mà axios xử lý mọi request của giao diện.
+
+**Không tìm thấy** lỗ hổng cho phép đọc/ghi chéo trung tâm hay leo thang quyền. Kiểm bằng API
+thật: token tenant A đọc/sửa/xoá dữ liệu tenant B đều **404**; không token **401**; tài khoản
+thường gọi endpoint chủ hệ thống **404**; 12 lần đăng nhập sai thì từ lần 10 là **429**.
+
+Chi tiết và hai nợ mang sang: `docs/02-kien-truc/ra-soat-bao-mat-dang-nhap.md`.
+
 ### Changed — Modal dựng lại theo chuẩn header · body · footer (11/10/2026)
 
 Chủ sản phẩm chỉ ra cách làm đúng và nhận xét tôi đang **chắp vá**: `sticky bottom-0` chỉ là

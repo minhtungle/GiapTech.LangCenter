@@ -7,6 +7,17 @@
   <ItemGroup>
     <PackageReference Include="EFCore.NamingConventions" Version="8.0.3" />
     <PackageReference Include="MailKit" Version="4.18.1" />
+    <!--
+      Ghim 10.0.13 để vá GHSA-846f-f764-76mx (High, CVSS 7.5). MimeKit 4.18.1 kéo về bản
+      10.0.0 dính lỗi. Lỗi là DoS: SignedCms.CheckSignature reparse dữ liệu X.509 do kẻ tấn
+      công kiểm soát, gây tốn CPU bậc hai.
+
+      Dự án KHÔNG chạm đường đó (chỉ gửi SMTP, không xác minh chữ ký S/MIME; đã grep
+      SignedCms / SecureMimeContext / MultipartSigned: không kết quả), nên rủi ro thực tế
+      thấp. Vẫn ghim vì `dotnet list package` sẽ đỏ ở mọi lần rà sau này, và một cảnh báo bị
+      bỏ qua lâu ngày thì cảnh báo THẬT cũng bị bỏ qua cùng.
+    -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">

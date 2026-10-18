@@ -263,3 +263,73 @@ Chức năng thêm cùng ngày rà soát này **cố ý không lưu mật khẩu
 
 Ô này **mặc định tắt**: trung tâm có máy dùng chung ở quầy lễ tân, điền sẵn tên đăng nhập của
 người trước là nói cho người sau biết ai vừa dùng máy.
+
+---
+
+# Rà soát lần 2 — 18/10/2026 (toàn hệ thống, không chỉ đăng nhập)
+
+> Lần 1 (22/09) chỉ soi **luồng đăng nhập**. Từ đó hệ thống thêm email SMTP, phôi tài liệu,
+> danh mục ngôn ngữ — chưa thứ nào được rà. Lần này soi cả phần mới, và **kiểm bằng cách gọi
+> API thật** chứ không chỉ đọc mã.
+
+## Kết luận ngắn
+
+**Không tìm thấy lỗ hổng cho phép đọc/ghi dữ liệu chéo trung tâm hay leo thang quyền.**
+Hai điểm cần sửa đều là **thư viện phụ thuộc**, đã vá xong trong cùng đợt rà.
+
+## Đã vá
+
+| # | Vấn đề | Mức | Trạng thái |
+|---|---|---|---|
+| 1 | `System.Security.Cryptography.Pkcs 10.0.0` dính **GHSA-846f-f764-76mx** (CVSS 7.5) — MimeKit 4.18.1 kéo về | High | ✅ Ghim `10.0.13` |
+| 2 | `axios 1.19.0` dính **12 advisory**, trong đó nhiều lỗi *prototype pollution* ở fetch adapter — chạy trong trình duyệt | High | ✅ Nâng `1.20.0` |
+
+Mục 1 **rủi ro thực tế thấp**: lỗi nằm ở `SignedCms.CheckSignature`, mà dự án chỉ **gửi** thư
+qua SMTP, không xác minh chữ ký S/MIME (đã grep `SignedCms`, `SecureMimeContext`,
+`MultipartSigned` — không kết quả). Vẫn ghim vì mọi lần rà sau này `dotnet list package
+--vulnerable` sẽ đỏ, và **một cảnh báo bị bỏ qua lâu ngày thì cảnh báo thật cũng bị bỏ qua
+cùng**.
+
+Mục 2 đáng lo hơn: axios xử lý **mọi** request của giao diện. Nâng 1.19 → 1.20 là patch-level,
+đã kiểm đăng nhập và tải danh sách khách hàng trên trình duyệt thật.
+
+## Chấp nhận, không sửa
+
+| Gói | Vì sao không sửa |
+|---|---|
+| `tailwindcss`, `chokidar`, `fast-glob`, `braces`, `micromatch`, `source-map-js` | **Build-time**, không vào gói trình duyệt. Người dùng cuối không chạm tới |
+| `mammoth` (moderate, qua `argparse`) | "Bản vá" là **lùi về 0.3.29** — major xuống, hỏng tính năng xem trước .docx đang chạy. Lỗi nằm ở bộ phân tích tham số dòng lệnh, đường mà dùng trong trình duyệt không chạm |
+| `System.Net.Http 4.3.0`, `System.Text.RegularExpressions 4.3.0` | Chỉ ở **project test**, không ship |
+
+## Đã kiểm bằng API thật, không chỉ đọc mã
+
+| Phép thử | Kết quả |
+|---|---|
+| Token tenant A đọc khách hàng của tenant B | **404** (không phải 403 — không lộ cả việc bản ghi tồn tại) |
+| Token tenant A **sửa** khách tenant B | **404**, dữ liệu không đổi |
+| Token tenant A **xoá** khách tenant B | **404**, dữ liệu không đổi |
+| Không token / token rác | **401** |
+| Tài khoản thường gọi endpoint chủ hệ thống | **404** |
+| 12 lần đăng nhập sai liên tiếp | 9 lần `400`, từ lần 10 là **429** |
+
+## Đã đối chiếu mã, không thấy vấn đề
+
+- **Tải tệp**: khoá MinIO mang `{tenantId}/` ở đầu, và hàm đọc **kiểm tiền tố** trước khi trả
+  (`MinioLuuTruTep.cs:127`). Có whitelist MIME và trần kích thước.
+- **Mật khẩu SMTP** không bao giờ ra API — DTO chỉ có cờ `CoMatKhau`.
+- **Không log** mật khẩu hay token ở đâu.
+- **Không có SQL thô nhận dữ liệu người dùng**. Chỗ duy nhất dùng `ExecuteSqlRawAsync` là dọn
+  tenant E2E: không nội suy dữ liệu ngoài, đòi quyền chủ hệ thống, và trả 404 khi cờ tắt.
+- **Hai chỗ `dangerouslySetInnerHTML`** đều có kiểm soát: một là HTML do Mammoth sinh (bộ thẻ
+  cố định), một là mẫu email do chính quản trị trung tâm soạn.
+- **14 chỗ `IgnoreQueryFilters`** đều trong luồng chưa đăng nhập hoặc đọc bảng `TENANT` —
+  không chỗ nào nhận id từ client.
+- **Security header**: ứng dụng trả 3 header, Nginx bổ sung HSTS + CSP + Permissions-Policy.
+
+## Nợ mang sang
+
+| # | Việc | Mức |
+|---|---|---|
+| 1 | **Blocklist mật khẩu phổ biến** — nợ từ 22/09, chưa làm | Thấp |
+| 2 | `ChongDoMatKhau` dùng `IMemoryCache` nên **chỉ đúng khi một bản API**. Hiện `docker-compose.yml` chạy đúng một bản nên an toàn; **nhân bản API thì phải chuyển sang Redis** trước, nếu không khoá tài khoản mất tác dụng | Thấp (cao nếu scale) |
+
