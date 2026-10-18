@@ -31,7 +31,8 @@ là đường frontend, API vẫn là `/api/v1/hoc-vien`.
 Tách ra từ một ứng dụng quản lý CLB đá bóng (04/09/2026), giữ toàn bộ tầng hệ thống. Nghiệp vụ
 LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 
-**30 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 762 test backend · 45 frontend · 48 E2E xanh.
+**31 mã FR chạy đầu-cuối** trên PostgreSQL + MinIO thật. 778 test backend · 51 frontend · 37 tệp E2E.
+Hai test `NhanXetBuoiHocTests` và 9 tệp E2E đang đỏ — **nợ có sẵn**, xem ke-hoach.md.
 
 | Đã chạy đầu-cuối | Chưa có |
 |---|---|
@@ -55,6 +56,7 @@ LMS dựng từ 05/09/2026 theo đặc tả Vietgenedu.
 | **Site chủ hệ thống** (ADR-0009) đủ backend + UI: `/chu` — tạo trung tâm · gắn domain · đóng nợ N3 | |
 | **FR-30 LDP**: soạn nội dung 7 khối · xuất bản · trang công khai `/t/{mã}` · form liên hệ → CRM | |
 | **FR-31 Email**: SMTP riêng từng trung tâm (mật khẩu mã hoá AES-GCM) · 4 mẫu nội dung soạn bằng Tiptap · **thư báo tài khoản + hồ sơ khi tạo người dùng** (09/10) | |
+| **FR-32 Ngôn ngữ** (11/10): danh mục ngôn ngữ giảng dạy · gắn vào khoá học/sản phẩm · lọc khách hàng và doanh thu theo ngôn ngữ | |
 
 Chi tiết và nợ kỹ thuật: [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-quan/ke-hoach.md).
 
@@ -143,8 +145,8 @@ phải xoá khi xong — không thì lần commit sau phải lọc chúng ra kh�
 |---|---|
 | **Tiến độ, lộ trình, nợ kỹ thuật** | [`docs/01-tong-quan/ke-hoach.md`](docs/01-tong-quan/ke-hoach.md) |
 | Tổng quan nghiệp vụ, đọc 1 mạch | [`docs/01-tong-quan/tong-thuat.md`](docs/01-tong-quan/tong-thuat.md) |
-| **30 mã FR** theo module | [`docs/06-nghiep-vu/`](docs/06-nghiep-vu/README.md) |
-| **ERD 53 bảng** + ràng buộc + hành vi xoá | [`docs/05-database/erd.md`](docs/05-database/erd.md) |
+| **31 mã FR** theo module | [`docs/06-nghiep-vu/`](docs/06-nghiep-vu/README.md) |
+| **ERD 54 bảng** + ràng buộc + hành vi xoá | [`docs/05-database/erd.md`](docs/05-database/erd.md) |
 | **Nhật ký theo ngày** (bối cảnh git log không có) | [`docs/nhat-ky/`](./docs/nhat-ky/README.md) |
 | Clean Architecture, luật phụ thuộc | [`docs/03-backend/clean-architecture.md`](docs/03-backend/clean-architecture.md) |
 | **Quy ước viết mã** (đặt tên, null, chú thích, test) | [`docs/08-quy-uoc/quy-uoc-code.md`](docs/08-quy-uoc/quy-uoc-code.md) |
@@ -228,6 +230,11 @@ Tầng hệ thống hiện có, đặt ở đâu:
    kiểm bằng `python3 scripts/check-nhan-phan-quyen.py`.
 7. Cập nhật [`CHANGELOG.md`](./CHANGELOG.md) + ghi [nhật ký ngày](./docs/nhat-ky/README.md) —
    làm ngay sau khi commit, không dồn lại.
+8. **Chạy `python3 scripts/check-tai-lieu-khop-ma.py`** trước khi commit. Nó bắt bảng mới
+   thiếu trong ERD, số bảng công bố sai, mã FR nhắc mà chưa mô tả. Rà 18/10/2026 cho thấy
+   quy tắc #4 **không có gì canh** nên tài liệu trôi âm thầm: bảng `NGON_NGU` thêm từ 11/10
+   mà ERD không có dòng nào, và bảng "Kiểm chứng" ở `ke-hoach.md` đứng yên ở số liệu 14/09
+   suốt hơn một tháng.
 
 ---
 
@@ -303,7 +310,7 @@ Yêu cầu: .NET SDK 8.0+ · Node 20+ · Docker (chạy PostgreSQL local).
 dotnet build          # 0 warning — TreatWarningsAsErrors đang bật  (~6 giây)
 
 # BỘ TEST ĐẦY ĐỦ TỐN ~3 PHÚT. Đừng chạy nó sau mỗi lần sửa — xem "Chạy test cho rẻ" dưới.
-dotnet test           # 762 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
+dotnet test           # 778 test: luật phụ thuộc, cách ly tenant, phân quyền, xác thực,
                       #           quản trị, lớp học, điểm danh, học liệu, học phí
 
 # Chạy API cần 2 biến bắt buộc (thiếu là 500 lúc đăng nhập / tải ảnh, không phải lúc khởi động):
@@ -323,6 +330,17 @@ python3 scripts/check-nhan-phan-quyen.py
 
 # --- Kiểm token màu (Tailwind IM LẶNG bỏ qua class sai ⇒ mất màu, không lỗi nào) ---
 python3 scripts/check-token-mau.py
+
+# --- Kiểm TÀI LIỆU còn khớp mã nguồn (quy tắc #4 — trước đây không có gì canh) ---
+# Bắt: bảng mới thiếu trong ERD, số bảng công bố sai, mã FR nhắc mà chưa mô tả,
+# script không ai biết. Rà 18/10/2026 ra 4 chỗ lệch, trong đó bảng NGON_NGU
+# thêm từ 11/10 mà ERD không có dòng nào.
+python3 scripts/check-tai-lieu-khop-ma.py
+
+# --- Dựng dữ liệu mẫu vào trung tâm đang test, QUA API thật (chỉ dev) ---
+# Qua API chứ không INSERT thẳng DB: dữ liệu phải đi đúng mọi quy tắc nghiệp vụ
+# (tự gán tenant_id, cột audit, validator, băm mật khẩu, ghi nhật ký).
+python3 scripts/tao-du-lieu-mau.py
 
 # --- Frontend ---
 cd frontend && npm install
@@ -358,7 +376,7 @@ docker run -d --name lms-pg -e POSTGRES_PASSWORD=devpass -e POSTGRES_USER=langce
 export ConnectionStrings__Default="Host=localhost;Port=55432;Database=langcenter;Username=langcenter;Password=devpass"
 dotnet ef database update --project src/GiapTech.LangCenter.Infrastructure \
   --startup-project src/GiapTech.LangCenter.API
-# → 53 bảng (+LICH_SU_EMAIL, PHOI_TAI_LIEU, BAN_XUAT_PHOI 09/10) — xem docs/05-database/erd.md
+# → 54 bảng (+NGON_NGU 11/10) — xem docs/05-database/erd.md
 
 # Tạo trung tâm thử — endpoint ẩn danh, mã 7 ký tự do hệ thống sinh.
 # CẦN `CHO_TU_DANG_KY=true` lúc chạy API, nếu không endpoint trả 404 (mặc định TẮT từ
@@ -425,7 +443,7 @@ class là một collection, nên không còn gì để song song thêm.
 Muốn nhanh hơn thật thì phải **gộp host** bằng `[CollectionDefinition]` — nhưng lúc đó các
 class dùng chung DB in-memory, và đó là đánh đổi về cách ly test, phải hỏi chủ sản phẩm trước.
 
-**Kiểm tra rẻ, chạy thoải mái:** `check-nhan-phan-quyen.py` (0,1s) · `check-i18n-keys.py`
+**Kiểm tra rẻ, chạy thoải mái:** `check-tai-lieu-khop-ma.py` (0,2s) · `check-nhan-phan-quyen.py` (0,1s) · `check-i18n-keys.py`
 (1s) · `check-token-mau.py` và `check-doc-links.py` (~3s) · `npx tsc -b --noEmit` (13s).
 
 ### Thêm migration

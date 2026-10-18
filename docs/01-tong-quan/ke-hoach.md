@@ -5,10 +5,10 @@
 ## Tiến độ tổng
 
 ```
-Nghiệp vụ  ████████████████  27/28 FR chạy đầu-cuối (FR-27 bài tập online chưa)
+Nghiệp vụ  ████████████████  31/32 FR chạy đầu-cuối (FR-27 bài tập online chưa)
 Ba hệ thống ████████████████  Cả ba hệ thống đủ nghiệp vụ
 Hạ tầng    ████████████░░░░  CI/CD sẵn sàng, chờ VPS thật
-Còn lại    ███░░░░░░░░░░░░░  Bài kiểm tra · bài tập online · 16 nợ kỹ thuật
+Còn lại    ███░░░░░░░░░░░░░  Bài kiểm tra · bài tập online · nợ kỹ thuật (xem dưới)
 ```
 
 ## Trạng thái mã FR
@@ -151,15 +151,22 @@ VPS → domain + HTTPS → backup. Xem
 | N24 | **Kéo-thả đổi cha trong cây cơ cấu** chưa làm (`@headless-tree` có `dragAndDropFeature`, chưa bật) — nay đổi cha bằng cách sửa phòng ban | Thấp |
 | ~~N16~~ | ~~4 test E2E lạc hậu~~ — **XONG 12/09/2026**. Ba test `dang-nhap-tra-ma` chờ chữ "đội" thời dự án bóng đá; hai test `quan-tri` trỏ **màn Tài khoản** trong khi địa chỉ/email đã sang `/hrm/nhan-su` (tách người ≠ tài khoản 07/09) và thiếu bước **xác nhận lưu** (thêm 07/09). App đúng, test lạc hậu | ✅ |
 | N28 | **`thong-ke-nhan-su.spec.ts` sát hạn mức thời gian** — chạy riêng mất **27,4s** trên `timeout: 30_000`, nên trong bộ đầy đủ (máy bận hơn) nó **đỏ ngẫu nhiên**: đã thấy 23/09/2026 khi chạy 63 test, chạy lại riêng thì xanh. Không phải lỗi logic. Cách chữa: tách test thành hai (tạo tiêu chí / chấm điểm), hoặc dựng dữ liệu qua API thay vì qua UI — chứ **đừng nâng timeout**, nâng chỉ giấu việc test đang làm quá nhiều việc | Thấp |
+| N29 | **2 test `NhanXetBuoiHocTests` đỏ**: `Gui_chuoi_rong_thi_xoa_nhan_xet` và `Sua_trang_thai_diem_danh_khong_lam_mat_nhan_xet`. Đã xác nhận **có trước** đợt 09–11/10 bằng cách stash hết thay đổi rồi chạy lại, nên không phải hệ quả của việc thêm email/ngôn ngữ. Chưa chẩn nguyên nhân. Đáng lo vì chúng canh **quy tắc #1** (sửa một trường không làm mất trường khác) — để đỏ lâu thì mất chính lớp bảo vệ đó | Trung bình |
+| N30 | **9/37 tệp E2E đỏ** (đo 11/10/2026). Ít nhất một phần không phải lỗi sản phẩm: `sidebar.spec.ts` tự báo *"trang không dài hơn viewport — test không kiểm được gì"*, tức tenant mới quá ít dữ liệu để kiểm cuộn. Đã xác nhận có trước đợt 09–11/10 bằng cách lùi 3 file UI rồi chạy lại. Cần rà từng tệp: tệp nào thiếu dữ liệu thì dựng fixture, tệp nào lỗi thật thì sửa | Trung bình |
 | N15 | **E2E phải tắt rate limit mới chạy được** (`GIOI_HAN_TAN_SUAT=false`) vì mỗi test tự tạo tenant qua endpoint có hạn mức 10 req/phút. Cách đúng hơn: fixture dùng CHUNG một tenant, hoặc endpoint tạo tenant riêng cho test | Trung bình |
 | ~~N14~~ | ~~Màn Học viên cho đọc danh sách toàn trung tâm~~ — **XONG 14/09/2026**. `IPhamViLopHoc.LocHocVienTheoPhamVi` lọc về lớp mình phụ trách; người có `LopHocToanTrungTam` vẫn thấy tất cả. Chỉ áp khi tập vai trò đúng bằng `{HocVien}` — màn lớp học gọi cùng query để chọn người thêm vào lớp, lọc ở đó sẽ chặn oan (quy tắc #1). Canh bởi `PhamViHocVienTests`, **hai đột biến kiểm đỏ**: bỏ lọc (rò rỉ) và lọc quá tay (chặn oan). Màn Nhân sự HRM không đụng tới: nó gác bằng `ChucNang.NhanSu` mà giáo viên không có | ✅ |
 | ~~N12~~ | ~~`Token_bi_sua_chu_ky_thi_bi_tu_choi` chớp nháy~~ — **XONG 12/09/2026**. KHÔNG phải chớp nháy: test đổi **ký tự cuối** chữ ký base64url, mà ký tự cuối chỉ mang 2 bit có nghĩa nên **16 nhóm ký tự cho ra cùng chữ ký** — rơi trúng cùng nhóm thì token vẫn hợp lệ. Nay đổi ký tự ở giữa. Chạy 5 lần đơn + 3 lần toàn bộ đều xanh | ✅ |
 
 ## Kiểm chứng hiện tại
 
-- **464 test backend xanh** (67 unit + 397 integration), build 0 warning — đo `dotnet test` 14/09/2026.
-- **23 test E2E / 10 spec — XANH HẾT** (14/09/2026). Chạy cả bộ phải
-  `GIOI_HAN_TAN_SUAT=false` — xem nợ N15.
-- Frontend `tsc -b` + `vite build` sạch, `oxlint` không lỗi.
-- **PostgreSQL + MinIO thật**: 42 bảng, 24 migration áp sạch, luồng đầu-cuối chạy tay đủ từ tạo
+> Số đo dưới đây cập nhật **18/10/2026**. Trước đó bảng này đứng yên ở số liệu 14/09 trong
+> hơn một tháng — nay có `scripts/check-tai-lieu-khop-ma.py` canh phần đếm được.
+
+- **778 test backend** (127 unit + 651 integration), build 0 warning — đo `dotnet test` 18/10/2026.
+  **2 test đỏ**: `NhanXetBuoiHocTests.Gui_chuoi_rong_thi_xoa_nhan_xet` và
+  `.Sua_trang_thai_diem_danh_khong_lam_mat_nhan_xet` — nợ **N29**.
+- **51 test frontend** (vitest) xanh; `tsc -b` + `vite build` sạch, `oxlint` không lỗi.
+- **37 tệp E2E**, trong đó **9 tệp đỏ** — nợ **N30**. Chạy cả bộ phải `GIOI_HAN_TAN_SUAT=false`
+  (nợ N15).
+- **PostgreSQL + MinIO thật**: 54 bảng, 41 migration áp sạch, luồng đầu-cuối chạy tay đủ từ tạo
   trung tâm tới thu học phí.

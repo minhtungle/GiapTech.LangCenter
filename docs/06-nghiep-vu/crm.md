@@ -1,4 +1,4 @@
-# Module CRM (FR-17 → FR-20)
+# Module CRM (FR-17 → FR-21, FR-32)
 
 Bán khoá học: gom dữ liệu khách hàng, bán khoá, tổng hợp doanh thu.
 
@@ -424,6 +424,42 @@ Chưa nối `LOP_HOC.khoa_hoc_id` trong đợt này — làm khi cần báo cáo
 - **Xoá khoá đã có đăng ký bị chặn** (`KHOA_HOC_DA_CO_DANG_KY`) — FK Restrict, và đơn hàng cũ
   phải giữ được tên khoá đã bán. Không dùng được nữa thì đánh dấu ngừng bán.
 - `so_buoi` là thông tin **niêm yết**, không ràng buộc số buổi lớp thật sinh ra.
+
+## FR-32 — Danh mục ngôn ngữ (11/10/2026)
+
+Bảng `NGON_NGU`: tên, thứ tự hiện, cờ còn dùng. Gắn vào `KHOA_HOC` và `SAN_PHAM` qua
+`ngon_ngu_id` **nullable**, rồi lọc khách hàng và doanh thu theo đó.
+
+Trả lời câu hỏi trước đây phải nhẩm theo tên khoá: *"tiếng Đức năm nay bán được bao nhiêu"*,
+*"ai đang học tiếng Nhật"*.
+
+### Vì sao là BẢNG, không phải enum trong mã
+
+Mỗi trung tâm dạy một bộ ngôn ngữ khác nhau, và bộ đó đổi theo thời gian — thêm tiếng Nhật
+khi mở bộ môn mới, bỏ tiếng Pháp khi đóng. Enum thì mỗi lần đổi phải sửa mã và triển khai
+lại: việc của lập trình viên cho một quyết định của người vận hành.
+
+### Vì sao khoá học trỏ tới bằng FK, không lưu chuỗi
+
+Lưu `"Tiếng Đức"` thì đổi tên thành `"Tiếng Đức (Goethe)"` phải sửa mọi hàng, và chỉ cần một
+chỗ gõ sai hoa thường là bộ lọc tách thành hai nhóm. Khoá ngoại làm việc đổi tên thành một
+lần ghi.
+
+### Quy tắc
+
+- `UNIQUE(tenant_id, ten)` — hai mục cùng tên làm bộ lọc tách đôi và không ai biết chọn cái nào.
+- **`ngon_ngu_id` nullable**: mọi khoá học / sản phẩm có trước 11/10/2026 ở trạng thái *chưa
+  gắn*, và lọc "Tất cả" vẫn thấy chúng (quy tắc #1 — không đụng dữ liệu hiện có).
+- FK là **SetNull**, nhưng handler **vẫn chặn** xoá khi còn khoá đang gắn
+  (`NGON_NGU_DANG_DUOC_DUNG`). SetNull sẽ âm thầm gỡ nhãn của mọi khoá mà không báo gì — hôm
+  sau bộ lọc trống và không ai biết vì sao. Đường lui đúng là tắt cờ `dang_dung`.
+- Lọc theo ngôn ngữ **bỏ qua mặt hàng chưa gắn** — lọc "tiếng Đức" không nên trả về thứ chưa
+  ai phân loại.
+
+### Quyền
+
+Chức năng `NgonNgu` (Crud). Nhóm Quản trị tự có nhờ `BoKhuyetQuyenQuanTri` chạy lúc khởi
+động; các nhóm khác phải cấp tay — chủ ý, vì trung tâm tự quyết ai được sửa danh mục nền.
 
 ## FR-21 — Yêu cầu xếp lớp (CRM → LMS)
 

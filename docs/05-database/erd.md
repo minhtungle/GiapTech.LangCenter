@@ -1,6 +1,6 @@
 # ERD — Mô hình dữ liệu
 
-**53 bảng**, PostgreSQL (đếm bằng `information_schema` ngày 09/10/2026, sau khi thêm
+**54 bảng**, PostgreSQL (đếm bằng `information_schema` ngày 09/10/2026, sau khi thêm
 `LICH_SU_EMAIL`, `PHOI_TAI_LIEU` và `BAN_XUAT_PHOI`). Mọi cột chuỗi có `HasMaxLength` (canh bởi
 `MoiEntityPhaiCoConfigTests`); ngoại lệ duy nhất là hai cột JSON của `NHAT_KY_HE_THONG`. Nội dung dưới đây khớp với schema thật (kiểm bằng
 `information_schema` sau khi áp toàn bộ migration), không phải bản thiết kế trên giấy.
@@ -79,6 +79,8 @@ erDiagram
     KHACH_HANG ||--o{ LICH_SU_CHAM_SOC : "chăm sóc"
     DANG_KY_KHOA_HOC ||--o{ THU_TIEN_DANG_KY : "thu nhiều đợt"
     KHOA_HOC ||--o{ DANG_KY_KHOA_HOC : "được đăng ký"
+    NGON_NGU ||--o{ KHOA_HOC : "phân loại"
+    NGON_NGU ||--o{ SAN_PHAM : "phân loại"
     SAN_PHAM ||--o{ DANG_KY_KHOA_HOC : "được mua"
     NGUOI_DUNG |o--o| KHACH_HANG : "cùng một người (0..1)"
     PHONG_BAN ||--o{ NGUOI_DUNG : "nhân sự thuộc phòng"
@@ -172,7 +174,7 @@ không phân công được họ vào lớp cũ nữa.
 | `TAI_LIEU_LOP_HOC` | Bảng gán tài liệu ↔ lớp. **Không có hàng nào** = tài liệu chung toàn trung tâm — ở đây "rỗng" và "chung" là **cùng một nghĩa** nên không cần cột cờ (khác `BUOI_HOC.da_tuy_chinh_hoc_vien`) |
 | `TEP_DINH_KEM` | Một bảng dùng chung, **6 cột FK nullable loại trừ nhau**, ép bằng `CHECK`. Cột thứ sáu `nguoi_dung_id` = tệp hồ sơ nhân sự (FR-23). **Thêm cột FK mới phải sửa cả `CHECK`** — quên là mọi hàng dùng cột đó bị chặn ở tầng DB |
 
-### Nhóm CRM (7 bảng)
+### Nhóm CRM (8 bảng)
 
 | Bảng | Cột đáng chú ý |
 |---|---|
@@ -182,6 +184,7 @@ không phân công được họ vào lớp cũ nữa.
 | `SAN_PHAM` | Vật phẩm bán kèm: sách, học cụ. `don_vi_tinh` ("quyển", "bộ") chỉ để đọc. Bảng RIÊNG chứ không gộp `KHOA_HOC` kèm cột `loai`: gộp thì `so_buoi` luôn NULL cho sách và mọi query khoá phải nhớ `WHERE loai` |
 | `LICH_SU_CHAM_SOC` | Từng lần liên hệ: `thoi_diem`, `hinh_thuc`, `noi_dung`, `nguoi_phu_trach_id` (từ token), **`trang_thai_sau`**. Trạng thái phễu hiện tại = `trang_thai_sau` của dòng **mới nhất** — không lưu cột trên `KHACH_HANG` để hai chỗ không lệch nhau |
 | `THU_TIEN_DANG_KY` | Tiền **thật đã nhận** cho một đăng ký, khách đóng nhiều đợt. Cùng đơn vị tiền với đăng ký. Còn thiếu = cam kết − tổng thu, **tính động**. Cột `xac_nhan_du_tien` (05/10/2026) là thứ KHÁC: phép trừ nói "còn thiếu bao nhiêu TIỀN", cờ này nói "trung tâm còn đòi nữa không" — hai câu lệch nhau khi miễn phần lẻ, giảm giá sau khi chốt, xoá nợ. Thống kê công nợ và nhắc nợ đọc cờ, không đọc phép trừ |
+| `NGON_NGU` | Danh mục ngôn ngữ giảng dạy (11/10/2026): `ten` **UNIQUE trong tenant**, `thu_tu` (thứ tự hiện trong ô chọn), `dang_dung`. Bảng riêng chứ không enum trong mã: mỗi trung tâm dạy một bộ ngôn ngữ khác nhau và bộ đó đổi theo thời gian — enum thì mỗi lần đổi phải sửa mã và triển khai lại. `KHOA_HOC`/`SAN_PHAM` trỏ tới bằng FK thay vì lưu chuỗi: đổi tên là một lần ghi, và không có chuyện gõ sai hoa thường làm bộ lọc tách đôi |
 | `YEU_CAU_XEP_LOP` | **Cầu nối CRM → LMS** (FR-21). Một đơn **nhiều lần gửi**: `lan_gui` (số thứ tự), `trang_thai` (`DangCho`/`DaXep`/`DaHuy`/`TuChoi`), `ghi_chu` (người gửi viết cho bên đào tạo), `ly_do_tu_choi`, `nguoi_gui_id` · `nguoi_duyet_id` · `thoi_diem_gui` · `thoi_diem_xu_ly`, `lop_hoc_id` nullable, `hoc_vien_id` (hồ sơ tự tạo từ dữ liệu khách nếu chưa có). Bảng riêng chứ không phải cột trạng thái trên đơn: giữ được **ai gửi · ai xử lý · lúc nào · vào lớp nào**, và giữ đủ mọi lần gửi |
 
 ### Nhóm học phí (1 bảng)
@@ -259,6 +262,7 @@ Các UNIQUE trên bảng con **không kèm `tenant_id`**: cột đầu đã là 
 | `YEU_CAU_XEP_LOP → DANG_KY_KHOA_HOC` (1-n) / `→ NGUOI_DUNG (hoc_vien)` | Restrict | Yêu cầu là vết nghiệp vụ; xoá đơn/học viên phải bị chặn để không còn yêu cầu treo |
 | `YEU_CAU_XEP_LOP → LOP_HOC` / `→ NGUOI_DUNG (nguoi_gui, nguoi_duyet)` | SetNull | Chỉ là dấu vết; Restrict sẽ khoá cứng việc xoá lớp nháp và mọi tài khoản đã từng duyệt |
 | `THU_TIEN_DANG_KY → DANG_KY_KHOA_HOC` | Restrict | Dữ liệu tiền: muốn xoá đăng ký thì phải xoá các lần thu trước, một cách có ý thức |
+| `KHOA_HOC → NGON_NGU` / `SAN_PHAM → NGON_NGU` | **SetNull** | Xoá một ngôn ngữ thì khoá học KHÔNG biến mất, chỉ mất nhãn. Restrict sẽ khoá cứng việc dọn một ngôn ngữ khai nhầm; Cascade thì xoá luôn cả khoá học — cả hai đều tệ hơn là để khoá quay về trạng thái "chưa gắn". **Nhưng handler vẫn CHẶN** khi còn khoá đang gắn: SetNull âm thầm gỡ nhãn của 12 khoá mà không báo gì, đó mới là thứ nguy hiểm |
 | `KHACH_HANG → NGUOI_DUNG` | SetNull | Chỉ là mối nối "cùng một người", không phải phụ thuộc: xoá hồ sơ học viên không được cuốn theo dữ liệu khách hàng và đơn hàng |
 | `DIEM_DANH → NGUOI_DUNG` (người xác nhận) | SetNull | Chỉ là dấu vết; Restrict sẽ khoá cứng mọi tài khoản giáo viên vĩnh viễn |
 | `KHOAN_THU_HOC_PHI → NGUOI_DUNG` (người thu) | SetNull | Cùng lý do |
