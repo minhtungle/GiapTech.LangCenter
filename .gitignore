@@ -86,3 +86,7 @@ caddy_config/
 # gốc repo lẫn `frontend/`. Gắn tiền tố thì chạy từ chỗ kia là rác lọt vào `git status`.
 test-results/
 playwright-report/
+
+# Python bytecode — sinh ra khi script trong scripts/ import lẫn nhau
+__pycache__/
+*.pyc

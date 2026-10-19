@@ -19,6 +19,7 @@ Vì vậy mỗi bài ở đây:
 | Bài | Nội dung |
 |---|---|
 | [01 — Multi-tenant](./01-multi-tenant.md) | Cách ly dữ liệu nhiều khách hàng trên một database: Global Query Filter, năm cái bẫy đã vấp, và cách canh để không hỏng lại |
+| [02 — Prompt lấy danh sách chức năng](./02-prompt-lay-danh-sach-chuc-nang.md) | Dùng dự án này làm **base**: prompt dán được ngay để một phiên trợ lý tự đọc mã và trả về chức năng nào giữ · sửa · bỏ · thiếu |
 
 *(Các bài tiếp theo sẽ thêm dần: phân quyền động, xác thực JWT + refresh token, test canh kiến
 trúc, đa ngôn ngữ, nhận diện tenant qua domain.)*
